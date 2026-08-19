@@ -67,7 +67,7 @@ summary::-webkit-details-marker { display:none; }
 .hero-flow-indicator b { margin-inline:.35rem; color:var(--gold); font-size:.9rem; }
 .hero-map-stage { position:absolute; inset:0; z-index:1; opacity:0; transition:opacity 1.05s cubic-bezier(.22,1,.36,1); pointer-events:none; }
 .hero-map-stage svg { display:block; width:100%; height:100%; overflow:visible; }
-.hero-nepal-boundary { fill:rgb(216 155 60 / .065); stroke:rgb(230 184 102 / .82); stroke-width:1.35; stroke-dasharray:1; stroke-dashoffset:1; vector-effect:non-scaling-stroke; }
+.hero-nepal-boundary { fill:rgb(216 155 60 / .075); stroke:rgb(230 184 102 / .96); stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
 .hero-world-network { opacity:.96; }
 .hero-counterpart-routes path { fill:none; stroke:rgb(143 175 185 / .27); stroke-width:1; vector-effect:non-scaling-stroke; }
 .hero-counterpart-nodes circle:first-child { fill:var(--glacier); }
@@ -79,7 +79,6 @@ summary::-webkit-details-marker { display:none; }
 .hero-directional-routes path { fill:none; stroke:var(--gold); stroke-width:1.2; stroke-dasharray:2 18; vector-effect:non-scaling-stroke; animation:heroRouteTravel 4.8s linear infinite; }
 .hero-directional-out path { stroke:var(--rhododendron); animation-direction:reverse; animation-duration:5.6s; }
 @keyframes heroRouteTravel { to { stroke-dashoffset:-80; } }
-@keyframes heroBoundaryReveal { to { stroke-dashoffset:0; } }
 .hero-physical-stage { inset:0; }
 .hero-branch-links path { fill:none; stroke:rgb(216 155 60 / .34); stroke-width:1.1; vector-effect:non-scaling-stroke; }
 .hero-branch-marker .branch-ring { fill:rgb(216 155 60 / .08); stroke:var(--gold); stroke-width:1.5; vector-effect:non-scaling-stroke; }
@@ -104,7 +103,6 @@ summary::-webkit-details-marker { display:none; }
 .himalayan-hero.phase-2 .hero-phase-global,.himalayan-hero.phase-3 .hero-phase-physical,.himalayan-hero.phase-4 .hero-phase-flow { opacity:1; transform:none; }
 .himalayan-hero.phase-2 .hero-global-stage,.himalayan-hero.phase-3 .hero-physical-stage { opacity:1; }
 .himalayan-hero.phase-4 .hero-global-stage { opacity:.7; }.himalayan-hero.phase-4 .hero-physical-stage { opacity:.84; }
-.himalayan-hero.phase-3 .hero-nepal-boundary,.himalayan-hero.phase-4 .hero-nepal-boundary { animation:heroBoundaryReveal 1.45s cubic-bezier(.65,0,.35,1) forwards; }
 .himalayan-hero.phase-2 .hero-network-legend,.himalayan-hero.phase-3 .hero-network-legend,.himalayan-hero.phase-4 .hero-network-legend { opacity:1; }
 .himalayan-hero.phase-4 .hero-directional-routes { opacity:.78; }
 .is-reduced .hero-world-layer,.is-reduced .hero-global-stage,.is-reduced .hero-physical-stage,.is-reduced .hero-network-legend { display:none; }

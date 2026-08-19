@@ -18,7 +18,7 @@ type GeoPoint = { x: number; y: number };
 type GeoBounds = { west: number; east: number; south: number; north: number };
 
 const WORLD = { width: 1600, height: 800, bounds: { west: -180, east: 180, south: -90, north: 90 } } as const;
-const REGION = { width: 1200, height: 900, bounds: { west: 76, east: 90, south: 21, north: 31.5 } } as const;
+const REGION = { width: 1440, height: 900, bounds: { west: 74.5333333333, east: 92.1333333333, south: 21, north: 32 } } as const;
 const HERO_NEPAL_BOUNDARY = createNepalBoundaryPath(REGION.width, REGION.height, REGION.bounds);
 const counterpartRegions = [
   { id: "asia", label: "Asia", latitude: 35, longitude: 105 },
@@ -61,7 +61,7 @@ function PhysicalNetworkGraphic() {
   const positions = Object.fromEntries(networkLocations.map((location) => [location.id, project(location.longitude, location.latitude, REGION.width, REGION.height, REGION.bounds)])) as Record<string, GeoPoint>;
   const kathmandu = positions.kathmandu;
   return <svg className="hero-physical-network" viewBox={`0 0 ${REGION.width} ${REGION.height}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="KCPL physical network: head office in Kathmandu and branches in Birgunj, Nepalgunj, Surkhet, Raxaul and Kolkata.">
-    <path className="hero-nepal-boundary" d={HERO_NEPAL_BOUNDARY} pathLength="1" aria-hidden="true"/>
+    <path className="hero-nepal-boundary" d={HERO_NEPAL_BOUNDARY} aria-hidden="true"/>
     <g className="hero-branch-links" aria-hidden="true">{networkLocations.filter((location) => location.id !== "kathmandu").map((location) => <path key={location.id} d={routeArc(kathmandu, positions[location.id], .08)}/>)}</g>
     <g>{networkLocations.map((location) => { const point = positions[location.id]; const label = location.type === "head-office" ? "HEAD OFFICE" : "KCPL BRANCH"; const offset = markerLabelOffsets[location.id]; return <g key={location.id} className={`hero-branch-marker ${location.type === "head-office" ? "is-head-office" : ""}`} transform={`translate(${point.x} ${point.y})`}><circle className="branch-ring" r={location.type === "head-office" ? 17 : 11}/><circle className="branch-core" r={location.type === "head-office" ? 6 : 4}/><text x={offset.dx} y={offset.dy} textAnchor={offset.anchor}>{location.name}</text><text className="branch-role" x={offset.dx} y={offset.dy + 17} textAnchor={offset.anchor}>{label}</text></g>; })}</g>
   </svg>;

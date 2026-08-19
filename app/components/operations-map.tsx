@@ -82,7 +82,7 @@ export function NepalOperationsMap() {
 
   return <div ref={mapRef} className="regional-satellite-shell">
     <div className="regional-satellite-map">
-      <SatelliteImage src="/images/nepal-satellite-nasa.jpg" alt="Satellite view of Nepal, the Himalayas and northern India" inView={inView} reducedMotion={reducedMotion}/>
+    <SatelliteImage src="/images/nepal-satellite-nasa-regional.jpg" alt="Satellite view of Nepal, the Himalayas and northern India" inView={inView} reducedMotion={reducedMotion}/>
       <div className="satellite-tone satellite-tone-regional" aria-hidden="true"/>
       <svg className="satellite-overlay" viewBox={`0 0 ${REGIONAL.width} ${REGIONAL.height}`} role="img" aria-labelledby="regional-map-title regional-map-description">
         <title id="regional-map-title">KCPL Nepal and India operations map</title>
@@ -90,10 +90,9 @@ export function NepalOperationsMap() {
         <motion.path
           className="satellite-country-boundary"
           d={NEPAL_BOUNDARY_PATH}
-          pathLength="1"
-          initial={reducedMotion ? false : { pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: inView ? 1 : 0, opacity: inView ? 1 : 0 }}
-          transition={{ duration: reducedMotion ? 0 : 1.35, delay: reducedMotion ? 0 : .25, ease: [0.65, 0, 0.35, 1] }}
+          initial={reducedMotion ? false : { opacity: 0 }}
+          animate={{ opacity: inView ? 1 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : .7, delay: reducedMotion ? 0 : .2, ease: [0.22, 1, 0.36, 1] }}
           aria-hidden="true"
         />
         <g className="satellite-routes" aria-hidden="true">
