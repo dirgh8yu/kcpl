@@ -67,10 +67,6 @@ function PhysicalNetworkGraphic() {
   </svg>;
 }
 
-function FlowIndicator() {
-  return <div className="hero-flow-indicator" aria-label="Import into Nepal and export from Nepal"><span>Import <b>↓</b></span><i/><span><b>↑</b> Export</span></div>;
-}
-
 export function HimalayanHero() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
@@ -103,11 +99,11 @@ export function HimalayanHero() {
       <Container className="hero-story-shell">
         <motion.div className="hero-phase-copy hero-phase-intro" style={reduce ? undefined : { y: introY }}>
           <p className="hero-kicker">International freight · Customs · Logistics</p>
-          <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><FlowIndicator/><div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
+          <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
         </motion.div>
         <div className="hero-phase-copy hero-phase-global"><p className="hero-kicker">Counterparts worldwide</p><h2>One connected logistics network beyond borders.</h2></div>
         <div className="hero-phase-copy hero-phase-physical"><p className="hero-kicker">KCPL on the ground</p><h2>Regional presence.<br/>Practical coordination.</h2><p>Branches positioned across Nepal&apos;s commercial regions and cross-border logistics network.</p></div>
-        <div className="hero-phase-copy hero-phase-flow"><p className="hero-kicker">Import + Export</p><h2>Global reach.<br/><em>Local control.</em></h2><p>From our own regional branches to trusted counterparts around the world, KCPL connects Nepalese trade with international markets in both directions.</p><FlowIndicator/></div>
+        <div className="hero-phase-copy hero-phase-flow"><p className="hero-kicker">Import + Export</p><h2>Global reach.<br/><em>Local control.</em></h2><p>From our own regional branches to trusted counterparts around the world, KCPL connects Nepalese trade with international markets in both directions.</p></div>
       </Container>
 
       <div className="hero-network-legend"><span><i className="legend-kcpl"/>KCPL location</span><span><i className="legend-counterpart"/>International counterpart region</span></div>
@@ -119,7 +115,7 @@ export function HimalayanHero() {
       <div className="hero-mobile-image" aria-hidden="true"><Image src="/images/nepal-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/><div/></div>
       <Container className="hero-mobile-copy">
         <p className="hero-kicker">International freight · Customs · Logistics</p>
-        <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><FlowIndicator/>
+        <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p>
         <div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
         <div className="hero-mobile-network"><p className="hero-kicker">KCPL on the ground</p><h2>Six verified operational locations.</h2><ul>{networkLocations.map((location) => <li key={location.id}><i/><span><strong>{location.name}</strong><small>{location.type === "head-office" ? "Head Office" : "KCPL Branch"}</small></span></li>)}</ul><div className="hero-mobile-counterparts"><span>Counterparts worldwide</span><p>Trusted international logistics relationships beyond KCPL&apos;s own regional branches.</p></div><div className="hero-mobile-flow"><ArrowLeftRight/><span>Import into Nepal</span><span>Export from Nepal</span></div></div>
       </Container>
