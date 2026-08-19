@@ -83,8 +83,8 @@ export const serviceContent = {
     intro: "Transport planning for large, complex or high-value equipment that requires non-standard movement.",
     overviewTitle: "Plan the movement before the cargo moves.",
     description: "Project cargo can involve multiple transport stages, special handling, route constraints and carefully timed handovers. KCPL coordinates the route and participating logistics parties around the cargo’s specific requirements.",
-    image: "/images/services/specialist-cargo.jpg",
-    imageAlt: "Representative oversized industrial equipment prepared for coordinated transport",
+    image: "/images/services/specialist-project-cargo.jpg",
+    imageAlt: "Representative project cargo movement with an oversized industrial transformer on a multi-axle trailer",
     points: [
       { title: "Cargo and route assessment", detail: "Review dimensions, handling needs and the practical movement path." },
       { title: "Multi-stage coordination", detail: "Connect the transport modes and operational parties involved in the route." },
@@ -102,8 +102,8 @@ export const serviceContent = {
     intro: "Coordination for machinery, vehicles, construction materials and other non-containerised loads.",
     overviewTitle: "Cargo handled piece by piece, route by route.",
     description: "When cargo cannot move inside a standard container, the plan must account for its dimensions, lifting and handling points, port or terminal processes and inland connections. KCPL coordinates those requirements as one movement.",
-    image: "/images/services/specialist-cargo.jpg",
-    imageAlt: "Representative heavy industrial cargo and transport equipment in a freight yard",
+    image: "/images/services/specialist-break-bulk.jpg",
+    imageAlt: "Representative break bulk operation loading individual industrial cargo pieces onto a general cargo vessel",
     points: [
       { title: "Cargo-profile review", detail: "Consider dimensions, weight and the required loading method." },
       { title: "Port and terminal coordination", detail: "Align non-containerised handling with the wider freight route." },
@@ -121,8 +121,8 @@ export const serviceContent = {
     intro: "Container planning for oversized cargo requiring top-loading or non-standard access.",
     overviewTitle: "A container option shaped around access.",
     description: "Open top containers can accommodate cargo that cannot be loaded through standard container doors. KCPL coordinates the container choice with cargo dimensions, loading requirements, the ocean leg and the connected inland route.",
-    image: "/images/services/specialist-cargo.jpg",
-    imageAlt: "Representative oversized industrial cargo prepared for specialist transport",
+    image: "/images/services/specialist-open-top.jpg",
+    imageAlt: "Representative open top container operation lowering oversized machinery through the open roof",
     points: [
       { title: "Cargo-dimension review", detail: "Assess the dimensions and access requirements that affect container planning." },
       { title: "Top-loading coordination", detail: "Align the loading method with the cargo and handling sequence." },

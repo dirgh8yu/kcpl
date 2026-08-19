@@ -52,9 +52,9 @@ export function WhyKCPL() {
 }
 
 const specialistItems = [
-  { n: "01", label: "Planned movement", title: "Project Cargo", copy: "Large, complex or high-value equipment requiring coordinated planning and transport.", href: "/services/project-cargo" },
-  { n: "02", label: "Non-containerised", title: "Break Bulk Cargo", copy: "Machinery, vehicles and construction materials moved outside standard containers.", href: "/services/break-bulk-cargo" },
-  { n: "03", label: "Top-loading access", title: "Open Top Container", copy: "Oversized cargo requiring top-loading or non-standard container access.", href: "/services/open-top-container" },
+  { n: "01", label: "Planned movement", title: "Project Cargo", copy: "Large, complex or high-value equipment requiring coordinated planning and transport.", href: "/services/project-cargo", image: "/images/services/specialist-project-cargo.jpg", alt: "Representative project cargo movement with an oversized industrial transformer on a multi-axle trailer" },
+  { n: "02", label: "Non-containerised", title: "Break Bulk Cargo", copy: "Machinery, vehicles and construction materials moved outside standard containers.", href: "/services/break-bulk-cargo", image: "/images/services/specialist-break-bulk.jpg", alt: "Representative break bulk operation loading individual industrial cargo pieces onto a general cargo vessel" },
+  { n: "03", label: "Top-loading access", title: "Open Top Container", copy: "Oversized cargo requiring top-loading or non-standard container access.", href: "/services/open-top-container", image: "/images/services/specialist-open-top.jpg", alt: "Representative open top container operation lowering oversized machinery through the open roof" },
 ] as const;
 
 export function SpecialistCargo() {
@@ -77,7 +77,7 @@ export function SpecialistCargo() {
 
       <div className="specialist-workbench">
         <motion.figure className={`specialist-visual specialist-visual-${activeIndex + 1}`} initial={reduce ? false : { opacity: 0, clipPath: "inset(0 100% 0 0)" }} animate={inView ? { opacity: 1, clipPath: "inset(0 0% 0 0)" } : {}} transition={{ duration: reduce ? 0 : 1.1, delay: reduce ? 0 : .12, ease: [0.65, 0, 0.35, 1] }}>
-          <motion.div className="specialist-visual-image" animate={reduce ? undefined : { scale: 1.025 + activeIndex * .008, x: activeIndex === 1 ? -7 : activeIndex === 2 ? 7 : 0 }} transition={{ duration: .9, ease: [0.22, 1, 0.36, 1] }}><Image src="/images/services/specialist-cargo.jpg" alt="Representative oversized industrial cargo secured on a multi-axle trailer" fill sizes="(max-width: 767px) 100vw, 58vw" className="object-cover"/></motion.div>
+          {specialistItems.map((item, index) => <motion.div key={item.image} className="specialist-visual-image" initial={false} animate={{ opacity: activeIndex === index ? 1 : 0, scale: reduce ? 1 : activeIndex === index ? 1.025 : 1.055, x: reduce ? 0 : activeIndex === index ? (index === 1 ? -7 : index === 2 ? 7 : 0) : 0 }} transition={{ duration: reduce ? 0 : .85, ease: [0.22, 1, 0.36, 1] }} aria-hidden={activeIndex !== index}><Image src={item.image} alt={activeIndex === index ? item.alt : ""} fill sizes="(max-width: 767px) 100vw, 58vw" className="object-cover"/></motion.div>)}
           <div className="specialist-visual-tone" aria-hidden="true"/>
           <div className="specialist-visual-meta"><span>KCPL / Specialist handling</span><span>Plan · Coordinate · Move</span></div>
           <motion.strong key={activeItem.n} className="specialist-visual-index" initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduce ? 0 : .5 }}>{activeItem.n}</motion.strong>
