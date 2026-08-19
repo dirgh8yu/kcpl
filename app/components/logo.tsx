@@ -11,10 +11,13 @@ export function Logo({ inverse = false, variant = "default" }: { inverse?: boole
       </span>
       <span className={`brand-copy ${inverse ? "is-inverse" : ""}`}>
         {isHeader ? (
-          <>
-            <span className="brand-name">Kapileshwor</span>
-            <span className="brand-meta"><b>Cargo</b> · Pvt. Ltd.</span>
-          </>
+          <span className="brand-header-rail">
+            <span className="brand-header-stage" aria-hidden="true">
+              <span className="brand-header-full">Kapileshwor Cargo <b>Pvt. Ltd.</b></span>
+              <span className="brand-header-short"><strong>KCPL</strong><small>Kathmandu · Nepal</small></span>
+            </span>
+            <span className="brand-header-line" aria-hidden="true"><i/></span>
+          </span>
         ) : (
           <>
             <span className="brand-name-default">Kapileshwor Cargo</span>
