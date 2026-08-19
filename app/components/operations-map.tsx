@@ -1,154 +1,152 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { motion, useInView, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { customsCoverageLocations, networkLocations, networkRoutes, type NetworkLocation } from "../network-data";
 
 type Position = { x: number; y: number };
-type Geometry = { type: "Polygon" | "MultiPolygon"; coordinates: number[][][] | number[][][][] };
-type BoundaryFeature = { type: "Feature"; properties: { name: string; iso_a3: string }; geometry: Geometry };
-type BoundaryCollection = { type: "FeatureCollection"; source: string; features: BoundaryFeature[] };
+type Bounds = { west: number; east: number; south: number; north: number };
 
-const WIDTH = 1200;
-const HEIGHT = 660;
-const BOUNDS = { west: 80, east: 89.45, south: 21.55, north: 30.7 };
+const WORLD = { width: 1600, height: 800, bounds: { west: -180, east: 180, south: -90, north: 90 } } as const;
+const REGIONAL = { width: 1200, height: 900, bounds: { west: 76, east: 90, south: 21, north: 31.5 } } as const;
 
-function mercatorLatitude(latitude: number) {
-  const radians = Math.max(-85, Math.min(85, latitude)) * Math.PI / 180;
-  return Math.log(Math.tan(Math.PI / 4 + radians / 2));
-}
-
-function project(longitude: number, latitude: number): Position {
-  const x = (longitude - BOUNDS.west) / (BOUNDS.east - BOUNDS.west) * WIDTH;
-  const north = mercatorLatitude(BOUNDS.north);
-  const south = mercatorLatitude(BOUNDS.south);
-  const y = (north - mercatorLatitude(latitude)) / (north - south) * HEIGHT;
-  return { x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) };
-}
-
-function ringPath(ring: number[][]) {
-  return ring.map(([longitude, latitude], index) => {
-    const point = project(longitude, latitude);
-    return `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.y.toFixed(2)}`;
-  }).join(" ") + " Z";
-}
-
-function geometryPath(geometry: Geometry) {
-  if (geometry.type === "Polygon") {
-    return (geometry.coordinates as number[][][]).map(ringPath).join(" ");
-  }
-  return (geometry.coordinates as number[][][][]).flatMap((polygon) => polygon.map(ringPath)).join(" ");
+function project(longitude: number, latitude: number, width: number, height: number, bounds: Bounds): Position {
+  return {
+    x: Number((((longitude - bounds.west) / (bounds.east - bounds.west)) * width).toFixed(3)),
+    y: Number((((bounds.north - latitude) / (bounds.north - bounds.south)) * height).toFixed(3)),
+  };
 }
 
 function curvedRoute(from: Position, to: Position) {
   const distance = Math.hypot(to.x - from.x, to.y - from.y);
-  const lift = Math.min(62, Math.max(16, distance * 0.12));
+  const lift = Math.min(55, Math.max(14, distance * .1));
   const controlX = (from.x + to.x) / 2;
   const controlY = (from.y + to.y) / 2 - lift;
-  return `M${from.x.toFixed(2)},${from.y.toFixed(2)} Q${controlX.toFixed(2)},${controlY.toFixed(2)} ${to.x.toFixed(2)},${to.y.toFixed(2)}`;
+  return `M${from.x},${from.y} Q${controlX.toFixed(3)},${controlY.toFixed(3)} ${to.x},${to.y}`;
 }
 
-export function OperationsMap() {
+function SatelliteImage({ src, alt, inView, reducedMotion }: { src: string; alt: string; inView: boolean; reducedMotion: boolean | null }) {
+  return <motion.div
+    className="satellite-image"
+    initial={reducedMotion ? false : { opacity: 0, scale: 1.025 }}
+    animate={{ opacity: inView ? 1 : 0, scale: inView ? 1 : 1.025 }}
+    transition={{ duration: reducedMotion ? 0 : 1.05, ease: [0.22, 1, 0.36, 1] }}
+  >
+    <Image src={src} alt={alt} fill sizes="(max-width: 767px) 100vw, 1200px" className="object-cover"/>
+  </motion.div>;
+}
+
+export function WorldNetworkMap() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [boundaries, setBoundaries] = useState<BoundaryFeature[]>([]);
+  const reducedMotion = useReducedMotion();
+  const inView = useInView(mapRef, { once: true, amount: .25 });
+  const kathmandu = networkLocations[0];
+  const origin = project(kathmandu.longitude, kathmandu.latitude, WORLD.width, WORLD.height, WORLD.bounds);
+
+  return <div ref={mapRef} className="world-satellite-map">
+    <SatelliteImage src="/images/world-satellite-nasa.jpg" alt="Satellite view of the world showing continents, oceans and mountain ranges" inView={inView} reducedMotion={reducedMotion}/>
+    <div className="satellite-tone" aria-hidden="true"/>
+    <svg className="satellite-overlay" viewBox={`0 0 ${WORLD.width} ${WORLD.height}`} role="img" aria-labelledby="world-map-title world-map-description">
+      <title id="world-map-title">KCPL world network origin</title>
+      <desc id="world-map-description">A satellite map of the world marking Nepal as KCPL&apos;s origin. No unverified overseas locations are displayed.</desc>
+      <motion.g className="world-origin" initial={reducedMotion ? false : { opacity: 0, scale: .8 }} animate={{ opacity: inView ? 1 : 0, scale: inView ? 1 : .8 }} transition={{ duration: reducedMotion ? 0 : .5, delay: reducedMotion ? 0 : .65 }} style={{ transformOrigin: `${origin.x}px ${origin.y}px` }}>
+        <circle className="world-origin-ring" cx={origin.x} cy={origin.y} r="18"/>
+        <circle className="world-origin-core" cx={origin.x} cy={origin.y} r="6"/>
+        <text className="world-origin-label" x={origin.x + 25} y={origin.y - 5}>NEPAL</text>
+        <text className="world-origin-subtitle" x={origin.x + 25} y={origin.y + 15}>KCPL ORIGIN</text>
+      </motion.g>
+    </svg>
+    <div className="world-map-caption">
+      <p>Nepal is the confirmed origin. Overseas counterpart locations will be added only after verification.</p>
+    </div>
+    <a className="satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
+  </div>;
+}
+
+export function NepalOperationsMap() {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const inView = useInView(mapRef, { once: true, amount: .18 });
   const [activeId, setActiveId] = useState("kathmandu");
-  const reduceMotion = useReducedMotion();
-  const mapInView = useInView(mapRef, { once: true, amount: .16 });
   const activeLocation = networkLocations.find((location) => location.id === activeId) ?? networkLocations[0];
-
-  useEffect(() => {
-    let live = true;
-    fetch("/data/kcpl-regional-boundaries.geojson")
-      .then((response) => {
-        if (!response.ok) throw new Error("Boundary data could not be loaded");
-        return response.json() as Promise<BoundaryCollection>;
-      })
-      .then((data) => { if (live) setBoundaries(data.features); })
-      .catch(() => { if (live) setBoundaries([]); });
-    return () => { live = false; };
-  }, []);
-
-  const positions = useMemo(() => Object.fromEntries(networkLocations.map((location) => [location.id, project(location.longitude, location.latitude)])) as Record<string, Position>, []);
+  const positions = useMemo(() => Object.fromEntries(networkLocations.map((location) => [location.id, project(location.longitude, location.latitude, REGIONAL.width, REGIONAL.height, REGIONAL.bounds)])) as Record<string, Position>, []);
   const activeRouteIds = new Set(networkRoutes.filter((route) => route.from === activeId || route.to === activeId).map((route) => route.id));
 
   function selectLocation(location: NetworkLocation) {
     setActiveId(location.id);
   }
 
-  return <div ref={mapRef} className="operations-map-shell">
-    <div className="operations-map-frame">
-      <svg className="operations-map" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby="operations-map-title operations-map-description">
-        <title id="operations-map-title">KCPL geographic operations network</title>
-        <desc id="operations-map-description">A projected geographic map showing Kathmandu, Birgunj, Nepalgunj and Surkhet in Nepal, with cross-border network locations at Raxaul and Kolkata in India.</desc>
-        <defs>
-          <clipPath id="map-frame-clip"><rect width={WIDTH} height={HEIGHT}/></clipPath>
-          <filter id="map-marker-glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        </defs>
-        <g className="map-grid" aria-hidden="true">
-          {[81,83,85,87,89].map((longitude) => { const x = project(longitude, 26).x; return <line key={`lon-${longitude}`} x1={x} x2={x} y1="0" y2={HEIGHT}/>; })}
-          {[22,24,26,28,30].map((latitude) => { const y = project(85, latitude).y; return <line key={`lat-${latitude}`} x1="0" x2={WIDTH} y1={y} y2={y}/>; })}
-        </g>
-        <g clipPath="url(#map-frame-clip)">
-          {boundaries.map((feature) => {
-            const isNepal = feature.properties.iso_a3 === "NPL";
-            const d = geometryPath(feature.geometry);
-            return <g key={feature.properties.iso_a3} className={isNepal ? "map-country map-country-nepal" : "map-country map-country-context"}>
-              <motion.path d={d} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: mapInView ? 1 : 0 }} transition={{ duration: reduceMotion ? 0 : .75, delay: isNepal ? .12 : 0 }}/>
-              {isNepal && <motion.path className="map-nepal-outline" d={d} fill="none" initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }} animate={{ pathLength: mapInView ? 1 : 0, opacity: mapInView ? 1 : 0 }} transition={{ duration: reduceMotion ? 0 : .9, delay: reduceMotion ? 0 : .12, ease: [0.65,0,0.35,1] }}/>} 
-            </g>;
+  return <div ref={mapRef} className="regional-satellite-shell">
+    <div className="regional-satellite-map">
+      <SatelliteImage src="/images/nepal-satellite-nasa.jpg" alt="Satellite view of Nepal, the Himalayas and northern India" inView={inView} reducedMotion={reducedMotion}/>
+      <div className="satellite-tone satellite-tone-regional" aria-hidden="true"/>
+      <svg className="satellite-overlay" viewBox={`0 0 ${REGIONAL.width} ${REGIONAL.height}`} role="img" aria-labelledby="regional-map-title regional-map-description">
+        <title id="regional-map-title">KCPL Nepal and India operations map</title>
+        <desc id="regional-map-description">Satellite map showing verified KCPL locations at Kathmandu, Birgunj, Nepalgunj, Surkhet, Raxaul and Kolkata.</desc>
+        <g className="satellite-routes" aria-hidden="true">
+          {networkRoutes.map((route, index) => {
+            const isActive = activeRouteIds.has(route.id);
+            return <motion.path
+              key={route.id}
+              d={curvedRoute(positions[route.from], positions[route.to])}
+              className={`satellite-route ${isActive ? "is-active" : ""} ${activeId && !isActive ? "is-muted" : ""}`}
+              initial={reducedMotion ? false : { pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: inView ? 1 : 0, opacity: inView ? 1 : 0 }}
+              transition={{ duration: reducedMotion ? 0 : .75, delay: reducedMotion ? 0 : .9 + index * .16, ease: [0.65, 0, 0.35, 1] }}
+            />;
           })}
-          <text className="map-country-label map-country-label-nepal" x={project(83.2,29.5).x} y={project(83.2,29.5).y}>NEPAL</text>
-          <text className="map-country-label map-country-label-india" x={project(86.8,24.1).x} y={project(86.8,24.1).y}>INDIA</text>
-          <g className="map-routes" aria-hidden="true">
-            {networkRoutes.map((route, index) => {
-              const active = activeRouteIds.has(route.id);
-              const unrelated = activeId && !active;
-              const delay = route.stage === "cross-border" ? 1.65 + index * .12 : 1.2 + index * .12;
-              return <motion.path key={route.id} d={curvedRoute(positions[route.from], positions[route.to])} className={`map-route ${route.stage === "cross-border" ? "map-route-cross-border" : ""} ${active ? "is-active" : ""} ${unrelated ? "is-muted" : ""}`} initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }} animate={{ pathLength: mapInView ? 1 : 0, opacity: mapInView ? unrelated ? .28 : 1 : 0 }} transition={{ duration: reduceMotion ? 0 : .65, delay: reduceMotion ? 0 : delay, ease: [0.65,0,0.35,1] }}/>
-            })}
-          </g>
-          <g className="map-markers">
-            {networkLocations.map((location, index) => {
-              const point = positions[location.id];
-              const isActive = activeId === location.id;
-              const isRelated = !activeId || isActive || networkRoutes.some((route) => activeRouteIds.has(route.id) && (route.from === location.id || route.to === location.id));
-              const labelAnchor = location.id === "kolkata" || location.id === "raxaul" ? "end" : "start";
-              const labelX = labelAnchor === "end" ? -14 : 14;
-              const labelY = location.id === "raxaul" ? 18 : 4;
-              const delay = location.id === "kathmandu" ? .78 : location.country === "Nepal" ? .92 + index * .12 : 1.82 + index * .12;
-              return <motion.g key={location.id} className={`map-marker ${isActive ? "is-active" : ""} ${!isRelated ? "is-muted" : ""}`} role="button" tabIndex={0} aria-label={`${location.name}, ${location.country}. ${location.description}`} onMouseEnter={() => selectLocation(location)} onFocus={() => selectLocation(location)} onClick={() => selectLocation(location)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectLocation(location); } }} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: mapInView ? 1 : 0 }} transition={{ duration: reduceMotion ? 0 : .35, delay: reduceMotion ? 0 : delay }}>
-                <circle cx={point.x} cy={point.y} r="24" fill="transparent"/>
-                <circle className="map-marker-halo" cx={point.x} cy={point.y} r={location.type === "head-office" ? 17 : 13}/>
-                <circle className="map-marker-core" cx={point.x} cy={point.y} r={location.type === "head-office" ? 7 : 5}/>
-                <text className="map-location-label" x={point.x + labelX} y={point.y + labelY} textAnchor={labelAnchor}>{location.name.toUpperCase()}</text>
-              </motion.g>;
-            })}
-          </g>
         </g>
       </svg>
-      {!boundaries.length && <div className="map-loading" role="status">Loading geographic boundary data…</div>}
-      <div className="map-coordinate-readout" aria-hidden="true"><span>REGIONAL FRAME / 80°E—89.45°E</span><span>PROJECTION / MERCATOR</span><span>BOUNDARY / NATURAL EARTH 1:10M</span></div>
+      <div className="satellite-markers-html">
+        {networkLocations.map((location, index) => {
+          const point = positions[location.id];
+          const isActive = activeId === location.id;
+          const isRelated = isActive || networkRoutes.some((route) => activeRouteIds.has(route.id) && (route.from === location.id || route.to === location.id));
+          const labelOnLeft = location.id === "kolkata" || location.id === "raxaul";
+          return <motion.button
+            type="button"
+            key={location.id}
+            className={`satellite-marker ${isActive ? "is-active" : ""} ${!isRelated ? "is-muted" : ""} ${location.id === "raxaul" ? "label-low" : ""}`}
+            style={{ left: `${point.x / REGIONAL.width * 100}%`, top: `${point.y / REGIONAL.height * 100}%` }}
+            aria-label={`${location.name}, ${location.country}. ${location.displayLabel}. ${location.description}`}
+            onMouseEnter={() => selectLocation(location)}
+            onFocus={() => selectLocation(location)}
+            onClick={() => selectLocation(location)}
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: inView ? 1 : 0 }}
+            transition={{ duration: reducedMotion ? 0 : .35, delay: reducedMotion ? 0 : .55 + index * .11 }}
+          >
+            <span className="satellite-marker-ring"/>
+            <span className="satellite-marker-core"/>
+            <span className={`satellite-marker-copy ${labelOnLeft ? "label-left" : ""}`}>
+              <strong className="satellite-marker-label">{location.name}</strong>
+              <small className="satellite-marker-role">{location.displayLabel}</small>
+            </span>
+          </motion.button>;
+        })}
+      </div>
+      <a className="satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
     </div>
 
-    <div className="operations-map-detail" aria-live="polite">
-      <span className="map-detail-index">{String(networkLocations.findIndex((location) => location.id === activeLocation.id) + 1).padStart(2,"0")} / {String(networkLocations.length).padStart(2,"0")}</span>
-      <p className="eyebrow text-gold">{activeLocation.type === "head-office" ? "Head office" : "Operational location"}</p>
+    <aside className="satellite-location-panel" aria-live="polite">
+      <p className="eyebrow text-gold">{activeLocation.displayLabel}</p>
       <h3>{activeLocation.name}</h3>
-      <p className="map-detail-country">{activeLocation.country} · {activeLocation.latitude.toFixed(4)}° N / {activeLocation.longitude.toFixed(4)}° E</p>
-      <p className="map-detail-copy">{activeLocation.description}</p>
-      {activeLocation.address && <p className="map-detail-address">{activeLocation.address}</p>}
-    </div>
+      <p className="satellite-location-country">{activeLocation.country}</p>
+      <p className="satellite-location-description">{activeLocation.description}</p>
+      {activeLocation.address && <p className="satellite-location-address">{activeLocation.address}</p>}
+      <Link href="#confirmed-locations" className="satellite-location-link">View confirmed locations <span aria-hidden="true">→</span></Link>
+    </aside>
 
-    <div className="operations-map-legend" aria-label="Map legend">
-      <span><i className="legend-branch"/>KCPL branch / office location</span>
-      <span><i className="legend-customs"/>Customs coverage / operational presence</span>
-      <small>{customsCoverageLocations.length ? `${customsCoverageLocations.length} verified customs points` : "Individual customs points will be added after location verification."}</small>
+    <div className="satellite-legend" aria-label="Map legend">
+      <span><i className="satellite-legend-branch"/>KCPL branch / office</span>
+      <span><i className="satellite-legend-customs"/>Customs coverage / operational presence</span>
+      <small>{customsCoverageLocations.length ? `${customsCoverageLocations.length} verified customs points` : "Individual customs points are not plotted until verified."}</small>
     </div>
-
-    <p className="map-source-note">Country boundaries: Natural Earth 1:10m Admin 0 Countries. Location coordinates: GeoNames. Lines show network relationships, not precise road routing.</p>
 
     <ul className="sr-only">
-      {networkLocations.map((location) => <li key={location.id}>{location.name}, {location.country}: {location.description} Coordinates {location.latitude}, {location.longitude}.</li>)}
+      {networkLocations.map((location) => <li key={location.id}>{location.name}, {location.country}: {location.displayLabel}. {location.description}</li>)}
       <li>KCPL also has personnel coverage across Nepal customs entry points. Individual customs locations are not plotted until verified.</li>
     </ul>
   </div>;
