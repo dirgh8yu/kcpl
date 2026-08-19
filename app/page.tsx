@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Box, Compass, Globe2, PackageCheck, ShieldCheck, Truck, Warehouse } from "lucide-react";
+import { ArrowRight, Box, PackageCheck, Truck, Warehouse } from "lucide-react";
 import { ButtonLink } from "./components/button-link";
 import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
-import { HimalayanHero, JourneyTimeline, Reveal } from "./components/home-motion";
+import { HimalayanHero, JourneyTimeline, Reveal, WhyKCPL } from "./components/home-motion";
 import { WorldNetworkMap } from "./components/operations-map";
 import { affiliations, company } from "./company-data";
 
@@ -50,7 +50,7 @@ export default function HomePage() {
       </Container>
     </section>
 
-    <section className="why-editorial bg-white py-24 lg:py-32"><Container><div className="grid gap-14 lg:grid-cols-[.8fr_1.2fr] lg:gap-24"><Reveal><p className="eyebrow text-gold">Why KCPL</p><h2 className="section-title mt-4">Clarity at every handover.</h2><p className="mt-7 max-w-md text-base leading-8 text-slate">A shipment can cross multiple systems. The service model is designed to keep the route, documentation and communication aligned.</p></Reveal><div className="why-list">{[[Compass,"Route-led planning","Options shaped around the cargo, timeline and destination."],[ShieldCheck,"Careful coordination","Documentation and handling processes considered throughout the journey."],[Globe2,"Local and global perspective","Understanding Nepal’s logistics environment while coordinating internationally."]].map(([Icon,title,copy],i)=>{const I=Icon as typeof Compass;return <Reveal key={title as string} delay={i*.08}><div className="why-row"><span>0{i+1}</span><I size={25} strokeWidth={1.3}/><div><h3>{title as string}</h3><p>{copy as string}</p></div></div></Reveal>})}</div></div></Container></section>
+    <WhyKCPL/>
 
     <section className="full-bleed-visual relative min-h-[660px] overflow-hidden text-white">
       <Image src="/images/nepal-road-freight.jpg" alt="Freight truck travelling on a mountain highway in Nepal" fill sizes="100vw" className="object-cover"/>

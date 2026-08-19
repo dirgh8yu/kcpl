@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Compass, Globe2, ShieldCheck } from "lucide-react";
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { createNepalBoundaryPath, nepalBoundarySource } from "../nepal-boundary";
@@ -12,6 +12,42 @@ import { Container } from "./container";
 export function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const reduce = useReducedMotion();
   return <motion.div className={className} initial={reduce ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: reduce ? 0 : 0.65, delay, ease: [0.25, 0.1, 0.25, 1] }}>{children}</motion.div>;
+}
+
+const whyItems = [
+  { icon: Compass, title: "Route-led planning", copy: "Options shaped around the cargo, timeline and destination.", detail: "Route" },
+  { icon: ShieldCheck, title: "Careful coordination", copy: "Documentation and handling processes considered throughout the journey.", detail: "Handover" },
+  { icon: Globe2, title: "Local and global perspective", copy: "Understanding Nepal’s logistics environment while coordinating internationally.", detail: "Network" },
+] as const;
+
+export function WhyKCPL() {
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, amount: .24 });
+  const reduce = useReducedMotion();
+
+  return <section ref={ref} className="why-cinematic">
+    <div className="why-contours" aria-hidden="true"/>
+    <div className="why-coordinate" aria-hidden="true">KTM · 2015 · KCPL</div>
+    <Container className="why-cinematic-shell">
+      <motion.div className="why-cinematic-intro" initial={reduce ? false : { opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .8, ease: [0.22, 1, 0.36, 1] }}>
+        <p className="eyebrow text-rhododendron">Why KCPL</p>
+        <h2>Clarity at every <em>handover.</em></h2>
+        <p>A shipment can cross multiple systems. The service model is designed to keep the route, documentation and communication aligned.</p>
+        <div className="why-intro-note" aria-hidden="true"><span>Origin</span><i/><span>Destination</span></div>
+      </motion.div>
+      <div className="why-process">
+        <div className="why-process-track" aria-hidden="true"><motion.i initial={false} animate={{ scaleY: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : 1.35, delay: reduce ? 0 : .18, ease: [0.65, 0, 0.35, 1] }}/></div>
+        {whyItems.map(({ icon: Icon, title, copy, detail }, index) => <motion.article key={title} className="why-stage" initial={reduce ? false : { opacity: 0, x: 30 }} animate={inView ? { opacity: 1, x: 0 } : {}} transition={{ duration: reduce ? 0 : .72, delay: reduce ? 0 : .2 + index * .14, ease: [0.22, 1, 0.36, 1] }} whileHover={reduce ? undefined : { x: 6 }}>
+          <div className="why-stage-number"><span>0{index + 1}</span><i/></div>
+          <div className="why-stage-icon"><Icon size={24} strokeWidth={1.25}/></div>
+          <div className="why-stage-heading"><small>{detail}</small><h3>{title}</h3></div>
+          <p>{copy}</p>
+          <span className="why-stage-rule" aria-hidden="true"/>
+        </motion.article>)}
+      </div>
+    </Container>
+    <div className="why-dhaka-edge" aria-hidden="true"/>
+  </section>;
 }
 
 type GeoPoint = { x: number; y: number };
