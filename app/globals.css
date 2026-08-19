@@ -571,13 +571,15 @@ summary::-webkit-details-marker { display:none; }
 .quote-launch-route-fields { grid-template-columns:1fr 1fr .75fr; }
 .quote-launch-cargo-fields { grid-template-columns:.7fr 1.5fr auto; }
 .quote-launch-form label,.quote-dimension-field { min-width:0; border:0; background:#fffdf8; padding:1.15rem 1.3rem; }
-.quote-launch-form label>span,.quote-dimension-field>legend { display:block; margin-bottom:.52rem; color:var(--slate); font-size:.5rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+.quote-dimension-field { overflow:hidden; }
+.quote-launch-form label>span,.quote-dimension-field>span { display:block; margin-bottom:.52rem; color:var(--slate); font-size:.5rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
 .quote-launch-form input,.quote-launch-form select { min-width:0; width:100%; min-height:29px; border:0; border-radius:0; background:transparent; color:var(--ink); font:inherit; font-size:.78rem; outline:none; }
 .quote-launch-form input::placeholder { color:rgb(93 104 107 / .48); }
 .quote-weight-field>div { display:grid; grid-template-columns:1fr 76px; gap:.55rem; }
 .quote-weight-field select,.quote-dimension-field select { border-left:1px solid var(--line); padding-left:.7rem; }
-.quote-dimension-field>div { display:grid; grid-template-columns:1fr auto 1fr auto 1fr 70px; gap:.55rem; align-items:center; }
+.quote-dimension-field>div { display:grid; min-width:0; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) 62px; gap:.45rem; align-items:center; }
 .quote-dimension-field label { padding:0; }
+.quote-dimension-field input { min-width:0; text-align:center; }
 .quote-dimension-field i { color:rgb(16 24 32 / .35); font-style:normal; font-size:.7rem; }
 .quote-launch-form button { display:inline-flex; min-width:220px; align-items:center; justify-content:center; gap:.9rem; border:0; background:var(--ink); padding:0 1.8rem; color:var(--parchment); font-size:.56rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; transition:background-color .3s ease,color .3s ease; }
 .quote-launch-form button:hover { background:var(--rhododendron); color:white; }
@@ -825,7 +827,7 @@ summary::-webkit-details-marker { display:none; }
   .quote-launch-form { margin:3rem -1.25rem 0; }
   .quote-launch-route-fields,.quote-launch-cargo-fields { grid-template-columns:1fr; }
   .quote-launch-form label,.quote-dimension-field { padding:1rem 1.25rem; }
-  .quote-dimension-field>div { grid-template-columns:1fr auto 1fr auto 1fr 65px; }
+  .quote-dimension-field>div { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) 58px; gap:.35rem; }
   .quote-launch-form button { grid-column:auto; min-height:64px; }
   .quote-launch-note { justify-content:flex-start; overflow:hidden; font-size:.39rem; white-space:nowrap; }
   .quote-page-section { padding:4.5rem 0 5rem; }
