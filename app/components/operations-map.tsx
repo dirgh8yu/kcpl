@@ -67,7 +67,7 @@ export function WorldNetworkMap() {
   </div>;
 }
 
-export function NepalOperationsMap() {
+export function NepalOperationsMap({ variant = "default", locationLinkHref = "#confirmed-locations" }: { variant?: "default" | "home"; locationLinkHref?: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const inView = useInView(mapRef, { once: true, amount: .18 });
@@ -80,7 +80,7 @@ export function NepalOperationsMap() {
     setActiveId(location.id);
   }
 
-  return <div ref={mapRef} className="regional-satellite-shell">
+  return <div ref={mapRef} className={`regional-satellite-shell ${variant === "home" ? "regional-satellite-shell-home" : ""}`}>
     <div className="regional-satellite-map">
     <SatelliteImage src="/images/nepal-satellite-nasa-regional.jpg" alt="Satellite view of Nepal, the Himalayas and northern India" inView={inView} reducedMotion={reducedMotion}/>
       <div className="satellite-tone satellite-tone-regional" aria-hidden="true"/>
@@ -146,7 +146,7 @@ export function NepalOperationsMap() {
       <p className="satellite-location-country">{activeLocation.country}</p>
       <p className="satellite-location-description">{activeLocation.description}</p>
       {activeLocation.address && <p className="satellite-location-address">{activeLocation.address}</p>}
-      <Link href="#confirmed-locations" className="satellite-location-link">View confirmed locations <span aria-hidden="true">→</span></Link>
+      <Link href={locationLinkHref} className="satellite-location-link">View confirmed locations <span aria-hidden="true">→</span></Link>
     </aside>
 
     <div className="satellite-legend" aria-label="Map legend">

@@ -6,7 +6,7 @@ import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
 import { HimalayanHero, JourneyTimeline, Reveal, WhyKCPL } from "./components/home-motion";
-import { WorldNetworkMap } from "./components/operations-map";
+import { NepalOperationsMap } from "./components/operations-map";
 import { affiliations, company } from "./company-data";
 
 const supportServices = [
@@ -52,13 +52,28 @@ export default function HomePage() {
 
     <WhyKCPL/>
 
-    <section className="full-bleed-visual relative min-h-[660px] overflow-hidden text-white">
-      <Image src="/images/nepal-road-freight.jpg" alt="Freight truck travelling on a mountain highway in Nepal" fill sizes="100vw" className="object-cover"/>
-      <div className="full-bleed-overlay"/>
-      <Container className="relative flex min-h-[660px] items-end pb-16 lg:pb-24"><Reveal><p className="eyebrow text-gold">Coordinated freight movement</p><h2 className="mt-5 max-w-4xl text-5xl font-extrabold leading-[.98] tracking-[-.055em] sm:text-7xl lg:text-8xl">Built for movement.</h2><p className="mt-7 max-w-xl text-base leading-8 text-white/70">From the first route decision to the final handover, every stage depends on clear, connected logistics coordination.</p></Reveal></Container>
-    </section>
+    <section className="network-story-section">
+      <div className="network-story-contours" aria-hidden="true"/>
+      <Container className="network-story-shell">
+        <div className="network-story-heading">
+          <Reveal><p className="eyebrow text-gold">Nepal to the world</p><h2>Nepal on the ground.<br/><em>The world within reach.</em></h2></Reveal>
+          <Reveal className="network-story-intro" delay={.08}><strong>A connected logistics model, with every part clearly defined.</strong><p>KCPL&apos;s own regional locations support freight movement across Nepal and India. Customs-entry-point personnel assist at Nepal&apos;s trade gateways, while international counterparts extend coordination beyond the branch network.</p></Reveal>
+        </div>
 
-    <section className="network-signature relative overflow-hidden bg-navy py-24 text-white lg:py-32"><Container className="relative"><div className="grid gap-10 lg:grid-cols-[.78fr_1.22fr] lg:items-end"><Reveal><p className="eyebrow text-gold">Nepal to the world</p><h2 className="section-title mt-4">From Nepal&apos;s trade gateways to global markets.</h2></Reveal><p className="max-w-xl text-base leading-8 text-white/60 lg:justify-self-end">Kathmandu connects through KCPL&apos;s Nepal locations, border and customs gateways, Raxaul and Kolkata, then onward through an international counterpart network.</p></div><div className="mt-14"><WorldNetworkMap/></div><div className="mt-8 flex justify-end"><ButtonLink href="/network" variant="secondary">Explore the network</ButtonLink></div></Container></section>
+        <div className="network-layer-strip" aria-label="KCPL network structure">
+          <Reveal className="network-layer"><span>01</span><div><small>Physical network</small><strong>Kathmandu head office + five confirmed branches</strong></div></Reveal>
+          <Reveal className="network-layer" delay={.08}><span>02</span><div><small>Customs coverage</small><strong>Personnel across Nepal&apos;s entry points</strong></div></Reveal>
+          <Reveal className="network-layer" delay={.16}><span>03</span><div><small>International reach</small><strong>Logistics counterparts in global markets</strong></div></Reveal>
+        </div>
+
+        <Reveal className="network-story-map"><NepalOperationsMap variant="home" locationLinkHref="/network#confirmed-locations"/></Reveal>
+
+        <div className="network-story-footer">
+          <Reveal className="network-counterpart-copy"><p className="eyebrow text-gold">Counterparts worldwide</p><h3>International coordination beyond KCPL&apos;s own branches.</h3><p>KCPL works with logistics counterparts in relevant origin and destination markets to coordinate cargo moving into Nepal and out to international destinations.</p></Reveal>
+          <Link href="/network" className="network-explore-link"><span><small>Explore the network</small><strong>See KCPL&apos;s confirmed locations and operating model.</strong></span><i><ArrowRight size={22}/></i></Link>
+        </div>
+      </Container>
+    </section>
 
     <section className="cargo-editorial bg-offwhite py-24 lg:py-32"><Container><div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr]"><Reveal><p className="eyebrow text-gold">Specialist cargo</p><h2 className="mt-5 text-4xl font-extrabold leading-[1.06] tracking-[-.045em] sm:text-6xl">Built for cargo that does not fit the standard route.</h2></Reveal><div className="specialist-list">{specialistServices.map((service)=><Link key={service.title} href={service.href} className="specialist-row group"><span>{service.n}</span><div><h3>{service.title}</h3><p>{service.copy}</p></div><ArrowRight size={18}/></Link>)}</div></div></Container></section>
 
