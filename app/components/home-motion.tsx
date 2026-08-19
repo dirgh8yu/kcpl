@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowLeftRight, Compass, Globe2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeftRight, ArrowUpRight, Compass, Globe2, ShieldCheck } from "lucide-react";
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { createNepalBoundaryPath, nepalBoundarySource } from "../nepal-boundary";
@@ -47,6 +48,56 @@ export function WhyKCPL() {
       </div>
     </Container>
     <div className="why-dhaka-edge" aria-hidden="true"/>
+  </section>;
+}
+
+const specialistItems = [
+  { n: "01", label: "Planned movement", title: "Project Cargo", copy: "Large, complex or high-value equipment requiring coordinated planning and transport.", href: "/services/project-cargo" },
+  { n: "02", label: "Non-containerised", title: "Break Bulk Cargo", copy: "Machinery, vehicles and construction materials moved outside standard containers.", href: "/services/break-bulk-cargo" },
+  { n: "03", label: "Top-loading access", title: "Open Top Container", copy: "Oversized cargo requiring top-loading or non-standard container access.", href: "/services/open-top-container" },
+] as const;
+
+export function SpecialistCargo() {
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, amount: .16 });
+  const reduce = useReducedMotion();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeItem = specialistItems[activeIndex];
+
+  return <section ref={ref} className="specialist-experience">
+    <div className="specialist-topography" aria-hidden="true"/>
+    <Container className="specialist-experience-shell">
+      <div className="specialist-experience-heading">
+        <motion.div initial={reduce ? false : { opacity: 0, y: 22 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .8, ease: [0.22, 1, 0.36, 1] }}>
+          <p className="eyebrow text-rhododendron">Specialist cargo</p>
+          <h2>Built for cargo that does not fit the <em>standard route.</em></h2>
+        </motion.div>
+        <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : .7, delay: reduce ? 0 : .2 }}>Specialist movements begin with the cargo itself—its dimensions, handling requirements and the route needed to move it.</motion.p>
+      </div>
+
+      <div className="specialist-workbench">
+        <motion.figure className={`specialist-visual specialist-visual-${activeIndex + 1}`} initial={reduce ? false : { opacity: 0, clipPath: "inset(0 100% 0 0)" }} animate={inView ? { opacity: 1, clipPath: "inset(0 0% 0 0)" } : {}} transition={{ duration: reduce ? 0 : 1.1, delay: reduce ? 0 : .12, ease: [0.65, 0, 0.35, 1] }}>
+          <motion.div className="specialist-visual-image" animate={reduce ? undefined : { scale: 1.025 + activeIndex * .008, x: activeIndex === 1 ? -7 : activeIndex === 2 ? 7 : 0 }} transition={{ duration: .9, ease: [0.22, 1, 0.36, 1] }}><Image src="/images/services/specialist-cargo.jpg" alt="Representative oversized industrial cargo secured on a multi-axle trailer" fill sizes="(max-width: 767px) 100vw, 58vw" className="object-cover"/></motion.div>
+          <div className="specialist-visual-tone" aria-hidden="true"/>
+          <div className="specialist-visual-meta"><span>KCPL / Specialist handling</span><span>Plan · Coordinate · Move</span></div>
+          <motion.strong key={activeItem.n} className="specialist-visual-index" initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduce ? 0 : .5 }}>{activeItem.n}</motion.strong>
+          <figcaption><small>Selected service</small><motion.span key={activeItem.title} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduce ? 0 : .45 }}>{activeItem.title}</motion.span></figcaption>
+          <div className="specialist-route-mark" aria-hidden="true"><i/><span/><i/></div>
+        </motion.figure>
+
+        <div className="specialist-service-index" aria-label="Specialist cargo services">
+          {specialistItems.map((item, index) => <motion.div key={item.title} initial={reduce ? false : { opacity: 0, x: 28 }} animate={inView ? { opacity: 1, x: 0 } : {}} transition={{ duration: reduce ? 0 : .65, delay: reduce ? 0 : .24 + index * .13, ease: [0.22, 1, 0.36, 1] }}>
+            <Link href={item.href} className={`specialist-service-link ${activeIndex === index ? "is-active" : ""}`} onMouseEnter={() => setActiveIndex(index)} onFocus={() => setActiveIndex(index)}>
+              <span className="specialist-service-number">{item.n}</span>
+              <span className="specialist-service-copy"><small>{item.label}</small><strong>{item.title}</strong><span>{item.copy}</span></span>
+              <i className="specialist-service-arrow"><ArrowUpRight size={18}/></i>
+            </Link>
+          </motion.div>)}
+          <motion.p className="specialist-manifest-note" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : .7, delay: reduce ? 0 : .75 }}><span>Planning note</span> Cargo details determine the suitable equipment, handling sequence and transport plan.</motion.p>
+        </div>
+      </div>
+    </Container>
+    <div className="specialist-edge" aria-hidden="true"/>
   </section>;
 }
 

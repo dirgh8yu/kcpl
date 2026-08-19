@@ -5,7 +5,7 @@ import { ButtonLink } from "./components/button-link";
 import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
-import { HimalayanHero, JourneyTimeline, Reveal, WhyKCPL } from "./components/home-motion";
+import { HimalayanHero, JourneyTimeline, Reveal, SpecialistCargo, WhyKCPL } from "./components/home-motion";
 import { NepalOperationsMap } from "./components/operations-map";
 import { affiliations, company } from "./company-data";
 
@@ -14,12 +14,6 @@ const supportServices = [
   { icon: Box, title: "Packaging & Storage", copy: "Cargo preparation and storage coordinated around the movement plan.", href: "/services/packaging-storage", image: "/images/services/packaging-storage.jpg", alt: "Representative cargo crate being secured for freight transport" },
   { icon: Truck, title: "Ground Transport", copy: "Road movement aligned with collection, customs and delivery requirements.", href: "/services/ground-transport", image: "/images/services/road-freight-nepal.jpg", alt: "Representative commercial freight truck on a Nepal highway" },
   { icon: PackageCheck, title: "Door-to-Door Delivery", copy: "Pickup-to-delivery coordination through one clear point of contact.", href: "/services/door-to-door", image: "/images/services/door-to-door.jpg", alt: "Representative commercial cargo handover at a receiving entrance" },
-];
-
-const specialistServices = [
-  { n: "01", title: "Project Cargo", copy: "Large, complex or high-value equipment requiring coordinated planning and transport.", href: "/services/project-cargo" },
-  { n: "02", title: "Break Bulk Cargo", copy: "Non-containerised cargo such as machinery, vehicles and construction materials.", href: "/services/break-bulk-cargo" },
-  { n: "03", title: "Open Top Container", copy: "Oversized cargo requiring top-loading or non-standard container access.", href: "/services/open-top-container" },
 ];
 
 export default function HomePage() {
@@ -75,7 +69,7 @@ export default function HomePage() {
       </Container>
     </section>
 
-    <section className="cargo-editorial bg-offwhite py-24 lg:py-32"><Container><div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr]"><Reveal><p className="eyebrow text-gold">Specialist cargo</p><h2 className="mt-5 text-4xl font-extrabold leading-[1.06] tracking-[-.045em] sm:text-6xl">Built for cargo that does not fit the standard route.</h2></Reveal><div className="specialist-list">{specialistServices.map((service)=><Link key={service.title} href={service.href} className="specialist-row group"><span>{service.n}</span><div><h3>{service.title}</h3><p>{service.copy}</p></div><ArrowRight size={18}/></Link>)}</div></div></Container></section>
+    <SpecialistCargo/>
 
     <section className="customs-editorial bg-white py-24 lg:py-32"><Container><div className="grid gap-14 lg:grid-cols-[.82fr_1.18fr] lg:items-center"><Reveal><p className="eyebrow text-gold">Customs coverage</p><h2 className="section-title mt-4">Present where Nepal trades.</h2></Reveal><div><p className="text-xl font-semibold leading-9 tracking-[-.02em] text-navy">KCPL combines its branch network with personnel positioned across Nepal&apos;s customs entry points.</p><p className="mt-5 max-w-2xl text-base leading-8 text-slate">This supports documentation, coordination and cargo movement through key trade gateways without implying a formal office at every entry point.</p><Link className="text-link mt-8" href="/network">View network <ArrowRight size={16}/></Link></div></div></Container></section>
 
