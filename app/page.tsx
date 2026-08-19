@@ -5,7 +5,8 @@ import { ButtonLink } from "./components/button-link";
 import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
-import { HeroRouteMap, JourneyTimeline, NetworkVisualization, Reveal } from "./components/home-motion";
+import { HeroRouteMap, JourneyTimeline, Reveal } from "./components/home-motion";
+import { OperationsMap } from "./components/operations-map";
 import { affiliations, company } from "./company-data";
 
 const supportServices = [
@@ -67,7 +68,7 @@ export default function HomePage() {
       <Container className="relative flex min-h-[660px] items-end pb-16 lg:pb-24"><Reveal><p className="eyebrow text-gold">Coordinated freight movement</p><h2 className="mt-5 max-w-4xl text-5xl font-extrabold leading-[.98] tracking-[-.055em] sm:text-7xl lg:text-8xl">Built for movement.</h2><p className="mt-7 max-w-xl text-base leading-8 text-white/70">From the first route decision to the final handover, every stage depends on clear, connected logistics coordination.</p></Reveal></Container>
     </section>
 
-    <section className="network-signature relative overflow-hidden bg-navy py-24 text-white lg:py-32"><div className="route-grid absolute inset-0 opacity-20"/><Container className="relative"><div className="grid gap-10 lg:grid-cols-[.78fr_1.22fr] lg:items-end"><Reveal><p className="eyebrow text-gold">Nepal to the world</p><h2 className="section-title mt-4">From Nepal&apos;s trade gateways to global markets.</h2></Reveal><p className="max-w-xl text-base leading-8 text-white/60 lg:justify-self-end">Kathmandu connects through KCPL&apos;s Nepal locations, border and customs gateways, Raxaul and Kolkata, then onward through an international counterpart network.</p></div><div className="mt-14"><NetworkVisualization/></div><div className="mt-8 flex justify-end"><ButtonLink href="/network" variant="secondary">Explore the network</ButtonLink></div></Container></section>
+    <section className="network-signature relative overflow-hidden bg-navy py-24 text-white lg:py-32"><div className="route-grid absolute inset-0 opacity-20"/><Container className="relative"><div className="grid gap-10 lg:grid-cols-[.78fr_1.22fr] lg:items-end"><Reveal><p className="eyebrow text-gold">Nepal to the world</p><h2 className="section-title mt-4">From Nepal&apos;s trade gateways to global markets.</h2></Reveal><p className="max-w-xl text-base leading-8 text-white/60 lg:justify-self-end">Kathmandu connects through KCPL&apos;s Nepal locations, border and customs gateways, Raxaul and Kolkata, then onward through an international counterpart network.</p></div><div className="mt-14"><OperationsMap/></div><div className="mt-8 flex justify-end"><ButtonLink href="/network" variant="secondary">Explore the network</ButtonLink></div></Container></section>
 
     <section className="cargo-editorial bg-offwhite py-24 lg:py-32"><Container><div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr]"><Reveal><p className="eyebrow text-gold">Specialist cargo</p><h2 className="mt-5 text-4xl font-extrabold leading-[1.06] tracking-[-.045em] sm:text-6xl">Built for cargo that does not fit the standard route.</h2></Reveal><div className="specialist-list">{specialistServices.map((service)=><Link key={service.title} href={service.href} className="specialist-row group"><span>{service.n}</span><div><h3>{service.title}</h3><p>{service.copy}</p></div><ArrowRight size={18}/></Link>)}</div></div></Container></section>
 

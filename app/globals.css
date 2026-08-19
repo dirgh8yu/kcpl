@@ -94,29 +94,45 @@ summary::-webkit-details-marker { display:none; }
 .why-row p { margin-top:.45rem; color:var(--slate); font-size:.8rem; line-height:1.7; }
 .full-bleed-overlay { position:absolute; inset:0; background:linear-gradient(90deg,rgb(4 21 38 / .9) 0%,rgb(4 21 38 / .53) 48%,rgb(4 21 38 / .08) 80%),linear-gradient(0deg,rgb(4 21 38 / .65),transparent 55%); }
 
-/* Technical network */
-.network-system { position:relative; min-height:620px; overflow:hidden; border-top:1px solid rgb(255 255 255 / .14); border-bottom:1px solid rgb(255 255 255 / .14); background:linear-gradient(90deg,rgb(255 255 255 / .018),transparent); }
-.network-system::before { position:absolute; inset:0; content:""; background-image:linear-gradient(rgb(255 255 255 / .045) 1px,transparent 1px),linear-gradient(90deg,rgb(255 255 255 / .045) 1px,transparent 1px); background-size:48px 48px; }
-.network-axis { position:absolute; background:rgb(255 255 255 / .13); }
-.network-axis-x { left:4%; right:4%; top:59%; height:1px; }
-.network-axis-y { bottom:7%; top:7%; left:24%; width:1px; }
-.network-contour { position:absolute; border:1px solid rgb(255 255 255 / .11); border-radius:50%; }
-.network-contour-a { left:5%; top:17%; height:56%; width:39%; transform:rotate(-11deg); }
-.network-contour-b { left:13%; top:28%; height:36%; width:24%; border-color:rgb(217 164 65 / .2); }
-.network-coordinates { position:absolute; left:1rem; top:1rem; display:flex; gap:1.25rem; color:rgb(255 255 255 / .34); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.5rem; letter-spacing:.1em; }
-.network-origin { position:absolute; left:24%; top:59%; z-index:3; display:flex; flex-direction:column; padding-left:1.15rem; transform:translateY(-5px); }
-.network-origin i { position:absolute; left:-5px; top:0; height:11px; width:11px; border:2px solid var(--gold); border-radius:50%; background:var(--navy); box-shadow:0 0 0 9px rgb(217 164 65 / .11); }
-.network-origin strong { color:var(--gold); font-size:.7rem; letter-spacing:.16em; }
-.network-origin span { margin-top:.3rem; color:rgb(255 255 255 / .43); font-size:.49rem; letter-spacing:.12em; }
-.network-region { position:absolute; z-index:2; height:1px; width:1px; }
-.network-route { position:absolute; right:0; top:0; height:1px; background:linear-gradient(90deg,rgb(217 164 65 / .15),var(--gold)); transform-origin:right center; }
-.network-route::after { position:absolute; left:0; top:-2px; height:5px; width:5px; border-radius:50%; content:""; background:rgb(217 164 65 / .75); box-shadow:0 0 8px var(--gold); }
-.network-region>i { position:absolute; left:-4px; top:-4px; height:9px; width:9px; border:1px solid white; border-radius:50%; background:var(--navy); box-shadow:0 0 0 6px rgb(255 255 255 / .06); }
-.network-region>span { position:absolute; left:.9rem; top:-.35rem; white-space:nowrap; color:rgb(255 255 255 / .72); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.58rem; letter-spacing:.11em; text-transform:uppercase; }
-.network-legend { position:absolute; right:1rem; bottom:1rem; display:flex; align-items:center; gap:1.2rem; color:rgb(255 255 255 / .4); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.48rem; letter-spacing:.1em; }
-.network-legend span { display:flex; align-items:center; gap:.45rem; }
-.network-legend i { height:5px; width:5px; border-radius:50%; background:white; }.network-legend .gold-dot{background:var(--gold)}
-.network-legend b { color:var(--gold); font-weight:500; }
+/* Geographic operations map */
+.operations-map-shell { display:grid; grid-template-columns:minmax(0,1fr) 320px; border-top:1px solid rgb(255 255 255 / .14); border-bottom:1px solid rgb(255 255 255 / .14); background:rgb(3 20 37 / .42); }
+.operations-map-frame { position:relative; min-width:0; overflow:hidden; border-right:1px solid rgb(255 255 255 / .12); }
+.operations-map { display:block; width:100%; height:auto; min-height:560px; background:linear-gradient(135deg,rgb(255 255 255 / .018),transparent 58%); }
+.map-grid line { stroke:rgb(255 255 255 / .052); stroke-width:1; vector-effect:non-scaling-stroke; }
+.map-country path { vector-effect:non-scaling-stroke; }
+.map-country-context path { fill:rgb(255 255 255 / .018); stroke:rgb(255 255 255 / .12); stroke-width:1; }
+.map-country-nepal path:first-child { fill:rgb(217 164 65 / .09); stroke:rgb(217 164 65 / .22); stroke-width:1; }
+.map-nepal-outline { stroke:var(--gold); stroke-width:1.5; filter:drop-shadow(0 0 5px rgb(217 164 65 / .18)); }
+.map-country-label { fill:rgb(255 255 255 / .16); font-family:var(--font-manrope),Arial,sans-serif; font-size:13px; font-weight:800; letter-spacing:.3em; }
+.map-country-label-nepal { fill:rgb(217 164 65 / .48); }
+.map-route { fill:none; stroke:var(--gold); stroke-width:1.45; opacity:.72; vector-effect:non-scaling-stroke; transition:opacity .3s ease,stroke-width .3s ease; }
+.map-route-cross-border { stroke-dasharray:5 5; }
+.map-route.is-active { stroke-width:2.7; opacity:1!important; filter:drop-shadow(0 0 4px rgb(217 164 65 / .4)); }
+.map-route.is-muted { opacity:.25; }
+.map-marker { cursor:pointer; outline:none; transition:opacity .3s ease; }
+.map-marker-halo { fill:rgb(217 164 65 / .07); stroke:rgb(217 164 65 / .35); stroke-width:1; vector-effect:non-scaling-stroke; transition:r .25s ease,opacity .25s ease; }
+.map-marker-core { fill:var(--gold); stroke:var(--navy); stroke-width:2; vector-effect:non-scaling-stroke; transition:r .25s ease; }
+.map-marker.is-active .map-marker-core,.map-marker:hover .map-marker-core,.map-marker:focus .map-marker-core { r:9; filter:url(#map-marker-glow); }
+.map-marker.is-active .map-marker-halo,.map-marker:hover .map-marker-halo,.map-marker:focus .map-marker-halo { r:22; opacity:1; }
+.map-marker.is-muted { opacity:.34; }
+.map-location-label { fill:rgb(255 255 255 / .76); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px; font-weight:700; letter-spacing:.11em; paint-order:stroke; stroke:var(--navy); stroke-width:3px; stroke-linejoin:round; transition:font-size .25s ease,fill .25s ease; }
+.map-marker.is-active .map-location-label,.map-marker:hover .map-location-label,.map-marker:focus .map-location-label { fill:white; font-size:12px; }
+.map-marker:focus-visible .map-marker-halo { stroke:white; stroke-width:2; }
+.map-coordinate-readout { position:absolute; inset:auto 1rem 1rem; display:flex; justify-content:space-between; gap:1rem; color:rgb(255 255 255 / .32); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.48rem; letter-spacing:.1em; pointer-events:none; }
+.map-loading { position:absolute; inset:0; display:grid; place-items:center; color:rgb(255 255 255 / .45); font-size:.6rem; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
+.operations-map-detail { position:relative; min-height:100%; padding:clamp(1.6rem,3vw,2.6rem); }
+.map-detail-index { position:absolute; right:1.5rem; top:1.5rem; color:rgb(255 255 255 / .28); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.55rem; letter-spacing:.13em; }
+.operations-map-detail h3 { margin-top:1rem; color:white; font-size:clamp(2rem,3vw,3.5rem); font-weight:800; letter-spacing:-.05em; line-height:1; }
+.map-detail-country { margin-top:.8rem; color:rgb(217 164 65 / .82); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.55rem; letter-spacing:.1em; line-height:1.7; }
+.map-detail-copy { margin-top:2rem; color:rgb(255 255 255 / .62); font-size:.82rem; line-height:1.8; }
+.map-detail-address { margin-top:1rem; padding-top:1rem; border-top:1px solid rgb(255 255 255 / .12); color:rgb(255 255 255 / .4); font-size:.67rem; line-height:1.7; }
+.operations-map-legend { grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; gap:1rem 2rem; padding:1.2rem 1.4rem; border-top:1px solid rgb(255 255 255 / .12); color:rgb(255 255 255 / .55); font-size:.62rem; letter-spacing:.08em; }
+.operations-map-legend span { display:inline-flex; align-items:center; gap:.65rem; }
+.operations-map-legend i { display:inline-block; height:9px; width:9px; border-radius:50%; }
+.legend-branch { background:var(--gold); box-shadow:0 0 0 3px rgb(217 164 65 / .11); }
+.legend-customs { border:1px solid rgb(255 255 255 / .7); background:transparent; }
+.operations-map-legend small { margin-left:auto; color:rgb(255 255 255 / .32); font-size:.56rem; }
+.map-source-note { grid-column:1/-1; padding:.75rem 1.4rem; border-top:1px solid rgb(255 255 255 / .08); color:rgb(255 255 255 / .27); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.48rem; line-height:1.6; letter-spacing:.05em; }
 
 /* Cargo language and connected journey */
 .cargo-words { display:flex; flex-wrap:wrap; gap:.7rem 1.6rem; margin-top:2.75rem; }
@@ -177,7 +193,10 @@ summary::-webkit-details-marker { display:none; }
   .hero-route { min-height:370px; }
   .service-showcase { grid-template-rows:430px 300px; }
   .service-support { gap:1.5rem; }
-  .network-system { min-height:520px; }
+  .operations-map-shell { grid-template-columns:1fr; }
+  .operations-map-frame { border-right:0; border-bottom:1px solid rgb(255 255 255 / .12); }
+  .operations-map-detail { min-height:250px; }
+  .operations-map-legend small { width:100%; margin-left:0; }
   .freight-starter { grid-template-columns:1fr 1fr; }
   .freight-starter label:nth-child(2) { border-right:0; }
   .freight-starter label:nth-child(3) { border-top:1px solid var(--line); }
@@ -208,12 +227,16 @@ summary::-webkit-details-marker { display:none; }
   .full-bleed-visual,.full-bleed-visual>div:last-child { min-height:620px; }
   .full-bleed-visual img { object-position:62% center; }
   .full-bleed-overlay { background:linear-gradient(0deg,rgb(4 21 38 / .9) 0%,rgb(4 21 38 / .45) 58%,rgb(4 21 38 / .16) 100%); }
-  .network-system { min-height:480px; margin-inline:-1.25rem; }
-  .network-origin { left:18%; top:59%; }.network-axis-y{left:18%}.network-contour-a{left:-12%;width:52%}.network-contour-b{left:-4%;width:35%}
-  .network-region:nth-of-type(n+9) { display:none; }
-  .network-region>span { font-size:.48rem; }
-  .network-legend { left:1rem; right:1rem; flex-wrap:wrap; gap:.6rem 1rem; }
-  .network-legend b { width:100%; }
+  .operations-map-shell { margin-inline:-1.25rem; }
+  .operations-map { min-height:0; aspect-ratio:1.25/1; object-fit:cover; }
+  .map-location-label { display:none; }
+  .map-country-label { font-size:10px; }
+  .map-coordinate-readout { display:none; }
+  .operations-map-detail { min-height:235px; padding:1.5rem 1.25rem; }
+  .operations-map-detail h3 { font-size:2.55rem; }
+  .map-detail-copy { margin-top:1.35rem; }
+  .operations-map-legend { flex-direction:column; align-items:flex-start; gap:.9rem; padding:1.2rem 1.25rem; }
+  .map-source-note { padding-inline:1.25rem; }
   .cargo-words { flex-direction:column; gap:1rem; }
   .affiliation-list { grid-template-columns:1fr; border-top:1px solid var(--line); border-left:0; }
   .affiliation-list>div { min-height:82px; border-right:0; border-bottom:1px solid var(--line); padding-inline:0; }
