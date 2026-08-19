@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowDown, ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { networkLocations } from "../network-data";
@@ -99,7 +99,7 @@ export function HimalayanHero() {
 
       <Container className="hero-story-shell">
         <motion.div className="hero-phase-copy hero-phase-intro" style={reduce ? undefined : { y: introY }}>
-          <div className="hero-nepal-accent"><span lang="ne">नेपाल केन्द्रमा</span><small>Nepal at the centre</small></div><p className="hero-kicker">International freight · Customs · Logistics</p>
+          <p className="hero-kicker">International freight · Customs · Logistics</p>
           <h1>NEPAL <em>↔</em><br/>THE WORLD</h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><FlowIndicator/><div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
         </motion.div>
         <div className="hero-phase-copy hero-phase-global"><p className="hero-kicker">Counterparts worldwide</p><h2>One connected logistics network beyond borders.</h2><p>Subtle global nodes represent trusted counterpart relationships—not KCPL offices.</p></div>
@@ -108,7 +108,6 @@ export function HimalayanHero() {
       </Container>
 
       <div className="hero-network-legend"><span><i className="legend-kcpl"/>KCPL location</span><span><i className="legend-counterpart"/>International counterpart region</span></div>
-      <div className="hero-scroll-cue" aria-hidden="true"><span>Nepal at the centre</span><ArrowDown/></div>
       <a className="hero-satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
       <motion.div className="hero-parchment-transition" style={reduce ? undefined : { y: transitionY }} aria-hidden="true"><div className="hero-dhaka-band"/></motion.div>
     </div>
@@ -116,7 +115,7 @@ export function HimalayanHero() {
     <div className="himalayan-hero-mobile">
       <div className="hero-mobile-image" aria-hidden="true"><Image src="/images/nepal-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/><div/></div>
       <Container className="hero-mobile-copy">
-        <div className="hero-nepal-accent"><span lang="ne">नेपाल केन्द्रमा</span><small>Nepal at the centre</small></div><p className="hero-kicker">International freight · Customs · Logistics</p>
+        <p className="hero-kicker">International freight · Customs · Logistics</p>
         <h1>NEPAL <em>↔</em><br/>THE WORLD</h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><FlowIndicator/>
         <div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
         <div className="hero-mobile-network"><p className="hero-kicker">KCPL on the ground</p><h2>Six verified operational locations.</h2><ul>{networkLocations.map((location) => <li key={location.id}><i/><span><strong>{location.name}</strong><small>{location.type === "head-office" ? "Head Office" : "KCPL Branch"}</small></span></li>)}</ul><div className="hero-mobile-counterparts"><span>Counterparts worldwide</span><p>Trusted international logistics relationships beyond KCPL&apos;s own regional branches.</p></div><div className="hero-mobile-flow"><ArrowLeftRight/><span>Import into Nepal</span><span>Export from Nepal</span></div></div>
