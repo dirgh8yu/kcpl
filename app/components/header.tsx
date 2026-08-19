@@ -14,7 +14,7 @@ export function Header() {
         <Logo inverse />
         <nav aria-label="Primary navigation" className="hidden items-center gap-8 lg:flex">
           {links.map(([label, href]) => (
-            <Link key={href} href={href} className="flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/78 transition-colors hover:text-white">
+            <Link key={href} href={href} className="nav-link flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/78 transition-colors hover:text-white">
               {label}{label === "Services" && <ChevronDown size={13} />}
             </Link>
           ))}
