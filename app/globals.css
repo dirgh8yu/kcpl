@@ -283,11 +283,27 @@ summary::-webkit-details-marker { display:none; }
 .service-related a { justify-content:space-between; border-left:1px solid var(--line); padding-inline:1.4rem; color:var(--navy); font-family:var(--font-cormorant),Georgia,serif; font-size:1.2rem; font-weight:600; }
 .service-related a svg { color:var(--gold); }
 
-/* Company and quieter editorial sections */
-.company-editorial { position:relative; }
-.company-editorial .grid>* { min-width:0; }
-.company-statement { max-width:650px; padding-left:clamp(0rem,4vw,4rem); border-left:1px solid var(--line); }
-.company-wordmark { grid-column:1/-1; width:100%; margin-top:2rem; overflow:hidden; white-space:nowrap; color:rgb(8 35 63 / .065); font-size:clamp(2.6rem,7vw,7.5rem); font-weight:900; letter-spacing:-.06em; }
+/* Company profile */
+.company-profile-section { position:relative; overflow:hidden; background:var(--ink); color:var(--parchment); }
+.company-profile-section::before { position:absolute; inset:-30% -8% -20% 50%; content:""; opacity:.11; background:repeating-radial-gradient(ellipse at 70% 65%,transparent 0 36px,rgb(143 175 185 / .72) 37px 38px,transparent 39px 55px); transform:rotate(-5deg); mask-image:linear-gradient(90deg,transparent,black 30%,black 76%,transparent); }
+.company-profile-section::after { position:absolute; inset:auto 0 0; height:7px; content:""; opacity:.7; background:repeating-linear-gradient(45deg,var(--rhododendron) 0 5px,transparent 5px 10px),repeating-linear-gradient(-45deg,var(--gold) 0 5px,var(--pine) 5px 10px); }
+.company-profile-grid { position:relative; z-index:1; display:grid; grid-template-columns:.52fr 1.48fr; gap:clamp(3rem,7vw,7rem); align-items:stretch; padding-block:clamp(6rem,10vw,9.5rem); }
+.company-profile-year { display:flex; min-width:0; flex-direction:column; justify-content:space-between; border-right:1px solid rgb(244 239 230 / .16); padding-right:clamp(2rem,5vw,5rem); }
+.company-profile-year>p { color:var(--gold); font-size:.62rem; font-weight:800; letter-spacing:.22em; text-transform:uppercase; }
+.company-profile-year>strong { display:block; margin-block:2rem; color:var(--parchment); font-family:var(--font-cormorant),"Iowan Old Style",Georgia,serif; font-size:clamp(6.5rem,12vw,11rem); font-weight:500; line-height:.75; letter-spacing:-.06em; }
+.company-origin-rule { display:flex; align-items:center; width:100%; }
+.company-origin-rule span { flex:1; height:1px; background:rgb(244 239 230 / .22); }
+.company-origin-rule i { width:7px; height:7px; border:1px solid var(--gold); border-radius:50%; }
+.company-origin-rule i:last-child { background:var(--rhododendron); border-color:var(--rhododendron); }
+.company-profile-copy { max-width:840px; }
+.company-profile-copy h2 { margin-top:1.2rem; font-family:var(--font-cormorant),"Iowan Old Style",Georgia,serif; font-size:clamp(3.7rem,6.2vw,7rem); font-weight:500; line-height:.83; letter-spacing:-.04em; }
+.company-profile-copy h2 em { color:var(--gold); font-style:normal; }
+.company-profile-lead { max-width:750px; margin-top:2.25rem; font-size:clamp(1.2rem,2vw,1.6rem); font-weight:600; line-height:1.55; letter-spacing:-.02em; }
+.company-profile-body { max-width:680px; margin-top:1.25rem; color:rgb(244 239 230 / .56); font-size:.88rem; line-height:1.85; }
+.company-profile-actions { display:flex; max-width:680px; align-items:flex-end; justify-content:space-between; gap:2rem; margin-top:3.25rem; padding-top:2rem; border-top:1px solid rgb(244 239 230 / .16); }
+.company-tenure { display:flex; align-items:flex-end; gap:.85rem; }
+.company-tenure strong { color:var(--gold); font-family:var(--font-cormorant),Georgia,serif; font-size:4rem; font-weight:500; line-height:.72; }
+.company-tenure span { max-width:90px; color:rgb(244 239 230 / .5); font-size:.54rem; font-weight:800; letter-spacing:.13em; line-height:1.5; text-transform:uppercase; }
 .why-list { border-top:1px solid var(--line); }
 .why-row { display:grid; grid-template-columns:35px 45px 1fr; gap:1rem; align-items:start; padding:1.8rem 0; border-bottom:1px solid var(--line); }
 .why-row>span { padding-top:.3rem; color:rgb(86 101 117 / .45); font-size:.58rem; font-weight:800; }
@@ -372,6 +388,9 @@ summary::-webkit-details-marker { display:none; }
 .leadership-mark::before { inset:12%; }.leadership-mark::after { inset:26%; border-color:rgb(217 164 65 / .3); }
 .leadership-mark span { font-size:clamp(5rem,12vw,10rem); font-weight:900; letter-spacing:-.08em; }
 .leadership-mark small { position:absolute; left:1.5rem; bottom:1.5rem; color:var(--slate); font-size:.55rem; font-weight:800; letter-spacing:.16em; }
+.leadership-experience { display:flex; max-width:600px; align-items:center; gap:1.25rem; margin-top:2rem; padding-block:1.25rem; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.leadership-experience strong { color:var(--rhododendron); font-family:var(--font-cormorant),Georgia,serif; font-size:3.8rem; font-weight:600; line-height:.75; }
+.leadership-experience p { max-width:330px; color:var(--slate); font-size:.72rem; font-weight:700; line-height:1.65; }
 .service-catalogue { border-top:1px solid var(--line); }
 .catalogue-group { display:grid; gap:2rem; padding:3.25rem 0; border-bottom:1px solid var(--line); }
 .catalogue-group>div:first-child>span { color:var(--gold); font-size:.62rem; font-weight:800; letter-spacing:.16em; }
@@ -413,6 +432,9 @@ summary::-webkit-details-marker { display:none; }
   .service-detail-overview { max-width:760px; }
   .service-scope-heading { grid-template-columns:1fr; gap:1.5rem; }
   .service-scope-heading h2 { justify-self:start; }
+  .company-profile-grid { grid-template-columns:1fr; gap:4rem; }
+  .company-profile-year { border-right:0; border-bottom:1px solid rgb(244 239 230 / .16); padding-right:0; padding-bottom:3rem; }
+  .company-profile-year>strong { max-width:520px; }
   .hero-phase-copy { width:min(610px,70vw); }
   .hero-phase-intro h1 { font-size:clamp(4.5rem,10vw,7rem); }
   .hero-phase-intro .hero-brand-headline { font-size:clamp(3.8rem,7.6vw,5.8rem); }
@@ -505,8 +527,13 @@ summary::-webkit-details-marker { display:none; }
   .service-related { grid-template-columns:1fr; }
   .service-related>span { min-height:58px; }
   .service-related a { border-top:1px solid var(--line); border-left:0; padding-inline:0; }
-  .company-statement { padding-left:0; border-left:0; }
-  .company-wordmark { margin-top:1rem; font-size:2.7rem; }
+  .company-profile-grid { gap:3rem; }
+  .company-profile-year { padding-bottom:2.25rem; }
+  .company-profile-year>strong { margin-block:1.6rem; font-size:clamp(6.3rem,34vw,8.2rem); }
+  .company-profile-copy h2 { font-size:clamp(3.15rem,15vw,4.5rem); line-height:.86; }
+  .company-profile-lead { margin-top:1.8rem; font-size:1.1rem; }
+  .company-profile-actions { align-items:stretch; flex-direction:column; }
+  .company-profile-actions a { width:100%; }
   .why-row { grid-template-columns:28px 34px 1fr; }
   .full-bleed-visual,.full-bleed-visual>div:last-child { min-height:620px; }
   .full-bleed-visual img { object-position:62% center; }

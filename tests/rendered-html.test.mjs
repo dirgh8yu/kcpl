@@ -37,7 +37,16 @@ test("server-renders KCPL production content", async () => {
   assert.match(html, /Counterparts worldwide/i);
   assert.match(html, /Project Cargo/);
   assert.match(html, /Kapileshwor Cargo Pvt\. Ltd\./);
+  assert.doesNotMatch(html, /KATHMANDU \/ NEPAL \/ LOGISTICS/);
   assert.doesNotMatch(html, /\[XX\]|to be confirmed|OIA Global/i);
+});
+
+test("server-renders confirmed Managing Director experience", async () => {
+  const response = await render("/about");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Ramesh Mishra/);
+  assert.match(html, /More than 25 years of experience in freight forwarding and logistics\./);
 });
 
 const serviceRoutes = [
