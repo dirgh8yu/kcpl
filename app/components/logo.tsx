@@ -16,7 +16,6 @@ export function Logo({ inverse = false, variant = "default" }: { inverse?: boole
               <span className="brand-header-full">Kapileshwor Cargo <b>Pvt. Ltd.</b></span>
               <span className="brand-header-short"><strong>KCPL</strong><small>Kathmandu · Nepal</small></span>
             </span>
-            <span className="brand-header-line" aria-hidden="true"><i/></span>
           </span>
         ) : (
           <>
