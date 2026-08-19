@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Instrument_Serif, Manrope, Noto_Serif_Devanagari } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 
@@ -7,14 +7,16 @@ const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
 });
+const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
+const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og-cinematic.jpg`;
-  const title = "Kapileshwor Cargo | Moving Nepal. Connecting the World.";
-  const description = "International cargo, freight forwarding and logistics solutions connecting Nepal with the world.";
+  const title = "Kapileshwor Cargo | Import & Export Logistics in Nepal";
+  const description = "Import, export and cross-border freight coordination through Nepal's logistics gateways and international trade connections.";
   return {
     title: { default: title, template: "%s | Kapileshwor Cargo" },
     description,
@@ -31,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${manrope.variable} antialiased`}>
+      <body className={`${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
         {children}
       </body>
     </html>

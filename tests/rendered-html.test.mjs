@@ -28,7 +28,8 @@ test("server-renders KCPL production content", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /Moving Nepal/);
+  assert.match(html, /From the world/);
+  assert.match(html, /Import · Export/);
   assert.match(html, /Since 2015/);
   assert.match(html, /Project Cargo/);
   assert.match(html, /Kapileshwor Cargo Pvt\. Ltd\./);

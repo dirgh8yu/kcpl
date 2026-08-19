@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronDown, Menu } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Container } from "./container";
 import { Logo } from "./logo";
 
@@ -8,8 +11,15 @@ const links = [
 ];
 
 export function Header() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 28);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
   return (
-    <header className="absolute inset-x-0 top-0 z-30 border-b border-white/15 text-white">
+    <header className={`site-header fixed inset-x-0 top-0 z-30 border-b text-white ${scrolled ? "is-scrolled" : ""}`}>
       <Container className="flex h-[78px] items-center justify-between">
         <Logo inverse />
         <nav aria-label="Primary navigation" className="hidden items-center gap-8 lg:flex">

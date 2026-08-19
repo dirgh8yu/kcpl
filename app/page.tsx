@@ -5,7 +5,7 @@ import { ButtonLink } from "./components/button-link";
 import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
-import { HeroRouteMap, JourneyTimeline, Reveal } from "./components/home-motion";
+import { HimalayanHero, JourneyTimeline, Reveal } from "./components/home-motion";
 import { WorldNetworkMap } from "./components/operations-map";
 import { affiliations, company } from "./company-data";
 
@@ -24,19 +24,7 @@ const specialistServices = [
 
 export default function HomePage() {
   return <><Header/><main>
-    <section className="hero-cinematic relative overflow-hidden bg-navy text-white">
-      <div className="route-grid absolute inset-0 opacity-35" />
-      <Container className="relative grid min-h-[780px] items-center gap-10 pb-16 pt-36 lg:min-h-[850px] lg:grid-cols-[1.08fr_.92fr] lg:pt-28">
-        <div className="relative z-10 max-w-3xl">
-          <Reveal><p className="eyebrow text-gold">Freight forwarding · Logistics · Nepal</p></Reveal>
-          <h1 className="mt-6 text-[clamp(3.15rem,7vw,7rem)] font-extrabold leading-[.94] tracking-[-.065em]">Moving Nepal.<br/><span className="text-white/55">Connecting</span><br/>the World.</h1>
-          <p className="mt-8 max-w-xl text-base leading-8 text-white/65 sm:text-lg">Since 2015, KCPL has coordinated air, ocean and road freight for businesses moving cargo through Nepal and international markets.</p>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
-        </div>
-        <div className="min-h-[360px] lg:min-h-[560px]"><HeroRouteMap/></div>
-      </Container>
-      <div className="absolute bottom-0 left-0 h-1 w-1/3 bg-gold" />
-    </section>
+    <HimalayanHero/>
 
     <section className="services-editorial bg-white py-24 lg:py-32"><Container>
       <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"><Reveal><p className="eyebrow text-gold">What we move</p><h2 className="section-title mt-4">Every shipment has a different way forward.</h2></Reveal><Link href="/services" className="text-link">Explore all services <ArrowRight size={16}/></Link></div>
