@@ -23,7 +23,7 @@ function project(longitude: number, latitude: number): Position {
   const north = mercatorLatitude(BOUNDS.north);
   const south = mercatorLatitude(BOUNDS.south);
   const y = (north - mercatorLatitude(latitude)) / (north - south) * HEIGHT;
-  return { x, y };
+  return { x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) };
 }
 
 function ringPath(ring: number[][]) {
