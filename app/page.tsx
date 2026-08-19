@@ -10,10 +10,10 @@ import { WorldNetworkMap } from "./components/operations-map";
 import { affiliations, company } from "./company-data";
 
 const supportServices = [
-  { icon: Warehouse, title: "Warehousing", copy: "Storage and cargo handling integrated with the wider shipment plan.", href: "/services/warehousing" },
-  { icon: Box, title: "Packaging & Storage", copy: "Cargo preparation and storage coordinated around the movement plan.", href: "/services/packaging-storage" },
-  { icon: Truck, title: "Ground Transport", copy: "Road movement aligned with collection, customs and delivery requirements.", href: "/services/ground-transport" },
-  { icon: PackageCheck, title: "Door-to-Door Delivery", copy: "Pickup-to-delivery coordination through one clear point of contact.", href: "/services/door-to-door" },
+  { icon: Warehouse, title: "Warehousing", copy: "Storage and cargo handling integrated with the wider shipment plan.", href: "/services/warehousing", image: "/images/services/warehousing.jpg", alt: "Representative cargo warehouse with pallets and handling equipment" },
+  { icon: Box, title: "Packaging & Storage", copy: "Cargo preparation and storage coordinated around the movement plan.", href: "/services/packaging-storage", image: "/images/services/packaging-storage.jpg", alt: "Representative cargo crate being secured for freight transport" },
+  { icon: Truck, title: "Ground Transport", copy: "Road movement aligned with collection, customs and delivery requirements.", href: "/services/ground-transport", image: "/images/services/road-freight-nepal.jpg", alt: "Representative commercial freight truck on a Nepal highway" },
+  { icon: PackageCheck, title: "Door-to-Door Delivery", copy: "Pickup-to-delivery coordination through one clear point of contact.", href: "/services/door-to-door", image: "/images/services/door-to-door.jpg", alt: "Representative commercial cargo handover at a receiving entrance" },
 ];
 
 const specialistServices = [
@@ -37,9 +37,10 @@ export default function HomePage() {
           <Image src="/images/ocean-freight.jpg" alt="Container ship and port cargo operations" fill sizes="(max-width: 768px) 100vw, 42vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.025]"/>
           <div className="service-shade"/><div className="service-copy"><span>02 / Ocean</span><h3>Ocean Freight</h3><p>Ocean freight coordination through suitable regional gateways.</p><ArrowRight/></div>
         </Link>
-        <Link href="/services/road-freight" className="service-road group"><div><span className="eyebrow text-gold">03 / Road freight</span><h3>Across borders.<br/>Across Nepal.</h3></div><div className="road-route-motif"><i/><i/><i/><span>ROUTE / GROUND</span></div><ArrowRight className="transition-transform group-hover:translate-x-2"/></Link>
+        <Link href="/services/road-freight" className="service-road group"><Image src="/images/services/road-freight-nepal.jpg" alt="Representative freight truck travelling on a Nepal trade corridor" fill sizes="(max-width: 768px) 100vw, 42vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.025]"/><div className="service-road-shade"/><div className="service-road-copy"><span className="eyebrow text-gold">03 / Road freight</span><h3>Across borders.<br/>Across Nepal.</h3><p>Domestic and Nepal–India road movement connected to the wider shipment route.</p></div><ArrowRight className="transition-transform group-hover:translate-x-2"/></Link>
       </div>
-      <div className="mt-20 grid gap-10 lg:grid-cols-[.62fr_1.38fr]"><div><p className="eyebrow text-gold">Logistics & handling</p><h3 className="mt-4 text-3xl font-extrabold tracking-[-.04em] text-navy">The services around the shipment.</h3></div><div className="service-support !mt-0">{supportServices.map(({icon:Icon,title,copy,href},i)=><Link key={title} href={href} className="support-service group"><span className="support-number">0{i+4}</span><Icon size={24} strokeWidth={1.35}/><div><h3>{title}</h3><p>{copy}</p></div><ArrowRight size={16} className="support-arrow"/></Link>)}</div></div>
+      <div className="service-support-heading mt-20"><div><p className="eyebrow text-rhododendron">Logistics & handling</p><h3>The services around the shipment.</h3></div><p>Preparation, storage, ground movement and final delivery—coordinated as connected parts of the route.</p></div>
+      <div className="service-support-visual-grid">{supportServices.map(({icon:Icon,title,copy,href,image,alt},i)=><Link key={title} href={href} className="support-service-visual group"><Image src={image} alt={alt} fill sizes="(max-width: 767px) 100vw, 50vw" className="object-cover"/><div className="support-service-shade"/><div className="support-service-copy"><div><span>0{i+4}</span><Icon size={22} strokeWidth={1.3}/></div><h3>{title}</h3><p>{copy}</p><ArrowRight size={17}/></div></Link>)}</div>
     </Container></section>
 
     <section className="company-editorial overflow-hidden bg-offwhite"><Container className="grid gap-12 py-24 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:py-32">

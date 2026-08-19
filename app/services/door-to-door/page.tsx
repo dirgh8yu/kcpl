@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Door-to-door delivery" title="One journey, coordinated end to end." intro="Pickup-to-delivery logistics planned through one clear point of contact." description="Door-to-door service brings the stages of a cargo movement into one coordinated plan—from origin collection through freight, border or port handovers and final delivery." points={["Origin pickup coordination","Freight-mode and route planning","Customs and gateway handovers","Final delivery coordination"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent["door-to-door"]}/>}

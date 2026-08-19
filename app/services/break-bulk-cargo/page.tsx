@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Break bulk cargo" title="A practical route for non-containerised cargo." intro="Coordination for machinery, vehicles, construction materials and other break bulk loads." description="When cargo cannot move in a standard container, the transport plan must account for dimensions, lifting, handling and the connections between each stage." points={["Non-containerised cargo planning","Port and ground-handling coordination","Machinery and vehicle movements","Inland transport connections"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent["break-bulk-cargo"]}/>}

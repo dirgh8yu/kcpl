@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Road freight" title="Routes across borders and within Nepal." intro="Road transport planning for domestic and Nepal–India cargo movements." description="KCPL plans road movements around the cargo, collection point, border or customs requirements and final delivery location." points={["Domestic transport coordination","Nepal–India cross-border movement","Gateway and customs handovers","First-mile and final-mile planning"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent["road-freight"]}/>}

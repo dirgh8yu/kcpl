@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-async function render() {
+async function render(pathname = "/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", {
+    new Request(`http://localhost${pathname}`, {
       headers: { accept: "text/html" },
     }),
     {
@@ -38,4 +38,32 @@ test("server-renders KCPL production content", async () => {
   assert.match(html, /Project Cargo/);
   assert.match(html, /Kapileshwor Cargo Pvt\. Ltd\./);
   assert.doesNotMatch(html, /\[XX\]|to be confirmed|OIA Global/i);
+});
+
+const serviceRoutes = [
+  "air-freight",
+  "sea-freight",
+  "road-freight",
+  "project-cargo",
+  "break-bulk-cargo",
+  "open-top-container",
+  "warehousing",
+  "packaging-storage",
+  "ground-transport",
+  "door-to-door",
+  "customs-clearance",
+];
+
+test("server-renders every KCPL service route", async (t) => {
+  for (const route of serviceRoutes) {
+    await t.test(route, async () => {
+      const response = await render(`/services/${route}`);
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      assert.match(html, /Service overview/);
+      assert.match(html, /What KCPL coordinates/);
+      assert.match(html, /Representative logistics imagery/);
+      assert.doesNotMatch(html, /\[XX\]|to be confirmed|OIA Global/i);
+    });
+  }
 });

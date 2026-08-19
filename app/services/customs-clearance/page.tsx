@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Customs coordination" title="Documentation handled with clarity." intro="Customs documentation and clearance coordination supporting cargo movement through Nepal's trade gateways." description="KCPL combines its operational network with personnel positioned across Nepal's customs entry points to coordinate the documentation and handovers required for cargo movement." points={["Shipment-document review","Customs-entry-point coordination","Border and gateway handovers","Communication across the shipment route"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent["customs-clearance"]}/>}

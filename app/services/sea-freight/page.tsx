@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Ocean freight" title="Ocean routes connected to Nepal." intro="Containerised and consolidated ocean freight coordinated through suitable regional gateways." description="For landlocked Nepal, ocean freight depends on well-planned inland and port connections. KCPL coordinates these stages through the relevant trade gateways and logistics counterparts." points={["Container and consolidation planning","Inland connection to port gateways","Port and documentation coordination","Onward delivery planning"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent["sea-freight"]}/>}

@@ -1,10 +1,47 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+import type { ServiceContent } from "../service-content";
 import { Container } from "./container";
 import { PageShell } from "./page-shell";
 
-export function ServicePage({ eyebrow, title, intro, description, points }: { eyebrow: string; title: string; intro: string; description: string; points: string[] }) {
-  return <PageShell eyebrow={eyebrow} title={title} intro={intro}>
-    <section className="section bg-white"><Container><div className="grid gap-14 lg:grid-cols-[.8fr_1.2fr] lg:gap-24"><div><p className="eyebrow text-gold">Service overview</p><h2 className="mt-4 text-3xl font-extrabold tracking-[-.04em] text-navy sm:text-5xl">Planned around the cargo and the route.</h2></div><div><p className="text-lg leading-8 text-slate">{description}</p><div className="mt-10 border-t border-line">{points.map((point)=><div key={point} className="flex gap-4 border-b border-line py-5 text-sm font-semibold text-navy"><Check className="mt-0.5 shrink-0 text-gold" size={18}/><span>{point}</span></div>)}</div><Link href="/quote" className="text-link mt-10">Request a quote <ArrowRight size={16}/></Link></div></div></Container></section>
+export function ServicePage({ content }: { content: ServiceContent }) {
+  return <PageShell eyebrow={content.eyebrow} title={content.title} intro={content.intro}>
+    <section className="service-detail-story bg-offwhite">
+      <Container>
+        <div className="service-detail-layout">
+          <figure className="service-detail-visual">
+            <Image src={content.image} alt={content.imageAlt} fill sizes="(max-width: 1023px) 100vw, 58vw" className="object-cover" />
+            <div className="service-detail-shade" />
+            <figcaption><span>{content.number}</span><div><strong>{content.eyebrow}</strong><small>Representative logistics imagery</small></div></figcaption>
+          </figure>
+          <div className="service-detail-overview">
+            <p className="eyebrow text-gold">Service overview</p>
+            <h2>{content.overviewTitle}</h2>
+            <p>{content.description}</p>
+            <Link href="/quote" className="service-detail-quote">Discuss this movement <ArrowUpRight size={18} strokeWidth={1.5} /></Link>
+          </div>
+        </div>
+      </Container>
+    </section>
+
+    <section className="service-scope-section bg-ink text-white">
+      <Container>
+        <div className="service-scope-heading"><p className="eyebrow text-gold">What KCPL coordinates</p><h2>The operational pieces behind the service.</h2></div>
+        <div className="service-scope-list">
+          {content.points.map((point, index) => <article key={point.title}><span>0{index + 1}</span><div><h3>{point.title}</h3><p>{point.detail}</p></div></article>)}
+        </div>
+      </Container>
+    </section>
+
+    <section className="service-context-section bg-white">
+      <Container>
+        <div className="service-context-layout">
+          <div><p className="eyebrow text-rhododendron">A connected route</p><h2>{content.contextTitle}</h2></div>
+          <div><p>{content.contextCopy}</p><Link href="/quote" className="text-link mt-8">Request a quote <ArrowRight size={16} /></Link></div>
+        </div>
+        <div className="service-related"><span>Continue exploring</span>{content.related.map((item) => <Link key={item.href} href={item.href}>{item.title}<ArrowUpRight size={16} strokeWidth={1.5} /></Link>)}</div>
+      </Container>
+    </section>
   </PageShell>;
 }

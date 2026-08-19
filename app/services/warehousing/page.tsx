@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Warehousing" title="Storage connected to the shipment plan." intro="Cargo warehousing and handling coordinated around broader logistics requirements." description="KCPL can coordinate warehousing as part of a wider freight movement, helping align storage, cargo preparation and the next transport stage." points={["Pre-shipment and in-transit storage","Cargo receiving and release coordination","Integration with freight schedules","Handling arranged to cargo requirements"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent.warehousing}/>}

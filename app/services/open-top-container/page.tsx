@@ -1,2 +1,3 @@
 import { ServicePage } from "../../components/service-page";
-export default function Page(){return <ServicePage eyebrow="Open top container" title="Access for cargo beyond standard dimensions." intro="Container planning for oversized cargo requiring top-loading or non-standard access." description="Open top containers can accommodate cargo that cannot be loaded through standard container doors. KCPL coordinates this option with the wider ocean and inland route." points={["Cargo-dimension review","Top-loading access planning","Ocean-freight coordination","Inland and delivery connections"]}/>}
+import { serviceContent } from "../../service-content";
+export default function Page(){return <ServicePage content={serviceContent["open-top-container"]}/>}
