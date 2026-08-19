@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeftRight, ArrowUpRight, Compass, Globe2, ShieldCheck } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, ArrowUpRight, Compass, Globe2, PlaneTakeoff, ShieldCheck } from "lucide-react";
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { affiliations } from "../company-data";
@@ -266,10 +266,10 @@ export function HimalayanHero() {
 }
 
 const stages = [
-  ["01", "Enquiry", "Share the cargo, origin, destination and preferred timeline."],
-  ["02", "Route planning", "Review the suitable freight mode, route and service scope."],
-  ["03", "Prepare & dispatch", "Coordinate documentation, collection and cargo movement."],
-  ["04", "Track to destination", "Follow key milestones through to the planned destination."],
+  ["01", "Cargo brief", "Enquiry", "Share the cargo, origin, destination and preferred timeline."],
+  ["02", "Movement plan", "Route planning", "Review the suitable freight mode, route and service scope."],
+  ["03", "Cargo in motion", "Prepare & dispatch", "Coordinate documentation, collection and cargo movement."],
+  ["04", "Final handover", "Track to destination", "Follow key milestones through to the planned destination."],
 ];
 
 export function JourneyTimeline() {
@@ -277,7 +277,49 @@ export function JourneyTimeline() {
   const inView = useInView(ref, { once: true, amount: .25 });
   const reduce = useReducedMotion();
   return <div ref={ref} className="journey-system">
+    <div className="journey-route-labels" aria-hidden="true"><span>Origin / enquiry</span><span>Destination / handover</span></div>
     <div className="journey-track"><motion.div className="journey-progress" initial={false} animate={{ scaleX: inView ? 1 : 0, scaleY: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : 1.4, ease: [0.65, 0, 0.35, 1] }}/></div>
-    {stages.map(([n,title,copy],index)=><motion.article key={n} className="journey-stage" initial={reduce ? false : { opacity: 0, y: 15 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .55, delay: reduce ? 0 : .25 + index * .18 }}><span className="journey-node"><i/></span><b>{n}</b><h3>{title}</h3><p>{copy}</p></motion.article>)}
+    <motion.span className="journey-moving-point" aria-hidden="true" initial={false} animate={{ left: inView ? "100%" : "0%", opacity: inView ? [0, 1, 1, 0] : 0 }} transition={{ duration: reduce ? 0 : 1.55, delay: reduce ? 0 : .18, ease: [0.65, 0, 0.35, 1] }}/>
+    {stages.map(([n,label,title,copy],index)=><motion.article key={n} className="journey-stage" initial={reduce ? false : { opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .65, delay: reduce ? 0 : .22 + index * .16, ease: [0.22, 1, 0.36, 1] }}><span className="journey-node"><i/></span><b>{n}</b><small>{label}</small><h3>{title}</h3><p>{copy}</p><span className="journey-stage-rule" aria-hidden="true"/></motion.article>)}
   </div>;
+}
+
+export function QuoteLaunch() {
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, amount: .28 });
+  const reduce = useReducedMotion();
+
+  return <section ref={ref} className="quote-launch">
+    <div className="quote-launch-contours" aria-hidden="true"/>
+    <Container className="quote-launch-shell">
+      <div className="quote-launch-heading">
+        <motion.div initial={reduce ? false : { opacity: 0, y: 22 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .75, ease: [0.22, 1, 0.36, 1] }}>
+          <p className="eyebrow">Start a shipment</p>
+          <h2>Plan the <em>first leg.</em></h2>
+          <p>Share the route and essential cargo measurements. The full enquiry opens with these details ready.</p>
+        </motion.div>
+
+        <div className="quote-flight-graphic" aria-hidden="true">
+          <span className="quote-flight-origin"><i/>KTM / ORIGIN</span>
+          <span className="quote-flight-destination"><i/>ROUTE / FORWARD</span>
+          <span className="quote-flight-path"/>
+          <motion.span className="quote-flight-plane" initial={false} animate={reduce ? { left: "72%", bottom: "67%", opacity: 1 } : inView ? { left: "72%", bottom: "67%", opacity: 1, rotate: -10 } : { left: "8%", bottom: "17%", opacity: .15, rotate: -2 }} transition={{ duration: reduce ? 0 : 1.65, delay: reduce ? 0 : .2, ease: [0.65, 0, 0.35, 1] }}><PlaneTakeoff size={38} strokeWidth={1.25}/></motion.span>
+        </div>
+      </div>
+
+      <motion.form action="/quote" method="get" className="quote-launch-form" initial={reduce ? false : { opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .8, delay: reduce ? 0 : .18, ease: [0.22, 1, 0.36, 1] }}>
+        <div className="quote-launch-route-fields">
+          <label><span>Origin</span><input name="origin" placeholder="City, country" autoComplete="address-level2" required/></label>
+          <label><span>Destination</span><input name="destination" placeholder="City, country" autoComplete="address-level2" required/></label>
+          <label><span>Freight mode</span><select name="mode" defaultValue=""><option value="" disabled>Select mode</option><option value="air">Air freight</option><option value="sea">Sea freight</option><option value="road">Road freight</option><option value="unsure">Not sure yet</option></select></label>
+        </div>
+        <div className="quote-launch-cargo-fields">
+          <label className="quote-weight-field"><span>Weight</span><div><input name="weight" type="number" min="0" step="any" inputMode="decimal" placeholder="0"/><select name="weightUnit" defaultValue="kg" aria-label="Weight unit"><option value="kg">kg</option><option value="tonnes">tonnes</option><option value="lb">lb</option></select></div></label>
+          <fieldset className="quote-dimension-field"><legend>Dimensions</legend><div><label><span className="sr-only">Length</span><input name="length" type="number" min="0" step="any" inputMode="decimal" placeholder="L"/></label><i>×</i><label><span className="sr-only">Width</span><input name="width" type="number" min="0" step="any" inputMode="decimal" placeholder="W"/></label><i>×</i><label><span className="sr-only">Height</span><input name="height" type="number" min="0" step="any" inputMode="decimal" placeholder="H"/></label><select name="dimensionUnit" defaultValue="cm" aria-label="Dimension unit"><option value="cm">cm</option><option value="m">m</option><option value="in">in</option></select></div></fieldset>
+          <button type="submit">Continue enquiry <ArrowRight size={17}/></button>
+        </div>
+      </motion.form>
+      <div className="quote-launch-note"><span>01 · Route</span><i/><span>02 · Cargo profile</span><i/><span>03 · Email KCPL</span></div>
+    </Container>
+  </section>;
 }

@@ -5,7 +5,7 @@ import { ButtonLink } from "./components/button-link";
 import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
-import { HimalayanHero, IndustryNetwork, JourneyTimeline, Reveal, SpecialistCargo, WhyKCPL } from "./components/home-motion";
+import { HimalayanHero, IndustryNetwork, JourneyTimeline, QuoteLaunch, Reveal, SpecialistCargo, WhyKCPL } from "./components/home-motion";
 import { NepalOperationsMap } from "./components/operations-map";
 import { company } from "./company-data";
 
@@ -73,8 +73,8 @@ export default function HomePage() {
 
     <IndustryNetwork/>
 
-    <section className="journey-editorial bg-white py-24 lg:py-32"><Container><div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"><Reveal><p className="eyebrow text-gold">The shipment journey</p><h2 className="section-title mt-4">From enquiry to destination.</h2></Reveal><p className="max-w-sm text-sm leading-7 text-slate">A connected process designed to move from one clear decision point to the next.</p></div><div className="mt-16"><JourneyTimeline/></div></Container></section>
+    <section className="journey-editorial"><Container><div className="journey-editorial-heading"><Reveal><p className="eyebrow text-rhododendron">The shipment journey</p><h2>From enquiry<br/>to <em>destination.</em></h2></Reveal><Reveal className="journey-editorial-intro" delay={.08}><span>One connected process</span><p>Each stage establishes the information and handover needed for the next—keeping the movement clear from the first brief to destination.</p></Reveal></div><JourneyTimeline/></Container></section>
 
-    <section className="quote-workflow bg-gold py-20 lg:py-24"><Container><div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:items-end"><div><p className="eyebrow text-navy/55">Start a shipment</p><h2 className="mt-4 text-4xl font-extrabold leading-[1.03] tracking-[-.05em] text-navy sm:text-6xl">Plan the first leg.</h2><p className="mt-5 max-w-md text-sm leading-7 text-navy/65">Enter the basics to begin your freight enquiry. You can add cargo details on the next screen.</p></div><form action="/quote" method="get" className="freight-starter"><label><span>Origin</span><input name="origin" placeholder="City, country" required/></label><label><span>Destination</span><input name="destination" placeholder="City, country" required/></label><label><span>Freight mode</span><select name="mode" defaultValue=""><option value="" disabled>Select mode</option><option value="air">Air freight</option><option value="sea">Sea freight</option><option value="road">Road freight</option><option value="unsure">Not sure yet</option></select></label><button type="submit">Start your quote <ArrowRight size={16}/></button></form></div></Container></section>
+    <QuoteLaunch/>
   </main><Footer/></>;
 }

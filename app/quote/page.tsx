@@ -1,14 +1,8 @@
-import { ArrowRight } from "lucide-react";
 import { Container } from "../components/container";
 import { PageShell } from "../components/page-shell";
-import { company } from "../company-data";
+import { QuoteEnquiry, QuoteValues } from "../components/quote-enquiry";
 
-export default async function QuotePage({ searchParams }: { searchParams: Promise<{ origin?: string; destination?: string; mode?: string }> }) {
+export default async function QuotePage({ searchParams }: { searchParams: Promise<QuoteValues> }) {
   const query = await searchParams;
-  const modeLabels: Record<string, string> = { air: "Air freight", sea: "Sea freight", road: "Road freight", unsure: "Not sure yet" };
-  const subject = encodeURIComponent(`Freight quote enquiry${query.origin && query.destination ? `: ${query.origin} to ${query.destination}` : ""}`);
-  const body = encodeURIComponent(`Hello KCPL,\n\nI would like a freight quote.\nOrigin: ${query.origin ?? ""}\nDestination: ${query.destination ?? ""}\nFreight mode: ${query.mode ? modeLabels[query.mode] ?? query.mode : ""}\n\nCargo details:\n`);
-  return <PageShell eyebrow="Request a quote" title="Tell us where your cargo needs to go." intro="Share the route and cargo details with the KCPL team to begin planning."><section className="section bg-offwhite"><Container><div className="mx-auto grid max-w-5xl gap-10 bg-white p-7 shadow-[0_20px_60px_rgba(8,35,63,.08)] sm:p-12 lg:grid-cols-[1.15fr_.85fr]"><div><p className="eyebrow text-gold">Freight enquiry</p><h2 className="mt-4 text-3xl font-extrabold tracking-[-.04em] text-navy">Start with the essentials.</h2><div className="mt-8 grid gap-5 sm:grid-cols-2"><ReadField label="Origin" value={query.origin}/><ReadField label="Destination" value={query.destination}/><ReadField label="Freight mode" value={query.mode ? modeLabels[query.mode] ?? query.mode : undefined}/><ReadField label="Cargo details" value="Weight, dimensions, cargo type"/></div></div><div className="border-t border-line pt-8 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0"><p className="text-sm leading-7 text-slate">Send these details directly to KCPL. Include your preferred timing and any special handling requirements.</p><a href={`mailto:${company.email}?subject=${subject}&body=${body}`} className="mt-8 inline-flex min-h-14 items-center justify-center gap-3 bg-navy px-7 text-xs font-bold uppercase tracking-[.15em] text-white">Email your enquiry <ArrowRight size={16}/></a><p className="mt-6 text-xs leading-6 text-slate">Email: <a className="font-bold text-navy" href={`mailto:${company.email}`}>{company.email}</a><br/>Phone: <a className="font-bold text-navy" href="tel:+97714987510">{company.phones[0]}</a></p></div></div></Container></section></PageShell>;
+  return <PageShell eyebrow="Request a quote" title="Tell us where your cargo needs to go." intro="Share the route, measurements and handling details with the KCPL team to begin planning."><section className="quote-page-section"><Container><QuoteEnquiry initial={query}/></Container></section></PageShell>;
 }
-
-function ReadField({label,value}:{label:string;value?:string}){return <div className="border-b border-line pb-4"><span className="field-label">{label}</span><p className="text-sm font-semibold text-navy">{value || "Add in your email"}</p></div>}
