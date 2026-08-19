@@ -1,0 +1,20 @@
+import Link from "next/link";
+import { Container } from "../components/container";
+import { PageShell } from "../components/page-shell";
+import { company } from "../company-data";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({ title: "Privacy Policy", description: "How the Kapileshwor Cargo website handles enquiry details, optional analytics preferences and external links.", path: "/privacy" });
+
+export default function PrivacyPage() {
+  return <PageShell eyebrow="Privacy" title="A clear approach to website information." intro="This policy explains what the KCPL website processes when you browse the site or prepare an enquiry.">
+    <section className="privacy-section bg-offwhite"><Container><div className="privacy-layout"><aside><p className="eyebrow text-rhododendron">Last updated</p><strong>19 August 2026</strong><Link href={`mailto:${company.email}`}>Questions about privacy</Link></aside><article>
+      <section><h2>Information you choose to provide</h2><p>The quote tool collects the route, cargo and contact details that you enter only to prepare an email in your own email application. The website does not send or store that enquiry. It reaches KCPL only after you review and send the email yourself.</p></section>
+      <section><h2>Contacting KCPL</h2><p>If you email or call KCPL, the information you provide is handled through the company&apos;s normal communication systems so the team can review and respond to your enquiry. Do not include sensitive information that is not needed to discuss the shipment.</p></section>
+      <section><h2>Optional website analytics</h2><p>Google Analytics is prepared but loads only in production when KCPL supplies a valid measurement ID and a visitor chooses to allow analytics. The implementation records page views and broad CTA events, not form contents. Your preference is stored in your browser.</p></section>
+      <section><h2>Cookies and local storage</h2><p>The public website does not require marketing cookies. If analytics is configured, a consent preference is stored locally and Google Analytics may set its own measurement cookies only after permission is granted.</p></section>
+      <section><h2>External services</h2><p>The website links to email, telephone, mapping and affiliation websites. Those services operate under their own privacy terms once you leave this site.</p></section>
+      <section><h2>Your choices</h2><p>You can decline optional analytics when the preference notice appears. You may also clear site data in your browser. For questions about information you have sent directly to KCPL, contact <a href={`mailto:${company.email}`}>{company.email}</a>.</p></section>
+    </article></div></Container></section>
+  </PageShell>;
+}

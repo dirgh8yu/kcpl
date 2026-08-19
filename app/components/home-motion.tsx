@@ -108,7 +108,7 @@ function AffiliationGroup({ duplicate = false }: { duplicate?: boolean }) {
       key={`${duplicate ? "duplicate-" : ""}${item.name}`}
       href={item.href}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       tabIndex={duplicate ? -1 : undefined}
       className={`affiliation-mark affiliation-mark-${item.tone}`}
       aria-label={`${item.name} official website`}
@@ -211,6 +211,7 @@ export function HimalayanHero() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState(1);
+  const [worldReady, setWorldReady] = useState(false);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const regionalScale = useTransform(scrollYProgress, [0, .2, .44, .72, 1], [1.09, 1.03, .86, 1.035, .98]);
   const regionalY = useTransform(scrollYProgress, [0, .2, .72], [0, -10, 0]);
@@ -218,6 +219,7 @@ export function HimalayanHero() {
   const introY = useTransform(scrollYProgress, [0, .25], [0, -38]);
   const transitionY = useTransform(scrollYProgress, [.86, 1], ["100%", "0%"]);
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (latest > .07) setWorldReady(true);
     const next = latest < .2 ? 1 : latest < .48 ? 2 : latest < .74 ? 3 : 4;
     setPhase((current) => current === next ? current : next);
   });
@@ -230,7 +232,7 @@ export function HimalayanHero() {
         <div className="hero-map-stage hero-physical-stage"><PhysicalNetworkGraphic/></div>
       </motion.div>
       <motion.div className="hero-satellite-layer hero-world-layer" style={reduce ? undefined : { scale: worldScale }}>
-        <Image src="/images/world-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/>
+        {worldReady && !reduce && <Image src="/images/world-satellite-nasa.jpg" alt="" fill sizes="100vw" className="object-cover"/>}
         <div className="hero-satellite-tone" aria-hidden="true"/>
         <div className="hero-map-stage hero-global-stage"><GlobalNetworkGraphic/></div>
       </motion.div>
@@ -239,7 +241,7 @@ export function HimalayanHero() {
       <Container className="hero-story-shell">
         <motion.div className="hero-phase-copy hero-phase-intro" style={reduce ? undefined : { y: introY }}>
           <p className="hero-kicker">International freight · Customs · Logistics</p>
-          <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
+          <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><div className="hero-actions"><ButtonLink href="/quote" analyticsEvent="hero_quote_click">Request a quote</ButtonLink><ButtonLink href="/services" variant="secondary" analyticsEvent="hero_services_click">Explore our services</ButtonLink></div>
         </motion.div>
         <div className="hero-phase-copy hero-phase-global"><p className="hero-kicker">Counterparts worldwide</p><h2>One connected logistics network beyond borders.</h2></div>
         <div className="hero-phase-copy hero-phase-physical"><p className="hero-kicker">KCPL on the ground</p><h2>Regional presence.<br/>Practical coordination.</h2><p>Branches positioned across Nepal&apos;s commercial regions and cross-border logistics network.</p></div>
@@ -247,7 +249,7 @@ export function HimalayanHero() {
       </Container>
 
       <div className="hero-network-legend"><span><i className="legend-kcpl"/>KCPL location</span><span><i className="legend-counterpart"/>International counterpart region</span></div>
-      <div className="hero-satellite-credit">Imagery: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble / MODIS</a> · Boundary: <a href={nepalBoundarySource} target="_blank" rel="noreferrer">geoBoundaries / Open Data Nepal</a></div>
+      <div className="hero-satellite-credit">Imagery: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noopener noreferrer">NASA Blue Marble / MODIS</a> · Boundary: <a href={nepalBoundarySource} target="_blank" rel="noopener noreferrer">geoBoundaries / Open Data Nepal</a></div>
       <motion.div className="hero-parchment-transition" style={reduce ? undefined : { y: transitionY }} aria-hidden="true"><div className="hero-dhaka-band"/></motion.div>
     </div>
 
@@ -255,8 +257,8 @@ export function HimalayanHero() {
       <div className="hero-mobile-image" aria-hidden="true"><Image src="/images/nepal-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/><div/></div>
       <Container className="hero-mobile-copy">
         <p className="hero-kicker">International freight · Customs · Logistics</p>
-        <h1 className="hero-brand-headline"><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p>
-        <div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
+        <div className="hero-brand-headline" role="heading" aria-level={1}><span>Nepal moves through us.</span><span>The world opens <em>from here.</em></span></div><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p>
+        <div className="hero-actions"><ButtonLink href="/quote" analyticsEvent="hero_quote_click">Request a quote</ButtonLink><ButtonLink href="/services" variant="secondary" analyticsEvent="hero_services_click">Explore our services</ButtonLink></div>
         <div className="hero-mobile-network"><p className="hero-kicker">KCPL on the ground</p><h2>Six verified operational locations.</h2><ul>{networkLocations.map((location) => <li key={location.id}><i/><span><strong>{location.name}</strong><small>{location.type === "head-office" ? "Head Office" : "KCPL Branch"}</small></span></li>)}</ul><div className="hero-mobile-counterparts"><span>Counterparts worldwide</span><p>Trusted international logistics relationships beyond KCPL&apos;s own regional branches.</p></div><div className="hero-mobile-flow"><ArrowLeftRight/><span>Import into Nepal</span><span>Export from Nepal</span></div></div>
       </Container>
       <div className="hero-dhaka-band" aria-hidden="true"/>
@@ -316,7 +318,7 @@ export function QuoteLaunch() {
         <div className="quote-launch-cargo-fields">
           <label className="quote-weight-field"><span>Weight</span><div><input name="weight" type="number" min="0" step="any" inputMode="decimal" placeholder="0"/><select name="weightUnit" defaultValue="kg" aria-label="Weight unit"><option value="kg">kg</option><option value="tonnes">tonnes</option><option value="lb">lb</option></select></div></label>
           <div className="quote-dimension-field"><span>Dimensions</span><div><label><span className="sr-only">Length</span><input name="length" type="number" min="0" step="any" inputMode="decimal" placeholder="L"/></label><i>×</i><label><span className="sr-only">Width</span><input name="width" type="number" min="0" step="any" inputMode="decimal" placeholder="W"/></label><i>×</i><label><span className="sr-only">Height</span><input name="height" type="number" min="0" step="any" inputMode="decimal" placeholder="H"/></label><select name="dimensionUnit" defaultValue="cm" aria-label="Dimension unit"><option value="cm">cm</option><option value="m">m</option><option value="in">in</option></select></div></div>
-          <button type="submit">Continue enquiry <ArrowRight size={17}/></button>
+          <button type="submit" data-analytics-event="homepage_quote_start">Continue enquiry <ArrowRight size={17}/></button>
         </div>
       </motion.form>
       <div className="quote-launch-note"><span>01 · Route</span><i/><span>02 · Cargo profile</span><i/><span>03 · Email KCPL</span></div>

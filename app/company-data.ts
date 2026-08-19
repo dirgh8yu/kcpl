@@ -8,7 +8,7 @@ export const company = {
     "Mhepi Road, Sorakhutte",
     "Kathmandu, Nepal",
   ],
-  phones: ["+977-1-4987510", "4027206"],
+  phones: ["+977-1-4987510"],
   email: "admin@kapileshworcargo.com.np",
   website: "kapileshworcargo.com.np",
 } as const;

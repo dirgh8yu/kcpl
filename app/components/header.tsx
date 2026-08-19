@@ -25,10 +25,12 @@ export function Header() {
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
+    document.body.classList.toggle("mobile-menu-open", menuOpen);
     const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && setMenuOpen(false);
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       document.body.style.overflow = "";
+      document.body.classList.remove("mobile-menu-open");
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuOpen]);
@@ -51,7 +53,7 @@ export function Header() {
 
         <div className="header-actions">
           <span className="header-location">Kathmandu <i /> Nepal</span>
-          <Link href="/quote" className="header-quote-link">
+          <Link href="/quote" className="header-quote-link" data-analytics-event="header_quote_click">
             <span>Request a quote</span>
             <ArrowUpRight size={15} strokeWidth={1.7} />
           </Link>
@@ -82,7 +84,7 @@ export function Header() {
           </nav>
           <div className="mobile-nav-footer">
             <p>Import into Nepal <span>↔</span> Export to the world</p>
-            <Link href="/quote" onClick={() => setMenuOpen(false)}>Start a freight enquiry <ArrowUpRight size={17} /></Link>
+            <Link href="/quote" onClick={() => setMenuOpen(false)} data-analytics-event="mobile_menu_quote_click">Start a freight enquiry <ArrowUpRight size={17} /></Link>
           </div>
         </Container>
       </div>

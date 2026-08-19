@@ -76,3 +76,33 @@ test("server-renders every KCPL service route", async (t) => {
     });
   }
 });
+
+test("renders launch metadata, FAQs, privacy and a truthful quote handoff", async () => {
+  const services = await render("/services");
+  const servicesHtml = await services.text();
+  assert.match(servicesHtml, /Logistics &amp; Freight Services \| Kapileshwor Cargo/);
+  assert.match(servicesHtml, /Does KCPL coordinate both imports and exports\?/);
+
+  const service = await render("/services/air-freight");
+  const serviceHtml = await service.text();
+  assert.match(serviceHtml, /BreadcrumbList/);
+  assert.match(serviceHtml, /Air Freight Forwarding in Nepal \| Kapileshwor Cargo/);
+
+  const quote = await render("/quote");
+  const quoteHtml = await quote.text();
+  assert.match(quoteHtml, /type="email"/);
+  assert.match(quoteHtml, /Your enquiry is not sent until you send the email\./);
+
+  const privacy = await render("/privacy");
+  assert.equal(privacy.status, 200);
+  assert.match(await privacy.text(), /The website does not send or store that enquiry\./);
+});
+
+test("returns the branded not-found experience with a real 404 status", async () => {
+  const response = await render("/missing-launch-audit-page");
+  assert.equal(response.status, 404);
+  const html = await response.text();
+  assert.match(html, /This page has moved beyond the map\./);
+  assert.match(html, /Return home/);
+  assert.match(html, /noindex/);
+});

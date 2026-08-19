@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowUpRight, Mail, MapPin, Ruler, Scale } from "lucide-react";
 import { company } from "../company-data";
+import { trackAnalyticsEvent } from "./analytics";
 
 export type QuoteValues = {
   origin?: string;
@@ -38,9 +39,11 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
     timing: "",
     requirements: "",
     contactName: "",
+    contactEmail: "",
     companyName: "",
     phone: "",
   });
+  const [emailDraftOpened, setEmailDraftOpened] = useState(false);
 
   const setField = (field: keyof typeof values, value: string) => setValues((current) => ({ ...current, [field]: value }));
   const dimensions = [values.length, values.width, values.height].some(Boolean)
@@ -70,6 +73,7 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
       "",
       "CONTACT",
       `Name: ${values.contactName || "Not provided"}`,
+      `Email: ${values.contactEmail || "Not provided"}`,
       `Company: ${values.companyName || "Not provided"}`,
       `Phone: ${values.phone || "Not provided"}`,
       "",
@@ -80,6 +84,8 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
 
   function emailEnquiry(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setEmailDraftOpened(true);
+    trackAnalyticsEvent("quote_email_draft_opened");
     window.location.href = mailtoHref;
   }
 
@@ -92,7 +98,7 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
         <div className="quote-form-grid quote-form-grid-route">
           <label><span>Origin</span><input value={values.origin} onChange={(event) => setField("origin", event.target.value)} placeholder="City, country" autoComplete="address-level2" required/></label>
           <label><span>Destination</span><input value={values.destination} onChange={(event) => setField("destination", event.target.value)} placeholder="City, country" autoComplete="address-level2" required/></label>
-          <label><span>Freight mode</span><select value={values.mode} onChange={(event) => setField("mode", event.target.value)}><option value="">Select mode</option><option value="air">Air freight</option><option value="sea">Sea freight</option><option value="road">Road freight</option><option value="unsure">Not sure yet</option></select></label>
+          <label><span>Freight mode</span><select value={values.mode} onChange={(event) => setField("mode", event.target.value)} required><option value="">Select mode</option><option value="air">Air freight</option><option value="sea">Sea freight</option><option value="road">Road freight</option><option value="unsure">Not sure yet</option></select></label>
         </div>
       </fieldset>
 
@@ -110,7 +116,8 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
       <fieldset className="quote-form-section">
         <legend><Ruler size={18}/><span>Your details</span></legend>
         <div className="quote-form-grid quote-form-grid-contact">
-          <label><span>Name</span><input value={values.contactName} onChange={(event) => setField("contactName", event.target.value)} autoComplete="name" placeholder="Your name"/></label>
+          <label><span>Name</span><input value={values.contactName} onChange={(event) => setField("contactName", event.target.value)} autoComplete="name" placeholder="Your name" required/></label>
+          <label><span>Email</span><input value={values.contactEmail} onChange={(event) => setField("contactEmail", event.target.value)} type="email" autoComplete="email" placeholder="you@company.com" required/></label>
           <label><span>Company</span><input value={values.companyName} onChange={(event) => setField("companyName", event.target.value)} autoComplete="organization" placeholder="Company name"/></label>
           <label><span>Phone</span><input value={values.phone} onChange={(event) => setField("phone", event.target.value)} autoComplete="tel" placeholder="Contact number"/></label>
         </div>
@@ -127,8 +134,9 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
         <span><small>Weight</small><strong>{weight}</strong></span>
         <span><small>Dimensions</small><strong>{dimensions}</strong></span>
       </div>
-      <button type="submit">Open email enquiry <ArrowUpRight size={18}/></button>
-      <small className="quote-email-note">Opens your default email application with the enquiry pre-filled.</small>
+      <button type="submit">{emailDraftOpened ? "Open email draft again" : "Open email enquiry"} <ArrowUpRight size={18}/></button>
+      <small className="quote-email-note">Opens your default email application with the enquiry pre-filled. Your enquiry is not sent until you send the email.</small>
+      {emailDraftOpened && <p className="quote-email-handoff" role="status" aria-live="polite">Email draft opened. Review the details and press send in your email application. KCPL will review the enquiry and get in touch after it is received.</p>}
       <a href={`mailto:${company.email}`} className="quote-email-address">{company.email}</a>
     </aside>
   </form>;

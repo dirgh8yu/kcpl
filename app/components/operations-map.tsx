@@ -63,7 +63,7 @@ export function WorldNetworkMap() {
     <div className="world-map-caption">
       <p>Nepal is the confirmed origin. Overseas counterpart locations will be added only after verification.</p>
     </div>
-    <a className="satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
+    <a className="satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noopener noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
   </div>;
 }
 
@@ -137,7 +137,7 @@ export function NepalOperationsMap({ variant = "default", locationLinkHref = "#c
           </motion.button>;
         })}
       </div>
-      <div className="satellite-credit">Imagery: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA</a> · Boundary: <a href={nepalBoundarySource} target="_blank" rel="noreferrer">geoBoundaries / Open Data Nepal</a></div>
+      <div className="satellite-credit">Imagery: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noopener noreferrer">NASA</a> · Boundary: <a href={nepalBoundarySource} target="_blank" rel="noopener noreferrer">geoBoundaries / Open Data Nepal</a></div>
     </div>
 
     <aside className="satellite-location-panel" aria-live="polite">
@@ -148,6 +148,10 @@ export function NepalOperationsMap({ variant = "default", locationLinkHref = "#c
       {activeLocation.address && <p className="satellite-location-address">{activeLocation.address}</p>}
       <Link href={locationLinkHref} className="satellite-location-link">View confirmed locations <span aria-hidden="true">→</span></Link>
     </aside>
+
+    <div className="satellite-mobile-location-tabs" aria-label="Choose a KCPL location">
+      {networkLocations.map((location) => <button type="button" key={location.id} aria-pressed={activeId === location.id} onClick={() => selectLocation(location)}>{location.name}</button>)}
+    </div>
 
     <div className="satellite-legend" aria-label="Map legend">
       <span><i className="satellite-legend-branch"/>KCPL branch / office</span>

@@ -8,6 +8,13 @@ import { Header } from "./components/header";
 import { HimalayanHero, IndustryNetwork, JourneyTimeline, QuoteLaunch, Reveal, SpecialistCargo, WhyKCPL } from "./components/home-motion";
 import { NepalOperationsMap } from "./components/operations-map";
 import { company } from "./company-data";
+import { createPageMetadata } from "./seo";
+
+export const metadata = createPageMetadata({
+  title: "Kapileshwor Cargo | Freight & Logistics in Nepal",
+  description: "KCPL coordinates import, export and cross-border air, ocean and road freight through Nepal's logistics gateways and international counterpart network.",
+  path: "/",
+});
 
 const supportServices = [
   { icon: Warehouse, title: "Warehousing", copy: "Storage and cargo handling integrated with the wider shipment plan.", href: "/services/warehousing", image: "/images/services/warehousing.jpg", alt: "Representative cargo warehouse with pallets and handling equipment" },

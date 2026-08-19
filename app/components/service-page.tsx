@@ -5,8 +5,9 @@ import type { ServiceContent } from "../service-content";
 import { Container } from "./container";
 import { PageShell } from "./page-shell";
 
-export function ServicePage({ content }: { content: ServiceContent }) {
-  return <PageShell eyebrow={content.eyebrow} title={content.title} intro={content.intro}>
+export function ServicePage({ content, slug }: { content: ServiceContent; slug: string }) {
+  const path = `/services/${slug}`;
+  return <PageShell eyebrow={content.eyebrow} title={content.title} intro={content.intro} breadcrumbs={[{ label: "Home", href: "/" }, { label: "Services", href: "/services" }, { label: content.eyebrow, href: path }]}>
     <section className="service-detail-story bg-offwhite">
       <Container>
         <div className="service-detail-layout">
@@ -19,7 +20,7 @@ export function ServicePage({ content }: { content: ServiceContent }) {
             <p className="eyebrow text-gold">Service overview</p>
             <h2>{content.overviewTitle}</h2>
             <p>{content.description}</p>
-            <Link href="/quote" className="service-detail-quote">Discuss this movement <ArrowUpRight size={18} strokeWidth={1.5} /></Link>
+            <Link href={`/quote?mode=${slug === "air-freight" ? "air" : slug === "sea-freight" ? "sea" : slug === "road-freight" || slug === "ground-transport" ? "road" : "unsure"}`} className="service-detail-quote" data-analytics-event="service_quote_click">Discuss this movement <ArrowUpRight size={18} strokeWidth={1.5} /></Link>
           </div>
         </div>
       </Container>

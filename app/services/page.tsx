@@ -4,6 +4,10 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Container } from "../components/container";
 import { PageShell } from "../components/page-shell";
 import { freightServiceKeys, handlingServiceKeys, serviceContent, specialistServiceKeys } from "../service-content";
+import { FaqSection } from "../components/faq-section";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({ title: "Logistics & Freight Services", description: "Explore KCPL air, ocean and road freight forwarding, specialist cargo, warehousing, packaging, ground transport and door-to-door services.", path: "/services" });
 
 export default function ServicesPage() {
   return <PageShell eyebrow="Our services" title="Every shipment has a different way forward." intro="Freight forwarding, specialist cargo and supporting logistics coordinated around the cargo, route and required handovers.">
@@ -52,5 +56,6 @@ export default function ServicesPage() {
         </div>
       </Container>
     </section>
+    <FaqSection />
   </PageShell>;
 }

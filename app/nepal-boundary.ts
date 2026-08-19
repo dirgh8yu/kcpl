@@ -14,7 +14,7 @@ type NepalBoundaryData = {
 
 // geoBoundaries NPL ADM0 (2019), sourced from Open Data Nepal, CC BY 4.0.
 // The geographic coordinates remain independent from their SVG presentation.
-const boundary = nepalAdm0 as NepalBoundaryData;
+const boundary = nepalAdm0 as unknown as NepalBoundaryData;
 
 export const nepalBoundarySource = "https://www.geoboundaries.org/countryDownloads.html#NPL";
 
