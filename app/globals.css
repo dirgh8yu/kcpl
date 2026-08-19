@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root { --background:#fff; --foreground:#0b1e33; --navy:#08233f; --ink:#06192d; --gold:#d9a441; --gold-light:#e8bb62; --offwhite:#f5f4f0; --slate:#566575; --line:#dfe3e6; --red:#b8322a; }
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+  --color-navy: var(--navy);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-offwhite: var(--offwhite);
+  --color-slate: var(--slate);
+  --color-line: var(--line);
+  --color-red: var(--red);
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--background); color:var(--foreground); font-family:var(--font-manrope), Arial, sans-serif; }
+a { text-decoration:none; }
+summary::-webkit-details-marker { display:none; }
+.section { padding-block:5.5rem; }
+.eyebrow { font-size:.67rem; font-weight:800; letter-spacing:.22em; text-transform:uppercase; }
+.section-title { max-width:760px; font-size:clamp(2rem,4vw,3.65rem); font-weight:800; letter-spacing:-.045em; line-height:1.08; }
+.footer-title { margin-bottom:1.5rem; color:var(--gold); font-size:.65rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+.footer-links { display:flex; flex-direction:column; gap:.8rem; color:rgb(255 255 255 / .55); font-size:.82rem; }
+.footer-links a { transition:color .2s ease; }
+.footer-links a:hover { color:white; }
+.field-label { display:block; margin-bottom:.65rem; color:var(--navy); font-size:.65rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+.field-input { min-height:3.5rem; width:100%; border:1px solid var(--line); padding:.9rem 1rem; color:var(--navy); font-size:.875rem; outline:none; }
+.field-input::placeholder { color:rgb(86 101 117 / .55); }
+.route-grid { background-image:linear-gradient(rgb(255 255 255 / .08) 1px,transparent 1px),linear-gradient(90deg,rgb(255 255 255 / .08) 1px,transparent 1px); background-size:64px 64px; mask-image:linear-gradient(to right,transparent,black); }
+@media (min-width:768px){ .section{padding-block:7.5rem;} }
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} *{transition-duration:.01ms!important;} }
