@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: title, template: "%s | Kapileshwor Cargo" },
     description,
-    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    icons: { icon: "/images/brand/kcpl-logo-mark.png", shortcut: "/images/brand/kcpl-logo-mark.png", apple: "/images/brand/kcpl-logo-mark.png" },
     openGraph: { title, description, images: [{ url: image, width: 1728, height: 910, alt: "KCPL — Moving Nepal. Connecting the World." }] },
     twitter: { card: "summary_large_image", title, description, images: [image] },
   };

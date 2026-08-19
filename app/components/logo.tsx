@@ -1,10 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function Logo({ inverse = false }: { inverse?: boolean }) {
   return (
     <Link href="/" aria-label="Kapileshwor Cargo home" className="inline-flex items-center gap-3">
-      <span className="relative grid h-11 w-11 place-items-center overflow-hidden bg-gold text-[0.7rem] font-black tracking-tight text-navy">
-        <span className="absolute left-0 top-0 h-full w-1 bg-red" />KCPL
+      <span className="relative h-11 w-11 shrink-0 overflow-hidden border border-gold bg-offwhite">
+        <Image src="/images/brand/kcpl-logo-mark.png" alt="" fill sizes="44px" className="object-cover"/>
       </span>
       <span className="leading-none">
         <span className={`block text-[0.78rem] font-extrabold uppercase tracking-[0.13em] ${inverse ? "text-white" : "text-navy"}`}>Kapileshwor Cargo</span>
