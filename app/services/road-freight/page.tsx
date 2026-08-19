@@ -1,2 +1,2 @@
-import { PageShell } from "../../components/page-shell";
-export default function Page(){return <PageShell eyebrow="Road freight" title="Reliable routes across borders and within Nepal." intro="Road transport planning for cross-border and domestic cargo movements."/>}
+import { ServicePage } from "../../components/service-page";
+export default function Page(){return <ServicePage eyebrow="Road freight" title="Routes across borders and within Nepal." intro="Road transport planning for domestic and Nepal–India cargo movements." description="KCPL plans road movements around the cargo, collection point, border or customs requirements and final delivery location." points={["Domestic transport coordination","Nepal–India cross-border movement","Gateway and customs handovers","First-mile and final-mile planning"]}/>}

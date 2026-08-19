@@ -1,2 +1,2 @@
-import { PageShell } from "../../components/page-shell";
-export default function Page(){return <PageShell eyebrow="Air freight" title="When time matters, take the direct route." intro="International air cargo coordination for time-sensitive shipments moving to and from Nepal."/>}
+import { ServicePage } from "../../components/service-page";
+export default function Page(){return <ServicePage eyebrow="Air freight" title="When time matters, take the direct route." intro="International air cargo coordination for time-sensitive shipments moving to and from Nepal." description="KCPL coordinates the air-freight journey from cargo preparation and documentation through airport handovers and destination arrangements." points={["Route and schedule coordination","Cargo documentation support","Airport and ground-handling coordination","International counterpart coordination"]}/>}

@@ -1,0 +1,2 @@
+import { ServicePage } from "../../components/service-page";
+export default function Page(){return <ServicePage eyebrow="Packaging & storage" title="Prepare cargo for the journey ahead." intro="Packaging and storage coordinated around transport and handling requirements." description="Cargo preparation can affect every later stage. KCPL coordinates packaging and storage requirements as part of the shipment plan." points={["Packaging requirement coordination","Pre-dispatch storage","Alignment with freight schedules","Preparation for planned handling"]}/>}

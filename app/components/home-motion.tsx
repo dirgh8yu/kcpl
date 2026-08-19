@@ -23,21 +23,21 @@ export function HeroRouteMap() {
 }
 
 const regions = [
-  { name: "South Asia*", x: "45%", y: "61%", width: "clamp(70px, 13vw, 180px)", rotate: "3deg", delay: .1 },
-  { name: "Southeast Asia*", x: "62%", y: "69%", width: "clamp(130px, 27vw, 380px)", rotate: "10deg", delay: .2 },
-  { name: "Middle East*", x: "56%", y: "43%", width: "clamp(105px, 21vw, 290px)", rotate: "-13deg", delay: .3 },
-  { name: "Europe*", x: "70%", y: "23%", width: "clamp(160px, 34vw, 470px)", rotate: "-25deg", delay: .4 },
-  { name: "Australia*", x: "83%", y: "78%", width: "clamp(210px, 48vw, 680px)", rotate: "13deg", delay: .5 },
+  { name: "BIRGUNJ", x: "43%", y: "65%", width: "clamp(70px, 12vw, 165px)", rotate: "7deg", delay: .1 },
+  { name: "NEPALGUNJ", x: "49%", y: "43%", width: "clamp(95px, 18vw, 245px)", rotate: "-12deg", delay: .18 },
+  { name: "SURKHET", x: "58%", y: "28%", width: "clamp(130px, 25vw, 350px)", rotate: "-21deg", delay: .26 },
+  { name: "RAXAUL", x: "65%", y: "67%", width: "clamp(155px, 31vw, 430px)", rotate: "5deg", delay: .34 },
+  { name: "KOLKATA", x: "80%", y: "78%", width: "clamp(210px, 45vw, 630px)", rotate: "12deg", delay: .42 },
 ];
 
 export function NetworkVisualization() {
   const reduce = useReducedMotion();
-  return <div className="network-system" aria-label="Illustrative outbound routes from Kathmandu to international regions; not confirmed service markets">
+  return <div className="network-system" aria-label="KCPL network from Kathmandu through Nepal and India trade gateways">
     <div className="network-coordinates"><span>27°43&apos;N</span><span>85°19&apos;E</span><span>ALT 1,400M</span></div>
     <div className="network-contour network-contour-a"/><div className="network-contour network-contour-b"/><div className="network-axis network-axis-x"/><div className="network-axis network-axis-y"/>
     <div className="network-origin"><i/><strong>KTM</strong><span>KATHMANDU / NEPAL</span></div>
     {regions.map((r) => <div className="network-region" key={r.name} style={{ left: r.x, top: r.y }}><motion.div className="network-route" style={{ width: r.width, rotate: r.rotate }} initial={reduce ? false : { scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true }} transition={{ duration: reduce ? 0 : 1.2, delay: r.delay, ease: [0.65, 0, 0.35, 1] }}/><motion.i initial={reduce ? false : { scale: .4, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }} transition={{ delay: reduce ? 0 : r.delay + .8 }}/><motion.span initial={reduce ? false : { opacity: 0, x: 6 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: reduce ? 0 : r.delay + .85 }}>{r.name}</motion.span></div>)}
-    <div className="network-legend"><span><i className="gold-dot"/>ORIGIN</span><span><i/>ILLUSTRATIVE REGION</span><b>MARKETS TO BE CONFIRMED BY KCPL</b></div>
+    <div className="network-legend"><span><i className="gold-dot"/>HEAD OFFICE</span><span><i/>OPERATIONAL LOCATION</span><b>→ INTERNATIONAL COUNTERPART NETWORK</b></div>
   </div>;
 }
 

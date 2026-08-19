@@ -1,0 +1,2 @@
+import { ServicePage } from "../../components/service-page";
+export default function Page(){return <ServicePage eyebrow="Ground transport" title="Connect every freight stage on the ground." intro="Road transport coordinated with collection, customs, port and delivery requirements." description="Ground transport links the key stages of air and ocean freight as well as domestic and cross-border movements. KCPL plans these connections around the wider route." points={["Origin collection","Airport and port connections","Border and customs connections","Final-mile delivery"]}/>}
