@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeftRight, ArrowUpRight, Compass, Globe2, ShieldCheck } from "lucide-react";
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
+import { affiliations } from "../company-data";
 import { createNepalBoundaryPath, nepalBoundarySource } from "../nepal-boundary";
 import { networkLocations } from "../network-data";
 import { ButtonLink } from "./button-link";
@@ -98,6 +99,58 @@ export function SpecialistCargo() {
       </div>
     </Container>
     <div className="specialist-edge" aria-hidden="true"/>
+  </section>;
+}
+
+function AffiliationGroup({ duplicate = false }: { duplicate?: boolean }) {
+  return <div className="affiliation-rail-group" aria-hidden={duplicate || undefined}>
+    {affiliations.map((item, index) => <a
+      key={`${duplicate ? "duplicate-" : ""}${item.name}`}
+      href={item.href}
+      target="_blank"
+      rel="noreferrer"
+      tabIndex={duplicate ? -1 : undefined}
+      className={`affiliation-mark affiliation-mark-${item.tone}`}
+      aria-label={`${item.name} official website`}
+    >
+      <span className="affiliation-mark-index">0{index + 1}</span>
+      <span className="affiliation-logo-stage">
+        <Image src={item.image} alt={`${item.name} official logo`} width={item.width} height={item.height} sizes="(max-width: 767px) 220px, 280px"/>
+      </span>
+      <span className="affiliation-mark-copy"><strong>{item.name}</strong><small>{item.detail}</small></span>
+      <ArrowUpRight className="affiliation-mark-arrow" size={18}/>
+    </a>)}
+  </div>;
+}
+
+export function IndustryNetwork() {
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, amount: .2 });
+  const reduce = useReducedMotion();
+
+  return <section ref={ref} className="industry-network" aria-labelledby="industry-network-title">
+    <div className="industry-network-pattern" aria-hidden="true"/>
+    <Container className="industry-network-heading">
+      <motion.div initial={reduce ? false : { opacity: 0, x: -28 }} animate={inView ? { opacity: 1, x: 0 } : {}} transition={{ duration: reduce ? 0 : .8, ease: [0.22, 1, 0.36, 1] }}>
+        <p className="eyebrow text-gold">Industry network</p>
+        <h2 id="industry-network-title">Connected to the communities <em>behind trade.</em></h2>
+      </motion.div>
+      <motion.div className="industry-network-intro" initial={reduce ? false : { opacity: 0, y: 18 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .7, delay: reduce ? 0 : .12 }}>
+        <span>Professional affiliations</span>
+        <p>KCPL&apos;s listed affiliations connect the company with freight-forwarding and business networks in Nepal and internationally.</p>
+      </motion.div>
+    </Container>
+
+    <motion.div className="affiliation-rail-window" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : .9, delay: reduce ? 0 : .2 }}>
+      <div className="affiliation-rail-track">
+        <AffiliationGroup/>
+        <AffiliationGroup duplicate/>
+      </div>
+    </motion.div>
+
+    <Container className="industry-network-footer">
+      <span>Listed by KCPL</span><i aria-hidden="true"/><span>Official organization marks</span>
+    </Container>
   </section>;
 }
 

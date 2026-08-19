@@ -5,9 +5,9 @@ import { ButtonLink } from "./components/button-link";
 import { Container } from "./components/container";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
-import { HimalayanHero, JourneyTimeline, Reveal, SpecialistCargo, WhyKCPL } from "./components/home-motion";
+import { HimalayanHero, IndustryNetwork, JourneyTimeline, Reveal, SpecialistCargo, WhyKCPL } from "./components/home-motion";
 import { NepalOperationsMap } from "./components/operations-map";
-import { affiliations, company } from "./company-data";
+import { company } from "./company-data";
 
 const supportServices = [
   { icon: Warehouse, title: "Warehousing", copy: "Storage and cargo handling integrated with the wider shipment plan.", href: "/services/warehousing", image: "/images/services/warehousing.jpg", alt: "Representative cargo warehouse with pallets and handling equipment" },
@@ -71,9 +71,7 @@ export default function HomePage() {
 
     <SpecialistCargo/>
 
-    <section className="customs-editorial bg-white py-24 lg:py-32"><Container><div className="grid gap-14 lg:grid-cols-[.82fr_1.18fr] lg:items-center"><Reveal><p className="eyebrow text-gold">Customs coverage</p><h2 className="section-title mt-4">Present where Nepal trades.</h2></Reveal><div><p className="text-xl font-semibold leading-9 tracking-[-.02em] text-navy">KCPL combines its branch network with personnel positioned across Nepal&apos;s customs entry points.</p><p className="mt-5 max-w-2xl text-base leading-8 text-slate">This supports documentation, coordination and cargo movement through key trade gateways without implying a formal office at every entry point.</p><Link className="text-link mt-8" href="/network">View network <ArrowRight size={16}/></Link></div></div></Container></section>
-
-    <section className="affiliations-section border-y border-line bg-offwhite py-14"><Container><div className="grid gap-8 lg:grid-cols-[.6fr_1.4fr] lg:items-center"><div><p className="eyebrow text-gold">Industry network</p><h2 className="mt-3 text-2xl font-extrabold tracking-[-.035em] text-navy">Professional affiliations</h2></div><div className="affiliation-list">{affiliations.map((item)=><div key={item.name}><strong>{item.name}</strong><span>{item.detail}</span></div>)}</div></div></Container></section>
+    <IndustryNetwork/>
 
     <section className="journey-editorial bg-white py-24 lg:py-32"><Container><div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"><Reveal><p className="eyebrow text-gold">The shipment journey</p><h2 className="section-title mt-4">From enquiry to destination.</h2></Reveal><p className="max-w-sm text-sm leading-7 text-slate">A connected process designed to move from one clear decision point to the next.</p></div><div className="mt-16"><JourneyTimeline/></div></Container></section>
 
