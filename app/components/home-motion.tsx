@@ -77,8 +77,6 @@ export function HimalayanHero() {
   const regionalY = useTransform(scrollYProgress, [0, .2, .72], [0, -10, 0]);
   const worldScale = useTransform(scrollYProgress, [.16, .48, 1], [1.18, 1, 1.08]);
   const introY = useTransform(scrollYProgress, [0, .25], [0, -38]);
-  const networkY = useTransform(scrollYProgress, [.2, .5], [28, 0]);
-  const physicalY = useTransform(scrollYProgress, [.45, .74], [28, 0]);
   const transitionY = useTransform(scrollYProgress, [.86, 1], ["100%", "0%"]);
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     const next = latest < .2 ? 1 : latest < .48 ? 2 : latest < .74 ? 3 : 4;
@@ -87,12 +85,17 @@ export function HimalayanHero() {
 
   return <section ref={ref} className={`himalayan-hero phase-${phase}${reduce ? " is-reduced" : ""}`} aria-label="KCPL connects Nepal with international logistics counterparts for import and export freight">
     <div className="himalayan-hero-sticky">
-      <motion.div className="hero-satellite-layer hero-regional-layer" style={reduce ? undefined : { scale: regionalScale, y: regionalY }} aria-hidden="true"><Image src="/images/nepal-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/><div/></motion.div>
-      <motion.div className="hero-satellite-layer hero-world-layer" style={reduce ? undefined : { scale: worldScale }} aria-hidden="true"><Image src="/images/world-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/><div/></motion.div>
+      <motion.div className="hero-satellite-layer hero-regional-layer" style={reduce ? undefined : { scale: regionalScale, y: regionalY }}>
+        <Image src="/images/nepal-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/>
+        <div className="hero-satellite-tone" aria-hidden="true"/>
+        <div className="hero-map-stage hero-physical-stage"><PhysicalNetworkGraphic/></div>
+      </motion.div>
+      <motion.div className="hero-satellite-layer hero-world-layer" style={reduce ? undefined : { scale: worldScale }}>
+        <Image src="/images/world-satellite-nasa.jpg" alt="" fill priority sizes="100vw" className="object-cover"/>
+        <div className="hero-satellite-tone" aria-hidden="true"/>
+        <div className="hero-map-stage hero-global-stage"><GlobalNetworkGraphic/></div>
+      </motion.div>
       <div className="hero-atmosphere" aria-hidden="true"/><div className="hero-contours" aria-hidden="true"/>
-
-      <motion.div className="hero-map-stage hero-global-stage" style={reduce ? undefined : { y: networkY }}><GlobalNetworkGraphic/></motion.div>
-      <motion.div className="hero-map-stage hero-physical-stage" style={reduce ? undefined : { y: physicalY }}><PhysicalNetworkGraphic/></motion.div>
 
       <Container className="hero-story-shell">
         <motion.div className="hero-phase-copy hero-phase-intro" style={reduce ? undefined : { y: introY }}>

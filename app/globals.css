@@ -39,7 +39,7 @@ summary::-webkit-details-marker { display:none; }
 .himalayan-hero-sticky { position:sticky; top:0; height:100svh; min-height:680px; overflow:hidden; isolation:isolate; }
 .hero-satellite-layer { position:absolute; inset:-3%; z-index:-5; opacity:0; transition:opacity 1.25s cubic-bezier(.22,1,.36,1); }
 .hero-satellite-layer img { filter:saturate(.45) contrast(1.08) brightness(.48); }
-.hero-satellite-layer>div { position:absolute; inset:0; background:linear-gradient(90deg,rgb(11 17 23 / .83) 0%,rgb(11 17 23 / .4) 42%,rgb(11 17 23 / .22) 72%,rgb(11 17 23 / .54) 100%),linear-gradient(0deg,rgb(11 17 23 / .78),transparent 52%,rgb(11 17 23 / .34)); }
+.hero-satellite-tone { position:absolute; inset:0; background:linear-gradient(90deg,rgb(11 17 23 / .83) 0%,rgb(11 17 23 / .4) 42%,rgb(11 17 23 / .22) 72%,rgb(11 17 23 / .54) 100%),linear-gradient(0deg,rgb(11 17 23 / .78),transparent 52%,rgb(11 17 23 / .34)); }
 .hero-regional-layer { opacity:1; }
 .hero-regional-layer img { object-position:center 51%; }
 .hero-world-layer img { object-position:center; filter:saturate(.38) contrast(1.1) brightness(.42); }
@@ -67,7 +67,7 @@ summary::-webkit-details-marker { display:none; }
 .hero-flow-indicator { display:flex; width:max-content; align-items:center; gap:1rem; margin-top:1.4rem; color:rgb(244 239 230 / .78); font-size:.55rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
 .hero-flow-indicator i { width:42px; height:1px; background:rgb(244 239 230 / .24); }
 .hero-flow-indicator b { margin-inline:.35rem; color:var(--gold); font-size:.9rem; }
-.hero-map-stage { position:absolute; inset:0; opacity:0; transition:opacity 1.05s cubic-bezier(.22,1,.36,1); pointer-events:none; }
+.hero-map-stage { position:absolute; inset:0; z-index:1; opacity:0; transition:opacity 1.05s cubic-bezier(.22,1,.36,1); pointer-events:none; }
 .hero-map-stage svg { display:block; width:100%; height:100%; overflow:visible; }
 .hero-world-network { opacity:.96; }
 .hero-counterpart-routes path { fill:none; stroke:rgb(143 175 185 / .27); stroke-width:1; vector-effect:non-scaling-stroke; }
