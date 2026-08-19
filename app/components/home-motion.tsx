@@ -105,7 +105,7 @@ export function HimalayanHero() {
           <p className="hero-kicker">International freight · Customs · Logistics</p>
           <h1>NEPAL <em>↔</em><br/>THE WORLD</h1><p className="hero-support">International freight, customs and logistics powered by KCPL&apos;s regional network and trusted counterparts worldwide.</p><FlowIndicator/><div className="hero-actions"><ButtonLink href="/quote">Request a quote</ButtonLink><ButtonLink href="/tracking" variant="secondary">Track shipment</ButtonLink></div>
         </motion.div>
-        <div className="hero-phase-copy hero-phase-global"><p className="hero-kicker">Counterparts worldwide</p><h2>One connected logistics network beyond borders.</h2><p>Subtle global nodes represent trusted counterpart relationships—not KCPL offices.</p></div>
+        <div className="hero-phase-copy hero-phase-global"><p className="hero-kicker">Counterparts worldwide</p><h2>One connected logistics network beyond borders.</h2></div>
         <div className="hero-phase-copy hero-phase-physical"><p className="hero-kicker">KCPL on the ground</p><h2>Regional presence.<br/>Practical coordination.</h2><p>Branches positioned across Nepal&apos;s commercial regions and cross-border logistics network.</p></div>
         <div className="hero-phase-copy hero-phase-flow"><p className="hero-kicker">Import + Export</p><h2>Global reach.<br/><em>Local control.</em></h2><p>From our own regional branches to trusted counterparts around the world, KCPL connects Nepalese trade with international markets in both directions.</p><FlowIndicator/></div>
       </Container>
