@@ -28,8 +28,8 @@ test("server-renders KCPL production content", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /NEPAL/);
-  assert.match(html, /THE WORLD/);
+  assert.match(html, /Nepal moves through us\./);
+  assert.match(html, /The world opens/);
   assert.match(html, /Import into Nepal/);
   assert.match(html, /Export from Nepal/);
   assert.match(html, /Nepalgunj/);

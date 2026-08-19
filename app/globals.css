@@ -99,6 +99,9 @@ summary::-webkit-details-marker { display:none; }
 .hero-kicker { color:var(--gold); font-size:.62rem; font-weight:800; letter-spacing:.22em; text-transform:uppercase; }
 .hero-phase-intro h1,.hero-mobile-copy h1 { max-width:900px; margin-top:1.25rem; font-family:var(--font-cormorant),"Iowan Old Style",Georgia,serif; font-size:clamp(5rem,8.4vw,9.5rem); font-weight:500; line-height:.76; letter-spacing:-.035em; text-wrap:balance; }
 .hero-phase-intro h1 em,.hero-mobile-copy h1 em { color:var(--gold); font-style:normal; font-weight:400; }
+.hero-phase-intro .hero-brand-headline { max-width:1100px; font-size:clamp(4.35rem,6.45vw,7.25rem); line-height:.81; letter-spacing:-.04em; }
+.hero-brand-headline>span { display:block; }
+.hero-brand-headline>span:last-child { margin-top:.08em; }
 .hero-phase-copy h2 { margin-top:1rem; font-family:var(--font-cormorant),"Iowan Old Style",Georgia,serif; font-size:clamp(3rem,5.3vw,6rem); font-weight:500; line-height:.86; letter-spacing:-.03em; }
 .hero-phase-copy h2 em { color:var(--gold); font-style:normal; }
 .hero-phase-copy>p:last-child { max-width:540px; margin-top:1.25rem; color:rgb(244 239 230 / .62); font-size:.84rem; line-height:1.75; }
@@ -309,6 +312,7 @@ summary::-webkit-details-marker { display:none; }
   .header-menu-button { display:grid; }
   .hero-phase-copy { width:min(610px,70vw); }
   .hero-phase-intro h1 { font-size:clamp(4.5rem,10vw,7rem); }
+  .hero-phase-intro .hero-brand-headline { font-size:clamp(3.8rem,7.6vw,5.8rem); }
   .hero-branch-marker text { font-size:12px; }
   .hero-phase-global,.hero-phase-physical,.hero-phase-flow { left:2rem; width:min(480px,54vw); }
   .service-showcase { grid-template-rows:430px 300px; }
@@ -345,6 +349,8 @@ summary::-webkit-details-marker { display:none; }
   .hero-mobile-copy { position:relative; z-index:2; padding-top:clamp(7.8rem,20svh,10rem); padding-bottom:4.8rem; }
   .hero-kicker { max-width:310px; font-size:.52rem; line-height:1.8; letter-spacing:.17em; }
   .hero-mobile-copy h1 { margin-top:1rem; font-size:clamp(3.65rem,17.4vw,5.1rem); line-height:.8; letter-spacing:-.04em; }
+  .hero-mobile-copy .hero-brand-headline { font-size:clamp(3.15rem,14.5vw,4.2rem); line-height:.83; }
+  .hero-mobile-copy .hero-brand-headline>span:last-child { max-width:350px; margin-top:.14em; }
   .hero-support { margin-top:1.35rem; font-size:.84rem; line-height:1.7; }
   .hero-actions { display:grid; grid-template-columns:1fr; margin-top:1.5rem; }
   .hero-actions a { min-height:50px; width:100%; }
