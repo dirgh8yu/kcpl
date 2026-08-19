@@ -67,6 +67,7 @@ summary::-webkit-details-marker { display:none; }
 .hero-flow-indicator b { margin-inline:.35rem; color:var(--gold); font-size:.9rem; }
 .hero-map-stage { position:absolute; inset:0; z-index:1; opacity:0; transition:opacity 1.05s cubic-bezier(.22,1,.36,1); pointer-events:none; }
 .hero-map-stage svg { display:block; width:100%; height:100%; overflow:visible; }
+.hero-nepal-boundary { fill:rgb(216 155 60 / .065); stroke:rgb(230 184 102 / .82); stroke-width:1.35; stroke-dasharray:1; stroke-dashoffset:1; vector-effect:non-scaling-stroke; }
 .hero-world-network { opacity:.96; }
 .hero-counterpart-routes path { fill:none; stroke:rgb(143 175 185 / .27); stroke-width:1; vector-effect:non-scaling-stroke; }
 .hero-counterpart-nodes circle:first-child { fill:var(--glacier); }
@@ -78,6 +79,7 @@ summary::-webkit-details-marker { display:none; }
 .hero-directional-routes path { fill:none; stroke:var(--gold); stroke-width:1.2; stroke-dasharray:2 18; vector-effect:non-scaling-stroke; animation:heroRouteTravel 4.8s linear infinite; }
 .hero-directional-out path { stroke:var(--rhododendron); animation-direction:reverse; animation-duration:5.6s; }
 @keyframes heroRouteTravel { to { stroke-dashoffset:-80; } }
+@keyframes heroBoundaryReveal { to { stroke-dashoffset:0; } }
 .hero-physical-stage { inset:0; }
 .hero-branch-links path { fill:none; stroke:rgb(216 155 60 / .34); stroke-width:1.1; vector-effect:non-scaling-stroke; }
 .hero-branch-marker .branch-ring { fill:rgb(216 155 60 / .08); stroke:var(--gold); stroke-width:1.5; vector-effect:non-scaling-stroke; }
@@ -90,6 +92,7 @@ summary::-webkit-details-marker { display:none; }
 .hero-network-legend i { display:block; width:7px; height:7px; border-radius:50%; }
 .legend-kcpl { background:var(--gold); }.legend-counterpart { border:1px solid var(--glacier); }
 .hero-satellite-credit { position:absolute; left:1rem; bottom:1rem; z-index:3; color:rgb(244 239 230 / .35); font-size:.43rem; letter-spacing:.04em; }
+.hero-satellite-credit a { transition:color .25s ease; }.hero-satellite-credit a:hover { color:rgb(244 239 230 / .72); }
 .hero-parchment-transition { position:absolute; inset:auto 0 0; z-index:4; height:15vh; background:var(--parchment); clip-path:polygon(0 56%,18% 40%,38% 62%,61% 35%,82% 58%,100% 42%,100% 100%,0 100%); }
 .hero-dhaka-band { position:absolute; inset:auto 0 0; height:8px; opacity:.72; background:repeating-linear-gradient(45deg,var(--rhododendron) 0 5px,transparent 5px 10px),repeating-linear-gradient(-45deg,var(--gold) 0 5px,var(--pine) 5px 10px); }
 .himalayan-hero-mobile { display:none; }
@@ -101,6 +104,7 @@ summary::-webkit-details-marker { display:none; }
 .himalayan-hero.phase-2 .hero-phase-global,.himalayan-hero.phase-3 .hero-phase-physical,.himalayan-hero.phase-4 .hero-phase-flow { opacity:1; transform:none; }
 .himalayan-hero.phase-2 .hero-global-stage,.himalayan-hero.phase-3 .hero-physical-stage { opacity:1; }
 .himalayan-hero.phase-4 .hero-global-stage { opacity:.7; }.himalayan-hero.phase-4 .hero-physical-stage { opacity:.84; }
+.himalayan-hero.phase-3 .hero-nepal-boundary,.himalayan-hero.phase-4 .hero-nepal-boundary { animation:heroBoundaryReveal 1.45s cubic-bezier(.65,0,.35,1) forwards; }
 .himalayan-hero.phase-2 .hero-network-legend,.himalayan-hero.phase-3 .hero-network-legend,.himalayan-hero.phase-4 .hero-network-legend { opacity:1; }
 .himalayan-hero.phase-4 .hero-directional-routes { opacity:.78; }
 .is-reduced .hero-world-layer,.is-reduced .hero-global-stage,.is-reduced .hero-physical-stage,.is-reduced .hero-network-legend { display:none; }
@@ -157,13 +161,14 @@ summary::-webkit-details-marker { display:none; }
 .satellite-image img { filter:saturate(.68) contrast(.88) brightness(.64); }
 .satellite-tone { position:absolute; inset:0; background:linear-gradient(90deg,rgb(6 23 41 / .45),rgb(6 23 41 / .12) 54%,rgb(6 23 41 / .32)),linear-gradient(0deg,rgb(6 23 41 / .45),transparent 45%); pointer-events:none; }
 .satellite-overlay { position:absolute; inset:0; display:block; width:100%; height:100%; }
+.satellite-country-boundary { fill:rgb(216 155 60 / .075); stroke:rgb(230 184 102 / .9); stroke-width:1.55; vector-effect:non-scaling-stroke; }
 .world-origin-ring { fill:rgb(217 164 65 / .12); stroke:var(--gold); stroke-width:1.4; vector-effect:non-scaling-stroke; }
 .world-origin-core { fill:var(--gold); stroke:#fff4d8; stroke-width:1; vector-effect:non-scaling-stroke; }
 .world-origin-label { fill:white; font-family:var(--font-manrope),Arial,sans-serif; font-size:15px; font-weight:800; letter-spacing:.08em; paint-order:stroke; stroke:rgb(4 21 38 / .8); stroke-width:4px; stroke-linejoin:round; }
 .world-origin-subtitle { fill:rgb(255 255 255 / .62); font-family:var(--font-manrope),Arial,sans-serif; font-size:9px; font-weight:700; letter-spacing:.14em; paint-order:stroke; stroke:rgb(4 21 38 / .8); stroke-width:3px; }
 .world-map-caption { position:absolute; left:clamp(1.25rem,3vw,2.5rem); bottom:clamp(1.2rem,3vw,2.25rem); max-width:390px; color:rgb(255 255 255 / .72); font-size:.76rem; line-height:1.7; }
-.satellite-credit { position:absolute; right:.75rem; bottom:.55rem; z-index:3; color:rgb(255 255 255 / .48); font-size:.48rem; letter-spacing:.03em; transition:color .25s ease; }
-.satellite-credit:hover { color:white; }
+.satellite-credit { position:absolute; right:.75rem; bottom:.55rem; z-index:3; color:rgb(255 255 255 / .48); font-size:.48rem; letter-spacing:.03em; }
+.satellite-credit a { transition:color .25s ease; }.satellite-credit a:hover { color:white; }
 
 .regional-satellite-shell { display:grid; grid-template-columns:minmax(0,1fr) 300px; background:white; box-shadow:0 24px 70px rgb(8 35 63 / .11); }
 .regional-satellite-map { position:relative; min-width:0; aspect-ratio:4/3; overflow:hidden; background:#102231; }

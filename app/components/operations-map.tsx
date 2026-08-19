@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { useMemo, useRef, useState } from "react";
+import { createNepalBoundaryPath, nepalBoundarySource } from "../nepal-boundary";
 import { customsCoverageLocations, networkLocations, networkRoutes, type NetworkLocation } from "../network-data";
 
 type Position = { x: number; y: number };
@@ -11,6 +12,7 @@ type Bounds = { west: number; east: number; south: number; north: number };
 
 const WORLD = { width: 1600, height: 800, bounds: { west: -180, east: 180, south: -90, north: 90 } } as const;
 const REGIONAL = { width: 1200, height: 900, bounds: { west: 76, east: 90, south: 21, north: 31.5 } } as const;
+const NEPAL_BOUNDARY_PATH = createNepalBoundaryPath(REGIONAL.width, REGIONAL.height, REGIONAL.bounds);
 
 function project(longitude: number, latitude: number, width: number, height: number, bounds: Bounds): Position {
   return {
@@ -85,6 +87,15 @@ export function NepalOperationsMap() {
       <svg className="satellite-overlay" viewBox={`0 0 ${REGIONAL.width} ${REGIONAL.height}`} role="img" aria-labelledby="regional-map-title regional-map-description">
         <title id="regional-map-title">KCPL Nepal and India operations map</title>
         <desc id="regional-map-description">Satellite map showing verified KCPL locations at Kathmandu, Birgunj, Nepalgunj, Surkhet, Raxaul and Kolkata.</desc>
+        <motion.path
+          className="satellite-country-boundary"
+          d={NEPAL_BOUNDARY_PATH}
+          pathLength="1"
+          initial={reducedMotion ? false : { pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: inView ? 1 : 0, opacity: inView ? 1 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : 1.35, delay: reducedMotion ? 0 : .25, ease: [0.65, 0, 0.35, 1] }}
+          aria-hidden="true"
+        />
         <g className="satellite-routes" aria-hidden="true">
           {networkRoutes.map((route, index) => {
             const isActive = activeRouteIds.has(route.id);
@@ -127,7 +138,7 @@ export function NepalOperationsMap() {
           </motion.button>;
         })}
       </div>
-      <a className="satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
+      <div className="satellite-credit">Imagery: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA</a> · Boundary: <a href={nepalBoundarySource} target="_blank" rel="noreferrer">geoBoundaries / Open Data Nepal</a></div>
     </div>
 
     <aside className="satellite-location-panel" aria-live="polite">

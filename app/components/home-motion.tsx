@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowLeftRight } from "lucide-react";
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
+import { createNepalBoundaryPath, nepalBoundarySource } from "../nepal-boundary";
 import { networkLocations } from "../network-data";
 import { ButtonLink } from "./button-link";
 import { Container } from "./container";
@@ -18,6 +19,7 @@ type GeoBounds = { west: number; east: number; south: number; north: number };
 
 const WORLD = { width: 1600, height: 800, bounds: { west: -180, east: 180, south: -90, north: 90 } } as const;
 const REGION = { width: 1200, height: 900, bounds: { west: 76, east: 90, south: 21, north: 31.5 } } as const;
+const HERO_NEPAL_BOUNDARY = createNepalBoundaryPath(REGION.width, REGION.height, REGION.bounds);
 const counterpartRegions = [
   { id: "asia", label: "Asia", latitude: 35, longitude: 105 },
   { id: "middle-east", label: "Middle East", latitude: 25, longitude: 45 },
@@ -59,6 +61,7 @@ function PhysicalNetworkGraphic() {
   const positions = Object.fromEntries(networkLocations.map((location) => [location.id, project(location.longitude, location.latitude, REGION.width, REGION.height, REGION.bounds)])) as Record<string, GeoPoint>;
   const kathmandu = positions.kathmandu;
   return <svg className="hero-physical-network" viewBox={`0 0 ${REGION.width} ${REGION.height}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="KCPL physical network: head office in Kathmandu and branches in Birgunj, Nepalgunj, Surkhet, Raxaul and Kolkata.">
+    <path className="hero-nepal-boundary" d={HERO_NEPAL_BOUNDARY} pathLength="1" aria-hidden="true"/>
     <g className="hero-branch-links" aria-hidden="true">{networkLocations.filter((location) => location.id !== "kathmandu").map((location) => <path key={location.id} d={routeArc(kathmandu, positions[location.id], .08)}/>)}</g>
     <g>{networkLocations.map((location) => { const point = positions[location.id]; const label = location.type === "head-office" ? "HEAD OFFICE" : "KCPL BRANCH"; const offset = markerLabelOffsets[location.id]; return <g key={location.id} className={`hero-branch-marker ${location.type === "head-office" ? "is-head-office" : ""}`} transform={`translate(${point.x} ${point.y})`}><circle className="branch-ring" r={location.type === "head-office" ? 17 : 11}/><circle className="branch-core" r={location.type === "head-office" ? 6 : 4}/><text x={offset.dx} y={offset.dy} textAnchor={offset.anchor}>{location.name}</text><text className="branch-role" x={offset.dx} y={offset.dy + 17} textAnchor={offset.anchor}>{label}</text></g>; })}</g>
   </svg>;
@@ -108,7 +111,7 @@ export function HimalayanHero() {
       </Container>
 
       <div className="hero-network-legend"><span><i className="legend-kcpl"/>KCPL location</span><span><i className="legend-counterpart"/>International counterpart region</span></div>
-      <a className="hero-satellite-credit" href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">Satellite imagery: NASA Blue Marble / MODIS</a>
+      <div className="hero-satellite-credit">Imagery: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble / MODIS</a> · Boundary: <a href={nepalBoundarySource} target="_blank" rel="noreferrer">geoBoundaries / Open Data Nepal</a></div>
       <motion.div className="hero-parchment-transition" style={reduce ? undefined : { y: transitionY }} aria-hidden="true"><div className="hero-dhaka-band"/></motion.div>
     </div>
 
