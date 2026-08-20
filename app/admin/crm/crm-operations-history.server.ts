@@ -1,3 +1,4 @@
+import type { DocumentSnapshot } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { quoteCurrencies, quoteStatuses, type QuoteCurrency, type QuoteStatus } from "../admin-data";
@@ -84,10 +85,12 @@ export async function listCrmOperationsHistory(customerId: string): Promise<CrmO
     };
   }).sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
 
-  const shipmentDocs = new Map(ownedShipmentsSnapshot.docs.map((doc) => [doc.id, doc]));
+  const shipmentDocs = new Map<string, DocumentSnapshot>();
+  ownedShipmentsSnapshot.docs.forEach((doc) => shipmentDocs.set(doc.id, doc));
+
   const fallbackRefs = quotes
     .map((quote) => quote.shipment_reference)
-    .filter((reference): reference is string => Boolean(reference) && !shipmentDocs.has(reference!))
+    .filter((reference): reference is string => Boolean(reference) && !shipmentDocs.has(reference as string))
     .slice(0, 100)
     .map((reference) => db.collection("shipments").doc(reference));
 
@@ -100,7 +103,7 @@ export async function listCrmOperationsHistory(customerId: string): Promise<CrmO
 
   const missingQuoteRefs = [...shipmentDocs.values()]
     .map((doc) => nullable(doc.get("quote_reference")))
-    .filter((reference): reference is string => Boolean(reference) && !quoteDataByReference.has(reference!))
+    .filter((reference): reference is string => Boolean(reference) && !quoteDataByReference.has(reference as string))
     .slice(0, 100)
     .map((reference) => db.collection("quotes").doc(reference));
 
