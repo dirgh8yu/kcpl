@@ -13,11 +13,28 @@ function redirectTo(request: Request, path: string, cookie?: string) {
   return new Response(null, { status: 303, headers });
 }
 
+function firstForwardedValue(value: string | null) {
+  return value?.split(",")[0]?.trim() || "";
+}
+
 function sameOrigin(request: Request) {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") return false;
+
   const origin = request.headers.get("origin");
   if (!origin) return true;
+
   try {
-    return new URL(origin).host === new URL(request.url).host;
+    const originHost = new URL(origin).host.toLowerCase();
+    const candidates = [
+      firstForwardedValue(request.headers.get("x-forwarded-host")),
+      request.headers.get("host") ?? "",
+      new URL(request.url).host,
+    ]
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    return candidates.includes(originHost);
   } catch {
     return false;
   }
