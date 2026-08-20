@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock3, Gauge, MapPin, Navigation, Route, TriangleAlert } from "lucide-react";
+import { Clock3, Gauge, MapPin, Navigation, Route } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { OpsButton, OpsErrorState, OpsMetric, OpsMetricStrip, OpsPanel, OpsStatusBadge } from "../operations-ui";
 
 type Estimate = {
   provider: string;
@@ -29,6 +30,8 @@ type ApiResponse = {
   error?: string;
 };
 
+const FRIENDLY_ERROR = "Road route estimates are temporarily unavailable. Existing KCPL shipment and quotation data is unaffected.";
+
 function durationText(seconds: number) {
   const roundedMinutes = Math.max(0, Math.round(seconds / 60));
   const days = Math.floor(roundedMinutes / 1440);
@@ -44,21 +47,16 @@ function durationText(seconds: number) {
 function arrivalText(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-export function GoogleRoadRoutePanel({
-  initialOrigin = "",
-  initialDestination = "",
-  compact = false,
-}: {
-  initialOrigin?: string;
-  initialDestination?: string;
-  compact?: boolean;
-}) {
+function requestedText(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+export function GoogleRoadRoutePanel({ initialOrigin = "", initialDestination = "", compact = false }: { initialOrigin?: string; initialDestination?: string; compact?: boolean }) {
   const [origin, setOrigin] = useState(initialOrigin);
   const [destination, setDestination] = useState(initialDestination);
   const [via, setVia] = useState("");
@@ -73,7 +71,6 @@ export function GoogleRoadRoutePanel({
     event?.preventDefault();
     setLoading(true);
     setError("");
-    setEstimate(null);
     try {
       const waypoints = via.split("\n").map((item) => item.trim()).filter(Boolean);
       const response = await fetch("/api/admin/routes/estimate", {
@@ -84,62 +81,45 @@ export function GoogleRoadRoutePanel({
       });
       const data = await response.json() as ApiResponse;
       if (!response.ok || !data.ok || !data.estimate) {
-        throw new Error(data.error || "Google road route could not be calculated.");
+        console.warn("Google route estimate request failed", { status: response.status, needsConfiguration: data.needs_configuration, error: data.error });
+        throw new Error(FRIENDLY_ERROR);
       }
       setEstimate(data.estimate);
       setPricingNote(data.pricing_note || "");
       setDisclaimer(data.disclaimer || "");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google road route could not be calculated.");
+      console.warn("Google route estimate unavailable", err);
+      setError(FRIENDLY_ERROR);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <section className={`border-b border-[#dfe3e8] bg-white ${compact ? "px-4 py-4 sm:px-6" : "px-4 py-5 sm:px-6 lg:px-8"}`}>
-      <div className="mx-auto max-w-[1700px]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-[#8a6c36]"><Route size={15}/><p className="text-[10px] font-black uppercase tracking-[.14em]">Google road route intelligence</p></div>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-[#737f89]">Calculate truck-road distance and transit time without leaving KCPL. Add border or branch stops one per line when the route must pass through them.</p>
-          </div>
-          <span className={`rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[.08em] ${trafficAware ? "border-indigo-200 bg-indigo-50 text-indigo-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</span>
-        </div>
+    <OpsPanel
+      title="Road distance & ETA"
+      eyebrow="Google Routes reference"
+      description="Calculate indicative truck-road distance and transit time. Add required branch or border stops one per line."
+      action={<OpsStatusBadge tone={trafficAware ? "accent" : "success"}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</OpsStatusBadge>}
+    >
+      <form onSubmit={calculate} className={`grid gap-3 p-3.5 ${compact ? "xl:grid-cols-[1fr_1fr_1fr_auto]" : "xl:grid-cols-[1fr_1fr_1fr_220px]"}`}>
+        <label className="block"><span className="text-[10px] font-medium text-[#69717a]">Origin</span><div className="ops-search-field mt-1.5 w-full"><MapPin size={13} className="text-[#7f89b3]"/><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kolkata, India" required/></div></label>
+        <label className="block"><span className="text-[10px] font-medium text-[#69717a]">Destination</span><div className="ops-search-field mt-1.5 w-full"><Navigation size={13} className="text-[#7f89b3]"/><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Kathmandu, Nepal" required/></div></label>
+        <label className="block"><span className="text-[10px] font-medium text-[#69717a]">Via stops <span className="text-[#a0a6ac]">optional</span></span><textarea rows={compact ? 1 : 2} value={via} onChange={(event) => setVia(event.target.value)} className={`mt-1.5 w-full resize-none px-3 py-2 ${compact ? "h-[34px]" : "min-h-[64px]"}`} placeholder="Raxaul, India&#10;Birgunj, Nepal"/></label>
+        <div className="flex items-end gap-2 xl:flex-col xl:items-stretch xl:justify-end"><label className="flex min-h-[34px] flex-1 cursor-pointer items-center gap-2 rounded-lg border border-[#dfe2e6] bg-[#fbfbfb] px-3 text-[10px] font-medium text-[#616a73]"><input type="checkbox" checked={trafficAware} onChange={(event) => setTrafficAware(event.target.checked)} className="h-3.5 w-3.5 accent-[#5367d9]"/><span>Use live traffic <span className="text-[#7f88b3]">Pro</span></span></label><OpsButton tone="primary" type="submit" disabled={loading}>{loading ? "Calculating…" : "Calculate route"}</OpsButton></div>
+      </form>
 
-        <form onSubmit={calculate} className={`mt-4 grid gap-3 ${compact ? "xl:grid-cols-[1fr_1fr_1fr_auto]" : "xl:grid-cols-[1fr_1fr_1fr_220px]"}`}>
-          <label className="block"><span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">Origin</span><div className="mt-1 flex h-10 items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 focus-within:border-[#aa8748] focus-within:bg-white"><MapPin size={13} className="text-[#9b7a40]"/><input value={origin} onChange={(event) => setOrigin(event.target.value)} className="w-full bg-transparent text-xs outline-none" placeholder="e.g. Kolkata, India" required/></div></label>
-          <label className="block"><span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">Destination</span><div className="mt-1 flex h-10 items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 focus-within:border-[#aa8748] focus-within:bg-white"><Navigation size={13} className="text-[#9b7a40]"/><input value={destination} onChange={(event) => setDestination(event.target.value)} className="w-full bg-transparent text-xs outline-none" placeholder="e.g. Kathmandu, Nepal" required/></div></label>
-          <label className="block"><span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">Via stops · optional</span><textarea rows={compact ? 1 : 2} value={via} onChange={(event) => setVia(event.target.value)} className={`mt-1 w-full resize-none rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 py-2 text-xs outline-none focus:border-[#aa8748] focus:bg-white ${compact ? "h-10" : "min-h-[62px]"}`} placeholder="Raxaul, India&#10;Birgunj, Nepal"/></label>
-          <div className="flex items-end gap-2 xl:flex-col xl:items-stretch xl:justify-end">
-            <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 text-[10px] font-semibold text-[#596773]"><input type="checkbox" checked={trafficAware} onChange={(event) => setTrafficAware(event.target.checked)} className="h-3.5 w-3.5 accent-[#10263f]"/><span>Use live traffic <span className="text-[#9a763b]">(Pro)</span></span></label>
-            <button type="submit" disabled={loading} className="h-10 rounded-lg bg-[#10263f] px-5 text-[10px] font-black uppercase tracking-[.08em] text-white disabled:opacity-50">{loading ? "Calculating…" : "Calculate route"}</button>
-          </div>
-        </form>
+      {error ? <OpsErrorState tone="warning" title="Road route estimate unavailable" detail="Existing KCPL shipment and quotation data is unaffected. Check the locations and retry when the route service is available." action={<OpsButton onClick={() => void calculate()} disabled={loading}>Retry</OpsButton>}/> : null}
 
-        {error ? <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><TriangleAlert size={14} className="mt-0.5 shrink-0"/><span>{error}</span></div> : null}
-
-        {estimate ? (
-          <div className="mt-4 overflow-hidden rounded-xl border border-[#dfe3e8] bg-[#f8f9fa]">
-            <div className="grid gap-px bg-[#dfe3e8] sm:grid-cols-2 xl:grid-cols-4">
-              <Metric icon={<Route size={14}/>} label="Road distance" value={`${estimate.distance_km.toLocaleString("en-AU", { maximumFractionDigits: 1 })} km`} />
-              <Metric icon={<Clock3 size={14}/>} label={estimate.traffic_aware ? "Traffic-aware drive" : "Estimated drive"} value={durationText(estimate.duration_seconds)} />
-              <Metric icon={<Navigation size={14}/>} label="Indicative arrival" value={arrivalText(estimate.estimated_arrival_at)} small />
-              <Metric icon={<Gauge size={14}/>} label="Traffic delay" value={estimate.traffic_aware ? durationText(estimate.traffic_delay_seconds) : "Not requested"} />
-            </div>
-            <div className="bg-white px-4 py-3 text-[10px] leading-5 text-[#77828c]">
-              <div className="flex flex-wrap items-center justify-between gap-2"><p><strong className="text-[#40515f]">{estimate.origin}</strong>{estimate.waypoints.map((item) => <span key={item}> → <strong className="text-[#40515f]">{item}</strong></span>)} → <strong className="text-[#40515f]">{estimate.destination}</strong></p><span>{pricingNote}</span></div>
-              {estimate.route_description ? <p className="mt-1">Google route: {estimate.route_description}</p> : null}
-              {estimate.warnings.length ? <p className="mt-1 text-amber-800">{estimate.warnings.join(" · ")}</p> : null}
-              {disclaimer ? <p className="mt-1 text-[#919aa2]">{disclaimer}</p> : null}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </section>
+      {estimate ? <div className="border-t border-[#eceef0]">
+        <OpsMetricStrip columns={4}>
+          <OpsMetric icon={<Route size={13}/>} label="Road distance" value={`${estimate.distance_km.toLocaleString("en-AU", { maximumFractionDigits: 1 })} km`} />
+          <OpsMetric icon={<Clock3 size={13}/>} label={estimate.traffic_aware ? "Traffic-aware drive" : "Estimated drive"} value={durationText(estimate.duration_seconds)} />
+          <OpsMetric icon={<Navigation size={13}/>} label="Indicative arrival" value={<span className="text-[14px]">{arrivalText(estimate.estimated_arrival_at)}</span>} />
+          <OpsMetric icon={<Gauge size={13}/>} label="Traffic delay" value={<span className="text-[14px]">{estimate.traffic_aware ? durationText(estimate.traffic_delay_seconds) : "Not requested"}</span>} />
+        </OpsMetricStrip>
+        <div className="grid gap-2 px-3.5 py-3 text-[10px] leading-5 text-[#7d858d] lg:grid-cols-[minmax(0,1fr)_auto]"><div><p><strong className="font-medium text-[#4b535b]">{estimate.origin}</strong>{estimate.waypoints.map((item) => <span key={item}> → <strong className="font-medium text-[#4b535b]">{item}</strong></span>)} → <strong className="font-medium text-[#4b535b]">{estimate.destination}</strong></p>{estimate.route_description ? <p className="mt-0.5">Route: {estimate.route_description}</p> : null}{estimate.warnings.length ? <p className="mt-0.5 text-[#8b6938]">{estimate.warnings.join(" · ")}</p> : null}{disclaimer ? <p className="mt-0.5 text-[#9299a0]">{disclaimer}</p> : null}</div><div className="text-right text-[#939aa1]"><p>{pricingNote}</p><p className="mt-0.5">Requested {requestedText(estimate.requested_at)}</p></div></div>
+      </div> : null}
+    </OpsPanel>
   );
-}
-
-function Metric({ icon, label, value, small = false }: { icon: React.ReactNode; label: string; value: string; small?: boolean }) {
-  return <div className="bg-white p-4"><div className="flex items-center gap-2 text-[#8b949c]">{icon}<span className="text-[9px] font-bold uppercase tracking-[.1em]">{label}</span></div><p className={`mt-1.5 font-black text-[#10263f] ${small ? "text-sm" : "text-xl"}`}>{value}</p></div>;
 }
