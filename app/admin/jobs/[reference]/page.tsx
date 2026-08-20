@@ -4,6 +4,7 @@ import { getStaffContext } from "../../staff-directory.server";
 import { getDigitalJobFile } from "../../job-file.server";
 import { OperationsShell } from "../../operations-shell";
 import { GoogleRoadRoutePanel } from "../../routes/google-road-route-panel";
+import { kcplStaffRoleLabels } from "../../staff-permissions";
 import { JobFileWorkspace } from "./job-file-workspace";
 
 export const dynamic = "force-dynamic";
@@ -21,14 +22,17 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is assigned to a KCPL branch outside your staff profile."/>;
 
   const roadOrigin = result.job.current_location || result.job.origin;
+  const roleLabel = kcplStaffRoleLabels[staff.permissions.role];
   return (
     <OperationsShell
       userName={access.user.displayName}
+      roleLabel={roleLabel}
       canManageStaff={staff.permissions.canManageStaff}
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
-      {roadOrigin && result.job.destination ? <GoogleRoadRoutePanel initialOrigin={roadOrigin} initialDestination={result.job.destination} compact/> : null}
+      {staff.permissions.canManageJobCosts ? <div className="border-b border-[#e5e7ea] bg-[#fafafa] px-4 py-2.5 sm:px-6"><div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-end gap-2"><Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button ops-button-secondary">Job profitability</Link>{staff.permissions.canManageFinance ? <><Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="ops-button ops-button-primary">Create invoice</Link><Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button ops-button-secondary">Add supplier bill</Link></> : null}</div></div> : null}
+      {roadOrigin && result.job.destination ? <div className="ops-page-body pb-0"><GoogleRoadRoutePanel initialOrigin={roadOrigin} initialDestination={result.job.destination} compact/></div> : null}
       <JobFileWorkspace
         initialJob={result.job}
         role={staff.permissions.role}
@@ -36,21 +40,10 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
         currentUserName={access.user.displayName}
         currentUserEmail={access.user.email}
       />
-      {staff.permissions.canManageJobCosts ? (
-        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
-          <Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="rounded-lg bg-[#10263f] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-white shadow-lg">Job profitability</Link>
-          {staff.permissions.canManageFinance ? (
-            <>
-              <Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-white shadow-lg">Create invoice</Link>
-              <Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="rounded-lg bg-[#b78a3e] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-white shadow-lg">Add supplier bill</Link>
-            </>
-          ) : null}
-        </div>
-      ) : null}
     </OperationsShell>
   );
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Digital Job File</p><h1 className="mt-3 text-2xl font-bold">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Operations</Link><Link href="/admin/crm" className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Customers</Link></div></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f7f7f5] p-6 text-[#1c2025]"><section className="w-full max-w-xl rounded-xl border border-[#e2e5e8] bg-white p-8"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#717a86]">KCPL Digital Job File</p><h1 className="mt-3 text-2xl font-semibold tracking-[-.03em]">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68717a]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/shipments" className="ops-button ops-button-primary">Shipments</Link><Link href="/admin/crm" className="ops-button ops-button-secondary">Customers</Link></div></section></main>;
 }
