@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import {
   ArrowRight,
   Building2,
@@ -12,53 +11,37 @@ import {
   MessageSquareText,
   Package,
   Phone,
-  Search,
   Send,
   UserRound,
 } from "lucide-react";
 import { quoteCurrencies } from "./admin-data";
 import type { QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 import { AdminShipmentPanel } from "./admin-shipment-panel";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";
 
-const statusLabels: Record<QuoteStatus, string> = {
-  new: "New",
-  reviewing: "Pending",
-  quoted: "Quoted",
-  won: "Won",
-  lost: "Lost",
-};
-
-const statusStyles: Record<QuoteStatus, { chip: string; dot: string }> = {
-  new: { chip: "border-sky-200 bg-sky-50 text-sky-700", dot: "bg-sky-500" },
-  reviewing: { chip: "border-amber-200 bg-amber-50 text-amber-800", dot: "bg-amber-500" },
-  quoted: { chip: "border-violet-200 bg-violet-50 text-violet-700", dot: "bg-violet-500" },
-  won: { chip: "border-emerald-200 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
-  lost: { chip: "border-rose-200 bg-rose-50 text-rose-700", dot: "bg-rose-500" },
-};
-
+const statusLabels: Record<QuoteStatus, string> = { new: "New", reviewing: "Reviewing", quoted: "Quoted", won: "Won", lost: "Lost" };
 const statusOptions: Array<"all" | QuoteStatus> = ["all", "new", "reviewing", "quoted", "won", "lost"];
-const detailTabs = ["overview", "commercial", "shipment", "activity"] as const;
+const detailTabs = ["overview", "pricing", "shipment", "activity"] as const;
 type DetailTab = (typeof detailTabs)[number];
 
-const inputClass = "mt-1.5 h-10 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 text-sm text-[#10263f] outline-none transition focus:border-[#aa8748] focus:bg-white";
+const modeLabels: Record<string, string> = { air: "Air freight", sea: "Sea freight", road: "Road freight", unsure: "Mode not decided" };
 
-const modeLabels: Record<string, string> = {
-  air: "Air freight",
-  sea: "Sea freight",
-  road: "Road freight",
-  unsure: "Mode not decided",
-};
+function statusTone(status: QuoteStatus): "info" | "warning" | "violet" | "success" | "danger" {
+  if (status === "new") return "info";
+  if (status === "reviewing") return "warning";
+  if (status === "quoted") return "violet";
+  if (status === "won") return "success";
+  return "danger";
+}
 
 function formatDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function formatDateOnly(value: string) {
   const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
 }
 
 function cargoDimensions(quote: QuoteDetail) {
@@ -79,15 +62,8 @@ function amountNumber(value: string | null) {
 function formatMoney(value: string | number, currency: QuoteCurrency) {
   const amount = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(amount)) return `${currency} ${value}`;
-  try {
-    return new Intl.NumberFormat("en-AU", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 3,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount.toLocaleString("en-AU")}`;
-  }
+  try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
+  catch { return `${currency} ${amount.toLocaleString("en-AU")}`; }
 }
 
 function commercialMetrics(quote: QuoteDetail) {
@@ -95,7 +71,7 @@ function commercialMetrics(quote: QuoteDetail) {
   const cost = amountNumber(quote.internal_cost);
   if (quoted === null || quoted <= 0 || cost === null) return null;
   const profit = quoted - cost;
-  return { profit, margin: (profit / quoted) * 100 };
+  return { quoted, cost, profit, margin: (profit / quoted) * 100 };
 }
 
 function quoteEmail(quote: QuoteDetail) {
@@ -103,31 +79,13 @@ function quoteEmail(quote: QuoteDetail) {
   const validity = quote.valid_until ? formatDateOnly(quote.valid_until) : "As discussed";
   const greetingName = quote.contact_name.trim().split(/\s+/)[0] || quote.contact_name;
   const lines = [
-    `Dear ${greetingName},`,
-    "",
-    "Thank you for your freight enquiry with Kapileshwor Cargo Pvt. Ltd. (KCPL).",
-    "",
-    `Quote reference: ${quote.reference}`,
-    `Route: ${quote.origin} → ${quote.destination}`,
-    `Mode: ${modeLabels[quote.mode] ?? quote.mode}`,
-    `Quoted price: ${price}`,
-    `Valid until: ${validity}`,
+    `Dear ${greetingName},`, "", "Thank you for your freight enquiry with Kapileshwor Cargo Pvt. Ltd. (KCPL).", "",
+    `Quote reference: ${quote.reference}`, `Route: ${quote.origin} → ${quote.destination}`,
+    `Mode: ${modeLabels[quote.mode] ?? quote.mode}`, `Quoted price: ${price}`, `Valid until: ${validity}`,
   ];
-
   if (quote.customer_quote_note?.trim()) lines.push("", quote.customer_quote_note.trim());
-
-  lines.push(
-    "",
-    "Please reply to this email if you would like to proceed or if you need any changes to the quotation.",
-    "",
-    "Regards,",
-    "Kapileshwor Cargo Pvt. Ltd. (KCPL)",
-  );
-
-  return {
-    subject: `KCPL Freight Quote ${quote.reference}: ${quote.origin} to ${quote.destination}`,
-    body: lines.join("\n"),
-  };
+  lines.push("", "Please reply to this email if you would like to proceed or if you need any changes to the quotation.", "", "Regards,", "Kapileshwor Cargo Pvt. Ltd. (KCPL)");
+  return { subject: `KCPL Freight Quote ${quote.reference}: ${quote.origin} to ${quote.destination}`, body: lines.join("\n") };
 }
 
 export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[] }) {
@@ -155,26 +113,24 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
     return quotes.filter((quote) => {
       if (statusFilter !== "all" && quote.status !== statusFilter) return false;
       if (!needle) return true;
-      return [quote.reference, quote.origin, quote.destination, quote.contact_name, quote.company_name ?? "", quote.assigned_to ?? ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(needle);
+      return [quote.reference, quote.origin, quote.destination, quote.contact_name, quote.company_name ?? "", quote.assigned_to ?? ""].join(" ").toLowerCase().includes(needle);
     });
   }, [query, quotes, statusFilter]);
 
   useEffect(() => {
     if (!selectedReference) return;
     const controller = new AbortController();
+    setLoading(true);
     fetch(`/api/admin/quotes/${encodeURIComponent(selectedReference)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
-        const data = await response.json() as { ok?: boolean; quote?: QuoteDetail; error?: string };
-        if (!response.ok || !data.quote) throw new Error(data.error || "Could not load the quote.");
+        const data = await response.json() as { quote?: QuoteDetail; error?: string };
+        if (!response.ok || !data.quote) throw new Error(data.error || "Could not load the enquiry.");
         setDetail(data.quote);
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setDetail(null);
-        setNotice(error instanceof Error ? error.message : "Could not load the quote.");
+        setNotice(error instanceof Error ? error.message : "Could not load the enquiry.");
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
@@ -182,85 +138,51 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
 
   function selectQuote(reference: string) {
     if (reference === selectedReference) return;
-    setDetail(null);
-    setNotice("");
-    setLoading(true);
-    setActiveTab("overview");
-    setSelectedReference(reference);
+    setDetail(null); setNotice(""); setActiveTab("overview"); setSelectedReference(reference);
   }
 
   async function saveQuote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!detail) return;
-    setSaving(true);
-    setNotice("");
+    setSaving(true); setNotice("");
     try {
       const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
+        method: "PATCH", headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "workflow", status: detail.status, assignedTo: detail.assigned_to ?? "" }),
       });
-      const data = await response.json() as { ok?: boolean; shipment?: QuoteDetail["shipment"]; error?: string };
-      if (!response.ok) throw new Error(data.error || "Could not save the quote.");
-
-      setQuotes((current) => current.map((quote) => quote.reference === detail.reference
-        ? { ...quote, status: detail.status, assigned_to: detail.assigned_to }
-        : quote));
-
+      const data = await response.json() as { shipment?: QuoteDetail["shipment"]; error?: string };
+      if (!response.ok) throw new Error(data.error || "Could not save the enquiry workflow.");
+      setQuotes((current) => current.map((quote) => quote.reference === detail.reference ? { ...quote, status: detail.status, assigned_to: detail.assigned_to } : quote));
       if (data.shipment) {
         setDetail((current) => current ? { ...current, shipment: data.shipment ?? current.shipment } : current);
         setNotice(`Quote won. Shipment ${data.shipment.reference} is ready.`);
         setActiveTab("shipment");
-      } else {
-        setNotice("Quote workflow updated.");
-      }
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save the quote.");
-    } finally {
-      setSaving(false);
-    }
+      } else setNotice("Enquiry workflow updated.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not save the enquiry workflow."); }
+    finally { setSaving(false); }
   }
 
   async function persistCommercial(showNotice = true) {
     if (!detail) return false;
-    setSaving(true);
-    setNotice("");
+    setSaving(true); setNotice("");
     try {
       const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          action: "commercial",
-          currency: detail.quote_currency,
-          quotedAmount: detail.quoted_amount ?? "",
-          internalCost: detail.internal_cost ?? "",
-          validUntil: detail.valid_until ?? "",
-          customerNote: detail.customer_quote_note ?? "",
-        }),
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "commercial", currency: detail.quote_currency, quotedAmount: detail.quoted_amount ?? "", internalCost: detail.internal_cost ?? "", validUntil: detail.valid_until ?? "", customerNote: detail.customer_quote_note ?? "" }),
       });
-      const data = await response.json() as { ok?: boolean; error?: string };
-      if (!response.ok) throw new Error(data.error || "Could not save the commercial quote.");
-      if (showNotice) setNotice("Commercial quote saved.");
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Could not save pricing.");
+      if (showNotice) setNotice("Pricing saved.");
       return true;
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save the commercial quote.");
-      return false;
-    } finally {
-      setSaving(false);
-    }
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not save pricing."); return false; }
+    finally { setSaving(false); }
   }
 
-  async function saveCommercial(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    await persistCommercial();
-  }
+  async function saveCommercial(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await persistCommercial(); }
 
   async function sendQuote() {
     if (!detail) return;
-    if (!detail.quoted_amount?.trim()) {
-      setNotice("Add a quoted price before preparing the customer email.");
-      return;
-    }
+    if (!detail.quoted_amount?.trim()) { setNotice("Add a customer price before preparing the quote email."); return; }
     const saved = await persistCommercial(false);
     if (!saved) return;
     const email = quoteEmail(detail);
@@ -271,168 +193,108 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
   async function addNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!detail || !noteDraft.trim()) return;
-    setSaving(true);
-    setNotice("");
+    setSaving(true); setNotice("");
     try {
-      const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ note: noteDraft }),
-      });
-      const data = await response.json() as { ok?: boolean; note?: QuoteDetail["notes"][number]; error?: string };
+      const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ note: noteDraft }) });
+      const data = await response.json() as { note?: QuoteDetail["notes"][number]; error?: string };
       if (!response.ok || !data.note) throw new Error(data.error || "Could not save the note.");
       setDetail((current) => current ? { ...current, notes: [data.note!, ...current.notes], note_count: current.note_count + 1 } : current);
-      setQuotes((current) => current.map((quote) => quote.reference === detail.reference
-        ? { ...quote, note_count: quote.note_count + 1 }
-        : quote));
-      setNoteDraft("");
-      setNotice("Internal note added.");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save the note.");
-    } finally {
-      setSaving(false);
-    }
+      setQuotes((current) => current.map((quote) => quote.reference === detail.reference ? { ...quote, note_count: quote.note_count + 1 } : quote));
+      setNoteDraft(""); setNotice("Internal note added.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not save the note."); }
+    finally { setSaving(false); }
   }
 
   const metrics = detail ? commercialMetrics(detail) : null;
 
-  return <main className="min-h-[calc(100vh-56px)] bg-[#f5f6f7] text-[#10263f] lg:min-h-screen">
-    <div className="grid min-h-[calc(100vh-56px)] lg:h-screen lg:min-h-0 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="flex max-h-[44vh] min-h-0 flex-col border-b border-[#dfe3e8] bg-white lg:max-h-none lg:border-b-0 lg:border-r">
-        <div className="border-b border-[#e8ebee] p-4">
-          <div className="flex items-end justify-between gap-3">
-            <div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#8a6c36]">Enquiries</p><p className="mt-1 text-sm font-bold">{quotes.length} freight requests</p></div>
-            <span className="text-[10px] font-medium text-[#929ba3]">{filtered.length} shown</span>
+  return (
+    <main className="min-h-[calc(100vh-58px)] bg-[#f8f6f3]">
+      <div className="ops-split">
+        <aside className="ops-split-list flex max-h-[46vh] min-h-0 flex-col lg:max-h-[calc(100vh-58px)]">
+          <div className="border-b border-[#e9e2dc] p-4">
+            <div className="flex items-end justify-between gap-3"><div><p className="ops-eyebrow">Enquiry desk</p><h1 className="mt-1 text-[18px] font-[730] tracking-[-.035em] text-[#3b342f]">Freight requests</h1></div><span className="text-[9px] font-semibold text-[#9c928a]">{filtered.length}/{quotes.length}</span></div>
+            <OpsSearch className="mt-3" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search reference, customer or route"/>
+            <div className="ops-filter-pills mt-3">{statusOptions.map((item) => <button key={item} type="button" className="ops-filter-pill" data-active={statusFilter === item || undefined} onClick={() => setStatusFilter(item)}>{item === "all" ? "All" : statusLabels[item]} <span className="ml-1 opacity-55">{item === "all" ? quotes.length : statusCounts[item]}</span></button>)}</div>
           </div>
-          <div className="relative mt-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#84909b]" size={16}/><input className="h-10 w-full rounded-lg border border-[#dfe3e8] bg-[#f8f9fa] pl-9 pr-3 text-sm outline-none transition focus:border-[#9e7b3e] focus:bg-white" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search enquiries"/></div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {statusOptions.map((status) => {
-              const active = statusFilter === status;
-              const count = status === "all" ? quotes.length : statusCounts[status];
-              return <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition ${active ? "border-[#10263f] bg-[#10263f] text-white" : "border-[#e1e5e9] bg-white text-[#5f6b76] hover:bg-[#f5f6f7]"}`}>{status === "all" ? "All" : statusLabels[status]} <span className={active ? "text-white/55" : "text-[#9aa3ab]"}>{count}</span></button>;
-            })}
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {filtered.length ? filtered.map((quote) => {
+              const selected = selectedReference === quote.reference;
+              return <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className="ops-record-row block w-full border-b border-[#eee7e1] px-4 py-3.5 text-left" data-selected={selected || undefined}>
+                <div className="flex items-center justify-between gap-2"><OpsMono className="truncate text-[10px] text-[#514840]">{quote.reference}</OpsMono><OpsBadge tone={statusTone(quote.status)} dot>{statusLabels[quote.status]}</OpsBadge></div>
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#514840]"><span className="truncate">{quote.origin}</span><ArrowRight size={11} className="shrink-0 text-[#c47b64]"/><span className="truncate">{quote.destination}</span></div>
+                <p className="mt-1 truncate text-[9px] text-[#857b73]">{quote.company_name || quote.contact_name}{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</p>
+                <div className="mt-2 flex items-center justify-between text-[8px] text-[#a0968e]"><span>{formatDate(quote.created_at)}</span>{quote.note_count ? <span className="flex items-center gap-1"><MessageSquareText size={10}/>{quote.note_count}</span> : null}</div>
+              </button>;
+            }) : <OpsEmptyState title="No enquiries match" description="Try a different status or search term."/>}
           </div>
-        </div>
+        </aside>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {filtered.length === 0 && <div className="p-6 text-sm leading-6 text-[#7b858f]">No enquiries match this view.</div>}
-          {filtered.map((quote) => {
-            const selected = selectedReference === quote.reference;
-            return <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className={`block w-full border-b border-[#edf0f2] px-4 py-3.5 text-left transition ${selected ? "bg-[#f2f4f5] shadow-[inset_3px_0_0_#b78a3e]" : "hover:bg-[#fafbfb]"}`}>
-              <div className="flex items-center justify-between gap-3"><strong className="truncate text-xs font-bold text-[#263a50]">{quote.reference}</strong><span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusStyles[quote.status].chip}`}><span className={`h-1.5 w-1.5 rounded-full ${statusStyles[quote.status].dot}`}/>{statusLabels[quote.status]}</span></div>
-              <div className="mt-2 flex min-w-0 items-center gap-1.5 text-sm font-semibold"><span className="truncate">{quote.origin}</span><ArrowRight size={13} className="shrink-0 text-[#9ca4ab]"/><span className="truncate">{quote.destination}</span></div>
-              <p className="mt-1 truncate text-xs text-[#69747e]">{quote.company_name || quote.contact_name}{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</p>
-              <div className="mt-2 flex items-center justify-between text-[10px] text-[#9aa3ab]"><span>{formatDate(quote.created_at)}</span>{quote.note_count > 0 && <span className="flex items-center gap-1"><MessageSquareText size={11}/>{quote.note_count}</span>}</div>
-            </button>;
-          })}
-        </div>
-      </aside>
+        <section className="ops-split-detail min-h-0 overflow-y-auto">
+          {!selectedReference ? <OpsEmptyState icon={<Package size={18}/>} title="Choose an enquiry" description="Select a freight request from the inbox to review cargo, price the job and convert it into a shipment."/> : null}
+          {loading ? <div className="grid min-h-[55vh] place-items-center text-[10px] font-semibold text-[#90867e]">Loading enquiry…</div> : null}
+          {!loading && selectedReference && !detail ? <div className="p-5"><OpsNotice tone="danger">{notice || "This enquiry could not be loaded."}</OpsNotice></div> : null}
 
-      <section className="min-w-0 overflow-y-auto">
-        {!selectedReference && <EmptyState/>}
-        {loading && <div className="flex min-h-[55vh] items-center justify-center text-sm text-[#7c8791]">Loading enquiry…</div>}
-        {!loading && selectedReference && !detail && <div className="m-6 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{notice || "This enquiry could not be loaded."}</div>}
-
-        {!loading && detail && <>
-          <div className="sticky top-0 z-20 border-b border-[#dfe3e8] bg-white/95 backdrop-blur">
-            <div className="px-5 py-4 lg:px-7">
+          {!loading && detail ? <>
+            <header className="sticky top-[58px] z-20 border-b border-[#e8e0d9] bg-[#fffdfa]/94 px-5 py-4 backdrop-blur-xl lg:top-0">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-bold text-[#8a6c36]">{detail.reference}</p><span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusStyles[detail.status].chip}`}>{statusLabels[detail.status]}</span></div><h1 className="mt-1 flex min-w-0 items-center gap-2 text-xl font-bold tracking-[-.02em] sm:text-2xl"><span className="truncate">{detail.origin}</span><ArrowRight size={18} className="shrink-0 text-[#b78a3e]"/><span className="truncate">{detail.destination}</span></h1><p className="mt-1 text-xs text-[#87919a]">Received {formatDate(detail.created_at)}</p></div>
-                <div className="flex items-center gap-2"><a href={`mailto:${detail.contact_email}`} className="rounded-lg border border-[#dfe3e8] bg-white px-3 py-2 text-xs font-semibold hover:bg-[#f7f8f9]">Email customer</a>{detail.phone && <a href={`tel:${detail.phone}`} className="rounded-lg border border-[#dfe3e8] bg-white px-3 py-2 text-xs font-semibold hover:bg-[#f7f8f9]">Call</a>}</div>
+                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><OpsMono className="text-[9px] text-[#a06451]">{detail.reference}</OpsMono><OpsBadge tone={statusTone(detail.status)} dot>{statusLabels[detail.status]}</OpsBadge></div><h2 className="mt-2 flex items-center gap-2 text-[22px] font-[735] tracking-[-.045em] text-[#3a322d]"><span className="truncate">{detail.origin}</span><ArrowRight size={15} className="shrink-0 text-[#c87960]"/><span className="truncate">{detail.destination}</span></h2><p className="mt-1 text-[9px] text-[#968c84]">{detail.company_name || detail.contact_name} · received {formatDate(detail.created_at)}</p></div>
+                <div className="flex flex-wrap items-center gap-2"><a href={`mailto:${detail.contact_email}`} className="ops-button" data-variant="secondary" data-size="sm"><Mail size={11}/>Email</a>{detail.phone ? <a href={`tel:${detail.phone}`} className="ops-button" data-variant="secondary" data-size="sm"><Phone size={11}/>Call</a> : null}{detail.quoted_amount ? <OpsButton variant="primary" size="sm" onClick={sendQuote}><Send size={11}/>Prepare quote email</OpsButton> : null}</div>
               </div>
-            </div>
-            <nav className="flex gap-5 overflow-x-auto px-5 lg:px-7">
-              {detailTabs.map((tab) => <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`border-b-2 pb-3 text-xs font-semibold capitalize transition ${activeTab === tab ? "border-[#b78a3e] text-[#10263f]" : "border-transparent text-[#7b858e] hover:text-[#10263f]"}`}>{tab}{tab === "activity" && detail.note_count > 0 ? ` (${detail.note_count})` : ""}</button>)}
-            </nav>
-          </div>
+              <nav className="ops-segmented mt-4">{detailTabs.map((tab) => <button key={tab} type="button" data-active={activeTab === tab || undefined} onClick={() => setActiveTab(tab)}>{tab === "activity" ? `Activity${detail.note_count ? ` · ${detail.note_count}` : ""}` : tab}</button>)}</nav>
+            </header>
 
-          <div className="mx-auto max-w-[1280px] p-4 sm:p-5 lg:p-7">
-            {notice && <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#dfe3e8] bg-white px-4 py-3 text-xs font-medium text-[#42505e]"><span>{notice}</span><button type="button" onClick={() => setNotice("")} className="text-[#88929a] hover:text-[#10263f]">Dismiss</button></div>}
+            <div className="ops-content ops-stack">
+              {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("add a") ? "warning" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
 
-            {activeTab === "overview" && <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px]">
-              <div className="space-y-4">
-                <Panel title="Cargo details" eyebrow="Enquiry">
-                  <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <Info icon={<MapPin size={16}/>} label="Route" value={`${detail.origin} → ${detail.destination}`}/>
-                    <Info icon={<Package size={16}/>} label="Mode" value={modeLabels[detail.mode] ?? detail.mode}/>
-                    <Info label="Cargo type" value={detail.cargo_type || "Not provided"}/>
-                    <Info label="Weight" value={cargoWeight(detail)}/>
-                    <Info label="Dimensions" value={cargoDimensions(detail)}/>
-                    <Info icon={<Clock3 size={16}/>} label="Preferred timing" value={detail.timing || "Not provided"}/>
-                  </div>
-                  {detail.requirements && <div className="mt-5 border-t border-[#edf0f2] pt-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#89929a]">Customer requirements</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#4f5b66]">{detail.requirements}</p></div>}
-                </Panel>
+              {activeTab === "overview" ? <div className="ops-grid-main">
+                <div className="ops-stack">
+                  <OpsSurface eyebrow="Request" title="Cargo & route" description="The customer’s original freight requirement.">
+                    <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3"><Info icon={<MapPin size={12}/>} label="Route" value={`${detail.origin} → ${detail.destination}`}/><Info icon={<Package size={12}/>} label="Mode" value={modeLabels[detail.mode] ?? detail.mode}/><Info label="Cargo type" value={detail.cargo_type || "Not provided"}/><Info label="Weight" value={cargoWeight(detail)}/><Info label="Dimensions" value={cargoDimensions(detail)}/><Info icon={<Clock3 size={12}/>} label="Preferred timing" value={detail.timing || "Not provided"}/></div>
+                    {detail.requirements ? <div className="mt-5 border-t border-[#eee7e1] pt-4"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9d938b]">Customer requirements</p><p className="mt-2 whitespace-pre-wrap text-[10px] leading-6 text-[#6c625a]">{detail.requirements}</p></div> : null}
+                  </OpsSurface>
+                  <OpsSurface eyebrow="Contact" title="Customer"><div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3"><Info icon={<UserRound size={12}/>} label="Name" value={detail.contact_name}/><Info icon={<Building2 size={12}/>} label="Company" value={detail.company_name || "Not provided"}/><Info icon={<Mail size={12}/>} label="Email" value={detail.contact_email} href={`mailto:${detail.contact_email}`}/><Info icon={<Phone size={12}/>} label="Phone" value={detail.phone || "Not provided"} href={detail.phone ? `tel:${detail.phone}` : undefined}/><Info icon={<CalendarDays size={12}/>} label="Validity" value={detail.valid_until ? formatDateOnly(detail.valid_until) : "Not set"}/></div></OpsSurface>
+                </div>
 
-                <Panel title="Customer" eyebrow="Contact">
-                  <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <Info icon={<UserRound size={16}/>} label="Name" value={detail.contact_name}/>
-                    <Info icon={<Building2 size={16}/>} label="Company" value={detail.company_name || "Not provided"}/>
-                    <Info icon={<Mail size={16}/>} label="Email" value={detail.contact_email} href={`mailto:${detail.contact_email}`}/>
-                    <Info icon={<Phone size={16}/>} label="Phone" value={detail.phone || "Not provided"} href={detail.phone ? `tel:${detail.phone}` : undefined}/>
-                    <Info icon={<CalendarDays size={16}/>} label="Quote validity" value={detail.valid_until ? formatDateOnly(detail.valid_until) : "Not set"}/>
-                  </div>
-                </Panel>
-              </div>
+                <aside className="ops-stack xl:sticky xl:top-[132px]">
+                  <OpsSurface eyebrow="Workflow" title="Ownership & status">
+                    <form onSubmit={saveQuote} className="grid gap-3"><OpsField label="Status"><select value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></OpsField><OpsField label="Assigned to"><input value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></OpsField><OpsButton variant="primary" disabled={saving}>{saving ? "Saving…" : "Save workflow"}</OpsButton></form>
+                  </OpsSurface>
+                  <OpsSurface eyebrow="Commercial" title="Quote snapshot"><div className="grid grid-cols-2 gap-2"><Snapshot label="Customer price" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "Not quoted"}/><Snapshot label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"}/></div><OpsButton variant="ghost" size="sm" className="mt-3" onClick={() => setActiveTab("pricing")}>Open pricing workspace <ArrowRight size={11}/></OpsButton></OpsSurface>
+                  {detail.shipment ? <OpsSurface eyebrow="Won business" title={<OpsMono>{detail.shipment.reference}</OpsMono>} description="A shipment and Digital Job File already exist for this quote."><div className="flex flex-wrap gap-2"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div></OpsSurface> : null}
+                </aside>
+              </div> : null}
 
-              <div className="space-y-4">
-                <form onSubmit={saveQuote} className="rounded-xl border border-[#dfe3e8] bg-white p-4">
-                  <div className="mb-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#89929a]">Workflow</p><h2 className="mt-1 text-base font-bold">Ownership & status</h2></div>
-                  <label className="block text-[11px] font-semibold text-[#5e6973]">Status<select className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm font-semibold outline-none ${statusStyles[detail.status].chip}`} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-                  <label className="mt-3 block text-[11px] font-semibold text-[#5e6973]">Assigned to<input className="mt-1.5 h-10 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 text-sm outline-none focus:border-[#aa8748] focus:bg-white" value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></label>
-                  <button disabled={saving} className="mt-4 h-10 w-full rounded-lg bg-[#10263f] px-4 text-xs font-bold text-white transition hover:bg-[#183651] disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save workflow"}</button>
+              {activeTab === "pricing" ? <OpsSurface eyebrow="Pricing worksheet" title="Build the customer offer" description="Sell price, internal cost and margin stay visible together. Internal cost never enters the customer email.">
+                <form onSubmit={saveCommercial} className="grid gap-5">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><OpsField label="Currency"><select value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></OpsField><OpsField label="Customer price"><input inputMode="decimal" value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00"/></OpsField><OpsField label="Internal cost" hint="KCPL only"><input inputMode="decimal" value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00"/></OpsField><OpsField label="Valid until"><input type="date" value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></OpsField></div>
+                  <div className="grid gap-2 sm:grid-cols-4"><PricingMetric label="Sell" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "—"}/><PricingMetric label="Cost" value={detail.internal_cost ? formatMoney(detail.internal_cost, detail.quote_currency) : "—"}/><PricingMetric label="Profit" value={metrics ? formatMoney(metrics.profit, detail.quote_currency) : "—"} tone={metrics && metrics.profit < 0 ? "danger" : "success"}/><PricingMetric label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"} tone={metrics && metrics.margin < 10 ? "warning" : "success"}/></div>
+                  <OpsField label="Customer-facing note" hint="Included in the prepared quote email"><textarea value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Scope, inclusions, exclusions, transit assumptions or next steps…"/></OpsField>
+                  <div className="flex flex-wrap gap-2"><OpsButton variant="primary" disabled={saving}>{saving ? "Saving…" : "Save pricing"}</OpsButton><OpsButton type="button" variant="secondary" disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote}><Send size={12}/>Save & prepare email</OpsButton></div>
                 </form>
+              </OpsSurface> : null}
 
-                <div className="rounded-xl border border-[#dfe3e8] bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#89929a]">Commercial snapshot</p><div className="mt-3 grid grid-cols-2 gap-3"><Metric label="Customer price" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "Not quoted"}/><Metric label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"}/></div><button type="button" onClick={() => setActiveTab("commercial")} className="mt-3 text-xs font-bold text-[#80612e] hover:underline">Open pricing workspace →</button></div>
+              {activeTab === "shipment" ? <OpsSurface eyebrow="Shipment" title={detail.shipment ? <OpsMono>{detail.shipment.reference}</OpsMono> : "Shipment workspace"} description={detail.shipment ? "Continue operational tracking without leaving the enquiry context." : "A shipment is created automatically when the enquiry is saved as Won."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={setNotice}/></OpsSurface> : null}
 
-                {detail.shipment && <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-emerald-700">Active shipment</p><p className="mt-1 text-sm font-bold text-[#173c2d]">{detail.shipment.reference}</p><div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={() => setActiveTab("shipment")} className="text-xs font-bold text-emerald-800 hover:underline">Open shipment workspace →</button><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="text-xs font-bold text-emerald-800 hover:underline">Digital Job File →</a></div></div>}
-              </div>
-            </div>}
-
-            {activeTab === "commercial" && <Panel title="Pricing & customer offer" eyebrow="Commercial">
-              <form onSubmit={saveCommercial} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field label="Currency"><select className={inputClass} value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></Field>
-                <Field label="Quoted price"><input inputMode="decimal" className={inputClass} value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00" maxLength={16}/></Field>
-                <Field label="Internal cost" hint="Never included in customer email"><input inputMode="decimal" className={inputClass} value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00" maxLength={16}/></Field>
-                <Field label="Valid until"><input type="date" className={inputClass} value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></Field>
-
-                <div className="grid gap-3 md:col-span-2 md:grid-cols-2 xl:col-span-4 xl:max-w-xl"><Metric label="Gross profit" value={metrics ? formatMoney(metrics.profit, detail.quote_currency) : "—"} negative={Boolean(metrics && metrics.profit < 0)}/><Metric label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"} negative={Boolean(metrics && metrics.margin < 0)}/></div>
-
-                <label className="md:col-span-2 xl:col-span-4"><span className="text-[11px] font-semibold text-[#5f6973]">Customer quote note</span><textarea className="mt-1.5 min-h-28 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] p-3 text-sm leading-6 outline-none focus:border-[#aa8748] focus:bg-white" value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Inclusions, exclusions, transit notes or payment terms…" maxLength={4000}/></label>
-
-                <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-4"><button disabled={saving} className="h-10 rounded-lg bg-[#10263f] px-4 text-xs font-bold text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save quote"}</button><button disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote} className="flex h-10 items-center gap-2 rounded-lg bg-[#b78a3e] px-4 text-xs font-bold text-white disabled:opacity-40" type="button"><Send size={14}/> Prepare customer email</button></div>
-              </form>
-            </Panel>}
-
-            {activeTab === "shipment" && (detail.shipment || detail.status === "won" ? <AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={setNotice}/> : <Panel title="Shipment workspace" eyebrow="Operations"><p className="text-sm leading-6 text-[#66717b]">A shipment record is created automatically when the quote is marked as Won. Update the workflow status from Overview when the customer confirms.</p></Panel>)}
-
-            {activeTab === "activity" && <Panel title="Team notes" eyebrow="Internal activity">
-              <form onSubmit={addNote}><textarea className="min-h-24 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] p-3 text-sm leading-6 outline-none focus:border-[#aa8748] focus:bg-white" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Add a private note for the KCPL team…" maxLength={3000}/><div className="mt-2 flex justify-end"><button disabled={saving || !noteDraft.trim()} type="submit" className="h-9 rounded-lg bg-[#10263f] px-4 text-xs font-bold text-white disabled:opacity-50">Add note</button></div></form>
-              <div className="mt-5 divide-y divide-[#edf0f2] border-t border-[#edf0f2]">{detail.notes.length === 0 && <p className="py-5 text-sm text-[#828c95]">No internal notes yet.</p>}{detail.notes.map((note) => <div key={note.id} className="py-4"><p className="whitespace-pre-wrap text-sm leading-6 text-[#46525e]">{note.note}</p><p className="mt-2 text-[10px] font-medium text-[#9099a1]">{note.author_name} · {formatDate(note.created_at)}</p></div>)}</div>
-            </Panel>}
-          </div>
-        </>}
-      </section>
-    </div>
-  </main>;
+              {activeTab === "activity" ? <OpsSurface eyebrow="Internal activity" title="Notes & decisions" description="A lightweight record of the conversation around this enquiry.">
+                <form onSubmit={addNote} className="flex flex-col gap-2 sm:flex-row"><textarea className="ops-input min-h-[74px] flex-1 resize-y" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Add an internal note, customer callback, pricing decision or follow-up…"/><OpsButton variant="primary" disabled={saving || !noteDraft.trim()}><MessageSquareText size={12}/>Add note</OpsButton></form>
+                <div className="mt-5 divide-y divide-[#eee7e1]">{detail.notes.length ? detail.notes.map((note) => <article key={note.id} className="py-3.5"><p className="whitespace-pre-wrap text-[10px] leading-5 text-[#615850]">{note.note}</p><p className="mt-2 text-[8px] font-semibold text-[#9e948c]">{note.author_name || note.author_email} · {formatDate(note.created_at)}</p></article>) : <OpsEmptyState icon={<MessageSquareText size={17}/>} title="No internal notes yet" description="Use notes for decisions and follow-ups that do not belong in the customer-facing quote."/>}</div>
+              </OpsSurface> : null}
+            </div>
+          </> : null}
+        </section>
+      </div>
+    </main>
+  );
 }
 
-function EmptyState() {
-  return <div className="flex min-h-[70vh] items-center justify-center p-6"><div className="max-w-sm text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-[#dfe3e8] bg-white text-[#9a783d]"><Package size={19}/></div><h2 className="mt-4 text-lg font-bold">No quote enquiries yet</h2><p className="mt-1 text-sm leading-6 text-[#7d8790]">New website enquiries will appear here automatically.</p></div></div>;
+function Info({ icon, label, value, href }: { icon?: React.ReactNode; label: string; value: string; href?: string }) {
+  const content = <p className="mt-1.5 break-words text-[10px] font-semibold text-[#5c534c]">{value}</p>;
+  return <div><p className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{icon}{label}</p>{href ? <a href={href} className="hover:underline">{content}</a> : content}</div>;
 }
 
-function Panel({ title, eyebrow, children }: { title: string; eyebrow: string; children: ReactNode }) {
-  return <article className="rounded-xl border border-[#dfe3e8] bg-white p-4 sm:p-5"><div className="mb-5"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#8b744d]">{eyebrow}</p><h2 className="mt-1 text-base font-bold tracking-[-.01em]">{title}</h2></div>{children}</article>;
-}
+function Snapshot({ label, value }: { label: string; value: string }) { return <div className="rounded-[12px] border border-[#ebe3dc] bg-[#faf7f4] p-3"><p className="text-[8px] font-bold uppercase tracking-[.07em] text-[#9b9189]">{label}</p><p className="mt-1.5 text-[11px] font-bold text-[#514840]">{value}</p></div>; }
 
-function Metric({ label, value, negative = false }: { label: string; value: string; negative?: boolean }) {
-  return <div className="rounded-lg border border-[#e4e7ea] bg-[#f8f9fa] p-3"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#89939c]">{label}</p><p className={`mt-1.5 text-base font-bold ${negative ? "text-rose-700" : "text-[#10263f]"}`}>{value}</p></div>;
-}
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return <label><span className="text-[11px] font-semibold text-[#5f6973]">{label}</span>{children}{hint && <span className="mt-1 block text-[10px] text-[#9aa2a9]">{hint}</span>}</label>;
-}
-
-function Info({ icon, label, value, href }: { icon?: ReactNode; label: string; value: string; href?: string }) {
-  const content = href ? <a href={href} className="font-semibold text-[#10263f] underline decoration-[#b78a3e]/35 underline-offset-4">{value}</a> : <strong className="font-semibold text-[#263a50]">{value}</strong>;
-  return <div className="flex gap-2.5">{icon && <span className="mt-0.5 text-[#a27e3d]">{icon}</span>}<div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#939ca4]">{label}</p><div className="mt-1 break-words text-sm leading-5">{content}</div></div></div>;
+function PricingMetric({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "success" | "warning" | "danger" }) {
+  return <div className="rounded-[13px] border border-[#e8e0d9] bg-[#faf7f4] p-4"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{label}</p><strong className={`mt-1.5 block text-[17px] tracking-[-.035em] ${tone === "success" ? "text-[#66806b]" : tone === "warning" ? "text-[#9a682f]" : tone === "danger" ? "text-[#b65355]" : "text-[#4d443e]"}`}>{value}</strong></div>;
 }
