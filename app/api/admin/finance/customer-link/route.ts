@@ -1,7 +1,7 @@
-import { getAdminAccess } from "../../../../../admin/admin-auth";
-import { confirmInvoiceCustomerForShipment } from "../../../../../admin/finance/finance-linking.server";
-import { getStaffContext } from "../../../../../admin/staff-directory.server";
-import { isTrustedSameOriginRequest } from "../../../../../request-security";
+import { getAdminAccess } from "../../../../admin/admin-auth";
+import { confirmInvoiceCustomerForShipment } from "../../../../admin/finance/finance-linking.server";
+import { getStaffContext } from "../../../../admin/staff-directory.server";
+import { isTrustedSameOriginRequest } from "../../../../request-security";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
