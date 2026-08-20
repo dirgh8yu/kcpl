@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { CalendarDays, Clock3, ExternalLink, MapPin, Plus, Truck } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { CalendarDays, Clock3, Download, ExternalLink, FileText, MapPin, Plus, ShieldCheck, Trash2, Truck, Upload } from "lucide-react";
 import type { QuoteStatus } from "./admin-data";
 import {
   shipmentStatusLabels,
@@ -10,6 +10,11 @@ import {
   type ShipmentEvent,
   type ShipmentStatus,
 } from "../shipment-types";
+import {
+  shipmentDocumentTypeLabels,
+  shipmentDocumentTypes,
+  type ShipmentDocument,
+} from "../shipment-document-types";
 
 const shipmentStatusStyles: Record<ShipmentStatus, string> = {
   booking_confirmed: "border-sky-200 bg-sky-50 text-sky-700",
@@ -31,6 +36,12 @@ function formatDateOnly(value: string) {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function AdminShipmentPanel({
@@ -66,6 +77,32 @@ function ShipmentWorkspace({
   const [draft, setDraft] = useState(initialShipment);
   const [saving, setSaving] = useState(false);
   const [eventDraft, setEventDraft] = useState({ title: "", location: "", details: "", eventTime: "" });
+  const [documents, setDocuments] = useState<ShipmentDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [documentSaving, setDocumentSaving] = useState(false);
+  const [documentStorageAvailable, setDocumentStorageAvailable] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setDocumentsLoading(true);
+    fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = await response.json() as { documents?: ShipmentDocument[]; storageAvailable?: boolean; error?: string };
+        if (!response.ok || !data.documents) throw new Error(data.error || "Could not load shipment documents.");
+        setDocuments(data.documents);
+        setDocumentStorageAvailable(data.storageAvailable !== false);
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        onNotice(error instanceof Error ? error.message : "Could not load shipment documents.");
+      })
+      .finally(() => setDocumentsLoading(false));
+
+    return () => controller.abort();
+  }, [draft.reference, onNotice]);
 
   async function saveShipment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,6 +130,49 @@ function ShipmentWorkspace({
       onNotice(error instanceof Error ? error.message : "Could not save the shipment.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function uploadDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const body = new FormData(form);
+    setDocumentSaving(true);
+    onNotice("");
+    try {
+      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, {
+        method: "POST",
+        body,
+      });
+      const data = await response.json() as { document?: ShipmentDocument; error?: string };
+      if (!response.ok || !data.document) throw new Error(data.error || "Could not upload the document.");
+      setDocuments((current) => [data.document!, ...current]);
+      setDocumentStorageAvailable(true);
+      form.reset();
+      onNotice(`${data.document.filename} uploaded to the private shipment vault.`);
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Could not upload the document.");
+    } finally {
+      setDocumentSaving(false);
+    }
+  }
+
+  async function removeDocument(document: ShipmentDocument) {
+    if (!window.confirm(`Delete ${document.filename} from this shipment?`)) return;
+    setDocumentSaving(true);
+    onNotice("");
+    try {
+      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents/${document.id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json() as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Could not delete the document.");
+      setDocuments((current) => current.filter((item) => item.id !== document.id));
+      onNotice(`${document.filename} deleted from the shipment vault.`);
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Could not delete the document.");
+    } finally {
+      setDocumentSaving(false);
     }
   }
 
@@ -141,6 +221,27 @@ function ShipmentWorkspace({
       <label className="text-xs font-black uppercase tracking-[.13em] text-black/45 sm:col-span-2 xl:col-span-3">Customer status note<textarea className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f8f7f2] p-4 text-sm font-medium normal-case leading-6 tracking-normal text-[#10263f] outline-none focus:border-[#b78a3e]" rows={3} value={draft.customer_note ?? ""} onChange={(event) => setDraft({ ...draft, customer_note: event.target.value })} placeholder="A short update customers can safely see on the tracking page…" maxLength={2000}/></label>
       <div className="sm:col-span-2 xl:col-span-3"><button disabled={saving} type="submit" className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50">{saving ? "Saving…" : "Save shipment"}</button></div>
     </form>
+
+    <div className="mt-8 border-t border-black/10 pt-7">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div className="flex gap-3"><span className="rounded-xl bg-[#b78a3e]/10 p-2.5 text-[#b78a3e]"><FileText size={19}/></span><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#b78a3e]">Document vault</p><h4 className="mt-1 text-lg font-black">Private shipment files</h4><p className="mt-1 text-xs leading-5 text-black/45">Stored privately in Cloudflare R2. These files never appear on public tracking.</p></div></div><div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.1em] text-emerald-700"><ShieldCheck size={13}/> Admin only</div></div>
+
+      {!documentStorageAvailable && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">R2 document storage has not been bound to this Worker yet. Existing metadata remains safe, but uploads and downloads are unavailable until the binding is deployed.</div>}
+
+      <form onSubmit={uploadDocument} className="mt-5 grid gap-3 rounded-2xl border border-black/8 bg-[#f8f7f2] p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <label className="text-[10px] font-black uppercase tracking-[.12em] text-black/40">Document type<select name="documentType" defaultValue="other" className="mt-2 w-full rounded-xl border border-black/10 bg-white p-3 text-sm font-semibold normal-case tracking-normal text-[#10263f] outline-none focus:border-[#b78a3e]">{shipmentDocumentTypes.map((type) => <option value={type} key={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></label>
+        <label className="text-[10px] font-black uppercase tracking-[.12em] text-black/40">File<input name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" className="mt-2 block w-full rounded-xl border border-black/10 bg-white p-2.5 text-sm font-semibold normal-case tracking-normal text-[#10263f] file:mr-3 file:rounded-lg file:border-0 file:bg-[#10263f] file:px-3 file:py-2 file:text-xs file:font-black file:text-white"/><span className="mt-1 block text-[10px] font-semibold normal-case tracking-normal text-black/35">PDF, image, Word, Excel, CSV or TXT · maximum 15 MB</span></label>
+        <button disabled={documentSaving || !documentStorageAvailable} type="submit" className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#b78a3e] px-5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Upload size={15}/>{documentSaving ? "Uploading…" : "Upload"}</button>
+      </form>
+
+      <div className="mt-5 space-y-3">
+        {documentsLoading && <p className="text-sm text-black/45">Loading shipment documents…</p>}
+        {!documentsLoading && documents.length === 0 && <div className="rounded-2xl border border-dashed border-black/15 p-6 text-center"><FileText className="mx-auto text-black/25" size={24}/><p className="mt-2 text-sm font-bold text-black/50">No documents uploaded yet.</p></div>}
+        {documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-black/8 bg-white p-4">
+          <div className="flex min-w-0 items-start gap-3"><span className="rounded-xl bg-[#f4f1e9] p-2.5 text-[#10263f]"><FileText size={18}/></span><div className="min-w-0"><p className="truncate text-sm font-black text-[#10263f]">{document.filename}</p><p className="mt-1 text-[11px] font-semibold text-black/40">{shipmentDocumentTypeLabels[document.document_type]} · {formatBytes(document.size_bytes)}</p><p className="mt-1 text-[10px] text-black/30">Uploaded by {document.uploaded_by} · {formatDate(document.uploaded_at)}</p></div></div>
+          <div className="flex items-center gap-2"><a href={`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents/${document.id}`} className="flex items-center gap-1.5 rounded-xl border border-black/10 px-3 py-2 text-xs font-black text-[#10263f] transition hover:bg-[#f8f7f2]"><Download size={13}/> Download</a><button type="button" disabled={documentSaving} onClick={() => removeDocument(document)} className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-40"><Trash2 size={13}/> Delete</button></div>
+        </div>)}
+      </div>
+    </div>
 
     <div className="mt-8 border-t border-black/10 pt-7">
       <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#b78a3e]">Tracking timeline</p><h4 className="mt-1 text-lg font-black">Public shipment events</h4></div><span className="text-xs font-bold text-black/35">{draft.events.length} {draft.events.length === 1 ? "event" : "events"}</span></div>
