@@ -35,10 +35,15 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   if ("response" in auth) return auth.response;
 
   const { reference } = await context.params;
-  const quote = await getQuoteDetail(reference);
-  if (quote === undefined) return json({ ok: false, error: "Quote storage is unavailable." }, 503);
-  if (!quote) return json({ ok: false, error: "Quote not found." }, 404);
-  return json({ ok: true, quote });
+  try {
+    const quote = await getQuoteDetail(reference);
+    if (quote === undefined) return json({ ok: false, error: "Quote storage is unavailable." }, 503);
+    if (!quote) return json({ ok: false, error: "Quote not found." }, 404);
+    return json({ ok: true, quote });
+  } catch (error) {
+    console.error("Failed to load KCPL quote detail", reference, error);
+    return json({ ok: false, error: "The enquiry could not be loaded. Please refresh and try again." }, 500);
+  }
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ reference: string }> }) {
@@ -103,12 +108,19 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
 
   let shipment = null;
+  let shipmentWarning: string | null = null;
   if (status === "won") {
-    const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName);
-    if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") shipment = shipmentResult.shipment;
+    try {
+      const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName);
+      if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") shipment = shipmentResult.shipment;
+      if (shipmentResult.kind === "unavailable") shipmentWarning = "Shipment storage is temporarily unavailable.";
+    } catch (error) {
+      console.error("Failed to create KCPL shipment from won quote", reference, error);
+      shipmentWarning = "The quote was saved as Won, but the shipment record could not be initialized yet.";
+    }
   }
 
-  return json({ ok: true, status, assignedTo, shipment });
+  return json({ ok: true, status, assignedTo, shipment, shipmentWarning });
 }
 
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
