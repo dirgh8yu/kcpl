@@ -1,21 +1,32 @@
 .crm360-input {
-  min-height: 44px;
+  min-height: 40px;
   width: 100%;
-  border: 1px solid rgb(0 0 0 / 0.1);
-  border-radius: 12px;
-  background: #fff;
-  padding: 10px 12px;
-  color: #10263f;
-  font-size: 13px;
+  border: 1px solid #e7dfd8;
+  border-radius: 11px;
+  background: #faf7f4;
+  padding: 9px 11px;
+  color: #332d29;
+  font-size: 11px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color .17s ease, box-shadow .17s ease, background-color .17s ease;
 }
+.crm360-input:focus { border-color: #e2aa99; background: white; box-shadow: 0 0 0 4px rgba(232,117,93,.07); }
+.crm360-input::placeholder { color: #aaa19a; }
 
-.crm360-input:focus {
-  border-color: #b78a3e;
-  box-shadow: 0 0 0 3px rgb(183 138 62 / 0.1);
-}
-
-.crm360-input::placeholder {
-  color: rgb(16 38 63 / 0.35);
-}
+.crm360-tools { display: grid; gap: 9px; }
+.crm360-tool { overflow: hidden; border: 1px solid #e7dfd8; border-radius: 15px; background: #fffdfa; }
+.crm360-tool > summary { display: flex; min-height: 58px; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 16px; }
+.crm360-tool > summary::-webkit-details-marker { display: none; }
+.crm360-tool > summary strong { display: block; color: #514840; font-size: 10px; font-weight: 750; }
+.crm360-tool > summary small { display: block; margin-top: 4px; color: #968c84; font-size: 8px; line-height: 1.4; }
+.crm360-tool > summary span:last-child { color: #b66750; font-size: 9px; font-weight: 750; }
+.crm360-tool[open] > summary { border-bottom: 1px solid #eee7e1; background: #faf7f4; }
+.crm360-tool-body { overflow: hidden; }
+.crm360-tool-body > section { background: transparent !important; padding: 0 !important; }
+.crm360-tool-body > section > div { max-width: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: #fffdfa !important; }
+.crm360-tool-body [class*="bg-[#10263f]"] { background: #e8755d !important; }
+.crm360-tool-body [class*="text-[#10263f]"] { color: #443b35 !important; }
+.crm360-tool-body [class*="border-black/10"] { border-color: #e9e2dc !important; }
+.crm360-tool-body [class*="bg-[#f4f1e9]"] { background: transparent !important; }
+.crm360-tool-body [class*="bg-[#faf9f5]"] { background: #faf7f4 !important; }
+.crm360-tool-body [class*="text-black/40"], .crm360-tool-body [class*="text-black/45"], .crm360-tool-body [class*="text-black/50"] { color: #91877f !important; }

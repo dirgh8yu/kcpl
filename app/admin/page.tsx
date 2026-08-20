@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { AdminDashboard } from "./admin-dashboard";
 import { getAdminAccess } from "./admin-auth";
 import { AdminLogin } from "./admin-login";
@@ -7,15 +8,9 @@ import type { QuoteSummary } from "./admin-data";
 import { OperationsShell } from "./operations-shell";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Enquiries | KCPL Operations",
-  robots: { index: false, follow: false },
-};
+export const metadata = { title: "Enquiries | KCPL Operations", robots: { index: false, follow: false } };
 
-type QuoteLoadResult =
-  | { kind: "ready"; quotes: QuoteSummary[] }
-  | { kind: "unavailable" }
-  | { kind: "error" };
+type QuoteLoadResult = { kind: "ready"; quotes: QuoteSummary[] } | { kind: "unavailable" } | { kind: "error" };
 
 async function loadQuotes(): Promise<QuoteLoadResult> {
   try {
@@ -30,53 +25,30 @@ async function loadQuotes(): Promise<QuoteLoadResult> {
 
 export default async function AdminPage() {
   const access = await getAdminAccess();
-
-  if (access.kind === "unconfigured") {
-    return <AdminGate title="Firebase admin access needs configuration." detail="Configure the Firebase project in App Hosting, then create the initial staff account in Firebase Authentication. KCPL_ADMIN_EMAILS can be used as the bootstrap management allowlist." />;
-  }
-
-  if (access.kind === "signed-out") return <AdminLoginPage />;
+  if (access.kind === "unconfigured") return <AdminGate title="Firebase admin access needs configuration" detail="Configure the Firebase project in App Hosting, then create the initial staff account in Firebase Authentication. KCPL_ADMIN_EMAILS can be used as the bootstrap management allowlist."/>;
+  if (access.kind === "signed-out") return <AdminLoginPage/>;
 
   const staff = await getStaffContext(access.user);
   const result = await loadQuotes();
-  if (result.kind === "unavailable") return <AdminGate title="Firestore is not available yet." detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment." signOutPath="/api/admin/session?logout=1" />;
-  if (result.kind === "error") return <AdminGate title="The enquiry desk could not be loaded." detail="KCPL's Firebase data is temporarily unavailable. No quote data was exposed." signOutPath="/api/admin/session?logout=1" />;
+  if (result.kind === "unavailable") return <AdminGate title="Firestore is not available yet" detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment." signOutPath="/api/admin/session?logout=1"/>;
+  if (result.kind === "error") return <AdminGate title="The enquiry desk could not be loaded" detail="KCPL's Firebase data is temporarily unavailable. No quote data was exposed." signOutPath="/api/admin/session?logout=1"/>;
 
-  return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff={staff.permissions.canManageStaff}
-      canManageFinance={staff.permissions.canManageFinance}
-      isManagement={staff.permissions.role === "management"}
-    >
-      <AdminDashboard initialQuotes={result.quotes} />
-    </OperationsShell>
-  );
+  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}><AdminDashboard initialQuotes={result.quotes}/></OperationsShell>;
 }
 
 function AdminLoginPage() {
-  return (
-    <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]">
-      <section className="w-full max-w-md rounded-xl border border-[#dfe3e8] bg-white p-8 sm:p-10">
-        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Operations</p>
-        <h1 className="mt-3 text-2xl font-bold tracking-[-.03em]">Private operations desk</h1>
-        <p className="mt-3 text-sm leading-6 text-[#68747f]">Sign in with your authorised KCPL Firebase staff account to manage enquiries, quotations, shipments, tracking and documents.</p>
-        <AdminLogin />
-        <Link href="/" className="mt-5 inline-block text-xs font-semibold text-[#6f7a84] underline underline-offset-4">Return to website</Link>
-      </section>
-    </main>
-  );
+  return <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f8f6f3] p-6 text-[#332d29]">
+    <div className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-[#f1c9b8]/25 blur-3xl"/>
+    <div className="pointer-events-none absolute -bottom-24 -left-24 h-[360px] w-[360px] rounded-full bg-[#e7dccd]/40 blur-3xl"/>
+    <section className="relative w-full max-w-[460px] rounded-[20px] border border-[#e6ddd6] bg-[#fffdfa]/95 p-8 shadow-[0_24px_70px_rgba(75,56,43,.08)] sm:p-10">
+      <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#e8755d] text-[12px] font-black text-white shadow-[0_8px_22px_rgba(191,91,68,.14)]">K</span><div><p className="text-[11px] font-[760] tracking-[-.02em] text-[#443b35]">KCPL Operations</p><p className="mt-0.5 text-[8px] font-semibold text-[#9d938b]">Private freight workspace</p></div></div>
+      <div className="mt-8"><p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-[#bd644e]">Authorised staff</p><h1 className="mt-2 text-[29px] font-[735] tracking-[-.045em] leading-[1.05]">Welcome back.</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">Sign in with your KCPL Firebase staff account to work enquiries, shipments, Job Files, customers, finance and operational alerts.</p></div>
+      <AdminLogin/>
+      <div className="mt-6 flex items-center justify-between gap-3 border-t border-[#eee7e1] pt-4"><span className="inline-flex items-center gap-1.5 text-[8px] font-semibold text-[#9b9189]"><ShieldCheck size={11}/>Firebase-authenticated staff only</span><Link href="/" className="inline-flex items-center gap-1 text-[8px] font-bold text-[#a96752]"><ArrowLeft size={10}/>Website</Link></div>
+    </section>
+  </main>;
 }
 
 function AdminGate({ title, detail, signOutPath }: { title: string; detail: string; signOutPath?: string }) {
-  return (
-    <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]">
-      <section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8 sm:p-10">
-        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Operations</p>
-        <h1 className="mt-3 text-2xl font-bold tracking-[-.03em]">{title}</h1>
-        <p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p>
-        <div className="mt-6 flex flex-wrap gap-2"><Link href="/" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Return to website</Link>{signOutPath ? <a href={signOutPath} className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Sign out</a> : null}</div>
-      </section>
-    </main>
-  );
+  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#332d29]"><section className="w-full max-w-xl rounded-[18px] border border-[#e6ddd6] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)] sm:p-10"><span className="grid h-10 w-10 place-items-center rounded-[12px] bg-[#f3e8e1] text-[#b6654f]"><ShieldCheck size={16}/></span><p className="mt-5 text-[9px] font-extrabold uppercase tracking-[.12em] text-[#bd644e]">KCPL Operations</p><h1 className="mt-2 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/" className="rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[10px] font-bold text-white">Return to website</Link>{signOutPath ? <a href={signOutPath} className="rounded-[11px] border border-[#e2d9d2] bg-white px-4 py-2.5 text-[10px] font-bold text-[#665c55]">Sign out</a> : null}</div></section></main>;
 }

@@ -3,13 +3,8 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import {
-  ArrowLeft,
-  BadgeDollarSign,
-  Building2,
   CalendarClock,
   Check,
-  CircleDollarSign,
-  Clock3,
   LockKeyhole,
   Mail,
   MapPin,
@@ -17,7 +12,6 @@ import {
   Phone,
   Plus,
   RefreshCw,
-  Tags,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -32,21 +26,18 @@ import {
   type CrmTask,
   type CrmTaskPriority,
 } from "../crm-data";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
 
 function formatDate(value: string | null) {
   if (!value) return "Not set";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function formatMoney(value: number | null, currency: string) {
   if (value === null) return "Not set";
-  try {
-    return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
-  } catch {
-    return `${currency} ${value.toLocaleString("en-AU")}`;
-  }
+  try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(value); }
+  catch { return `${currency} ${value.toLocaleString("en-AU")}`; }
 }
 
 function taskSort(tasks: CrmTask[]) {
@@ -59,19 +50,7 @@ function taskSort(tasks: CrmTask[]) {
   });
 }
 
-export function Customer360Workspace({
-  initialCustomer,
-  userName,
-  userEmail,
-  commercialVisible,
-  creditVisible,
-}: {
-  initialCustomer: CrmCustomerDetail;
-  userName: string;
-  userEmail: string;
-  commercialVisible: boolean;
-  creditVisible: boolean;
-}) {
+export function Customer360Workspace({ initialCustomer, userName, userEmail, commercialVisible, creditVisible }: { initialCustomer: CrmCustomerDetail; userName: string; userEmail: string; commercialVisible: boolean; creditVisible: boolean }) {
   const [customer, setCustomer] = useState(initialCustomer);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -85,247 +64,114 @@ export function Customer360Workspace({
 
   const tasks = useMemo(() => taskSort(customer.tasks), [customer.tasks]);
   const openTasks = tasks.filter((item) => !item.completed);
+  const overdueTasks = openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < Date.now());
   const grossMargin = customer.revenue_total > 0 ? (customer.profit_total / customer.revenue_total) * 100 : 0;
 
   async function refresh() {
     const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customer.id)}`, { cache: "no-store" });
-    const data = await response.json() as { ok?: boolean; customer?: CrmCustomerDetail; error?: string };
+    const data = await response.json() as { customer?: CrmCustomerDetail; error?: string };
     if (!response.ok || !data.customer) throw new Error(data.error || "Could not refresh Customer 360.");
     setCustomer(data.customer);
   }
 
   async function write(path: string, body: Record<string, unknown>, method = "POST") {
-    setBusy(true);
-    setNotice("");
+    setBusy(true); setNotice("");
     try {
-      const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customer.id)}/${path}`, {
-        method,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await response.json() as { ok?: boolean; error?: string };
+      const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customer.id)}/${path}`, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "The CRM update could not be saved.");
       await refresh();
       return true;
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "The CRM update could not be saved.");
-      return false;
-    } finally {
-      setBusy(false);
-    }
+    } catch (error) { setNotice(error instanceof Error ? error.message : "The CRM update could not be saved."); return false; }
+    finally { setBusy(false); }
   }
 
   async function addContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const ok = await write("contacts", contact);
-    if (!ok) return;
-    setContact({ name: "", jobTitle: "", email: "", phone: "", communicationPreference: "email", isPrimary: false, notes: "" });
-    setContactOpen(false);
-    setNotice("Contact added.");
+    if (!(await write("contacts", contact))) return;
+    setContact({ name: "", jobTitle: "", email: "", phone: "", communicationPreference: "email", isPrimary: false, notes: "" }); setContactOpen(false); setNotice("Contact added.");
   }
-
   async function addAddress(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const ok = await write("addresses", address);
-    if (!ok) return;
-    setAddress({ label: "Office", line1: "", line2: "", city: "", stateRegion: "", postalCode: "", country: customer.country || "Nepal", isPrimary: false });
-    setAddressOpen(false);
-    setNotice("Address added.");
+    if (!(await write("addresses", address))) return;
+    setAddress({ label: "Office", line1: "", line2: "", city: "", stateRegion: "", postalCode: "", country: customer.country || "Nepal", isPrimary: false }); setAddressOpen(false); setNotice("Address added.");
   }
-
   async function addNote(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!note.trim()) return;
-    const ok = await write("notes", { note });
-    if (!ok) return;
-    setNote("");
-    setNotice("Internal note added.");
+    event.preventDefault(); if (!note.trim()) return;
+    if (!(await write("notes", { note }))) return;
+    setNote(""); setNotice("Internal note added.");
   }
-
   async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const ok = await write("tasks", task);
-    if (!ok) return;
-    setTask({ title: "", detail: "", dueAt: "", priority: "normal", assignedToName: userName, assignedToEmail: userEmail });
-    setTaskOpen(false);
-    setNotice("Follow-up created.");
+    if (!(await write("tasks", task))) return;
+    setTask({ title: "", detail: "", dueAt: "", priority: "normal", assignedToName: userName, assignedToEmail: userEmail }); setTaskOpen(false); setNotice("Follow-up created.");
   }
-
   async function toggleTask(item: CrmTask) {
     const ok = await write("tasks", { taskId: item.id, completed: !item.completed }, "PATCH");
     if (ok) setNotice(item.completed ? "Follow-up reopened." : "Follow-up completed.");
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f1e9] text-[#10263f]">
-      <header className="border-b border-white/10 bg-[#0b1724] px-5 py-5 text-white lg:px-8">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/crm" className="grid h-10 w-10 place-items-center rounded-xl border border-white/15 text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Back to CRM"><ArrowLeft size={17} /></Link>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#d4ad62]">KCPL Customer 360 · {customer.id}</p>
-              <h1 className="mt-1 text-2xl font-black tracking-[-.035em]">{customer.display_name}</h1>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {customer.relationship_types.map((type) => <span key={type} className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-[.1em] text-white/75">{crmRelationshipLabels[type]}</span>)}
-            <span className="rounded-full bg-[#d4ad62] px-3 py-1.5 text-[9px] font-black uppercase tracking-[.1em] text-[#10263f]">{crmAccountStatusLabels[customer.account_status]}</span>
-          </div>
-        </div>
-      </header>
+    <OpsPage>
+      <OpsPageHeader
+        eyebrow="Customer 360"
+        title={customer.display_name}
+        description={customer.internal_summary || "Relationship, contacts, operational history and commercial context in one account record."}
+        meta={<><OpsMono>{customer.id}</OpsMono><OpsBadge tone={customer.account_status === "active" ? "success" : customer.account_status === "on_hold" ? "warning" : customer.account_status === "blacklisted" ? "danger" : customer.account_status === "prospect" ? "info" : "neutral"} dot>{crmAccountStatusLabels[customer.account_status]}</OpsBadge>{customer.relationship_types.map((type) => <OpsBadge key={type}>{crmRelationshipLabels[type]}</OpsBadge>)}</>}
+        actions={<><Link href="/admin/crm" className="ops-button" data-variant="secondary" data-size="md">Back to customers</Link><OpsButton variant="primary" onClick={() => refresh().catch((error) => setNotice(error instanceof Error ? error.message : "Refresh failed."))}><RefreshCw size={13}/>Refresh</OpsButton></>}
+      />
 
-      <section className="border-b border-black/10 bg-[#10263f] px-5 py-5 text-white lg:px-8">
-        <div className="mx-auto grid max-w-[1680px] grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          <Metric label="Contacts" value={customer.contacts.length} icon={<UsersRound size={15} />} />
-          <Metric label="Saved addresses" value={customer.addresses.length} icon={<MapPin size={15} />} />
-          <Metric label="Open follow-ups" value={openTasks.length} icon={<CalendarClock size={15} />} accent />
-          <Metric label="Quotes" value={customer.quote_count} icon={<MessageSquareText size={15} />} />
-          <Metric label="Active shipments" value={customer.active_shipment_count} icon={<Building2 size={15} />} />
-          <Metric label="Completed jobs" value={customer.completed_shipment_count} icon={<Check size={15} />} />
-        </div>
-      </section>
+      <OpsStatStrip>
+        <OpsStat label="Contacts" value={customer.contacts.length} icon={<UsersRound size={13}/>} />
+        <OpsStat label="Addresses" value={customer.addresses.length} icon={<MapPin size={13}/>} />
+        <OpsStat label="Open follow-ups" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<CalendarClock size={13}/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
+        <OpsStat label="Quotes" value={customer.quote_count} icon={<MessageSquareText size={13}/>} />
+        <OpsStat label="Active shipments" value={customer.active_shipment_count} />
+        <OpsStat label="Completed jobs" value={customer.completed_shipment_count} tone="success" />
+      </OpsStatStrip>
 
-      <div className="mx-auto max-w-[1680px] p-5 lg:p-8">
-        {notice ? <div className="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-[#d4ad62]/35 bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#6d5427]"><span>{notice}</span><button type="button" onClick={() => refresh().catch(() => undefined)} className="text-[#6d5427]/60" aria-label="Refresh customer"><RefreshCw size={15} /></button></div> : null}
+      <div className="ops-content-wide ops-stack">
+        {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("failed") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
 
-        <div className="grid gap-6 xl:grid-cols-[1.45fr_.8fr]">
-          <div className="space-y-6">
-            <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm sm:p-7">
-              <SectionHeader title="Contacts" detail="People KCPL works with at this account." action="Add contact" onAction={() => setContactOpen((value) => !value)} />
-              {contactOpen ? <form onSubmit={addContact} className="mt-5 grid gap-3 rounded-2xl border border-black/10 bg-[#faf9f5] p-4 sm:grid-cols-2">
-                <Input label="Name"><input required className="crm360-input" value={contact.name} onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))} /></Input>
-                <Input label="Role / title"><input className="crm360-input" value={contact.jobTitle} onChange={(event) => setContact((current) => ({ ...current, jobTitle: event.target.value }))} /></Input>
-                <Input label="Email"><input type="email" className="crm360-input" value={contact.email} onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))} /></Input>
-                <Input label="Phone"><input className="crm360-input" value={contact.phone} onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))} /></Input>
-                <Input label="Preferred contact"><select className="crm360-input" value={contact.communicationPreference} onChange={(event) => setContact((current) => ({ ...current, communicationPreference: event.target.value }))}>{crmCommunicationPreferences.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></Input>
-                <label className="flex items-center gap-2 self-end pb-3 text-xs font-bold"><input type="checkbox" checked={contact.isPrimary} onChange={(event) => setContact((current) => ({ ...current, isPrimary: event.target.checked }))} /> Primary contact</label>
-                <div className="sm:col-span-2"><Input label="Contact notes"><textarea className="crm360-input min-h-20 resize-y" value={contact.notes} onChange={(event) => setContact((current) => ({ ...current, notes: event.target.value }))} /></Input></div>
-                <FormButtons busy={busy} onCancel={() => setContactOpen(false)} label="Save contact" />
-              </form> : null}
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {customer.contacts.length ? customer.contacts.map((item) => <div key={item.id} className="rounded-2xl border border-black/10 p-4">
-                  <div className="flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#10263f] text-white"><UserRound size={15} /></div><div><strong className="text-sm">{item.name}</strong><p className="mt-0.5 text-xs text-black/45">{item.job_title || "Contact"}</p></div></div>{item.is_primary ? <span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-black uppercase text-emerald-700">Primary</span> : null}</div>
-                  <div className="mt-4 space-y-2 text-xs text-black/55">{item.email ? <p className="flex items-center gap-2"><Mail size={13} />{item.email}</p> : null}{item.phone ? <p className="flex items-center gap-2"><Phone size={13} />{item.phone}</p> : null}{item.communication_preference ? <p className="font-bold text-black/40">Prefers {item.communication_preference}</p> : null}</div>
-                </div>) : <EmptyState text="No contacts saved yet." />}
-              </div>
-            </section>
+        <div className="ops-grid-main">
+          <div className="ops-stack">
+            <OpsSurface eyebrow="People" title="Contacts" description="The people KCPL actually works with at this account." action={<OpsButton variant="secondary" size="sm" onClick={() => setContactOpen((value) => !value)}><Plus size={12}/>{contactOpen ? "Close" : "Add contact"}</OpsButton>}>
+              {contactOpen ? <form onSubmit={addContact} className="mb-4 grid gap-3 rounded-[14px] border border-[#ebe3dc] bg-[#faf7f4] p-4 sm:grid-cols-2"><OpsField label="Name"><input required value={contact.name} onChange={(event) => setContact({ ...contact, name: event.target.value })}/></OpsField><OpsField label="Role / title"><input value={contact.jobTitle} onChange={(event) => setContact({ ...contact, jobTitle: event.target.value })}/></OpsField><OpsField label="Email"><input type="email" value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })}/></OpsField><OpsField label="Phone"><input value={contact.phone} onChange={(event) => setContact({ ...contact, phone: event.target.value })}/></OpsField><OpsField label="Preferred contact"><select value={contact.communicationPreference} onChange={(event) => setContact({ ...contact, communicationPreference: event.target.value })}>{crmCommunicationPreferences.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></OpsField><label className="flex items-center gap-2 self-end pb-3 text-[10px] font-semibold text-[#675e57]"><input type="checkbox" checked={contact.isPrimary} onChange={(event) => setContact({ ...contact, isPrimary: event.target.checked })}/>Primary contact</label><OpsField label="Contact notes" className="sm:col-span-2"><textarea value={contact.notes} onChange={(event) => setContact({ ...contact, notes: event.target.value })}/></OpsField><div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Save contact</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setContactOpen(false)}>Cancel</OpsButton></div></form> : null}
+              {customer.contacts.length ? <div className="divide-y divide-[#eee7e1]">{customer.contacts.map((item) => <div key={item.id} className="flex items-start gap-3 py-3.5"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-[#f2ece7] text-[#8f7567]"><UserRound size={15}/></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="text-[10px] text-[#514840]">{item.name}</strong>{item.is_primary ? <OpsBadge tone="success">Primary</OpsBadge> : null}{item.communication_preference ? <OpsBadge>{item.communication_preference}</OpsBadge> : null}</div><p className="mt-1 text-[9px] text-[#8c827a]">{item.job_title || "Contact"}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-[#80766e]">{item.email ? <a href={`mailto:${item.email}`} className="flex items-center gap-1.5 hover:underline"><Mail size={11}/>{item.email}</a> : null}{item.phone ? <a href={`tel:${item.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone size={11}/>{item.phone}</a> : null}</div>{item.notes ? <p className="mt-2 text-[9px] leading-5 text-[#928880]">{item.notes}</p> : null}</div></div>)}</div> : <OpsEmptyState icon={<UsersRound size={18}/>} title="No contacts saved" description="Add the people KCPL calls, emails or coordinates with at this account."/>}
+            </OpsSurface>
 
-            <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm sm:p-7">
-              <SectionHeader title="Saved addresses" detail="Office, warehouse, billing, pickup and delivery locations." action="Add address" onAction={() => setAddressOpen((value) => !value)} />
-              {addressOpen ? <form onSubmit={addAddress} className="mt-5 grid gap-3 rounded-2xl border border-black/10 bg-[#faf9f5] p-4 sm:grid-cols-2">
-                <Input label="Label"><input required className="crm360-input" value={address.label} onChange={(event) => setAddress((current) => ({ ...current, label: event.target.value }))} placeholder="Office, Warehouse, Billing" /></Input>
-                <Input label="Country"><input required className="crm360-input" value={address.country} onChange={(event) => setAddress((current) => ({ ...current, country: event.target.value }))} /></Input>
-                <div className="sm:col-span-2"><Input label="Address line 1"><input required className="crm360-input" value={address.line1} onChange={(event) => setAddress((current) => ({ ...current, line1: event.target.value }))} /></Input></div>
-                <div className="sm:col-span-2"><Input label="Address line 2"><input className="crm360-input" value={address.line2} onChange={(event) => setAddress((current) => ({ ...current, line2: event.target.value }))} /></Input></div>
-                <Input label="City"><input required className="crm360-input" value={address.city} onChange={(event) => setAddress((current) => ({ ...current, city: event.target.value }))} /></Input>
-                <Input label="State / region"><input className="crm360-input" value={address.stateRegion} onChange={(event) => setAddress((current) => ({ ...current, stateRegion: event.target.value }))} /></Input>
-                <Input label="Postal code"><input className="crm360-input" value={address.postalCode} onChange={(event) => setAddress((current) => ({ ...current, postalCode: event.target.value }))} /></Input>
-                <label className="flex items-center gap-2 self-end pb-3 text-xs font-bold"><input type="checkbox" checked={address.isPrimary} onChange={(event) => setAddress((current) => ({ ...current, isPrimary: event.target.checked }))} /> Primary address</label>
-                <FormButtons busy={busy} onCancel={() => setAddressOpen(false)} label="Save address" />
-              </form> : null}
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {customer.addresses.length ? customer.addresses.map((item) => <div key={item.id} className="rounded-2xl border border-black/10 p-4"><div className="flex items-center justify-between gap-3"><strong className="text-sm">{item.label}</strong>{item.is_primary ? <span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-black uppercase text-emerald-700">Primary</span> : null}</div><p className="mt-3 text-xs leading-6 text-black/55">{item.line1}{item.line2 ? <><br />{item.line2}</> : null}<br />{item.city}{item.state_region ? `, ${item.state_region}` : ""}{item.postal_code ? ` ${item.postal_code}` : ""}<br />{item.country}</p></div>) : <EmptyState text="No saved addresses yet." />}
-              </div>
-            </section>
+            <OpsSurface eyebrow="Places" title="Saved addresses" description="Office, warehouse, billing, pickup and delivery locations." action={<OpsButton variant="secondary" size="sm" onClick={() => setAddressOpen((value) => !value)}><Plus size={12}/>{addressOpen ? "Close" : "Add address"}</OpsButton>}>
+              {addressOpen ? <form onSubmit={addAddress} className="mb-4 grid gap-3 rounded-[14px] border border-[#ebe3dc] bg-[#faf7f4] p-4 sm:grid-cols-2"><OpsField label="Label"><input required value={address.label} onChange={(event) => setAddress({ ...address, label: event.target.value })} placeholder="Office, Warehouse, Billing"/></OpsField><OpsField label="Country"><input required value={address.country} onChange={(event) => setAddress({ ...address, country: event.target.value })}/></OpsField><OpsField label="Address line 1" className="sm:col-span-2"><input required value={address.line1} onChange={(event) => setAddress({ ...address, line1: event.target.value })}/></OpsField><OpsField label="Address line 2" className="sm:col-span-2"><input value={address.line2} onChange={(event) => setAddress({ ...address, line2: event.target.value })}/></OpsField><OpsField label="City"><input required value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })}/></OpsField><OpsField label="State / region"><input value={address.stateRegion} onChange={(event) => setAddress({ ...address, stateRegion: event.target.value })}/></OpsField><OpsField label="Postal code"><input value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })}/></OpsField><label className="flex items-center gap-2 self-end pb-3 text-[10px] font-semibold text-[#675e57]"><input type="checkbox" checked={address.isPrimary} onChange={(event) => setAddress({ ...address, isPrimary: event.target.checked })}/>Primary address</label><div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Save address</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setAddressOpen(false)}>Cancel</OpsButton></div></form> : null}
+              {customer.addresses.length ? <div className="grid gap-3 md:grid-cols-2">{customer.addresses.map((item) => <div key={item.id} className="rounded-[13px] border border-[#eae2dc] bg-[#faf7f4] p-4"><div className="flex items-center justify-between gap-2"><strong className="text-[10px] text-[#514840]">{item.label}</strong>{item.is_primary ? <OpsBadge tone="success">Primary</OpsBadge> : null}</div><p className="mt-2 text-[9px] leading-5 text-[#7f756d]">{[item.line1, item.line2, item.city, item.state_region, item.postal_code, item.country].filter(Boolean).join(", ")}</p></div>)}</div> : <OpsEmptyState icon={<MapPin size={18}/>} title="No addresses saved" description="Add recurring pickup, billing or delivery locations once and reuse the context later."/>}
+            </OpsSurface>
 
-            <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm sm:p-7">
-              <SectionHeader title="Internal notes" detail="Private account context for KCPL staff." />
-              <form onSubmit={addNote} className="mt-5"><textarea className="crm360-input min-h-28 resize-y" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add relationship context, operating preferences, special instructions…" /><div className="mt-3 flex justify-end"><button type="submit" disabled={busy || !note.trim()} className="rounded-xl bg-[#10263f] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">Add note</button></div></form>
-              <div className="mt-5 space-y-3">{customer.notes.length ? customer.notes.map((item) => <div key={item.id} className="rounded-2xl border border-black/10 bg-[#faf9f5] p-4"><p className="text-sm leading-6">{item.note}</p><p className="mt-3 text-[10px] font-bold uppercase tracking-[.08em] text-black/35">{item.author_name} · {formatDate(item.created_at)}</p></div>) : <EmptyState text="No internal notes yet." />}</div>
-            </section>
+            <OpsSurface eyebrow="Relationship work" title="Follow-ups" description="Tasks that belong to the customer relationship rather than a specific shipment." action={<OpsButton variant="secondary" size="sm" onClick={() => setTaskOpen((value) => !value)}><Plus size={12}/>{taskOpen ? "Close" : "Add follow-up"}</OpsButton>}>
+              {taskOpen ? <form onSubmit={addTask} className="mb-4 grid gap-3 rounded-[14px] border border-[#ebe3dc] bg-[#faf7f4] p-4 sm:grid-cols-2"><OpsField label="Follow-up"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField><OpsField label="Priority"><select value={task.priority} onChange={(event) => setTask({ ...task, priority: event.target.value as CrmTaskPriority })}>{crmTaskPriorities.map((priority) => <option key={priority} value={priority}>{crmTaskPriorityLabels[priority]}</option>)}</select></OpsField><OpsField label="Due"><input type="datetime-local" value={task.dueAt} onChange={(event) => setTask({ ...task, dueAt: event.target.value })}/></OpsField><OpsField label="Assigned to"><input value={task.assignedToName} onChange={(event) => setTask({ ...task, assignedToName: event.target.value })}/></OpsField><OpsField label="Detail" className="sm:col-span-2"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField><div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Create follow-up</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div></form> : null}
+              {tasks.length ? <div className="divide-y divide-[#eee7e1]">{tasks.map((item) => <FollowUpRow key={item.id} item={item} busy={busy} onToggle={() => toggleTask(item)}/>)}</div> : <OpsEmptyState icon={<CalendarClock size={18}/>} title="No follow-ups yet" description="Create callbacks, document chases, commercial follow-ups or relationship tasks here."/>}
+            </OpsSurface>
 
-            <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm sm:p-7">
-              <SectionHeader title="Activity timeline" detail="The institutional memory of this account." />
-              <div className="mt-5 space-y-0">{customer.activity.length ? customer.activity.map((item, index) => <div key={item.id} className="grid grid-cols-[24px_1fr] gap-3"><div className="flex flex-col items-center"><div className="mt-1 h-2.5 w-2.5 rounded-full bg-[#d4ad62]" />{index < customer.activity.length - 1 ? <div className="min-h-12 w-px flex-1 bg-black/10" /> : null}</div><div className="pb-5"><div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-sm">{item.title}</strong><span className="text-[10px] text-black/35">{formatDate(item.created_at)}</span></div>{item.detail ? <p className="mt-1 text-xs leading-5 text-black/50">{item.detail}</p> : null}{item.actor_name ? <p className="mt-1 text-[10px] font-bold uppercase tracking-[.08em] text-black/30">{item.actor_name}</p> : null}</div></div>) : <EmptyState text="Activity will appear as the account is used." />}</div>
-            </section>
+            <OpsSurface eyebrow="Internal notes" title="Relationship notes" description="Context and decisions that should stay with the account.">
+              <form onSubmit={addNote} className="flex flex-col gap-2 sm:flex-row"><textarea className="ops-input min-h-[72px] flex-1 resize-y" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add an internal note…"/><OpsButton variant="primary" disabled={busy || !note.trim()}><MessageSquareText size={12}/>Add note</OpsButton></form>
+              <div className="mt-4 divide-y divide-[#eee7e1]">{customer.notes.length ? customer.notes.map((item) => <article key={item.id} className="py-3.5"><p className="whitespace-pre-wrap text-[10px] leading-5 text-[#615850]">{item.note}</p><p className="mt-2 text-[8px] font-semibold text-[#9e948c]">{item.author_name || item.author_email} · {formatDate(item.created_at)}</p></article>) : <OpsEmptyState icon={<MessageSquareText size={17}/>} title="No notes yet" description="Use this for relationship context that should persist beyond one quote or shipment."/>}</div>
+            </OpsSurface>
           </div>
 
-          <aside className="space-y-6">
-            <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm">
-              <SectionHeader title="Follow-ups" detail={`${openTasks.length} open task${openTasks.length === 1 ? "" : "s"}.`} action="New task" onAction={() => setTaskOpen((value) => !value)} />
-              {taskOpen ? <form onSubmit={addTask} className="mt-5 space-y-3 rounded-2xl border border-black/10 bg-[#faf9f5] p-4">
-                <Input label="Task"><input required className="crm360-input" value={task.title} onChange={(event) => setTask((current) => ({ ...current, title: event.target.value }))} placeholder="Follow up quote, request documents…" /></Input>
-                <Input label="Detail"><textarea className="crm360-input min-h-20 resize-y" value={task.detail} onChange={(event) => setTask((current) => ({ ...current, detail: event.target.value }))} /></Input>
-                <Input label="Due"><input type="datetime-local" className="crm360-input" value={task.dueAt} onChange={(event) => setTask((current) => ({ ...current, dueAt: event.target.value }))} /></Input>
-                <Input label="Priority"><select className="crm360-input" value={task.priority} onChange={(event) => setTask((current) => ({ ...current, priority: event.target.value as CrmTaskPriority }))}>{crmTaskPriorities.map((priority) => <option key={priority} value={priority}>{crmTaskPriorityLabels[priority]}</option>)}</select></Input>
-                <Input label="Assigned to"><input className="crm360-input" value={task.assignedToName} onChange={(event) => setTask((current) => ({ ...current, assignedToName: event.target.value }))} /></Input>
-                <Input label="Assignee email"><input type="email" className="crm360-input" value={task.assignedToEmail} onChange={(event) => setTask((current) => ({ ...current, assignedToEmail: event.target.value }))} /></Input>
-                <FormButtons busy={busy} onCancel={() => setTaskOpen(false)} label="Create follow-up" />
-              </form> : null}
-              <div className="mt-5 space-y-3">{tasks.length ? tasks.map((item) => <TaskCard key={item.id} task={item} busy={busy} onToggle={() => toggleTask(item)} />) : <EmptyState text="No follow-ups yet." />}</div>
-            </section>
+          <aside className="ops-stack xl:sticky xl:top-[76px]">
+            <OpsSurface eyebrow="Account" title="Relationship snapshot"><div className="grid grid-cols-2 gap-x-4 gap-y-4"><Fact label="Lead stage" value={crmLeadStageLabels[customer.lead_stage]}/><Fact label="Primary branch" value={customer.primary_branch}/><Fact label="Account manager" value={customer.account_manager_name || "Unassigned"}/><Fact label="Country" value={customer.country}/><Fact label="Entity" value={customer.entity_kind === "company" ? "Company / organisation" : "Individual"}/><Fact label="Billing email" value={customer.billing_email || "Not set"}/></div>{customer.tags.length ? <div className="mt-4 border-t border-[#eee7e1] pt-4"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{customer.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}</OpsSurface>
 
-            <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[.17em] text-[#8b6b32]">Account profile</p>
-              <div className="mt-4 divide-y divide-black/10">
-                <Info label="Lead stage" value={crmLeadStageLabels[customer.lead_stage]} />
-                <Info label="Primary branch" value={customer.primary_branch} />
-                <Info label="Account manager" value={customer.account_manager_name || "Unassigned"} />
-                <Info label="Primary email" value={customer.primary_email || "Not recorded"} />
-                <Info label="Primary phone" value={customer.primary_phone || "Not recorded"} />
-                <Info label="Country" value={customer.country} />
-                <Info label="Tax ID" value={customer.tax_id || "Not recorded"} />
-              </div>
-              {customer.tags.length ? <div className="mt-5 flex flex-wrap gap-2">{customer.tags.map((tag) => <span key={tag} className="flex items-center gap-1 rounded-full bg-[#10263f] px-3 py-1.5 text-[9px] font-black text-white"><Tags size={10} />{tag}</span>)}</div> : null}
-            </section>
+            {commercialVisible ? <OpsSurface eyebrow="Commercial" title={`${customer.preferred_currency} account`} description="Commercial data is visible only to authorised roles."><div className="divide-y divide-[#eee7e1]"><MoneyLine label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)}/><MoneyLine label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)}/><MoneyLine label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} strong/><MoneyLine label="Gross margin" value={`${grossMargin.toFixed(1)}%`}/><MoneyLine label="Markup" value={customer.commercial.markup_percent === null ? "Not set" : `${customer.commercial.markup_percent}%`}/>{creditVisible ? <><MoneyLine label="Payment terms" value={customer.commercial.payment_terms_days === null ? "Not set" : `${customer.commercial.payment_terms_days} days`}/><MoneyLine label="Credit limit" value={formatMoney(customer.commercial.credit_limit, customer.preferred_currency)}/><MoneyLine label="Outstanding" value={formatMoney(customer.commercial.outstanding_balance, customer.preferred_currency)}/></> : null}</div>{customer.commercial.pricing_notes ? <div className="mt-4 rounded-[12px] bg-[#faf7f4] p-3"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Pricing note</p><p className="mt-2 text-[9px] leading-5 text-[#756b63]">{customer.commercial.pricing_notes}</p></div> : null}</OpsSurface> : <OpsSurface eyebrow="Commercial" title="Commercial data restricted" description="Your role can work the relationship without receiving pricing, margin or credit data."><div className="flex gap-3 rounded-[12px] bg-[#faf7f4] p-3 text-[#756b63]"><LockKeyhole size={15} className="mt-0.5 shrink-0 text-[#9b745f]"/><p className="text-[9px] leading-5">Sensitive fields are withheld server-side, not merely hidden with CSS.</p></div></OpsSurface>}
 
-            {commercialVisible ? <section className="rounded-[26px] border border-black/10 bg-[#10263f] p-6 text-white shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[.17em] text-[#d4ad62]">Commercial & credit</p>
-              <div className="mt-5 space-y-4">
-                <Money label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)} icon={<BadgeDollarSign size={14} />} />
-                <Money label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)} icon={<CircleDollarSign size={14} />} />
-                <Money label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} icon={<BadgeDollarSign size={14} />} strong />
-                <Money label="Gross margin" value={`${grossMargin.toFixed(1)}%`} icon={<CircleDollarSign size={14} />} />
-                {creditVisible ? <>
-                  <Money label="Credit limit" value={formatMoney(customer.commercial.credit_limit, customer.preferred_currency)} icon={<CircleDollarSign size={14} />} />
-                  <Money label="Outstanding" value={formatMoney(customer.commercial.outstanding_balance, customer.preferred_currency)} icon={<Clock3 size={14} />} />
-                  <Money label="Payment terms" value={customer.commercial.payment_terms_days === null ? "Not set" : `${customer.commercial.payment_terms_days} days`} icon={<CalendarClock size={14} />} />
-                </> : null}
-              </div>
-              {customer.commercial.pricing_notes ? <div className="mt-6 rounded-2xl border border-white/10 bg-white/[.05] p-4"><p className="text-[9px] font-black uppercase tracking-[.14em] text-white/35">Pricing notes</p><p className="mt-2 text-xs leading-5 text-white/65">{customer.commercial.pricing_notes}</p></div> : null}
-            </section> : <section className="rounded-[26px] border border-black/10 bg-[#10263f] p-6 text-white shadow-sm"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#d4ad62]"><LockKeyhole size={17} /></div><div><p className="text-[10px] font-black uppercase tracking-[.17em] text-[#d4ad62]">Commercial access</p><h3 className="mt-2 text-base font-black">Restricted for this staff role</h3><p className="mt-2 text-xs leading-5 text-white/50">Rates, revenue, costs, profit and customer credit data are not included in this session.</p></div></div></section>}
+            <OpsSurface eyebrow="Recent activity" title="Account trail"><div className="divide-y divide-[#eee7e1]">{customer.activity.length ? customer.activity.slice(0, 8).map((item) => <div key={item.id} className="py-3"><div className="flex items-start gap-2.5"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c6755d]"/><div><strong className="text-[9px] text-[#514840]">{item.title}</strong>{item.detail ? <p className="mt-1 text-[8px] leading-4 text-[#8b8179]">{item.detail}</p> : null}<p className="mt-1 text-[8px] text-[#a0968e]">{formatDate(item.created_at)}{item.actor_name ? ` · ${item.actor_name}` : ""}</p></div></div></div>) : <p className="py-4 text-[9px] text-[#91877f]">No activity recorded yet.</p>}</div></OpsSurface>
           </aside>
         </div>
       </div>
-    </main>
+    </OpsPage>
   );
 }
 
-function Metric({ label, value, icon, accent = false }: { label: string; value: number; icon: React.ReactNode; accent?: boolean }) {
-  return <div className={`rounded-2xl border p-4 ${accent ? "border-[#d4ad62]/45 bg-[#d4ad62]/10" : "border-white/10 bg-white/[.035]"}`}><div className="flex items-center gap-2 text-white/40">{icon}<span className="text-[9px] font-black uppercase tracking-[.14em]">{label}</span></div><p className={`mt-2 text-2xl font-black ${accent ? "text-[#e0bd79]" : "text-white"}`}>{value}</p></div>;
-}
-
-function SectionHeader({ title, detail, action, onAction }: { title: string; detail: string; action?: string; onAction?: () => void }) {
-  return <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-black tracking-[-.02em]">{title}</h2><p className="mt-1 text-xs leading-5 text-black/45">{detail}</p></div>{action && onAction ? <button type="button" onClick={onAction} className="flex items-center gap-2 rounded-xl border border-black/10 bg-[#f8f7f2] px-3 py-2 text-[10px] font-black"><Plus size={13} />{action}</button> : null}</div>;
-}
-
-function Input({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.13em] text-black/40">{label}</span>{children}</label>;
-}
-
-function FormButtons({ busy, onCancel, label }: { busy: boolean; onCancel: () => void; label: string }) {
-  return <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" onClick={onCancel} className="rounded-xl border border-black/10 px-3 py-2 text-xs font-black">Cancel</button><button type="submit" disabled={busy} className="rounded-xl bg-[#10263f] px-4 py-2 text-xs font-black text-white disabled:opacity-50">{busy ? "Saving…" : label}</button></div>;
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-2xl border border-dashed border-black/15 bg-[#faf9f5] p-5 text-sm text-black/40">{text}</div>;
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-4 py-3 text-xs"><span className="text-black/40">{label}</span><strong className="max-w-[62%] text-right">{value}</strong></div>;
-}
-
-function Money({ label, value, icon, strong = false }: { label: string; value: string; icon: React.ReactNode; strong?: boolean }) {
-  return <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4"><div className="flex items-center gap-2 text-xs text-white/45">{icon}{label}</div><strong className={strong ? "text-lg text-[#e0bd79]" : "text-sm"}>{value}</strong></div>;
-}
-
-function TaskCard({ task, busy, onToggle }: { task: CrmTask; busy: boolean; onToggle: () => void }) {
-  const overdue = !task.completed && task.due_at ? new Date(task.due_at).getTime() < Date.now() : false;
-  const priorityStyle: Record<CrmTaskPriority, string> = {
-    low: "bg-stone-100 text-stone-600",
-    normal: "bg-sky-50 text-sky-700",
-    high: "bg-amber-50 text-amber-800",
-    urgent: "bg-rose-50 text-rose-700",
-  };
-  return <div className={`rounded-2xl border p-4 ${task.completed ? "border-black/5 bg-black/[.025] opacity-65" : overdue ? "border-rose-200 bg-rose-50/40" : "border-black/10"}`}><div className="flex items-start gap-3"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border ${task.completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20 bg-white"}`}>{task.completed ? <Check size={13} /> : null}</button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><strong className={`text-sm ${task.completed ? "line-through" : ""}`}>{task.title}</strong><span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-[.08em] ${priorityStyle[task.priority]}`}>{crmTaskPriorityLabels[task.priority]}</span></div>{task.detail ? <p className="mt-1 text-xs leading-5 text-black/50">{task.detail}</p> : null}<div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-black/35">{task.due_at ? <span className={overdue ? "text-rose-600" : ""}>{overdue ? "Overdue · " : "Due · "}{formatDate(task.due_at)}</span> : <span>No due date</span>}{task.assigned_to_name ? <span>{task.assigned_to_name}</span> : null}</div></div></div></div>;
+function Fact({ label, value }: { label: string; value: string }) { return <div><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{label}</p><p className="mt-1.5 break-words text-[9px] font-semibold text-[#5b524b]">{value}</p></div>; }
+function MoneyLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) { return <div className="flex items-center justify-between gap-4 py-3 text-[9px]"><span className="text-[#8d837b]">{label}</span><strong className={strong ? "text-[11px] text-[#66806b]" : "text-[#514840]"}>{value}</strong></div>; }
+function FollowUpRow({ item, busy, onToggle }: { item: CrmTask; busy: boolean; onToggle: () => void }) {
+  const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < Date.now();
+  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : overdue ? "border-[#dda9aa] bg-[#fff0f0] text-transparent" : "border-[#dcd3cc] bg-white text-transparent"}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84] line-through" : "text-[#514840]"}`}>{item.title}</strong><OpsBadge tone={item.priority === "urgent" ? "danger" : item.priority === "high" ? "warning" : "neutral"}>{crmTaskPriorityLabels[item.priority]}</OpsBadge>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}</div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[8px] text-[#9f958d]"><span>{item.assigned_to_name || item.assigned_to_email || "Unassigned"}</span><span>{item.due_at ? `Due ${formatDate(item.due_at)}` : "No due time"}</span></p></div></div>;
 }

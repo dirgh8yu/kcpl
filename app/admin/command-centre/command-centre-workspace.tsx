@@ -68,13 +68,16 @@ export function CommandCentreWorkspace({ data, roleLabel }: { data: CommandCentr
   const recent = useMemo(() => [...data.jobs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 8), [data.jobs]);
 
   useEffect(() => {
-    const raw = window.localStorage.getItem("kcpl-ops-home-sections");
-    if (!raw) return;
-    try {
-      setSections({ ...defaultSections, ...JSON.parse(raw) });
-    } catch {
-      window.localStorage.removeItem("kcpl-ops-home-sections");
-    }
+    const frame = window.requestAnimationFrame(() => {
+      const raw = window.localStorage.getItem("kcpl-ops-home-sections");
+      if (!raw) return;
+      try {
+        setSections({ ...defaultSections, ...JSON.parse(raw) });
+      } catch {
+        window.localStorage.removeItem("kcpl-ops-home-sections");
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   function toggleSection(key: SectionKey) {

@@ -32,6 +32,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
         canManageBranches={staff.permissions.role === "management"}
         currentUserName={access.user.displayName}
         currentUserEmail={access.user.email}
+        nowIso={new Date().toISOString()}
       />
       {staff.permissions.canManageJobCosts ? (
         <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
