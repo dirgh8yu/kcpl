@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Banknote, BriefcaseBusiness, Building2, CheckCircle2, CircleDollarSign, FileText, Printer, ReceiptText, Trash2 } from "lucide-react";
+import { ArrowLeft, Banknote, BriefcaseBusiness, Building2, CheckCircle2, Printer, ReceiptText, Trash2 } from "lucide-react";
 import { financeInvoiceStatusLabels, financePaymentMethodLabels, financePaymentMethods, type FinanceInvoice, type FinancePaymentMethod } from "../../finance-data";
 
 function money(amount: number, currency: string) {
