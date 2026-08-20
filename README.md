@@ -1,17 +1,18 @@
-# Kapileshwor Cargo Pvt. Ltd.
+# Kapileshwor Cargo Pvt. Ltd. (KCPL)
 
-Production website for KCPL, a freight-forwarding and logistics company established in Kathmandu, Nepal.
+KCPL's public website and private freight operations system. The application is a Next.js App Router project with Firebase-backed authentication, operational data and private document storage.
 
 ## Stack
 
-- Next.js App Router via Vinext
-- React and TypeScript
-- Tailwind CSS
+- Next.js 16 App Router
+- React 19 + TypeScript
+- Tailwind CSS 4
 - Motion
 - Lucide icons
-- Cloudflare Workers hosting
-- Cloudflare D1 for freight quote enquiries and internal quote workflow
-- Secure KCPL admin session authentication
+- Firebase Authentication for KCPL staff sign-in
+- Cloud Firestore for enquiries, CRM, shipments, Digital Job Files, finance and operational records
+- Firebase Storage for private shipment/customer documents
+- Firebase App Hosting as the intended production web runtime
 
 ## Local development
 
@@ -22,9 +23,11 @@ npm install
 npm run dev
 ```
 
-The local site is served at `http://localhost:3000`.
+The local app is served at `http://localhost:3000`.
 
-## Quality checks
+## Quality gate
+
+Before a production merge:
 
 ```bash
 npm run lint
@@ -32,59 +35,86 @@ npx tsc --noEmit
 npm test
 ```
 
-`npm test` performs a production build and verifies the rendered homepage, company information, service routes, quote experience, protected admin route, launch metadata, privacy content and not-found response.
+GitHub Actions runs the same lint, type-check and production-build gate for pull requests and pushes to `main`.
 
-## Cloudflare Workers deployment
+## Firebase App Hosting
 
-The root `wrangler.jsonc` is the source of truth for the free Cloudflare deployment. It enables the public `workers.dev` route and declares a D1 database binding named `DB`. Cloudflare can automatically provision that D1 resource on the first deployment because the binding intentionally has no account-specific database ID committed to Git.
+This repository is prepared for Firebase App Hosting with `apphosting.yaml`. The file contains only portable Cloud Run runtime limits; it intentionally contains no Firebase project ID, API key or secret.
 
-Build the Vinext app, then deploy the generated Worker configuration:
+### One-time Firebase Console setup
 
-```bash
-npm run deploy
-```
+1. Open the Firebase project that already contains KCPL Authentication / Firestore / Storage.
+2. Go to **Hosting & Serverless → App Hosting**.
+3. Create an App Hosting backend and connect GitHub repository `dirgh8yu/kcpl`.
+4. Use `/` as the app root because `package.json` is at the repository root.
+5. Use `main` as the live branch.
+6. Keep automatic rollouts enabled.
+7. Create/select the Firebase Web App for this backend.
+8. Add the KCPL environment values required by the deployment, especially `NEXT_PUBLIC_SITE_URL` and `KCPL_ADMIN_EMAILS`.
+9. Finish the backend setup and deploy.
 
-For Cloudflare Git integration, connect the GitHub repository and use `main` as the production branch. A successful deployment receives an address in the form:
+After that one-time connection, a successful push/merge to the configured live branch can trigger a Firebase App Hosting build and rollout automatically. Rollout/build history is visible in the App Hosting backend dashboard.
 
-```text
-https://kapileshwor-cargo.<cloudflare-account-subdomain>.workers.dev
-```
+Do **not** add `.firebaserc` with a guessed project ID. Project association should come from the real Firebase backend connection.
 
-Set `NEXT_PUBLIC_SITE_URL` to that final origin in the Cloudflare build environment. A custom domain can be attached later without changing the application architecture.
+## App Hosting runtime configuration
 
-## Environment and secrets
+`apphosting.yaml` currently uses a low-idle-cost baseline:
 
-Do not commit real secrets. Configure sensitive values in Cloudflare Worker settings.
+- `minInstances: 0`
+- `maxInstances: 10`
+- `concurrency: 80`
+- `memoryMiB: 512`
+
+These values can be adjusted later from source control if KCPL traffic or workload changes.
+
+## Firebase resources
+
+`firebase.json` remains the source configuration for Firestore and Storage security rules:
+
+- `firestore.rules`
+- `storage.rules`
+
+The hosted Next.js app uses Firebase SDK configuration provided by the App Hosting environment. Sensitive credentials and service-account JSON must not be committed to Git.
+
+## Environment variables
+
+See `.env.example` for the portable environment contract.
+
+Important values include:
 
 - `NEXT_PUBLIC_SITE_URL`: canonical production origin without a trailing slash.
-- `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional GA4 measurement ID. Analytics loads only in production and only after visitor consent.
-- `KCPL_ADMIN_PASSWORD`: required private password for `/admin`.
-- `KCPL_ADMIN_SESSION_SECRET`: required high-entropy secret used to sign short-lived admin session cookies.
-- `KCPL_ADMIN_NAME`: optional administrator display name used in the operations dashboard and private note attribution.
-- `KCPL_ADMIN_EMAIL`: optional administrator email used for private note attribution.
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional GA4 measurement ID.
+- `KCPL_ADMIN_EMAILS`: comma-separated Firebase Authentication emails allowed to bootstrap KCPL admin access.
+- `SEARATES_FREIGHT_INDEX_API_KEY`: dormant/optional legacy adapter variable; no live market-rate feature should depend on it unless the integration is deliberately re-enabled.
 
-The admin password and session secret should be configured as encrypted Worker secrets rather than plaintext repository variables.
+Firebase App Hosting injects Firebase runtime configuration for the hosted environment. Local development outside Google infrastructure may require explicit local Firebase configuration / Application Default Credentials.
 
-## Quote backend
+## KCPL Operations
 
-The `/quote` form submits JSON to `POST /api/quotes`. The route validates the request server-side, generates a reference in the form `KCPL-Q-YYYYMMDD-XXXXXXXX`, and stores the enquiry in Cloudflare D1.
+`/admin` is the private operations product for authorised KCPL staff. Role and branch permissions are enforced server-side after Firebase Authentication.
 
-The Worker requests the database as the `DB` D1 binding. The API also creates the quote table and indexes if they do not yet exist. The equivalent schema is kept in `migrations/0001_quote_enquiries.sql` for review and future database management.
+Core workspaces include:
 
-Stored quote fields include route, freight mode, cargo details, requested timing, handling notes and customer contact information. New records start with the status `new`.
+- Operations Home
+- Enquiries and quote pricing
+- Shipments and tracking
+- Digital Job Files
+- Tasks & operational alerts
+- Customer CRM / Customer 360
+- Partners & vendors
+- Accounts Receivable
+- Accounts Payable
+- Job profitability
+- Management analytics
+- Staff & branch access
 
-If the database binding is unavailable or submission fails, the public quote page keeps a pre-filled email fallback so the customer is not trapped by an infrastructure problem.
+The UI is intentionally one light, warm operations system rather than separate dark dashboards. Record IDs, shipment references, AWBs/BL-style references and system keys use monospace treatment for fast scanning.
 
-## KCPL operations dashboard
+## Security notes
 
-`/admin` is the private quote desk for KCPL staff. Authentication uses a KCPL administrator password stored only in the Cloudflare runtime. A successful login creates a signed, `HttpOnly`, `Secure`, `SameSite=Strict` session cookie with a 12-hour lifetime. The protected admin API checks the same signed session before returning or modifying quote data.
-
-The dashboard provides:
-
-- Searchable quote inbox with status filters
-- Full route, cargo and customer details
-- Workflow states: `new`, `reviewing`, `quoted`, `won`, `lost`
-- Assignment to a staff member or branch
-- Timestamped private notes with configured administrator attribution
-
-Admin workflow metadata and notes are stored in D1 tables defined by `migrations/0002_admin_workspace.sql`. The protected `/api/admin/quotes/[reference]` endpoint reads and updates these records only after checking admin authorisation.
+- Never commit production secrets, private keys or service-account JSON.
+- Authentication is Firebase-backed; passwords are not stored in this repository.
+- Role/branch access must be checked server-side, not only hidden in the UI.
+- Commercial, credit and job-cost data are redacted for roles that are not permitted to view them.
+- Private documents are served through protected admin APIs rather than public tracking routes.
