@@ -1,0 +1,39 @@
+name: Generate Firebase package lock
+
+on:
+  push:
+    branches: [firebase-migration]
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: firebase-migration
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+
+      - name: Generate npm lock file
+        run: npm install --package-lock-only
+
+      - name: Commit lock file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already current"
+          else
+            git commit -m "Add Firebase App Hosting package lock"
+            git push origin HEAD:firebase-migration
+          fi
