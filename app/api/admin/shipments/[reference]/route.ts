@@ -52,7 +52,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     carrier,
     carrierReference,
     customerNote,
-  }, auth.user.displayName);
+  }, auth.user.displayName, auth.user.email);
 
   if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
