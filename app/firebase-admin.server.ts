@@ -3,6 +3,25 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 
+type InjectedFirebaseConfig = {
+  projectId?: string;
+  storageBucket?: string;
+};
+
+function injectedConfig(): InjectedFirebaseConfig {
+  const raw = process.env.FIREBASE_CONFIG;
+  if (!raw || !raw.trim().startsWith("{")) return {};
+  try {
+    return JSON.parse(raw) as InjectedFirebaseConfig;
+  } catch {
+    return {};
+  }
+}
+
+const automaticConfig = injectedConfig();
+process.env.FIREBASE_PROJECT_ID ||= automaticConfig.projectId;
+process.env.FIREBASE_STORAGE_BUCKET ||= automaticConfig.storageBucket;
+
 function adminApp() {
   return getApps().length ? getApp() : initializeApp();
 }
@@ -30,4 +49,8 @@ export function firebaseAdminStorage() {
 
 export function firebaseAdminBucket() {
   return getStorage(adminApp()).bucket();
+}
+
+export function firebaseStorageBucketName() {
+  return process.env.FIREBASE_STORAGE_BUCKET || automaticConfig.storageBucket || "";
 }
