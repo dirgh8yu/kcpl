@@ -31,7 +31,8 @@ async function getConfig(): Promise<AdminConfig> {
       email: runtimeEnv.KCPL_ADMIN_EMAIL?.trim() || "admin@kcpl.internal",
     };
   } catch {
-    const localEnv = typeof process !== "undefined" ? process.env : {};
+    const localEnv: Record<string, string | undefined> =
+      typeof process !== "undefined" ? process.env : {};
     return {
       password: localEnv.KCPL_ADMIN_PASSWORD ?? "",
       sessionSecret: localEnv.KCPL_ADMIN_SESSION_SECRET ?? "",
