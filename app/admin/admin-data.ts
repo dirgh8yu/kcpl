@@ -3,6 +3,9 @@ import { env } from "cloudflare:workers";
 export const quoteStatuses = ["new", "reviewing", "quoted", "won", "lost"] as const;
 export type QuoteStatus = (typeof quoteStatuses)[number];
 
+export const quoteCurrencies = ["USD", "AUD", "NPR", "INR", "CNY", "EUR", "GBP", "SGD", "AED", "JPY"] as const;
+export type QuoteCurrency = (typeof quoteCurrencies)[number];
+
 export type QuoteSummary = {
   reference: string;
   created_at: string;
@@ -37,7 +40,20 @@ export type QuoteDetail = QuoteSummary & {
   requirements: string | null;
   contact_email: string;
   phone: string | null;
+  quote_currency: QuoteCurrency;
+  quoted_amount: string | null;
+  internal_cost: string | null;
+  valid_until: string | null;
+  customer_quote_note: string | null;
   notes: QuoteNote[];
+};
+
+export type QuoteCommercialInput = {
+  currency: QuoteCurrency;
+  quotedAmount: string;
+  internalCost: string;
+  validUntil: string;
+  customerNote: string;
 };
 
 const schema = `
@@ -83,7 +99,21 @@ CREATE INDEX IF NOT EXISTS idx_quote_enquiries_status ON quote_enquiries(status)
 CREATE INDEX IF NOT EXISTS idx_quote_notes_reference ON quote_notes(quote_reference, created_at DESC);
 `;
 
+const commercialSchema = `
+CREATE TABLE IF NOT EXISTS quote_commercial (
+  quote_reference TEXT PRIMARY KEY,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  quoted_amount TEXT,
+  internal_cost TEXT,
+  valid_until TEXT,
+  customer_note TEXT,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (quote_reference) REFERENCES quote_enquiries(reference) ON DELETE CASCADE
+)
+`;
+
 let schemaReady: Promise<void> | null = null;
+let commercialSchemaReady: Promise<void> | null = null;
 
 function database() {
   return (env as unknown as { DB?: D1Database }).DB;
@@ -118,6 +148,16 @@ async function ensureSchema(db: D1Database) {
   await schemaReady;
 }
 
+async function ensureCommercialSchema(db: D1Database) {
+  if (!commercialSchemaReady) {
+    commercialSchemaReady = db.prepare(commercialSchema).run().then(() => undefined).catch((error) => {
+      commercialSchemaReady = null;
+      throw error;
+    });
+  }
+  await commercialSchemaReady;
+}
+
 export async function listQuoteSummaries(): Promise<QuoteSummary[] | null> {
   const db = database();
   if (!db) return null;
@@ -150,6 +190,7 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   const db = database();
   if (!db) return undefined;
   await ensureSchema(db);
+  await ensureCommercialSchema(db);
 
   const quote = await db.prepare(`
     SELECT
@@ -173,9 +214,15 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
       q.company_name,
       q.phone,
       m.assigned_to,
+      COALESCE(c.currency, 'USD') AS quote_currency,
+      c.quoted_amount,
+      c.internal_cost,
+      c.valid_until,
+      c.customer_note AS customer_quote_note,
       (SELECT COUNT(*) FROM quote_notes n WHERE n.quote_reference = q.reference) AS note_count
     FROM quote_enquiries q
     LEFT JOIN quote_admin_meta m ON m.quote_reference = q.reference
+    LEFT JOIN quote_commercial c ON c.quote_reference = q.reference
     WHERE q.reference = ?
   `).bind(reference).first<Omit<QuoteDetail, "notes">>();
 
@@ -209,6 +256,38 @@ export async function updateQuoteAdmin(reference: string, status: QuoteStatus, a
         updated_at = excluded.updated_at
     `).bind(reference, assignedTo || null),
   ]);
+
+  return { kind: "updated" as const };
+}
+
+export async function updateQuoteCommercial(reference: string, values: QuoteCommercialInput) {
+  const db = database();
+  if (!db) return { kind: "unavailable" as const };
+  await ensureSchema(db);
+  await ensureCommercialSchema(db);
+
+  const exists = await db.prepare("SELECT reference FROM quote_enquiries WHERE reference = ?").bind(reference).first<{ reference: string }>();
+  if (!exists) return { kind: "missing" as const };
+
+  await db.prepare(`
+    INSERT INTO quote_commercial (
+      quote_reference, currency, quoted_amount, internal_cost, valid_until, customer_note, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(quote_reference) DO UPDATE SET
+      currency = excluded.currency,
+      quoted_amount = excluded.quoted_amount,
+      internal_cost = excluded.internal_cost,
+      valid_until = excluded.valid_until,
+      customer_note = excluded.customer_note,
+      updated_at = excluded.updated_at
+  `).bind(
+    reference,
+    values.currency,
+    values.quotedAmount || null,
+    values.internalCost || null,
+    values.validUntil || null,
+    values.customerNote || null,
+  ).run();
 
   return { kind: "updated" as const };
 }
