@@ -10,6 +10,9 @@ export type StaffCapabilities = {
   canManageCustomerDocuments: boolean;
   canEditCustomer: boolean;
   canArchiveCustomer: boolean;
+  canManageStaff: boolean;
+  canManageJobCosts: boolean;
+  canManageJobFile: boolean;
 };
 
 function emailSet(name: string) {
@@ -42,14 +45,10 @@ export function staffRoleForEmail(email: string): KcplStaffRole {
   if (emailSet("KCPL_COMMERCIAL_EMAILS").has(normalized)) return "commercial";
   if (emailSet("KCPL_OPERATIONS_EMAILS").has(normalized)) return "operations";
 
-  // The admin allowlist still controls who can sign in. Once explicit roles are
-  // enabled, an allowlisted staff member without a role gets least-privilege
-  // operational access rather than accidental access to rates or credit data.
   return "operations";
 }
 
-export function staffCapabilitiesForEmail(email: string): StaffCapabilities {
-  const role = staffRoleForEmail(email);
+export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities {
   const management = role === "management";
   const accounts = role === "accounts";
   const commercial = role === "commercial";
@@ -64,7 +63,14 @@ export function staffCapabilitiesForEmail(email: string): StaffCapabilities {
     canManageCustomerDocuments: management || accounts || operations,
     canEditCustomer: management || accounts || commercial || operations,
     canArchiveCustomer: management,
+    canManageStaff: management,
+    canManageJobCosts: management || accounts || commercial,
+    canManageJobFile: management || accounts || commercial || operations,
   };
+}
+
+export function staffCapabilitiesForEmail(email: string): StaffCapabilities {
+  return staffCapabilitiesForRole(staffRoleForEmail(email));
 }
 
 export const kcplStaffRoleLabels: Record<KcplStaffRole, string> = {
