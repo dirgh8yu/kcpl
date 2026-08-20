@@ -15,7 +15,7 @@ type QuoteLoadResult =
 
 async function loadQuotes(): Promise<QuoteLoadResult> {
   try {
-    const { listQuoteSummaries } = await import("./admin-data");
+    const { listQuoteSummaries } = await import("./admin-data.server");
     const quotes = await listQuoteSummaries();
     return quotes === null ? { kind: "unavailable" } : { kind: "ready", quotes };
   } catch (error) {

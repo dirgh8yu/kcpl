@@ -2,8 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { ArrowRight, Building2, Clock3, LogOut, Mail, MapPin, MessageSquareText, Package, Phone, Search, UserRound } from "lucide-react";
-import type { QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
+import { ArrowRight, Building2, CalendarDays, CircleDollarSign, Clock3, LogOut, Mail, MapPin, MessageSquareText, Package, Phone, Search, Send, TrendingUp, UserRound } from "lucide-react";
+import { quoteCurrencies } from "./admin-data";
+import type { QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 
 const statusLabels: Record<QuoteStatus, string> = {
   new: "New",
@@ -55,6 +56,12 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function formatDateOnly(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
+}
+
 function cargoDimensions(quote: QuoteDetail) {
   if (![quote.length, quote.width, quote.height].some(Boolean)) return "Not provided";
   return `${quote.length || "—"} × ${quote.width || "—"} × ${quote.height || "—"} ${quote.dimension_unit || ""}`.trim();
@@ -62,6 +69,68 @@ function cargoDimensions(quote: QuoteDetail) {
 
 function cargoWeight(quote: QuoteDetail) {
   return quote.weight ? `${quote.weight} ${quote.weight_unit || ""}`.trim() : "Not provided";
+}
+
+function amountNumber(value: string | null) {
+  if (!value) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function formatMoney(value: string | number, currency: QuoteCurrency) {
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount)) return `${currency} ${value}`;
+  try {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 3,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString("en-AU")}`;
+  }
+}
+
+function commercialMetrics(quote: QuoteDetail) {
+  const quoted = amountNumber(quote.quoted_amount);
+  const cost = amountNumber(quote.internal_cost);
+  if (quoted === null || quoted <= 0 || cost === null) return null;
+  const profit = quoted - cost;
+  return { profit, margin: (profit / quoted) * 100 };
+}
+
+function quoteEmail(quote: QuoteDetail) {
+  const price = quote.quoted_amount ? formatMoney(quote.quoted_amount, quote.quote_currency) : "To be confirmed";
+  const validity = quote.valid_until ? formatDateOnly(quote.valid_until) : "As discussed";
+  const greetingName = quote.contact_name.trim().split(/\s+/)[0] || quote.contact_name;
+  const lines = [
+    `Dear ${greetingName},`,
+    "",
+    "Thank you for your freight enquiry with Kapileshwor Cargo Pvt. Ltd. (KCPL).",
+    "",
+    `Quote reference: ${quote.reference}`,
+    `Route: ${quote.origin} → ${quote.destination}`,
+    `Mode: ${modeLabels[quote.mode] ?? quote.mode}`,
+    `Quoted price: ${price}`,
+    `Valid until: ${validity}`,
+  ];
+
+  if (quote.customer_quote_note?.trim()) {
+    lines.push("", quote.customer_quote_note.trim());
+  }
+
+  lines.push(
+    "",
+    "Please reply to this email if you would like to proceed or if you need any changes to the quotation.",
+    "",
+    "Regards,",
+    "Kapileshwor Cargo Pvt. Ltd. (KCPL)",
+  );
+
+  return {
+    subject: `KCPL Freight Quote ${quote.reference}: ${quote.origin} to ${quote.destination}`,
+    body: lines.join("\n"),
+  };
 }
 
 export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initialQuotes: QuoteSummary[]; userName: string; signOutPath: string }) {
@@ -136,7 +205,7 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
       const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: detail.status, assignedTo: detail.assigned_to ?? "" }),
+        body: JSON.stringify({ action: "workflow", status: detail.status, assignedTo: detail.assigned_to ?? "" }),
       });
       const data = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok) throw new Error(data.error || "Could not save the quote.");
@@ -150,6 +219,56 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
     } finally {
       setSaving(false);
     }
+  }
+
+  async function persistCommercial(showNotice = true) {
+    if (!detail) return false;
+    setSaving(true);
+    setNotice("");
+
+    try {
+      const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "commercial",
+          currency: detail.quote_currency,
+          quotedAmount: detail.quoted_amount ?? "",
+          internalCost: detail.internal_cost ?? "",
+          validUntil: detail.valid_until ?? "",
+          customerNote: detail.customer_quote_note ?? "",
+        }),
+      });
+      const data = await response.json() as { ok?: boolean; error?: string };
+      if (!response.ok) throw new Error(data.error || "Could not save the commercial quote.");
+      if (showNotice) setNotice("Commercial quote saved.");
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not save the commercial quote.");
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveCommercial(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistCommercial();
+  }
+
+  async function sendQuote() {
+    if (!detail) return;
+    if (!detail.quoted_amount?.trim()) {
+      setNotice("Add a quoted price before preparing the customer email.");
+      return;
+    }
+
+    const saved = await persistCommercial(false);
+    if (!saved) return;
+
+    const email = quoteEmail(detail);
+    setNotice("Quote saved. Opening a customer email draft.");
+    window.location.href = `mailto:${encodeURIComponent(detail.contact_email)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`;
   }
 
   async function addNote(event: FormEvent<HTMLFormElement>) {
@@ -179,6 +298,8 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
       setSaving(false);
     }
   }
+
+  const metrics = detail ? commercialMetrics(detail) : null;
 
   return <main className="min-h-screen bg-[#f4f1e9] text-[#10263f]">
     <header className="border-b border-black/10 bg-[#10263f] px-5 py-5 text-white lg:px-8">
@@ -256,6 +377,33 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
             <div className="sm:col-span-2"><button disabled={saving} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save workflow"}</button></div>
           </form>
 
+          <article className="rounded-3xl border border-black/10 bg-white p-5 sm:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex gap-3"><span className="mt-0.5 rounded-xl bg-[#b78a3e]/10 p-2.5 text-[#b78a3e]"><CircleDollarSign size={20}/></span><div><p className="text-xs font-black uppercase tracking-[.18em] text-[#b78a3e]">Commercial quote</p><h3 className="mt-1 text-xl font-black">Pricing & customer offer</h3><p className="mt-1 text-sm text-black/45">Internal cost and margin stay inside KCPL.</p></div></div>
+              {detail.quoted_amount && <div className="rounded-2xl bg-[#10263f] px-4 py-3 text-right text-white"><p className="text-[10px] font-bold uppercase tracking-[.13em] text-white/55">Customer price</p><p className="mt-1 text-lg font-black">{formatMoney(detail.quoted_amount, detail.quote_currency)}</p></div>}
+            </div>
+
+            <form onSubmit={saveCommercial} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Currency<select className="mt-2 w-full rounded-xl border border-black/10 bg-[#f8f7f2] p-3 text-sm font-bold text-[#10263f] outline-none focus:border-[#b78a3e]" value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></label>
+              <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Quoted price<input inputMode="decimal" className="mt-2 w-full rounded-xl border border-black/10 bg-[#f8f7f2] p-3 text-sm font-bold text-[#10263f] outline-none focus:border-[#b78a3e]" value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00" maxLength={16}/></label>
+              <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Internal cost<input inputMode="decimal" className="mt-2 w-full rounded-xl border border-black/10 bg-[#fff8eb] p-3 text-sm font-bold text-[#10263f] outline-none focus:border-[#b78a3e]" value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00" maxLength={16}/><span className="mt-1 block text-[10px] font-semibold normal-case tracking-normal text-black/35">Never included in customer email</span></label>
+              <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Valid until<input type="date" className="mt-2 w-full rounded-xl border border-black/10 bg-[#f8f7f2] p-3 text-sm font-bold text-[#10263f] outline-none focus:border-[#b78a3e]" value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></label>
+
+              <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-4 xl:max-w-2xl">
+                <div className="rounded-2xl border border-black/8 bg-[#f8f7f2] p-4"><div className="flex items-center gap-2 text-black/40"><TrendingUp size={15}/><p className="text-[10px] font-black uppercase tracking-[.13em]">Gross profit</p></div><p className={`mt-2 text-xl font-black ${metrics && metrics.profit < 0 ? "text-rose-700" : "text-[#10263f]"}`}>{metrics ? formatMoney(metrics.profit, detail.quote_currency) : "—"}</p></div>
+                <div className="rounded-2xl border border-black/8 bg-[#f8f7f2] p-4"><div className="flex items-center gap-2 text-black/40"><CircleDollarSign size={15}/><p className="text-[10px] font-black uppercase tracking-[.13em]">Margin</p></div><p className={`mt-2 text-xl font-black ${metrics && metrics.margin < 0 ? "text-rose-700" : "text-[#10263f]"}`}>{metrics ? `${metrics.margin.toFixed(1)}%` : "—"}</p></div>
+              </div>
+
+              <label className="sm:col-span-2 xl:col-span-4 text-xs font-black uppercase tracking-[.13em] text-black/45">Customer quote note<textarea className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f8f7f2] p-4 text-sm font-medium normal-case leading-6 tracking-normal text-[#10263f] outline-none focus:border-[#b78a3e]" rows={4} value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Included in the customer email. Add inclusions, exclusions, transit notes or payment terms…" maxLength={4000}/></label>
+
+              <div className="flex flex-wrap items-center gap-3 sm:col-span-2 xl:col-span-4">
+                <button disabled={saving} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save commercial quote"}</button>
+                <button disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote} className="flex items-center gap-2 rounded-xl bg-[#b78a3e] px-5 py-3 text-sm font-black text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40" type="button"><Send size={15}/> Send quote</button>
+                <p className="text-xs leading-5 text-black/40">Send quote saves first, then opens a pre-addressed email draft for your final confirmation.</p>
+              </div>
+            </form>
+          </article>
+
           <div className="grid gap-6 xl:grid-cols-2">
             <article className="rounded-3xl border border-black/10 bg-white p-6 sm:p-7"><p className="text-xs font-black uppercase tracking-[.18em] text-[#b78a3e]">Cargo</p><div className="mt-6 grid gap-5 sm:grid-cols-2">
               <Info icon={<MapPin size={18}/>} label="Route" value={`${detail.origin} → ${detail.destination}`}/>
@@ -271,6 +419,7 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
               <Info icon={<Building2 size={18}/>} label="Company" value={detail.company_name || "Not provided"}/>
               <Info icon={<Mail size={18}/>} label="Email" value={detail.contact_email} href={`mailto:${detail.contact_email}`}/>
               <Info icon={<Phone size={18}/>} label="Phone" value={detail.phone || "Not provided"} href={detail.phone ? `tel:${detail.phone}` : undefined}/>
+              <Info icon={<CalendarDays size={18}/>} label="Quote validity" value={detail.valid_until ? formatDateOnly(detail.valid_until) : "Not set"}/>
             </div></article>
           </div>
 
