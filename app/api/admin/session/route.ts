@@ -13,31 +13,15 @@ function redirectTo(request: Request, path: string, cookie?: string) {
   return new Response(null, { status: 303, headers });
 }
 
-function firstForwardedValue(value: string | null) {
-  return value?.split(",")[0]?.trim() || "";
-}
-
 function sameOrigin(request: Request) {
-  const fetchSite = request.headers.get("sec-fetch-site");
-  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") return false;
-
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-
-  try {
-    const originHost = new URL(origin).host.toLowerCase();
-    const candidates = [
-      firstForwardedValue(request.headers.get("x-forwarded-host")),
-      request.headers.get("host") ?? "",
-      new URL(request.url).host,
-    ]
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean);
-
-    return candidates.includes(originHost);
-  } catch {
-    return false;
-  }
+  // Firebase App Hosting terminates the public request at a proxy, so comparing
+  // request.url/Host to the browser Origin can reject a legitimate same-page
+  // request. Fetch Metadata is set by modern browsers before the proxy hop and
+  // survives that routing correctly. Cross-site browser requests are rejected;
+  // non-browser requests still need a valid Firebase ID token from an explicitly
+  // allowlisted KCPL staff account before a session cookie can be created.
+  const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
+  return fetchSite !== "cross-site";
 }
 
 export async function POST(request: Request) {
