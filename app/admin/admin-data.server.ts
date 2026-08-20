@@ -181,13 +181,18 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
     ORDER BY created_at DESC, id DESC
   `).bind(reference).all<QuoteNote>();
 
-  let shipment = await getShipmentForQuote(reference);
-  if (!shipment && quote.status === "won") {
-    const created = await ensureShipmentForWonQuote(reference);
-    if (created.kind === "created" || created.kind === "ready") shipment = created.shipment;
+  let shipment: QuoteDetail["shipment"] = null;
+  try {
+    shipment = (await getShipmentForQuote(reference)) ?? null;
+    if (!shipment && quote.status === "won") {
+      const created = await ensureShipmentForWonQuote(reference);
+      if (created.kind === "created" || created.kind === "ready") shipment = created.shipment ?? null;
+    }
+  } catch (error) {
+    console.error("Failed to load or initialize KCPL shipment for quote", reference, error);
   }
 
-  return { ...quote, shipment: shipment ?? null, notes: notes.results ?? [] };
+  return { ...quote, shipment, notes: notes.results ?? [] };
 }
 
 export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string) {
