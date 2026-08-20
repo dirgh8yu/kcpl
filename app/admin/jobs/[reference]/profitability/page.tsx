@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeDollarSign, FileText, Landmark, TrendingDown, TrendingUp, WalletCards } from "lucide-react";
+import { BadgeDollarSign, FileText, Landmark, TrendingUp, WalletCards } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
 import { getDigitalJobFile } from "../../../job-file.server";
 import { jobCostCategoryLabels } from "../../../job-file";
