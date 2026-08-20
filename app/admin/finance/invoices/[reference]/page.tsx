@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAdminAccess } from "../../../admin-auth";
+import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
 import { kcplStaffRoleLabels } from "../../../staff-permissions";
 import { getFinanceInvoice } from "../../finance.server";
@@ -18,9 +19,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
   if (result.kind === "missing") return <Gate title="Invoice not found" detail="This invoice reference does not exist."/>;
   if (result.kind === "forbidden") return <Gate title="Outside your finance access" detail="This invoice belongs to a branch outside your staff scope."/>;
   if (result.kind === "unavailable") return <Gate title="Finance unavailable" detail="The Firestore finance backend is unavailable for this deployment."/>;
-  return <InvoiceWorkspace invoice={result.invoice} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>;
+  const roleLabel = kcplStaffRoleLabels[staff.permissions.role];
+  return <OperationsShell userName={access.user.displayName} roleLabel={roleLabel} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}><InvoiceWorkspace invoice={result.invoice} roleLabel={roleLabel}/></OperationsShell>;
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f4f1e9] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-3xl border border-black/10 bg-white p-8 shadow-sm"><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b78a3e]">KCPL Finance</p><h1 className="mt-3 text-3xl font-black">{title}</h1><p className="mt-3 text-sm leading-6 text-black/50">{detail}</p><Link href="/admin/finance" className="mt-6 inline-block rounded-xl bg-[#10263f] px-4 py-3 text-sm font-black text-white">Back to Finance</Link></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f7f7f5] p-6 text-[#1c2025]"><section className="w-full max-w-xl rounded-xl border border-[#e2e5e8] bg-white p-8"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#717a86]">KCPL Finance</p><h1 className="mt-3 text-2xl font-semibold tracking-[-.03em]">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68717a]">{detail}</p><Link href="/admin/finance" className="ops-button ops-button-primary mt-6">Back to Finance</Link></section></main>;
 }
