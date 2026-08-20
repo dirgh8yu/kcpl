@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   AlertTriangle,
-  BadgeDollarSign,
   Boxes,
   Download,
   Landmark,
