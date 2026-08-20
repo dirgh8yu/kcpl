@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -22,15 +24,28 @@ jobs:
           node-version: 22.13.0
           cache: npm
 
-      - name: Install dependencies
+      - name: Install dependencies or repair lockfile
         shell: bash
         run: |
-          if ! npm ci --loglevel verbose; then
-            echo "::group::npm debug log"
-            cat "$HOME"/.npm/_logs/*-debug-0.log || true
-            echo "::endgroup::"
+          if npm ci; then
+            exit 0
+          fi
+
+          echo "Existing package-lock.json is malformed; regenerating from package.json."
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfile regeneration made no change."
             exit 1
           fi
+          git commit -m "Regenerate npm lockfile"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          echo "Clean lockfile committed; the next CI run will validate it."
+          exit 1
 
       - name: Lint
         run: npm run lint
