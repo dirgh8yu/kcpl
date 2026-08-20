@@ -6,8 +6,7 @@ import { quoteCurrencies, type QuoteCurrency } from "../admin-data";
 
 const modes = ["air", "LCL", "FCL", "LTL", "FTL", "express"] as const;
 type EstimateMode = (typeof modes)[number];
-const loadTypes = ["boxes", "crate", "pallets", "container20", "container40", "container40HC"] as const;
-type LoadType = (typeof loadTypes)[number];
+type LoadType = "boxes" | "crate" | "pallets" | "container20" | "container40" | "container40HC";
 
 type Estimate = {
   provider: string;
