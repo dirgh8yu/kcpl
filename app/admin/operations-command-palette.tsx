@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Command, Search, X } from "lucide-react";
 
@@ -11,8 +11,9 @@ export type OperationsCommandItem = {
   keywords?: string[];
 };
 
-export function OperationsCommandPalette({ items, open, onOpenChange }: { items: OperationsCommandItem[]; open: boolean; onOpenChange: (open: boolean) => void }) {
+export function OperationsCommandPalette({ items, onClose }: { items: OperationsCommandItem[]; onClose: () => void }) {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -21,59 +22,37 @@ export function OperationsCommandPalette({ items, open, onOpenChange }: { items:
     if (!needle) return items;
     return items.filter((item) => [item.label, item.group, ...(item.keywords ?? [])].join(" ").toLowerCase().includes(needle));
   }, [items, query]);
+  const safeActiveIndex = Math.min(activeIndex, Math.max(0, results.length - 1));
 
   useEffect(() => {
-    if (!open) return;
-    setQuery("");
-    setActiveIndex(0);
-  }, [open]);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        onOpenChange(!open);
-        return;
-      }
-      if (!open) return;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onOpenChange(false);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onOpenChange, open]);
-
-  useEffect(() => {
-    if (activeIndex >= results.length) setActiveIndex(Math.max(0, results.length - 1));
-  }, [activeIndex, results.length]);
-
-  if (!open) return null;
+    inputRef.current?.focus();
+  }, []);
 
   function choose(href: string) {
-    onOpenChange(false);
+    onClose();
     router.push(href);
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-[#0d1117]/35 px-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={() => onOpenChange(false)}>
-      <div role="dialog" aria-modal="true" aria-label="KCPL command palette" className="w-full max-w-xl overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_24px_80px_rgba(15,23,42,.22)]" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]">
+      <button type="button" className="absolute inset-0 cursor-default bg-[#0d1117]/35 backdrop-blur-[2px]" onClick={onClose} aria-label="Close command palette"/>
+      <div role="dialog" aria-modal="true" aria-label="KCPL command palette" className="relative z-10 w-full max-w-xl overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_24px_80px_rgba(15,23,42,.22)]">
         <div className="flex h-12 items-center gap-3 border-b border-[#e6e8eb] px-3.5">
           <Search size={16} className="shrink-0 text-[#858c94]"/>
           <input
-            autoFocus
+            ref={inputRef}
             value={query}
             onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }}
             onKeyDown={(event) => {
-              if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((current) => Math.min(results.length - 1, current + 1)); }
+              if (event.key === "Escape") { event.preventDefault(); onClose(); }
+              if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((current) => Math.min(Math.max(0, results.length - 1), current + 1)); }
               if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((current) => Math.max(0, current - 1)); }
-              if (event.key === "Enter" && results[activeIndex]) { event.preventDefault(); choose(results[activeIndex].href); }
+              if (event.key === "Enter" && results[safeActiveIndex]) { event.preventDefault(); choose(results[safeActiveIndex].href); }
             }}
             className="h-full min-w-0 flex-1 bg-transparent text-sm text-[#20242a] outline-none placeholder:text-[#a1a7ad]"
             placeholder="Jump to a workspace…"
           />
-          <button type="button" onClick={() => onOpenChange(false)} className="grid h-7 w-7 place-items-center rounded-md text-[#8b9299] hover:bg-[#f2f3f4] hover:text-[#3a4047]" aria-label="Close command palette"><X size={14}/></button>
+          <button type="button" onClick={onClose} className="grid h-7 w-7 place-items-center rounded-md text-[#8b9299] hover:bg-[#f2f3f4] hover:text-[#3a4047]" aria-label="Close command palette"><X size={14}/></button>
         </div>
 
         <div className="max-h-[390px] overflow-y-auto p-1.5">
@@ -83,7 +62,7 @@ export function OperationsCommandPalette({ items, open, onOpenChange }: { items:
               type="button"
               onMouseEnter={() => setActiveIndex(index)}
               onClick={() => choose(item.href)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${activeIndex === index ? "bg-[#f2f4f8]" : "hover:bg-[#f7f8f9]"}`}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${safeActiveIndex === index ? "bg-[#f2f4f8]" : "hover:bg-[#f7f8f9]"}`}
             >
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-[#e3e6ea] bg-white text-[#5b67a7]"><Command size={13}/></span>
               <span className="min-w-0 flex-1"><strong className="block truncate text-xs font-semibold text-[#2d3238]">{item.label}</strong><span className="mt-0.5 block text-[10px] text-[#939aa1]">{item.group}</span></span>
