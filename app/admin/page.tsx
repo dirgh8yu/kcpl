@@ -72,6 +72,7 @@ export default async function AdminPage() {
         signOutPath="/api/admin/session?logout=1"
       />
       <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
+        {staff.permissions.role === "management" ? <Link href="/admin/management" className="rounded-2xl border border-[#d4ad62]/40 bg-[#10263f] px-5 py-3 text-[10px] font-black uppercase tracking-[.1em] text-[#e0bd79] shadow-lg transition hover:-translate-y-0.5">Executive dashboard</Link> : null}
         {staff.permissions.canManageFinance ? <Link href="/admin/finance" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-[10px] font-black uppercase tracking-[.1em] text-emerald-800 shadow-lg transition hover:-translate-y-0.5">Finance & AR</Link> : null}
         {staff.permissions.canManageJobFile ? <Link href="/admin/command-centre" className="rounded-2xl bg-[#b78a3e] px-5 py-3 text-[10px] font-black uppercase tracking-[.1em] text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#9d7433]">Command Centre</Link> : null}
         {staff.permissions.canManageStaff ? <Link href="/admin/staff" className="rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-[.1em] text-[#10263f] shadow-lg transition hover:-translate-y-0.5">Staff & branches</Link> : null}
