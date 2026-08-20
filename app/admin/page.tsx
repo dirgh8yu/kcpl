@@ -22,12 +22,16 @@ export default async function AdminPage() {
     return <AdminGate title="This account is not an authorised KCPL admin." detail={`Signed in as ${access.user.email}. Only emails listed in KCPL_ADMIN_EMAILS can open the operations dashboard.`} signOutPath={chatGPTSignOutPath("/admin")}/>;
   }
 
-  const quotes = await listQuoteSummaries();
-  if (quotes === null) {
-    return <AdminGate title="Quote storage is not available yet." detail="The admin dashboard is ready, but the Cloudflare D1 DB binding has not been provisioned for this deployment." signOutPath={chatGPTSignOutPath("/")}/>;
+  try {
+    const quotes = await listQuoteSummaries();
+    if (quotes === null) {
+      return <AdminGate title="Quote storage is not available yet." detail="The admin dashboard is ready, but the Cloudflare D1 DB binding has not been provisioned for this deployment." signOutPath={chatGPTSignOutPath("/")}/>;
+    }
+    return <AdminDashboard initialQuotes={quotes} userName={access.user.displayName} signOutPath={chatGPTSignOutPath("/")}/>;
+  } catch (error) {
+    console.error("Failed to load KCPL operations dashboard", error);
+    return <AdminGate title="The quote desk could not be loaded." detail="KCPL's stored enquiries are temporarily unavailable. No quote data was exposed." signOutPath={chatGPTSignOutPath("/")}/>;
   }
-
-  return <AdminDashboard initialQuotes={quotes} userName={access.user.displayName}/>;
 }
 
 function AdminGate({ title, detail, signOutPath }: { title: string; detail: string; signOutPath: string }) {
