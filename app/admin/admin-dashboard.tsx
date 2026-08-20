@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowRight, Building2, Clock3, Mail, MapPin, MessageSquareText, Package, Phone, Search, UserRound } from "lucide-react";
+import type { ReactNode } from "react";
+import { ArrowRight, Building2, Clock3, LogOut, Mail, MapPin, MessageSquareText, Package, Phone, Search, UserRound } from "lucide-react";
 import type { QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 
 const statusLabels: Record<QuoteStatus, string> = {
@@ -11,6 +12,8 @@ const statusLabels: Record<QuoteStatus, string> = {
   won: "Won",
   lost: "Lost",
 };
+
+const statusOptions: Array<"all" | QuoteStatus> = ["all", "new", "reviewing", "quoted", "won", "lost"];
 
 const modeLabels: Record<string, string> = {
   air: "Air freight",
@@ -37,7 +40,7 @@ function cargoWeight(quote: QuoteDetail) {
   return quote.weight ? `${quote.weight} ${quote.weight_unit || ""}`.trim() : "Not provided";
 }
 
-export function AdminDashboard({ initialQuotes, userName }: { initialQuotes: QuoteSummary[]; userName: string }) {
+export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initialQuotes: QuoteSummary[]; userName: string; signOutPath: string }) {
   const [quotes, setQuotes] = useState(initialQuotes);
   const [selectedReference, setSelectedReference] = useState(initialQuotes[0]?.reference ?? "");
   const [detail, setDetail] = useState<QuoteDetail | null>(null);
@@ -146,7 +149,7 @@ export function AdminDashboard({ initialQuotes, userName }: { initialQuotes: Quo
     <header className="border-b border-black/10 bg-[#10263f] px-5 py-5 text-white lg:px-8">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
         <div><p className="text-xs font-bold uppercase tracking-[.24em] text-[#d4ad62]">KCPL Operations</p><h1 className="mt-1 text-2xl font-black tracking-[-.03em]">Freight enquiry desk</h1></div>
-        <div className="text-right text-sm text-white/70"><p>Signed in as</p><strong className="text-white">{userName}</strong></div>
+        <div className="flex items-center gap-4"><div className="text-right text-sm text-white/70"><p>Signed in as</p><strong className="text-white">{userName}</strong></div><a href={signOutPath} className="flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-xs font-black text-white transition hover:bg-white/10">Sign out <LogOut size={14}/></a></div>
       </div>
     </header>
 
@@ -155,7 +158,7 @@ export function AdminDashboard({ initialQuotes, userName }: { initialQuotes: Quo
         <div className="sticky top-0 border-b border-black/10 bg-white p-5">
           <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35" size={17}/><input className="w-full rounded-xl border border-black/10 bg-[#f8f7f2] py-3 pl-10 pr-3 text-sm outline-none transition focus:border-[#b78a3e]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search quotes, clients, routes"/></div>
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {(["all", ...Object.keys(statusLabels)] as const).map((status) => <button key={status} type="button" onClick={() => setStatusFilter(status as "all" | QuoteStatus)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${statusFilter === status ? "bg-[#10263f] text-white" : "bg-[#eeeae0] text-[#425365]"}`}>{status === "all" ? "All" : statusLabels[status as QuoteStatus]}</button>)}
+            {statusOptions.map((status) => <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${statusFilter === status ? "bg-[#10263f] text-white" : "bg-[#eeeae0] text-[#425365]"}`}>{status === "all" ? "All" : statusLabels[status]}</button>)}
           </div>
         </div>
 
@@ -217,7 +220,7 @@ export function AdminDashboard({ initialQuotes, userName }: { initialQuotes: Quo
   </main>;
 }
 
-function Info({ icon, label, value, href }: { icon?: React.ReactNode; label: string; value: string; href?: string }) {
+function Info({ icon, label, value, href }: { icon?: ReactNode; label: string; value: string; href?: string }) {
   const content = href ? <a href={href} className="font-bold text-[#10263f] underline decoration-[#b78a3e]/40 underline-offset-4">{value}</a> : <strong className="font-bold text-[#10263f]">{value}</strong>;
   return <div className="flex gap-3">{icon && <span className="mt-0.5 text-[#b78a3e]">{icon}</span>}<div><p className="text-[10px] font-black uppercase tracking-[.13em] text-black/35">{label}</p><div className="mt-1 text-sm leading-6">{content}</div></div></div>;
 }
