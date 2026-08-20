@@ -3,7 +3,7 @@ import {
   adminSessionCookie,
   clearAdminSessionCookie,
   firebaseAdminConfigured,
-  isAllowedAdminEmail,
+  isAuthorizedAdminUser,
 } from "../../../admin/admin-auth";
 import { firebaseAdminAuth } from "../../../firebase-admin.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   try {
     const auth = firebaseAdminAuth();
     const decoded = await auth.verifyIdToken(idToken, true);
-    if (!isAllowedAdminEmail(decoded.email)) {
+    if (!await isAuthorizedAdminUser(decoded.uid, decoded.email)) {
       return Response.json({ ok: false, error: "This Firebase account is not authorised for KCPL Operations." }, { status: 403 });
     }
 
