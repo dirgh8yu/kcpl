@@ -16,8 +16,9 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function currencyValue(value: unknown): CrmCurrency {
-  return crmCurrencies.includes(value as CrmCurrency) ? value as CrmCurrency : "NPR";
+function currencyValue(value: unknown): CrmCurrency | null {
+  const normalized = text(value).trim().toUpperCase();
+  return crmCurrencies.includes(normalized as CrmCurrency) ? normalized as CrmCurrency : null;
 }
 
 function branchValue(value: unknown): KcplBranch {
@@ -133,6 +134,16 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   const quotes = new Map(quotesSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
   const shipments = new Map(shipmentsSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
 
+  let excludedCurrencyRecords = 0;
+  const excludedCurrencyValues = new Set<string>();
+  function financialCurrency(value: unknown) {
+    const currency = currencyValue(value);
+    if (currency) return currency;
+    excludedCurrencyRecords += 1;
+    excludedCurrencyValues.add(text(value).trim().toUpperCase() || "MISSING");
+    return null;
+  }
+
   const currentFinancials = new Map<CrmCurrency, CurrencyFinancialMetric>();
   function current(currency: CrmCurrency) {
     let row = currentFinancials.get(currency);
@@ -179,7 +190,8 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   for (const doc of invoicesSnapshot.docs) {
     const data = doc.data() as Record<string, unknown>;
     const status = text(data.status);
-    const currency = currencyValue(data.currency);
+    const currency = financialCurrency(data.currency);
+    if (!currency) continue;
     const total = numberValue(data.total);
     const balance = Math.max(0, numberValue(data.balance_due));
     const due = datePart(data.due_date);
@@ -217,7 +229,10 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     if (month) {
       const trendKey = moneyKey(month, currency);
       let trend = trendMoney.get(trendKey);
-      if (!trend) { trend = { month, currency, revenue: 0, cost: 0 }; trendMoney.set(trendKey, trend); }
+      if (!trend) {
+        trend = { month, currency, revenue: 0, cost: 0 };
+        trendMoney.set(trendKey, trend);
+      }
       trend.revenue += total;
     }
   }
@@ -226,7 +241,8 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     const data = doc.data() as Record<string, unknown>;
     const status = text(data.status);
     if (["draft", "void"].includes(status)) continue;
-    const currency = currencyValue(data.currency);
+    const currency = financialCurrency(data.currency);
+    if (!currency) continue;
     const balance = Math.max(0, numberValue(data.balance_due));
     const due = datePart(data.due_date);
     const snapshot = current(currency);
@@ -239,8 +255,9 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     if (!inRange(data.created_at, range)) continue;
     const shipmentReference = shipmentIdFromChild(doc.ref);
     if (!shipmentReference) continue;
+    const currency = financialCurrency(data.currency);
+    if (!currency) continue;
     const amount = numberValue(data.amount);
-    const currency = currencyValue(data.currency);
     const shipment = shipments.get(shipmentReference) ?? {};
     const quote = quotes.get(text(shipment.quote_reference)) ?? {};
     const customerId = nullable(shipment.customer_id) ?? nullable(quote.customer_id) ?? "";
@@ -269,7 +286,10 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     if (month) {
       const trendKey = moneyKey(month, currency);
       let trend = trendMoney.get(trendKey);
-      if (!trend) { trend = { month, currency, revenue: 0, cost: 0 }; trendMoney.set(trendKey, trend); }
+      if (!trend) {
+        trend = { month, currency, revenue: 0, cost: 0 };
+        trendMoney.set(trendKey, trend);
+      }
       trend.cost += amount;
     }
   }
@@ -311,6 +331,7 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     }
     return row;
   }
+
   for (const [, data] of shipments) {
     if (text(data.status) === "delivered") continue;
     const name = nullable(data.job_assigned_to_name) ?? "Unassigned";
@@ -319,6 +340,7 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     row.active_jobs += 1;
     if (text(data.job_priority) === "urgent") row.urgent_jobs += 1;
   }
+
   for (const doc of tasksSnapshot.docs) {
     if (doc.get("completed") === true) continue;
     const name = nullable(doc.get("assigned_to_name")) ?? "Unassigned";
@@ -352,8 +374,9 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   const branches: BranchPerformance[] = [];
   for (const [key, row] of branchMoney) {
     const [branchRaw, currencyRaw] = key.split("::");
-    const branch = branchValue(branchRaw);
     const currency = currencyValue(currencyRaw);
+    if (!currency) continue;
+    const branch = branchValue(branchRaw);
     const profit = row.revenue - row.cost;
     branches.push({ branch, currency, revenue: row.revenue, cost: row.cost, profit, margin_percent: margin(row.revenue, profit), active_jobs: activeByBranch.get(branch) ?? 0, invoice_count: row.invoiceCount });
   }
@@ -377,7 +400,10 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   for (const job of jobs) {
     const key = moneyKey(job.origin, job.destination, job.mode, job.currency);
     let route = routeMap.get(key);
-    if (!route) { route = { origin: job.origin, destination: job.destination, mode: job.mode, currency: job.currency, revenue: 0, cost: 0, jobs: new Set<string>() }; routeMap.set(key, route); }
+    if (!route) {
+      route = { origin: job.origin, destination: job.destination, mode: job.mode, currency: job.currency, revenue: 0, cost: 0, jobs: new Set<string>() };
+      routeMap.set(key, route);
+    }
     route.revenue += job.revenue;
     route.cost += job.cost;
     route.jobs.add(job.shipment_reference);
@@ -400,6 +426,13 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
 
   const staffWorkload = [...workloads.values()].filter((row) => row.active_jobs || row.open_tasks).sort((a, b) => (b.overdue_tasks * 5 + b.urgent_jobs * 4 + b.open_tasks + b.active_jobs) - (a.overdue_tasks * 5 + a.urgent_jobs * 4 + a.open_tasks + a.active_jobs)).slice(0, 25);
   const lossMakingJobs = jobs.filter((row) => row.profit < -0.00001).sort((a, b) => a.currency.localeCompare(b.currency) || a.profit - b.profit).slice(0, 50);
+
+  if (excludedCurrencyRecords) {
+    console.warn("KCPL Management Analytics excluded financial records with unsupported currency values", {
+      count: excludedCurrencyRecords,
+      values: [...excludedCurrencyValues].sort(),
+    });
+  }
 
   return {
     generated_at: new Date().toISOString(),
