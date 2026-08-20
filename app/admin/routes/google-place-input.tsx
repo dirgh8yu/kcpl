@@ -42,12 +42,7 @@ export function GooglePlaceInput({
 
   useEffect(() => {
     const query = value.trim();
-    if (!touched || query.length < 3) {
-      setSuggestions([]);
-      setLoading(false);
-      setError("");
-      return;
-    }
+    if (!touched || query.length < 3) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -91,8 +86,12 @@ export function GooglePlaceInput({
           onFocus={() => setFocused(true)}
           onBlur={() => window.setTimeout(() => setFocused(false), 120)}
           onChange={(event) => {
+            const nextValue = event.target.value;
             setTouched(true);
-            onChange(event.target.value);
+            setSuggestions([]);
+            setError("");
+            setLoading(false);
+            onChange(nextValue);
           }}
           className="w-full bg-transparent text-xs outline-none"
           placeholder={placeholder}
