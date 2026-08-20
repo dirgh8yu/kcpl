@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Calculator, Clock3, Copy, ExternalLink, PackageSearch, Route, ShieldCheck, TriangleAlert } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Calculator, Clock3, Copy, ExternalLink, MapPin, PackageSearch, Route, ShieldCheck, TriangleAlert } from "lucide-react";
 import { quoteCurrencies, type QuoteCurrency } from "../admin-data";
 
 const modes = ["air", "LCL", "FCL", "LTL", "FTL", "express"] as const;
@@ -27,6 +27,13 @@ type Estimate = {
   quantity: number;
   disclaimer: string;
   attribution_url: string;
+};
+
+type LocationSuggestion = {
+  value: string;
+  label: string;
+  kind: string;
+  detail: string;
 };
 
 const modeLabels: Record<EstimateMode, string> = {
@@ -60,6 +67,152 @@ function money(value: number, currency: string) {
 function fetchedLabel(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function directCodeSuggestions(value: string): LocationSuggestion[] {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, "");
+  const suggestions: LocationSuggestion[] = [];
+  if (/^[A-Z]{3}$/.test(normalized)) {
+    suggestions.push({
+      value: normalized,
+      label: normalized,
+      kind: "IATA airport code",
+      detail: "Freightos accepts 3-letter airport codes",
+    });
+  }
+  if (/^[A-Z]{2}[A-Z0-9]{3}$/.test(normalized)) {
+    suggestions.push({
+      value: normalized,
+      label: normalized,
+      kind: "UN/LOCODE",
+      detail: "Freightos accepts 5-character seaport codes",
+    });
+  }
+  return suggestions;
+}
+
+function LocationAutocomplete({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const listboxId = `market-estimate-${label.toLowerCase()}-suggestions`;
+
+  useEffect(() => {
+    const query = value.trim();
+    if (!open || query.length < 2) return;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await fetch(`/api/admin/market-estimate/locations?q=${encodeURIComponent(query)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await response.json() as { ok?: boolean; suggestions?: LocationSuggestion[] };
+        if (!response.ok || !data.ok) {
+          setSuggestions([]);
+          return;
+        }
+        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setSuggestions([]);
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 320);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, value]);
+
+  const combined = useMemo(() => {
+    const direct = directCodeSuggestions(value);
+    const seen = new Set(direct.map((item) => item.value.toLowerCase()));
+    return [...direct, ...suggestions.filter((item) => {
+      const key = item.value.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })].slice(0, 9);
+  }, [suggestions, value]);
+
+  function choose(suggestion: LocationSuggestion) {
+    onChange(suggestion.value);
+    setSuggestions([]);
+    setSearching(false);
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative md:col-span-1 xl:col-span-2">
+      <label className="block">
+        <span className="text-[11px] font-semibold text-[#5f6973]">{label}</span>
+        <div className="relative">
+          <MapPin className="pointer-events-none absolute left-3 top-[22px] z-10 text-[#9aa3ab]" size={15}/>
+          <input
+            required
+            autoComplete="off"
+            role="combobox"
+            aria-controls={listboxId}
+            aria-expanded={open && value.trim().length >= 2}
+            aria-autocomplete="list"
+            className={`${inputClass} pl-9`}
+            value={value}
+            onChange={(event) => {
+              onChange(event.target.value);
+              setSuggestions([]);
+              setSearching(false);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => window.setTimeout(() => setOpen(false), 160)}
+            placeholder={placeholder}
+          />
+        </div>
+      </label>
+
+      {open && value.trim().length >= 2 ? (
+        <div id={listboxId} role="listbox" className="absolute inset-x-0 top-full z-40 mt-1 max-h-80 overflow-y-auto rounded-xl border border-[#d9dee3] bg-white p-1.5 shadow-[0_18px_45px_rgba(16,38,63,.18)]">
+          {searching && combined.length === 0 ? <p className="px-3 py-3 text-xs text-[#7d8790]">Searching locations…</p> : null}
+          {!searching && combined.length === 0 ? <div className="px-3 py-3"><p className="text-xs font-bold text-[#42505e]">No dropdown match yet.</p><p className="mt-1 text-[10px] leading-4 text-[#8a949d]">Try city + country, or enter a 3-letter IATA airport code / 5-character UN/LOCODE directly.</p></div> : null}
+          {combined.map((suggestion) => (
+            <button
+              key={`${suggestion.kind}:${suggestion.value}`}
+              type="button"
+              role="option"
+              aria-selected={false}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => choose(suggestion)}
+              className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-[#f3f5f6]"
+            >
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#eef1f3] text-[#87672f]"><MapPin size={13}/></span>
+              <span className="min-w-0">
+                <strong className="block truncate text-xs text-[#10263f]">{suggestion.label}</strong>
+                <span className="mt-0.5 block truncate text-[10px] text-[#7e8992]">{suggestion.kind}{suggestion.detail ? ` · ${suggestion.detail}` : ""}</span>
+              </span>
+            </button>
+          ))}
+          <div className="border-t border-[#edf0f2] px-3 py-2 text-[9px] leading-4 text-[#9aa2a9]">
+            Global place suggestions © OpenStreetMap contributors, served via Photon. Airport and seaport codes are accepted directly by Freightos.
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function MarketEstimateWorkspace({ roleLabel }: { roleLabel: string }) {
@@ -156,8 +309,9 @@ export function MarketEstimateWorkspace({ roleLabel }: { roleLabel: string }) {
         </div>
 
         <form onSubmit={calculate} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="md:col-span-1 xl:col-span-2"><span className="text-[11px] font-semibold text-[#5f6973]">Origin</span><input required className={inputClass} value={form.origin} onChange={(event) => setForm({ ...form, origin: event.target.value })} placeholder="Kathmandu, Nepal or KTM"/></label>
-          <label className="md:col-span-1 xl:col-span-2"><span className="text-[11px] font-semibold text-[#5f6973]">Destination</span><input required className={inputClass} value={form.destination} onChange={(event) => setForm({ ...form, destination: event.target.value })} placeholder="Melbourne, Australia or MEL"/></label>
+          <LocationAutocomplete label="Origin" value={form.origin} onChange={(origin) => setForm((current) => ({ ...current, origin }))} placeholder="Start typing Kathmandu, KTM, CNSHA…"/>
+          <LocationAutocomplete label="Destination" value={form.destination} onChange={(destination) => setForm((current) => ({ ...current, destination }))} placeholder="Start typing Melbourne, MEL, USLAX…"/>
+          <p className="md:col-span-2 xl:col-span-4 -mt-1 text-[10px] leading-5 text-[#7a858f]">Select a dropdown location whenever possible. Freightos also accepts exact 3-letter IATA airport codes and 5-character UN/LOCODE seaport codes.</p>
 
           <label><span className="text-[11px] font-semibold text-[#5f6973]">Mode</span><select className={inputClass} value={form.mode} onChange={(event) => setMode(event.target.value as EstimateMode)}>{modes.map((mode) => <option key={mode} value={mode}>{modeLabels[mode]}</option>)}</select></label>
           <label><span className="text-[11px] font-semibold text-[#5f6973]">Load type</span><select className={inputClass} value={form.loadType} onChange={(event) => setForm({ ...form, loadType: event.target.value as LoadType })}>{relevantLoadTypes.map((item) => <option key={item} value={item}>{loadTypeLabels[item]}</option>)}</select></label>
@@ -170,7 +324,7 @@ export function MarketEstimateWorkspace({ roleLabel }: { roleLabel: string }) {
           <label><span className="text-[11px] font-semibold text-[#5f6973]">Width</span><input required={!containerMode} min="0.01" step="0.01" type="number" className={inputClass} value={form.width} onChange={(event) => setForm({ ...form, width: event.target.value })} placeholder={containerMode ? "Optional" : "Required"}/></label>
           <label><span className="text-[11px] font-semibold text-[#5f6973]">Height</span><input required={!containerMode} min="0.01" step="0.01" type="number" className={inputClass} value={form.height} onChange={(event) => setForm({ ...form, height: event.target.value })} placeholder={containerMode ? "Optional" : "Required"}/></label>
 
-          {!containerMode ? <p className="md:col-span-2 xl:col-span-4 text-[10px] leading-5 text-[#7a858f]">Freightos requires weight plus length, width and height for boxes, crates and pallets. For best route matching, enter city + country or use an airport/seaport code.</p> : null}
+          {!containerMode ? <p className="md:col-span-2 xl:col-span-4 text-[10px] leading-5 text-[#7a858f]">Freightos requires weight plus length, width and height for boxes, crates and pallets.</p> : null}
 
           <div className="md:col-span-2 xl:col-span-4">
             <button disabled={busy} type="submit" className="flex h-11 items-center gap-2 rounded-lg bg-[#10263f] px-5 text-sm font-black text-white transition hover:bg-[#173650] disabled:opacity-50"><Calculator size={16}/>{busy ? "Checking external market…" : "Get external estimate"}</button>
