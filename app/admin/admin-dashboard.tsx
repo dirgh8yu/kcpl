@@ -37,6 +37,7 @@ const statusStyles: Record<QuoteStatus, { chip: string; stripe: string }> = {
 };
 
 const statusOptions: Array<"all" | QuoteStatus> = ["all", "new", "reviewing", "quoted", "won", "lost"];
+const summaryStatuses: QuoteStatus[] = ["new", "reviewing", "quoted", "won", "lost"];
 
 const modeLabels: Record<string, string> = {
   air: "Air freight",
@@ -73,6 +74,14 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [noteDraft, setNoteDraft] = useState("");
+
+  const statusCounts = useMemo<Record<QuoteStatus, number>>(() => ({
+    new: quotes.filter((quote) => quote.status === "new").length,
+    reviewing: quotes.filter((quote) => quote.status === "reviewing").length,
+    quoted: quotes.filter((quote) => quote.status === "quoted").length,
+    won: quotes.filter((quote) => quote.status === "won").length,
+    lost: quotes.filter((quote) => quote.status === "lost").length,
+  }), [quotes]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -206,6 +215,29 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
       </aside>
 
       <section className="p-5 lg:p-8 xl:p-10">
+        <div className="mx-auto mb-6 max-w-5xl">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div><p className="text-[10px] font-black uppercase tracking-[.18em] text-black/35">Pipeline overview</p><h2 className="mt-1 text-lg font-black tracking-[-.02em]">{quotes.length} total enquiries</h2></div>
+            {statusFilter !== "all" && <button type="button" onClick={() => setStatusFilter("all")} className="text-xs font-bold text-black/45 underline decoration-black/20 underline-offset-4 transition hover:text-[#10263f]">Clear status filter</button>}
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {summaryStatuses.map((status) => {
+              const active = statusFilter === status;
+              return <button
+                key={status}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setStatusFilter(active ? "all" : status)}
+                className={`rounded-2xl p-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${statusStyles[status].chip} ${active ? "ring-2 ring-current/25 ring-offset-2" : ""}`}
+              >
+                <p className="text-[10px] font-black uppercase tracking-[.14em] opacity-70">{statusLabels[status]}</p>
+                <p className="mt-2 text-3xl font-black tracking-[-.05em]">{statusCounts[status]}</p>
+                <p className="mt-1 text-[11px] font-semibold opacity-60">{statusCounts[status] === 1 ? "enquiry" : "enquiries"}</p>
+              </button>;
+            })}
+          </div>
+        </div>
+
         {!selectedReference && <div className="mx-auto mt-20 max-w-xl rounded-3xl border border-black/10 bg-white p-10 text-center"><Package className="mx-auto text-[#b78a3e]"/><h2 className="mt-5 text-2xl font-black">No quote enquiries yet.</h2><p className="mt-2 text-sm leading-6 text-black/55">New website enquiries will appear here automatically.</p></div>}
         {loading && <div className="mx-auto mt-20 max-w-xl text-center text-sm text-black/50">Loading enquiry…</div>}
         {!loading && selectedReference && !detail && <div className="mx-auto mt-20 max-w-xl rounded-3xl border border-red-200 bg-white p-8 text-sm text-red-700">{notice || "This enquiry could not be loaded."}</div>}
