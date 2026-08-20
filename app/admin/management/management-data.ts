@@ -2,6 +2,7 @@ import type { CrmCurrency, KcplBranch } from "../crm/crm-data";
 
 export const managementRangeKeys = ["today", "7d", "month", "quarter", "year", "all", "custom"] as const;
 export type ManagementRangeKey = (typeof managementRangeKeys)[number];
+export type ManagementBranch = KcplBranch | "Unassigned";
 
 export type ManagementRange = {
   key: ManagementRangeKey;
@@ -25,7 +26,7 @@ export type CurrencyFinancialMetric = {
 };
 
 export type BranchPerformance = {
-  branch: KcplBranch;
+  branch: ManagementBranch;
   currency: CrmCurrency;
   revenue: number;
   cost: number;
@@ -51,7 +52,7 @@ export type JobPerformance = {
   shipment_reference: string;
   customer_id: string | null;
   customer_name: string;
-  branch: KcplBranch;
+  branch: ManagementBranch;
   origin: string;
   destination: string;
   mode: string;
@@ -61,6 +62,10 @@ export type JobPerformance = {
   cost: number;
   profit: number;
   margin_percent: number | null;
+  period_revenue: number;
+  period_cost: number;
+  period_profit: number;
+  period_margin_percent: number | null;
 };
 
 export type RoutePerformance = {
@@ -100,6 +105,15 @@ export type StaffWorkload = {
   overdue_tasks: number;
 };
 
+export type ManagementDataQuality = {
+  excluded_currency_records: number;
+  excluded_currency_values: string[];
+  unassigned_branch_financial_records: number;
+  active_unassigned_branch_shipments: number;
+  unlinked_invoice_records: number;
+  orphaned_job_cost_records: number;
+};
+
 export type ManagementAnalytics = {
   generated_at: string;
   range: ManagementRange;
@@ -112,10 +126,14 @@ export type ManagementAnalytics = {
   trends: TrendPoint[];
   concentration: ConcentrationRisk[];
   staff_workload: StaffWorkload[];
+  data_quality: ManagementDataQuality;
   quote_total: number;
   quote_won: number;
   quote_lost: number;
+  quote_open: number;
+  quote_decided: number;
   quote_conversion_percent: number;
+  quote_decision_rate_percent: number;
   active_shipments: number;
   delivered_in_period: number;
   urgent_shipments: number;
