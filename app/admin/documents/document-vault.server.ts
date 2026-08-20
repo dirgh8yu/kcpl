@@ -77,7 +77,13 @@ function documentFromData(id: string, data: Record<string, unknown>): VaultDocum
 }
 
 function safeFileName(input: string) {
-  const normalized = input.normalize("NFKC").replace(/[\\/\u0000-\u001f\u007f]+/g, "-").trim();
+  const withoutControls = [...input.normalize("NFKC")]
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join("");
+  const normalized = withoutControls.replace(/[\\/]+/g, "-").trim();
   const safe = normalized.replace(/[^a-zA-Z0-9._()\- ]+/g, "-").replace(/\s+/g, " ").slice(0, 160);
   return safe || "document";
 }
