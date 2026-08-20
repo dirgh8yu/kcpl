@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
+import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { addShipmentEvent, updateShipment } from "../../../../shipment-data.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../../../shipment-types";
 
@@ -13,16 +14,6 @@ async function authorize() {
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
 }
 
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === new URL(request.url).host;
-  } catch {
-    return false;
-  }
-}
-
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -30,7 +21,7 @@ function clean(value: unknown) {
 export async function PATCH(request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
-  if (!sameOrigin(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
+  if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
   let body: Record<string, unknown>;
@@ -71,7 +62,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
-  if (!sameOrigin(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
+  if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
   let body: Record<string, unknown>;
