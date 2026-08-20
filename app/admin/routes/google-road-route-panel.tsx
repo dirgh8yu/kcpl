@@ -1,8 +1,9 @@
 "use client";
 
-import { Clock3, Gauge, MapPin, Navigation, Route } from "lucide-react";
+import { Clock3, Gauge, Navigation, Route } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { OpsButton, OpsErrorState, OpsMetric, OpsMetricStrip, OpsPanel, OpsStatusBadge } from "../operations-ui";
+import { GooglePlaceInput } from "./google-place-input";
 
 type Estimate = {
   provider: string;
@@ -99,12 +100,12 @@ export function GoogleRoadRoutePanel({ initialOrigin = "", initialDestination = 
     <OpsPanel
       title="Road distance & ETA"
       eyebrow="Google Routes reference"
-      description="Calculate indicative truck-road distance and transit time. Add required branch or border stops one per line."
+      description="Calculate indicative truck-road distance and transit time. Start typing to use Google Maps location suggestions."
       action={<OpsStatusBadge tone={trafficAware ? "accent" : "success"}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</OpsStatusBadge>}
     >
       <form onSubmit={calculate} className={`grid gap-3 p-3.5 ${compact ? "xl:grid-cols-[1fr_1fr_1fr_auto]" : "xl:grid-cols-[1fr_1fr_1fr_220px]"}`}>
-        <label className="block"><span className="text-[10px] font-medium text-[#69717a]">Origin</span><div className="ops-search-field mt-1.5 w-full"><MapPin size={13} className="text-[#7f89b3]"/><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kolkata, India" required/></div></label>
-        <label className="block"><span className="text-[10px] font-medium text-[#69717a]">Destination</span><div className="ops-search-field mt-1.5 w-full"><Navigation size={13} className="text-[#7f89b3]"/><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Kathmandu, Nepal" required/></div></label>
+        <GooglePlaceInput label="Origin" value={origin} onChange={setOrigin} placeholder="Kolkata, India" required />
+        <GooglePlaceInput label="Destination" value={destination} onChange={setDestination} placeholder="Kathmandu, Nepal" icon={<Navigation size={13}/>} required />
         <label className="block"><span className="text-[10px] font-medium text-[#69717a]">Via stops <span className="text-[#a0a6ac]">optional</span></span><textarea rows={compact ? 1 : 2} value={via} onChange={(event) => setVia(event.target.value)} className={`mt-1.5 w-full resize-none px-3 py-2 ${compact ? "h-[34px]" : "min-h-[64px]"}`} placeholder="Raxaul, India&#10;Birgunj, Nepal"/></label>
         <div className="flex items-end gap-2 xl:flex-col xl:items-stretch xl:justify-end"><label className="flex min-h-[34px] flex-1 cursor-pointer items-center gap-2 rounded-lg border border-[#dfe2e6] bg-[#fbfbfb] px-3 text-[10px] font-medium text-[#616a73]"><input type="checkbox" checked={trafficAware} onChange={(event) => setTrafficAware(event.target.checked)} className="h-3.5 w-3.5 accent-[#5367d9]"/><span>Use live traffic <span className="text-[#7f88b3]">Pro</span></span></label><OpsButton tone="primary" type="submit" disabled={loading}>{loading ? "Calculating…" : "Calculate route"}</OpsButton></div>
       </form>
