@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
+import { staffCapabilitiesForEmail, type StaffCapabilities } from "../../../admin/staff-permissions";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
 export function crmJson(body: unknown, status = 200) {
@@ -7,9 +8,17 @@ export function crmJson(body: unknown, status = 200) {
 
 export async function authorizeCrm() {
   const access = await getAdminAccess();
-  if (access.kind === "authorized") return { user: access.user };
+  if (access.kind === "authorized") {
+    return { user: access.user, permissions: staffCapabilitiesForEmail(access.user.email) };
+  }
   if (access.kind === "signed-out") return { response: crmJson({ ok: false, error: "Sign in is required." }, 401) };
   return { response: crmJson({ ok: false, error: "Admin access is not configured." }, 503) };
+}
+
+export function requireCrmCapability(permissions: StaffCapabilities, capability: keyof Omit<StaffCapabilities, "role">) {
+  return permissions[capability]
+    ? null
+    : crmJson({ ok: false, error: "Your KCPL staff role does not allow this action." }, 403);
 }
 
 export function protectCrmWrite(request: Request) {
