@@ -41,10 +41,10 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
 
   try {
     const result = await getShipmentDocumentFile(reference, parsedId);
-    if (result.kind === "unavailable") return json({ ok: false, error: "R2 document storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
     if (result.kind === "missing" || result.kind === "object-missing") return json({ ok: false, error: "Document not found." }, 404);
 
-    return new Response(result.object.body, {
+    return new Response(result.bytes, {
       headers: {
         "content-type": result.document.content_type || "application/octet-stream",
         "content-length": String(result.document.size_bytes),
@@ -54,7 +54,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
       },
     });
   } catch (error) {
-    console.error("Failed to download KCPL shipment document", error);
+    console.error("Failed to download KCPL Firebase shipment document", error);
     return json({ ok: false, error: "The document could not be downloaded." }, 500);
   }
 }
@@ -70,11 +70,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
 
   try {
     const result = await deleteShipmentDocument(reference, parsedId);
-    if (result.kind === "unavailable") return json({ ok: false, error: "R2 document storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
     return json({ ok: true });
   } catch (error) {
-    console.error("Failed to delete KCPL shipment document", error);
+    console.error("Failed to delete KCPL Firebase shipment document", error);
     return json({ ok: false, error: "The document could not be deleted." }, 500);
   }
 }
