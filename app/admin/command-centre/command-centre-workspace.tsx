@@ -6,7 +6,6 @@ import {
   ArrowUpRight,
   BriefcaseBusiness,
   CalendarDays,
-  CheckCircle2,
   Clock3,
   Landmark,
   PackageCheck,
