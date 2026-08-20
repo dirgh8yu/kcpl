@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ArrowRight, Building2, CalendarDays, CircleDollarSign, Clock3, LogOut, Mail, MapPin, MessageSquareText, Package, Phone, Search, Send, TrendingUp, UserRound } from "lucide-react";
 import { quoteCurrencies } from "./admin-data";
 import type { QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
+import { AdminShipmentPanel } from "./admin-shipment-panel";
 
 const statusLabels: Record<QuoteStatus, string> = {
   new: "New",
@@ -207,13 +208,18 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "workflow", status: detail.status, assignedTo: detail.assigned_to ?? "" }),
       });
-      const data = await response.json() as { ok?: boolean; error?: string };
+      const data = await response.json() as { ok?: boolean; shipment?: QuoteDetail["shipment"]; error?: string };
       if (!response.ok) throw new Error(data.error || "Could not save the quote.");
 
       setQuotes((current) => current.map((quote) => quote.reference === detail.reference
         ? { ...quote, status: detail.status, assigned_to: detail.assigned_to }
         : quote));
-      setNotice("Quote workflow updated.");
+      if (data.shipment) {
+        setDetail((current) => current ? { ...current, shipment: data.shipment ?? current.shipment } : current);
+        setNotice(`Quote won. Shipment ${data.shipment.reference} is ready.`);
+      } else {
+        setNotice("Quote workflow updated.");
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save the quote.");
     } finally {
@@ -376,6 +382,13 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
             <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Assigned to<input className="mt-2 w-full rounded-xl border border-black/10 bg-[#f8f7f2] p-3 text-sm text-[#10263f]" value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></label>
             <div className="sm:col-span-2"><button disabled={saving} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save workflow"}</button></div>
           </form>
+
+          <AdminShipmentPanel
+            shipment={detail.shipment}
+            quoteStatus={detail.status}
+            onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)}
+            onNotice={setNotice}
+          />
 
           <article className="rounded-3xl border border-black/10 bg-white p-5 sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
