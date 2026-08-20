@@ -1,5 +1,5 @@
 import { ArrowRight, CalendarDays, CircleDollarSign, MapPin, PackageCheck, Plane, Ship, Truck } from "lucide-react";
-import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
+import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
 import type { CrmOperationsHistory, CrmQuoteHistoryItem, CrmShipmentHistoryItem } from "../crm-operations-history.server";
 
 const quoteStatusLabels: Record<string, string> = {
