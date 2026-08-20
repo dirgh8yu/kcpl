@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
+import { OperationsShell } from "../operations-shell";
 import { kcplStaffRoleLabels } from "../staff-permissions";
 import { getStaffContext } from "../staff-directory.server";
 import { listPayablesDashboard } from "./payables.server";
@@ -17,7 +18,17 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   if (!dashboard) return <Gate title="Accounts Payable is unavailable." detail="The Firestore payable ledger is not available for this deployment."/>;
   const params = await searchParams;
   const initialShipment = typeof params.shipment === "string" ? params.shipment.trim().toUpperCase() : "";
-  return <PayablesWorkspace dashboard={dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]} initialShipment={initialShipment}/>;
+
+  return (
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={staff.permissions.canManageStaff}
+      canManageFinance={staff.permissions.canManageFinance}
+      isManagement={staff.permissions.role === "management"}
+    >
+      <PayablesWorkspace dashboard={dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]} initialShipment={initialShipment}/>
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
