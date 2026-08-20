@@ -7,10 +7,33 @@ import type { QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 
 const statusLabels: Record<QuoteStatus, string> = {
   new: "New",
-  reviewing: "Reviewing",
+  reviewing: "Pending",
   quoted: "Quoted",
   won: "Won",
   lost: "Lost",
+};
+
+const statusStyles: Record<QuoteStatus, { chip: string; stripe: string }> = {
+  new: {
+    chip: "border border-sky-200 bg-sky-50 text-sky-700",
+    stripe: "border-l-sky-400",
+  },
+  reviewing: {
+    chip: "border border-amber-200 bg-amber-50 text-amber-800",
+    stripe: "border-l-amber-400",
+  },
+  quoted: {
+    chip: "border border-violet-200 bg-violet-50 text-violet-700",
+    stripe: "border-l-violet-400",
+  },
+  won: {
+    chip: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+    stripe: "border-l-emerald-500",
+  },
+  lost: {
+    chip: "border border-rose-200 bg-rose-50 text-rose-700",
+    stripe: "border-l-rose-500",
+  },
 };
 
 const statusOptions: Array<"all" | QuoteStatus> = ["all", "new", "reviewing", "quoted", "won", "lost"];
@@ -161,14 +184,20 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
         <div className="sticky top-0 border-b border-black/10 bg-white p-5">
           <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35" size={17}/><input className="w-full rounded-xl border border-black/10 bg-[#f8f7f2] py-3 pl-10 pr-3 text-sm outline-none transition focus:border-[#b78a3e]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search quotes, clients, routes"/></div>
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {statusOptions.map((status) => <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${statusFilter === status ? "bg-[#10263f] text-white" : "bg-[#eeeae0] text-[#425365]"}`}>{status === "all" ? "All" : statusLabels[status]}</button>)}
+            {statusOptions.map((status) => {
+              const active = statusFilter === status;
+              if (status === "all") {
+                return <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-bold transition ${active ? "border-[#10263f] bg-[#10263f] text-white shadow-sm" : "border-black/10 bg-[#eeeae0] text-[#425365] hover:bg-[#e7e2d7]"}`}>All</button>;
+              }
+              return <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold transition ${statusStyles[status].chip} ${active ? "ring-2 ring-current/20 ring-offset-1" : "opacity-80 hover:opacity-100"}`}>{statusLabels[status]}</button>;
+            })}
           </div>
         </div>
 
         <div className="divide-y divide-black/10">
           {filtered.length === 0 && <div className="p-8 text-sm leading-6 text-black/50">No enquiries match this view.</div>}
-          {filtered.map((quote) => <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className={`block w-full p-5 text-left transition ${selectedReference === quote.reference ? "bg-[#f4f1e9]" : "hover:bg-[#faf9f5]"}`}>
-            <div className="flex items-start justify-between gap-3"><strong className="text-sm">{quote.reference}</strong><span className="rounded-full bg-[#10263f]/8 px-2.5 py-1 text-[10px] font-black uppercase tracking-[.1em]">{statusLabels[quote.status] ?? quote.status}</span></div>
+          {filtered.map((quote) => <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className={`block w-full border-l-4 p-5 text-left transition ${statusStyles[quote.status].stripe} ${selectedReference === quote.reference ? "bg-[#f4f1e9]" : "hover:bg-[#faf9f5]"}`}>
+            <div className="flex items-start justify-between gap-3"><strong className="text-sm">{quote.reference}</strong><span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[.1em] ${statusStyles[quote.status].chip}`}>{statusLabels[quote.status] ?? quote.status}</span></div>
             <div className="mt-3 flex items-center gap-2 text-sm font-bold"><span className="truncate">{quote.origin}</span><ArrowRight size={14} className="shrink-0 text-[#b78a3e]"/><span className="truncate">{quote.destination}</span></div>
             <p className="mt-2 truncate text-xs text-black/55">{quote.company_name || quote.contact_name}{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</p>
             <div className="mt-3 flex items-center justify-between text-[11px] text-black/45"><span>{formatDate(quote.created_at)}</span>{quote.note_count > 0 && <span className="flex items-center gap-1"><MessageSquareText size={12}/>{quote.note_count}</span>}</div>
@@ -184,13 +213,13 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
         {!loading && detail && <div className="mx-auto max-w-5xl space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="text-xs font-black uppercase tracking-[.2em] text-[#b78a3e]">{detail.reference}</p><h2 className="mt-2 text-3xl font-black tracking-[-.04em] sm:text-4xl">{detail.origin} <span className="text-[#b78a3e]">→</span> {detail.destination}</h2><p className="mt-2 text-sm text-black/50">Received {formatDate(detail.created_at)}</p></div>
-            <span className="rounded-full bg-[#10263f] px-4 py-2 text-xs font-black uppercase tracking-[.12em] text-white">{statusLabels[detail.status]}</span>
+            <span className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[.12em] shadow-sm ${statusStyles[detail.status].chip}`}>{statusLabels[detail.status]}</span>
           </div>
 
           {notice && <div className="rounded-2xl border border-black/10 bg-white px-5 py-4 text-sm font-semibold">{notice}</div>}
 
           <form onSubmit={saveQuote} className="grid gap-4 rounded-3xl border border-black/10 bg-white p-5 sm:grid-cols-2 sm:p-7">
-            <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Workflow status<select className="mt-2 w-full rounded-xl border border-black/10 bg-[#f8f7f2] p-3 text-sm font-bold text-[#10263f]" value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+            <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Workflow status<select className={`mt-2 w-full rounded-xl p-3 text-sm font-bold outline-none ${statusStyles[detail.status].chip}`} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
             <label className="text-xs font-black uppercase tracking-[.13em] text-black/45">Assigned to<input className="mt-2 w-full rounded-xl border border-black/10 bg-[#f8f7f2] p-3 text-sm text-[#10263f]" value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></label>
             <div className="sm:col-span-2"><button disabled={saving} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save workflow"}</button></div>
           </form>
