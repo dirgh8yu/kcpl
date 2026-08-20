@@ -32,7 +32,12 @@ export default async function CrmPage() {
   if (customers === null) return <CrmGate title="Firestore is not available yet." detail="The CRM is ready, but Firebase customer storage is not available for this deployment." />;
 
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff}>
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={staff.permissions.canManageStaff}
+      canManageFinance={staff.permissions.canManageFinance}
+      isManagement={staff.permissions.role === "management"}
+    >
       <CrmCustomerJump customers={customers} />
       <CrmDashboard initialCustomers={customers} initialStats={crmDashboardStats(customers)} userName={access.user.displayName} userEmail={access.user.email} />
     </OperationsShell>
