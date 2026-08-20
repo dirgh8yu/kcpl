@@ -1,54 +1,56 @@
 import Link from "next/link";
+import { BadgeCheck, Calculator, Handshake, PackageSearch, ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
+import { OpsBadge, OpsEmptyState, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Market Estimate | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function MarketEstimatePage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required." detail="Use an authorised KCPL staff account to access commercial tools."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Use an authorised KCPL staff account to access commercial tools."/>;
 
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canViewCommercial) return <Gate title="Commercial access required." detail="Market intelligence tools are available to Management, Accounts and Commercial roles."/>;
+  if (!staff.permissions.canViewCommercial) return <Gate title="Commercial access required" detail="Market intelligence tools are available to Management, Accounts and Commercial roles."/>;
 
   return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff={staff.permissions.canManageStaff}
-      canManageFinance={staff.permissions.canManageFinance}
-      isManagement={staff.permissions.role === "management"}
-    >
-      <main className="min-h-screen bg-[#f5f6f7] text-[#10263f]">
-        <header className="border-b border-[#dfe3e8] bg-white px-4 py-5 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-[1500px] flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#9a763b]">KCPL Commercial Intelligence</p>
-              <h1 className="mt-1 text-3xl font-black tracking-[-.045em]">Market Estimate</h1>
-              <p className="mt-2 max-w-3xl text-xs leading-5 text-[#68747f]">The external courier-rate provider has been removed. This workspace is reserved for KCPL-controlled pricing tools and future vetted integrations.</p>
+    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+      <OpsPage>
+        <OpsPageHeader eyebrow="Commercial" title="Market estimate" description="A controlled workspace for pricing inputs KCPL can trust. External courier-rate calls are disabled until a replacement provider is deliberately vetted." meta={<><OpsBadge tone="accent">{kcplStaffRoleLabels[staff.permissions.role]}</OpsBadge><span>No external rate API connected</span></>} />
+        <div className="ops-content ops-stack">
+          <OpsSurface eyebrow="Pricing sources" title="Build estimates from verified inputs" description="Use KCPL partner/vendor rates and the enquiry pricing worksheet today. A future live-rate connector can plug into this workspace without changing the rest of the commercial flow.">
+            <div className="grid gap-3 md:grid-cols-2">
+              <Link href="/admin/partners" className="group rounded-[15px] border border-[#e7dfd8] bg-[#faf7f4] p-5 hover:bg-white">
+                <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-[#f3e7df] text-[#b8654f]"><Handshake size={17}/></span>
+                <h2 className="mt-4 text-[13px] font-[720] tracking-[-.02em] text-[#4b423c]">Verified partners & vendors</h2>
+                <p className="mt-1.5 text-[9px] leading-5 text-[#8a8078]">Review counterpart coverage, supplier terms, modes and service context before building a customer offer.</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-[9px] font-bold text-[#b5654f]">Open network register →</span>
+              </Link>
+              <Link href="/admin" className="group rounded-[15px] border border-[#e7dfd8] bg-[#faf7f4] p-5 hover:bg-white">
+                <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-[#eef3ef] text-[#6f8874]"><PackageSearch size={17}/></span>
+                <h2 className="mt-4 text-[13px] font-[720] tracking-[-.02em] text-[#4b423c]">Enquiry pricing worksheet</h2>
+                <p className="mt-1.5 text-[9px] leading-5 text-[#8a8078]">Put customer price, internal cost, profit, margin, currency and validity together in the live quote workflow.</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-[9px] font-bold text-[#b5654f]">Open enquiries →</span>
+              </Link>
             </div>
-            <span className="rounded-full border border-[#dfe3e8] bg-[#f8f9fa] px-3 py-2 text-[10px] font-black uppercase tracking-[.08em] text-[#68747f]">{kcplStaffRoleLabels[staff.permissions.role]}</span>
-          </div>
-        </header>
+          </OpsSurface>
 
-        <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
-          <section className="max-w-3xl rounded-2xl border border-[#dfe3e8] bg-white p-6 shadow-sm sm:p-8">
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#9a763b]">External provider disconnected</p>
-            <h2 className="mt-2 text-2xl font-black tracking-[-.03em]">No live courier API is connected.</h2>
-            <p className="mt-3 text-sm leading-6 text-[#68747f]">KCPL will not send shipment details to an external rate provider from this page. Use verified partner/vendor rates and the internal quotation workflow until a replacement pricing source is approved.</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/admin/partners" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Open Partners</Link>
-              <Link href="/admin" className="rounded-lg border border-[#dfe3e8] bg-white px-4 py-2.5 text-xs font-bold text-[#10263f]">Back to enquiries</Link>
-            </div>
-          </section>
+          <OpsSurface eyebrow="Integration policy" title="No synthetic rates" description="KCPL should never present a number as a live market quote unless its source, freshness and scope are known.">
+            <div className="grid gap-3 sm:grid-cols-3"><Principle icon={<BadgeCheck size={15}/>} title="Verified source" detail="Only approved providers or internal rate cards."/><Principle icon={<ShieldCheck size={15}/>} title="Private by default" detail="Do not send shipment data to unknown third parties."/><Principle icon={<Calculator size={15}/>} title="Transparent estimate" detail="Separate market input, cost, margin and customer sell."/></div>
+          </OpsSurface>
         </div>
-      </main>
+      </OpsPage>
     </OperationsShell>
   );
 }
 
+function Principle({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
+  return <div className="rounded-[13px] border border-[#eae2dc] bg-[#faf7f4] p-4"><span className="text-[#a86b54]">{icon}</span><strong className="mt-3 block text-[10px] text-[#514840]">{title}</strong><p className="mt-1 text-[8px] leading-4 text-[#91877f]">{detail}</p></div>;
+}
+
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Operations</p><h1 className="mt-3 text-2xl font-bold">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p><Link href="/admin" className="mt-5 inline-block rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Back to enquiries</Link></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#332d29]"><section className="w-full max-w-xl rounded-[18px] border border-[#e7dfd8] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[9px] font-extrabold uppercase tracking-[.13em] text-[#bd644e]">KCPL Operations</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><Link href="/admin" className="mt-6 inline-flex rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[10px] font-bold text-white">Back to enquiries</Link></section></main>;
 }
