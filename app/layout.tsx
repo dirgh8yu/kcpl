@@ -7,6 +7,7 @@ import { MobileQuoteCta } from "./components/mobile-quote-cta";
 import { StructuredData } from "./components/structured-data";
 import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
 import "./globals.css";
+import "./admin/operations-theme.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
