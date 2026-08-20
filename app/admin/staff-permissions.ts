@@ -13,6 +13,7 @@ export type StaffCapabilities = {
   canManageStaff: boolean;
   canManageJobCosts: boolean;
   canManageJobFile: boolean;
+  canManageFinance: boolean;
 };
 
 function emailSet(name: string) {
@@ -66,6 +67,7 @@ export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities
     canManageStaff: management,
     canManageJobCosts: management || accounts || commercial,
     canManageJobFile: management || accounts || commercial || operations,
+    canManageFinance: management || accounts,
   };
 }
 
