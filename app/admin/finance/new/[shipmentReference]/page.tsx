@@ -24,7 +24,9 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
     <ShipmentInvoiceForm
       shipmentReference={reference}
       customerId={linked.kind === "resolved" ? linked.customerId : null}
+      customerName={linked.kind === "resolved" ? linked.customerName : null}
       quoteReference={linked.kind === "unlinked" ? linked.quoteReference : null}
+      suggestions={linked.kind === "unlinked" ? linked.suggestions : []}
     />
   );
 }

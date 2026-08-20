@@ -51,14 +51,27 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/admin/finance/invoices", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, amount: Number(form.amount), taxRate: Number(form.taxRate) }) });
-      const data = await response.json() as { reference?: string; error?: string };
+      const shipmentReference = form.shipmentReference.trim().toUpperCase();
+      const typedCustomerId = form.customerId.trim().toUpperCase();
+      const customerId = typedCustomerId.startsWith("KCPL-C-") ? typedCustomerId : "";
+      const response = await fetch("/api/admin/finance/invoices", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...form, shipmentReference, customerId, amount: Number(form.amount), taxRate: Number(form.taxRate) }),
+      });
+      const data = await response.json() as { reference?: string; error?: string; resolutionPath?: string };
+      if (!response.ok && data.resolutionPath) {
+        router.push(data.resolutionPath);
+        return;
+      }
       if (!response.ok || !data.reference) throw new Error(data.error || "Invoice could not be created.");
       router.push(`/admin/finance/invoices/${encodeURIComponent(data.reference)}`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Invoice could not be created.");
     } finally { setBusy(false); }
   }
+
+  const shipmentMode = Boolean(form.shipmentReference.trim());
 
   return <main className="min-h-screen bg-[#f3f0e7] text-[#10263f]">
     <header className="bg-[#091624] px-5 py-6 text-white lg:px-8">
@@ -77,9 +90,9 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
 
     <div className="mx-auto max-w-[1700px] space-y-6 p-5 lg:p-8">
       {notice ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{notice}</div> : null}
-      {createOpen ? <section className="rounded-[28px] border border-black/10 bg-white p-6 shadow-sm sm:p-8"><div className="mb-5"><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#b78a3e]">Create receivable</p><h2 className="mt-1 text-2xl font-black">New invoice draft</h2><p className="mt-2 text-xs text-black/45">Link a shipment where possible. If there is no shipment yet, enter the CRM customer reference instead.</p></div><form onSubmit={createInvoice} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Field label="Shipment reference"><input className="fin-input" value={form.shipmentReference} onChange={(event) => setForm({ ...form, shipmentReference: event.target.value })} placeholder="KCPL-S-..."/></Field>
-        <Field label="Customer reference"><input className="fin-input" value={form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })} placeholder="KCPL-C-..."/></Field>
+      {createOpen ? <section className="rounded-[28px] border border-black/10 bg-white p-6 shadow-sm sm:p-8"><div className="mb-5"><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#b78a3e]">Create receivable</p><h2 className="mt-1 text-2xl font-black">New invoice draft</h2><p className="mt-2 text-xs text-black/45">For shipment invoices, enter only the shipment reference. KCPL resolves the CRM customer automatically and asks for confirmation if needed.</p></div><form onSubmit={createInvoice} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Field label="Shipment reference"><input className="fin-input" value={form.shipmentReference} onChange={(event) => setForm((current) => ({ ...current, shipmentReference: event.target.value, customerId: event.target.value.trim() ? "" : current.customerId }))} placeholder="KCPL-S-..."/></Field>
+        <Field label={shipmentMode ? "Customer reference (automatic)" : "Customer reference"}><input disabled={shipmentMode} className="fin-input disabled:opacity-55" value={shipmentMode ? "Resolved from shipment" : form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })} placeholder="KCPL-C-..."/></Field>
         <Field label="Issue date"><input required type="date" className="fin-input" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></Field>
         <Field label="Due date"><input type="date" className="fin-input" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></Field>
         <Field label="Currency"><select className="fin-input" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></Field>
@@ -87,7 +100,7 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
         <Field label="Tax %"><input min="0" max="100" step="0.01" type="number" className="fin-input" value={form.taxRate} onChange={(event) => setForm({ ...form, taxRate: event.target.value })}/></Field>
         <Field label="Description"><input className="fin-input" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Freight and logistics services"/></Field>
         <div className="md:col-span-2 xl:col-span-4"><Field label="Invoice notes"><textarea className="fin-input min-h-20 resize-y" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></Field></div>
-        <div className="md:col-span-2 xl:col-span-4"><button disabled={busy} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busy ? "Creating…" : "Create invoice draft"}</button></div>
+        <div className="md:col-span-2 xl:col-span-4"><button disabled={busy} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busy ? "Creating…" : shipmentMode ? "Continue to invoice" : "Create invoice draft"}</button></div>
       </form></section> : null}
 
       <section className="grid gap-4 xl:grid-cols-2">{dashboard.currency_summaries.length ? dashboard.currency_summaries.map((summary) => <div key={summary.currency} className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-[9px] font-black uppercase tracking-[.15em] text-[#b78a3e]">{summary.currency} receivables</p><h2 className="mt-1 text-xl font-black">{money(summary.outstanding, summary.currency)} outstanding</h2></div><CircleDollarSign size={22} className="text-[#b78a3e]"/></div><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Mini label="Invoiced" value={money(summary.invoiced, summary.currency)}/><Mini label="Collected" value={money(summary.collected, summary.currency)}/><Mini label="Outstanding" value={money(summary.outstanding, summary.currency)}/><Mini label="Overdue" value={money(summary.overdue, summary.currency)} warn={summary.overdue > 0}/></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><Age label="0–30 days" value={summary.aging_0_30} currency={summary.currency}/><Age label="31–60" value={summary.aging_31_60} currency={summary.currency}/><Age label="61–90" value={summary.aging_61_90} currency={summary.currency}/><Age label="90+" value={summary.aging_90_plus} currency={summary.currency}/></div></div>) : <div className="rounded-[26px] border border-black/10 bg-white p-8 text-sm text-black/45">No issued invoices yet. Create the first invoice draft to start Accounts Receivable.</div>}</section>
