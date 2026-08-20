@@ -1,19 +1,19 @@
-import { applicationDefault, getApps, initializeApp } from "firebase-admin/app";
+import { getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 
 function adminApp() {
-  if (getApps().length) return getApps()[0];
+  return getApps().length ? getApp() : initializeApp();
+}
 
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-
-  return initializeApp({
-    credential: applicationDefault(),
-    ...(projectId ? { projectId } : {}),
-    ...(storageBucket ? { storageBucket } : {}),
-  });
+export function firebaseRuntimeConfigured() {
+  return Boolean(
+    process.env.FIREBASE_CONFIG ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT ||
+    process.env.FIREBASE_PROJECT_ID,
+  );
 }
 
 export function firebaseAdminAuth() {
@@ -28,6 +28,6 @@ export function firebaseAdminStorage() {
   return getStorage(adminApp());
 }
 
-export function firebaseStorageBucketName() {
-  return process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "";
+export function firebaseAdminBucket() {
+  return getStorage(adminApp()).bucket();
 }
