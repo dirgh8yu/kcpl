@@ -1,8 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeft, BellRing, Check, CheckCircle2, RefreshCw, Search, ShieldAlert } from "lucide-react";
+import { AlertTriangle, BellRing, Check, CheckCircle2, RefreshCw, Search, ShieldAlert, X } from "lucide-react";
+import {
+  OpsButton,
+  OpsEmptyState,
+  OpsFilterBar,
+  OpsMetric,
+  OpsMetricStrip,
+  OpsPageHeader,
+  OpsPanel,
+  OpsStatusBadge,
+} from "../operations-ui";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity } from "./alert-data";
 
 function dateTime(value: string) {
@@ -10,10 +19,8 @@ function dateTime(value: string) {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function severityClass(value: AutomationAlertSeverity) {
-  if (value === "critical") return "border-rose-200 bg-rose-50 text-rose-700";
-  if (value === "warning") return "border-amber-200 bg-amber-50 text-amber-800";
-  return "border-sky-200 bg-sky-50 text-sky-700";
+function severityTone(value: AutomationAlertSeverity): "danger" | "warning" | "info" {
+  return value === "critical" ? "danger" : value === "warning" ? "warning" : "info";
 }
 
 export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: AutomationAlert[]; roleLabel: string }) {
@@ -38,6 +45,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     acknowledged: alerts.filter((alert) => alert.status === "acknowledged").length,
     open: alerts.filter((alert) => alert.status === "open").length,
   };
+  const filtersActive = severity !== "all" || Boolean(query.trim());
 
   async function reload() {
     const response = await fetch("/api/admin/alerts", { cache: "no-store" });
@@ -50,11 +58,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/admin/alerts", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: actionName, alertId }),
-      });
+      const response = await fetch("/api/admin/alerts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: actionName, alertId }) });
       const data = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok) throw new Error(data.error || "Alert action failed.");
       await reload();
@@ -66,55 +70,31 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     }
   }
 
-  return (
-    <main className="min-h-screen bg-[#f3f0e7] text-[#10263f]">
-      <header className="bg-[#091624] px-5 py-6 text-white lg:px-8">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-start justify-between gap-5">
-          <div className="flex items-start gap-4">
-            <Link href="/admin/command-centre" className="grid h-10 w-10 place-items-center rounded-xl border border-white/15 text-white/65 hover:bg-white/10"><ArrowLeft size={16}/></Link>
-            <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-[#d4ad62]">KCPL Automation</p><h1 className="mt-1 text-3xl font-black tracking-[-.045em]">Alerts & Escalations</h1><p className="mt-2 text-xs text-white/45">Live operational inbox · {roleLabel}</p></div>
-          </div>
-          <button disabled={busy} onClick={() => action("evaluate")} className="flex items-center gap-2 rounded-xl bg-[#d4ad62] px-4 py-3 text-[10px] font-black uppercase tracking-[.1em] text-[#10263f] disabled:opacity-50"><RefreshCw size={13}/>{busy ? "Checking…" : "Run checks now"}</button>
-        </div>
-      </header>
+  return <main>
+    <OpsPageHeader
+      eyebrow="Operations"
+      title="Alerts"
+      description="Operational exceptions and escalations in one action queue. Acknowledge ownership, resolve completed issues, or run the existing automation checks on demand."
+      breadcrumbs={[{ label: "Operations", href: "/admin/command-centre" }, { label: "Alerts" }]}
+      meta={<>Live operational inbox · {roleLabel}</>}
+      actions={<OpsButton tone="primary" disabled={busy} onClick={() => void action("evaluate")}><RefreshCw size={13} className={busy ? "animate-spin" : ""}/>{busy ? "Checking…" : "Run checks"}</OpsButton>}
+    />
 
-      <section className="bg-[#10263f] px-5 pb-6 text-white lg:px-8">
-        <div className="mx-auto grid max-w-[1600px] grid-cols-2 gap-3 md:grid-cols-4">
-          <Metric label="Open" value={counts.open} icon={<BellRing size={15}/>} />
-          <Metric label="Critical" value={counts.critical} icon={<ShieldAlert size={15}/>} danger={counts.critical > 0} />
-          <Metric label="Warnings" value={counts.warning} icon={<AlertTriangle size={15}/>} warning={counts.warning > 0} />
-          <Metric label="Acknowledged" value={counts.acknowledged} icon={<Check size={15}/>} />
-        </div>
-      </section>
+    <div className="ops-page-body ops-stack">
+      <OpsMetricStrip columns={4}>
+        <OpsMetric label="Open" value={counts.open} icon={<BellRing size={13}/>} />
+        <OpsMetric label="Critical" value={counts.critical} icon={<ShieldAlert size={13}/>} tone={counts.critical ? "danger" : "neutral"}/>
+        <OpsMetric label="Warnings" value={counts.warning} icon={<AlertTriangle size={13}/>} tone={counts.warning ? "warning" : "neutral"}/>
+        <OpsMetric label="Acknowledged" value={counts.acknowledged} icon={<Check size={13}/>} />
+      </OpsMetricStrip>
 
-      <div className="mx-auto max-w-[1600px] p-5 lg:p-8">
-        {notice ? <div className="mb-5 rounded-2xl border border-[#d4ad62]/30 bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#6d5427]">{notice}</div> : null}
-        <div className="mb-5 grid gap-3 md:grid-cols-[1fr_220px]">
-          <label className="flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3"><Search size={14} className="text-black/30"/><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="Search alert, customer, shipment, staff…"/></label>
-          <select value={severity} onChange={(event) => setSeverity(event.target.value as "all" | AutomationAlertSeverity)} className="rounded-xl border border-black/10 bg-white px-3 py-3 text-xs font-bold outline-none"><option value="all">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="info">Info</option></select>
-        </div>
+      {notice ? <div className="flex items-center justify-between gap-3 rounded-lg border border-[#dde2f2] bg-[#f5f6fb] px-3.5 py-2.5 text-[11px] text-[#59657b]"><span>{notice}</span><button type="button" onClick={() => setNotice("")} className="grid h-6 w-6 place-items-center rounded-md hover:bg-white" aria-label="Dismiss notice"><X size={12}/></button></div> : null}
 
-        <section className="overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-sm">
-          <div className="border-b border-black/10 p-6"><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#b78a3e]">Action queue</p><h2 className="mt-1 text-xl font-black">{visible.length} active alerts</h2><p className="mt-1 text-xs text-black/45">Acknowledging means someone owns the issue. Resolving closes it, but the engine will reopen it if the underlying condition still exists.</p></div>
-          <div className="divide-y divide-black/10">
-            {visible.length ? visible.map((alert) => <article key={alert.id} className="p-5 sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[.08em] ${severityClass(alert.severity)}`}>{alert.severity}</span><span className="rounded-full bg-[#f3f0e7] px-2.5 py-1 text-[9px] font-black">{automationAlertTypeLabels[alert.type]}</span>{alert.status === "acknowledged" ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-black text-emerald-700">Acknowledged</span> : null}</div>
-                  <h3 className="mt-3 text-base font-black">{alert.title}</h3><p className="mt-1 text-xs leading-5 text-black/50">{alert.detail}</p>
-                  <p className="mt-3 text-[10px] font-bold text-black/35">{alert.branch ? `${alert.branch} · ` : ""}{alert.assigned_to_name || alert.assigned_to_email || "Unassigned"} · triggered {dateTime(alert.first_triggered_at)}{alert.escalated_at ? ` · escalated ${dateTime(alert.escalated_at)}` : ""}</p>
-                </div>
-                <div className="flex flex-wrap gap-2"><Link href={alert.action_path} className="rounded-xl bg-[#10263f] px-4 py-2.5 text-[10px] font-black text-white">Open record</Link>{alert.status === "open" ? <button disabled={busy} onClick={() => action("acknowledge", alert.id)} className="rounded-xl border border-black/10 px-4 py-2.5 text-[10px] font-black">Acknowledge</button> : null}<button disabled={busy} onClick={() => action("resolve", alert.id)} className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[10px] font-black text-emerald-700"><CheckCircle2 size={12}/>Resolve</button></div>
-              </div>
-            </article>) : <div className="p-12 text-center"><CheckCircle2 className="mx-auto text-emerald-500" size={28}/><h3 className="mt-3 text-base font-black">No active alerts</h3><p className="mt-1 text-xs text-black/40">The automation engine has nothing requiring action right now.</p></div>}
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-}
+      <OpsPanel title="Action queue" eyebrow="Automation" description="Acknowledging assigns human ownership. Resolving closes the current alert, but the engine can reopen it if the underlying condition persists." action={<span className="text-[10px] text-[#90979e]">{visible.length} shown</span>}>
+        <div className="border-b border-[#eceef0] p-3"><OpsFilterBar reset={filtersActive ? <button type="button" onClick={() => { setQuery(""); setSeverity("all"); }} className="inline-flex items-center gap-1 font-medium text-[#5968bb] hover:underline"><X size={11}/>Clear</button> : null}><label className="ops-search-field flex-1 lg:max-w-[520px]"><Search size={13} className="text-[#8e959c]"/><span className="sr-only">Search alerts</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search alert, customer, shipment or staff"/></label><label className="ops-filter-control"><ShieldAlert size={13}/><span className="sr-only">Severity</span><select value={severity} onChange={(event) => setSeverity(event.target.value as "all" | AutomationAlertSeverity)}><option value="all">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="info">Info</option></select></label></OpsFilterBar></div>
 
-function Metric({ label, value, icon, danger = false, warning = false }: { label: string; value: number; icon: React.ReactNode; danger?: boolean; warning?: boolean }) {
-  const style = danger ? "border-rose-300/30 bg-rose-400/10 text-rose-100" : warning ? "border-amber-300/30 bg-amber-400/10 text-amber-100" : "border-white/10 bg-white/[.035] text-white";
-  return <div className={`rounded-2xl border p-4 ${style}`}><div className="flex items-center gap-2 opacity-55">{icon}<span className="text-[8px] font-black uppercase tracking-[.12em]">{label}</span></div><p className="mt-2 text-2xl font-black">{value}</p></div>;
+        {visible.length ? <div className="divide-y divide-[#eceef0]">{visible.map((alert) => <article key={alert.id} className="px-4 py-4 hover:bg-[#fafbfc] sm:px-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><OpsStatusBadge tone={severityTone(alert.severity)}>{alert.severity}</OpsStatusBadge><OpsStatusBadge>{automationAlertTypeLabels[alert.type]}</OpsStatusBadge>{alert.status === "acknowledged" ? <OpsStatusBadge tone="success">Acknowledged</OpsStatusBadge> : null}</div><h3 className="mt-2.5 text-[13px] font-semibold text-[#353c43]">{alert.title}</h3><p className="mt-1 max-w-4xl text-[11px] leading-5 text-[#707982]">{alert.detail}</p><div className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1 text-[9px] text-[#959ca3]"><span>{alert.branch || "No branch"}</span><span>·</span><span>{alert.assigned_to_name || alert.assigned_to_email || "Unassigned"}</span><span>·</span><span>Triggered {dateTime(alert.first_triggered_at)}</span>{alert.escalated_at ? <><span>·</span><span>Escalated {dateTime(alert.escalated_at)}</span></> : null}</div></div><div className="flex shrink-0 flex-wrap items-center gap-1.5"><OpsButton href={alert.action_path}>Open record</OpsButton>{alert.status === "open" ? <OpsButton disabled={busy} onClick={() => void action("acknowledge", alert.id)}>Acknowledge</OpsButton> : null}<OpsButton disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12}/>Resolve</OpsButton></div></div></article>)}</div> : <OpsEmptyState title="No active alerts" detail="The automation engine has nothing requiring action in this view."/>}
+      </OpsPanel>
+    </div>
+  </main>;
 }
