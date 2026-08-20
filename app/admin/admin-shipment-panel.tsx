@@ -84,7 +84,6 @@ function ShipmentWorkspace({
 
   useEffect(() => {
     const controller = new AbortController();
-    setDocumentsLoading(true);
     fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, {
       cache: "no-store",
       signal: controller.signal,
