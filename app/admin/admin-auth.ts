@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { isActiveStaffProfile } from "./staff-directory.server";
 
 export const ADMIN_SESSION_COOKIE = "kcpl_admin_session";
 export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -25,12 +26,29 @@ function allowedAdminEmails() {
 }
 
 export function firebaseAdminConfigured() {
-  return firebaseRuntimeConfigured() && allowedAdminEmails().size > 0;
+  return firebaseRuntimeConfigured();
 }
 
 export function isAllowedAdminEmail(email: string | undefined | null) {
   if (!email) return false;
   return allowedAdminEmails().has(email.trim().toLowerCase());
+}
+
+export async function isAuthorizedAdminUser(uid: string, email: string | undefined | null) {
+  if (!email) return false;
+  if (isAllowedAdminEmail(email)) {
+    // An explicit inactive staff profile overrides the bootstrap allowlist so a
+    // management user can suspend access without deleting Firebase Auth users.
+    const profileActive = await isActiveStaffProfile(uid, email).catch(() => false);
+    const profileCheckAvailable = firebaseRuntimeConfigured();
+    if (profileCheckAvailable) {
+      const { staffProfileByUid } = await import("./staff-directory.server");
+      const profile = await staffProfileByUid(uid, email).catch(() => null);
+      if (profile) return profile.active;
+    }
+    return true;
+  }
+  return isActiveStaffProfile(uid, email).catch(() => false);
 }
 
 export async function getAdminAccess(): Promise<AdminAccess> {
@@ -42,7 +60,7 @@ export async function getAdminAccess(): Promise<AdminAccess> {
 
   try {
     const decoded = await firebaseAdminAuth().verifySessionCookie(session, true);
-    if (!isAllowedAdminEmail(decoded.email)) return { kind: "signed-out" };
+    if (!await isAuthorizedAdminUser(decoded.uid, decoded.email)) return { kind: "signed-out" };
 
     return {
       kind: "authorized",
