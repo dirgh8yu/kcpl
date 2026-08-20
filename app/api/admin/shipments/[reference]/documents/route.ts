@@ -92,7 +92,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   try {
     const result = await uploadShipmentDocument(reference, {
       filename: file.name.trim(),
-      contentType: file.type || inferredType,
+      contentType: inferredType,
       sizeBytes: file.size,
       documentType: documentType as ShipmentDocumentType,
       uploadedBy: auth.user.displayName,
