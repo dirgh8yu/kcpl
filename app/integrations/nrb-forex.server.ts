@@ -22,7 +22,7 @@ export type NrbForexSnapshot = {
 };
 
 type NrbApiRate = {
-  currency?: { unit?: number | string; name?: string; ISO3?: string };
+  currency?: { unit?: number | string; name?: string; ISO3?: string; iso3?: string };
   buy?: number | string;
   sell?: number | string;
 };
@@ -35,7 +35,7 @@ type NrbApiPayload = {
 };
 
 type NrbApiResponse = {
-  status?: { code?: number };
+  status?: { code?: number | string };
   data?: { payload?: NrbApiPayload[] | null };
 };
 
@@ -62,7 +62,7 @@ function numberValue(value: unknown) {
 }
 
 function normalizeRate(rate: NrbApiRate): NrbForexRate | null {
-  const currency = rate.currency?.ISO3?.trim().toUpperCase() ?? "";
+  const currency = (rate.currency?.iso3 ?? rate.currency?.ISO3 ?? "").trim().toUpperCase();
   const name = rate.currency?.name?.trim() ?? currency;
   const unit = numberValue(rate.currency?.unit);
   const buy = numberValue(rate.buy);
@@ -87,13 +87,16 @@ export async function getNrbForexSnapshot(): Promise<NrbForexSnapshot> {
   const from = daysBefore(today, 7);
   const params = new URLSearchParams({ page: "1", per_page: "10", from, to: today });
   const response = await fetch(`${NRB_FOREX_API_URL}?${params.toString()}`, {
-    headers: { accept: "application/json" },
+    headers: {
+      accept: "application/json",
+      "user-agent": "KCPL-Operations/1.0",
+    },
     next: { revalidate: 3600 },
   });
   if (!response.ok) throw new Error(`NRB Forex API returned HTTP ${response.status}.`);
 
   const body = await response.json() as NrbApiResponse;
-  if (body.status?.code !== 200 || !Array.isArray(body.data?.payload)) {
+  if (Number(body.status?.code) !== 200 || !Array.isArray(body.data?.payload)) {
     throw new Error("NRB Forex API returned an unexpected response.");
   }
 
