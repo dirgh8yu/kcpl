@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { firebaseAdminAuth } from "../firebase-admin.server";
+import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
 
 export const ADMIN_SESSION_COOKIE = "kcpl_admin_session";
 export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -25,10 +25,7 @@ function allowedAdminEmails() {
 }
 
 export function firebaseAdminConfigured() {
-  return Boolean(
-    (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) &&
-    allowedAdminEmails().size,
-  );
+  return firebaseRuntimeConfigured() && allowedAdminEmails().size > 0;
 }
 
 export function isAllowedAdminEmail(email: string | undefined | null) {
