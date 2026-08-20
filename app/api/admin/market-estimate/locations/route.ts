@@ -1,5 +1,5 @@
-import { getAdminAccess } from "../../../../../admin/admin-auth";
-import { getStaffContext } from "../../../../../admin/staff-directory.server";
+import { getAdminAccess } from "../../../../admin/admin-auth";
+import { getStaffContext } from "../../../../admin/staff-directory.server";
 
 const LOCATION_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 type CachedLocations = { expiresAt: number; value: LocationSuggestion[] };
