@@ -58,7 +58,7 @@ export function OperationsShell({
       { href: "/admin/payables", label: "Payables", icon: HandCoins, match: (path: string) => path.startsWith("/admin/payables") },
     ] : []),
     ...(isManagement ? [
-      { href: "/admin/management", label: "Executive", icon: ChartNoAxesCombined, match: (path: string) => path.startsWith("/admin/management") },
+      { href: "/admin/management", label: "Management Analytics", icon: ChartNoAxesCombined, match: (path: string) => path.startsWith("/admin/management") },
     ] : []),
     ...(canManageStaff ? [
       { href: "/admin/staff", label: "Staff & branches", icon: UsersRound, match: (path: string) => path.startsWith("/admin/staff") },
