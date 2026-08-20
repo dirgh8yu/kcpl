@@ -103,6 +103,16 @@ test("renders launch metadata, FAQs, privacy and the live quote submission flow"
   assert.match(privacyHtml, /reference number/i);
 });
 
+test("renders the customer shipment tracking portal", async () => {
+  const response = await render("/tracking");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Follow your shipment journey\./);
+  assert.match(html, /KCPL shipment reference/);
+  assert.match(html, /Track shipment/);
+  assert.match(html, /never displays customer contact details/i);
+});
+
 test("keeps the KCPL operations dashboard closed until admin secrets are configured", async () => {
   const response = await render("/admin");
   assert.equal(response.status, 200);

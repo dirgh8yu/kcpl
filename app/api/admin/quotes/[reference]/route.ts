@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { quoteCurrencies, QuoteCurrency, quoteStatuses, QuoteStatus } from "../../../../admin/admin-data";
 import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
+import { ensureShipmentForWonQuote } from "../../../../shipment-data.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -100,7 +101,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const result = await updateQuoteAdmin(reference, status as QuoteStatus, assignedTo);
   if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
-  return json({ ok: true, status, assignedTo });
+
+  let shipment = null;
+  if (status === "won") {
+    const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName);
+    if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") shipment = shipmentResult.shipment;
+  }
+
+  return json({ ok: true, status, assignedTo, shipment });
 }
 
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
