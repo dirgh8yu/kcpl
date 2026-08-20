@@ -40,6 +40,13 @@ function rateNumber(value: number) {
   return new Intl.NumberFormat("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(value);
 }
 
+async function requestForex() {
+  const response = await fetch("/api/admin/forex", { cache: "no-store" });
+  const data = await response.json() as ApiResult;
+  if (!response.ok || !data.ok || !data.snapshot) throw new Error(data.error || "NRB reference rates could not be loaded.");
+  return { snapshot: data.snapshot, disclaimer: data.disclaimer || "" };
+}
+
 export function ForexReferencePanel({ compact = false }: { compact?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [disclaimer, setDisclaimer] = useState("");
@@ -48,23 +55,37 @@ export function ForexReferencePanel({ compact = false }: { compact?: boolean }) 
   const [currency, setCurrency] = useState<CrmCurrency>("USD");
   const [amount, setAmount] = useState("1000");
 
-  async function load() {
+  useEffect(() => {
+    let active = true;
+    void requestForex()
+      .then((data) => {
+        if (!active) return;
+        setSnapshot(data.snapshot);
+        setDisclaimer(data.disclaimer);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "NRB reference rates could not be loaded.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  async function refresh() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/forex", { cache: "no-store" });
-      const data = await response.json() as ApiResult;
-      if (!response.ok || !data.ok || !data.snapshot) throw new Error(data.error || "NRB reference rates could not be loaded.");
+      const data = await requestForex();
       setSnapshot(data.snapshot);
-      setDisclaimer(data.disclaimer || "");
+      setDisclaimer(data.disclaimer);
     } catch (err) {
       setError(err instanceof Error ? err.message : "NRB reference rates could not be loaded.");
     } finally {
       setLoading(false);
     }
   }
-
-  useEffect(() => { void load(); }, []);
 
   const rate = useMemo(() => snapshot?.rates.find((item) => item.currency === currency) ?? null, [currency, snapshot]);
   const numericAmount = Number(amount);
@@ -82,7 +103,7 @@ export function ForexReferencePanel({ compact = false }: { compact?: boolean }) 
           </div>
           <div className="flex items-center gap-2">
             {snapshot ? <span className="rounded-full border border-[#dfe3e8] bg-white px-3 py-1.5 text-[10px] font-bold text-[#69747d]">Rate date {snapshot.date}</span> : null}
-            <button type="button" onClick={() => void load()} disabled={loading} className="grid h-8 w-8 place-items-center rounded-lg border border-[#dfe3e8] bg-white text-[#66717b] disabled:opacity-50" aria-label="Refresh NRB forex rates"><RefreshCw size={13} className={loading ? "animate-spin" : ""}/></button>
+            <button type="button" onClick={() => void refresh()} disabled={loading} className="grid h-8 w-8 place-items-center rounded-lg border border-[#dfe3e8] bg-white text-[#66717b] disabled:opacity-50" aria-label="Refresh NRB forex rates"><RefreshCw size={13} className={loading ? "animate-spin" : ""}/></button>
           </div>
         </div>
 
