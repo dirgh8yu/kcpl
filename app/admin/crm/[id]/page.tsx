@@ -24,25 +24,9 @@ export const metadata = { title: "Customer 360 | KCPL Operations", robots: { ind
 
 function redactCustomerForRole(customer: CrmCustomerDetail, permissions: StaffCapabilities): CrmCustomerDetail {
   const commercial = permissions.canViewCommercial
-    ? {
-        ...customer.commercial,
-        ...(permissions.canManageCredit ? {} : { payment_terms_days: null, credit_limit: null, outstanding_balance: null }),
-      }
-    : {
-        preferred_currency: customer.preferred_currency,
-        payment_terms_days: null,
-        credit_limit: null,
-        outstanding_balance: null,
-        pricing_notes: null,
-        markup_percent: null,
-        preferred_carriers: [],
-      };
-
-  return {
-    ...customer,
-    ...(permissions.canViewCommercial ? {} : { revenue_total: 0, cost_total: 0, profit_total: 0 }),
-    commercial,
-  };
+    ? { ...customer.commercial, ...(permissions.canManageCredit ? {} : { payment_terms_days: null, credit_limit: null, outstanding_balance: null }) }
+    : { preferred_currency: customer.preferred_currency, payment_terms_days: null, credit_limit: null, outstanding_balance: null, pricing_notes: null, markup_percent: null, preferred_carriers: [] };
+  return { ...customer, ...(permissions.canViewCommercial ? {} : { revenue_total: 0, cost_total: 0, profit_total: 0 }), commercial };
 }
 
 function redactHistoryForRole(history: CrmOperationsHistory, permissions: StaffCapabilities): CrmOperationsHistory {
@@ -52,7 +36,7 @@ function redactHistoryForRole(history: CrmOperationsHistory, permissions: StaffC
 
 export default async function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <CustomerGate title="Sign in to KCPL Operations." detail="Customer 360 is available only to authorised KCPL staff." />;
+  if (access.kind !== "authorized") return <CustomerGate title="Sign in to KCPL Operations" detail="Customer 360 is available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
   const permissions = staffCapabilitiesForEmail(access.user.email);
@@ -68,60 +52,44 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
 
   try {
     const [customerResult, quoteLinks, operationsHistory, rateCardResult, documentResult] = await Promise.all([
-      getCrmCustomer(id),
-      listCrmQuoteLinks(id),
-      listCrmOperationsHistory(id),
+      getCrmCustomer(id), listCrmQuoteLinks(id), listCrmOperationsHistory(id),
       permissions.canViewCommercial ? listCrmRateCards(id) : Promise.resolve(null),
       permissions.canManageCustomerDocuments ? listCrmCustomerDocuments(id) : Promise.resolve(null),
     ]);
     customer = customerResult;
-    linked = quoteLinks?.linked ?? [];
-    suggested = quoteLinks?.suggested ?? [];
-    history = operationsHistory ?? history;
+    linked = quoteLinks?.linked ?? []; suggested = quoteLinks?.suggested ?? []; history = operationsHistory ?? history;
     if (rateCardResult?.kind === "ready") rateCards = rateCardResult.rateCards;
-    if (documentResult?.kind === "ready") {
-      documents = documentResult.documents;
-      documentStorageAvailable = documentResult.storageAvailable;
-    }
+    if (documentResult?.kind === "ready") { documents = documentResult.documents; documentStorageAvailable = documentResult.storageAvailable; }
   } catch (error) {
-    failed = true;
-    customer = undefined;
-    console.error("Failed to load KCPL Customer 360", id, error);
+    failed = true; customer = undefined; console.error("Failed to load KCPL Customer 360", id, error);
   }
 
-  if (failed) return <CustomerGate title="Customer 360 could not be loaded." detail="KCPL customer data is temporarily unavailable." />;
-  if (customer === undefined) return <CustomerGate title="Firestore is unavailable." detail="The CRM backend is not available for this deployment." />;
-  if (!customer || customer.archived) return <CustomerGate title="Customer not found." detail="This CRM record does not exist or has been archived." />;
+  if (failed) return <CustomerGate title="Customer 360 could not be loaded" detail="KCPL customer data is temporarily unavailable."/>;
+  if (customer === undefined) return <CustomerGate title="Firestore is unavailable" detail="The CRM backend is not available for this deployment."/>;
+  if (!customer || customer.archived) return <CustomerGate title="Customer not found" detail="This CRM record does not exist or has been archived."/>;
 
   const safeCustomer = redactCustomerForRole(customer, permissions);
   const safeHistory = redactHistoryForRole(history, permissions);
 
-  return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff={staff.permissions.canManageStaff}
-      canManageFinance={staff.permissions.canManageFinance}
-      isManagement={staff.permissions.role === "management"}
-    >
-      <Customer360Workspace initialCustomer={safeCustomer} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={permissions.canViewCommercial} creditVisible={permissions.canManageCredit} />
-      <CrmCustomerProfileEditor customer={safeCustomer} permissions={permissions} />
-      <CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial} />
-      {permissions.canViewCommercial ? <CrmRateCardPanel customerId={safeCustomer.id} initialRateCards={rateCards} permissions={permissions} /> : null}
-      {permissions.canManageCustomerDocuments ? <CrmCustomerDocumentsPanel customerId={safeCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions} /> : null}
-      <CrmQuoteMatchDock customerId={safeCustomer.id} initialLinked={linked} initialSuggested={suggested} />
-    </OperationsShell>
-  );
+  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+    <Customer360Workspace initialCustomer={safeCustomer} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={permissions.canViewCommercial} creditVisible={permissions.canManageCredit}/>
+    <section className="ops-content-wide pb-12 pt-0">
+      <div className="mb-3"><p className="ops-eyebrow">Account tools</p><h2 className="mt-1 text-[17px] font-[720] tracking-[-.025em] text-[#443b35]">Advanced customer controls</h2><p className="mt-1 max-w-2xl text-[9px] leading-4 text-[#958b83]">Detailed profile editing, operational history, rate cards, document storage and quote matching stay available without crowding the everyday account view.</p></div>
+      <div className="crm360-tools">
+        <Tool title="Master profile" detail="Edit identity, ownership, relationship classification and permitted commercial settings."><CrmCustomerProfileEditor customer={safeCustomer} permissions={permissions}/></Tool>
+        <Tool title="Operations history" detail="Review the customer’s quote and shipment trail."><CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/></Tool>
+        {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific commercial rates and pricing references."><CrmRateCardPanel customerId={safeCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}
+        {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="Private account-level files stored through Firebase Storage."><CrmCustomerDocumentsPanel customerId={safeCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}
+        <Tool title="Quote matching" detail="Link historical or suggested enquiries to this customer record."><CrmQuoteMatchDock customerId={safeCustomer.id} initialLinked={linked} initialSuggested={suggested}/></Tool>
+      </div>
+    </section>
+  </OperationsShell>;
+}
+
+function Tool({ title, detail, children }: { title: string; detail: string; children: React.ReactNode }) {
+  return <details className="crm360-tool"><summary><span><strong>{title}</strong><small>{detail}</small></span><span>Open</span></summary><div className="crm360-tool-body">{children}</div></details>;
 }
 
 function CustomerGate({ title, detail }: { title: string; detail: string }) {
-  return (
-    <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]">
-      <section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8 sm:p-10">
-        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Customer 360</p>
-        <h1 className="mt-3 text-2xl font-bold tracking-[-.03em]">{title}</h1>
-        <p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p>
-        <div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/crm" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Back to Customers</Link><Link href="/admin" className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Enquiries</Link></div>
-      </section>
-    </main>
-  );
+  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#332d29]"><section className="w-full max-w-xl rounded-[18px] border border-[#e6ddd6] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[9px] font-extrabold uppercase tracking-[.13em] text-[#bd644e]">KCPL Customer 360</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/crm" className="rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[10px] font-bold text-white">Back to Customers</Link><Link href="/admin" className="rounded-[11px] border border-[#e2d9d2] bg-white px-4 py-2.5 text-[10px] font-bold text-[#665c55]">Enquiries</Link></div></section></main>;
 }
