@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, Check, Link2, X } from "lucide-react";
 import type { CrmQuoteLinkItem } from "../crm-quote-links.server";
@@ -19,6 +20,7 @@ export function CrmQuoteMatchDock({
   initialLinked: CrmQuoteLinkItem[];
   initialSuggested: CrmQuoteLinkItem[];
 }) {
+  const router = useRouter();
   const [linked, setLinked] = useState(initialLinked);
   const [suggested, setSuggested] = useState(initialSuggested);
   const [open, setOpen] = useState(initialSuggested.length > 0);
@@ -39,6 +41,7 @@ export function CrmQuoteMatchDock({
       setSuggested((current) => current.filter((quote) => quote.reference !== item.reference));
       setLinked((current) => [{ ...item, customer_id: customerId }, ...current.filter((quote) => quote.reference !== item.reference)]);
       setNotice(`${item.reference} linked to this customer.`);
+      router.refresh();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not link the quote.");
     } finally {
