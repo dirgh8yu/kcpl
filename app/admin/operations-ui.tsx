@@ -128,7 +128,7 @@ export function OpsPanel({
   eyebrow?: string;
   description?: string;
   action?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
 }) {
   return <section className={`ops-panel ${className}`.trim()}>
