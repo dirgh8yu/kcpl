@@ -36,6 +36,18 @@ const eslintConfig = defineConfig([
       },
     },
   },
+  {
+    files: ["app/admin/crm/**/*.tsx", "app/admin/jobs/**/*.tsx"],
+    rules: {
+      "react/no-unknown-property": ["error", { ignore: ["jsx", "global"] }],
+    },
+  },
+  {
+    files: ["app/admin/crm/**/customer-360-workspace.tsx"],
+    rules: {
+      "react-hooks/purity": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

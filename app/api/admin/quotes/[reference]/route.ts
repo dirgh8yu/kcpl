@@ -102,7 +102,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   let shipmentWarning: string | null = null;
   if (status === "won") {
     try {
-      const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName);
+      const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName, auth.user.email);
       if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") shipment = shipmentResult.shipment;
       if (shipmentResult.kind === "unavailable") shipmentWarning = "Shipment storage is temporarily unavailable.";
     } catch (error) {

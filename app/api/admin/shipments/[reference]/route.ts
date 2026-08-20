@@ -1,4 +1,6 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
+import { getStaffContext } from "../../../../admin/staff-directory.server";
+import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { addShipmentEvent, updateShipment } from "../../../../shipment-data.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../../../shipment-types";
@@ -9,9 +11,17 @@ function json(body: unknown, status = 200) {
 
 async function authorize() {
   const access = await getAdminAccess();
-  if (access.kind === "authorized") return { user: access.user };
+  if (access.kind === "authorized") return { user: access.user, staff: await getStaffContext(access.user) };
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
+}
+
+async function branchGuard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
+  const access = await checkShipmentBranchAccess(reference, staff);
+  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (access.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (access.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
+  return null;
 }
 
 function clean(value: unknown) {
@@ -24,6 +34,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
+  const branchError = await branchGuard(reference, auth.staff);
+  if (branchError) return branchError;
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;
@@ -52,7 +64,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     carrier,
     carrierReference,
     customerNote,
-  }, auth.user.displayName);
+  }, auth.user.displayName, auth.user.email);
 
   if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
@@ -65,6 +77,8 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
+  const branchError = await branchGuard(reference, auth.staff);
+  if (branchError) return branchError;
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;

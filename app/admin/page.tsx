@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminDashboard } from "./admin-dashboard";
 import { getAdminAccess } from "./admin-auth";
 import { AdminLogin } from "./admin-login";
+import { getStaffContext } from "./staff-directory.server";
 import type { QuoteSummary } from "./admin-data";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export default async function AdminPage() {
     return (
       <AdminGate
         title="Firebase admin access needs configuration."
-        detail="Configure the Firebase project variables and KCPL_ADMIN_EMAILS in Firebase App Hosting, then create the staff account in Firebase Authentication."
+        detail="Configure the Firebase project in App Hosting, then create the initial staff account in Firebase Authentication. KCPL_ADMIN_EMAILS can be used as the bootstrap management allowlist."
       />
     );
   }
@@ -42,6 +43,7 @@ export default async function AdminPage() {
     return <AdminLoginPage />;
   }
 
+  const staff = await getStaffContext(access.user);
   const result = await loadQuotes();
   if (result.kind === "unavailable") {
     return (
@@ -63,11 +65,22 @@ export default async function AdminPage() {
   }
 
   return (
-    <AdminDashboard
-      initialQuotes={result.quotes}
-      userName={access.user.displayName}
-      signOutPath="/api/admin/session?logout=1"
-    />
+    <>
+      <AdminDashboard
+        initialQuotes={result.quotes}
+        userName={access.user.displayName}
+        signOutPath="/api/admin/session?logout=1"
+      />
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
+        {staff.permissions.canManageStaff ? <Link href="/admin/staff" className="rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-[.1em] text-[#10263f] shadow-lg transition hover:-translate-y-0.5">Staff & branches</Link> : null}
+        <Link
+          href="/admin/crm"
+          className="rounded-2xl border border-white/15 bg-[#10263f] px-5 py-3 text-xs font-black uppercase tracking-[.12em] text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-[#173958]"
+        >
+          Open CRM
+        </Link>
+      </div>
+    </>
   );
 }
 

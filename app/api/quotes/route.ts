@@ -1,4 +1,5 @@
 import { firebaseAdminDb } from "../../firebase-admin.server";
+import { findCrmDuplicates } from "../../admin/crm/crm-data.server";
 import { isTrustedSameOriginRequest } from "../../request-security";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
@@ -149,6 +150,18 @@ export async function POST(request: Request) {
   const quote = validated.data;
   const reference = createReference();
   const createdAt = new Date().toISOString();
+  let crmMatches: Array<{ id: string; display_name: string; reason: string }> = [];
+
+  try {
+    crmMatches = await findCrmDuplicates({
+      displayName: quote.companyName || quote.contactName,
+      primaryEmail: quote.contactEmail,
+      primaryPhone: quote.phone,
+      taxId: "",
+    });
+  } catch (error) {
+    console.error("CRM matching skipped for quote", reference, error);
+  }
 
   try {
     await firebaseAdminDb().collection("quotes").doc(reference).create({
@@ -180,6 +193,13 @@ export async function POST(request: Request) {
       valid_until: null,
       customer_quote_note: null,
       shipment_reference: null,
+      customer_id: null,
+      crm_match_state: crmMatches.length ? "suggested" : "unmatched",
+      crm_match_ids: crmMatches.map((match) => match.id),
+      crm_matches: crmMatches,
+      crm_linked_at: null,
+      crm_linked_by_name: null,
+      crm_linked_by_email: null,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

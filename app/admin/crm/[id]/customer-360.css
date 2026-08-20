@@ -1,0 +1,21 @@
+.crm360-input {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid rgb(0 0 0 / 0.1);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  color: #10263f;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crm360-input:focus {
+  border-color: #b78a3e;
+  box-shadow: 0 0 0 3px rgb(183 138 62 / 0.1);
+}
+
+.crm360-input::placeholder {
+  color: rgb(16 38 63 / 0.35);
+}

@@ -1,4 +1,6 @@
 import { getAdminAccess } from "../../../../../../admin/admin-auth";
+import { getStaffContext } from "../../../../../../admin/staff-directory.server";
+import { checkShipmentBranchAccess } from "../../../../../../admin/shipment-access.server";
 import { isTrustedSameOriginRequest } from "../../../../../../request-security";
 import { deleteShipmentDocument, getShipmentDocumentFile } from "../../../../../../shipment-documents.server";
 
@@ -8,9 +10,17 @@ function json(body: unknown, status = 200) {
 
 async function authorize() {
   const access = await getAdminAccess();
-  if (access.kind === "authorized") return { user: access.user };
+  if (access.kind === "authorized") return { user: access.user, staff: await getStaffContext(access.user) };
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
+}
+
+async function guard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
+  const access = await checkShipmentBranchAccess(reference, staff);
+  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (access.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (access.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
+  return null;
 }
 
 function documentId(value: string) {
@@ -27,6 +37,8 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   if ("response" in auth) return auth.response;
 
   const { reference, id } = await context.params;
+  const accessError = await guard(reference, auth.staff);
+  if (accessError) return accessError;
   const parsedId = documentId(id);
   if (parsedId === null) return json({ ok: false, error: "Document not found." }, 404);
 
@@ -56,6 +68,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin deletes are not accepted." }, 403);
 
   const { reference, id } = await context.params;
+  const accessError = await guard(reference, auth.staff);
+  if (accessError) return accessError;
   const parsedId = documentId(id);
   if (parsedId === null) return json({ ok: false, error: "Document not found." }, 404);
 
