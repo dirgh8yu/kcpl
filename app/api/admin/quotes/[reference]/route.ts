@@ -6,11 +6,10 @@ function json(body: unknown, status = 200) {
 }
 
 async function authorize() {
-  const access = await getAdminAccess("/admin");
+  const access = await getAdminAccess();
   if (access.kind === "authorized") return { user: access.user };
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
-  if (access.kind === "unconfigured") return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
-  return { response: json({ ok: false, error: "You are not authorised to access KCPL operations." }, 403) };
+  return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
 }
 
 function sameOrigin(request: Request) {

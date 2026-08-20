@@ -103,10 +103,12 @@ test("renders launch metadata, FAQs, privacy and the live quote submission flow"
   assert.match(privacyHtml, /reference number/i);
 });
 
-test("protects the KCPL operations dashboard behind sign in", async () => {
+test("keeps the KCPL operations dashboard closed until admin secrets are configured", async () => {
   const response = await render("/admin");
-  assert.ok([302, 303, 307, 308].includes(response.status));
-  assert.match(response.headers.get("location") ?? "", /\/signin-with-chatgpt\?return_to=%2Fadmin/);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Admin login needs configuration\./);
+  assert.doesNotMatch(html, /Freight enquiry desk/);
 });
 
 test("returns the branded not-found experience with a real 404 status", async () => {
