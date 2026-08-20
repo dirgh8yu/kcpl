@@ -11,24 +11,32 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+type StaffUser = { uid: string; displayName: string; email: string };
+
+async function loadState(user: StaffUser) {
+  try {
+    const staff = await getStaffContext(user);
+    if (!staff.permissions.canManageJobFile) return { kind: "restricted" as const };
+    const data = await loadCommandCentre(staff);
+    if (!data) return { kind: "unavailable" as const };
+    return { kind: "ready" as const, data, roleLabel: kcplStaffRoleLabels[staff.permissions.role] };
+  } catch (error) {
+    console.error("Failed to load KCPL Operations Command Centre", error);
+    return { kind: "error" as const };
+  }
+}
+
 export default async function CommandCentrePage() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") {
     return <Gate title="Sign in to KCPL Operations." detail="The Operations Command Centre is available only to authorised KCPL staff." />;
   }
 
-  try {
-    const staff = await getStaffContext(access.user);
-    if (!staff.permissions.canManageJobFile) {
-      return <Gate title="Command Centre access is restricted." detail="Your staff role does not currently include operational Job File access." />;
-    }
-    const data = await loadCommandCentre(staff);
-    if (!data) return <Gate title="Firestore is unavailable." detail="The operational dashboard backend is not available for this deployment." />;
-    return <CommandCentreWorkspace data={data} roleLabel={kcplStaffRoleLabels[staff.permissions.role]} />;
-  } catch (error) {
-    console.error("Failed to load KCPL Operations Command Centre", error);
-    return <Gate title="The Command Centre could not be loaded." detail="KCPL operational data is temporarily unavailable. No operations data was exposed." />;
-  }
+  const state = await loadState(access.user);
+  if (state.kind === "restricted") return <Gate title="Command Centre access is restricted." detail="Your staff role does not currently include operational Job File access." />;
+  if (state.kind === "unavailable") return <Gate title="Firestore is unavailable." detail="The operational dashboard backend is not available for this deployment." />;
+  if (state.kind === "error") return <Gate title="The Command Centre could not be loaded." detail="KCPL operational data is temporarily unavailable. No operations data was exposed." />;
+  return <CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel} />;
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
