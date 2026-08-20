@@ -1,0 +1,8 @@
+# Firebase App Hosting runtime settings for KCPL.
+# Project-specific environment variables and secrets belong in the Firebase
+# App Hosting backend configuration / Cloud Secret Manager, not in Git.
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+  memoryMiB: 512
