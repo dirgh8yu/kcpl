@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { chatGPTSignOutPath } from "../chatgpt-auth";
 import { AdminDashboard } from "./admin-dashboard";
 import { getAdminAccess } from "./admin-auth";
-import { listQuoteSummaries, QuoteSummary } from "./admin-data";
+import type { QuoteSummary } from "./admin-data";
 
 export const metadata = {
   title: "KCPL Operations",
@@ -17,6 +17,7 @@ type QuoteLoadResult =
 
 async function loadQuotes(): Promise<QuoteLoadResult> {
   try {
+    const { listQuoteSummaries } = await import("./admin-data");
     const quotes = await listQuoteSummaries();
     return quotes === null ? { kind: "unavailable" } : { kind: "ready", quotes };
   } catch (error) {
