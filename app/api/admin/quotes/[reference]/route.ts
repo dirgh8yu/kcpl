@@ -1,14 +1,6 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
-import {
-  addQuoteNote,
-  getQuoteDetail,
-  quoteCurrencies,
-  QuoteCurrency,
-  quoteStatuses,
-  QuoteStatus,
-  updateQuoteAdmin,
-  updateQuoteCommercial,
-} from "../../../../admin/admin-data";
+import { quoteCurrencies, QuoteCurrency, quoteStatuses, QuoteStatus } from "../../../../admin/admin-data";
+import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
