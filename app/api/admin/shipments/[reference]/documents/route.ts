@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../../../admin/admin-auth";
+import { isTrustedSameOriginRequest } from "../../../../../request-security";
 import { shipmentDocumentTypes, type ShipmentDocumentType } from "../../../../../shipment-document-types";
 import { listShipmentDocuments, uploadShipmentDocument } from "../../../../../shipment-documents.server";
 
@@ -29,16 +30,6 @@ async function authorize() {
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
 }
 
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === new URL(request.url).host;
-  } catch {
-    return false;
-  }
-}
-
 function extension(filename: string) {
   const match = filename.toLowerCase().match(/\.([a-z0-9]+)$/);
   return match?.[1] ?? "";
@@ -63,7 +54,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
-  if (!sameOrigin(request)) return json({ ok: false, error: "Cross-origin uploads are not accepted." }, 403);
+  if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin uploads are not accepted." }, 403);
 
   const { reference } = await context.params;
   let form: FormData;
