@@ -8,15 +8,42 @@ import {
   kcplBranches,
   type CrmAccountStatus,
   type CrmCurrency,
+  type CrmCustomerDetail,
   type CrmEntityKind,
   type CrmLeadSource,
   type CrmLeadStage,
   type CrmRelationshipType,
   type KcplBranch,
 } from "../../../../../admin/crm/crm-data";
+import type { StaffCapabilities } from "../../../../../admin/staff-permissions";
 import { archiveCrmCustomer, updateCrmCustomer } from "../../../../../admin/crm/crm-customer-management.server";
 import { getCrmCustomer } from "../../../../../admin/crm/crm-data.server";
 import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, validEmail } from "../../crm-api";
+
+function redactCustomer(customer: CrmCustomerDetail, permissions: StaffCapabilities): CrmCustomerDetail {
+  return {
+    ...customer,
+    ...(permissions.canViewCommercial ? {} : { revenue_total: 0, cost_total: 0, profit_total: 0 }),
+    commercial: permissions.canViewCommercial
+      ? {
+          ...customer.commercial,
+          ...(permissions.canManageCredit ? {} : {
+            payment_terms_days: null,
+            credit_limit: null,
+            outstanding_balance: null,
+          }),
+        }
+      : {
+          preferred_currency: customer.preferred_currency,
+          payment_terms_days: null,
+          credit_limit: null,
+          outstanding_balance: null,
+          pricing_notes: null,
+          markup_percent: null,
+          preferred_carriers: [],
+        },
+  };
+}
 
 function stringArray(value: unknown, max = 50) {
   if (!Array.isArray(value)) return [];
@@ -41,7 +68,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const customer = await getCrmCustomer(id);
     if (customer === undefined) return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
     if (!customer || customer.archived) return crmJson({ ok: false, error: "Customer record not found." }, 404);
-    return crmJson({ ok: true, customer, permissions: auth.permissions });
+    return crmJson({ ok: true, customer: redactCustomer(customer, auth.permissions), permissions: auth.permissions });
   } catch (error) {
     console.error("Failed to load KCPL CRM customer", id, error);
     return crmJson({ ok: false, error: "The customer record could not be loaded." }, 500);
@@ -155,7 +182,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     const customer = await getCrmCustomer(id);
-    return crmJson({ ok: true, customer });
+    return crmJson({ ok: true, customer: customer ? redactCustomer(customer, auth.permissions) : null });
   } catch (error) {
     console.error("Failed to update KCPL CRM customer", id, error);
     return crmJson({ ok: false, error: "The customer record could not be updated." }, 500);
