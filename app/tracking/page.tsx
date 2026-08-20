@@ -5,6 +5,8 @@ import { company } from "../company-data";
 import { createPageMetadata } from "../seo";
 import { shipmentStatusLabels, type PublicShipmentTracking, type ShipmentStatus } from "../shipment-types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = createPageMetadata({
   title: "Shipment Tracking",
   description: "Track a KCPL shipment using the shipment reference provided by the operations team.",
