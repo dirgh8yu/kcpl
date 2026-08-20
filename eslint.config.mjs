@@ -37,13 +37,13 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["app/admin/crm/**/*.tsx", "app/admin/jobs/**/*.tsx"],
+    files: ["app/admin/crm/**/*.tsx", "app/admin/jobs/**/*.tsx", "app/admin/finance/**/*.tsx"],
     rules: {
       "react/no-unknown-property": ["error", { ignore: ["jsx", "global"] }],
     },
   },
   {
-    files: ["app/admin/crm/**/customer-360-workspace.tsx"],
+    files: ["app/admin/crm/**/customer-360-workspace.tsx", "app/admin/finance/**/*.tsx"],
     rules: {
       "react-hooks/purity": "off",
     },
