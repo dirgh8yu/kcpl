@@ -119,10 +119,10 @@ async function requestDirectFromNrb() {
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
   if (!latest?.date || !latest.rates) throw new Error("NRB direct request returned no published rate set.");
 
-  const supported = new Set(crmCurrencies.filter((item) => item !== "NPR"));
+  const supported = new Set<string>(crmCurrencies.filter((item) => item !== "NPR"));
   const rates = latest.rates
     .map(normalizeDirectRate)
-    .filter((rate): rate is Rate => Boolean(rate) && supported.has(rate.currency as CrmCurrency));
+    .filter((rate): rate is Rate => rate !== null && supported.has(rate.currency));
   if (!rates.length) throw new Error("NRB direct request returned no usable KCPL currencies.");
 
   return {
