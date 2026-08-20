@@ -4,18 +4,16 @@ import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
 import { GoogleRoadRoutePanel } from "../routes/google-road-route-panel";
 import { getStaffContext } from "../staff-directory.server";
-import { kcplStaffRoleLabels } from "../staff-permissions";
-import { EasyshipMarketEstimateWorkspace } from "./easyship-market-estimate-workspace";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Market Estimate | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function MarketEstimatePage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required." detail="Use an authorised KCPL staff account to access external market estimates."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required." detail="Use an authorised KCPL staff account to access commercial tools."/>;
 
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canViewCommercial) return <Gate title="Commercial access required." detail="External market estimates are available to Management, Accounts and Commercial roles."/>;
+  if (!staff.permissions.canViewCommercial) return <Gate title="Commercial access required." detail="Market intelligence tools are available to Management, Accounts and Commercial roles."/>;
 
   return (
     <OperationsShell
@@ -26,7 +24,6 @@ export default async function MarketEstimatePage() {
     >
       <ForexReferencePanel compact/>
       <GoogleRoadRoutePanel initialOrigin="Kolkata, India" initialDestination="Kathmandu, Nepal" compact/>
-      <EasyshipMarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
     </OperationsShell>
   );
 }
