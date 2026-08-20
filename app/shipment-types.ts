@@ -34,6 +34,7 @@ export type ShipmentEvent = {
 export type ShipmentDetail = {
   reference: string;
   quote_reference: string;
+  customer_id: string | null;
   created_at: string;
   updated_at: string;
   status: ShipmentStatus;
