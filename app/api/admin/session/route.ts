@@ -6,6 +6,7 @@ import {
   isAllowedAdminEmail,
 } from "../../../admin/admin-auth";
 import { firebaseAdminAuth } from "../../../firebase-admin.server";
+import { isTrustedSameOriginRequest } from "../../../request-security";
 
 function redirectTo(request: Request, path: string, cookie?: string) {
   const headers = new Headers({ location: new URL(path, request.url).toString() });
@@ -13,19 +14,8 @@ function redirectTo(request: Request, path: string, cookie?: string) {
   return new Response(null, { status: 303, headers });
 }
 
-function sameOrigin(request: Request) {
-  // Firebase App Hosting terminates the public request at a proxy, so comparing
-  // request.url/Host to the browser Origin can reject a legitimate same-page
-  // request. Fetch Metadata is set by modern browsers before the proxy hop and
-  // survives that routing correctly. Cross-site browser requests are rejected;
-  // non-browser requests still need a valid Firebase ID token from an explicitly
-  // allowlisted KCPL staff account before a session cookie can be created.
-  const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
-  return fetchSite !== "cross-site";
-}
-
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) {
+  if (!isTrustedSameOriginRequest(request)) {
     return Response.json({ ok: false, error: "Cross-origin sign-in is not accepted." }, { status: 403 });
   }
   if (!firebaseAdminConfigured()) {
