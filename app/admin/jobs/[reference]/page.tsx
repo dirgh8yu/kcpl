@@ -16,7 +16,10 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "unavailable") return <Gate title="Job File unavailable" detail="Firestore is not available for this deployment."/>;
   if (result.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is assigned to a KCPL branch outside your staff profile."/>;
-  return <JobFileWorkspace initialJob={result.job} role={staff.permissions.role} canManageBranches={staff.permissions.role === "management"} currentUserName={access.user.displayName} currentUserEmail={access.user.email}/>;
+  return <>
+    <JobFileWorkspace initialJob={result.job} role={staff.permissions.role} canManageBranches={staff.permissions.role === "management"} currentUserName={access.user.displayName} currentUserEmail={access.user.email}/>
+    {staff.permissions.canManageFinance ? <Link href="/admin/finance" className="fixed bottom-5 left-5 z-50 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-[.1em] text-emerald-800 shadow-lg">Finance & invoices</Link> : null}
+  </>;
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {

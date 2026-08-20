@@ -6,6 +6,7 @@ export const automationAlertTypes = [
   "shipment_exception",
   "eta_customs_blocked",
   "quote_stale",
+  "invoice_overdue",
   "credit_limit_exceeded",
 ] as const;
 export type AutomationAlertType = (typeof automationAlertTypes)[number];
@@ -24,7 +25,7 @@ export type AutomationAlert = {
   status: AutomationAlertStatus;
   title: string;
   detail: string;
-  entity_type: "shipment" | "quote" | "customer" | "task";
+  entity_type: "shipment" | "quote" | "customer" | "task" | "invoice";
   entity_id: string;
   parent_reference: string | null;
   branch: KcplBranch | null;
@@ -48,5 +49,6 @@ export const automationAlertTypeLabels: Record<AutomationAlertType, string> = {
   shipment_exception: "Shipment exception",
   eta_customs_blocked: "ETA / customs risk",
   quote_stale: "Quote follow-up",
+  invoice_overdue: "Overdue receivable",
   credit_limit_exceeded: "Credit control",
 };

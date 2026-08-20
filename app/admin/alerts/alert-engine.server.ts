@@ -64,7 +64,7 @@ function alertFromDoc(id: string, data: Record<string, unknown>): AutomationAler
     status: status(data.status),
     title: text(data.title, "KCPL alert"),
     detail: text(data.detail),
-    entity_type: ["shipment", "quote", "customer", "task"].includes(text(data.entity_type)) ? text(data.entity_type) as AutomationAlert["entity_type"] : "shipment",
+    entity_type: ["shipment", "quote", "customer", "task", "invoice"].includes(text(data.entity_type)) ? text(data.entity_type) as AutomationAlert["entity_type"] : "shipment",
     entity_id: text(data.entity_id),
     parent_reference: nullable(data.parent_reference),
     branch: branchValue(data.branch),
@@ -102,10 +102,11 @@ function candidate(input: Omit<Candidate, "fingerprint"> & { fingerprint: string
 export async function evaluateAutomationRules() {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
-  const [shipmentsSnapshot, quotesSnapshot, customersSnapshot, tasksSnapshot, customsSnapshot, existingAlertsSnapshot] = await Promise.all([
+  const [shipmentsSnapshot, quotesSnapshot, customersSnapshot, invoicesSnapshot, tasksSnapshot, customsSnapshot, existingAlertsSnapshot] = await Promise.all([
     db.collection("shipments").limit(2500).get(),
     db.collection("quotes").limit(3000).get(),
     db.collection("customers").limit(3000).get(),
+    db.collection("invoices").limit(4000).get(),
     db.collectionGroup("job_tasks").limit(10000).get(),
     db.collectionGroup("customs_steps").limit(7000).get(),
     db.collection("alerts").limit(5000).get(),
@@ -235,6 +236,35 @@ export async function evaluateAutomationRules() {
     }));
   }
 
+  for (const doc of invoicesSnapshot.docs) {
+    const data = doc.data() as Record<string, unknown>;
+    const currentStatus = text(data.status);
+    if (["draft", "paid", "void"].includes(currentStatus)) continue;
+    const balanceDue = numberValue(data.balance_due);
+    const dueDate = nullable(data.due_date);
+    if (!dueDate || balanceDue <= 0 || dueDate >= today) continue;
+    const dueMs = new Date(`${dueDate}T00:00:00Z`).getTime();
+    const overdueDays = Number.isFinite(dueMs) ? Math.max(1, Math.floor((nowMs - dueMs) / 86_400_000)) : 1;
+    const isCritical = overdueDays > 30;
+    const fingerprint = `invoice-overdue:${doc.id}`;
+    candidates.set(fingerprint, candidate({
+      fingerprint,
+      type: "invoice_overdue",
+      severity: isCritical ? "critical" : "warning",
+      title: `${isCritical ? "Receivable overdue 30d+" : "Invoice overdue"}: ${doc.id}`,
+      detail: `${text(data.currency, "NPR")} ${balanceDue.toLocaleString("en-AU")} outstanding · due ${dueDate} · ${text(data.customer_name, text(data.customer_id, "Customer"))}`,
+      entity_type: "invoice",
+      entity_id: doc.id,
+      parent_reference: nullable(data.shipment_reference),
+      branch: branchValue(data.branch),
+      assigned_to_name: null,
+      assigned_to_email: null,
+      target_roles: ["management", "accounts"],
+      action_path: `/admin/finance/invoices/${encodeURIComponent(doc.id)}`,
+      escalated_at: isCritical ? nowIso : null,
+    }));
+  }
+
   const creditHoldBatch = db.batch();
   let creditHolds = 0;
   for (const [customerId, data] of customers) {
@@ -265,7 +295,7 @@ export async function evaluateAutomationRules() {
       creditHoldBatch.create(customerRef.collection("activity").doc(`activity-${Date.now()}-${randomBytes(4).toString("hex")}`), {
         type: "credit_hold_automatic",
         title: "Account automatically placed On Hold",
-        detail: `Outstanding balance exceeded the configured credit limit.`,
+        detail: "Outstanding balance exceeded the configured credit limit.",
         actor_name: "KCPL Automation",
         actor_email: null,
         created_at: nowIso,
