@@ -1,31 +1,4 @@
-import { env } from "cloudflare:workers";
-
-const quoteSchema = `
-CREATE TABLE IF NOT EXISTS quote_enquiries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  reference TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  status TEXT NOT NULL DEFAULT 'new',
-  origin TEXT NOT NULL,
-  destination TEXT NOT NULL,
-  mode TEXT NOT NULL,
-  cargo_type TEXT,
-  weight TEXT,
-  weight_unit TEXT,
-  length TEXT,
-  width TEXT,
-  height TEXT,
-  dimension_unit TEXT,
-  timing TEXT,
-  requirements TEXT,
-  contact_name TEXT NOT NULL,
-  contact_email TEXT NOT NULL,
-  company_name TEXT,
-  phone TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_quote_enquiries_created_at ON quote_enquiries(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_quote_enquiries_status ON quote_enquiries(status);
-`;
+import { firebaseAdminDb } from "../../firebase-admin.server";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
 const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
@@ -86,8 +59,6 @@ type CleanQuote = {
   phone: string;
 };
 
-let schemaReady: Promise<void> | null = null;
-
 function json(body: unknown, status = 200) {
   return Response.json(body, {
     status,
@@ -138,30 +109,6 @@ function validate(payload: QuotePayload): { data?: CleanQuote; errors?: Record<s
   return { data: values };
 }
 
-function getDatabase() {
-  return (env as unknown as { DB?: D1Database }).DB;
-}
-
-async function ensureSchema(db: D1Database) {
-  if (!schemaReady) {
-    schemaReady = (async () => {
-      const existing = await db.prepare(`
-        SELECT name
-        FROM sqlite_master
-        WHERE type = 'table' AND name = 'quote_enquiries'
-      `).first<{ name: string }>();
-
-      if (existing?.name === "quote_enquiries") return;
-      await db.exec(quoteSchema);
-    })().catch((error) => {
-      schemaReady = null;
-      throw error;
-    });
-  }
-
-  await schemaReady;
-}
-
 function createReference() {
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase();
@@ -201,44 +148,48 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "Please check the highlighted details.", fields: validated.errors }, 400);
   }
 
-  const db = getDatabase();
-  if (!db) {
+  if (!(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)) {
     return json({ ok: false, error: "Quote storage is not configured yet. Please email KCPL instead." }, 503);
   }
 
   const quote = validated.data;
   const reference = createReference();
+  const createdAt = new Date().toISOString();
 
   try {
-    await ensureSchema(db);
-    await db.prepare(`
-      INSERT INTO quote_enquiries (
-        reference, origin, destination, mode, cargo_type, weight, weight_unit,
-        length, width, height, dimension_unit, timing, requirements,
-        contact_name, contact_email, company_name, phone
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
+    await firebaseAdminDb().collection("quotes").doc(reference).create({
       reference,
-      quote.origin,
-      quote.destination,
-      quote.mode,
-      quote.cargoType || null,
-      quote.weight || null,
-      quote.weightUnit,
-      quote.length || null,
-      quote.width || null,
-      quote.height || null,
-      quote.dimensionUnit,
-      quote.timing || null,
-      quote.requirements || null,
-      quote.contactName,
-      quote.contactEmail,
-      quote.companyName || null,
-      quote.phone || null,
-    ).run();
+      created_at: createdAt,
+      updated_at: createdAt,
+      status: "new",
+      assigned_to: null,
+      note_count: 0,
+      origin: quote.origin,
+      destination: quote.destination,
+      mode: quote.mode,
+      cargo_type: quote.cargoType || null,
+      weight: quote.weight || null,
+      weight_unit: quote.weightUnit,
+      length: quote.length || null,
+      width: quote.width || null,
+      height: quote.height || null,
+      dimension_unit: quote.dimensionUnit,
+      timing: quote.timing || null,
+      requirements: quote.requirements || null,
+      contact_name: quote.contactName,
+      contact_email: quote.contactEmail,
+      company_name: quote.companyName || null,
+      phone: quote.phone || null,
+      quote_currency: "USD",
+      quoted_amount: null,
+      internal_cost: null,
+      valid_until: null,
+      customer_quote_note: null,
+      shipment_reference: null,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("Failed to save KCPL quote enquiry", { message });
+    console.error("Failed to save KCPL Firestore quote enquiry", { message });
     return json({ ok: false, error: "KCPL could not save the enquiry. Please try again or email us directly." }, 500);
   }
 
