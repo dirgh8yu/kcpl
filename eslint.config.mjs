@@ -43,7 +43,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["app/admin/crm/[id]/customer-360-workspace.tsx"],
+    files: ["app/admin/crm/**/customer-360-workspace.tsx"],
     rules: {
       "react-hooks/purity": "off",
     },
