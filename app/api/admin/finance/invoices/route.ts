@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { crmCurrencies, type CrmCurrency } from "../../../../admin/crm/crm-data";
+import { resolveInvoiceCustomerFromShipment } from "../../../../admin/finance/finance-linking.server";
 import { createFinanceInvoice } from "../../../../admin/finance/finance.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 
@@ -21,9 +22,32 @@ export async function POST(request: Request) {
 
   const currency = typeof body.currency === "string" ? body.currency.toUpperCase() : "NPR";
   if (!crmCurrencies.includes(currency as CrmCurrency)) return json({ ok: false, error: "Choose a supported invoice currency." }, 400);
+
+  const shipmentReference = typeof body.shipmentReference === "string" ? body.shipmentReference.trim() : "";
+  let customerId = typeof body.customerId === "string" ? body.customerId.trim() : "";
+
+  if (shipmentReference) {
+    const linked = await resolveInvoiceCustomerFromShipment(shipmentReference);
+    if (linked.kind === "unavailable") return json({ ok: false, error: "Finance customer linking is temporarily unavailable." }, 503);
+    if (linked.kind === "shipment_missing") return json({ ok: false, error: "Shipment reference was not found." }, 404);
+    if (linked.kind === "resolved") {
+      customerId = linked.customerId;
+    } else if (linked.kind === "unlinked") {
+      const typedCustomer = customerId.toUpperCase();
+      if (!typedCustomer || typedCustomer === shipmentReference.toUpperCase()) {
+        return json({
+          ok: false,
+          error: linked.quoteReference
+            ? `This shipment is not linked to a CRM customer yet. Confirm the customer for quote ${linked.quoteReference} in Customer 360, then create the invoice again.`
+            : "This shipment is not linked to a CRM customer yet. Link the shipment to a customer in CRM before invoicing.",
+        }, 409);
+      }
+    }
+  }
+
   const result = await createFinanceInvoice({
-    customerId: typeof body.customerId === "string" ? body.customerId : "",
-    shipmentReference: typeof body.shipmentReference === "string" ? body.shipmentReference : "",
+    customerId,
+    shipmentReference,
     issueDate: typeof body.issueDate === "string" ? body.issueDate : "",
     dueDate: typeof body.dueDate === "string" ? body.dueDate : "",
     currency: currency as CrmCurrency,
@@ -35,8 +59,8 @@ export async function POST(request: Request) {
 
   if (result.kind === "created") return json({ ok: true, reference: result.reference }, 201);
   if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment reference was not found." }, 404);
-  if (result.kind === "customer_missing") return json({ ok: false, error: "Customer record was not found." }, 404);
-  if (result.kind === "customer_required") return json({ ok: false, error: "Link a shipment or enter a customer reference." }, 400);
+  if (result.kind === "customer_missing") return json({ ok: false, error: "Customer record was not found. CRM customer references start with KCPL-C-." }, 404);
+  if (result.kind === "customer_required") return json({ ok: false, error: "Link a shipment to CRM or enter a KCPL-C customer reference." }, 400);
   if (result.kind === "invalid_amount") return json({ ok: false, error: "Enter an invoice amount greater than zero." }, 400);
   if (result.kind === "invalid_tax") return json({ ok: false, error: "Tax rate must be between 0 and 100%." }, 400);
   if (result.kind === "forbidden") return json({ ok: false, error: "This record is outside your finance or branch access." }, 403);
