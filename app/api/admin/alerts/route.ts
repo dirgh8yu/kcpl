@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { evaluateAutomationRules, listAutomationAlerts, updateAutomationAlert } from "../../../admin/alerts/alert-engine.server";
+import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
@@ -32,8 +33,9 @@ export async function POST(request: Request) {
 
   if (action === "evaluate") {
     const result = await evaluateAutomationRules();
-    if (result.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
-    return json({ ok: true, result });
+    const payables = await evaluatePayablesAlerts();
+    if (result.kind !== "completed" || payables.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+    return json({ ok: true, result: { ...result, payable_alerts: payables.active } });
   }
 
   if (action === "acknowledge" || action === "resolve") {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
+import { evaluatePayablesAlerts } from "../payables/payables-alerts.server";
 import { evaluateAutomationRules, listAutomationAlerts } from "./alert-engine.server";
 import { AlertsWorkspace } from "./alerts-workspace";
 
@@ -17,6 +18,7 @@ async function loadPage(user: { uid: string; email: string; displayName: string 
   try {
     const staff = await getStaffContext(user);
     await evaluateAutomationRules();
+    await evaluatePayablesAlerts();
     const alerts = await listAutomationAlerts(staff, user.email);
     if (!alerts) return { kind: "unavailable" };
     return { kind: "ready", roleLabel: kcplStaffRoleLabels[staff.permissions.role], alerts };

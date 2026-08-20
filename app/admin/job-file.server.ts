@@ -29,6 +29,11 @@ function booleanValue(value: unknown) {
   return value === true;
 }
 
+function numberValue(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function branchValue(value: unknown, fallback: KcplBranch = "Kathmandu"): KcplBranch {
   return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : fallback;
 }
@@ -94,9 +99,12 @@ function costFromDoc(id: string, data: Record<string, unknown>): JobCost {
     category: costCategory(data.category),
     label: text(data.label),
     vendor: nullable(data.vendor),
-    amount: Number(data.amount) || 0,
+    amount: numberValue(data.amount),
     currency: currencyValue(data.currency),
     notes: nullable(data.notes),
+    source_type: data.source_type === "payable" ? "payable" : "manual",
+    source_reference: nullable(data.source_reference),
+    locked: data.locked === true,
     created_at: text(data.created_at),
     created_by: text(data.created_by, "KCPL Staff"),
   };
@@ -133,13 +141,16 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
 
   const quoteReference = text(shipmentData.quote_reference);
   const customerId = nullable(shipmentData.customer_id);
-  const [quote, customer, tasksSnapshot, customsSnapshot, costsSnapshot] = await Promise.all([
+  const [quote, customer, tasksSnapshot, customsSnapshot, costsSnapshot, invoicesSnapshot] = await Promise.all([
     quoteReference ? db.collection("quotes").doc(quoteReference).get() : Promise.resolve(null),
     customerId ? db.collection("customers").doc(customerId).get() : Promise.resolve(null),
     shipmentRef.collection("job_tasks").orderBy("created_at", "desc").limit(500).get(),
     shipmentRef.collection("customs_steps").orderBy("created_at", "asc").limit(300).get(),
     context.permissions.canManageJobCosts
       ? shipmentRef.collection("job_costs").orderBy("created_at", "desc").limit(500).get()
+      : Promise.resolve(null),
+    context.permissions.canManageJobCosts
+      ? db.collection("invoices").where("shipment_reference", "==", id).limit(500).get()
       : Promise.resolve(null),
   ]);
 
@@ -149,6 +160,30 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
   const costs = costsSnapshot ? costsSnapshot.docs.map((doc) => costFromDoc(doc.id, doc.data() as Record<string, unknown>)) : [];
   const costTotals: Partial<Record<CrmCurrency, number>> = {};
   for (const cost of costs) costTotals[cost.currency] = (costTotals[cost.currency] ?? 0) + cost.amount;
+
+  const revenueTotals: Partial<Record<CrmCurrency, number>> = {};
+  if (invoicesSnapshot) {
+    for (const invoice of invoicesSnapshot.docs) {
+      const status = text(invoice.get("status"));
+      if (status === "draft" || status === "void") continue;
+      const currency = currencyValue(invoice.get("currency"));
+      revenueTotals[currency] = (revenueTotals[currency] ?? 0) + numberValue(invoice.get("total"));
+    }
+  }
+
+  const profitTotals: Partial<Record<CrmCurrency, number>> = {};
+  const marginPercent: Partial<Record<CrmCurrency, number>> = {};
+  const profitabilityCurrencies = new Set<CrmCurrency>([
+    ...Object.keys(costTotals) as CrmCurrency[],
+    ...Object.keys(revenueTotals) as CrmCurrency[],
+  ]);
+  for (const currency of profitabilityCurrencies) {
+    const revenue = revenueTotals[currency] ?? 0;
+    const cost = costTotals[currency] ?? 0;
+    const profit = revenue - cost;
+    profitTotals[currency] = profit;
+    if (revenue > 0) marginPercent[currency] = Math.round((profit / revenue) * 10000) / 100;
+  }
 
   const job: DigitalJobFile = {
     reference: id,
@@ -174,6 +209,9 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
     customs_steps: customsSteps,
     costs,
     cost_totals: costTotals,
+    revenue_totals: revenueTotals,
+    profit_totals: profitTotals,
+    margin_percent: marginPercent,
     can_view_costs: context.permissions.canManageJobCosts,
     updated_at: text(shipmentData.updated_at),
   };
@@ -286,7 +324,19 @@ export async function addJobCost(reference: string, input: {
   const ref = firebaseAdminDb().collection("shipments").doc(loaded.job.reference);
   const id = childId("cost");
   const now = new Date().toISOString();
-  const cost = { category: input.category, label: input.label.trim(), vendor: input.vendor.trim() || null, amount: input.amount, currency: input.currency, notes: input.notes.trim() || null, created_at: now, created_by: actor.email };
+  const cost = {
+    category: input.category,
+    label: input.label.trim(),
+    vendor: input.vendor.trim() || null,
+    amount: input.amount,
+    currency: input.currency,
+    notes: input.notes.trim() || null,
+    source_type: "manual",
+    source_reference: null,
+    locked: false,
+    created_at: now,
+    created_by: actor.email,
+  };
   await ref.collection("job_costs").doc(id).create(cost);
   return { kind: "created" as const, cost: costFromDoc(id, cost) };
 }

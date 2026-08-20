@@ -41,6 +41,9 @@ export type JobCost = {
   amount: number;
   currency: CrmCurrency;
   notes: string | null;
+  source_type: "manual" | "payable";
+  source_reference: string | null;
+  locked: boolean;
   created_at: string;
   created_by: string;
 };
@@ -69,6 +72,9 @@ export type DigitalJobFile = {
   customs_steps: CustomsStep[];
   costs: JobCost[];
   cost_totals: Partial<Record<CrmCurrency, number>>;
+  revenue_totals: Partial<Record<CrmCurrency, number>>;
+  profit_totals: Partial<Record<CrmCurrency, number>>;
+  margin_percent: Partial<Record<CrmCurrency, number>>;
   can_view_costs: boolean;
   updated_at: string;
 };
