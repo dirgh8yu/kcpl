@@ -10,6 +10,7 @@ import {
   Check,
   CircleDollarSign,
   Clock3,
+  LockKeyhole,
   Mail,
   MapPin,
   MessageSquareText,
@@ -62,10 +63,14 @@ export function Customer360Workspace({
   initialCustomer,
   userName,
   userEmail,
+  commercialVisible,
+  creditVisible,
 }: {
   initialCustomer: CrmCustomerDetail;
   userName: string;
   userEmail: string;
+  commercialVisible: boolean;
+  creditVisible: boolean;
 }) {
   const [customer, setCustomer] = useState(initialCustomer);
   const [busy, setBusy] = useState(false);
@@ -264,19 +269,21 @@ export function Customer360Workspace({
               {customer.tags.length ? <div className="mt-5 flex flex-wrap gap-2">{customer.tags.map((tag) => <span key={tag} className="flex items-center gap-1 rounded-full bg-[#10263f] px-3 py-1.5 text-[9px] font-black text-white"><Tags size={10} />{tag}</span>)}</div> : null}
             </section>
 
-            <section className="rounded-[26px] border border-black/10 bg-[#10263f] p-6 text-white shadow-sm">
+            {commercialVisible ? <section className="rounded-[26px] border border-black/10 bg-[#10263f] p-6 text-white shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-[.17em] text-[#d4ad62]">Commercial & credit</p>
               <div className="mt-5 space-y-4">
                 <Money label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)} icon={<BadgeDollarSign size={14} />} />
                 <Money label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)} icon={<CircleDollarSign size={14} />} />
                 <Money label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} icon={<BadgeDollarSign size={14} />} strong />
                 <Money label="Gross margin" value={`${grossMargin.toFixed(1)}%`} icon={<CircleDollarSign size={14} />} />
-                <Money label="Credit limit" value={formatMoney(customer.commercial.credit_limit, customer.preferred_currency)} icon={<CircleDollarSign size={14} />} />
-                <Money label="Outstanding" value={formatMoney(customer.commercial.outstanding_balance, customer.preferred_currency)} icon={<Clock3 size={14} />} />
-                <Money label="Payment terms" value={customer.commercial.payment_terms_days === null ? "Not set" : `${customer.commercial.payment_terms_days} days`} icon={<CalendarClock size={14} />} />
+                {creditVisible ? <>
+                  <Money label="Credit limit" value={formatMoney(customer.commercial.credit_limit, customer.preferred_currency)} icon={<CircleDollarSign size={14} />} />
+                  <Money label="Outstanding" value={formatMoney(customer.commercial.outstanding_balance, customer.preferred_currency)} icon={<Clock3 size={14} />} />
+                  <Money label="Payment terms" value={customer.commercial.payment_terms_days === null ? "Not set" : `${customer.commercial.payment_terms_days} days`} icon={<CalendarClock size={14} />} />
+                </> : null}
               </div>
               {customer.commercial.pricing_notes ? <div className="mt-6 rounded-2xl border border-white/10 bg-white/[.05] p-4"><p className="text-[9px] font-black uppercase tracking-[.14em] text-white/35">Pricing notes</p><p className="mt-2 text-xs leading-5 text-white/65">{customer.commercial.pricing_notes}</p></div> : null}
-            </section>
+            </section> : <section className="rounded-[26px] border border-black/10 bg-[#10263f] p-6 text-white shadow-sm"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#d4ad62]"><LockKeyhole size={17} /></div><div><p className="text-[10px] font-black uppercase tracking-[.17em] text-[#d4ad62]">Commercial access</p><h3 className="mt-2 text-base font-black">Restricted for this staff role</h3><p className="mt-2 text-xs leading-5 text-white/50">Rates, revenue, costs, profit and customer credit data are not included in this session.</p></div></div></section>}
           </aside>
         </div>
       </div>
