@@ -77,7 +77,7 @@ test("server-renders every KCPL service route", async (t) => {
   }
 });
 
-test("renders launch metadata, FAQs, privacy and a truthful quote handoff", async () => {
+test("renders launch metadata, FAQs, privacy and the live quote submission flow", async () => {
   const services = await render("/services");
   const servicesHtml = await services.text();
   assert.match(servicesHtml, /Logistics &amp; Freight Services \| Kapileshwor Cargo/);
@@ -91,11 +91,15 @@ test("renders launch metadata, FAQs, privacy and a truthful quote handoff", asyn
   const quote = await render("/quote");
   const quoteHtml = await quote.text();
   assert.match(quoteHtml, /type="email"/);
-  assert.match(quoteHtml, /Your enquiry is not sent until you send the email\./);
+  assert.match(quoteHtml, /Submit quote request/);
+  assert.match(quoteHtml, /securely submitted to KCPL for review/i);
+  assert.doesNotMatch(quoteHtml, /Your enquiry is not sent until you send the email\./);
 
   const privacy = await render("/privacy");
   assert.equal(privacy.status, 200);
-  assert.match(await privacy.text(), /The website does not send or store that enquiry\./);
+  const privacyHtml = await privacy.text();
+  assert.match(privacyHtml, /KCPL receives and stores the route, cargo and contact details/i);
+  assert.match(privacyHtml, /reference number/i);
 });
 
 test("returns the branded not-found experience with a real 404 status", async () => {
