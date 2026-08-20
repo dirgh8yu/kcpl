@@ -97,7 +97,12 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   const safeHistory = redactHistoryForRole(history, permissions);
 
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff}>
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={staff.permissions.canManageStaff}
+      canManageFinance={staff.permissions.canManageFinance}
+      isManagement={staff.permissions.role === "management"}
+    >
       <Customer360Workspace initialCustomer={safeCustomer} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={permissions.canViewCommercial} creditVisible={permissions.canManageCredit} />
       <CrmCustomerProfileEditor customer={safeCustomer} permissions={permissions} />
       <CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial} />
