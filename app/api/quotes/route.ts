@@ -1,4 +1,5 @@
 import { firebaseAdminDb } from "../../firebase-admin.server";
+import { isTrustedSameOriginRequest } from "../../request-security";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
 const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
@@ -121,15 +122,8 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "Send the enquiry as JSON." }, 415);
   }
 
-  const requestOrigin = request.headers.get("origin");
-  if (requestOrigin) {
-    try {
-      if (new URL(requestOrigin).host !== new URL(request.url).host) {
-        return json({ ok: false, error: "Cross-origin submissions are not accepted." }, 403);
-      }
-    } catch {
-      return json({ ok: false, error: "Invalid request origin." }, 403);
-    }
+  if (!isTrustedSameOriginRequest(request)) {
+    return json({ ok: false, error: "Cross-origin submissions are not accepted." }, 403);
   }
 
   let payload: QuotePayload;
