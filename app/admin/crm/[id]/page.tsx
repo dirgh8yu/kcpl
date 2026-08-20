@@ -3,6 +3,7 @@ import { getAdminAccess } from "../../admin-auth";
 import { getCrmCustomer } from "../crm-data.server";
 import type { CrmCustomerDetail } from "../crm-data";
 import { Customer360Workspace } from "./customer-360-workspace";
+import "./customer-360.css";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
