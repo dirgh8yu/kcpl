@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
+import { getStaffContext } from "../../staff-directory.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../../staff-permissions";
+import { OperationsShell } from "../../operations-shell";
 import { getCrmCustomer } from "../crm-data.server";
 import { listCrmQuoteLinks, type CrmQuoteLinkItem } from "../crm-quote-links.server";
 import { listCrmOperationsHistory, type CrmOperationsHistory } from "../crm-operations-history.server";
@@ -18,20 +20,13 @@ import { CrmCustomerDocumentsPanel } from "./crm-customer-documents-panel";
 import "./customer-360.css";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Customer 360 | KCPL CRM",
-  robots: { index: false, follow: false },
-};
+export const metadata = { title: "Customer 360 | KCPL Operations", robots: { index: false, follow: false } };
 
 function redactCustomerForRole(customer: CrmCustomerDetail, permissions: StaffCapabilities): CrmCustomerDetail {
   const commercial = permissions.canViewCommercial
     ? {
         ...customer.commercial,
-        ...(permissions.canManageCredit ? {} : {
-          payment_terms_days: null,
-          credit_limit: null,
-          outstanding_balance: null,
-        }),
+        ...(permissions.canManageCredit ? {} : { payment_terms_days: null, credit_limit: null, outstanding_balance: null }),
       }
     : {
         preferred_currency: customer.preferred_currency,
@@ -45,29 +40,21 @@ function redactCustomerForRole(customer: CrmCustomerDetail, permissions: StaffCa
 
   return {
     ...customer,
-    ...(permissions.canViewCommercial ? {} : {
-      revenue_total: 0,
-      cost_total: 0,
-      profit_total: 0,
-    }),
+    ...(permissions.canViewCommercial ? {} : { revenue_total: 0, cost_total: 0, profit_total: 0 }),
     commercial,
   };
 }
 
 function redactHistoryForRole(history: CrmOperationsHistory, permissions: StaffCapabilities): CrmOperationsHistory {
   if (permissions.canViewCommercial) return history;
-  return {
-    quotes: history.quotes.map((quote) => ({ ...quote, quoted_amount: null })),
-    shipments: history.shipments,
-  };
+  return { quotes: history.quotes.map((quote) => ({ ...quote, quoted_amount: null })), shipments: history.shipments };
 }
 
 export default async function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") {
-    return <CustomerGate title="Sign in to KCPL Operations." detail="Customer 360 is available only to authorised KCPL staff." />;
-  }
+  if (access.kind !== "authorized") return <CustomerGate title="Sign in to KCPL Operations." detail="Customer 360 is available only to authorised KCPL staff." />;
 
+  const staff = await getStaffContext(access.user);
   const permissions = staffCapabilitiesForEmail(access.user.email);
   const { id } = await params;
   let customer: CrmCustomerDetail | null | undefined;
@@ -110,34 +97,30 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   const safeHistory = redactHistoryForRole(history, permissions);
 
   return (
-    <>
-      <Customer360Workspace
-        initialCustomer={safeCustomer}
-        userName={access.user.displayName}
-        userEmail={access.user.email}
-        commercialVisible={permissions.canViewCommercial}
-        creditVisible={permissions.canManageCredit}
-      />
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={staff.permissions.canManageStaff}
+      canManageFinance={staff.permissions.canManageFinance}
+      isManagement={staff.permissions.role === "management"}
+    >
+      <Customer360Workspace initialCustomer={safeCustomer} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={permissions.canViewCommercial} creditVisible={permissions.canManageCredit} />
       <CrmCustomerProfileEditor customer={safeCustomer} permissions={permissions} />
       <CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial} />
       {permissions.canViewCommercial ? <CrmRateCardPanel customerId={safeCustomer.id} initialRateCards={rateCards} permissions={permissions} /> : null}
       {permissions.canManageCustomerDocuments ? <CrmCustomerDocumentsPanel customerId={safeCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions} /> : null}
       <CrmQuoteMatchDock customerId={safeCustomer.id} initialLinked={linked} initialSuggested={suggested} />
-    </>
+    </OperationsShell>
   );
 }
 
 function CustomerGate({ title, detail }: { title: string; detail: string }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f4f1e9] p-6 text-[#10263f]">
-      <section className="w-full max-w-xl rounded-3xl border border-black/10 bg-white p-8 shadow-sm sm:p-10">
-        <p className="text-xs font-black uppercase tracking-[.22em] text-[#b78a3e]">KCPL Customer 360</p>
-        <h1 className="mt-4 text-3xl font-black tracking-[-.04em]">{title}</h1>
-        <p className="mt-4 text-sm leading-7 text-black/60">{detail}</p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/admin/crm" className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white">Back to CRM</Link>
-          <Link href="/admin" className="rounded-xl border border-black/10 px-5 py-3 text-sm font-black">Operations</Link>
-        </div>
+    <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]">
+      <section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8 sm:p-10">
+        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Customer 360</p>
+        <h1 className="mt-3 text-2xl font-bold tracking-[-.03em]">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p>
+        <div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/crm" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Back to Customers</Link><Link href="/admin" className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Enquiries</Link></div>
       </section>
     </main>
   );
