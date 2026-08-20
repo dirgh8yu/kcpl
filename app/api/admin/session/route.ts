@@ -1,9 +1,11 @@
 import {
+  ADMIN_SESSION_TTL_MS,
   adminSessionCookie,
   clearAdminSessionCookie,
-  createAdminSessionToken,
-  verifyAdminPassword,
+  firebaseAdminConfigured,
+  isAllowedAdminEmail,
 } from "../../../admin/admin-auth";
+import { firebaseAdminAuth } from "../../../firebase-admin.server";
 
 function redirectTo(request: Request, path: string, cookie?: string) {
   const headers = new Headers({ location: new URL(path, request.url).toString() });
@@ -25,33 +27,40 @@ export async function POST(request: Request) {
   if (!sameOrigin(request)) {
     return Response.json({ ok: false, error: "Cross-origin sign-in is not accepted." }, { status: 403 });
   }
+  if (!firebaseAdminConfigured()) {
+    return Response.json({ ok: false, error: "Firebase admin access is not configured." }, { status: 503 });
+  }
 
-  const contentType = request.headers.get("content-type") ?? "";
-  let password = "";
+  let idToken = "";
+  try {
+    const body = await request.json() as { idToken?: unknown };
+    idToken = typeof body.idToken === "string" ? body.idToken : "";
+  } catch {
+    return Response.json({ ok: false, error: "The sign-in token could not be read." }, { status: 400 });
+  }
+  if (!idToken) return Response.json({ ok: false, error: "Sign in again and retry." }, { status: 400 });
 
   try {
-    if (contentType.includes("application/json")) {
-      const body = await request.json() as { password?: unknown };
-      password = typeof body.password === "string" ? body.password : "";
-    } else {
-      const form = await request.formData();
-      const value = form.get("password");
-      password = typeof value === "string" ? value : "";
+    const auth = firebaseAdminAuth();
+    const decoded = await auth.verifyIdToken(idToken, true);
+    if (!isAllowedAdminEmail(decoded.email)) {
+      return Response.json({ ok: false, error: "This Firebase account is not authorised for KCPL Operations." }, { status: 403 });
     }
-  } catch {
-    return redirectTo(request, "/admin?auth=failed");
-  }
 
-  const result = await verifyAdminPassword(password);
-  if (result.kind === "unconfigured") {
-    return Response.json({ ok: false, error: "Admin login is not configured." }, { status: 503 });
-  }
-  if (result.kind === "invalid") {
-    return redirectTo(request, "/admin?auth=failed");
-  }
+    const authTime = Number(decoded.auth_time ?? 0) * 1000;
+    if (!authTime || Date.now() - authTime > 5 * 60 * 1000) {
+      return Response.json({ ok: false, error: "Recent sign-in is required. Please sign in again." }, { status: 401 });
+    }
 
-  const token = await createAdminSessionToken(result.sessionSecret);
-  return redirectTo(request, "/admin", adminSessionCookie(token));
+    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn: ADMIN_SESSION_TTL_MS });
+    return Response.json(
+      { ok: true },
+      { headers: { "cache-control": "no-store", "set-cookie": adminSessionCookie(sessionCookie) } },
+    );
+  } catch (error) {
+    console.error("Firebase KCPL admin sign-in failed", error);
+    return Response.json({ ok: false, error: "Firebase sign-in could not be verified." }, { status: 401 });
+  }
 }
 
 export async function GET(request: Request) {
