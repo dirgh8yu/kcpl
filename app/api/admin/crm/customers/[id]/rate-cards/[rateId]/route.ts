@@ -23,7 +23,8 @@ function parseRateCard(body: Record<string, unknown>) {
   const sellRate = optionalNumber(body.sellRate);
   const costRate = optionalNumber(body.costRate);
   const minimumCharge = optionalNumber(body.minimumCharge);
-  if (sellRate.error || sellRate.value === null) return { error: sellRate.error || "Sell rate is required." };
+  const sellRateValue = sellRate.value;
+  if (sellRate.error || sellRateValue === null || sellRateValue === undefined) return { error: sellRate.error || "Sell rate is required." };
   if (costRate.error || minimumCharge.error) return { error: costRate.error || minimumCharge.error };
 
   const validFrom = cleanCrmText(body.validFrom, 10);
@@ -41,7 +42,7 @@ function parseRateCard(body: Record<string, unknown>) {
     service: cleanCrmText(body.service, 160),
     currency: currency as CrmCurrency,
     costRate: costRate.value ?? null,
-    sellRate: sellRate.value,
+    sellRate: sellRateValue,
     unit: unit as CrmRateUnit,
     minimumCharge: minimumCharge.value ?? null,
     validFrom,
