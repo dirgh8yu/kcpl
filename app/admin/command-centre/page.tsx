@@ -25,6 +25,8 @@ async function loadState(user: StaffUser) {
       data,
       roleLabel: kcplStaffRoleLabels[staff.permissions.role],
       canManageStaff: staff.permissions.canManageStaff,
+      canManageFinance: staff.permissions.canManageFinance,
+      isManagement: staff.permissions.role === "management",
     };
   } catch (error) {
     console.error("Failed to load KCPL Operations Home", error);
@@ -42,7 +44,12 @@ export default async function CommandCentrePage() {
   if (state.kind === "error") return <Gate title="Operations Home could not be loaded." detail="KCPL operational data is temporarily unavailable. No operations data was exposed." />;
 
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={state.canManageStaff}>
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={state.canManageStaff}
+      canManageFinance={state.canManageFinance}
+      isManagement={state.isManagement}
+    >
       <CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel}/>
     </OperationsShell>
   );
