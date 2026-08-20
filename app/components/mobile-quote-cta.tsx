@@ -25,7 +25,13 @@ export function MobileQuoteCta() {
     return () => observer.disconnect();
   }, [pathname]);
 
-  if (pathname === "/quote" || pathname === "/privacy" || pathname === "/network") return null;
+  if (
+    pathname.startsWith("/admin") ||
+    pathname === "/quote" ||
+    pathname === "/privacy" ||
+    pathname === "/network"
+  ) return null;
+
   return <div className={`mobile-quote-cta ${footerVisible || !pastHero ? "is-hidden" : ""}`}>
     <Link href="/quote" data-analytics-event="mobile_quote_cta_click">Request a quote <ArrowUpRight size={17} /></Link>
   </div>;
