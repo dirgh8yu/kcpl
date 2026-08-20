@@ -1,0 +1,215 @@
+.kcpl-ops {
+  --ops-canvas: #fbfaf8;
+  --ops-surface: #fffdfb;
+  --ops-surface-soft: #f8f4ef;
+  --ops-sidebar: #f7f3ee;
+  --ops-line: #e9e2db;
+  --ops-line-soft: #f0eae4;
+  --ops-ink: #302b27;
+  --ops-ink-soft: #655d56;
+  --ops-muted: #948a81;
+  --ops-accent: #e97d5d;
+  --ops-accent-deep: #ca674a;
+  --ops-accent-soft: #f8e7df;
+  --ops-sage: #76907a;
+  background: var(--ops-canvas);
+  color: var(--ops-ink);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.008em;
+}
+
+.kcpl-ops * {
+  scrollbar-width: thin;
+  scrollbar-color: #d8cec5 transparent;
+}
+
+.kcpl-ops *::-webkit-scrollbar { width: 9px; height: 9px; }
+.kcpl-ops *::-webkit-scrollbar-track { background: transparent; }
+.kcpl-ops *::-webkit-scrollbar-thumb { background: #d8cec5; border: 2px solid transparent; border-radius: 999px; background-clip: padding-box; }
+
+.kcpl-ops button,
+.kcpl-ops a,
+.kcpl-ops input,
+.kcpl-ops select,
+.kcpl-ops textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kcpl-ops button:focus-visible,
+.kcpl-ops a:focus-visible,
+.kcpl-ops input:focus-visible,
+.kcpl-ops select:focus-visible,
+.kcpl-ops textarea:focus-visible {
+  outline: 3px solid rgba(233, 125, 93, .18);
+  outline-offset: 2px;
+}
+
+/* Warm remap for legacy admin pages so every workspace belongs to the same OS. */
+.kcpl-ops [class*="bg-[#f5f6f7]"] { background-color: var(--ops-canvas) !important; }
+.kcpl-ops [class*="bg-[#f8f9fa]"],
+.kcpl-ops [class*="bg-[#fafbfb]"] { background-color: #faf7f3 !important; }
+.kcpl-ops [class*="bg-[#0a1828]"] { background-color: var(--ops-sidebar) !important; }
+.kcpl-ops [class*="bg-[#10263f]"] { background-color: var(--ops-accent) !important; }
+.kcpl-ops [class*="hover:bg-[#183651]"]:hover { background-color: var(--ops-accent-deep) !important; }
+.kcpl-ops [class*="text-[#10263f]"] { color: var(--ops-ink) !important; }
+.kcpl-ops [class*="text-[#263a50]"],
+.kcpl-ops [class*="text-[#42515e]"],
+.kcpl-ops [class*="text-[#42505e]"] { color: #514842 !important; }
+.kcpl-ops [class*="text-[#8a6c36]"],
+.kcpl-ops [class*="text-[#9a783d]"],
+.kcpl-ops [class*="text-[#785c2d]"],
+.kcpl-ops [class*="text-[#80612e]"] { color: #ba654a !important; }
+.kcpl-ops [class*="border-[#dfe3e8]"],
+.kcpl-ops [class*="border-[#e1e5e8]"],
+.kcpl-ops [class*="border-[#e1e5e9]"],
+.kcpl-ops [class*="border-[#e2e6e9]"] { border-color: var(--ops-line) !important; }
+.kcpl-ops [class*="border-[#e8ebee]"],
+.kcpl-ops [class*="border-[#edf0f2]"] { border-color: var(--ops-line-soft) !important; }
+.kcpl-ops [class*="focus:border-[#aa8748]"]:focus,
+.kcpl-ops [class*="focus:border-[#9e7b3e]"]:focus { border-color: var(--ops-accent) !important; }
+.kcpl-ops [class*="hover:border-[#b78a3e]"]:hover,
+.kcpl-ops [class*="hover:border-[#c5aa78]"]:hover { border-color: #e1a590 !important; }
+.kcpl-ops [class*="shadow-[inset_3px_0_0_#b78a3e]"] { box-shadow: inset 3px 0 0 var(--ops-accent) !important; }
+
+.kcpl-ops input,
+.kcpl-ops select,
+.kcpl-ops textarea {
+  border-color: var(--ops-line);
+  color: var(--ops-ink);
+}
+
+.kcpl-ops input::placeholder,
+.kcpl-ops textarea::placeholder { color: #aaa198; }
+
+.kcpl-ops table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.kcpl-ops thead { color: #968c83; }
+.kcpl-ops tbody tr { transition: background-color .16s ease, transform .16s ease; }
+.kcpl-ops tbody tr:hover { background: #fcf8f4; }
+
+.kcpl-ops [class*="rounded-xl"] { border-radius: 16px; }
+.kcpl-ops [class*="rounded-lg"] { border-radius: 11px; }
+
+.kcpl-ops [class~="sticky"][class~="top-0"] { top: 64px !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .kcpl-ops a,
+  .kcpl-ops button,
+  .kcpl-ops input,
+  .kcpl-ops select,
+  .kcpl-ops textarea {
+    transition-duration: 180ms;
+  }
+}
+
+/* Operations Home composition */
+.kcpl-home {
+  min-height: calc(100vh - 64px);
+  background:
+    radial-gradient(circle at 82% -8%, rgba(244, 205, 186, .32), transparent 32rem),
+    radial-gradient(circle at 12% 4%, rgba(231, 217, 197, .28), transparent 26rem),
+    var(--ops-canvas);
+}
+
+.kcpl-home-hero {
+  padding: 32px clamp(18px, 3vw, 44px) 22px;
+}
+
+.kcpl-home-title {
+  max-width: 780px;
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+  font-weight: 720;
+  color: #302a26;
+}
+
+.kcpl-home-subtitle {
+  margin-top: 9px;
+  max-width: 720px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #847a72;
+}
+
+.kcpl-stat-ribbon {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  overflow-x: auto;
+  border-top: 1px solid var(--ops-line);
+  border-bottom: 1px solid var(--ops-line);
+  background: rgba(255, 253, 251, .72);
+  backdrop-filter: blur(16px);
+}
+
+.kcpl-stat-ribbon > div {
+  min-width: 126px;
+  padding: 14px 18px;
+  border-right: 1px solid var(--ops-line-soft);
+}
+
+.kcpl-stat-ribbon > div:last-child { border-right: 0; }
+
+.kcpl-home-grid {
+  display: grid;
+  gap: 18px;
+  padding: 20px clamp(18px, 3vw, 44px) 40px;
+}
+
+.kcpl-home-panel {
+  overflow: hidden;
+  border: 1px solid var(--ops-line);
+  border-radius: 18px;
+  background: rgba(255, 253, 251, .92);
+  box-shadow: 0 12px 36px rgba(83, 62, 47, .045);
+}
+
+.kcpl-home-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 17px 18px;
+  border-bottom: 1px solid var(--ops-line-soft);
+}
+
+.kcpl-home-panel-eyebrow {
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  color: #c47155;
+}
+
+.kcpl-home-panel-title {
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 720;
+  letter-spacing: -.018em;
+  color: #3d3530;
+}
+
+.kcpl-home .regional-satellite-shell {
+  border: 0;
+  border-radius: 0;
+  background: #f6f0ea;
+  box-shadow: none;
+}
+
+.kcpl-home .regional-satellite-map { min-height: 390px; }
+.kcpl-home .satellite-location-panel { background: #fffaf6; }
+
+@media (max-width: 1100px) {
+  .kcpl-stat-ribbon { grid-template-columns: repeat(7, 145px); }
+  .kcpl-home .regional-satellite-map { min-height: 330px; }
+}
+
+@media (max-width: 640px) {
+  .kcpl-home-hero { padding-top: 24px; }
+  .kcpl-home-grid { padding-bottom: 28px; }
+  .kcpl-home-panel { border-radius: 15px; }
+}
