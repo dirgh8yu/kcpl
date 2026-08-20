@@ -128,11 +128,6 @@ export function OperationsShell({
     return () => { document.body.style.overflow = previous; };
   }, [mobileOpen, paletteOpen]);
 
-  useEffect(() => {
-    setMobileOpen(false);
-    setPaletteOpen(false);
-  }, [pathname]);
-
   const groups = useMemo<NavGroup[]>(() => {
     const finance: NavItem[] = canManageFinance ? [
       { href: "/admin/finance", label: "Finance & AR", icon: ReceiptText, match: (path) => path.startsWith("/admin/finance"), keywords: ["invoices", "receivables", "payments"] },
