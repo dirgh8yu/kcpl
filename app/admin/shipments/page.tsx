@@ -27,7 +27,12 @@ export default async function ShipmentsPage() {
   if (!data) return <Gate title="Shipment backend unavailable" detail="Firestore is not available for this deployment."/>;
 
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff}>
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={staff.permissions.canManageStaff}
+      canManageFinance={staff.permissions.canManageFinance}
+      isManagement={staff.permissions.role === "management"}
+    >
       <ShipmentsWorkspace data={data} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
     </OperationsShell>
   );
