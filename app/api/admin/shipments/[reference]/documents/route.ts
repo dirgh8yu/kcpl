@@ -51,11 +51,11 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   const { reference } = await context.params;
   try {
     const result = await listShipmentDocuments(reference);
-    if (result.kind === "unavailable") return json({ ok: false, error: "Document metadata storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
     return json({ ok: true, documents: result.documents, storageAvailable: result.storageAvailable });
   } catch (error) {
-    console.error("Failed to list KCPL shipment documents", error);
+    console.error("Failed to list KCPL Firebase shipment documents", error);
     return json({ ok: false, error: "Shipment documents could not be loaded." }, 500);
   }
 }
@@ -98,11 +98,11 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       uploadedBy: auth.user.displayName,
       data: await file.arrayBuffer(),
     });
-    if (result.kind === "unavailable") return json({ ok: false, error: "R2 document storage is not configured yet." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase Storage is not configured yet." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
     return json({ ok: true, document: result.document }, 201);
   } catch (error) {
-    console.error("Failed to upload KCPL shipment document", error);
+    console.error("Failed to upload KCPL Firebase shipment document", error);
     return json({ ok: false, error: "The document could not be stored." }, 500);
   }
 }
