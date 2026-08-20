@@ -1,48 +1,11 @@
-import { env } from "cloudflare:workers";
+import { firebaseAdminDb, firebaseAdminStorage, firebaseStorageBucketName } from "./firebase-admin.server";
 import type { ShipmentDocument, ShipmentDocumentType } from "./shipment-document-types";
 
-const documentSchema = `
-CREATE TABLE IF NOT EXISTS shipment_documents (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  shipment_reference TEXT NOT NULL,
-  r2_key TEXT NOT NULL UNIQUE,
-  filename TEXT NOT NULL,
-  content_type TEXT NOT NULL,
-  size_bytes INTEGER NOT NULL,
-  document_type TEXT NOT NULL,
-  uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  uploaded_by TEXT NOT NULL,
-  FOREIGN KEY (shipment_reference) REFERENCES shipments(reference) ON DELETE CASCADE
-)
-`;
-
-let documentSchemaReady: Promise<void> | null = null;
-
-function database() {
-  return (env as unknown as { DB?: D1Database }).DB;
-}
-
-function bucket() {
-  return (env as unknown as { DOCUMENTS?: R2Bucket }).DOCUMENTS;
-}
-
-async function ensureDocumentSchema(db: D1Database) {
-  if (!documentSchemaReady) {
-    documentSchemaReady = (async () => {
-      await db.prepare(documentSchema).run();
-      await db.prepare("CREATE INDEX IF NOT EXISTS idx_shipment_documents_reference ON shipment_documents(shipment_reference, uploaded_at DESC, id DESC)").run();
-    })().catch((error) => {
-      documentSchemaReady = null;
-      throw error;
-    });
-  }
-  await documentSchemaReady;
-}
-
-async function shipmentExists(db: D1Database, reference: string) {
-  return Boolean(await db.prepare("SELECT reference FROM shipments WHERE reference = ?")
-    .bind(reference)
-    .first<{ reference: string }>());
+function configured() {
+  return Boolean(
+    (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) &&
+    firebaseStorageBucketName(),
+  );
 }
 
 function safeFilename(filename: string) {
@@ -60,22 +23,37 @@ function normalizeReference(reference: string) {
   return reference.trim().toUpperCase();
 }
 
-export async function listShipmentDocuments(reference: string) {
-  const db = database();
-  if (!db) return { kind: "unavailable" as const };
-  await ensureDocumentSchema(db);
+function numericId() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
 
+async function shipmentRef(reference: string) {
   const normalized = normalizeReference(reference);
-  if (!await shipmentExists(db, normalized)) return { kind: "missing" as const };
+  const ref = firebaseAdminDb().collection("shipments").doc(normalized);
+  const snapshot = await ref.get();
+  return snapshot.exists ? { normalized, ref } : null;
+}
 
-  const result = await db.prepare(`
-    SELECT id, shipment_reference, filename, content_type, size_bytes, document_type, uploaded_at, uploaded_by
-    FROM shipment_documents
-    WHERE shipment_reference = ?
-    ORDER BY uploaded_at DESC, id DESC
-  `).bind(normalized).all<ShipmentDocument>();
+function storageBucket() {
+  return firebaseAdminStorage().bucket(firebaseStorageBucketName());
+}
 
-  return { kind: "ready" as const, documents: result.results ?? [], storageAvailable: Boolean(bucket()) };
+export async function listShipmentDocuments(reference: string) {
+  if (!(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)) {
+    return { kind: "unavailable" as const };
+  }
+  const shipment = await shipmentRef(reference);
+  if (!shipment) return { kind: "missing" as const };
+
+  const snapshot = await shipment.ref.collection("documents")
+    .orderBy("uploaded_at", "desc")
+    .limit(1000)
+    .get();
+  return {
+    kind: "ready" as const,
+    documents: snapshot.docs.map((doc) => doc.data() as ShipmentDocument),
+    storageAvailable: configured(),
+  };
 }
 
 export async function uploadShipmentDocument(
@@ -89,87 +67,74 @@ export async function uploadShipmentDocument(
     data: ArrayBuffer;
   },
 ) {
-  const db = database();
-  const documents = bucket();
-  if (!db || !documents) return { kind: "unavailable" as const };
-  await ensureDocumentSchema(db);
+  if (!configured()) return { kind: "unavailable" as const };
+  const shipment = await shipmentRef(reference);
+  if (!shipment) return { kind: "missing" as const };
 
-  const normalized = normalizeReference(reference);
-  if (!await shipmentExists(db, normalized)) return { kind: "missing" as const };
-
-  const key = `shipments/${normalized}/${crypto.randomUUID()}-${safeFilename(values.filename)}`;
-  await documents.put(key, values.data, {
-    httpMetadata: { contentType: values.contentType },
-    customMetadata: {
-      shipmentReference: normalized,
-      originalFilename: values.filename.slice(0, 240),
+  const id = numericId();
+  const key = `shipments/${shipment.normalized}/${crypto.randomUUID()}-${safeFilename(values.filename)}`;
+  const file = storageBucket().file(key);
+  await file.save(Buffer.from(values.data), {
+    resumable: false,
+    metadata: {
+      contentType: values.contentType,
+      cacheControl: "private, no-store",
+      metadata: {
+        shipmentReference: shipment.normalized,
+        originalFilename: values.filename.slice(0, 240),
+      },
     },
   });
 
+  const document: ShipmentDocument & { storage_path: string } = {
+    id,
+    shipment_reference: shipment.normalized,
+    filename: values.filename,
+    content_type: values.contentType,
+    size_bytes: values.sizeBytes,
+    document_type: values.documentType,
+    uploaded_at: new Date().toISOString(),
+    uploaded_by: values.uploadedBy,
+    storage_path: key,
+  };
+
   try {
-    const result = await db.prepare(`
-      INSERT INTO shipment_documents (
-        shipment_reference, r2_key, filename, content_type, size_bytes, document_type, uploaded_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      normalized,
-      key,
-      values.filename,
-      values.contentType,
-      values.sizeBytes,
-      values.documentType,
-      values.uploadedBy,
-    ).run();
-
-    const document = await db.prepare(`
-      SELECT id, shipment_reference, filename, content_type, size_bytes, document_type, uploaded_at, uploaded_by
-      FROM shipment_documents
-      WHERE id = ?
-    `).bind(Number(result.meta.last_row_id)).first<ShipmentDocument>();
-
-    return { kind: "created" as const, document };
+    await shipment.ref.collection("documents").doc(String(id)).create(document);
+    const { storage_path: _storagePath, ...publicDocument } = document;
+    return { kind: "created" as const, document: publicDocument };
   } catch (error) {
-    await documents.delete(key).catch(() => undefined);
+    await file.delete({ ignoreNotFound: true }).catch(() => undefined);
     throw error;
   }
 }
 
 export async function getShipmentDocumentFile(reference: string, id: number) {
-  const db = database();
-  const documents = bucket();
-  if (!db || !documents) return { kind: "unavailable" as const };
-  await ensureDocumentSchema(db);
+  if (!configured()) return { kind: "unavailable" as const };
+  const shipment = await shipmentRef(reference);
+  if (!shipment) return { kind: "missing" as const };
 
-  const normalized = normalizeReference(reference);
-  const document = await db.prepare(`
-    SELECT id, shipment_reference, r2_key, filename, content_type, size_bytes, document_type, uploaded_at, uploaded_by
-    FROM shipment_documents
-    WHERE shipment_reference = ? AND id = ?
-  `).bind(normalized, id).first<ShipmentDocument & { r2_key: string }>();
-  if (!document) return { kind: "missing" as const };
+  const snapshot = await shipment.ref.collection("documents").doc(String(id)).get();
+  if (!snapshot.exists) return { kind: "missing" as const };
+  const document = snapshot.data() as ShipmentDocument & { storage_path: string };
 
-  const object = await documents.get(document.r2_key);
-  if (!object) return { kind: "object-missing" as const, document };
-  return { kind: "ready" as const, document, object };
+  const file = storageBucket().file(document.storage_path);
+  const [exists] = await file.exists();
+  if (!exists) return { kind: "object-missing" as const, document };
+  const [bytes] = await file.download();
+  return { kind: "ready" as const, document, bytes };
 }
 
 export async function deleteShipmentDocument(reference: string, id: number) {
-  const db = database();
-  const documents = bucket();
-  if (!db || !documents) return { kind: "unavailable" as const };
-  await ensureDocumentSchema(db);
+  if (!configured()) return { kind: "unavailable" as const };
+  const shipment = await shipmentRef(reference);
+  if (!shipment) return { kind: "missing" as const };
 
-  const normalized = normalizeReference(reference);
-  const document = await db.prepare(`
-    SELECT id, shipment_reference, r2_key, filename, content_type, size_bytes, document_type, uploaded_at, uploaded_by
-    FROM shipment_documents
-    WHERE shipment_reference = ? AND id = ?
-  `).bind(normalized, id).first<ShipmentDocument & { r2_key: string }>();
-  if (!document) return { kind: "missing" as const };
+  const documentRef = shipment.ref.collection("documents").doc(String(id));
+  const snapshot = await documentRef.get();
+  if (!snapshot.exists) return { kind: "missing" as const };
+  const document = snapshot.data() as ShipmentDocument & { storage_path: string };
 
-  await documents.delete(document.r2_key);
-  await db.prepare("DELETE FROM shipment_documents WHERE id = ? AND shipment_reference = ?")
-    .bind(id, normalized)
-    .run();
+  await storageBucket().file(document.storage_path).delete({ ignoreNotFound: true });
+  await documentRef.delete();
   return { kind: "deleted" as const };
 }
