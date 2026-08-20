@@ -36,6 +36,12 @@ const eslintConfig = defineConfig([
       },
     },
   },
+  {
+    files: ["app/admin/crm/**/*.tsx"],
+    rules: {
+      "react/no-unknown-property": ["error", { ignore: ["jsx", "global"] }],
+    },
+  },
 ]);
 
 export default eslintConfig;
