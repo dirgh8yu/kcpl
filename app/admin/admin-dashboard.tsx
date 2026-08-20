@@ -258,13 +258,37 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
   async function sendQuote() {
     if (!detail) return;
     if (!detail.quoted_amount?.trim()) {
-      setNotice("Add a quoted price before preparing the customer email.");
+      setNotice("Add a quoted price before sending the customer email.");
       return;
     }
     const saved = await persistCommercial(false);
     if (!saved) return;
+
+    setSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}/email`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      });
+      const data = await response.json() as { ok?: boolean; to?: string; status?: QuoteStatus; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Could not send the quote email.");
+
+      const nextStatus = data.status ?? detail.status;
+      setDetail((current) => current ? { ...current, status: nextStatus } : current);
+      setQuotes((current) => current.map((quote) => quote.reference === detail.reference ? { ...quote, status: nextStatus } : quote));
+      setNotice(`Quote emailed to ${data.to || detail.contact_email}.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not send the quote email.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openQuoteDraft() {
+    if (!detail) return;
     const email = quoteEmail(detail);
-    setNotice("Quote saved. Opening a customer email draft.");
     window.location.href = `mailto:${encodeURIComponent(detail.contact_email)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`;
   }
 
@@ -399,7 +423,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
 
                 <label className="md:col-span-2 xl:col-span-4"><span className="text-[11px] font-semibold text-[#5f6973]">Customer quote note</span><textarea className="mt-1.5 min-h-28 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] p-3 text-sm leading-6 outline-none focus:border-[#aa8748] focus:bg-white" value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Inclusions, exclusions, transit notes or payment terms…" maxLength={4000}/></label>
 
-                <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-4"><button disabled={saving} className="h-10 rounded-lg bg-[#10263f] px-4 text-xs font-bold text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save quote"}</button><button disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote} className="flex h-10 items-center gap-2 rounded-lg bg-[#b78a3e] px-4 text-xs font-bold text-white disabled:opacity-40" type="button"><Send size={14}/> Prepare customer email</button></div>
+                <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-4"><button disabled={saving} className="h-10 rounded-lg bg-[#10263f] px-4 text-xs font-bold text-white disabled:opacity-50" type="submit">{saving ? "Saving…" : "Save quote"}</button><button disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote} className="flex h-10 items-center gap-2 rounded-lg bg-[#b78a3e] px-4 text-xs font-bold text-white disabled:opacity-40" type="button"><Send size={14}/>{saving ? "Sending…" : "Send quote by email"}</button><button disabled={saving || !detail.quoted_amount?.trim()} onClick={openQuoteDraft} className="h-10 rounded-lg border border-[#dfe3e8] bg-white px-4 text-xs font-bold text-[#52606d] disabled:opacity-40" type="button">Open email draft</button></div>
               </form>
             </Panel>}
 
