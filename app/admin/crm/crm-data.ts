@@ -48,6 +48,16 @@ export type KcplBranch = (typeof kcplBranches)[number];
 export const crmCurrencies = ["NPR", "USD", "AUD", "INR", "CNY", "EUR", "GBP", "SGD", "AED", "JPY"] as const;
 export type CrmCurrency = (typeof crmCurrencies)[number];
 
+export const crmTaskPriorities = ["low", "normal", "high", "urgent"] as const;
+export type CrmTaskPriority = (typeof crmTaskPriorities)[number];
+
+export const crmTaskPriorityLabels: Record<CrmTaskPriority, string> = {
+  low: "Low",
+  normal: "Normal",
+  high: "High",
+  urgent: "Urgent",
+};
+
 export type CrmAddress = {
   id: string;
   label: string;
@@ -72,6 +82,41 @@ export type CrmContact = {
   communication_preference: CrmCommunicationPreference | null;
   is_primary: boolean;
   notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CrmNote = {
+  id: string;
+  note: string;
+  author_name: string;
+  author_email: string;
+  created_at: string;
+};
+
+export type CrmActivity = {
+  id: string;
+  type: string;
+  title: string;
+  detail: string | null;
+  actor_name: string | null;
+  actor_email: string | null;
+  created_at: string;
+};
+
+export type CrmTask = {
+  id: string;
+  title: string;
+  detail: string | null;
+  due_at: string | null;
+  priority: CrmTaskPriority;
+  assigned_to_name: string | null;
+  assigned_to_email: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  completed_by_name: string | null;
+  created_by_name: string;
+  created_by_email: string;
   created_at: string;
   updated_at: string;
 };
@@ -126,6 +171,9 @@ export type CrmCustomerDetail = CrmCustomerSummary & {
   commercial: CrmCommercialProfile;
   contacts: CrmContact[];
   addresses: CrmAddress[];
+  notes: CrmNote[];
+  activity: CrmActivity[];
+  tasks: CrmTask[];
 };
 
 export type CrmDashboardStats = {
