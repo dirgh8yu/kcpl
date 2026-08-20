@@ -1,0 +1,3 @@
+KCPL Firebase App Hosting rollout trigger.
+This file exists only because the App Hosting rollout filter is currently configured to watch src/app/* while the application source lives under app/*.
+Triggered: 2026-08-20T22:25+10:00
