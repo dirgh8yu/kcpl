@@ -8,6 +8,7 @@ import {
   Building2,
   ChartNoAxesCombined,
   HandCoins,
+  Handshake,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -30,6 +31,7 @@ const coreNav: NavItem[] = [
   { href: "/admin", label: "Enquiries", icon: PackageSearch, match: (path) => path === "/admin" },
   { href: "/admin/shipments", label: "Shipments", icon: Boxes, match: (path) => path.startsWith("/admin/shipments") || path.startsWith("/admin/jobs/") },
   { href: "/admin/crm", label: "Customers", icon: Building2, match: (path) => path.startsWith("/admin/crm") },
+  { href: "/admin/partners", label: "Partners", icon: Handshake, match: (path) => path.startsWith("/admin/partners") },
   { href: "/admin/alerts", label: "Alerts", icon: BellRing, match: (path) => path.startsWith("/admin/alerts") },
 ];
 
