@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { CrmDashboard } from "./crm-dashboard";
+import { CrmCustomerJump } from "./crm-customer-jump";
 import { crmDashboardStats, listCrmCustomers } from "./crm-data.server";
 import type { CrmCustomerSummary } from "./crm-data";
 
@@ -39,12 +40,15 @@ export default async function CrmPage() {
   }
 
   return (
-    <CrmDashboard
-      initialCustomers={customers}
-      initialStats={crmDashboardStats(customers)}
-      userName={access.user.displayName}
-      userEmail={access.user.email}
-    />
+    <>
+      <CrmCustomerJump customers={customers} />
+      <CrmDashboard
+        initialCustomers={customers}
+        initialStats={crmDashboardStats(customers)}
+        userName={access.user.displayName}
+        userEmail={access.user.email}
+      />
+    </>
   );
 }
 
