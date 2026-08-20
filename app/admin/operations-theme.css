@@ -193,7 +193,8 @@
   color: #3d3530;
 }
 
-.kcpl-home .regional-satellite-shell {
+.kcpl-home .regional-satellite-shell,
+.kcpl-home .regional-satellite-shell-home {
   border: 0;
   border-radius: 0;
   background: #f6f0ea;
@@ -201,7 +202,43 @@
 }
 
 .kcpl-home .regional-satellite-map { min-height: 390px; }
-.kcpl-home .satellite-location-panel { background: #fffaf6; }
+.kcpl-home .satellite-tone-regional {
+  background:
+    linear-gradient(90deg, rgba(72, 53, 42, .06), rgba(255, 247, 239, .14) 58%, rgba(72, 53, 42, .07)),
+    linear-gradient(0deg, rgba(255, 244, 235, .12), transparent 45%);
+}
+.kcpl-home .regional-satellite-shell-home .satellite-location-panel,
+.kcpl-home .satellite-location-panel {
+  border-color: #eadfd6;
+  background: #fffaf6;
+  color: #3f3832;
+}
+.kcpl-home .regional-satellite-shell-home .satellite-location-panel h3 { color: #3b332e; }
+.kcpl-home .regional-satellite-shell-home .satellite-location-country,
+.kcpl-home .regional-satellite-shell-home .satellite-location-description,
+.kcpl-home .regional-satellite-shell-home .satellite-location-address { color: #887d74; }
+.kcpl-home .regional-satellite-shell-home .satellite-location-address { border-color: #eadfd6; }
+.kcpl-home .regional-satellite-shell-home .satellite-location-link { color: #b45f47; }
+.kcpl-home .regional-satellite-shell-home .satellite-legend {
+  border-color: #eadfd6;
+  background: #fffdfb;
+  color: #7e736a;
+}
+.kcpl-home .regional-satellite-shell-home .satellite-legend small { color: #9b9188; }
+.kcpl-home .regional-satellite-shell-home .satellite-legend-customs { border-color: #c8b8ac; }
+.kcpl-home .regional-satellite-shell-home .satellite-mobile-location-tabs {
+  border-color: #eadfd6;
+  background: #fffaf6;
+}
+.kcpl-home .regional-satellite-shell-home .satellite-mobile-location-tabs button {
+  border-color: #e6dbd2;
+  color: #756a61;
+}
+.kcpl-home .regional-satellite-shell-home .satellite-mobile-location-tabs button[aria-pressed="true"] {
+  border-color: #e4a58f;
+  background: #f7dfd5;
+  color: #8f4e3b;
+}
 
 @media (max-width: 1100px) {
   .kcpl-stat-ribbon { grid-template-columns: repeat(7, 145px); }
