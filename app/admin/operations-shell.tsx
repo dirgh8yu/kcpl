@@ -3,41 +3,67 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BellRing,
   Boxes,
   Building2,
+  ChartNoAxesCombined,
+  HandCoins,
   LayoutDashboard,
   LogOut,
   Menu,
   PackageSearch,
+  ReceiptText,
   UsersRound,
   X,
 } from "lucide-react";
 import { useState } from "react";
 
-const coreNav = [
-  { href: "/admin/command-centre", label: "Operations Home", icon: LayoutDashboard, match: (path: string) => path.startsWith("/admin/command-centre") },
-  { href: "/admin", label: "Enquiries", icon: PackageSearch, match: (path: string) => path === "/admin" },
-  { href: "/admin/shipments", label: "Shipments", icon: Boxes, match: (path: string) => path.startsWith("/admin/shipments") || path.startsWith("/admin/jobs/") },
-  { href: "/admin/crm", label: "Customers", icon: Building2, match: (path: string) => path.startsWith("/admin/crm") },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  match: (path: string) => boolean;
+};
+
+const coreNav: NavItem[] = [
+  { href: "/admin/command-centre", label: "Operations Home", icon: LayoutDashboard, match: (path) => path.startsWith("/admin/command-centre") },
+  { href: "/admin", label: "Enquiries", icon: PackageSearch, match: (path) => path === "/admin" },
+  { href: "/admin/shipments", label: "Shipments", icon: Boxes, match: (path) => path.startsWith("/admin/shipments") || path.startsWith("/admin/jobs/") },
+  { href: "/admin/crm", label: "Customers", icon: Building2, match: (path) => path.startsWith("/admin/crm") },
+  { href: "/admin/alerts", label: "Alerts", icon: BellRing, match: (path) => path.startsWith("/admin/alerts") },
+];
 
 export function OperationsShell({
   children,
   userName,
   canManageStaff = false,
+  canManageFinance = false,
+  isManagement = false,
   signOutPath = "/api/admin/session?logout=1",
 }: {
   children: React.ReactNode;
   userName: string;
   canManageStaff?: boolean;
+  canManageFinance?: boolean;
+  isManagement?: boolean;
   signOutPath?: string;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav = canManageStaff
-    ? [...coreNav, { href: "/admin/staff", label: "Staff & branches", icon: UsersRound, match: (path: string) => path.startsWith("/admin/staff") }]
-    : coreNav;
+  const nav: NavItem[] = [
+    ...coreNav,
+    ...(canManageFinance ? [
+      { href: "/admin/finance", label: "Finance & AR", icon: ReceiptText, match: (path: string) => path.startsWith("/admin/finance") },
+      { href: "/admin/payables", label: "Payables", icon: HandCoins, match: (path: string) => path.startsWith("/admin/payables") },
+    ] : []),
+    ...(isManagement ? [
+      { href: "/admin/management", label: "Executive", icon: ChartNoAxesCombined, match: (path: string) => path.startsWith("/admin/management") },
+    ] : []),
+    ...(canManageStaff ? [
+      { href: "/admin/staff", label: "Staff & branches", icon: UsersRound, match: (path: string) => path.startsWith("/admin/staff") },
+    ] : []),
+  ];
 
   return (
     <div className="min-h-screen bg-[#f5f6f7] text-[#10263f]">
@@ -52,7 +78,7 @@ export function OperationsShell({
           </Link>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {nav.map((item) => {
             const active = item.match(pathname);
             const Icon = item.icon;
@@ -89,7 +115,7 @@ export function OperationsShell({
       </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-x-0 top-14 z-40 border-b border-black/10 bg-white p-3 shadow-xl lg:hidden">
+        <div className="fixed inset-x-0 top-14 z-40 max-h-[calc(100vh-56px)] overflow-y-auto border-b border-black/10 bg-white p-3 shadow-xl lg:hidden">
           <nav className="grid gap-1">
             {nav.map((item) => {
               const active = item.match(pathname);
