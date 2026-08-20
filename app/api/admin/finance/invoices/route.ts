@@ -23,8 +23,9 @@ export async function POST(request: Request) {
   const currency = typeof body.currency === "string" ? body.currency.toUpperCase() : "NPR";
   if (!crmCurrencies.includes(currency as CrmCurrency)) return json({ ok: false, error: "Choose a supported invoice currency." }, 400);
 
-  const shipmentReference = typeof body.shipmentReference === "string" ? body.shipmentReference.trim() : "";
-  let customerId = typeof body.customerId === "string" ? body.customerId.trim() : "";
+  const shipmentReference = typeof body.shipmentReference === "string" ? body.shipmentReference.trim().toUpperCase() : "";
+  let customerId = typeof body.customerId === "string" ? body.customerId.trim().toUpperCase() : "";
+  if (customerId && !customerId.startsWith("KCPL-C-")) customerId = "";
 
   if (shipmentReference) {
     const linked = await resolveInvoiceCustomerFromShipment(shipmentReference);
@@ -33,15 +34,13 @@ export async function POST(request: Request) {
     if (linked.kind === "resolved") {
       customerId = linked.customerId;
     } else if (linked.kind === "unlinked") {
-      const typedCustomer = customerId.toUpperCase();
-      if (!typedCustomer || typedCustomer === shipmentReference.toUpperCase()) {
-        return json({
-          ok: false,
-          error: linked.quoteReference
-            ? `This shipment is not linked to a CRM customer yet. Confirm the customer for quote ${linked.quoteReference} in Customer 360, then create the invoice again.`
-            : "This shipment is not linked to a CRM customer yet. Link the shipment to a customer in CRM before invoicing.",
-        }, 409);
-      }
+      return json({
+        ok: false,
+        error: "Confirm the CRM customer before invoicing this shipment.",
+        resolutionPath: `/admin/finance/new/${encodeURIComponent(shipmentReference)}`,
+        quoteReference: linked.quoteReference,
+        suggestions: linked.suggestions,
+      }, 409);
     }
   }
 
