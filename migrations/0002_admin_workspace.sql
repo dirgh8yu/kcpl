@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS quote_admin_meta (
   quote_reference TEXT PRIMARY KEY,
   assigned_to TEXT,
-  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (quote_reference) REFERENCES quote_enquiries(reference) ON DELETE CASCADE
 );
 
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS quote_notes (
   note TEXT NOT NULL,
   author_name TEXT NOT NULL,
   author_email TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (quote_reference) REFERENCES quote_enquiries(reference) ON DELETE CASCADE
 );
 

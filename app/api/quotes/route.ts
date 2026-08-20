@@ -4,7 +4,7 @@ const quoteSchema = `
 CREATE TABLE IF NOT EXISTS quote_enquiries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   reference TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   status TEXT NOT NULL DEFAULT 'new',
   origin TEXT NOT NULL,
   destination TEXT NOT NULL,
@@ -144,11 +144,21 @@ function getDatabase() {
 
 async function ensureSchema(db: D1Database) {
   if (!schemaReady) {
-    schemaReady = db.exec(quoteSchema).then(() => undefined).catch((error) => {
+    schemaReady = (async () => {
+      const existing = await db.prepare(`
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table' AND name = 'quote_enquiries'
+      `).first<{ name: string }>();
+
+      if (existing?.name === "quote_enquiries") return;
+      await db.exec(quoteSchema);
+    })().catch((error) => {
       schemaReady = null;
       throw error;
     });
   }
+
   await schemaReady;
 }
 
@@ -227,7 +237,8 @@ export async function POST(request: Request) {
       quote.phone || null,
     ).run();
   } catch (error) {
-    console.error("Failed to save KCPL quote enquiry", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Failed to save KCPL quote enquiry", { message });
     return json({ ok: false, error: "KCPL could not save the enquiry. Please try again or email us directly." }, 500);
   }
 
