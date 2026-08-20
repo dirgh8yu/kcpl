@@ -22,6 +22,11 @@ function stringValue(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
 }
 
+function numberValue(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function shipmentStatus(value: unknown): ShipmentStatus {
   return shipmentStatuses.includes(value as ShipmentStatus) ? value as ShipmentStatus : "booking_confirmed";
 }
@@ -36,10 +41,15 @@ function numericId() {
   return Date.now() * 1000 + Math.floor(Math.random() * 1000);
 }
 
+function crmActivityId(suffix: string) {
+  return `activity-${Date.now()}-${suffix}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 function shipmentFromData(reference: string, data: Record<string, unknown>): Omit<ShipmentDetail, "events"> {
   return {
     reference,
     quote_reference: stringValue(data.quote_reference),
+    customer_id: nullableString(data.customer_id),
     created_at: stringValue(data.created_at),
     updated_at: stringValue(data.updated_at),
     status: shipmentStatus(data.status),
@@ -92,7 +102,7 @@ export async function getShipmentForQuote(quoteReference: string): Promise<Shipm
   return loadShipment(legacy.docs[0].id);
 }
 
-export async function ensureShipmentForWonQuote(quoteReference: string, authorName = "KCPL Operations") {
+export async function ensureShipmentForWonQuote(quoteReference: string, authorName = "KCPL Operations", authorEmail = "") {
   if (!configured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const normalized = quoteReference.trim().toUpperCase();
@@ -106,6 +116,10 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
 
     const existingReference = nullableString(data.shipment_reference);
     if (existingReference) return { kind: "ready" as const, reference: existingReference };
+
+    const customerId = nullableString(data.customer_id);
+    const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
+    const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
 
     const reference = shipmentReference();
     const createdAt = new Date().toISOString();
@@ -125,6 +139,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     transaction.set(shipmentRef, {
       reference,
       quote_reference: normalized,
+      customer_id: customerId,
       created_at: createdAt,
       updated_at: createdAt,
       status: "booking_confirmed",
@@ -136,6 +151,25 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     });
     transaction.set(shipmentRef.collection("events").doc(String(eventId)), initialEvent);
     transaction.update(quoteRef, { shipment_reference: reference, updated_at: createdAt });
+
+    if (customerRef && customerSnapshot?.exists) {
+      const currentAccountStatus = stringValue(customerSnapshot.get("account_status"));
+      transaction.update(customerRef, {
+        active_shipment_count: numberValue(customerSnapshot.get("active_shipment_count")) + 1,
+        lead_stage: "won",
+        ...(currentAccountStatus === "prospect" || currentAccountStatus === "dormant" ? { account_status: "active" } : {}),
+        updated_at: createdAt,
+      });
+      transaction.create(customerRef.collection("activity").doc(crmActivityId(reference)), {
+        type: "shipment_created",
+        title: `Shipment opened: ${reference}`,
+        detail: `${stringValue(data.origin)} → ${stringValue(data.destination)} · from ${normalized}`,
+        actor_name: authorName || "KCPL Operations",
+        actor_email: authorEmail || null,
+        created_at: createdAt,
+      });
+    }
+
     return { kind: "created" as const, reference };
   });
 
@@ -143,46 +177,82 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
   return { kind: result.kind, shipment: await loadShipment(result.reference) } as const;
 }
 
-export async function updateShipment(reference: string, values: ShipmentUpdateInput, authorName: string) {
+export async function updateShipment(reference: string, values: ShipmentUpdateInput, authorName: string, authorEmail = "") {
   if (!configured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const normalized = reference.trim().toUpperCase();
   const shipmentRef = db.collection("shipments").doc(normalized);
-  const snapshot = await shipmentRef.get();
-  if (!snapshot.exists) return { kind: "missing" as const };
-
-  const currentStatus = shipmentStatus(snapshot.data()?.status);
   const updatedAt = new Date().toISOString();
-  const update = {
-    status: values.status,
-    eta: values.eta || null,
-    current_location: values.currentLocation || null,
-    carrier: values.carrier || null,
-    carrier_reference: values.carrierReference || null,
-    customer_note: values.customerNote || null,
-    updated_at: updatedAt,
-  };
 
-  if (currentStatus !== values.status) {
-    const eventId = numericId();
-    const event: ShipmentEvent = {
-      id: eventId,
-      shipment_reference: normalized,
-      title: shipmentStatusLabels[values.status],
-      location: values.currentLocation || null,
-      details: values.customerNote || null,
-      event_time: updatedAt,
-      created_at: updatedAt,
-      author_name: authorName || "KCPL Operations",
-    };
-    const batch = db.batch();
-    batch.update(shipmentRef, update);
-    batch.set(shipmentRef.collection("events").doc(String(eventId)), event);
-    await batch.commit();
-  } else {
-    await shipmentRef.update(update);
-  }
+  const result = await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(shipmentRef);
+    if (!snapshot.exists) return { kind: "missing" as const };
 
+    const currentStatus = shipmentStatus(snapshot.data()?.status);
+    const customerId = nullableString(snapshot.get("customer_id"));
+    const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
+    const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
+    const statusChanged = currentStatus !== values.status;
+
+    transaction.update(shipmentRef, {
+      status: values.status,
+      eta: values.eta || null,
+      current_location: values.currentLocation || null,
+      carrier: values.carrier || null,
+      carrier_reference: values.carrierReference || null,
+      customer_note: values.customerNote || null,
+      updated_at: updatedAt,
+    });
+
+    if (statusChanged) {
+      const eventId = numericId();
+      const event: ShipmentEvent = {
+        id: eventId,
+        shipment_reference: normalized,
+        title: shipmentStatusLabels[values.status],
+        location: values.currentLocation || null,
+        details: values.customerNote || null,
+        event_time: updatedAt,
+        created_at: updatedAt,
+        author_name: authorName || "KCPL Operations",
+      };
+      transaction.set(shipmentRef.collection("events").doc(String(eventId)), event);
+
+      if (customerRef && customerSnapshot?.exists) {
+        const wasDelivered = currentStatus === "delivered";
+        const isDelivered = values.status === "delivered";
+        let activeCount = numberValue(customerSnapshot.get("active_shipment_count"));
+        let completedCount = numberValue(customerSnapshot.get("completed_shipment_count"));
+        if (!wasDelivered && isDelivered) {
+          activeCount = Math.max(0, activeCount - 1);
+          completedCount += 1;
+        } else if (wasDelivered && !isDelivered) {
+          activeCount += 1;
+          completedCount = Math.max(0, completedCount - 1);
+        }
+
+        transaction.update(customerRef, {
+          active_shipment_count: activeCount,
+          completed_shipment_count: completedCount,
+          updated_at: updatedAt,
+        });
+        transaction.create(customerRef.collection("activity").doc(crmActivityId(`${normalized}-status`)), {
+          type: "shipment_status_changed",
+          title: `${normalized}: ${shipmentStatusLabels[values.status]}`,
+          detail: values.currentLocation
+            ? `${shipmentStatusLabels[currentStatus]} → ${shipmentStatusLabels[values.status]} · ${values.currentLocation}`
+            : `${shipmentStatusLabels[currentStatus]} → ${shipmentStatusLabels[values.status]}`,
+          actor_name: authorName || "KCPL Operations",
+          actor_email: authorEmail || null,
+          created_at: updatedAt,
+        });
+      }
+    }
+
+    return { kind: "updated" as const };
+  });
+
+  if (result.kind === "missing") return result;
   return { kind: "updated" as const, shipment: await loadShipment(normalized) };
 }
 
