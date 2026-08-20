@@ -60,6 +60,28 @@ function numberText(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function providerErrorText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return value.map(providerErrorText).filter(Boolean).join(" ");
+  if (value && typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).map(providerErrorText).filter(Boolean).join(" ");
+  }
+  return "";
+}
+
+function friendlyProviderError(raw: string) {
+  if (/invalid url parameters/i.test(raw)) {
+    return "The external provider could not understand these shipment details. Use a specific city and country (for example, Melbourne, Australia) and enter weight plus length, width and height for non-container cargo.";
+  }
+  if (/location|origin|destination|address|geocod/i.test(raw)) {
+    return "The external provider could not resolve the route. Use a city and country, a three-letter airport code, or a five-letter UN seaport code.";
+  }
+  if (/dimension|width|length|height|volume|load/i.test(raw)) {
+    return "The external provider needs complete cargo dimensions for this load type. Enter length, width and height for each box, crate or pallet.";
+  }
+  return raw || "No external market estimate was available for this route and load.";
+}
+
 function pruneCache() {
   const now = Date.now();
   for (const [key, cached] of estimateCache) if (cached.expiresAt <= now) estimateCache.delete(key);
@@ -96,18 +118,20 @@ export async function POST(request: Request) {
   const width = positiveNumber(body.width);
   const length = positiveNumber(body.length);
   const height = positiveNumber(body.height);
+  const isContainer = loadType.startsWith("container");
 
   if (origin.length < 2 || destination.length < 2) return json({ ok: false, error: "Enter both an origin and destination." }, 400);
   if (!estimateModes.includes(mode)) return json({ ok: false, error: "Choose a supported freight mode." }, 400);
   if (!loadTypes.includes(loadType)) return json({ ok: false, error: "Choose a supported load type." }, 400);
   if (!quoteCurrencies.includes(currency)) return json({ ok: false, error: "Choose a supported estimate currency." }, 400);
-  if (!loadType.startsWith("container") && !weight) return json({ ok: false, error: "Enter a shipment weight for this estimate." }, 400);
+  if (!isContainer && !weight) return json({ ok: false, error: "Enter a shipment weight for this estimate." }, 400);
+  if (!isContainer && (!width || !length || !height)) {
+    return json({ ok: false, error: "Enter length, width and height for each box, crate or pallet. Freightos requires dimensions (or volume) for non-container estimates." }, 400);
+  }
 
   const params = new URLSearchParams({
     estimate: "true",
     format: "json",
-    resultSet: "cheapestEachMode",
-    rFQType: "NETWORK",
     origin,
     destination,
     mode,
@@ -149,12 +173,14 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "The external freight estimate provider returned an unreadable response." }, 502);
   }
 
+  const response = payload.response && typeof payload.response === "object" ? payload.response as Record<string, unknown> : {};
+  const rawProviderError = providerErrorText(response.errors || payload.errors);
+
   if (!upstream.ok) {
     console.error("Freightos estimate returned HTTP error", upstream.status, payload);
-    return json({ ok: false, error: "The external freight estimate provider rejected the request." }, 502);
+    return json({ ok: false, error: friendlyProviderError(rawProviderError) }, 502);
   }
 
-  const response = payload.response && typeof payload.response === "object" ? payload.response as Record<string, unknown> : {};
   const rates = response.estimatedFreightRates && typeof response.estimatedFreightRates === "object"
     ? response.estimatedFreightRates as Record<string, unknown>
     : null;
@@ -166,8 +192,7 @@ export async function POST(request: Request) {
   const selected = modeRows.find((row) => text(row.mode, 12).toLowerCase() === mode.toLowerCase()) ?? modeRows[0];
 
   if (!rates || !selected) {
-    const providerError = typeof response.errors === "string" ? response.errors : typeof payload.errors === "string" ? payload.errors : "";
-    return json({ ok: false, error: providerError || "No external market estimate was available for this route and load." }, 404);
+    return json({ ok: false, error: friendlyProviderError(rawProviderError) }, 404);
   }
 
   const price = selected.price && typeof selected.price === "object" ? selected.price as Record<string, unknown> : {};
