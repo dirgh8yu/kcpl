@@ -120,6 +120,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     const customerId = nullableString(data.customer_id);
     const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
     const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
+    const primaryBranch = customerSnapshot?.exists ? stringValue(customerSnapshot.get("primary_branch"), "Kathmandu") : "Kathmandu";
 
     const reference = shipmentReference();
     const createdAt = new Date().toISOString();
@@ -140,6 +141,13 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
       reference,
       quote_reference: normalized,
       customer_id: customerId,
+      primary_branch: primaryBranch,
+      handling_branches: [primaryBranch],
+      job_priority: "standard",
+      job_assigned_to_name: null,
+      job_assigned_to_email: null,
+      internal_job_reference: null,
+      internal_job_notes: null,
       created_at: createdAt,
       updated_at: createdAt,
       status: "booking_confirmed",
