@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
+import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
@@ -22,6 +23,7 @@ export default async function MarketEstimatePage() {
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
+      <ForexReferencePanel compact/>
       <MarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
     </OperationsShell>
   );
