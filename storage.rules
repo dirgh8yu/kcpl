@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Shipment documents are served only through authenticated KCPL admin
+    // routes using the Firebase Admin SDK. Direct client access is denied.
+    match /{object=**} {
+      allow read, write: if false;
+    }
+  }
+}
