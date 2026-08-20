@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { getCrmCustomer } from "../crm-data.server";
+import { listCrmQuoteLinks, type CrmQuoteLinkItem } from "../crm-quote-links.server";
 import type { CrmCustomerDetail } from "../crm-data";
 import { Customer360Workspace } from "./customer-360-workspace";
+import { CrmQuoteMatchDock } from "./crm-quote-match-dock";
 import "./customer-360.css";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +21,17 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
 
   const { id } = await params;
   let customer: CrmCustomerDetail | null | undefined;
+  let linked: CrmQuoteLinkItem[] = [];
+  let suggested: CrmQuoteLinkItem[] = [];
   let failed = false;
   try {
-    customer = await getCrmCustomer(id);
+    const [customerResult, quoteLinks] = await Promise.all([
+      getCrmCustomer(id),
+      listCrmQuoteLinks(id),
+    ]);
+    customer = customerResult;
+    linked = quoteLinks?.linked ?? [];
+    suggested = quoteLinks?.suggested ?? [];
   } catch (error) {
     failed = true;
     customer = undefined;
@@ -32,7 +42,12 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   if (customer === undefined) return <CustomerGate title="Firestore is unavailable." detail="The CRM backend is not available for this deployment." />;
   if (!customer || customer.archived) return <CustomerGate title="Customer not found." detail="This CRM record does not exist or has been archived." />;
 
-  return <Customer360Workspace initialCustomer={customer} userName={access.user.displayName} userEmail={access.user.email} />;
+  return (
+    <>
+      <Customer360Workspace initialCustomer={customer} userName={access.user.displayName} userEmail={access.user.email} />
+      <CrmQuoteMatchDock customerId={customer.id} initialLinked={linked} initialSuggested={suggested} />
+    </>
+  );
 }
 
 function CustomerGate({ title, detail }: { title: string; detail: string }) {
