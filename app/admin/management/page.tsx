@@ -2,11 +2,12 @@ import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { kcplStaffRoleLabels } from "../staff-permissions";
 import { buildManagementAnalytics, resolveManagementRange } from "./management.server";
 import { ManagementWorkspace } from "./management-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Executive Dashboard | KCPL", robots: { index: false, follow: false } };
+export const metadata = { title: "Management Analytics | KCPL", robots: { index: false, follow: false } };
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -16,9 +17,9 @@ function param(value: string | string[] | undefined) {
 
 export default async function ManagementPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations." detail="Executive analytics are available only to authorised KCPL management."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations." detail="Management analytics are available only to authorised KCPL management."/>;
   const staff = await getStaffContext(access.user);
-  if (staff.permissions.role !== "management") return <Gate title="Management access required." detail="Executive performance, profitability and company-wide financial analytics are restricted to the Management role."/>;
+  if (staff.permissions.role !== "management") return <Gate title="Management access required." detail="Company-wide performance, profitability and financial analytics are restricted to the Management role."/>;
 
   const params = await searchParams;
   const range = resolveManagementRange(param(params.range), param(params.from), param(params.to));
@@ -28,6 +29,7 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
   return (
     <OperationsShell
       userName={access.user.displayName}
+      roleLabel={kcplStaffRoleLabels[staff.permissions.role]}
       canManageStaff={staff.permissions.canManageStaff}
       canManageFinance={staff.permissions.canManageFinance}
       isManagement
@@ -38,5 +40,5 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8 sm:p-10"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Management Intelligence</p><h1 className="mt-3 text-2xl font-bold tracking-[-.03em]">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Operations</Link><Link href="/admin/command-centre" className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Operations Home</Link></div></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f7f7f5] p-6 text-[#1c2025]"><section className="w-full max-w-xl rounded-xl border border-[#e2e5e8] bg-white p-8"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#717a86]">KCPL Management</p><h1 className="mt-3 text-2xl font-semibold tracking-[-.03em]">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68717a]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/command-centre" className="ops-button ops-button-primary">Operations Home</Link><Link href="/admin" className="ops-button ops-button-secondary">Enquiry desk</Link></div></section></main>;
 }
