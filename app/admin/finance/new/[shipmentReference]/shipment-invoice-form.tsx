@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FilePlus2, Link2, TriangleAlert, UserCheck } from "lucide-react";
+import { ArrowLeft, FilePlus2, Link2, TriangleAlert, UserCheck, UserPlus } from "lucide-react";
 import { crmCurrencies, type CrmCurrency } from "../../../crm/crm-data";
 import type { FinanceCustomerSuggestion } from "../../finance-customer-resolution";
 
@@ -26,6 +26,7 @@ export function ShipmentInvoiceForm({
   const [linkBusy, setLinkBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [manualCustomerId, setManualCustomerId] = useState("");
+  const [candidateCustomers, setCandidateCustomers] = useState(suggestions);
   const [form, setForm] = useState({
     issueDate: today,
     dueDate: "",
@@ -45,7 +46,7 @@ export function ShipmentInvoiceForm({
       const response = await fetch("/api/admin/finance/customer-link", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ shipmentReference, customerId: target }),
+        body: JSON.stringify({ shipmentReference, customerId: target, action: "confirm" }),
       });
       const data = await response.json() as { customerId?: string; error?: string };
       if (!response.ok || !data.customerId) throw new Error(data.error || "Customer could not be linked.");
@@ -58,10 +59,40 @@ export function ShipmentInvoiceForm({
     }
   }
 
+  async function createCustomerFromQuote() {
+    setLinkBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/finance/customer-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ shipmentReference, action: "create_from_quote" }),
+      });
+      const data = await response.json() as {
+        customerId?: string;
+        customerName?: string;
+        error?: string;
+        code?: string;
+        suggestions?: FinanceCustomerSuggestion[];
+      };
+      if (response.status === 409 && data.code === "possible_duplicate" && data.suggestions?.length) {
+        setCandidateCustomers(data.suggestions);
+        throw new Error("A similar CRM customer already exists. Confirm the correct existing customer below instead of creating a duplicate.");
+      }
+      if (!response.ok || !data.customerId) throw new Error(data.error || "CRM customer could not be created.");
+      setNotice(`CRM customer ${data.customerName || data.customerId} created and linked. Reloading…`);
+      router.refresh();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "CRM customer could not be created.");
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!customerId) {
-      setNotice("Confirm the CRM customer before creating the invoice.");
+      setNotice("Confirm or create the CRM customer before creating the invoice.");
       return;
     }
     setBusy(true);
@@ -99,12 +130,12 @@ export function ShipmentInvoiceForm({
       </section>
 
       {!customerId ? <section className="mb-5 rounded-[28px] border border-amber-200 bg-amber-50 p-5 sm:p-6">
-        <div className="flex items-start gap-3"><span className="rounded-xl bg-amber-100 p-2.5 text-amber-800"><UserCheck size={17}/></span><div><p className="text-[9px] font-black uppercase tracking-[.14em] text-amber-700">Resolve customer</p><h2 className="mt-1 text-xl font-black text-amber-950">Confirm who this shipment belongs to</h2><p className="mt-2 text-xs leading-5 text-amber-900/70">Finance will link the originating quote and shipment to the customer you confirm. This preserves the CRM audit trail before invoicing.</p></div></div>
-        {suggestions.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{suggestions.map((item) => <div key={item.id} className="rounded-2xl border border-amber-200 bg-white p-4"><p className="text-sm font-black text-[#10263f]">{item.display_name}</p><p className="mt-1 text-[10px] text-black/40">{item.id}</p><p className="mt-2 text-[10px] font-bold text-amber-800">Matched by {item.reason}</p><button type="button" disabled={linkBusy} onClick={() => confirmCustomer(item.id)} className="mt-4 rounded-xl bg-[#10263f] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">{linkBusy ? "Linking…" : "Confirm this customer"}</button></div>)}</div> : <div className="mt-5 rounded-2xl border border-amber-200 bg-white p-4 text-xs text-black/55">No strong CRM match was found automatically.</div>}
-        <div className="mt-4 flex flex-wrap items-end gap-3"><label className="min-w-[280px] flex-1"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.12em] text-amber-800">Or enter CRM customer reference</span><input className="ship-fin-input" value={manualCustomerId} onChange={(event) => setManualCustomerId(event.target.value)} placeholder="KCPL-C-..."/></label><button type="button" disabled={linkBusy || !manualCustomerId.trim()} onClick={() => confirmCustomer(manualCustomerId)} className="rounded-xl border border-amber-300 bg-white px-4 py-3 text-xs font-black text-amber-950 disabled:opacity-50">Confirm manual customer</button></div>
+        <div className="flex items-start gap-3"><span className="rounded-xl bg-amber-100 p-2.5 text-amber-800"><UserCheck size={17}/></span><div><p className="text-[9px] font-black uppercase tracking-[.14em] text-amber-700">Resolve customer</p><h2 className="mt-1 text-xl font-black text-amber-950">Confirm who this shipment belongs to</h2><p className="mt-2 text-xs leading-5 text-amber-900/70">Finance will link the originating quote and shipment to the customer you confirm. If this is a new customer, KCPL can create the CRM record directly from the quote.</p></div></div>
+        {candidateCustomers.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{candidateCustomers.map((item) => <div key={item.id} className="rounded-2xl border border-amber-200 bg-white p-4"><p className="text-sm font-black text-[#10263f]">{item.display_name}</p><p className="mt-1 text-[10px] text-black/40">{item.id}</p><p className="mt-2 text-[10px] font-bold text-amber-800">Matched by {item.reason}</p><button type="button" disabled={linkBusy} onClick={() => confirmCustomer(item.id)} className="mt-4 rounded-xl bg-[#10263f] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">{linkBusy ? "Linking…" : "Confirm this customer"}</button></div>)}</div> : <div className="mt-5 rounded-2xl border border-amber-200 bg-white p-4"><p className="text-xs text-black/55">No existing CRM customer matched this quote.</p><button type="button" disabled={linkBusy || !quoteReference} onClick={createCustomerFromQuote} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#10263f] px-4 py-3 text-xs font-black text-white disabled:opacity-50"><UserPlus size={14}/>{linkBusy ? "Creating customer…" : "Create CRM customer from quote"}</button><p className="mt-2 text-[10px] leading-4 text-black/35">KCPL will use the quote company/contact details, mark the account Active, link this quote and shipment, and preserve the CRM audit trail.</p></div>}
+        <div className="mt-4 flex flex-wrap items-end gap-3"><label className="min-w-[280px] flex-1"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.12em] text-amber-800">Or enter existing CRM customer reference</span><input className="ship-fin-input" value={manualCustomerId} onChange={(event) => setManualCustomerId(event.target.value)} placeholder="KCPL-C-..."/></label><button type="button" disabled={linkBusy || !manualCustomerId.trim()} onClick={() => confirmCustomer(manualCustomerId)} className="rounded-xl border border-amber-300 bg-white px-4 py-3 text-xs font-black text-amber-950 disabled:opacity-50">Confirm existing customer</button></div>
       </section> : null}
 
-      <section className={`rounded-[30px] border border-black/10 bg-white p-6 shadow-sm sm:p-8 ${customerId ? "" : "opacity-60"}`}><div className="mb-6 flex items-start gap-3"><span className="rounded-xl bg-[#10263f] p-2.5 text-white"><FilePlus2 size={17}/></span><div><p className="text-[9px] font-black uppercase tracking-[.15em] text-[#b78a3e]">New receivable</p><h2 className="mt-1 text-2xl font-black">Invoice draft</h2><p className="mt-1 text-xs text-black/45">{customerId ? "Customer confirmed. Complete the commercial details below." : "Invoice creation unlocks after the CRM customer is confirmed above."}</p></div></div>
+      <section className={`rounded-[30px] border border-black/10 bg-white p-6 shadow-sm sm:p-8 ${customerId ? "" : "opacity-60"}`}><div className="mb-6 flex items-start gap-3"><span className="rounded-xl bg-[#10263f] p-2.5 text-white"><FilePlus2 size={17}/></span><div><p className="text-[9px] font-black uppercase tracking-[.15em] text-[#b78a3e]">New receivable</p><h2 className="mt-1 text-2xl font-black">Invoice draft</h2><p className="mt-1 text-xs text-black/45">{customerId ? "Customer confirmed. Complete the commercial details below." : "Invoice creation unlocks after the CRM customer is confirmed or created above."}</p></div></div>
         <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Field label="Issue date"><input required disabled={!customerId} type="date" className="ship-fin-input" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></Field>
           <Field label="Due date"><input disabled={!customerId} type="date" className="ship-fin-input" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></Field>
