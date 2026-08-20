@@ -92,5 +92,3 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return crmJson({ ok: false, error: "The rate card could not be saved." }, 500);
   }
 }
-
-export { parseRateCard };
