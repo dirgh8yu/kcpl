@@ -63,11 +63,19 @@ export default async function AdminPage() {
   }
 
   return (
-    <AdminDashboard
-      initialQuotes={result.quotes}
-      userName={access.user.displayName}
-      signOutPath="/api/admin/session?logout=1"
-    />
+    <>
+      <AdminDashboard
+        initialQuotes={result.quotes}
+        userName={access.user.displayName}
+        signOutPath="/api/admin/session?logout=1"
+      />
+      <Link
+        href="/admin/crm"
+        className="fixed bottom-5 right-5 z-50 rounded-2xl border border-white/15 bg-[#10263f] px-5 py-3 text-xs font-black uppercase tracking-[.12em] text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-[#173958]"
+      >
+        Open CRM
+      </Link>
+    </>
   );
 }
 
