@@ -61,11 +61,20 @@ export async function evaluatePayablesAlerts() {
     active.add(fingerprint);
     const alertRef = db.collection("alerts").doc(fingerprintId(fingerprint));
     const existing = alertsSnapshot.docs.find((item) => text(item.get("fingerprint"), item.id) === fingerprint);
+    const escalated = critical && text(existing?.get("severity")) !== "critical";
+    const acknowledgedAt = escalated ? null : nullable(existing?.get("acknowledged_at"));
+    const restoredStatus = escalated
+      ? "open"
+      : acknowledgedAt
+        ? "acknowledged"
+        : existing && text(existing.get("status")) !== "resolved"
+          ? text(existing.get("status"), "open")
+          : "open";
     batch.set(alertRef, {
       fingerprint,
       type: "payable_overdue",
       severity: critical ? "critical" : "warning",
-      status: existing && text(existing.get("status")) !== "resolved" ? text(existing.get("status"), "open") : "open",
+      status: restoredStatus,
       title: `${critical ? "Payable overdue 30d+" : "Supplier bill overdue"}: ${doc.id}`,
       detail: `${text(data.currency, "NPR")} ${balanceDue.toLocaleString("en-AU")} payable · due ${dueDate} · ${text(data.supplier_name, "Supplier")}`,
       entity_type: "payable",
@@ -79,9 +88,9 @@ export async function evaluatePayablesAlerts() {
       first_triggered_at: existing ? text(existing.get("first_triggered_at"), nowIso) : nowIso,
       last_triggered_at: nowIso,
       escalated_at: critical ? nowIso : nullable(existing?.get("escalated_at")),
-      acknowledged_at: nullable(existing?.get("acknowledged_at")),
-      acknowledged_by_name: nullable(existing?.get("acknowledged_by_name")),
-      acknowledged_by_email: nullable(existing?.get("acknowledged_by_email")),
+      acknowledged_at: acknowledgedAt,
+      acknowledged_by_name: acknowledgedAt ? nullable(existing?.get("acknowledged_by_name")) : null,
+      acknowledged_by_email: acknowledgedAt ? nullable(existing?.get("acknowledged_by_email")) : null,
       resolved_at: null,
       resolved_by_name: null,
       resolved_by_email: null,
