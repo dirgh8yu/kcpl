@@ -3,6 +3,7 @@ import { getAdminAccess } from "../../admin-auth";
 import { getStaffContext } from "../../staff-directory.server";
 import { getDigitalJobFile } from "../../job-file.server";
 import { OperationsShell } from "../../operations-shell";
+import { GoogleRoadRoutePanel } from "../../routes/google-road-route-panel";
 import { JobFileWorkspace } from "./job-file-workspace";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is assigned to a KCPL branch outside your staff profile."/>;
 
+  const roadOrigin = result.job.current_location || result.job.origin;
   return (
     <OperationsShell
       userName={access.user.displayName}
@@ -26,6 +28,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
+      {roadOrigin && result.job.destination ? <GoogleRoadRoutePanel initialOrigin={roadOrigin} initialDestination={result.job.destination} compact/> : null}
       <JobFileWorkspace
         initialJob={result.job}
         role={staff.permissions.role}

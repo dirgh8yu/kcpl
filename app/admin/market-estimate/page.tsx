@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
+import { GoogleRoadRoutePanel } from "../routes/google-road-route-panel";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
 import { EasyshipMarketEstimateWorkspace } from "./easyship-market-estimate-workspace";
@@ -24,6 +25,7 @@ export default async function MarketEstimatePage() {
       isManagement={staff.permissions.role === "management"}
     >
       <ForexReferencePanel compact/>
+      <GoogleRoadRoutePanel initialOrigin="Kolkata, India" initialDestination="Kathmandu, Nepal" compact/>
       <EasyshipMarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
     </OperationsShell>
   );
