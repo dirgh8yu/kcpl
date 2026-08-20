@@ -48,7 +48,7 @@ export function ManagementWorkspace({ analytics }: { analytics: ManagementAnalyt
       <div className="mx-auto max-w-[1600px]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="flex flex-wrap items-center gap-2"><p className="text-[10px] font-black uppercase tracking-[.18em] text-[#9a763b]">Management Intelligence</p><ScopeBadge label={analytics.range.label} tone="period"/></div>
+            <div className="flex flex-wrap items-center gap-2"><p className="text-[10px] font-black uppercase tracking-[.18em] text-[#9a763b]">Management Intelligence</p><ScopeBadge label={analytics.range.label}/></div>
             <h1 className="mt-1 text-3xl font-black tracking-[-.045em]">Executive Dashboard</h1>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-[#68747f]">Selected-period performance, live working-capital pressure and current operational exceptions. Financial currencies are never combined.</p>
           </div>
@@ -111,7 +111,7 @@ export function ManagementWorkspace({ analytics }: { analytics: ManagementAnalyt
   </main>;
 }
 
-function ScopeBadge({ label, tone }: { label: string; tone: "period" | "live" }) { return <span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-[.08em] ${tone === "live" ? "bg-emerald-50 text-emerald-700" : "bg-[#f2eadc] text-[#805e28]"}`}>{label}</span>; }
+function ScopeBadge({ label }: { label: string }) { return <span className="rounded-full bg-[#f2eadc] px-2 py-1 text-[8px] font-black uppercase tracking-[.08em] text-[#805e28]">{label}</span>; }
 function HeroMetric({ label, value, icon, scope, danger = false }: { label: string; value: string; icon: React.ReactNode; scope: string; danger?: boolean }) { return <div className={`rounded-xl border p-3.5 ${danger ? "border-rose-300/25 bg-rose-400/10" : "border-white/10 bg-white/[.035]"}`}><div className={`flex items-center gap-2 ${danger ? "text-rose-200" : "text-white/40"}`}>{icon}<span className="text-[8px] font-black uppercase tracking-[.1em]">{label}</span></div><p className={`mt-2 text-2xl font-black ${danger ? "text-rose-100" : "text-white"}`}>{value}</p><p className="mt-1 text-[8px] font-bold uppercase tracking-[.08em] text-white/25">{scope}</p></div>; }
 function AttentionCard({ label, value, detail, danger = false }: { label: string; value: string; detail: string; danger?: boolean }) { return <div className={`rounded-xl border bg-white p-4 ${danger ? "border-rose-200" : "border-[#dfe3e8]"}`}><p className={`text-[8px] font-black uppercase tracking-[.11em] ${danger ? "text-rose-700" : "text-[#8b96a0]"}`}>{label}</p><p className={`mt-2 text-2xl font-black ${danger ? "text-rose-800" : ""}`}>{value}</p><p className="mt-1 text-[9px] leading-4 text-[#7b8792]">{detail}</p></div>; }
 function MoneyMini({ label, value, icon, warn = false }: { label: string; value: string; icon: React.ReactNode; warn?: boolean }) { return <div className={`rounded-lg border p-3 ${warn ? "border-rose-200 bg-rose-50" : "border-[#e4e7ea] bg-[#fafbfb]"}`}><div className="flex items-center gap-1.5 text-[#8b96a0]">{icon}<span className="text-[8px] font-black uppercase tracking-[.08em]">{label}</span></div><p className={`mt-1 text-xs font-black ${warn ? "text-rose-700" : ""}`}>{value}</p></div>; }
