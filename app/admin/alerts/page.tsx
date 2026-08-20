@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
+import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
 import { evaluatePayablesAlerts } from "../payables/payables-alerts.server";
@@ -10,7 +11,14 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Alerts & Escalations | KCPL", robots: { index: false, follow: false } };
 
 type LoadResult =
-  | { kind: "ready"; roleLabel: string; alerts: NonNullable<Awaited<ReturnType<typeof listAutomationAlerts>>> }
+  | {
+      kind: "ready";
+      roleLabel: string;
+      alerts: NonNullable<Awaited<ReturnType<typeof listAutomationAlerts>>>;
+      canManageStaff: boolean;
+      canManageFinance: boolean;
+      isManagement: boolean;
+    }
   | { kind: "unavailable" }
   | { kind: "error" };
 
@@ -21,7 +29,14 @@ async function loadPage(user: { uid: string; email: string; displayName: string 
     await evaluatePayablesAlerts();
     const alerts = await listAutomationAlerts(staff, user.email);
     if (!alerts) return { kind: "unavailable" };
-    return { kind: "ready", roleLabel: kcplStaffRoleLabels[staff.permissions.role], alerts };
+    return {
+      kind: "ready",
+      roleLabel: kcplStaffRoleLabels[staff.permissions.role],
+      alerts,
+      canManageStaff: staff.permissions.canManageStaff,
+      canManageFinance: staff.permissions.canManageFinance,
+      isManagement: staff.permissions.role === "management",
+    };
   } catch (error) {
     console.error("Failed to load KCPL automation alerts", error);
     return { kind: "error" };
@@ -34,7 +49,17 @@ export default async function AlertsPage() {
   const result = await loadPage(access.user);
   if (result.kind === "unavailable") return <Gate title="Automation storage is unavailable." detail="Firebase is not available for the alerts engine in this deployment." />;
   if (result.kind === "error") return <Gate title="Alerts could not be loaded." detail="KCPL automation data is temporarily unavailable." />;
-  return <AlertsWorkspace initialAlerts={result.alerts} roleLabel={result.roleLabel} />;
+
+  return (
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={result.canManageStaff}
+      canManageFinance={result.canManageFinance}
+      isManagement={result.isManagement}
+    >
+      <AlertsWorkspace initialAlerts={result.alerts} roleLabel={result.roleLabel} />
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
