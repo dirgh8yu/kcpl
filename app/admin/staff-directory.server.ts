@@ -7,6 +7,7 @@ import {
   type KcplStaffRole,
 } from "./staff-permissions";
 import type { KcplStaffContext, KcplStaffProfile, StaffProfileInput } from "./staff-directory";
+export type { KcplStaffContext } from "./staff-directory";
 
 type StaffUser = { uid: string; email: string; displayName: string };
 type Actor = { name: string; email: string };
