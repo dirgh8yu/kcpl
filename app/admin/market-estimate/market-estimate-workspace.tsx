@@ -105,14 +105,11 @@ function LocationAutocomplete({
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const listboxId = `market-estimate-${label.toLowerCase()}-suggestions`;
 
   useEffect(() => {
     const query = value.trim();
-    if (!open || query.length < 2) {
-      setSuggestions([]);
-      setSearching(false);
-      return;
-    }
+    if (!open || query.length < 2) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -156,6 +153,7 @@ function LocationAutocomplete({
   function choose(suggestion: LocationSuggestion) {
     onChange(suggestion.value);
     setSuggestions([]);
+    setSearching(false);
     setOpen(false);
   }
 
@@ -169,12 +167,15 @@ function LocationAutocomplete({
             required
             autoComplete="off"
             role="combobox"
-            aria-expanded={open}
+            aria-controls={listboxId}
+            aria-expanded={open && value.trim().length >= 2}
             aria-autocomplete="list"
             className={`${inputClass} pl-9`}
             value={value}
             onChange={(event) => {
               onChange(event.target.value);
+              setSuggestions([]);
+              setSearching(false);
               setOpen(true);
             }}
             onFocus={() => setOpen(true)}
@@ -185,7 +186,7 @@ function LocationAutocomplete({
       </label>
 
       {open && value.trim().length >= 2 ? (
-        <div role="listbox" className="absolute inset-x-0 top-full z-40 mt-1 max-h-80 overflow-y-auto rounded-xl border border-[#d9dee3] bg-white p-1.5 shadow-[0_18px_45px_rgba(16,38,63,.18)]">
+        <div id={listboxId} role="listbox" className="absolute inset-x-0 top-full z-40 mt-1 max-h-80 overflow-y-auto rounded-xl border border-[#d9dee3] bg-white p-1.5 shadow-[0_18px_45px_rgba(16,38,63,.18)]">
           {searching && combined.length === 0 ? <p className="px-3 py-3 text-xs text-[#7d8790]">Searching locations…</p> : null}
           {!searching && combined.length === 0 ? <div className="px-3 py-3"><p className="text-xs font-bold text-[#42505e]">No dropdown match yet.</p><p className="mt-1 text-[10px] leading-4 text-[#8a949d]">Try city + country, or enter a 3-letter IATA airport code / 5-character UN/LOCODE directly.</p></div> : null}
           {combined.map((suggestion) => (
@@ -193,6 +194,7 @@ function LocationAutocomplete({
               key={`${suggestion.kind}:${suggestion.value}`}
               type="button"
               role="option"
+              aria-selected={false}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(suggestion)}
               className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-[#f3f5f6]"
