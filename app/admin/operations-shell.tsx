@@ -8,9 +8,7 @@ import {
   Building2,
   Calculator,
   ChartNoAxesCombined,
-  ChevronLeft,
   ChevronRight,
-  CircleDollarSign,
   Command,
   HandCoins,
   Handshake,
@@ -26,7 +24,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OperationsCommandPalette, type OperationsCommandItem } from "./operations-command-palette";
 
 type NavItem = {
@@ -96,6 +94,17 @@ export function OperationsShell({
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((current) => !current);
+      }
+    }
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
   const groups = useMemo<NavGroup[]>(() => {
     const finance: NavItem[] = canManageFinance ? [
       { href: "/admin/finance", label: "Finance & AR", icon: ReceiptText, match: (path) => path.startsWith("/admin/finance"), keywords: ["invoices", "receivables", "payments"] },
@@ -140,13 +149,7 @@ export function OperationsShell({
             <div className="space-y-0.5">{group.items.map((item) => {
               const active = item.match(pathname);
               const Icon = item.icon;
-              return <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                aria-current={active ? "page" : undefined}
-                className={`group relative flex h-9 items-center rounded-lg text-[11px] font-medium transition ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} ${active ? "bg-white/[.09] text-white" : "text-white/52 hover:bg-white/[.055] hover:text-white/82"}`}
-              >
+              return <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined} aria-current={active ? "page" : undefined} className={`group relative flex h-9 items-center rounded-lg text-[11px] font-medium transition ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} ${active ? "bg-white/[.09] text-white" : "text-white/52 hover:bg-white/[.055] hover:text-white/82"}`}>
                 {active ? <span className="absolute inset-y-2 left-0 w-[2px] rounded-r bg-[#8996ff]"/> : null}
                 <Icon size={15} strokeWidth={1.8} className={active ? "text-[#aab3ff]" : "text-white/38 transition group-hover:text-white/65"}/>
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
@@ -190,7 +193,7 @@ export function OperationsShell({
         </aside>
       </div> : null}
 
-      <OperationsCommandPalette items={commandItems} open={paletteOpen} onOpenChange={setPaletteOpen}/>
+      {paletteOpen ? <OperationsCommandPalette items={commandItems} onClose={() => setPaletteOpen(false)}/> : null}
     </div>
   );
 }
