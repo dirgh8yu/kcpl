@@ -34,8 +34,13 @@ type SeaRatesLocation = {
   name?: string;
   short_name?: string;
   country?: string;
-  latitude?: string | number;
-  longitude?: string | number;
+};
+
+type ResolvedLocation = {
+  id: number | string;
+  type: LocationType;
+  name: string;
+  code: string;
 };
 
 let shippingTypesCache: DictionaryCache | null = null;
@@ -63,6 +68,10 @@ function apiKey() {
   return text(process.env.SEARATES_FREIGHT_INDEX_API_KEY, 512);
 }
 
+function isLocationType(value: string): value is LocationType {
+  return value === "CITY" || value === "PORT" || value === "AIRPORT";
+}
+
 function preferredLocationTypes(mode: SupportedMode): LocationType[] {
   if (mode === "air") return ["AIRPORT", "CITY"];
   if (mode === "FCL" || mode === "LCL") return ["PORT", "CITY"];
@@ -75,7 +84,7 @@ async function seaRatesFetch(path: string, key: string, init?: RequestInit) {
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      "x-api-key": key,
+      "X-API-KEY": key,
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
@@ -96,6 +105,7 @@ async function getShippingTypes(key: string) {
   if (shippingTypesCache && shippingTypesCache.expiresAt > Date.now()) return shippingTypesCache.value;
 
   const { response, payload } = await seaRatesFetch("get/dictionary/shipping-types?include_transport_units=true", key);
+  if (response.status === 401 || response.status === 403) throw new Error("SeaRates rejected the configured API key.");
   if (!response.ok || !payload || typeof payload !== "object") throw new Error("SeaRates shipping-type dictionary is unavailable.");
 
   const data = (payload as Record<string, unknown>).data;
@@ -119,22 +129,17 @@ function shippingTypeForMode(rows: ShippingType[], mode: SupportedMode) {
 }
 
 function transportUnitForLoad(type: ShippingType, loadType: LoadType) {
-  if (loadType === "container20") {
-    const candidates = new Set(["ST20", "20ST", "20STANDARD", "20STANDARD"]);
-    return type.transport_unit_types?.find((item) => candidates.has(normalize(item.short_name)) || candidates.has(normalize(item.name))) ?? null;
-  }
-  if (loadType === "container40") {
-    const candidates = new Set(["ST40", "40ST", "40STANDARD"]);
-    return type.transport_unit_types?.find((item) => candidates.has(normalize(item.short_name)) || candidates.has(normalize(item.name))) ?? null;
-  }
-  if (loadType === "container40HC") {
-    const candidates = new Set(["HC40", "40HC", "40HIGHCUBE"]);
-    return type.transport_unit_types?.find((item) => candidates.has(normalize(item.short_name)) || candidates.has(normalize(item.name))) ?? null;
-  }
-  return null;
+  const candidateMap: Partial<Record<LoadType, Set<string>>> = {
+    container20: new Set(["ST20", "20ST", "20STANDARD"]),
+    container40: new Set(["ST40", "40ST", "40STANDARD"]),
+    container40HC: new Set(["HC40", "40HC", "40HIGHCUBE"]),
+  };
+  const candidates = candidateMap[loadType];
+  if (!candidates) return null;
+  return type.transport_unit_types?.find((item) => candidates.has(normalize(item.short_name)) || candidates.has(normalize(item.name))) ?? null;
 }
 
-async function resolveLocation(query: string, mode: SupportedMode, key: string): Promise<{ id: number | string; type: LocationType; name: string; code: string } | null> {
+async function resolveLocation(query: string, mode: SupportedMode, key: string): Promise<ResolvedLocation | null> {
   for (const locationType of preferredLocationTypes(mode)) {
     const params = new URLSearchParams({ search: query, location_type: locationType });
     const { response, payload } = await seaRatesFetch(`get/dictionary/locations?${params.toString()}`, key);
@@ -151,6 +156,18 @@ async function resolveLocation(query: string, mode: SupportedMode, key: string):
     };
   }
   return null;
+}
+
+function selectedLocation(body: Record<string, unknown>, prefix: "origin" | "destination"): ResolvedLocation | null {
+  const id = text(body[`${prefix}LocationId`], 256);
+  const rawType = text(body[`${prefix}LocationType`], 16).toUpperCase();
+  if (!id || !isLocationType(rawType)) return null;
+  return {
+    id,
+    type: rawType,
+    name: text(body[prefix]) || prefix,
+    code: text(body[`${prefix}LocationCode`], 32),
+  };
 }
 
 function dateOnly(date: Date) {
@@ -217,13 +234,14 @@ export async function POST(request: Request) {
   const height = positiveNumber(body.height);
 
   if (origin.length < 2 || destination.length < 2) return json({ ok: false, error: "Enter both an origin and destination." }, 400);
-  if (rawMode === "express") return json({ ok: false, error: "SeaRates Freight Index does not provide parcel/express benchmarks. Choose Air, FCL, LCL, FTL or LTL." }, 400);
   if (!supportedModes.includes(mode)) return json({ ok: false, error: "Choose Air, FCL, LCL, FTL or LTL for the SeaRates benchmark." }, 400);
 
   try {
+    const originPicked = selectedLocation(body, "origin");
+    const destinationPicked = selectedLocation(body, "destination");
     const [originResolved, destinationResolved, shippingTypes] = await Promise.all([
-      resolveLocation(origin, mode, key),
-      resolveLocation(destination, mode, key),
+      originPicked ? Promise.resolve(originPicked) : resolveLocation(origin, mode, key),
+      destinationPicked ? Promise.resolve(destinationPicked) : resolveLocation(destination, mode, key),
       getShippingTypes(key),
     ]);
 
@@ -258,16 +276,16 @@ export async function POST(request: Request) {
       body: JSON.stringify(calculateBody),
     });
 
+    if (response.status === 401 || response.status === 403) {
+      return json({ ok: false, error: "SeaRates rejected the configured API key. Check the Firebase secret and SeaRates Freight Index API subscription." }, 502);
+    }
     if (!response.ok || !payload || typeof payload !== "object") {
-      const status = response.status === 401 || response.status === 403 ? 502 : 502;
-      return json({ ok: false, error: response.status === 401 || response.status === 403
-        ? "SeaRates rejected the configured API key. Check the Firebase secret and SeaRates subscription."
-        : "SeaRates could not calculate a freight market benchmark for this request." }, status);
+      return json({ ok: false, error: `SeaRates could not calculate this freight benchmark (HTTP ${response.status}).` }, 502);
     }
 
     const root = payload as Record<string, unknown>;
     const data = root.data && typeof root.data === "object" ? root.data as Record<string, unknown> : null;
-    if (!root.success || !data) return json({ ok: false, error: "SeaRates returned no freight-index data for this lane and mode." }, 404);
+    if (!root.success || !data) return json({ ok: false, error: "SeaRates returned no Freight Index data for this lane and mode." }, 404);
 
     const stats = data.statistics && typeof data.statistics === "object" ? data.statistics as Record<string, unknown> : {};
     const min = numeric(stats.min);
@@ -277,8 +295,8 @@ export async function POST(request: Request) {
     const change = numeric(stats.change);
     const valid = data.is_valid !== false && [min, max, average, latest].some((value) => value !== null && value > 0);
 
-    if (!valid || min === null || max === null) {
-      return json({ ok: false, error: "SeaRates has no usable market index for this exact lane/mode in the selected 30-day period." }, 404);
+    if (!valid || min === null || max === null || min <= 0 || max <= 0) {
+      return json({ ok: false, error: "SeaRates has no usable market index for this exact lane/mode in the latest 30-day period." }, 404);
     }
 
     const midpoint = average !== null && average > 0 ? average : (min + max) / 2;
@@ -298,6 +316,8 @@ export async function POST(request: Request) {
       fetched_at: fetchedAt,
       origin: text(data.origin) || originResolved.name,
       destination: text(data.destination) || destinationResolved.name,
+      origin_code: originResolved.code,
+      destination_code: destinationResolved.code,
       load_type: loadType,
       quantity,
       cargo_context: {
@@ -305,7 +325,7 @@ export async function POST(request: Request) {
         width,
         length,
         height,
-        note: "Cargo measurements are retained as KCPL context; the SeaRates Freight Index is a lane-level market benchmark, not an exact shipment quote.",
+        note: "Cargo measurements are retained as KCPL context; SeaRates Freight Index is a lane-level market benchmark, not an exact shipment quote.",
       },
       disclaimer: "SeaRates Freight Index is market intelligence, not a binding carrier quotation. Verify KCPL partner buy rates, surcharges, routing and validity before quoting a customer.",
       attribution_url: "https://www.searates.com/freight-index/",
