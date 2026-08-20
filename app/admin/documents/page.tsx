@@ -33,6 +33,11 @@ export default async function DocumentVaultPage({
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
+      <div className="mx-auto flex w-full max-w-[1700px] justify-end px-4 pt-4 sm:px-6 lg:px-8">
+        <Link href={shipment ? `/admin/documents/checklists?shipment=${encodeURIComponent(shipment)}` : "/admin/documents/checklists"} className="rounded-xl border border-black/10 bg-white px-4 py-2 text-[9px] font-black uppercase tracking-[.08em] text-[#30485e] shadow-sm">
+          Document checklists & alerts
+        </Link>
+      </div>
       <DocumentVaultWorkspace
         initialDocuments={result.documents}
         allowedBranches={staff.branches}
