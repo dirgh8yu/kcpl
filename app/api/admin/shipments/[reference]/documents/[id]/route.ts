@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../../../../admin/admin-auth";
+import { isTrustedSameOriginRequest } from "../../../../../../request-security";
 import { deleteShipmentDocument, getShipmentDocumentFile } from "../../../../../../shipment-documents.server";
 
 function json(body: unknown, status = 200) {
@@ -10,16 +11,6 @@ async function authorize() {
   if (access.kind === "authorized") return { user: access.user };
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
-}
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === new URL(request.url).host;
-  } catch {
-    return false;
-  }
 }
 
 function documentId(value: string) {
@@ -62,7 +53,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
 export async function DELETE(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
-  if (!sameOrigin(request)) return json({ ok: false, error: "Cross-origin deletes are not accepted." }, 403);
+  if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin deletes are not accepted." }, 403);
 
   const { reference, id } = await context.params;
   const parsedId = documentId(id);
