@@ -22,18 +22,19 @@ export function trackAnalyticsEvent(name: string) {
 export function Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const internalRoute = pathname.startsWith("/admin");
   const [consent, setConsent] = useState<"granted" | "denied" | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || internalRoute) return;
     const stored = window.localStorage.getItem(consentKey);
     if (stored !== "granted" && stored !== "denied") return;
     const timeout = window.setTimeout(() => setConsent(stored), 0);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [internalRoute]);
 
   useEffect(() => {
-    if (!enabled || consent !== "granted" || !measurementId) return;
+    if (!enabled || internalRoute || consent !== "granted" || !measurementId) return;
     window.dataLayer = window.dataLayer ?? [];
     window.gtag = window.gtag ?? function gtag(...args: unknown[]) { window.dataLayer?.push(args); };
     window.gtag("js", new Date());
@@ -46,25 +47,25 @@ export function Analytics() {
       script.dataset.kcplGa = measurementId;
       document.head.appendChild(script);
     }
-  }, [consent]);
+  }, [consent, internalRoute]);
 
   useEffect(() => {
-    if (consent !== "granted" || !window.gtag) return;
+    if (internalRoute || consent !== "granted" || !window.gtag) return;
     const query = searchParams.toString();
     window.gtag("event", "page_view", { page_path: `${pathname}${query ? `?${query}` : ""}` });
-  }, [consent, pathname, searchParams]);
+  }, [consent, internalRoute, pathname, searchParams]);
 
   useEffect(() => {
-    if (consent !== "granted") return;
+    if (internalRoute || consent !== "granted") return;
     const handleClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-analytics-event]") : null;
       if (target?.dataset.analyticsEvent) trackAnalyticsEvent(target.dataset.analyticsEvent);
     };
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
-  }, [consent]);
+  }, [consent, internalRoute]);
 
-  if (!enabled || consent !== null) return null;
+  if (!enabled || internalRoute || consent !== null) return null;
 
   function choose(next: "granted" | "denied") {
     window.localStorage.setItem(consentKey, next);

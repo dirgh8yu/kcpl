@@ -99,7 +99,14 @@ test("renders launch metadata, FAQs, privacy and the live quote submission flow"
   assert.equal(privacy.status, 200);
   const privacyHtml = await privacy.text();
   assert.match(privacyHtml, /KCPL receives and stores the route, cargo and contact details/i);
+  assert.match(privacyHtml, /authorised KCPL staff/i);
   assert.match(privacyHtml, /reference number/i);
+});
+
+test("protects the KCPL operations dashboard behind sign in", async () => {
+  const response = await render("/admin");
+  assert.ok([302, 303, 307, 308].includes(response.status));
+  assert.match(response.headers.get("location") ?? "", /\/signin-with-chatgpt\?return_to=%2Fadmin/);
 });
 
 test("returns the branded not-found experience with a real 404 status", async () => {
