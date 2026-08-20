@@ -30,7 +30,25 @@ type ApiResult = {
   error?: string;
 };
 
+type NrbApiRate = {
+  currency?: { iso3?: string; ISO3?: string; name?: string; unit?: number | string };
+  buy?: number | string;
+  sell?: number | string;
+};
+
+type NrbPayload = {
+  date?: string;
+  rates?: NrbApiRate[];
+};
+
+type NrbResponse = {
+  status?: { code?: number | string };
+  data?: { payload?: NrbPayload[] | null };
+};
+
 const featuredCurrencies = ["USD", "INR", "CNY", "EUR", "AUD"];
+const NRB_FOREX_URL = "https://www.nrb.org.np/api/forex/v1/rates";
+const NRB_DISCLAIMER = "NRB reference rates only. Commercial banks and actual settlement rates may differ.";
 
 function npr(value: number) {
   return new Intl.NumberFormat("en-NP", { style: "currency", currency: "NPR", maximumFractionDigits: 2 }).format(value);
@@ -40,11 +58,100 @@ function rateNumber(value: number) {
   return new Intl.NumberFormat("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(value);
 }
 
+function numberValue(value: unknown) {
+  const number = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function kathmanduDate() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kathmandu",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function daysBefore(dateText: string, days: number) {
+  const date = new Date(`${dateText}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeDirectRate(item: NrbApiRate): Rate | null {
+  const currency = (item.currency?.iso3 || item.currency?.ISO3 || "").trim().toUpperCase();
+  const unit = numberValue(item.currency?.unit);
+  const buy = numberValue(item.buy);
+  const sell = numberValue(item.sell);
+  if (!currency || !unit || unit <= 0 || buy === null || sell === null || buy < 0 || sell < 0) return null;
+  const buyPerUnit = buy / unit;
+  const sellPerUnit = sell / unit;
+  return {
+    currency,
+    name: item.currency?.name?.trim() || currency,
+    unit,
+    buy,
+    sell,
+    buy_per_unit: buyPerUnit,
+    sell_per_unit: sellPerUnit,
+    midpoint_per_unit: (buyPerUnit + sellPerUnit) / 2,
+  };
+}
+
+async function requestDirectFromNrb() {
+  const today = kathmanduDate();
+  const params = new URLSearchParams({ page: "1", per_page: "10", from: daysBefore(today, 7), to: today });
+  const response = await fetch(`${NRB_FOREX_URL}?${params.toString()}`, {
+    cache: "no-store",
+    headers: { accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`NRB direct request returned HTTP ${response.status}.`);
+
+  const body = await response.json() as NrbResponse;
+  if (Number(body.status?.code) !== 200 || !Array.isArray(body.data?.payload)) {
+    throw new Error("NRB direct request returned an unexpected response.");
+  }
+
+  const latest = [...body.data.payload]
+    .filter((item) => typeof item.date === "string" && Array.isArray(item.rates))
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+  if (!latest?.date || !latest.rates) throw new Error("NRB direct request returned no published rate set.");
+
+  const supported = new Set(crmCurrencies.filter((item) => item !== "NPR"));
+  const rates = latest.rates
+    .map(normalizeDirectRate)
+    .filter((rate): rate is Rate => Boolean(rate) && supported.has(rate.currency as CrmCurrency));
+  if (!rates.length) throw new Error("NRB direct request returned no usable KCPL currencies.");
+
+  return {
+    snapshot: {
+      provider: "Nepal Rastra Bank",
+      source: "NRB Forex API v1 · direct fallback",
+      date: latest.date,
+      fetched_at: new Date().toISOString(),
+      rates,
+    } satisfies Snapshot,
+    disclaimer: `${NRB_DISCLAIMER} Loaded directly from NRB because the KCPL server-side request was unavailable.`,
+  };
+}
+
 async function requestForex() {
-  const response = await fetch("/api/admin/forex", { cache: "no-store" });
-  const data = await response.json() as ApiResult;
-  if (!response.ok || !data.ok || !data.snapshot) throw new Error(data.error || "NRB reference rates could not be loaded.");
-  return { snapshot: data.snapshot, disclaimer: data.disclaimer || "" };
+  try {
+    const response = await fetch("/api/admin/forex", { cache: "no-store" });
+    const data = await response.json() as ApiResult;
+    if (!response.ok || !data.ok || !data.snapshot) throw new Error(data.error || "KCPL server-side NRB request failed.");
+    return { snapshot: data.snapshot, disclaimer: data.disclaimer || NRB_DISCLAIMER };
+  } catch (serverError) {
+    try {
+      return await requestDirectFromNrb();
+    } catch (directError) {
+      const serverMessage = serverError instanceof Error ? serverError.message : "KCPL server-side NRB request failed.";
+      const directMessage = directError instanceof Error ? directError.message : "Direct NRB request failed.";
+      throw new Error(`${serverMessage} Browser fallback also failed: ${directMessage}`);
+    }
+  }
 }
 
 export function ForexReferencePanel({ compact = false }: { compact?: boolean }) {
