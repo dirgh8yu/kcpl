@@ -2,9 +2,11 @@ import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { getCrmCustomer } from "../crm-data.server";
 import { listCrmQuoteLinks, type CrmQuoteLinkItem } from "../crm-quote-links.server";
+import { listCrmOperationsHistory, type CrmOperationsHistory } from "../crm-operations-history.server";
 import type { CrmCustomerDetail } from "../crm-data";
 import { Customer360Workspace } from "./customer-360-workspace";
 import { CrmQuoteMatchDock } from "./crm-quote-match-dock";
+import { CrmOperationsHistoryPanel } from "./crm-operations-history";
 import "./customer-360.css";
 
 export const dynamic = "force-dynamic";
@@ -23,15 +25,18 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   let customer: CrmCustomerDetail | null | undefined;
   let linked: CrmQuoteLinkItem[] = [];
   let suggested: CrmQuoteLinkItem[] = [];
+  let history: CrmOperationsHistory = { quotes: [], shipments: [] };
   let failed = false;
   try {
-    const [customerResult, quoteLinks] = await Promise.all([
+    const [customerResult, quoteLinks, operationsHistory] = await Promise.all([
       getCrmCustomer(id),
       listCrmQuoteLinks(id),
+      listCrmOperationsHistory(id),
     ]);
     customer = customerResult;
     linked = quoteLinks?.linked ?? [];
     suggested = quoteLinks?.suggested ?? [];
+    history = operationsHistory ?? history;
   } catch (error) {
     failed = true;
     customer = undefined;
@@ -45,6 +50,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   return (
     <>
       <Customer360Workspace initialCustomer={customer} userName={access.user.displayName} userEmail={access.user.email} />
+      <CrmOperationsHistoryPanel history={history} />
       <CrmQuoteMatchDock customerId={customer.id} initialLinked={linked} initialSuggested={suggested} />
     </>
   );
