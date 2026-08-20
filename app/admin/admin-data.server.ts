@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import type { QuoteCommercialInput, QuoteDetail, QuoteNote, QuoteStatus, QuoteSummary } from "./admin-data";
+import { ensureShipmentForWonQuote, getShipmentForQuote } from "../shipment-data.server";
 
 const schema = `
 CREATE TABLE IF NOT EXISTS quote_enquiries (
@@ -169,7 +170,7 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
     LEFT JOIN quote_admin_meta m ON m.quote_reference = q.reference
     LEFT JOIN quote_commercial c ON c.quote_reference = q.reference
     WHERE q.reference = ?
-  `).bind(reference).first<Omit<QuoteDetail, "notes">>();
+  `).bind(reference).first<Omit<QuoteDetail, "notes" | "shipment">>();
 
   if (!quote) return null;
 
@@ -180,7 +181,13 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
     ORDER BY created_at DESC, id DESC
   `).bind(reference).all<QuoteNote>();
 
-  return { ...quote, notes: notes.results ?? [] };
+  let shipment = await getShipmentForQuote(reference);
+  if (!shipment && quote.status === "won") {
+    const created = await ensureShipmentForWonQuote(reference);
+    if (created.kind === "created" || created.kind === "ready") shipment = created.shipment;
+  }
+
+  return { ...quote, shipment: shipment ?? null, notes: notes.results ?? [] };
 }
 
 export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string) {
