@@ -170,7 +170,7 @@ export async function POST(request: Request) {
       },
       items: [{
         description: "General cargo",
-        category: "others",
+        item_category_id: 1,
         quantity: 1,
         actual_weight: weight,
         declared_currency: declaredCurrency,
