@@ -2,13 +2,19 @@ import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
   crmAccountStatuses,
+  crmCommunicationPreferences,
   crmCurrencies,
   crmEntityKinds,
   crmLeadSources,
   crmLeadStages,
   crmRelationshipTypes,
+  crmTaskPriorities,
   kcplBranches,
   type CrmAccountStatus,
+  type CrmActivity,
+  type CrmAddress,
+  type CrmCommunicationPreference,
+  type CrmContact,
   type CrmCreateCustomerInput,
   type CrmCurrency,
   type CrmCustomerDetail,
@@ -18,9 +24,44 @@ import {
   type CrmEntityKind,
   type CrmLeadSource,
   type CrmLeadStage,
+  type CrmNote,
   type CrmRelationshipType,
+  type CrmTask,
+  type CrmTaskPriority,
   type KcplBranch,
 } from "./crm-data";
+
+type Actor = { name: string; email: string };
+
+type AddContactInput = {
+  name: string;
+  jobTitle: string;
+  email: string;
+  phone: string;
+  communicationPreference: CrmCommunicationPreference | "";
+  isPrimary: boolean;
+  notes: string;
+};
+
+type AddAddressInput = {
+  label: string;
+  line1: string;
+  line2: string;
+  city: string;
+  stateRegion: string;
+  postalCode: string;
+  country: string;
+  isPrimary: boolean;
+};
+
+type AddTaskInput = {
+  title: string;
+  detail: string;
+  dueAt: string;
+  priority: CrmTaskPriority;
+  assignedToName: string;
+  assignedToEmail: string;
+};
 
 function stringValue(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -72,6 +113,10 @@ function customerReference() {
   return `KCPL-C-${date}-${randomBytes(5).toString("hex").toUpperCase()}`;
 }
 
+function childId(prefix: string) {
+  return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`;
+}
+
 function summaryFromData(id: string, data: Record<string, unknown>): CrmCustomerSummary {
   const preferredCurrency = enumValue(data.preferred_currency, crmCurrencies, "NPR") as CrmCurrency;
   return {
@@ -120,6 +165,48 @@ function parseOptionalDays(value: string) {
   if (!value.trim()) return null;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function activityData(type: string, title: string, detail: string | null, actor: Actor, createdAt: string) {
+  return {
+    type,
+    title,
+    detail,
+    actor_name: actor.name,
+    actor_email: actor.email,
+    created_at: createdAt,
+  };
+}
+
+function activityFromDoc(id: string, data: Record<string, unknown>): CrmActivity {
+  return {
+    id,
+    type: stringValue(data.type, "activity"),
+    title: stringValue(data.title, "CRM activity"),
+    detail: nullableString(data.detail),
+    actor_name: nullableString(data.actor_name),
+    actor_email: nullableString(data.actor_email),
+    created_at: stringValue(data.created_at),
+  };
+}
+
+function taskFromDoc(id: string, data: Record<string, unknown>): CrmTask {
+  return {
+    id,
+    title: stringValue(data.title),
+    detail: nullableString(data.detail),
+    due_at: nullableString(data.due_at),
+    priority: enumValue(data.priority, crmTaskPriorities, "normal") as CrmTaskPriority,
+    assigned_to_name: nullableString(data.assigned_to_name),
+    assigned_to_email: nullableString(data.assigned_to_email),
+    completed: booleanValue(data.completed),
+    completed_at: nullableString(data.completed_at),
+    completed_by_name: nullableString(data.completed_by_name),
+    created_by_name: stringValue(data.created_by_name, "KCPL Staff"),
+    created_by_email: stringValue(data.created_by_email),
+    created_at: stringValue(data.created_at),
+    updated_at: stringValue(data.updated_at),
+  };
 }
 
 export async function listCrmCustomers(): Promise<CrmCustomerSummary[] | null> {
@@ -177,7 +264,7 @@ export async function findCrmDuplicates(input: Pick<CrmCreateCustomerInput, "dis
   return [...matches.values()];
 }
 
-export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: { name: string; email: string }) {
+export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Actor) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const id = customerReference();
@@ -234,14 +321,13 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: { 
 
   const batch = db.batch();
   batch.create(ref, document);
-  batch.create(ref.collection("activity").doc(`${Date.now()}-created`), {
-    type: "customer_created",
-    title: "CRM record created",
-    detail: `${actor.name} created this customer record.`,
-    actor_name: actor.name,
-    actor_email: actor.email,
-    created_at: now,
-  });
+  batch.create(ref.collection("activity").doc(childId("activity")), activityData(
+    "customer_created",
+    "CRM record created",
+    `${actor.name} created this customer record.`,
+    actor,
+    now,
+  ));
   await batch.commit();
 
   return { kind: "created" as const, customer: summaryFromData(id, document) };
@@ -255,9 +341,12 @@ export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail | nu
   const data = snapshot.data() as Record<string, unknown>;
   const summary = summaryFromData(snapshot.id, data);
 
-  const [contactsSnapshot, addressesSnapshot] = await Promise.all([
+  const [contactsSnapshot, addressesSnapshot, notesSnapshot, activitySnapshot, tasksSnapshot] = await Promise.all([
     ref.collection("contacts").orderBy("created_at", "asc").limit(200).get(),
     ref.collection("addresses").orderBy("created_at", "asc").limit(100).get(),
+    ref.collection("notes").orderBy("created_at", "desc").limit(300).get(),
+    ref.collection("activity").orderBy("created_at", "desc").limit(500).get(),
+    ref.collection("tasks").orderBy("created_at", "desc").limit(300).get(),
   ]);
 
   return {
@@ -278,20 +367,22 @@ export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail | nu
       markup_percent: nullableNumber(data.markup_percent),
       preferred_carriers: stringArray(data.preferred_carriers),
     },
-    contacts: contactsSnapshot.docs.map((doc) => ({
+    contacts: contactsSnapshot.docs.map((doc): CrmContact => ({
       id: doc.id,
       customer_id: snapshot.id,
       name: stringValue(doc.get("name")),
       job_title: nullableString(doc.get("job_title")),
       email: nullableString(doc.get("email")),
       phone: nullableString(doc.get("phone")),
-      communication_preference: nullableString(doc.get("communication_preference")) as CrmCustomerDetail["contacts"][number]["communication_preference"],
+      communication_preference: doc.get("communication_preference")
+        ? enumValue(doc.get("communication_preference"), crmCommunicationPreferences, "other") as CrmCommunicationPreference
+        : null,
       is_primary: booleanValue(doc.get("is_primary")),
       notes: nullableString(doc.get("notes")),
       created_at: stringValue(doc.get("created_at")),
       updated_at: stringValue(doc.get("updated_at")),
     })),
-    addresses: addressesSnapshot.docs.map((doc) => ({
+    addresses: addressesSnapshot.docs.map((doc): CrmAddress => ({
       id: doc.id,
       label: stringValue(doc.get("label"), "Address"),
       line1: stringValue(doc.get("line1")),
@@ -304,5 +395,224 @@ export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail | nu
       created_at: stringValue(doc.get("created_at")),
       updated_at: stringValue(doc.get("updated_at")),
     })),
+    notes: notesSnapshot.docs.map((doc): CrmNote => ({
+      id: doc.id,
+      note: stringValue(doc.get("note")),
+      author_name: stringValue(doc.get("author_name"), "KCPL Staff"),
+      author_email: stringValue(doc.get("author_email")),
+      created_at: stringValue(doc.get("created_at")),
+    })),
+    activity: activitySnapshot.docs.map((doc) => activityFromDoc(doc.id, doc.data() as Record<string, unknown>)),
+    tasks: tasksSnapshot.docs.map((doc) => taskFromDoc(doc.id, doc.data() as Record<string, unknown>)),
   };
+}
+
+export async function addCrmContact(customerId: string, input: AddContactInput, actor: Actor) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const customerRef = db.collection("customers").doc(customerId.trim().toUpperCase());
+  const customer = await customerRef.get();
+  if (!customer.exists) return { kind: "missing" as const };
+
+  const now = new Date().toISOString();
+  const id = childId("contact");
+  const contactRef = customerRef.collection("contacts").doc(id);
+  const data = {
+    name: input.name.trim(),
+    job_title: input.jobTitle.trim() || null,
+    email: input.email.trim() || null,
+    phone: input.phone.trim() || null,
+    communication_preference: input.communicationPreference || null,
+    is_primary: input.isPrimary,
+    notes: input.notes.trim() || null,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const batch = db.batch();
+  if (input.isPrimary) {
+    const existingPrimary = await customerRef.collection("contacts").where("is_primary", "==", true).limit(20).get();
+    existingPrimary.docs.forEach((doc) => batch.update(doc.ref, { is_primary: false, updated_at: now }));
+  }
+  batch.create(contactRef, data);
+  const customerUpdate: Record<string, unknown> = { updated_at: now };
+  if (input.isPrimary) {
+    customerUpdate.primary_email = data.email;
+    customerUpdate.primary_phone = data.phone;
+    customerUpdate.normalized_email = normalize(input.email);
+    customerUpdate.normalized_phone = normalizePhone(input.phone);
+  }
+  batch.update(customerRef, customerUpdate);
+  batch.create(customerRef.collection("activity").doc(childId("activity")), activityData(
+    "contact_added",
+    `Contact added: ${data.name}`,
+    data.job_title ? `${data.name} added as ${data.job_title}.` : `${data.name} added to the account.`,
+    actor,
+    now,
+  ));
+  await batch.commit();
+
+  const contact: CrmContact = { id, customer_id: customerRef.id, ...data };
+  return { kind: "created" as const, contact };
+}
+
+export async function addCrmAddress(customerId: string, input: AddAddressInput, actor: Actor) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const customerRef = db.collection("customers").doc(customerId.trim().toUpperCase());
+  const customer = await customerRef.get();
+  if (!customer.exists) return { kind: "missing" as const };
+
+  const now = new Date().toISOString();
+  const id = childId("address");
+  const addressRef = customerRef.collection("addresses").doc(id);
+  const data = {
+    label: input.label.trim(),
+    line1: input.line1.trim(),
+    line2: input.line2.trim() || null,
+    city: input.city.trim(),
+    state_region: input.stateRegion.trim() || null,
+    postal_code: input.postalCode.trim() || null,
+    country: input.country.trim(),
+    is_primary: input.isPrimary,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const batch = db.batch();
+  if (input.isPrimary) {
+    const existingPrimary = await customerRef.collection("addresses").where("is_primary", "==", true).limit(20).get();
+    existingPrimary.docs.forEach((doc) => batch.update(doc.ref, { is_primary: false, updated_at: now }));
+  }
+  batch.create(addressRef, data);
+  batch.update(customerRef, { updated_at: now });
+  batch.create(customerRef.collection("activity").doc(childId("activity")), activityData(
+    "address_added",
+    `Address added: ${data.label}`,
+    `${data.city}, ${data.country}`,
+    actor,
+    now,
+  ));
+  await batch.commit();
+
+  const address: CrmAddress = { id, ...data };
+  return { kind: "created" as const, address };
+}
+
+export async function addCrmNote(customerId: string, noteText: string, actor: Actor) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const customerRef = db.collection("customers").doc(customerId.trim().toUpperCase());
+  const customer = await customerRef.get();
+  if (!customer.exists) return { kind: "missing" as const };
+
+  const now = new Date().toISOString();
+  const id = childId("note");
+  const note: CrmNote = {
+    id,
+    note: noteText.trim(),
+    author_name: actor.name,
+    author_email: actor.email,
+    created_at: now,
+  };
+  const batch = db.batch();
+  batch.create(customerRef.collection("notes").doc(id), {
+    note: note.note,
+    author_name: note.author_name,
+    author_email: note.author_email,
+    created_at: note.created_at,
+  });
+  batch.update(customerRef, { updated_at: now });
+  batch.create(customerRef.collection("activity").doc(childId("activity")), activityData(
+    "note_added",
+    "Internal note added",
+    note.note.length > 180 ? `${note.note.slice(0, 177)}...` : note.note,
+    actor,
+    now,
+  ));
+  await batch.commit();
+  return { kind: "created" as const, note };
+}
+
+export async function addCrmTask(customerId: string, input: AddTaskInput, actor: Actor) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const customerRef = db.collection("customers").doc(customerId.trim().toUpperCase());
+  const customer = await customerRef.get();
+  if (!customer.exists) return { kind: "missing" as const };
+
+  const now = new Date().toISOString();
+  const id = childId("task");
+  const task: CrmTask = {
+    id,
+    title: input.title.trim(),
+    detail: input.detail.trim() || null,
+    due_at: input.dueAt.trim() || null,
+    priority: input.priority,
+    assigned_to_name: input.assignedToName.trim() || null,
+    assigned_to_email: input.assignedToEmail.trim() || null,
+    completed: false,
+    completed_at: null,
+    completed_by_name: null,
+    created_by_name: actor.name,
+    created_by_email: actor.email,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const batch = db.batch();
+  batch.create(customerRef.collection("tasks").doc(id), task);
+  batch.update(customerRef, {
+    follow_up_count: numberValue(customer.get("follow_up_count")) + 1,
+    updated_at: now,
+  });
+  batch.create(customerRef.collection("activity").doc(childId("activity")), activityData(
+    "task_created",
+    `Follow-up created: ${task.title}`,
+    task.due_at ? `Due ${task.due_at}.` : null,
+    actor,
+    now,
+  ));
+  await batch.commit();
+  return { kind: "created" as const, task };
+}
+
+export async function setCrmTaskCompleted(customerId: string, taskId: string, completed: boolean, actor: Actor) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const customerRef = db.collection("customers").doc(customerId.trim().toUpperCase());
+  const taskRef = customerRef.collection("tasks").doc(taskId);
+  const now = new Date().toISOString();
+
+  return db.runTransaction(async (transaction) => {
+    const [customerSnapshot, taskSnapshot] = await Promise.all([
+      transaction.get(customerRef),
+      transaction.get(taskRef),
+    ]);
+    if (!customerSnapshot.exists) return { kind: "missing" as const };
+    if (!taskSnapshot.exists) return { kind: "task_missing" as const };
+
+    const current = taskFromDoc(taskSnapshot.id, taskSnapshot.data() as Record<string, unknown>);
+    if (current.completed === completed) return { kind: "updated" as const, task: current };
+
+    const count = numberValue(customerSnapshot.get("follow_up_count"));
+    const nextCount = completed ? Math.max(0, count - 1) : count + 1;
+    const update = {
+      completed,
+      completed_at: completed ? now : null,
+      completed_by_name: completed ? actor.name : null,
+      updated_at: now,
+    };
+    transaction.update(taskRef, update);
+    transaction.update(customerRef, { follow_up_count: nextCount, updated_at: now });
+    transaction.create(customerRef.collection("activity").doc(childId("activity")), activityData(
+      completed ? "task_completed" : "task_reopened",
+      completed ? `Follow-up completed: ${current.title}` : `Follow-up reopened: ${current.title}`,
+      null,
+      actor,
+      now,
+    ));
+
+    return { kind: "updated" as const, task: { ...current, ...update } };
+  });
 }
