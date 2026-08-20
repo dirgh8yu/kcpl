@@ -1,3 +1,5 @@
+import type { ShipmentDetail } from "../shipment-types";
+
 export const quoteStatuses = ["new", "reviewing", "quoted", "won", "lost"] as const;
 export type QuoteStatus = (typeof quoteStatuses)[number];
 
@@ -43,6 +45,7 @@ export type QuoteDetail = QuoteSummary & {
   internal_cost: string | null;
   valid_until: string | null;
   customer_quote_note: string | null;
+  shipment: ShipmentDetail | null;
   notes: QuoteNote[];
 };
 
