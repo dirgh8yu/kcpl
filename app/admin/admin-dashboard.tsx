@@ -46,7 +46,7 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
   const [detail, setDetail] = useState<QuoteDetail | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | QuoteStatus>("all");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(initialQuotes[0]));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [noteDraft, setNoteDraft] = useState("");
@@ -64,14 +64,9 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
   }, [query, quotes, statusFilter]);
 
   useEffect(() => {
-    if (!selectedReference) {
-      setDetail(null);
-      return;
-    }
+    if (!selectedReference) return;
 
     const controller = new AbortController();
-    setLoading(true);
-    setNotice("");
     fetch(`/api/admin/quotes/${encodeURIComponent(selectedReference)}`, {
       cache: "no-store",
       signal: controller.signal,
@@ -90,6 +85,14 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
 
     return () => controller.abort();
   }, [selectedReference]);
+
+  function selectQuote(reference: string) {
+    if (reference === selectedReference) return;
+    setDetail(null);
+    setNotice("");
+    setLoading(true);
+    setSelectedReference(reference);
+  }
 
   async function saveQuote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -164,7 +167,7 @@ export function AdminDashboard({ initialQuotes, userName, signOutPath }: { initi
 
         <div className="divide-y divide-black/10">
           {filtered.length === 0 && <div className="p-8 text-sm leading-6 text-black/50">No enquiries match this view.</div>}
-          {filtered.map((quote) => <button key={quote.reference} type="button" onClick={() => setSelectedReference(quote.reference)} className={`block w-full p-5 text-left transition ${selectedReference === quote.reference ? "bg-[#f4f1e9]" : "hover:bg-[#faf9f5]"}`}>
+          {filtered.map((quote) => <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className={`block w-full p-5 text-left transition ${selectedReference === quote.reference ? "bg-[#f4f1e9]" : "hover:bg-[#faf9f5]"}`}>
             <div className="flex items-start justify-between gap-3"><strong className="text-sm">{quote.reference}</strong><span className="rounded-full bg-[#10263f]/8 px-2.5 py-1 text-[10px] font-black uppercase tracking-[.1em]">{statusLabels[quote.status] ?? quote.status}</span></div>
             <div className="mt-3 flex items-center gap-2 text-sm font-bold"><span className="truncate">{quote.origin}</span><ArrowRight size={14} className="shrink-0 text-[#b78a3e]"/><span className="truncate">{quote.destination}</span></div>
             <p className="mt-2 truncate text-xs text-black/55">{quote.company_name || quote.contact_name}{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</p>
