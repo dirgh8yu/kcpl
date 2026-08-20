@@ -44,7 +44,7 @@ export default async function AdminPage() {
 
   return (
     <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff}>
-      <AdminDashboard initialQuotes={result.quotes} userName={access.user.displayName} signOutPath="/api/admin/session?logout=1" />
+      <AdminDashboard initialQuotes={result.quotes} />
     </OperationsShell>
   );
 }
