@@ -78,9 +78,9 @@ export function GooglePlaceInput({
 
   return (
     <label className="relative block">
-      <span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">{label}</span>
-      <div className="mt-1 flex h-10 items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 focus-within:border-[#aa8748] focus-within:bg-white">
-        <span className="text-[#9b7a40]">{icon ?? <MapPin size={13}/>}</span>
+      <span className="mb-1.5 block text-[10px] font-semibold text-[var(--ops-text-secondary)]">{label}</span>
+      <div className="flex h-9 items-center gap-2 rounded-lg border border-[var(--ops-border)] bg-[var(--ops-surface-subtle)] px-2.5 focus-within:border-[#9aa6e5] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(83,103,217,.08)]">
+        <span className="text-[var(--ops-text-muted)]">{icon ?? <MapPin size={13}/>}</span>
         <input
           value={value}
           onFocus={() => setFocused(true)}
@@ -101,9 +101,9 @@ export function GooglePlaceInput({
       </div>
 
       {showMenu ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-[#dfe3e8] bg-white shadow-xl">
-          {loading ? <div className="px-3 py-3 text-[10px] font-semibold text-[#7e8992]">Finding locations…</div> : null}
-          {!loading && error ? <div className="px-3 py-3 text-[10px] leading-4 text-amber-800">{error} You can still enter the location manually.</div> : null}
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-[var(--ops-border)] bg-white shadow-[var(--ops-shadow-float)]">
+          {loading ? <div className="px-3 py-3 text-[11px] text-[var(--ops-text-secondary)]">Finding locations…</div> : null}
+          {!loading && error ? <div className="px-3 py-3 text-[11px] leading-4 text-amber-800">Place suggestions are temporarily unavailable. You can still enter the location manually.</div> : null}
           {!loading && !error ? suggestions.map((suggestion) => (
             <button
               key={suggestion.place_id}
@@ -115,14 +115,14 @@ export function GooglePlaceInput({
                 setSuggestions([]);
                 setFocused(false);
               }}
-              className="block w-full border-b border-[#edf0f2] px-3 py-2.5 text-left last:border-b-0 hover:bg-[#f7f8f9]"
+              className="block w-full border-b border-[#eef0f2] px-3 py-2.5 text-left last:border-b-0 hover:bg-[#f7f8f9]"
             >
-              <span className="block truncate text-xs font-bold text-[#263a50]">{suggestion.main_text}</span>
-              {suggestion.secondary_text ? <span className="mt-0.5 block truncate text-[10px] text-[#7d8790]">{suggestion.secondary_text}</span> : null}
+              <span className="block truncate text-xs font-semibold text-[#30363d]">{suggestion.main_text}</span>
+              {suggestion.secondary_text ? <span className="mt-0.5 block truncate text-[10px] text-[#858c94]">{suggestion.secondary_text}</span> : null}
             </button>
           )) : null}
-          <div className="border-t border-[#edf0f2] bg-[#fafbfb] px-3 py-1.5 text-right text-[9px] font-semibold text-[#8d969e]">
-            Results by <span translate="no" className="font-bold text-[#58636d]">Google Maps</span>
+          <div className="border-t border-[#eef0f2] bg-[#fafafa] px-3 py-1.5 text-right text-[9px] text-[#91979e]">
+            Results by <span translate="no" className="font-semibold text-[#606871]">Google Maps</span>
           </div>
         </div>
       ) : null}

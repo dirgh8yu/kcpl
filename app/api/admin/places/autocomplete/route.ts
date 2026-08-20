@@ -32,14 +32,11 @@ export async function POST(request: Request) {
       return json({
         ok: false,
         needs_configuration: true,
-        error: "Google Places is ready in KCPL but GOOGLE_MAPS_PLACES_API_KEY has not been configured in Firebase App Hosting.",
+        error: "Google Places is not configured for this deployment.",
       }, 503);
     }
 
     console.error("Google Places autocomplete failed", error);
-    return json({
-      ok: false,
-      error: error instanceof Error ? error.message : "Google Places autocomplete is temporarily unavailable.",
-    }, 502);
+    return json({ ok: false, error: "Place suggestions are temporarily unavailable." }, 502);
   }
 }

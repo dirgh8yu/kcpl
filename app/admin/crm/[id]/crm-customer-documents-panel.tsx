@@ -9,6 +9,7 @@ import {
   type CrmCustomerDocumentType,
 } from "../crm-customer-document-types";
 import type { StaffCapabilities } from "../../staff-permissions";
+import { OpsButton, OpsEmptyState, OpsPanel } from "../../operations-ui";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -84,30 +85,21 @@ export function CrmCustomerDocumentsPanel({
   if (!permissions.canManageCustomerDocuments) return null;
 
   return (
-    <section className="bg-[#f4f1e9] px-5 pb-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[28px] border border-black/10 bg-white shadow-sm">
-        <div className="border-b border-black/10 p-6 sm:p-8">
-          <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#b78a3e]">Permanent account files</p>
-          <h2 className="mt-2 text-2xl font-black tracking-[-.035em]">Customer document vault</h2>
-          <p className="mt-2 max-w-2xl text-xs leading-6 text-black/45">Keep KYC, PAN/VAT, contracts, credit agreements, standing instructions and rate sheets against the customer, separate from shipment documents.</p>
-        </div>
+    <section className="ops-page-body !pt-0">
+      <OpsPanel eyebrow="Permanent account files" title="Customer document vault" description="Store KYC, PAN/VAT, contracts, credit agreements, standing instructions and rate sheets separately from shipment documents.">
+        {!storageAvailable ? <div role="alert" className="mx-4 mt-4 rounded-lg border border-[#eadfca] bg-[#fbf7ef] px-3 py-2.5 text-[11px] font-medium text-[#8a6734]">Firebase Storage is unavailable for this deployment. Existing metadata can load, but new customer documents cannot be uploaded.</div> : null}
+        {notice ? <div role="status" aria-live="polite" className="mx-4 mt-4 rounded-lg border border-[#e5dfd1] bg-[#faf7f0] px-3 py-2.5 text-[11px] font-medium text-[#765f3b]">{notice}</div> : null}
 
-        {!storageAvailable ? <div className="mx-6 mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800 sm:mx-8">Firebase Storage is not available for this deployment. Metadata can load, but new customer documents cannot be uploaded.</div> : null}
-        {notice ? <div className="mx-6 mt-5 rounded-xl bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427] sm:mx-8">{notice}</div> : null}
-
-        <form onSubmit={upload} className="mx-6 mt-5 grid gap-3 rounded-2xl border border-black/10 bg-[#faf9f5] p-4 sm:mx-8 md:grid-cols-[220px_1fr_auto] md:items-end">
-          <label><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.13em] text-black/40">Document type</span><select className="crm360-input" value={documentType} onChange={(event) => setDocumentType(event.target.value as CrmCustomerDocumentType)}>{crmCustomerDocumentTypes.map((type) => <option key={type} value={type}>{crmCustomerDocumentTypeLabels[type]}</option>)}</select></label>
-          <label><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.13em] text-black/40">File · max 15 MB</span><input ref={fileRef} type="file" className="block w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-xs" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" /></label>
-          <button type="submit" disabled={busy || !storageAvailable} className="flex items-center justify-center gap-2 rounded-xl bg-[#10263f] px-4 py-3 text-xs font-black text-white disabled:opacity-50"><Upload size={14} />{busy ? "Working…" : "Upload"}</button>
+        <form onSubmit={upload} className="mx-4 mt-4 grid gap-3 rounded-lg border border-[#e3e6e9] bg-[#fafafa] p-4 md:grid-cols-[220px_minmax(0,1fr)_auto] md:items-end">
+          <label><span className="mb-1.5 block text-[10px] font-semibold text-[#69727b]">Document type</span><select className="crm360-input" value={documentType} onChange={(event) => setDocumentType(event.target.value as CrmCustomerDocumentType)}>{crmCustomerDocumentTypes.map((type) => <option key={type} value={type}>{crmCustomerDocumentTypeLabels[type]}</option>)}</select></label>
+          <label><span className="mb-1.5 block text-[10px] font-semibold text-[#69727b]">File <span className="font-normal text-[#9aa0a7]">· max 15 MB</span></span><input ref={fileRef} type="file" required className="block min-h-10 w-full rounded-lg border border-[#dfe2e6] bg-white px-2 py-1.5 text-[11px] file:mr-2 file:rounded-md file:border-0 file:bg-[#f0f1f2] file:px-3 file:py-1.5 file:text-[10px] file:font-semibold file:text-[#4d555e]" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></label>
+          <OpsButton type="submit" tone="primary" disabled={busy || !storageAvailable}><Upload size={13}/>{busy ? "Working…" : "Upload"}</OpsButton>
         </form>
 
-        <div className="p-6 sm:p-8">
-          {documents.length ? <div className="divide-y divide-black/10 rounded-2xl border border-black/10">{documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
-            <div className="flex min-w-0 items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#10263f] text-white"><FileText size={16} /></div><div className="min-w-0"><strong className="block truncate text-sm">{document.filename}</strong><p className="mt-1 text-[10px] font-bold text-black/40">{crmCustomerDocumentTypeLabels[document.document_type]} · {formatBytes(document.size_bytes)} · {formatDate(document.uploaded_at)} · {document.uploaded_by}</p></div></div>
-            <div className="flex gap-2"><a href={`/api/admin/crm/customers/${encodeURIComponent(customerId)}/documents/${document.id}`} className="flex items-center gap-1 rounded-lg border border-black/10 bg-[#faf9f5] px-2.5 py-2 text-[9px] font-black"><Download size={11} />Download</a><button type="button" disabled={busy} onClick={() => remove(document)} className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2 text-[9px] font-black text-rose-700"><Trash2 size={11} />Delete</button></div>
-          </div>)}</div> : <div className="rounded-2xl border border-dashed border-black/15 bg-[#faf9f5] p-8 text-center text-sm text-black/40">No permanent customer documents stored yet.</div>}
+        <div className="p-4">
+          {documents.length ? <div className="overflow-hidden rounded-lg border border-[#e3e6e9]"><div className="overflow-x-auto"><table className="ops-dense-table min-w-[760px] text-left"><thead><tr><th className="px-4">Document</th><th className="px-3">Type</th><th className="px-3">Size</th><th className="px-3">Uploaded</th><th className="px-3">By</th><th className="px-3 text-right">Actions</th></tr></thead><tbody>{documents.map((document) => <tr key={document.id}><td className="px-4"><div className="flex min-w-0 items-center gap-2.5"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#f0f2ff] text-[#5367d9]"><FileText size={14}/></span><strong className="max-w-[260px] truncate text-[11px] font-semibold text-[#31363c]" title={document.filename}>{document.filename}</strong></div></td><td className="px-3 text-[#66707a]">{crmCustomerDocumentTypeLabels[document.document_type]}</td><td className="px-3 text-[#66707a]">{formatBytes(document.size_bytes)}</td><td className="px-3 text-[#66707a]">{formatDate(document.uploaded_at)}</td><td className="px-3 text-[#66707a]">{document.uploaded_by}</td><td className="px-3"><div className="flex justify-end gap-1.5"><a href={`/api/admin/crm/customers/${encodeURIComponent(customerId)}/documents/${document.id}`} className="ops-button ops-button-secondary !min-h-8 !px-2.5 !text-[10px]"><Download size={11}/>Download</a><OpsButton type="button" tone="danger" className="!min-h-8 !px-2.5 !text-[10px]" disabled={busy} onClick={() => remove(document)}><Trash2 size={11}/>Delete</OpsButton></div></td></tr>)}</tbody></table></div></div> : <OpsEmptyState compact title="No permanent customer documents" detail="Account-level documents will appear here after upload."/>}
         </div>
-      </div>
+      </OpsPanel>
     </section>
   );
 }

@@ -9,324 +9,112 @@ import {
   Search,
   ShieldCheck,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import type { KcplBranch } from "../crm/crm-data";
+import {
+  OpsButton,
+  OpsEmptyState,
+  OpsFilterBar,
+  OpsMetric,
+  OpsMetricStrip,
+  OpsPageHeader,
+  OpsPanel,
+  OpsStatusBadge,
+  OpsTableFrame,
+} from "../operations-ui";
 import type { NnswIntegrationState } from "./customs-integration.server";
 
 type Focus = "open" | "all" | "cleared";
 
 function humanize(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) return "—";
+  if (!value) return "Not recorded";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function attentionScore(job: CommandCentreJob) {
-  return (
-    job.required_customs_open * 20 +
-    (job.status === "exception" ? 100 : 0) +
-    (job.priority === "urgent" ? 50 : job.priority === "high" ? 20 : 0) +
-    job.overdue_tasks * 8
-  );
+  return job.required_customs_open * 20 + (job.status === "exception" ? 100 : 0) + (job.priority === "urgent" ? 50 : job.priority === "high" ? 20 : 0) + job.overdue_tasks * 8;
 }
 
 function CustomsProgress({ job }: { job: CommandCentreJob }) {
   const completed = Math.max(0, job.required_customs_total - job.required_customs_open);
-  const percent = job.required_customs_total > 0
-    ? Math.round((completed / job.required_customs_total) * 100)
-    : 0;
-
-  return (
-    <div className="min-w-[132px]">
-      <div className="flex items-center justify-between gap-3 text-[11px] font-semibold">
-        <span>{completed}/{job.required_customs_total} complete</span>
-        <span className="text-[#7a858f]">{percent}%</span>
-      </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e8ebee]">
-        <div className="h-full rounded-full bg-[#b78a3e]" style={{ width: `${percent}%` }}/>
-      </div>
-    </div>
-  );
+  const percent = job.required_customs_total > 0 ? Math.round((completed / job.required_customs_total) * 100) : 0;
+  return <div className="min-w-[145px]"><div className="flex items-center justify-between gap-3 text-[10px]"><span className="font-medium text-[#535b64]">{completed}/{job.required_customs_total} complete</span><span className="text-[#92989f]">{percent}%</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-[#e9ebed]"><div className={`h-full rounded-full ${job.required_customs_open ? "bg-[#a78a5b]" : "bg-[#5f8b70]"}`} style={{ width: `${percent}%` }}/></div></div>;
 }
 
-export function CustomsWorkspace({
-  data,
-  roleLabel,
-  integration,
-}: {
-  data: CommandCentreData;
-  roleLabel: string;
-  integration: NnswIntegrationState;
-}) {
+export function CustomsWorkspace({ data, roleLabel, integration }: { data: CommandCentreData; roleLabel: string; integration: NnswIntegrationState }) {
   const [query, setQuery] = useState("");
   const [branch, setBranch] = useState<"all" | KcplBranch>("all");
   const [focus, setFocus] = useState<Focus>("open");
 
-  const customsJobs = useMemo(
-    () => data.jobs.filter((job) => job.required_customs_total > 0),
-    [data.jobs],
-  );
-
-  const openJobs = useMemo(
-    () => customsJobs.filter((job) => job.required_customs_open > 0),
-    [customsJobs],
-  );
-
-  const clearedJobs = useMemo(
-    () => customsJobs.filter((job) => job.required_customs_open === 0),
-    [customsJobs],
-  );
-
-  const openSteps = useMemo(
-    () => customsJobs.reduce((sum, job) => sum + job.required_customs_open, 0),
-    [customsJobs],
-  );
+  const customsJobs = useMemo(() => data.jobs.filter((job) => job.required_customs_total > 0), [data.jobs]);
+  const openJobs = useMemo(() => customsJobs.filter((job) => job.required_customs_open > 0), [customsJobs]);
+  const clearedJobs = useMemo(() => customsJobs.filter((job) => job.required_customs_open === 0), [customsJobs]);
+  const openSteps = useMemo(() => customsJobs.reduce((sum, job) => sum + job.required_customs_open, 0), [customsJobs]);
+  const noChecklistCount = data.jobs.filter((job) => job.required_customs_total === 0).length;
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return customsJobs
-      .filter((job) => {
-        if (focus === "open" && job.required_customs_open === 0) return false;
-        if (focus === "cleared" && job.required_customs_open > 0) return false;
-        if (branch !== "all" && job.primary_branch !== branch && !job.handling_branches.includes(branch)) return false;
-        if (!needle) return true;
-        return [
-          job.reference,
-          job.quote_reference,
-          job.customer_name,
-          job.origin,
-          job.destination,
-          job.current_location ?? "",
-          job.carrier ?? "",
-          job.assigned_to_name ?? "",
-          job.assigned_to_email ?? "",
-          job.primary_branch,
-          ...job.handling_branches,
-        ].join(" ").toLowerCase().includes(needle);
-      })
-      .sort((a, b) => attentionScore(b) - attentionScore(a) || b.updated_at.localeCompare(a.updated_at));
+    return customsJobs.filter((job) => {
+      if (focus === "open" && job.required_customs_open === 0) return false;
+      if (focus === "cleared" && job.required_customs_open > 0) return false;
+      if (branch !== "all" && job.primary_branch !== branch && !job.handling_branches.includes(branch)) return false;
+      if (!needle) return true;
+      return [job.reference, job.quote_reference, job.customer_name, job.origin, job.destination, job.current_location ?? "", job.carrier ?? "", job.assigned_to_name ?? "", job.assigned_to_email ?? "", job.primary_branch, ...job.handling_branches].join(" ").toLowerCase().includes(needle);
+    }).sort((a, b) => attentionScore(b) - attentionScore(a) || b.updated_at.localeCompare(a.updated_at));
   }, [branch, customsJobs, focus, query]);
 
-  const noChecklistCount = data.jobs.filter((job) => job.required_customs_total === 0).length;
+  const filtersActive = focus !== "open" || branch !== "all" || Boolean(query.trim());
+  const reset = () => { setFocus("open"); setBranch("all"); setQuery(""); };
 
-  return (
-    <main className="min-h-screen bg-[#f5f6f7] p-4 text-[#10263f] sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-[1500px]">
-        <header className="flex flex-col gap-4 border-b border-[#dfe3e8] pb-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">
-              <ShieldCheck size={14}/>
-              Customs Desk
-            </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-[-.035em] sm:text-3xl">Nepal customs control queue</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#68747f]">
-              One operational view for required customs steps across active KCPL shipments. Open the Digital Job File to complete clearance actions and keep branch ownership auditable.
-            </p>
-          </div>
-          <div className="text-left text-xs text-[#68747f] xl:text-right">
-            <p><span className="font-semibold text-[#10263f]">{roleLabel}</span> · Nepal operational date {data.operational_date}</p>
-            <p className="mt-1">Snapshot {formatDateTime(data.generated_at)}</p>
-          </div>
-        </header>
+  return <main>
+    <OpsPageHeader
+      eyebrow="Operations"
+      title="Customs"
+      description="A focused clearance queue for required customs actions across active KCPL job files. Blocked work is surfaced before completed checklists."
+      breadcrumbs={[{ label: "Operations", href: "/admin/command-centre" }, { label: "Customs" }]}
+      meta={<>{roleLabel} · Nepal operational date {data.operational_date} · Snapshot {formatDateTime(data.generated_at)}</>}
+      actions={<OpsButton href="/admin/shipments">Open shipments</OpsButton>}
+    />
 
-        <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Customs jobs" value={customsJobs.length} detail="Active jobs with a customs checklist" icon={<FileCheck2 size={17}/>}/>
-          <Metric label="Blocked jobs" value={openJobs.length} detail="At least one required step open" danger={openJobs.length > 0} icon={<TriangleAlert size={17}/>}/>
-          <Metric label="Open required steps" value={openSteps} detail="Across accessible branches" danger={openSteps > 0} icon={<Landmark size={17}/>}/>
-          <Metric label="Cleared checklists" value={clearedJobs.length} detail="All required steps completed" icon={<CheckCircle2 size={17}/>}/>
-        </section>
+    <div className="ops-page-body ops-stack">
+      <OpsMetricStrip columns={4}>
+        <OpsMetric label="Customs jobs" value={customsJobs.length} icon={<FileCheck2 size={13}/>} hint="with checklist"/>
+        <OpsMetric label="Blocked jobs" value={openJobs.length} icon={<TriangleAlert size={13}/>} tone={openJobs.length ? "warning" : "neutral"}/>
+        <OpsMetric label="Open steps" value={openSteps} icon={<Landmark size={13}/>} tone={openSteps ? "warning" : "neutral"}/>
+        <OpsMetric label="Cleared" value={clearedJobs.length} icon={<CheckCircle2 size={13}/>} tone="success"/>
+      </OpsMetricStrip>
 
-        <section className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="min-w-0 rounded-xl border border-[#dfe3e8] bg-white">
-            <div className="border-b border-[#e8ebee] p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-sm font-bold">Clearance queue</h2>
-                  <p className="mt-1 text-xs text-[#7a858f]">{filtered.length} jobs shown · {noChecklistCount} active shipments currently have no customs checklist</p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {([
-                    ["open", "Needs action", openJobs.length],
-                    ["all", "All customs", customsJobs.length],
-                    ["cleared", "Cleared", clearedJobs.length],
-                  ] as const).map(([value, label, count]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setFocus(value)}
-                      className={`rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition ${focus === value ? "border-[#10263f] bg-[#10263f] text-white" : "border-[#dfe3e8] bg-white text-[#56636f] hover:bg-[#f5f6f7]"}`}
-                    >
-                      {label} <span className={focus === value ? "text-white/55" : "text-[#9aa3ab]"}>{count}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+      <div className="ops-grid-2">
+        <OpsTableFrame
+          toolbar={<div className="space-y-2.5"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[11px] font-semibold text-[#3d444b]">Clearance queue</p><p className="mt-0.5 text-[10px] text-[#8b9299]">{noChecklistCount} active shipment{noChecklistCount === 1 ? "" : "s"} currently have no customs checklist.</p></div><div className="flex items-center gap-1 rounded-lg bg-[#f3f4f5] p-1">{([ ["open", "Needs action", openJobs.length], ["all", "All", customsJobs.length], ["cleared", "Cleared", clearedJobs.length] ] as const).map(([value, label, count]) => <button key={value} type="button" onClick={() => setFocus(value)} className={`rounded-md px-2.5 py-1.5 text-[10px] font-medium transition ${focus === value ? "bg-white text-[#343a41] shadow-sm" : "text-[#7b838b] hover:text-[#444b52]"}`}>{label} <span className="ml-1 text-[#9da3a9]">{count}</span></button>)}</div></div><OpsFilterBar count={<><strong className="font-semibold text-[#3b4249]">{filtered.length}</strong> shown</>} reset={filtersActive ? <button type="button" onClick={reset} className="inline-flex items-center gap-1 font-medium text-[#5968bb] hover:underline"><X size={11}/>Clear</button> : null}><label className="ops-search-field flex-1"><Search size={13} className="text-[#8e959c]"/><span className="sr-only">Search customs jobs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, route, carrier or owner"/></label><label className="ops-filter-control"><Landmark size={13}/><span className="sr-only">Branch</span><select value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)}><option value="all">All branches</option>{data.accessible_branches.map((item) => <option key={item} value={item}>{item}</option>)}</select></label></OpsFilterBar></div>}
+          footer={<span className="text-[10px] text-[#8f969d]">Open required customs steps remain controlled inside each Digital Job File.</span>}
+        >
+          <table className="ops-dense-table min-w-[1040px] text-left"><thead><tr><th className="px-4">Shipment</th><th className="px-3">Customer / route</th><th className="px-3">Progress</th><th className="px-3">Branch</th><th className="px-3">Owner</th><th className="px-3">State</th><th className="w-28 px-3 text-right">Action</th></tr></thead><tbody>{filtered.length ? filtered.map((job) => { const blocked = job.required_customs_open > 0; return <tr key={job.reference}><td className="px-4"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-row-link">{job.reference}</Link><p className="mt-0.5 text-[9px] text-[#9aa0a7]">{job.quote_reference || "No quote ref"}</p></td><td className="px-3"><p className="max-w-[220px] truncate font-medium text-[#414850]">{job.customer_name}</p><p className="mt-0.5 max-w-[270px] truncate text-[10px] text-[#818990]">{job.origin || "Origin not set"} → {job.destination || "Destination not set"}</p></td><td className="px-3"><CustomsProgress job={job}/><div className="mt-1.5"><OpsStatusBadge tone={blocked ? "warning" : "success"}>{blocked ? `${job.required_customs_open} required open` : "Checklist complete"}</OpsStatusBadge></div></td><td className="px-3"><span className="font-medium text-[#56606a]">{job.primary_branch}</span>{job.handling_branches.length > 1 ? <p className="mt-0.5 text-[9px] text-[#9ba1a7]">+{job.handling_branches.length - 1} handling</p> : null}</td><td className="px-3"><p className={`max-w-[170px] truncate ${job.assigned_to_name ? "text-[#56606a]" : "font-semibold text-[#9f5059]"}`}>{job.assigned_to_name || "Unassigned"}</p><p className="mt-0.5 max-w-[170px] truncate text-[9px] text-[#9ba1a7]">{job.assigned_to_email || "No staff email"}</p></td><td className="px-3"><OpsStatusBadge tone={job.status === "exception" ? "danger" : blocked ? "warning" : "success"}>{job.status === "exception" ? "Exception" : humanize(job.status)}</OpsStatusBadge>{job.current_location ? <p className="mt-1.5 max-w-[180px] truncate text-[9px] text-[#8e959c]">{job.current_location}</p> : null}</td><td className="px-3 text-right"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="inline-flex items-center gap-1.5 rounded-md border border-[#dfe2e6] bg-white px-2.5 py-1.5 text-[10px] font-medium text-[#4d5660] hover:border-[#cbd1dc] hover:text-[#3445a3]">Job File<ArrowUpRight size={11}/></Link></td></tr>; }) : <tr><td colSpan={7}><OpsEmptyState title="No customs jobs match this view" detail="Try clearing the search, branch or queue filter." action={filtersActive ? <OpsButton onClick={reset}>Clear filters</OpsButton> : undefined}/></td></tr>}</tbody></table>
+        </OpsTableFrame>
 
-              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
-                <label className="relative block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#84909b]" size={15}/>
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search shipment, customer, route, carrier or owner"
-                    className="h-10 w-full rounded-lg border border-[#dfe3e8] bg-[#f8f9fa] pl-9 pr-3 text-sm outline-none transition focus:border-[#9e7b3e] focus:bg-white"
-                  />
-                </label>
-                <select
-                  value={branch}
-                  onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)}
-                  className="h-10 rounded-lg border border-[#dfe3e8] bg-white px-3 text-sm outline-none focus:border-[#9e7b3e]"
-                >
-                  <option value="all">All accessible branches</option>
-                  {data.accessible_branches.map((item) => <option key={item} value={item}>{item}</option>)}
-                </select>
-              </div>
-            </div>
+        <aside className="ops-stack">
+          <OpsPanel title="Integration status" eyebrow="NNSW / NECAS" action={<OpsStatusBadge tone="warning">Portal bridge</OpsStatusBadge>}>
+            <div className="p-4"><div className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f3f4f8] text-[#5968a7]"><ShieldCheck size={15}/></span><div><p className="text-xs font-semibold text-[#3d444b]">{integration.label}</p><p className="mt-1.5 text-[11px] leading-5 text-[#747c84]">{integration.detail}</p></div></div><div className="mt-3 rounded-lg border border-[#e7dfcf] bg-[#fbf8f1] px-3 py-2.5 text-[10px] leading-5 text-[#77684f]">Automated NECAS/NNSW sync remains disabled until KCPL receives authorised endpoint documentation and credentials. No browser-stored secrets or unofficial scraping are used.</div></div>
+          </OpsPanel>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] border-collapse text-left">
-                <thead className="bg-[#fafbfb] text-[10px] font-bold uppercase tracking-[.08em] text-[#7a858f]">
-                  <tr>
-                    <th className="px-4 py-3">Shipment</th>
-                    <th className="px-4 py-3">Customer / route</th>
-                    <th className="px-4 py-3">Customs progress</th>
-                    <th className="px-4 py-3">Branch</th>
-                    <th className="px-4 py-3">Owner</th>
-                    <th className="px-4 py-3">Shipment state</th>
-                    <th className="px-4 py-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((job) => {
-                    const blocked = job.required_customs_open > 0;
-                    return (
-                      <tr key={job.reference} className="border-t border-[#edf0f2] align-top hover:bg-[#fbfbfa]">
-                        <td className="px-4 py-3.5">
-                          <p className="text-xs font-bold">{job.reference}</p>
-                          <p className="mt-1 text-[10px] text-[#8a949d]">{job.quote_reference || "No quote reference"}</p>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <p className="max-w-[230px] truncate text-xs font-semibold">{job.customer_name}</p>
-                          <p className="mt-1 max-w-[280px] truncate text-[11px] text-[#72808b]">{job.origin || "—"} → {job.destination || "—"}</p>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <CustomsProgress job={job}/>
-                          <p className={`mt-2 text-[10px] font-semibold ${blocked ? "text-amber-700" : "text-emerald-700"}`}>
-                            {blocked ? `${job.required_customs_open} required step${job.required_customs_open === 1 ? "" : "s"} open` : "Required checklist complete"}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <p className="text-xs font-semibold">{job.primary_branch}</p>
-                          {job.handling_branches.length > 1 ? <p className="mt-1 text-[10px] text-[#8a949d]">+ {job.handling_branches.length - 1} handling branch{job.handling_branches.length === 2 ? "" : "es"}</p> : null}
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <p className="max-w-[170px] truncate text-xs font-semibold">{job.assigned_to_name || "Unassigned"}</p>
-                          <p className="mt-1 max-w-[170px] truncate text-[10px] text-[#8a949d]">{job.assigned_to_email || "No staff email"}</p>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-bold ${job.status === "exception" ? "border-rose-200 bg-rose-50 text-rose-700" : blocked ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
-                            {job.status === "exception" ? "Exception" : humanize(job.status)}
-                          </span>
-                          {job.current_location ? <p className="mt-2 max-w-[180px] truncate text-[10px] text-[#7a858f]">{job.current_location}</p> : null}
-                        </td>
-                        <td className="px-4 py-3.5 text-right">
-                          <Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="inline-flex items-center gap-1.5 rounded-lg bg-[#10263f] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#173958]">
-                            Open Job File <ArrowUpRight size={12}/>
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filtered.length === 0 ? (
-                    <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-[#7a858f]">No customs jobs match this view.</td></tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <OpsPanel title="Official tools" eyebrow="Customs resources">
+            <div className="p-1.5">{integration.resources.map((resource) => <a key={resource.href} href={resource.href} target="_blank" rel="noreferrer" className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f6f7f8]"><span className="min-w-0"><strong className="block text-[11px] font-semibold text-[#414850]">{resource.label}</strong><span className="mt-0.5 block text-[10px] leading-4 text-[#8b9299]">{resource.detail}</span></span><ArrowUpRight size={12} className="shrink-0 text-[#9aa0a7] group-hover:text-[#5367d9]"/></a>)}</div>
+          </OpsPanel>
 
-          <aside className="space-y-4">
-            <section className="rounded-xl border border-[#dfe3e8] bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#8a6c36]">NNSW / NECAS</p>
-                  <h2 className="mt-1 text-sm font-bold">Integration status</h2>
-                </div>
-                <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-amber-800">Portal bridge</span>
-              </div>
-              <p className="mt-3 text-xs font-semibold text-[#10263f]">{integration.label}</p>
-              <p className="mt-2 text-xs leading-5 text-[#6d7984]">{integration.detail}</p>
-              <div className="mt-4 rounded-lg border border-[#e6dfd0] bg-[#fcfaf5] p-3 text-[11px] leading-5 text-[#6e6046]">
-                Automated NECAS/NNSW status sync stays off until KCPL receives authorised endpoint documentation and credentials. No unofficial scraping or browser-stored secrets.
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-[#dfe3e8] bg-white p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#8a6c36]">Official tools</p>
-              <div className="mt-3 space-y-2">
-                {integration.resources.map((resource) => (
-                  <a
-                    key={resource.href}
-                    href={resource.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-lg border border-[#e5e8eb] px-3 py-3 transition hover:border-[#c8b58f] hover:bg-[#fcfaf5]"
-                  >
-                    <span>
-                      <strong className="block text-xs">{resource.label}</strong>
-                      <span className="mt-0.5 block text-[10px] text-[#84909b]">{resource.detail}</span>
-                    </span>
-                    <ArrowUpRight size={14} className="shrink-0 text-[#8a6c36]"/>
-                  </a>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-[#dfe3e8] bg-[#10263f] p-4 text-white">
-              <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#d4ad62]">Next connector step</p>
-              <p className="mt-2 text-sm font-semibold">Request authorised NNSW/NECAS integration access for KCPL.</p>
-              <p className="mt-2 text-xs leading-5 text-white/55">Once endpoint documentation is supplied, the server connector can map declaration status, customs office, reference numbers and clearance milestones into the same Job File checklist.</p>
-            </section>
-          </aside>
-        </section>
+          <OpsPanel title="Connector readiness" eyebrow="Next step">
+            <div className="p-4"><p className="text-[11px] font-medium leading-5 text-[#4d555e]">Request authorised NNSW/NECAS integration access for KCPL.</p><p className="mt-2 text-[10px] leading-5 text-[#858c94]">Once official endpoint documentation is available, declaration status, customs office, reference numbers and clearance milestones can map into the existing Job File checklist without changing staff workflow.</p></div>
+          </OpsPanel>
+        </aside>
       </div>
-    </main>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  detail,
-  icon,
-  danger = false,
-}: {
-  label: string;
-  value: number;
-  detail: string;
-  icon: React.ReactNode;
-  danger?: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-[#dfe3e8] bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#7c8791]">{label}</p>
-        <span className={danger ? "text-amber-700" : "text-[#8a6c36]"}>{icon}</span>
-      </div>
-      <p className={`mt-3 text-2xl font-bold tracking-[-.04em] ${danger ? "text-amber-800" : "text-[#10263f]"}`}>{value}</p>
-      <p className="mt-1 text-[11px] text-[#84909b]">{detail}</p>
     </div>
-  );
+  </main>;
 }

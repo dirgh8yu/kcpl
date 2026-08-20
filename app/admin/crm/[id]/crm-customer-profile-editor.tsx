@@ -18,14 +18,10 @@ import {
   type CrmRelationshipType,
 } from "../crm-data";
 import { kcplStaffRoleLabels, type StaffCapabilities } from "../../staff-permissions";
+import { OpsButton, OpsPanel, OpsStatusBadge } from "../../operations-ui";
 
-function csv(values: string[]) {
-  return values.join(", ");
-}
-
-function list(value: string) {
-  return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))];
-}
+function csv(values: string[]) { return values.join(", "); }
+function list(value: string) { return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))]; }
 
 export function CrmCustomerProfileEditor({ customer, permissions }: { customer: CrmCustomerDetail; permissions: StaffCapabilities }) {
   const router = useRouter();
@@ -63,9 +59,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
     preferredCarriers: csv(customer.commercial.preferred_carriers),
   });
 
-  function field(name: string, value: unknown) {
-    setForm((current) => ({ ...current, [name]: value }));
-  }
+  function field(name: string, value: unknown) { setForm((current) => ({ ...current, [name]: value })); }
 
   function toggleRelationship(type: CrmRelationshipType) {
     setForm((current) => ({
@@ -81,11 +75,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
     setBusy(true);
     setNotice("");
     try {
-      const payload: Record<string, unknown> = {
-        ...form,
-        tags: list(form.tags),
-        transportPreferences: list(form.transportPreferences),
-      };
+      const payload: Record<string, unknown> = { ...form, tags: list(form.tags), transportPreferences: list(form.transportPreferences) };
       if (!permissions.canEditCommercial) {
         delete payload.preferredCurrency;
         delete payload.pricingNotes;
@@ -112,9 +102,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
       router.refresh();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Customer could not be updated.");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function archiveCustomer() {
@@ -133,74 +121,37 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
     }
   }
 
-  return (
-    <section className="bg-[#f4f1e9] px-5 pb-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[26px] border border-black/10 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[10px] font-black uppercase tracking-[.17em] text-[#b78a3e]">Account controls</p>
-              <span className="flex items-center gap-1 rounded-full bg-[#10263f] px-2.5 py-1 text-[9px] font-black uppercase tracking-[.08em] text-white"><ShieldCheck size={11} />{kcplStaffRoleLabels[permissions.role]}</span>
-            </div>
-            <p className="mt-2 text-xs leading-5 text-black/45">Edit the master CRM profile. Archive preserves the complete customer history.</p>
-          </div>
-          <div className="flex gap-2">
-            {permissions.canArchiveCustomer ? <button type="button" disabled={busy} onClick={archiveCustomer} className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700"><Archive size={13} />Archive</button> : null}
-            {permissions.canEditCustomer ? <button type="button" onClick={() => setOpen((value) => !value)} className="flex items-center gap-2 rounded-xl bg-[#10263f] px-3 py-2 text-[10px] font-black text-white">{open ? <X size={13} /> : <Pencil size={13} />}{open ? "Close editor" : "Edit customer"}</button> : null}
-          </div>
-        </div>
-        {notice ? <div className="mt-4 rounded-xl bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427]">{notice}</div> : null}
+  return <OpsPanel
+    title="Master customer profile"
+    eyebrow="Account controls"
+    description="Edit the canonical CRM record. Archiving preserves quotes, shipments, documents and audit history."
+    action={<div className="flex flex-wrap items-center gap-2"><OpsStatusBadge tone="accent"><ShieldCheck size={10}/>{kcplStaffRoleLabels[permissions.role]}</OpsStatusBadge>{permissions.canArchiveCustomer ? <OpsButton tone="danger" disabled={busy} onClick={() => void archiveCustomer()}><Archive size={12}/>Archive</OpsButton> : null}{permissions.canEditCustomer ? <OpsButton tone={open ? "secondary" : "primary"} onClick={() => setOpen((value) => !value)}>{open ? <X size={12}/> : <Pencil size={12}/>} {open ? "Close editor" : "Edit customer"}</OpsButton> : null}</div>}
+  >
+    {notice ? <div className="border-b border-[#eceef0] bg-[#fcfcfc] px-4 py-3 text-[11px] text-[#59616a]">{notice}</div> : null}
+    {!open ? <div className="grid gap-px bg-[#eceef0] sm:grid-cols-2 xl:grid-cols-4"><Snapshot label="Record type" value={form.entityKind === "company" ? "Company / organisation" : "Individual"}/><Snapshot label="Account status" value={crmAccountStatusLabels[form.accountStatus]}/><Snapshot label="Lead stage" value={crmLeadStageLabels[form.leadStage]}/><Snapshot label="Primary branch" value={form.primaryBranch}/></div> : null}
 
-        {open ? <form onSubmit={save} className="mt-6 space-y-6 border-t border-black/10 pt-6">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Field label="Record type"><select className="crm360-input" value={form.entityKind} onChange={(event) => field("entityKind", event.target.value)}>{crmEntityKinds.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
-            <Field label="Display name"><input required className="crm360-input" value={form.displayName} onChange={(event) => field("displayName", event.target.value)} /></Field>
-            <Field label="Legal name"><input className="crm360-input" value={form.legalName} onChange={(event) => field("legalName", event.target.value)} /></Field>
-            <Field label="Trading name"><input className="crm360-input" value={form.tradingName} onChange={(event) => field("tradingName", event.target.value)} /></Field>
-            <Field label="Account status"><select className="crm360-input" value={form.accountStatus} onChange={(event) => field("accountStatus", event.target.value)}>{crmAccountStatuses.map((value) => <option key={value} value={value}>{crmAccountStatusLabels[value]}</option>)}</select></Field>
-            <Field label="Lead stage"><select className="crm360-input" value={form.leadStage} onChange={(event) => field("leadStage", event.target.value)}>{crmLeadStages.map((value) => <option key={value} value={value}>{crmLeadStageLabels[value]}</option>)}</select></Field>
-            <Field label="Lead source"><select className="crm360-input" value={form.leadSource} onChange={(event) => field("leadSource", event.target.value)}><option value="">Not recorded</option>{crmLeadSources.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></Field>
-            <Field label="Primary branch"><select className="crm360-input" value={form.primaryBranch} onChange={(event) => field("primaryBranch", event.target.value)}>{kcplBranches.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
-          </div>
+    {open ? <form onSubmit={save} className="p-4">
+      <div className="grid gap-3 xl:grid-cols-2">
+        <FormSection title="Identity & relationship">
+          <div className="grid gap-3 sm:grid-cols-2"><Field label="Record type"><select value={form.entityKind} onChange={(event) => field("entityKind", event.target.value)}>{crmEntityKinds.map((value) => <option key={value} value={value}>{value === "company" ? "Company / organisation" : "Individual"}</option>)}</select></Field><Field label="Display name"><input required value={form.displayName} onChange={(event) => field("displayName", event.target.value)}/></Field><Field label="Legal name"><input value={form.legalName} onChange={(event) => field("legalName", event.target.value)}/></Field><Field label="Trading name"><input value={form.tradingName} onChange={(event) => field("tradingName", event.target.value)}/></Field><Field label="Account status"><select value={form.accountStatus} onChange={(event) => field("accountStatus", event.target.value)}>{crmAccountStatuses.map((value) => <option key={value} value={value}>{crmAccountStatusLabels[value]}</option>)}</select></Field><Field label="Lead stage"><select value={form.leadStage} onChange={(event) => field("leadStage", event.target.value)}>{crmLeadStages.map((value) => <option key={value} value={value}>{crmLeadStageLabels[value]}</option>)}</select></Field><Field label="Lead source"><select value={form.leadSource} onChange={(event) => field("leadSource", event.target.value)}><option value="">Not recorded</option>{crmLeadSources.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></Field><Field label="Primary branch"><select value={form.primaryBranch} onChange={(event) => field("primaryBranch", event.target.value)}>{kcplBranches.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field></div>
+          <div className="mt-3"><span className="mb-1.5 block text-[10px] font-medium text-[#69717a]">Relationships</span><div className="flex flex-wrap gap-1.5">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} className={`rounded-md border px-2.5 py-1.5 text-[10px] font-medium ${form.relationshipTypes.includes(type) ? "border-[#dce0fa] bg-[#f1f3ff] text-[#4655a0]" : "border-[#e1e4e7] bg-white text-[#737b84]"}`}>{crmRelationshipLabels[type]}</button>)}</div></div>
+        </FormSection>
 
-          <div><p className="mb-2 text-[9px] font-black uppercase tracking-[.13em] text-black/40">Relationships</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} className={`rounded-full border px-3 py-1.5 text-[9px] font-black ${form.relationshipTypes.includes(type) ? "border-[#10263f] bg-[#10263f] text-white" : "border-black/10 bg-[#faf9f5] text-black/50"}`}>{crmRelationshipLabels[type]}</button>)}</div></div>
+        <FormSection title="Contact & ownership">
+          <div className="grid gap-3 sm:grid-cols-2"><Field label="Primary email"><input type="email" value={form.primaryEmail} onChange={(event) => field("primaryEmail", event.target.value)}/></Field><Field label="Primary phone"><input value={form.primaryPhone} onChange={(event) => field("primaryPhone", event.target.value)}/></Field><Field label="Billing email"><input type="email" value={form.billingEmail} onChange={(event) => field("billingEmail", event.target.value)}/></Field><Field label="Country"><input value={form.country} onChange={(event) => field("country", event.target.value)}/></Field><Field label="Website"><input value={form.website} onChange={(event) => field("website", event.target.value)}/></Field><Field label="Industry"><input value={form.industry} onChange={(event) => field("industry", event.target.value)}/></Field><Field label="PAN / VAT / Tax ID"><input value={form.taxId} onChange={(event) => field("taxId", event.target.value)}/></Field><Field label="Tags"><input value={form.tags} onChange={(event) => field("tags", event.target.value)} placeholder="VIP, Importer, China Trade"/></Field><Field label="Account manager"><input value={form.accountManagerName} onChange={(event) => field("accountManagerName", event.target.value)}/></Field><Field label="Manager email"><input type="email" value={form.accountManagerEmail} onChange={(event) => field("accountManagerEmail", event.target.value)}/></Field><div className="sm:col-span-2"><Field label="Transport preferences"><input value={form.transportPreferences} onChange={(event) => field("transportPreferences", event.target.value)}/></Field></div></div>
+        </FormSection>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Field label="Primary email"><input type="email" className="crm360-input" value={form.primaryEmail} onChange={(event) => field("primaryEmail", event.target.value)} /></Field>
-            <Field label="Primary phone"><input className="crm360-input" value={form.primaryPhone} onChange={(event) => field("primaryPhone", event.target.value)} /></Field>
-            <Field label="Billing email"><input type="email" className="crm360-input" value={form.billingEmail} onChange={(event) => field("billingEmail", event.target.value)} /></Field>
-            <Field label="Country"><input className="crm360-input" value={form.country} onChange={(event) => field("country", event.target.value)} /></Field>
-            <Field label="Website"><input className="crm360-input" value={form.website} onChange={(event) => field("website", event.target.value)} /></Field>
-            <Field label="Industry"><input className="crm360-input" value={form.industry} onChange={(event) => field("industry", event.target.value)} /></Field>
-            <Field label="PAN / VAT / Tax ID"><input className="crm360-input" value={form.taxId} onChange={(event) => field("taxId", event.target.value)} /></Field>
-            <Field label="Tags"><input className="crm360-input" value={form.tags} onChange={(event) => field("tags", event.target.value)} placeholder="VIP, Importer, China Trade" /></Field>
-            <Field label="Account manager"><input className="crm360-input" value={form.accountManagerName} onChange={(event) => field("accountManagerName", event.target.value)} /></Field>
-            <Field label="Manager email"><input type="email" className="crm360-input" value={form.accountManagerEmail} onChange={(event) => field("accountManagerEmail", event.target.value)} /></Field>
-            <Field label="Transport preferences"><input className="crm360-input" value={form.transportPreferences} onChange={(event) => field("transportPreferences", event.target.value)} /></Field>
-          </div>
+        <FormSection title="Internal account context"><Field label="Internal account summary"><textarea rows={5} value={form.internalSummary} onChange={(event) => field("internalSummary", event.target.value)}/></Field></FormSection>
 
-          <Field label="Internal account summary"><textarea className="crm360-input min-h-24 resize-y" value={form.internalSummary} onChange={(event) => field("internalSummary", event.target.value)} /></Field>
+        {permissions.canEditCommercial ? <FormSection title="Commercial pricing"><div className="grid gap-3 sm:grid-cols-2"><Field label="Currency"><select value={form.preferredCurrency} onChange={(event) => field("preferredCurrency", event.target.value)}>{crmCurrencies.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field><Field label="Default markup %"><input inputMode="decimal" value={form.markupPercent} onChange={(event) => field("markupPercent", event.target.value)}/></Field><div className="sm:col-span-2"><Field label="Preferred carriers"><input value={form.preferredCarriers} onChange={(event) => field("preferredCarriers", event.target.value)}/></Field></div><div className="sm:col-span-2"><Field label="Pricing notes"><textarea rows={4} value={form.pricingNotes} onChange={(event) => field("pricingNotes", event.target.value)}/></Field></div></div></FormSection> : null}
 
-          {permissions.canEditCommercial ? <div className="rounded-2xl border border-[#d4ad62]/30 bg-[#fffaf0] p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#8b6b32]">Commercial pricing</p><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Field label="Currency"><select className="crm360-input" value={form.preferredCurrency} onChange={(event) => field("preferredCurrency", event.target.value)}>{crmCurrencies.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
-            <Field label="Default markup %"><input inputMode="decimal" className="crm360-input" value={form.markupPercent} onChange={(event) => field("markupPercent", event.target.value)} /></Field>
-            <Field label="Preferred carriers"><input className="crm360-input" value={form.preferredCarriers} onChange={(event) => field("preferredCarriers", event.target.value)} /></Field>
-            <div className="md:col-span-2 xl:col-span-4"><Field label="Pricing notes"><textarea className="crm360-input min-h-20 resize-y" value={form.pricingNotes} onChange={(event) => field("pricingNotes", event.target.value)} /></Field></div>
-          </div></div> : null}
-
-          {permissions.canManageCredit ? <div className="rounded-2xl border border-black/10 bg-[#faf9f5] p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-black/40">Credit control</p><div className="mt-4 grid gap-3 md:grid-cols-3">
-            <Field label="Payment terms days"><input inputMode="numeric" className="crm360-input" value={form.paymentTermsDays} onChange={(event) => field("paymentTermsDays", event.target.value)} /></Field>
-            <Field label="Credit limit"><input inputMode="decimal" className="crm360-input" value={form.creditLimit} onChange={(event) => field("creditLimit", event.target.value)} /></Field>
-            <Field label="Outstanding balance"><input inputMode="decimal" className="crm360-input" value={form.outstandingBalance} onChange={(event) => field("outstandingBalance", event.target.value)} /></Field>
-          </div></div> : null}
-
-          <div className="flex justify-end"><button type="submit" disabled={busy || !form.relationshipTypes.length} className="flex items-center gap-2 rounded-xl bg-[#10263f] px-5 py-3 text-xs font-black text-white disabled:opacity-50"><Save size={14} />{busy ? "Saving…" : "Save customer"}</button></div>
-        </form> : null}
+        {permissions.canManageCredit ? <FormSection title="Credit control"><div className="grid gap-3 sm:grid-cols-3"><Field label="Payment terms days"><input inputMode="numeric" value={form.paymentTermsDays} onChange={(event) => field("paymentTermsDays", event.target.value)}/></Field><Field label="Credit limit"><input inputMode="decimal" value={form.creditLimit} onChange={(event) => field("creditLimit", event.target.value)}/></Field><Field label="Outstanding balance"><input inputMode="decimal" value={form.outstandingBalance} onChange={(event) => field("outstandingBalance", event.target.value)}/></Field></div></FormSection> : null}
       </div>
-    </section>
-  );
+      <div className="mt-4 flex justify-end border-t border-[#eceef0] pt-4"><OpsButton tone="primary" type="submit" disabled={busy || !form.relationshipTypes.length}><Save size={12}/>{busy ? "Saving…" : "Save customer"}</OpsButton></div>
+    </form> : null}
+  </OpsPanel>;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.13em] text-black/40">{label}</span>{children}</label>;
-}
+function Snapshot({ label, value }: { label: string; value: string }) { return <div className="bg-white p-3.5"><p className="text-[9px] text-[#9299a0]">{label}</p><p className="mt-1 text-[11px] font-semibold text-[#414850]">{value}</p></div>; }
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) { return <section className="rounded-lg border border-[#e4e6e9] bg-white p-4"><h3 className="mb-3 text-xs font-semibold text-[#343a40]">{title}</h3>{children}</section>; }
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block"><span className="mb-1.5 block text-[10px] font-medium text-[#69717a]">{label}</span>{children}</label>; }

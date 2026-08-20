@@ -2,11 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import {
-  CalendarDays,
   Clock3,
   Download,
   ExternalLink,
-  FileText,
   MapPin,
   Plus,
   ShieldCheck,
@@ -27,20 +25,19 @@ import {
   shipmentDocumentTypes,
   type ShipmentDocument,
 } from "../shipment-document-types";
+import { OpsButton, OpsEmptyState, OpsErrorState, OpsMetric, OpsMetricStrip, OpsPanel, OpsStatusBadge } from "./operations-ui";
 
-const shipmentStatusStyles: Record<ShipmentStatus, string> = {
-  booking_confirmed: "border-sky-200 bg-sky-50 text-sky-700",
-  preparing: "border-amber-200 bg-amber-50 text-amber-800",
-  in_transit: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  customs_clearance: "border-violet-200 bg-violet-50 text-violet-700",
-  out_for_delivery: "border-cyan-200 bg-cyan-50 text-cyan-700",
-  delivered: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  exception: "border-rose-200 bg-rose-50 text-rose-700",
-};
-
-const inputClass = "mt-1.5 h-10 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 text-sm text-[#10263f] outline-none transition focus:border-[#aa8748] focus:bg-white";
 const shipmentTabs = ["details", "tracking", "documents"] as const;
 type ShipmentTab = (typeof shipmentTabs)[number];
+
+function statusTone(status: ShipmentStatus): "neutral" | "info" | "success" | "warning" | "danger" | "accent" {
+  if (status === "delivered") return "success";
+  if (status === "exception") return "danger";
+  if (status === "customs_clearance" || status === "preparing") return "warning";
+  if (status === "in_transit") return "accent";
+  if (status === "booking_confirmed" || status === "out_for_delivery") return "info";
+  return "neutral";
+}
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -60,12 +57,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function AdminShipmentPanel({
-  shipment,
-  quoteStatus,
-  onShipmentChange,
-  onNotice,
-}: {
+export function AdminShipmentPanel({ shipment, quoteStatus, onShipmentChange, onNotice }: {
   shipment: ShipmentDetail | null;
   quoteStatus: QuoteStatus;
   onShipmentChange: (shipment: ShipmentDetail) => void;
@@ -73,19 +65,13 @@ export function AdminShipmentPanel({
 }) {
   if (!shipment) {
     if (quoteStatus !== "won") return null;
-    return <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-5">
-      <div className="flex items-start gap-3"><span className="mt-0.5 rounded-lg bg-emerald-100 p-2 text-emerald-700"><Truck size={18}/></span><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-emerald-700">Shipment creation</p><h3 className="mt-1 text-base font-bold text-[#173c2d]">Shipment record is being prepared</h3><p className="mt-1 text-sm leading-6 text-emerald-900/65">Save the Won workflow or reload this enquiry. KCPL will create the tracking reference automatically.</p></div></div>
-    </div>;
+    return <OpsPanel title="Shipment record is being prepared" eyebrow="Operations" description="Save the Won workflow or reload this enquiry. KCPL creates the tracking reference automatically." action={<OpsStatusBadge tone="success"><Truck size={10}/>Won quote</OpsStatusBadge>}/>;
   }
 
   return <ShipmentWorkspace key={shipment.reference} initialShipment={shipment} onShipmentChange={onShipmentChange} onNotice={onNotice}/>;
 }
 
-function ShipmentWorkspace({
-  initialShipment,
-  onShipmentChange,
-  onNotice,
-}: {
+function ShipmentWorkspace({ initialShipment, onShipmentChange, onNotice }: {
   initialShipment: ShipmentDetail;
   onShipmentChange: (shipment: ShipmentDetail) => void;
   onNotice: (message: string) => void;
@@ -110,7 +96,8 @@ function ShipmentWorkspace({
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        onNotice(error instanceof Error ? error.message : "Could not load shipment documents.");
+        console.warn("Shipment documents unavailable", error);
+        onNotice("Shipment documents are temporarily unavailable. Shipment data is unaffected.");
       })
       .finally(() => setDocumentsLoading(false));
     return () => controller.abort();
@@ -140,19 +127,16 @@ function ShipmentWorkspace({
       onNotice("Shipment details updated.");
     } catch (error) {
       onNotice(error instanceof Error ? error.message : "Could not save the shipment.");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
   async function uploadDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const body = new FormData(form);
     setDocumentSaving(true);
     onNotice("");
     try {
-      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, { method: "POST", body });
+      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, { method: "POST", body: new FormData(form) });
       const data = await response.json() as { document?: ShipmentDocument; error?: string };
       if (!response.ok || !data.document) throw new Error(data.error || "Could not upload the document.");
       setDocuments((current) => [data.document!, ...current]);
@@ -161,9 +145,7 @@ function ShipmentWorkspace({
       onNotice(`${data.document.filename} uploaded to the private shipment vault.`);
     } catch (error) {
       onNotice(error instanceof Error ? error.message : "Could not upload the document.");
-    } finally {
-      setDocumentSaving(false);
-    }
+    } finally { setDocumentSaving(false); }
   }
 
   async function removeDocument(document: ShipmentDocument) {
@@ -178,9 +160,7 @@ function ShipmentWorkspace({
       onNotice(`${document.filename} deleted from the shipment vault.`);
     } catch (error) {
       onNotice(error instanceof Error ? error.message : "Could not delete the document.");
-    } finally {
-      setDocumentSaving(false);
-    }
+    } finally { setDocumentSaving(false); }
   }
 
   async function addEvent(event: FormEvent<HTMLFormElement>) {
@@ -203,99 +183,77 @@ function ShipmentWorkspace({
       onNotice("Tracking event published.");
     } catch (error) {
       onNotice(error instanceof Error ? error.message : "Could not add the tracking event.");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
-  return <div className="overflow-hidden rounded-xl border border-[#dfe3e8] bg-white">
-    <div className="border-b border-[#e8ebee] px-4 pt-4 sm:px-5 sm:pt-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#8b744d]">Shipment operations</p><span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${shipmentStatusStyles[draft.status]}`}>{shipmentStatusLabels[draft.status]}</span></div><h2 className="mt-1 text-lg font-bold tracking-[-.02em]">{draft.reference}</h2><p className="mt-1 text-xs text-[#87919a]">Won quote {draft.quote_reference}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><a href={`/admin/jobs/${encodeURIComponent(draft.reference)}`} className="flex h-9 items-center gap-1.5 rounded-lg bg-[#10263f] px-3 text-xs font-semibold text-white transition hover:bg-[#183651]">Digital Job File <ExternalLink size={13}/></a><a href={`/tracking?reference=${encodeURIComponent(draft.reference)}`} target="_blank" rel="noreferrer" className="flex h-9 items-center gap-1.5 rounded-lg border border-[#dfe3e8] bg-white px-3 text-xs font-semibold transition hover:bg-[#f7f8f9]">Public tracking <ExternalLink size={13}/></a></div>
-      </div>
+  return <OpsPanel
+    title={draft.reference}
+    eyebrow="Shipment operations"
+    description={`Won quote ${draft.quote_reference}`}
+    action={<div className="flex flex-wrap items-center gap-2"><OpsStatusBadge tone={statusTone(draft.status)}>{shipmentStatusLabels[draft.status]}</OpsStatusBadge><OpsButton href={`/admin/jobs/${encodeURIComponent(draft.reference)}`} tone="primary">Digital Job File <ExternalLink size={11}/></OpsButton><OpsButton href={`/tracking?reference=${encodeURIComponent(draft.reference)}`}>Public tracking <ExternalLink size={11}/></OpsButton></div>}
+  >
+    <OpsMetricStrip columns={4}>
+      <OpsMetric label="Status" value={<span className="text-[14px]">{shipmentStatusLabels[draft.status]}</span>}/>
+      <OpsMetric label="Current location" value={<span className="text-[14px]">{draft.current_location || "Not set"}</span>} icon={<MapPin size={12}/>}/>
+      <OpsMetric label="ETA" value={<span className="text-[14px]">{draft.eta ? formatDateOnly(draft.eta) : "Not set"}</span>} icon={<Clock3 size={12}/>}/>
+      <OpsMetric label="Carrier" value={<span className="text-[14px]">{draft.carrier || "Not set"}</span>}/>
+    </OpsMetricStrip>
 
-      <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-[#e3e7ea] bg-[#e3e7ea] sm:grid-cols-4">
-        <ShipmentSnapshot label="Status" value={shipmentStatusLabels[draft.status]}/>
-        <ShipmentSnapshot label="Current location" value={draft.current_location || "Not set"}/>
-        <ShipmentSnapshot label="ETA" value={draft.eta ? formatDateOnly(draft.eta) : "Not set"}/>
-        <ShipmentSnapshot label="Carrier" value={draft.carrier || "Not set"}/>
-      </div>
+    <nav className="flex overflow-x-auto border-b border-[#eceef0] px-2" aria-label="Shipment sections">
+      {shipmentTabs.map((tab) => {
+        const count = tab === "tracking" ? draft.events.length : tab === "documents" ? documents.length : undefined;
+        const active = activeTab === tab;
+        return <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`relative flex h-10 items-center gap-1.5 px-3 text-[11px] font-medium capitalize ${active ? "text-[#303a75]" : "text-[#737b84] hover:text-[#333940]"}`}>{tab}{count !== undefined ? <span className={`rounded px-1.5 py-0.5 text-[9px] ${active ? "bg-[#eef0ff] text-[#5367a8]" : "bg-[#f1f2f3] text-[#8c939b]"}`}>{count}</span> : null}{active ? <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-t bg-[#5367d9]"/> : null}</button>;
+      })}
+    </nav>
 
-      <nav className="mt-5 flex gap-5 overflow-x-auto">
-        {shipmentTabs.map((tab) => {
-          const suffix = tab === "tracking" ? ` ${draft.events.length}` : tab === "documents" ? ` ${documents.length}` : "";
-          return <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`border-b-2 pb-3 text-xs font-semibold capitalize transition ${activeTab === tab ? "border-[#b78a3e] text-[#10263f]" : "border-transparent text-[#7b858e] hover:text-[#10263f]"}`}>{tab}<span className="ml-1 text-[10px] text-[#9aa2aa]">{suffix}</span></button>;
-        })}
-      </nav>
-    </div>
-
-    <div className="p-4 sm:p-5">
-      {activeTab === "details" && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <form onSubmit={saveShipment} className="grid gap-4 sm:grid-cols-2">
-          <ShipmentField label="Shipment status"><select className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm font-semibold outline-none ${shipmentStatusStyles[draft.status]}`} value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as ShipmentStatus })}>{shipmentStatuses.map((status) => <option value={status} key={status}>{shipmentStatusLabels[status]}</option>)}</select></ShipmentField>
-          <ShipmentField label="ETA"><input type="date" className={inputClass} value={draft.eta ?? ""} onChange={(event) => setDraft({ ...draft, eta: event.target.value })}/></ShipmentField>
-          <ShipmentField label="Current location"><input className={inputClass} value={draft.current_location ?? ""} onChange={(event) => setDraft({ ...draft, current_location: event.target.value })} placeholder="Kathmandu, Nepal" maxLength={180}/></ShipmentField>
-          <ShipmentField label="Carrier / line"><input className={inputClass} value={draft.carrier ?? ""} onChange={(event) => setDraft({ ...draft, carrier: event.target.value })} placeholder="Airline, shipping line or road carrier" maxLength={160}/></ShipmentField>
-          <ShipmentField label="Carrier reference" hint="AWB, BL, container or carrier reference"><input className={inputClass} value={draft.carrier_reference ?? ""} onChange={(event) => setDraft({ ...draft, carrier_reference: event.target.value })} placeholder="Reference" maxLength={160}/></ShipmentField>
-          <label className="sm:col-span-2"><span className="text-[11px] font-semibold text-[#5f6973]">Customer status note</span><textarea className="mt-1.5 min-h-24 w-full rounded-lg border border-[#dfe3e8] bg-[#fafbfb] p-3 text-sm leading-6 text-[#10263f] outline-none transition focus:border-[#aa8748] focus:bg-white" value={draft.customer_note ?? ""} onChange={(event) => setDraft({ ...draft, customer_note: event.target.value })} placeholder="Short customer-safe update shown on tracking…" maxLength={2000}/></label>
-          <div className="sm:col-span-2"><button disabled={saving} type="submit" className="h-10 rounded-lg bg-[#10263f] px-4 text-xs font-bold text-white transition hover:bg-[#183651] disabled:opacity-50">{saving ? "Saving…" : "Save shipment"}</button></div>
+    <div className="p-4">
+      {activeTab === "details" ? <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <form onSubmit={saveShipment} className="grid gap-3 sm:grid-cols-2">
+          <Field label="Shipment status"><select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as ShipmentStatus })}>{shipmentStatuses.map((status) => <option value={status} key={status}>{shipmentStatusLabels[status]}</option>)}</select></Field>
+          <Field label="ETA"><input type="date" value={draft.eta ?? ""} onChange={(event) => setDraft({ ...draft, eta: event.target.value })}/></Field>
+          <Field label="Current location"><input value={draft.current_location ?? ""} onChange={(event) => setDraft({ ...draft, current_location: event.target.value })} placeholder="Kathmandu, Nepal" maxLength={180}/></Field>
+          <Field label="Carrier / line"><input value={draft.carrier ?? ""} onChange={(event) => setDraft({ ...draft, carrier: event.target.value })} placeholder="Airline, shipping line or road carrier" maxLength={160}/></Field>
+          <Field label="Carrier reference" hint="AWB, BL, container or carrier reference"><input value={draft.carrier_reference ?? ""} onChange={(event) => setDraft({ ...draft, carrier_reference: event.target.value })} placeholder="Reference" maxLength={160}/></Field>
+          <div className="sm:col-span-2"><Field label="Customer status note"><textarea rows={4} value={draft.customer_note ?? ""} onChange={(event) => setDraft({ ...draft, customer_note: event.target.value })} placeholder="Short customer-safe update shown on tracking…" maxLength={2000}/></Field></div>
+          <div className="sm:col-span-2 flex justify-end"><OpsButton tone="primary" type="submit" disabled={saving}>{saving ? "Saving…" : "Save shipment"}</OpsButton></div>
         </form>
 
-        <aside className="h-fit rounded-lg border border-[#e3e7ea] bg-[#f8f9fa] p-4">
-          <div className="flex items-center gap-2 text-[#8a6b37]"><CalendarDays size={14}/><p className="text-[10px] font-bold uppercase tracking-[.1em]">Customer view</p></div>
-          <p className="mt-3 text-sm font-bold text-[#10263f]">{shipmentStatusLabels[draft.status]}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-[#65717c]"><MapPin size={12}/>{draft.current_location || "Location not set"}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-[#65717c]"><Clock3 size={12}/>{draft.eta ? `ETA ${formatDateOnly(draft.eta)}` : "ETA not set"}</p>
-          {draft.customer_note && <p className="mt-3 border-t border-[#e3e7ea] pt-3 text-xs leading-5 text-[#68737d]">{draft.customer_note}</p>}
-        </aside>
-      </div>}
+        <div className="h-fit rounded-lg border border-[#e2e5e8] bg-[#fafafa] p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[.06em] text-[#858c94]">Customer tracking view</p>
+          <div className="mt-3 flex flex-wrap gap-1.5"><OpsStatusBadge tone={statusTone(draft.status)}>{shipmentStatusLabels[draft.status]}</OpsStatusBadge></div>
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#626a73]"><MapPin size={11}/>{draft.current_location || "Location not set"}</p>
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#626a73]"><Clock3 size={11}/>{draft.eta ? `ETA ${formatDateOnly(draft.eta)}` : "ETA not set"}</p>
+          {draft.customer_note ? <p className="mt-3 border-t border-[#e3e5e8] pt-3 text-[10px] leading-5 text-[#737b84]">{draft.customer_note}</p> : null}
+        </div>
+      </div> : null}
 
-      {activeTab === "tracking" && <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <form onSubmit={addEvent} className="h-fit rounded-lg border border-[#e3e7ea] bg-[#f8f9fa] p-4">
-          <div className="mb-4"><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#8b744d]">New public update</p><h3 className="mt-1 text-sm font-bold">Publish tracking event</h3></div>
-          <ShipmentField label="Event title"><input className={inputClass} value={eventDraft.title} onChange={(event) => setEventDraft({ ...eventDraft, title: event.target.value })} placeholder="Departed origin facility" maxLength={180}/></ShipmentField>
-          <div className="mt-3"><ShipmentField label="Location"><input className={inputClass} value={eventDraft.location} onChange={(event) => setEventDraft({ ...eventDraft, location: event.target.value })} placeholder="Birgunj, Nepal" maxLength={180}/></ShipmentField></div>
-          <div className="mt-3"><ShipmentField label="Event time" hint="Leave blank to use current time"><input type="datetime-local" className={inputClass} value={eventDraft.eventTime} onChange={(event) => setEventDraft({ ...eventDraft, eventTime: event.target.value })}/></ShipmentField></div>
-          <label className="mt-3 block"><span className="text-[11px] font-semibold text-[#5f6973]">Details</span><textarea className="mt-1.5 min-h-20 w-full rounded-lg border border-[#dfe3e8] bg-white p-3 text-sm leading-5 outline-none focus:border-[#aa8748]" value={eventDraft.details} onChange={(event) => setEventDraft({ ...eventDraft, details: event.target.value })} placeholder="Optional customer-safe detail" maxLength={2000}/></label>
-          <button disabled={saving || !eventDraft.title.trim()} type="submit" className="mt-4 flex h-10 items-center gap-2 rounded-lg bg-[#b78a3e] px-4 text-xs font-bold text-white disabled:opacity-40"><Plus size={14}/> Publish update</button>
+      {activeTab === "tracking" ? <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+        <form onSubmit={addEvent} className="h-fit rounded-lg border border-[#e2e5e8] bg-[#fafafa] p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[.06em] text-[#858c94]">New public update</p><h3 className="mt-1 text-xs font-semibold text-[#30363d]">Publish tracking event</h3>
+          <div className="mt-3 space-y-3"><Field label="Event title"><input value={eventDraft.title} onChange={(event) => setEventDraft({ ...eventDraft, title: event.target.value })} placeholder="Departed origin facility" maxLength={180}/></Field><Field label="Location"><input value={eventDraft.location} onChange={(event) => setEventDraft({ ...eventDraft, location: event.target.value })} placeholder="Birgunj, Nepal" maxLength={180}/></Field><Field label="Event time" hint="Leave blank to use current time"><input type="datetime-local" value={eventDraft.eventTime} onChange={(event) => setEventDraft({ ...eventDraft, eventTime: event.target.value })}/></Field><Field label="Details"><textarea rows={3} value={eventDraft.details} onChange={(event) => setEventDraft({ ...eventDraft, details: event.target.value })} placeholder="Optional customer-safe detail" maxLength={2000}/></Field><OpsButton tone="primary" type="submit" disabled={saving || !eventDraft.title.trim()}><Plus size={12}/>Publish update</OpsButton></div>
         </form>
 
         <div>
-          <div className="mb-4 flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#8b744d]">Tracking timeline</p><h3 className="mt-1 text-sm font-bold">Customer-visible events</h3></div><span className="text-xs font-semibold text-[#89939c]">{draft.events.length} {draft.events.length === 1 ? "event" : "events"}</span></div>
-          {draft.events.length === 0 && <div className="rounded-lg border border-dashed border-[#d9dee2] p-8 text-center text-sm text-[#87919a]">No tracking events yet.</div>}
-          <div>{draft.events.map((event, index) => <div key={event.id} className="relative pl-7 pb-5 last:pb-0"><span className={`absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full ${index === 0 ? "bg-[#b78a3e]" : "bg-[#b8c0c7]"}`}/>{index < draft.events.length - 1 && <span className="absolute left-[4px] top-4 h-[calc(100%-4px)] w-px bg-[#dfe3e8]"/>}<div className="rounded-lg border border-[#e3e7ea] bg-white p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-sm font-bold text-[#263a50]">{event.title}</p>{event.location && <p className="mt-1 flex items-center gap-1.5 text-xs text-[#707b85]"><MapPin size={11}/>{event.location}</p>}</div><p className="flex items-center gap-1.5 text-[10px] font-medium text-[#949da5]"><Clock3 size={11}/>{formatDate(event.event_time)}</p></div>{event.details && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5d6873]">{event.details}</p>}<p className="mt-3 text-[10px] text-[#9ba3aa]">Published by {event.author_name}</p></div></div>)}</div>
+          <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-[9px] font-semibold uppercase tracking-[.06em] text-[#858c94]">Tracking timeline</p><h3 className="mt-1 text-xs font-semibold text-[#30363d]">Customer-visible events</h3></div><span className="text-[10px] text-[#9299a0]">{draft.events.length} events</span></div>
+          {draft.events.length ? <div>{draft.events.map((event, index) => <div key={event.id} className="relative grid grid-cols-[18px_minmax(0,1fr)] gap-3"><div className="flex flex-col items-center"><span className={`mt-3 h-2 w-2 rounded-full ${index === 0 ? "bg-[#6878c5]" : "bg-[#c1c6cc]"}`}/>{index < draft.events.length - 1 ? <span className="min-h-10 w-px flex-1 bg-[#e3e5e8]"/> : null}</div><div className="pb-3"><div className="rounded-lg border border-[#e3e5e8] bg-white p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[11px] font-semibold text-[#343a40]">{event.title}</p>{event.location ? <p className="mt-1 flex items-center gap-1 text-[10px] text-[#737b84]"><MapPin size={10}/>{event.location}</p> : null}</div><p className="text-[9px] text-[#969da4]">{formatDate(event.event_time)}</p></div>{event.details ? <p className="mt-2 text-[10px] leading-5 text-[#626a73]">{event.details}</p> : null}<p className="mt-2 text-[9px] text-[#9aa1a8]">Published by {event.author_name}</p></div></div></div>)}</div> : <OpsEmptyState compact title="No tracking events" detail="Publish the first customer-visible update using the form."/>}
         </div>
-      </div>}
+      </div> : null}
 
-      {activeTab === "documents" && <div>
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><FileText size={15} className="text-[#92703a]"/><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#8b744d]">Document vault</p></div><h3 className="mt-1 text-sm font-bold">Private shipment files</h3><p className="mt-1 text-xs text-[#838d96]">Admin-only files stored privately in Firebase Storage. They never appear on public tracking.</p></div><span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700"><ShieldCheck size={12}/> Admin only</span></div>
-
-        {!documentStorageAvailable && <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-800">Firebase Storage is unavailable for this deployment. Existing metadata remains safe, but uploads and downloads are unavailable until storage is configured.</div>}
-
-        <form onSubmit={uploadDocument} className="grid gap-3 rounded-lg border border-[#e3e7ea] bg-[#f8f9fa] p-4 md:grid-cols-[220px_minmax(0,1fr)_auto] md:items-end">
-          <ShipmentField label="Document type"><select name="documentType" defaultValue="other" className={inputClass}>{shipmentDocumentTypes.map((type) => <option value={type} key={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></ShipmentField>
-          <ShipmentField label="File" hint="PDF, image, Word, Excel, CSV or TXT · max 15 MB"><input name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" className="mt-1.5 block h-10 w-full rounded-lg border border-[#dfe3e8] bg-white p-1.5 text-xs text-[#5f6973] file:mr-3 file:rounded-md file:border-0 file:bg-[#10263f] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"/></ShipmentField>
-          <button disabled={documentSaving || !documentStorageAvailable} type="submit" className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#b78a3e] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Upload size={14}/>{documentSaving ? "Uploading…" : "Upload"}</button>
-        </form>
-
-        <div className="mt-4 overflow-hidden rounded-lg border border-[#e3e7ea]">
-          {documentsLoading && <p className="p-4 text-sm text-[#87919a]">Loading shipment documents…</p>}
-          {!documentsLoading && documents.length === 0 && <div className="p-8 text-center"><FileText className="mx-auto text-[#b3bbc2]" size={20}/><p className="mt-2 text-sm font-semibold text-[#7e8992]">No documents uploaded yet.</p></div>}
-          {documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0f2] p-3 last:border-b-0">
-            <div className="min-w-0"><p className="truncate text-sm font-semibold text-[#263a50]">{document.filename}</p><p className="mt-1 text-[10px] text-[#89939c]">{shipmentDocumentTypeLabels[document.document_type]} · {formatBytes(document.size_bytes)} · {document.uploaded_by} · {formatDate(document.uploaded_at)}</p></div>
-            <div className="flex items-center gap-1.5"><a href={`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents/${document.id}`} className="flex h-8 items-center gap-1.5 rounded-md border border-[#dfe3e8] px-2.5 text-[11px] font-semibold hover:bg-[#f7f8f9]"><Download size={12}/> Download</a><button type="button" disabled={documentSaving} onClick={() => removeDocument(document)} className="flex h-8 items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-40"><Trash2 size={12}/> Delete</button></div>
-          </div>)}
+      {activeTab === "documents" ? <div>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3"><div><p className="text-[9px] font-semibold uppercase tracking-[.06em] text-[#858c94]">Document vault</p><p className="mt-1 text-[10px] text-[#7d858d]">Private Firebase Storage files. They never appear on public tracking.</p></div><OpsStatusBadge tone="success"><ShieldCheck size={10}/>Admin only</OpsStatusBadge></div>
+        {!documentStorageAvailable ? <OpsErrorState tone="warning" title="Document storage unavailable" detail="Shipment data remains safe. Uploads and downloads will resume when Firebase Storage is available."/> : null}
+        <form onSubmit={uploadDocument} className="grid gap-3 rounded-lg border border-[#e3e5e8] bg-[#fafafa] p-3.5 md:grid-cols-[220px_minmax(0,1fr)_auto] md:items-end"><Field label="Document type"><select name="documentType" defaultValue="other">{shipmentDocumentTypes.map((type) => <option value={type} key={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></Field><Field label="File" hint="PDF, image, Word, Excel, CSV or TXT · max 15 MB"><input name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></Field><OpsButton tone="primary" type="submit" disabled={documentSaving || !documentStorageAvailable}><Upload size={12}/>{documentSaving ? "Uploading…" : "Upload"}</OpsButton></form>
+        <div className="mt-3 overflow-hidden rounded-lg border border-[#e3e5e8]">
+          {documentsLoading ? <div className="p-4 text-[11px] text-[#87919a]">Loading shipment documents…</div> : null}
+          {!documentsLoading && !documents.length ? <OpsEmptyState compact title="No shipment documents" detail="Upload customs, transport or commercial documents when they become available."/> : null}
+          {documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0f2] p-3 last:border-b-0"><div className="min-w-0"><p className="truncate text-[11px] font-semibold text-[#343a40]">{document.filename}</p><p className="mt-1 text-[9px] text-[#8d949b]">{shipmentDocumentTypeLabels[document.document_type]} · {formatBytes(document.size_bytes)} · {document.uploaded_by} · {formatDate(document.uploaded_at)}</p></div><div className="flex items-center gap-1.5"><a href={`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents/${document.id}`} className="ops-button ops-button-secondary"><Download size={11}/>Download</a><OpsButton tone="danger" disabled={documentSaving} onClick={() => void removeDocument(document)}><Trash2 size={11}/>Delete</OpsButton></div></div>)}
         </div>
-      </div>}
+      </div> : null}
     </div>
-  </div>;
+  </OpsPanel>;
 }
 
-function ShipmentSnapshot({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0 bg-[#f8f9fa] px-3 py-2.5"><p className="text-[9px] font-semibold uppercase tracking-[.09em] text-[#929ba3]">{label}</p><p className="mt-1 truncate text-xs font-semibold text-[#34495d]" title={value}>{value}</p></div>;
-}
-
-function ShipmentField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return <label className="block"><span className="text-[11px] font-semibold text-[#5f6973]">{label}</span>{children}{hint && <span className="mt-1 block text-[10px] text-[#9aa2a9]">{hint}</span>}</label>;
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return <label className="block"><span className="mb-1.5 block text-[10px] font-medium text-[#69717a]">{label}</span>{children}{hint ? <span className="mt-1 block text-[9px] text-[#9aa2a9]">{hint}</span> : null}</label>;
 }

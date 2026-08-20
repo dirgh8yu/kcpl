@@ -58,9 +58,6 @@ export async function autocompleteGooglePlaces(input: string): Promise<GooglePla
     body: JSON.stringify({
       input: query,
       languageCode: "en",
-      // Prefer KCPL's Nepal/India operating corridor without excluding global
-      // origins or destinations. locationBias can still return results outside
-      // this rectangle when the typed query clearly points elsewhere.
       locationBias: {
         rectangle: {
           low: { latitude: 6.5, longitude: 68.0 },

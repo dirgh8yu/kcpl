@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { ArrowLeft, BadgeDollarSign, FileText, Landmark, TrendingDown, TrendingUp, WalletCards } from "lucide-react";
+import { BadgeDollarSign, FileText, Landmark, TrendingUp, WalletCards } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
 import { getDigitalJobFile } from "../../../job-file.server";
 import { jobCostCategoryLabels } from "../../../job-file";
+import { OperationsShell } from "../../../operations-shell";
+import { OpsButton, OpsEmptyState, OpsMetric, OpsMetricStrip, OpsPageHeader, OpsPanel, OpsStatusBadge, OpsTableFrame } from "../../../operations-ui";
 import { listPayablesDashboard } from "../../../payables/payables.server";
 import { payableStatusLabels } from "../../../payables/payables-data";
 import { getStaffContext } from "../../../staff-directory.server";
+import { kcplStaffRoleLabels } from "../../../staff-permissions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Job Profitability | KCPL", robots: { index: false, follow: false } };
@@ -29,36 +32,51 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
   const job = result.job;
   const payablesDashboard = staff.permissions.canManageFinance ? await listPayablesDashboard(staff) : null;
   const bills = payablesDashboard?.bills.filter((bill) => bill.shipment_reference === job.reference) ?? [];
-  const currencies = [...new Set([
-    ...Object.keys(job.revenue_totals),
-    ...Object.keys(job.cost_totals),
-  ])].sort();
+  const currencies = [...new Set([...Object.keys(job.revenue_totals), ...Object.keys(job.cost_totals)])].sort();
+  const roleLabel = kcplStaffRoleLabels[staff.permissions.role];
 
-  return <main className="min-h-screen bg-[#f3f0e7] text-[#10263f]">
-    <header className="bg-[#091624] px-5 py-6 text-white lg:px-8"><div className="mx-auto flex max-w-[1500px] flex-wrap items-start justify-between gap-5"><div className="flex items-start gap-4"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="grid h-10 w-10 place-items-center rounded-xl border border-white/15 text-white/65 hover:bg-white/10"><ArrowLeft size={16}/></Link><div><p className="text-[10px] font-black uppercase tracking-[.22em] text-[#d4ad62]">KCPL Commercial Control</p><h1 className="mt-1 text-3xl font-black tracking-[-.045em]">Job Profitability</h1><p className="mt-2 text-xs text-white/45">{job.reference} · {job.origin || "Origin"} → {job.destination || "Destination"}</p></div></div>{staff.permissions.canManageFinance ? <Link href={`/admin/payables?shipment=${encodeURIComponent(job.reference)}`} className="rounded-xl bg-[#d4ad62] px-4 py-3 text-xs font-black text-[#10263f]">Add supplier bill</Link> : null}</div></header>
+  return <OperationsShell userName={access.user.displayName} roleLabel={roleLabel} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+    <main>
+      <OpsPageHeader
+        eyebrow="Commercial control"
+        title="Job Profitability"
+        description={`${job.reference} · ${job.origin || "Origin"} → ${job.destination || "Destination"}`}
+        breadcrumbs={[{ label: "Operations" }, { label: "Shipments", href: "/admin/shipments" }, { label: job.reference, href: `/admin/jobs/${encodeURIComponent(job.reference)}` }, { label: "Profitability" }]}
+        meta={<span>{job.customer_name || "Customer not linked"} · {job.primary_branch}</span>}
+        actions={<><OpsButton href={`/admin/jobs/${encodeURIComponent(job.reference)}`}>Digital Job File</OpsButton>{staff.permissions.canManageFinance ? <OpsButton href={`/admin/payables?shipment=${encodeURIComponent(job.reference)}`} tone="primary">Add supplier bill</OpsButton> : null}</>}
+      />
 
-    <div className="mx-auto max-w-[1500px] space-y-6 p-5 lg:p-8">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><InfoCard label="Customer" value={job.customer_name || "Not linked"} icon={<BadgeDollarSign size={16}/>}/><InfoCard label="Branch" value={job.primary_branch} icon={<Landmark size={16}/>}/><InfoCard label="Revenue currencies" value={String(Object.keys(job.revenue_totals).length)} icon={<TrendingUp size={16}/>}/><InfoCard label="Recognised cost items" value={String(job.costs.length)} icon={<WalletCards size={16}/>}/></section>
+      <div className="ops-page-body ops-stack">
+        <OpsMetricStrip columns={4}>
+          <OpsMetric label="Customer" value={<span className="text-[15px]">{job.customer_name || "Not linked"}</span>} icon={<BadgeDollarSign size={13}/>}/>
+          <OpsMetric label="Branch" value={<span className="text-[15px]">{job.primary_branch}</span>} icon={<Landmark size={13}/>}/>
+          <OpsMetric label="Revenue currencies" value={Object.keys(job.revenue_totals).length} icon={<TrendingUp size={13}/>}/>
+          <OpsMetric label="Recognised costs" value={job.costs.length} icon={<WalletCards size={13}/>}/>
+        </OpsMetricStrip>
 
-      <section className="rounded-[30px] border border-black/10 bg-white p-6 shadow-sm sm:p-8"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#b78a3e]">Commercial result</p><h2 className="mt-1 text-2xl font-black">Revenue → Cost → Gross profit</h2><p className="mt-2 text-xs text-black/45">No automatic FX conversion is applied. Profit and margin are kept honest by currency.</p></div>
-        {currencies.length ? <div className="mt-6 grid gap-4 lg:grid-cols-2">{currencies.map((currency) => {
-          const revenue = job.revenue_totals[currency as keyof typeof job.revenue_totals] ?? 0;
-          const cost = job.cost_totals[currency as keyof typeof job.cost_totals] ?? 0;
-          const profit = job.profit_totals[currency as keyof typeof job.profit_totals] ?? revenue - cost;
-          const margin = job.margin_percent[currency as keyof typeof job.margin_percent];
-          return <div key={currency} className="rounded-[24px] border border-black/10 bg-[#faf9f5] p-5"><div className="flex items-center justify-between"><strong className="text-lg">{currency}</strong><span className={`rounded-full px-3 py-1 text-[9px] font-black ${profit >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{margin === undefined ? "Margin N/A" : `${margin.toFixed(2)}% margin`}</span></div><div className="mt-5 grid grid-cols-3 gap-2"><MoneyCell label="Revenue" value={money(revenue, currency)}/><MoneyCell label="Cost" value={money(cost, currency)}/><MoneyCell label="Gross profit" value={money(profit, currency)} positive={profit >= 0}/></div></div>;
-        })}</div> : <div className="mt-6 rounded-2xl bg-[#faf9f5] p-6 text-sm text-black/45">No invoiced revenue or recognised job costs yet.</div>}
-      </section>
+        <OpsPanel title="Revenue → Cost → Gross profit" eyebrow="Commercial result" description="No automatic FX conversion is applied. Profit and margin stay separated by currency.">
+          {currencies.length ? <div className="grid gap-px bg-[#eceef0] md:grid-cols-2">{currencies.map((currency) => {
+            const revenue = job.revenue_totals[currency as keyof typeof job.revenue_totals] ?? 0;
+            const cost = job.cost_totals[currency as keyof typeof job.cost_totals] ?? 0;
+            const profit = job.profit_totals[currency as keyof typeof job.profit_totals] ?? revenue - cost;
+            const margin = job.margin_percent[currency as keyof typeof job.margin_percent];
+            return <div key={currency} className="bg-white p-4"><div className="flex items-center justify-between gap-3"><strong className="text-xs font-semibold text-[#30363d]">{currency}</strong><OpsStatusBadge tone={profit >= 0 ? "success" : "danger"}>{margin === undefined ? "Margin N/A" : `${margin.toFixed(2)}% margin`}</OpsStatusBadge></div><div className="mt-3 grid grid-cols-3 gap-2"><MoneyCell label="Revenue" value={money(revenue, currency)}/><MoneyCell label="Cost" value={money(cost, currency)}/><MoneyCell label="Gross profit" value={money(profit, currency)} positive={profit >= 0}/></div></div>;
+          })}</div> : <OpsEmptyState compact title="No financial result yet" detail="No invoiced revenue or recognised job costs have been recorded."/>}
+        </OpsPanel>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <section className="rounded-[28px] border border-black/10 bg-white p-6 shadow-sm sm:p-8"><div className="flex items-start gap-3"><span className="rounded-xl bg-[#10263f] p-2.5 text-white"><WalletCards size={16}/></span><div><p className="text-[9px] font-black uppercase tracking-[.14em] text-[#b78a3e]">Cost ledger</p><h2 className="mt-1 text-xl font-black">Recognised job costs</h2></div></div><div className="mt-5 space-y-2">{job.costs.length ? job.costs.map((cost) => <div key={cost.id} className="rounded-xl border border-black/10 p-4"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-black">{cost.label}</p><p className="mt-1 text-[9px] text-black/40">{jobCostCategoryLabels[cost.category]}{cost.vendor ? ` · ${cost.vendor}` : ""}</p>{cost.source_type === "payable" && cost.source_reference ? <Link href={`/admin/payables/bills/${encodeURIComponent(cost.source_reference)}`} className="mt-2 inline-flex items-center gap-1 text-[9px] font-black text-[#b78a3e]"><FileText size={10}/>AP {cost.source_reference}</Link> : <p className="mt-2 text-[9px] font-bold text-black/30">Manual Job File cost</p>}</div><strong className="text-sm">{money(cost.amount, cost.currency)}</strong></div></div>) : <p className="rounded-xl bg-[#faf9f5] p-4 text-xs text-black/40">No recognised costs yet.</p>}</div></section>
+        <div className="ops-grid-even">
+          <OpsTableFrame toolbar={<div><h2 className="text-xs font-semibold text-[#30363d]">Recognised job costs</h2><p className="mt-0.5 text-[10px] text-[#8c939b]">Manual Job File costs and approved supplier bills.</p></div>}>
+            {job.costs.length ? <table className="ops-dense-table min-w-[700px]"><thead><tr><th className="px-4 text-left">Cost</th><th className="px-3 text-left">Category</th><th className="px-3 text-left">Vendor</th><th className="px-3 text-left">Source</th><th className="px-4 text-right">Amount</th></tr></thead><tbody>{job.costs.map((cost) => <tr key={cost.id}><td className="px-4"><strong className="font-medium">{cost.label}</strong></td><td className="px-3">{jobCostCategoryLabels[cost.category]}</td><td className="px-3">{cost.vendor || "—"}</td><td className="px-3">{cost.source_type === "payable" && cost.source_reference ? <Link href={`/admin/payables/bills/${encodeURIComponent(cost.source_reference)}`} className="inline-flex items-center gap-1 font-medium text-[#5367a8]"><FileText size={10}/>{cost.source_reference}</Link> : <OpsStatusBadge>Manual</OpsStatusBadge>}</td><td className="px-4 text-right font-medium">{money(cost.amount, cost.currency)}</td></tr>)}</tbody></table> : <OpsEmptyState compact title="No recognised costs" detail="Add a Job File cost or approve a linked supplier bill."/>}
+          </OpsTableFrame>
 
-        <section className="rounded-[28px] border border-black/10 bg-white p-6 shadow-sm sm:p-8"><div className="flex items-start gap-3"><span className="rounded-xl bg-[#b78a3e] p-2.5 text-white"><TrendingDown size={16}/></span><div><p className="text-[9px] font-black uppercase tracking-[.14em] text-[#b78a3e]">Accounts Payable</p><h2 className="mt-1 text-xl font-black">Supplier bills for this job</h2></div></div>{staff.permissions.canManageFinance ? <div className="mt-5 space-y-2">{bills.length ? bills.map((bill) => <Link key={bill.reference} href={`/admin/payables/bills/${encodeURIComponent(bill.reference)}`} className="block rounded-xl border border-black/10 p-4 hover:bg-[#faf9f5]"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-black">{bill.supplier_name}</p><p className="mt-1 text-[9px] text-black/40">{bill.reference} · {payableStatusLabels[bill.status]}</p></div><div className="text-right"><strong className="text-sm">{money(bill.total, bill.currency)}</strong><p className="mt-1 text-[9px] text-black/40">{money(bill.balance_due, bill.currency)} due</p></div></div></Link>) : <p className="rounded-xl bg-[#faf9f5] p-4 text-xs text-black/40">No supplier bills linked to this job.</p>}</div> : <div className="mt-5 rounded-xl bg-[#faf9f5] p-4 text-xs text-black/40">Supplier payment details are restricted to Management and Accounts.</div>}</section>
+          <OpsTableFrame toolbar={<div><h2 className="text-xs font-semibold text-[#30363d]">Supplier bills for this job</h2><p className="mt-0.5 text-[10px] text-[#8c939b]">Accounts Payable records linked to this shipment.</p></div>}>
+            {staff.permissions.canManageFinance ? bills.length ? <table className="ops-dense-table min-w-[650px]"><thead><tr><th className="px-4 text-left">Supplier</th><th className="px-3 text-left">Bill</th><th className="px-3 text-left">Status</th><th className="px-3 text-right">Total</th><th className="px-4 text-right">Due</th></tr></thead><tbody>{bills.map((bill) => <tr key={bill.reference}><td className="px-4 font-medium">{bill.supplier_name}</td><td className="px-3"><Link href={`/admin/payables/bills/${encodeURIComponent(bill.reference)}`} className="ops-row-link">{bill.reference}</Link></td><td className="px-3"><OpsStatusBadge tone={bill.status === "overdue" ? "danger" : bill.status === "paid" ? "success" : "neutral"}>{payableStatusLabels[bill.status]}</OpsStatusBadge></td><td className="px-3 text-right">{money(bill.total, bill.currency)}</td><td className="px-4 text-right font-medium">{money(bill.balance_due, bill.currency)}</td></tr>)}</tbody></table> : <OpsEmptyState compact title="No supplier bills linked" detail="Add a supplier bill from Accounts Payable when vendor costs arrive."/> : <OpsEmptyState compact title="Supplier payments restricted" detail="Payment details are available only to Management and Accounts."/>}
+          </OpsTableFrame>
+        </div>
       </div>
-    </div>
-  </main>;
+    </main>
+  </OperationsShell>;
 }
 
-function InfoCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) { return <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-black/30">{icon}<span className="text-[8px] font-black uppercase tracking-[.12em]">{label}</span></div><p className="mt-2 text-lg font-black">{value}</p></div>; }
-function MoneyCell({ label, value, positive }: { label: string; value: string; positive?: boolean }) { return <div className="rounded-xl bg-white p-3"><p className="text-[8px] font-black uppercase tracking-[.1em] text-black/35">{label}</p><p className={`mt-1 text-xs font-black ${positive === false ? "text-rose-700" : positive === true ? "text-emerald-700" : ""}`}>{value}</p></div>; }
-function Gate({ title, detail }: { title: string; detail: string }) { return <main className="grid min-h-screen place-items-center bg-[#f4f1e9] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-3xl border border-black/10 bg-white p-8 shadow-sm"><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b78a3e]">KCPL Job Profitability</p><h1 className="mt-3 text-3xl font-black">{title}</h1><p className="mt-3 text-sm leading-6 text-black/50">{detail}</p><div className="mt-6"><Link href="/admin" className="rounded-xl bg-[#10263f] px-4 py-3 text-sm font-black text-white">Operations</Link></div></section></main>; }
+function MoneyCell({ label, value, positive }: { label: string; value: string; positive?: boolean }) { return <div className="rounded-md bg-[#f7f8f9] p-2.5"><p className="text-[9px] text-[#9299a0]">{label}</p><p className={`mt-1 truncate text-[11px] font-semibold ${positive === false ? "text-[#9a4d55]" : positive === true ? "text-[#397052]" : "text-[#414850]"}`}>{value}</p></div>; }
+function Gate({ title, detail }: { title: string; detail: string }) { return <main className="grid min-h-screen place-items-center bg-[#f7f7f5] p-6 text-[#1c2025]"><section className="w-full max-w-xl rounded-xl border border-[#e2e5e8] bg-white p-8"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#717a86]">KCPL Job Profitability</p><h1 className="mt-3 text-2xl font-semibold tracking-[-.03em]">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68717a]">{detail}</p><Link href="/admin/shipments" className="ops-button ops-button-primary mt-6">Shipments</Link></section></main>; }

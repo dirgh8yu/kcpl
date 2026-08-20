@@ -18,19 +18,21 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   if (!dashboard) return <Gate title="Accounts Payable is unavailable." detail="The Firestore payable ledger is not available for this deployment."/>;
   const params = await searchParams;
   const initialShipment = typeof params.shipment === "string" ? params.shipment.trim().toUpperCase() : "";
+  const roleLabel = kcplStaffRoleLabels[staff.permissions.role];
 
   return (
     <OperationsShell
       userName={access.user.displayName}
+      roleLabel={roleLabel}
       canManageStaff={staff.permissions.canManageStaff}
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
-      <PayablesWorkspace dashboard={dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]} initialShipment={initialShipment}/>
+      <PayablesWorkspace dashboard={dashboard} roleLabel={roleLabel} initialShipment={initialShipment}/>
     </OperationsShell>
   );
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f4f1e9] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-3xl border border-black/10 bg-white p-8 shadow-sm"><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b78a3e]">KCPL Finance</p><h1 className="mt-3 text-3xl font-black">{title}</h1><p className="mt-3 text-sm leading-6 text-black/50">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/finance" className="rounded-xl bg-[#10263f] px-4 py-3 text-sm font-black text-white">Accounts Receivable</Link><Link href="/admin" className="rounded-xl border border-black/10 px-4 py-3 text-sm font-black">Operations</Link></div></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f7f7f5] p-6 text-[#1c2025]"><section className="w-full max-w-xl rounded-xl border border-[#e2e5e8] bg-white p-8"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-[#717a86]">KCPL Finance</p><h1 className="mt-3 text-2xl font-semibold tracking-[-.03em]">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68717a]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/finance" className="inline-flex h-9 items-center rounded-lg bg-[#283a77] px-4 text-xs font-semibold text-white">Finance & AR</Link><Link href="/admin" className="inline-flex h-9 items-center rounded-lg border border-[#dfe2e6] px-4 text-xs font-semibold text-[#505861]">Enquiry desk</Link></div></section></main>;
 }
