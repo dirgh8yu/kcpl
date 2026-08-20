@@ -49,7 +49,7 @@ function safeFilename(filename: string) {
   const tail = filename.split(/[\\/]/).pop() || "document";
   const cleaned = tail
     .normalize("NFKD")
-    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\p{Cc}/gu, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120);
