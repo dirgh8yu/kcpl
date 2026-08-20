@@ -44,7 +44,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
     if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
     if (result.kind === "missing" || result.kind === "object-missing") return json({ ok: false, error: "Document not found." }, 404);
 
-    return new Response(result.bytes, {
+    return new Response(new Uint8Array(result.bytes), {
       headers: {
         "content-type": result.document.content_type || "application/octet-stream",
         "content-length": String(result.document.size_bytes),
