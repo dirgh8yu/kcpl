@@ -35,7 +35,7 @@ function resultError(kind: string) {
   if (kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
   if (kind === "invalid_branch") return json({ ok: false, error: "Choose a branch assigned to this job." }, 400);
   if (kind === "missing_child") return json({ ok: false, error: "The requested Job File item was not found." }, 404);
-  return null;
+  return json({ ok: false, error: "The Job File action could not be completed." }, 500);
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ reference: string }> }) {
@@ -43,7 +43,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   if ("response" in auth) return auth.response;
   const { reference } = await context.params;
   const result = await getDigitalJobFile(reference, auth.staff);
-  if (result.kind !== "ready") return resultError(result.kind)!;
+  if (result.kind !== "ready") return resultError(result.kind);
   return json({ ok: true, job: result.job, role: auth.staff.permissions.role, canManageBranches: auth.staff.permissions.role === "management" });
 }
 
@@ -72,8 +72,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     internalReference: clean(body.internalReference, 160),
     internalNotes: clean(body.internalNotes, 8000),
   }, { name: auth.user.displayName, email: auth.user.email }, auth.staff);
-  const error = resultError(result.kind);
-  if (error) return error;
+  if (result.kind !== "updated") return resultError(result.kind);
   return json({ ok: true });
 }
 
@@ -100,8 +99,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       assignedToName: clean(body.assignedToName, 160),
       assignedToEmail: clean(body.assignedToEmail, 240),
     }, actor, auth.staff);
-    const error = resultError(result.kind);
-    if (error) return error;
+    if (result.kind !== "created") return resultError(result.kind);
     return json({ ok: true, task: result.task }, 201);
   }
 
@@ -109,8 +107,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     const taskId = clean(body.taskId, 180);
     if (!taskId) return json({ ok: false, error: "Task not found." }, 404);
     const result = await toggleJobTask(reference, taskId, body.completed === true, actor, auth.staff);
-    const error = resultError(result.kind);
-    if (error) return error;
+    if (result.kind !== "updated") return resultError(result.kind);
     return json({ ok: true });
   }
 
@@ -125,8 +122,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       branch: branch as KcplBranch,
       required: body.required !== false,
     }, actor, auth.staff);
-    const error = resultError(result.kind);
-    if (error) return error;
+    if (result.kind !== "created") return resultError(result.kind);
     return json({ ok: true, step: result.step }, 201);
   }
 
@@ -134,8 +130,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     const stepId = clean(body.stepId, 180);
     if (!stepId) return json({ ok: false, error: "Customs step not found." }, 404);
     const result = await toggleCustomsStep(reference, stepId, body.completed === true, actor, auth.staff);
-    const error = resultError(result.kind);
-    if (error) return error;
+    if (result.kind !== "updated") return resultError(result.kind);
     return json({ ok: true });
   }
 
@@ -157,8 +152,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       currency: currency as CrmCurrency,
       notes: clean(body.notes, 5000),
     }, actor, auth.staff);
-    const error = resultError(result.kind);
-    if (error) return error;
+    if (result.kind !== "created") return resultError(result.kind);
     return json({ ok: true, cost: result.cost }, 201);
   }
 
