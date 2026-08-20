@@ -1,5 +1,14 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
-import { addQuoteNote, getQuoteDetail, quoteStatuses, QuoteStatus, updateQuoteAdmin } from "../../../../admin/admin-data";
+import {
+  addQuoteNote,
+  getQuoteDetail,
+  quoteCurrencies,
+  QuoteCurrency,
+  quoteStatuses,
+  QuoteStatus,
+  updateQuoteAdmin,
+  updateQuoteCommercial,
+} from "../../../../admin/admin-data";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -22,6 +31,12 @@ function sameOrigin(request: Request) {
   }
 }
 
+function clean(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+const moneyPattern = /^\d{1,12}(?:\.\d{1,3})?$/;
+
 export async function GET(_request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
@@ -39,15 +54,54 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (!sameOrigin(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
-  let body: { status?: unknown; assignedTo?: unknown };
+  let body: Record<string, unknown>;
   try {
-    body = await request.json() as { status?: unknown; assignedTo?: unknown };
+    body = await request.json() as Record<string, unknown>;
   } catch {
     return json({ ok: false, error: "The update could not be read." }, 400);
   }
 
-  const status = typeof body.status === "string" ? body.status : "";
-  const assignedTo = typeof body.assignedTo === "string" ? body.assignedTo.trim() : "";
+  if (body.action === "commercial") {
+    const currency = clean(body.currency).toUpperCase();
+    const quotedAmount = clean(body.quotedAmount);
+    const internalCost = clean(body.internalCost);
+    const validUntil = clean(body.validUntil);
+    const customerNote = clean(body.customerNote);
+
+    if (!quoteCurrencies.includes(currency as QuoteCurrency)) {
+      return json({ ok: false, error: "Choose a supported quote currency." }, 400);
+    }
+    if (quotedAmount && !moneyPattern.test(quotedAmount)) {
+      return json({ ok: false, error: "Quoted price must be a valid positive amount with up to 3 decimal places." }, 400);
+    }
+    if (internalCost && !moneyPattern.test(internalCost)) {
+      return json({ ok: false, error: "Internal cost must be a valid positive amount with up to 3 decimal places." }, 400);
+    }
+    if (validUntil && !/^\d{4}-\d{2}-\d{2}$/.test(validUntil)) {
+      return json({ ok: false, error: "Choose a valid quote expiry date." }, 400);
+    }
+    if (customerNote.length > 4000) {
+      return json({ ok: false, error: "Customer quote note must be 4000 characters or fewer." }, 400);
+    }
+
+    const result = await updateQuoteCommercial(reference, {
+      currency: currency as QuoteCurrency,
+      quotedAmount,
+      internalCost,
+      validUntil,
+      customerNote,
+    });
+    if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
+    if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
+
+    return json({
+      ok: true,
+      commercial: { currency, quotedAmount, internalCost, validUntil, customerNote },
+    });
+  }
+
+  const status = clean(body.status);
+  const assignedTo = clean(body.assignedTo);
   if (!quoteStatuses.includes(status as QuoteStatus)) return json({ ok: false, error: "Choose a valid quote status." }, 400);
   if (assignedTo.length > 120) return json({ ok: false, error: "Assignee must be 120 characters or fewer." }, 400);
 
