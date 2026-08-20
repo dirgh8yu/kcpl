@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft,
+  ArrowRight,
   BriefcaseBusiness,
+  CalendarDays,
   Check,
+  CheckCircle2,
   ClipboardCheck,
   Download,
   FileText,
@@ -16,8 +18,10 @@ import {
   ShieldCheck,
   Trash2,
   Upload,
+  UserRound,
   UsersRound,
   WalletCards,
+  X,
 } from "lucide-react";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "../../crm/crm-data";
 import {
@@ -32,17 +36,20 @@ import {
   type JobTask,
 } from "../../job-file";
 import { kcplStaffRoleLabels, type KcplStaffRole } from "../../staff-permissions";
-import {
-  shipmentDocumentTypeLabels,
-  shipmentDocumentTypes,
-  type ShipmentDocument,
-} from "../../../shipment-document-types";
-import { shipmentStatusLabels } from "../../../shipment-types";
+import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
+import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
 
 function dateLabel(value: string | null) {
   if (!value) return "Not set";
   const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
+}
+
+function dateTime(value: string | null) {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function money(amount: number, currency: string) {
@@ -54,6 +61,15 @@ function bytes(value: number) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "violet" | "success" | "danger" {
+  if (status === "delivered") return "success";
+  if (status === "exception") return "danger";
+  if (status === "customs_clearance") return "violet";
+  if (status === "preparing") return "warning";
+  if (status === "booking_confirmed" || status === "in_transit" || status === "out_for_delivery") return "info";
+  return "neutral";
 }
 
 export function JobFileWorkspace({
@@ -79,6 +95,7 @@ export function JobFileWorkspace({
   const [taskOpen, setTaskOpen] = useState(false);
   const [customsOpen, setCustomsOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
   const [draft, setDraft] = useState({
     primaryBranch: job.primary_branch,
     handlingBranches: job.handling_branches,
@@ -93,6 +110,7 @@ export function JobFileWorkspace({
   const [cost, setCost] = useState({ category: "freight" as JobCostCategory, label: "", vendor: "", amount: "", currency: "NPR" as CrmCurrency, notes: "" });
 
   const openTasks = useMemo(() => job.tasks.filter((item) => !item.completed), [job.tasks]);
+  const overdueTasks = useMemo(() => openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < Date.now()), [openTasks]);
   const requiredCustoms = useMemo(() => job.customs_steps.filter((item) => item.required), [job.customs_steps]);
   const completedCustoms = requiredCustoms.filter((item) => item.completed).length;
 
@@ -142,6 +160,7 @@ export function JobFileWorkspace({
       const data = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok) throw new Error(data.error || "Could not save the Job File.");
       await refresh();
+      setSetupOpen(false);
       setNotice("Digital Job File updated.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save the Job File.");
@@ -233,86 +252,114 @@ export function JobFileWorkspace({
     finally { setDocumentBusy(false); }
   }
 
-  return <main className="min-h-screen bg-[#f4f1e9] text-[#10263f]">
-    <header className="bg-[#0b1724] px-5 py-6 text-white lg:px-8">
-      <div className="mx-auto max-w-[1600px]">
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div className="flex items-start gap-4"><Link href="/admin" className="grid h-10 w-10 place-items-center rounded-xl border border-white/15 text-white/65 hover:bg-white/10"><ArrowLeft size={16}/></Link><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#d4ad62]">KCPL Digital Job File</p><h1 className="mt-1 text-2xl font-black tracking-[-.035em]">{job.reference}</h1><p className="mt-1 text-xs text-white/45">{job.origin || "Origin"} → {job.destination || "Destination"} · {job.quote_reference}</p></div></div>
-          <div className="flex flex-wrap gap-2"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-[.1em] text-white/65">{kcplStaffRoleLabels[role]}</span><span className="rounded-full bg-[#d4ad62] px-3 py-2 text-[9px] font-black uppercase tracking-[.1em] text-[#10263f]">{shipmentStatusLabels[job.status]}</span></div>
+  return (
+    <OpsPage>
+      <OpsPageHeader
+        eyebrow="Digital Job File"
+        title={<OpsMono>{job.reference}</OpsMono>}
+        description={<span className="flex flex-wrap items-center gap-2"><strong className="text-[#5c534c]">{job.customer_name || "Customer not linked"}</strong><span>{job.origin || "Origin"}</span><ArrowRight size={12} className="text-[#c7755d]"/><span>{job.destination || "Destination"}</span></span>}
+        meta={<><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge><OpsBadge>{kcplStaffRoleLabels[role]}</OpsBadge><span>Quote <OpsMono>{job.quote_reference}</OpsMono></span><span>Updated {dateTime(job.updated_at)}</span></>}
+        actions={<><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="md">Back to shipments</Link><OpsButton variant="secondary" onClick={() => setSetupOpen((current) => !current)}><BriefcaseBusiness size={13}/>{setupOpen ? "Close setup" : "Edit handling"}</OpsButton><OpsButton variant="primary" onClick={() => refresh().catch((error) => setNotice(error instanceof Error ? error.message : "Refresh failed."))}><RefreshCw size={13}/>Refresh</OpsButton></>}
+      />
+
+      <OpsStatStrip>
+        <OpsStat label="Primary branch" value={job.primary_branch} icon={<Landmark size={13}/>} />
+        <OpsStat label="Open tasks" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<ClipboardCheck size={13}/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
+        <OpsStat label="Customs" value={`${completedCustoms}/${requiredCustoms.length}`} detail="required steps complete" icon={<ShieldCheck size={13}/>} tone={requiredCustoms.length && completedCustoms < requiredCustoms.length ? "warning" : "success"}/>
+        <OpsStat label="Documents" value={documents.length} icon={<FileText size={13}/>} />
+        <OpsStat label="ETA" value={dateLabel(job.eta)} icon={<CalendarDays size={13}/>} />
+        <OpsStat label="Priority" value={jobPriorityLabels[job.priority]} icon={<BriefcaseBusiness size={13}/>} tone={job.priority === "urgent" ? "danger" : job.priority === "high" ? "warning" : "neutral"}/>
+      </OpsStatStrip>
+
+      <div className="ops-content-wide ops-stack">
+        {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("failed") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
+
+        {setupOpen ? <OpsSurface eyebrow="Handling setup" title="Ownership, branches & private instructions" description="Edit the operational spine of this file. Changes stay internal to KCPL.">
+          <form onSubmit={saveSetup} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <OpsField label="Primary branch"><select disabled={!canManageBranches} value={draft.primaryBranch} onChange={(event) => setDraft({ ...draft, primaryBranch: event.target.value as KcplBranch })}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+            <OpsField label="Priority"><select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as JobPriority })}>{jobPriorities.map((priority) => <option key={priority} value={priority}>{jobPriorityLabels[priority]}</option>)}</select></OpsField>
+            <OpsField label="Internal reference"><input value={draft.internalReference} onChange={(event) => setDraft({ ...draft, internalReference: event.target.value })} placeholder="Optional internal file/ref"/></OpsField>
+            <OpsField label="Assigned staff"><input value={draft.assignedToName} onChange={(event) => setDraft({ ...draft, assignedToName: event.target.value })} placeholder="Staff name"/></OpsField>
+            <OpsField label="Staff email"><input type="email" value={draft.assignedToEmail} onChange={(event) => setDraft({ ...draft, assignedToEmail: event.target.value })}/></OpsField>
+            <OpsField label="Current handling"><div className="ops-input flex items-center">{job.current_location || "Location not updated"}</div></OpsField>
+            <div className="md:col-span-2 xl:col-span-3"><p className="mb-2 text-[9px] font-bold uppercase tracking-[.09em] text-[#9c928a]">Handling branches</p><div className="flex flex-wrap gap-2">{kcplBranches.map((branch) => <button type="button" key={branch} disabled={!canManageBranches} onClick={() => toggleHandlingBranch(branch)} className="ops-badge disabled:opacity-60" data-tone={draft.handlingBranches.includes(branch) ? "accent" : "neutral"}>{draft.handlingBranches.includes(branch) ? <Check size={10}/> : null}{branch}</button>)}</div></div>
+            <OpsField label="Internal operating notes" className="md:col-span-2 xl:col-span-3"><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} placeholder="Private handling instructions, counterpart details, exceptions, branch handoff context…"/></OpsField>
+            <div className="flex gap-2 md:col-span-2 xl:col-span-3"><OpsButton variant="primary" disabled={busy}>{busy ? "Saving…" : "Save handling"}</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setSetupOpen(false)}>Cancel</OpsButton></div>
+          </form>
+        </OpsSurface> : null}
+
+        <div className="ops-grid-main">
+          <div className="ops-stack">
+            <OpsSurface eyebrow="Work queue" title="Operational tasks" description="Every unfinished action for this shipment, kept beside the record it belongs to." action={<OpsButton variant="secondary" size="sm" onClick={() => setTaskOpen((value) => !value)}><Plus size={12}/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>
+              {taskOpen ? <form onSubmit={addTask} className="mb-4 grid gap-3 rounded-[14px] border border-[#ebe3dc] bg-[#faf7f4] p-4 sm:grid-cols-2">
+                <OpsField label="Task"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField>
+                <OpsField label="Branch"><select value={task.branch} onChange={(event) => setTask({ ...task, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+                <OpsField label="Due"><input type="datetime-local" value={task.dueAt} onChange={(event) => setTask({ ...task, dueAt: event.target.value })}/></OpsField>
+                <OpsField label="Assigned to"><input value={task.assignedToName} onChange={(event) => setTask({ ...task, assignedToName: event.target.value })}/></OpsField>
+                <OpsField label="Detail" className="sm:col-span-2"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField>
+                <div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Create task</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div>
+              </form> : null}
+              {job.tasks.length ? <div className="divide-y divide-[#eee7e1]">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</div> : <OpsEmptyState icon={<ClipboardCheck size={18}/>} title="No operational tasks yet" description="Add work here when a shipment needs an owner, a due time or a follow-up."/>}
+            </OpsSurface>
+
+            <OpsSurface eyebrow="Clearance workspace" title="Customs & clearance" description="Required steps stay visible until cleared, without turning the job file into a compliance spreadsheet." action={<OpsButton variant="secondary" size="sm" onClick={() => setCustomsOpen((value) => !value)}><Plus size={12}/>{customsOpen ? "Close" : "Add step"}</OpsButton>}>
+              {requiredCustoms.length ? <div className="mb-4 rounded-[13px] border border-[#ebe3dc] bg-[#faf7f4] p-3"><div className="flex items-center justify-between gap-3"><span className="text-[9px] font-bold text-[#6c625b]">Required clearance progress</span><span className="text-[9px] font-semibold text-[#928880]">{completedCustoms} of {requiredCustoms.length}</span></div><div className="mt-2"><OpsProgress value={completedCustoms} max={Math.max(requiredCustoms.length, 1)} tone={completedCustoms === requiredCustoms.length ? "success" : "warning"}/></div></div> : null}
+              {customsOpen ? <form onSubmit={addCustoms} className="mb-4 grid gap-3 rounded-[14px] border border-[#ebe3dc] bg-[#faf7f4] p-4 sm:grid-cols-2">
+                <OpsField label="Clearance step"><input required value={customs.title} onChange={(event) => setCustoms({ ...customs, title: event.target.value })}/></OpsField>
+                <OpsField label="Branch"><select value={customs.branch} onChange={(event) => setCustoms({ ...customs, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+                <OpsField label="Detail" className="sm:col-span-2"><textarea value={customs.detail} onChange={(event) => setCustoms({ ...customs, detail: event.target.value })}/></OpsField>
+                <label className="flex items-center gap-2 text-[10px] font-semibold text-[#675d56]"><input type="checkbox" checked={customs.required} onChange={(event) => setCustoms({ ...customs, required: event.target.checked })}/> Required before clearance</label>
+                <div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Add clearance step</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setCustomsOpen(false)}>Cancel</OpsButton></div>
+              </form> : null}
+              {job.customs_steps.length ? <div className="divide-y divide-[#eee7e1]">{job.customs_steps.map((item) => <CustomsRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_customs", stepId: item.id, completed: !item.completed })}/>)}</div> : <OpsEmptyState icon={<ShieldCheck size={18}/>} title="No customs checklist yet" description="Add only the clearance steps this movement actually requires."/>}
+            </OpsSurface>
+
+            <OpsSurface eyebrow="Private file note" title="Operating context" description="The running context that should follow this movement from branch to branch.">
+              {job.internal_notes ? <p className="whitespace-pre-wrap text-[11px] leading-6 text-[#655c54]">{job.internal_notes}</p> : <OpsEmptyState title="No internal operating note" description="Use Edit handling above to add branch handoff context, counterpart instructions or exceptional handling notes."/>}
+            </OpsSurface>
+          </div>
+
+          <aside className="ops-stack xl:sticky xl:top-[76px]">
+            <OpsSurface eyebrow="Shipment identity" title={job.customer_name || "Unlinked customer"} description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4"><Fact icon={<UserRound size={12}/>} label="Customer" value={job.customer_name || "Not linked"}/><Fact label="Quote" value={job.quote_reference} mono/><Fact label="Mode" value={job.mode || "Not set"}/><Fact label="Carrier" value={job.carrier || "Not assigned"}/><Fact label="Carrier ref" value={job.carrier_reference || "Not assigned"} mono/><Fact icon={<MapPin size={12}/>} label="Current location" value={job.current_location || "Not updated"}/><Fact icon={<Landmark size={12}/>} label="Primary branch" value={job.primary_branch}/><Fact icon={<UsersRound size={12}/>} label="Owner" value={job.assigned_to_name || job.assigned_to_email || "Unassigned"}/></div>
+              <div className="mt-4 flex flex-wrap gap-2">{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Customer 360</Link> : null}<Link href={`/admin/jobs/${encodeURIComponent(job.reference)}/profitability`} className="ops-button" data-variant="ghost" data-size="sm">Profitability</Link></div>
+            </OpsSurface>
+
+            <OpsSurface eyebrow="Document vault" title="Shipment documents" description="Private Firebase Storage files attached to this movement." action={<span className="text-[9px] font-semibold text-[#938981]">{documents.length} files</span>}>
+              {!storageAvailable ? <OpsNotice tone="warning">Firebase Storage is unavailable for this deployment.</OpsNotice> : null}
+              <form onSubmit={uploadDocument} className="mt-3 grid gap-3 rounded-[13px] border border-[#ebe3dc] bg-[#faf7f4] p-3">
+                <OpsField label="Document type"><select name="documentType" defaultValue="other">{shipmentDocumentTypes.map((type) => <option key={type} value={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></OpsField>
+                <OpsField label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField>
+                <OpsButton variant="primary" size="sm" disabled={documentBusy || !storageAvailable}><Upload size={12}/>{documentBusy ? "Uploading…" : "Upload document"}</OpsButton>
+              </form>
+              <div className="mt-3 divide-y divide-[#eee7e1]">{documentsLoading ? <p className="py-4 text-[10px] text-[#928880]">Loading documents…</p> : documents.length ? documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} onDelete={() => deleteDocument(document)}/>) : <OpsEmptyState icon={<FileText size={17}/>} title="No documents yet" description="Upload AWBs, BLs, invoices, packing lists and clearance documents here."/>}</div>
+            </OpsSurface>
+
+            {job.can_view_costs ? <OpsSurface eyebrow="Commercial control" title="Job costs" description="Internal only. Cost data never appears to operations roles without permission." action={<OpsButton variant="secondary" size="sm" onClick={() => setCostOpen((value) => !value)}><Plus size={12}/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
+              {Object.keys(job.cost_totals).length ? <div className="grid grid-cols-2 gap-2">{Object.entries(job.cost_totals).map(([currency, total]) => <div key={currency} className="rounded-[12px] border border-[#ebe3dc] bg-[#faf7f4] p-3"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{currency} costs</p><p className="mt-1.5 text-[13px] font-[720] text-[#514840]">{money(total ?? 0, currency)}</p>{job.profit_totals[currency as CrmCurrency] !== undefined ? <p className="mt-1 text-[8px] text-[#8d837b]">Profit {money(job.profit_totals[currency as CrmCurrency] ?? 0, currency)}</p> : null}</div>)}</div> : null}
+              {costOpen ? <form onSubmit={addCost} className="mt-3 grid gap-3 rounded-[13px] border border-[#ebe3dc] bg-[#faf7f4] p-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Vendor"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="grid grid-cols-[1fr_.7fr] gap-2"><OpsField label="Amount"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><OpsButton variant="primary" size="sm" disabled={busy}>Save cost</OpsButton></form> : null}
+              <div className="mt-3 divide-y divide-[#eee7e1]">{job.costs.length ? job.costs.map((item) => <div key={item.id} className="flex items-start justify-between gap-4 py-3"><div className="min-w-0"><p className="truncate text-[10px] font-bold text-[#514840]">{item.label}</p><p className="mt-1 text-[8px] text-[#9a9088]">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</p></div><strong className="shrink-0 text-[10px] text-[#514840]">{money(item.amount, item.currency)}</strong></div>) : <OpsEmptyState icon={<WalletCards size={17}/>} title="No costs recorded" description="Add supplier, freight, customs and handling costs here."/>}</div>
+            </OpsSurface> : <OpsSurface eyebrow="Commercial controls" title="Cost data restricted" description="Your role can operate this shipment, but commercial cost data is intentionally withheld from the browser."><div className="flex items-start gap-3 rounded-[13px] bg-[#faf7f4] p-3 text-[#756b63]"><Landmark size={15} className="mt-0.5 shrink-0 text-[#b77861]"/><p className="text-[10px] leading-5">You still have full access to the operational Job File, tasks, customs and documents allowed by your role.</p></div></OpsSurface>}
+          </aside>
         </div>
       </div>
-    </header>
-
-    <section className="border-b border-black/10 bg-[#10263f] px-5 pb-5 text-white lg:px-8">
-      <div className="mx-auto grid max-w-[1600px] grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <Metric label="Primary branch" value={job.primary_branch} icon={<Landmark size={14}/>}/>
-        <Metric label="Open tasks" value={String(openTasks.length)} icon={<ClipboardCheck size={14}/>}/>
-        <Metric label="Customs" value={`${completedCustoms}/${requiredCustoms.length}`} icon={<ShieldCheck size={14}/>}/>
-        <Metric label="Documents" value={String(documents.length)} icon={<FileText size={14}/>}/>
-        <Metric label="ETA" value={dateLabel(job.eta)} icon={<MapPin size={14}/>}/>
-        <Metric label="Priority" value={jobPriorityLabels[job.priority]} icon={<BriefcaseBusiness size={14}/>} accent={job.priority !== "standard"}/>
-      </div>
-    </section>
-
-    <div className="mx-auto max-w-[1600px] p-5 lg:p-8">
-      {notice ? <div className="mb-5 flex items-center justify-between rounded-2xl border border-[#d4ad62]/30 bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#6d5427]"><span>{notice}</span><button type="button" onClick={() => refresh().catch(() => undefined)}><RefreshCw size={14}/></button></div> : null}
-
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
-        <div className="space-y-6">
-          <Panel title="Job control" detail="Internal ownership, branch handoffs and handling instructions." icon={<BriefcaseBusiness size={17}/> }>
-            <form onSubmit={saveSetup} className="grid gap-4 sm:grid-cols-2">
-              <Field label="Primary branch"><select disabled={!canManageBranches} className="job-input disabled:opacity-60" value={draft.primaryBranch} onChange={(event) => setDraft({ ...draft, primaryBranch: event.target.value as KcplBranch })}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></Field>
-              <Field label="Priority"><select className="job-input" value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as JobPriority })}>{jobPriorities.map((priority) => <option key={priority} value={priority}>{jobPriorityLabels[priority]}</option>)}</select></Field>
-              <Field label="Assigned staff"><input className="job-input" value={draft.assignedToName} onChange={(event) => setDraft({ ...draft, assignedToName: event.target.value })} placeholder="Staff name"/></Field>
-              <Field label="Staff email"><input type="email" className="job-input" value={draft.assignedToEmail} onChange={(event) => setDraft({ ...draft, assignedToEmail: event.target.value })}/></Field>
-              <Field label="Internal job reference"><input className="job-input" value={draft.internalReference} onChange={(event) => setDraft({ ...draft, internalReference: event.target.value })} placeholder="Optional internal file/ref"/></Field>
-              <Field label="Current handling"><div className="job-input bg-[#faf9f5]">{job.current_location || "Location not updated"}</div></Field>
-              {canManageBranches ? <div className="sm:col-span-2"><p className="mb-2 text-[9px] font-black uppercase tracking-[.13em] text-black/40">Handling branches</p><div className="flex flex-wrap gap-2">{kcplBranches.map((branch) => <button type="button" key={branch} onClick={() => toggleHandlingBranch(branch)} className={`rounded-full border px-3 py-2 text-[10px] font-black ${draft.handlingBranches.includes(branch) ? "border-[#10263f] bg-[#10263f] text-white" : "border-black/10 bg-[#faf9f5] text-black/45"}`}>{branch}</button>)}</div></div> : <div className="sm:col-span-2 flex flex-wrap gap-2">{job.handling_branches.map((branch) => <span key={branch} className="rounded-full bg-[#f4f1e9] px-3 py-2 text-[10px] font-black">{branch}</span>)}</div>}
-              <div className="sm:col-span-2"><Field label="Internal operating notes"><textarea className="job-input min-h-28 resize-y" value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} placeholder="Private handling instructions, counterpart details, exceptions, branch handoff context…"/></Field></div>
-              <div className="sm:col-span-2"><button disabled={busy} className="rounded-xl bg-[#10263f] px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busy ? "Saving…" : "Save Job File"}</button></div>
-            </form>
-          </Panel>
-
-          <Panel title="Operational tasks" detail="Internal work queue for this shipment." icon={<ClipboardCheck size={17}/>} action="Add task" onAction={() => setTaskOpen((value) => !value)}>
-            {taskOpen ? <form onSubmit={addTask} className="mb-5 grid gap-3 rounded-2xl bg-[#faf9f5] p-4 sm:grid-cols-2"><Field label="Task"><input required className="job-input" value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></Field><Field label="Branch"><select className="job-input" value={task.branch} onChange={(event) => setTask({ ...task, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></Field><Field label="Due"><input type="datetime-local" className="job-input" value={task.dueAt} onChange={(event) => setTask({ ...task, dueAt: event.target.value })}/></Field><Field label="Assigned to"><input className="job-input" value={task.assignedToName} onChange={(event) => setTask({ ...task, assignedToName: event.target.value })}/></Field><div className="sm:col-span-2"><Field label="Detail"><textarea className="job-input min-h-20" value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></Field></div><div className="sm:col-span-2 flex gap-2"><button disabled={busy} className="rounded-xl bg-[#10263f] px-4 py-2.5 text-xs font-black text-white">Create task</button><button type="button" onClick={() => setTaskOpen(false)} className="rounded-xl border border-black/10 px-4 py-2.5 text-xs font-black">Cancel</button></div></form> : null}
-            <div className="space-y-3">{job.tasks.length ? job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>) : <Empty text="No operational tasks yet."/>}</div>
-          </Panel>
-
-          <Panel title="Customs & clearance" detail="Track required clearance steps across branches." icon={<ShieldCheck size={17}/>} action="Add step" onAction={() => setCustomsOpen((value) => !value)}>
-            {customsOpen ? <form onSubmit={addCustoms} className="mb-5 grid gap-3 rounded-2xl bg-[#faf9f5] p-4 sm:grid-cols-2"><Field label="Step"><input required className="job-input" value={customs.title} onChange={(event) => setCustoms({ ...customs, title: event.target.value })}/></Field><Field label="Branch"><select className="job-input" value={customs.branch} onChange={(event) => setCustoms({ ...customs, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></Field><div className="sm:col-span-2"><Field label="Detail"><textarea className="job-input min-h-20" value={customs.detail} onChange={(event) => setCustoms({ ...customs, detail: event.target.value })}/></Field></div><label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={customs.required} onChange={(event) => setCustoms({ ...customs, required: event.target.checked })}/> Required step</label><div className="sm:col-span-2 flex gap-2"><button disabled={busy} className="rounded-xl bg-[#10263f] px-4 py-2.5 text-xs font-black text-white">Add clearance step</button><button type="button" onClick={() => setCustomsOpen(false)} className="rounded-xl border border-black/10 px-4 py-2.5 text-xs font-black">Cancel</button></div></form> : null}
-            <div className="space-y-3">{job.customs_steps.length ? job.customs_steps.map((item) => <CustomsRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_customs", stepId: item.id, completed: !item.completed })}/>) : <Empty text="No customs checklist yet."/>}</div>
-          </Panel>
-        </div>
-
-        <aside className="space-y-6">
-          <Panel title="Job identity" detail="The operational spine of this movement." icon={<UsersRound size={17}/> }>
-            <Info label="Customer" value={job.customer_name || "Not linked"}/><Info label="Quote" value={job.quote_reference}/><Info label="Mode" value={job.mode || "Not set"}/><Info label="Carrier" value={job.carrier || "Not assigned"}/><Info label="Carrier ref" value={job.carrier_reference || "Not assigned"}/><Info label="Current location" value={job.current_location || "Not updated"}/>{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`} className="mt-4 block rounded-xl border border-black/10 px-4 py-3 text-center text-xs font-black">Open Customer 360</Link> : null}
-          </Panel>
-
-          <Panel title="Shipment documents" detail="Private Firebase Storage files for this job." icon={<FileText size={17}/> }>
-            {!storageAvailable ? <div className="mb-4 rounded-xl bg-amber-50 p-3 text-xs font-bold text-amber-800">Firebase Storage is unavailable for this deployment.</div> : null}
-            <form onSubmit={uploadDocument} className="space-y-3 rounded-2xl bg-[#faf9f5] p-4"><Field label="Document type"><select name="documentType" defaultValue="other" className="job-input">{shipmentDocumentTypes.map((type) => <option key={type} value={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></Field><Field label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" className="job-input"/></Field><button disabled={documentBusy || !storageAvailable} className="flex items-center gap-2 rounded-xl bg-[#b78a3e] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50"><Upload size={13}/>{documentBusy ? "Uploading…" : "Upload document"}</button></form>
-            <div className="mt-4 space-y-2">{documentsLoading ? <p className="text-xs text-black/40">Loading documents…</p> : documents.length ? documents.map((document) => <div key={document.id} className="rounded-xl border border-black/10 p-3"><p className="truncate text-xs font-black">{document.filename}</p><p className="mt-1 text-[9px] text-black/40">{shipmentDocumentTypeLabels[document.document_type]} · {bytes(document.size_bytes)}</p><div className="mt-2 flex gap-2"><a href={`/api/admin/shipments/${encodeURIComponent(job.reference)}/documents/${document.id}`} className="flex items-center gap-1 rounded-lg border border-black/10 px-2.5 py-1.5 text-[9px] font-black"><Download size={10}/>Download</a><button type="button" disabled={documentBusy} onClick={() => deleteDocument(document)} className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[9px] font-black text-rose-700"><Trash2 size={10}/>Delete</button></div></div>) : <Empty text="No shipment documents yet."/>}</div>
-          </Panel>
-
-          {job.can_view_costs ? <Panel title="Job costs" detail="Internal only. Hidden from Operations users." icon={<WalletCards size={17}/>} action="Add cost" onAction={() => setCostOpen((value) => !value)}>
-            {Object.keys(job.cost_totals).length ? <div className="mb-4 grid grid-cols-2 gap-2">{Object.entries(job.cost_totals).map(([currency, total]) => <div key={currency} className="rounded-xl bg-[#10263f] p-3 text-white"><p className="text-[8px] font-black uppercase tracking-[.1em] text-white/40">{currency} costs</p><p className="mt-1 text-sm font-black text-[#e0bd79]">{money(total ?? 0, currency)}</p></div>)}</div> : null}
-            {costOpen ? <form onSubmit={addCost} className="mb-4 space-y-3 rounded-2xl bg-[#faf9f5] p-4"><Field label="Category"><select className="job-input" value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></Field><Field label="Description"><input required className="job-input" value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></Field><Field label="Vendor"><input className="job-input" value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></Field><div className="grid grid-cols-[1fr_.7fr] gap-2"><Field label="Amount"><input required type="number" min="0" step="0.01" className="job-input" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></Field><Field label="Currency"><select className="job-input" value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></Field></div><Field label="Notes"><textarea className="job-input min-h-16" value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></Field><button disabled={busy} className="rounded-xl bg-[#10263f] px-4 py-2.5 text-xs font-black text-white">Save cost</button></form> : null}
-            <div className="space-y-2">{job.costs.length ? job.costs.map((item) => <div key={item.id} className="rounded-xl border border-black/10 p-3"><div className="flex justify-between gap-3"><div><p className="text-xs font-black">{item.label}</p><p className="mt-1 text-[9px] text-black/40">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}</p></div><strong className="text-xs">{money(item.amount, item.currency)}</strong></div></div>) : <Empty text="No internal costs recorded."/>}</div>
-          </Panel> : <section className="rounded-[26px] border border-black/10 bg-[#10263f] p-6 text-white"><div className="flex items-center gap-3"><Landmark size={18} className="text-[#d4ad62]"/><div><p className="text-[9px] font-black uppercase tracking-[.12em] text-[#d4ad62]">Commercial controls</p><h3 className="mt-1 text-sm font-black">Job costs restricted</h3></div></div><p className="mt-3 text-xs leading-5 text-white/50">Your role can operate this shipment, but cost data is withheld from the browser.</p></section>}
-        </aside>
-      </div>
-    </div>
-    <style jsx global>{`.job-input{width:100%;border:1px solid rgba(0,0,0,.1);border-radius:12px;background:#faf9f5;padding:10px 12px;font-size:13px;outline:none;color:#10263f}.job-input:focus{border-color:#b78a3e}`}</style>
-  </main>;
+    </OpsPage>
+  );
 }
 
-function Panel({ title, detail, icon, children, action, onAction }: { title: string; detail: string; icon: React.ReactNode; children: React.ReactNode; action?: string; onAction?: () => void }) {
-  return <section className="rounded-[26px] border border-black/10 bg-white p-6 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex items-start gap-3"><span className="rounded-xl bg-[#10263f]/7 p-2.5 text-[#10263f]">{icon}</span><div><h2 className="text-base font-black">{title}</h2><p className="mt-1 text-xs leading-5 text-black/45">{detail}</p></div></div>{action && onAction ? <button type="button" onClick={onAction} className="flex items-center gap-1.5 rounded-xl border border-black/10 bg-[#faf9f5] px-3 py-2 text-[10px] font-black"><Plus size={12}/>{action}</button> : null}</div><div className="mt-5">{children}</div></section>;
+function Fact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: string; mono?: boolean }) {
+  return <div><p className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{icon}{label}</p><p className="mt-1.5 break-words text-[10px] font-semibold text-[#5b524b]">{mono ? <OpsMono>{value}</OpsMono> : value}</p></div>;
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.12em] text-black/40">{label}</span>{children}</label>; }
-function Metric({ label, value, icon, accent = false }: { label: string; value: string; icon: React.ReactNode; accent?: boolean }) { return <div className={`rounded-2xl border p-4 ${accent ? "border-[#d4ad62]/40 bg-[#d4ad62]/10" : "border-white/10 bg-white/[.035]"}`}><div className="flex items-center gap-2 text-white/40">{icon}<span className="text-[8px] font-black uppercase tracking-[.12em]">{label}</span></div><p className={`mt-2 truncate text-sm font-black ${accent ? "text-[#e0bd79]" : "text-white"}`}>{value}</p></div>; }
-function Info({ label, value }: { label: string; value: string }) { return <div className="flex items-start justify-between gap-4 border-b border-black/10 py-3 text-xs"><span className="text-black/40">{label}</span><strong className="max-w-[65%] text-right">{value}</strong></div>; }
-function Empty({ text }: { text: string }) { return <div className="rounded-xl border border-dashed border-black/15 bg-[#faf9f5] p-4 text-xs text-black/40">{text}</div>; }
-function TaskRow({ item, busy, onToggle }: { item: JobTask; busy: boolean; onToggle: () => void }) { return <div className={`rounded-2xl border p-4 ${item.completed ? "border-black/5 bg-black/[.025] opacity-60" : "border-black/10"}`}><div className="flex items-start gap-3"><button type="button" disabled={busy} onClick={onToggle} className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border ${item.completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20"}`}>{item.completed ? <Check size={12}/> : null}</button><div className="min-w-0 flex-1"><div className="flex flex-wrap justify-between gap-2"><strong className={item.completed ? "text-sm line-through" : "text-sm"}>{item.title}</strong><span className="rounded-full bg-[#f4f1e9] px-2 py-1 text-[8px] font-black">{item.branch}</span></div>{item.detail ? <p className="mt-1 text-xs leading-5 text-black/50">{item.detail}</p> : null}<p className="mt-2 text-[9px] font-bold text-black/35">{item.assigned_to_name || "Unassigned"} · {item.due_at ? `Due ${dateLabel(item.due_at)}` : "No due date"}</p></div></div></div>; }
-function CustomsRow({ item, busy, onToggle }: { item: CustomsStep; busy: boolean; onToggle: () => void }) { return <div className={`rounded-2xl border p-4 ${item.completed ? "border-emerald-200 bg-emerald-50/40" : "border-black/10"}`}><div className="flex items-start gap-3"><button type="button" disabled={busy} onClick={onToggle} className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border ${item.completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20"}`}>{item.completed ? <Check size={12}/> : null}</button><div className="min-w-0 flex-1"><div className="flex flex-wrap justify-between gap-2"><strong className="text-sm">{item.title}</strong><div className="flex gap-1"><span className="rounded-full bg-[#f4f1e9] px-2 py-1 text-[8px] font-black">{item.branch}</span>{item.required ? <span className="rounded-full bg-amber-50 px-2 py-1 text-[8px] font-black text-amber-700">Required</span> : null}</div></div>{item.detail ? <p className="mt-1 text-xs leading-5 text-black/50">{item.detail}</p> : null}</div></div></div>; }
+
+function TaskRow({ item, busy, onToggle }: { item: JobTask; busy: boolean; onToggle: () => void }) {
+  const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < Date.now();
+  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : overdue ? "border-[#dda9aa] bg-[#fff0f0] text-transparent" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84] line-through" : "text-[#514840]"}`}>{item.title}</strong>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}<OpsBadge>{item.branch}</OpsBadge></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 text-[8px] text-[#9f958d]">{item.assigned_to_name || item.assigned_to_email || "Unassigned"}{item.due_at ? ` · due ${dateTime(item.due_at)}` : " · no due time"}</p></div></div>;
+}
+
+function CustomsRow({ item, busy, onToggle }: { item: CustomsStep; busy: boolean; onToggle: () => void }) {
+  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84]" : "text-[#514840]"}`}>{item.title}</strong><OpsBadge tone={item.required ? "warning" : "neutral"}>{item.required ? "Required" : "Optional"}</OpsBadge><OpsBadge>{item.branch}</OpsBadge></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 text-[8px] text-[#9f958d]">{item.completed ? `Cleared ${dateTime(item.completed_at)}${item.completed_by ? ` by ${item.completed_by}` : ""}` : `Added ${dateTime(item.created_at)}`}</p></div></div>;
+}
+
+function DocumentRow({ document, jobReference, documentBusy, onDelete }: { document: ShipmentDocument; jobReference: string; documentBusy: boolean; onDelete: () => void }) {
+  return <div className="flex items-start gap-3 py-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#f4eee9] text-[#9b745f]"><FileText size={14}/></span><div className="min-w-0 flex-1"><p className="truncate text-[10px] font-bold text-[#514840]">{document.filename}</p><p className="mt-1 text-[8px] text-[#9b9189]">{shipmentDocumentTypeLabels[document.document_type]} · {bytes(document.size_bytes)} · {dateTime(document.uploaded_at)}</p><div className="mt-2 flex flex-wrap gap-1.5"><a href={`/api/admin/shipments/${encodeURIComponent(jobReference)}/documents/${document.id}`} className="ops-button" data-variant="ghost" data-size="sm"><Download size={10}/>Download</a><button type="button" disabled={documentBusy} onClick={onDelete} className="ops-button" data-variant="danger" data-size="sm"><Trash2 size={10}/>Delete</button></div></div></div>;
+}
