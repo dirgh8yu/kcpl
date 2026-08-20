@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
+import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
 import { listFinanceDashboard } from "./finance.server";
@@ -15,7 +16,17 @@ export default async function FinancePage() {
   if (!staff.permissions.canManageFinance) return <Gate title="Finance access is restricted." detail="Accounts Receivable is available to Management and Accounts roles only."/>;
   const dashboard = await listFinanceDashboard(staff);
   if (!dashboard) return <Gate title="Finance is unavailable." detail="The Firestore finance backend is not available for this deployment."/>;
-  return <><FinanceWorkspace dashboard={dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/><Link href="/admin/payables" className="fixed bottom-5 left-5 z-50 rounded-2xl bg-[#b78a3e] px-4 py-3 text-[10px] font-black uppercase tracking-[.1em] text-white shadow-lg">Accounts Payable</Link></>;
+
+  return (
+    <OperationsShell
+      userName={access.user.displayName}
+      canManageStaff={staff.permissions.canManageStaff}
+      canManageFinance={staff.permissions.canManageFinance}
+      isManagement={staff.permissions.role === "management"}
+    >
+      <FinanceWorkspace dashboard={dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
