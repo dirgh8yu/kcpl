@@ -15,12 +15,12 @@ export async function GET() {
 
   try {
     const snapshot = await getNrbForexSnapshot();
-    const supported = new Set(crmCurrencies.filter((currency) => currency !== "NPR"));
+    const supported = new Set<string>(crmCurrencies.filter((currency) => currency !== "NPR"));
     return json({
       ok: true,
       snapshot: {
         ...snapshot,
-        rates: snapshot.rates.filter((rate) => supported.has(rate.currency as (typeof crmCurrencies)[number])),
+        rates: snapshot.rates.filter((rate) => supported.has(rate.currency)),
       },
       disclaimer: "NRB reference rates only. Commercial banks and actual settlement rates may differ.",
     });
