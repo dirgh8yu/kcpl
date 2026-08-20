@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, ClipboardCheck, FileWarning } from "lucide-react";
+import type { ReactNode } from "react";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
 import { getStaffContext } from "../../staff-directory.server";
@@ -45,7 +46,7 @@ export default async function DocumentChecklistsPage({
           <div>
             <div className="flex items-center gap-2 text-[#b78a3e]"><ClipboardCheck size={16}/><span className="text-[10px] font-black uppercase tracking-[.16em]">KCPL Document Control</span></div>
             <h1 className="mt-2 text-2xl font-black tracking-[-.03em] text-[#10263f]">Document checklists & missing-document alerts</h1>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-black/50">KCPL automatically compares each shipment's required document set with the current files in the private Document Vault. Uploading the right category clears the missing status automatically.</p>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-black/50">KCPL automatically compares each shipment document requirement with the current files in the private Document Vault. Uploading the right category clears the missing status automatically.</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/admin/documents" className="rounded-xl border border-black/10 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-[.08em] text-[#30485e]">Open Vault</Link>
@@ -103,7 +104,7 @@ export default async function DocumentChecklistsPage({
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return <div className="bg-white px-5 py-4"><div className="flex items-center gap-2 text-[#b78a3e]">{icon}<p className="text-[9px] font-black uppercase tracking-[.1em] text-black/40">{label}</p></div><p className="mt-2 text-2xl font-black tabular-nums text-[#10263f]">{value}</p></div>;
 }
 
