@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { inMemoryPersistence, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { firebaseClientAuth, firebaseClientConfigured } from "../firebase-client";
+import { firebaseClientAuth } from "../firebase-client";
 
 export function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -16,7 +16,6 @@ export function AdminLogin() {
     setError("");
 
     try {
-      if (!firebaseClientConfigured()) throw new Error("Firebase web app configuration is missing.");
       const auth = firebaseClientAuth();
       await setPersistence(auth, inMemoryPersistence);
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
