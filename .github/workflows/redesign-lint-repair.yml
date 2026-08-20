@@ -1,0 +1,148 @@
+name: KCPL redesign lint repair
+
+on:
+  push:
+    branches:
+      - redesign/operations-v3
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout redesign branch
+        uses: actions/checkout@v4
+        with:
+          ref: redesign/operations-v3
+
+      - name: Apply deterministic UI quality repairs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str, expected: int = 1):
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f"{path}: expected {expected} occurrences, found {count}: {old[:100]!r}")
+              file.write_text(text.replace(old, new, expected))
+
+          # Enquiry desk: loading begins from the user's selection event, not synchronously inside the fetch effect.
+          replace(
+              "app/admin/admin-dashboard.tsx",
+              '    setLoading(true);\n    fetch(`/api/admin/quotes/${encodeURIComponent(selectedReference)}`, { cache: "no-store", signal: controller.signal })',
+              '    fetch(`/api/admin/quotes/${encodeURIComponent(selectedReference)}`, { cache: "no-store", signal: controller.signal })',
+          )
+          replace(
+              "app/admin/admin-dashboard.tsx",
+              '    setDetail(null); setNotice(""); setActiveTab("overview"); setSelectedReference(reference);',
+              '    setLoading(true); setDetail(null); setNotice(""); setActiveTab("overview"); setSelectedReference(reference);',
+          )
+
+          # Operations Home: restore saved layout after hydration via an animation-frame callback.
+          replace(
+              "app/admin/command-centre/command-centre-workspace.tsx",
+              '''  useEffect(() => {\n    const raw = window.localStorage.getItem("kcpl-ops-home-sections");\n    if (!raw) return;\n    try {\n      setSections({ ...defaultSections, ...JSON.parse(raw) });\n    } catch {\n      window.localStorage.removeItem("kcpl-ops-home-sections");\n    }\n  }, []);''',
+              '''  useEffect(() => {\n    const frame = window.requestAnimationFrame(() => {\n      const raw = window.localStorage.getItem("kcpl-ops-home-sections");\n      if (!raw) return;\n      try {\n        setSections({ ...defaultSections, ...JSON.parse(raw) });\n      } catch {\n        window.localStorage.removeItem("kcpl-ops-home-sections");\n      }\n    });\n    return () => window.cancelAnimationFrame(frame);\n  }, []);''',
+          )
+
+          # Customer 360: remove stale icon import.
+          replace("app/admin/crm/[id]/customer-360-workspace.tsx", "  Clock3,\n", "")
+
+          # Digital Job File: remove stale imports and use a server-provided render timestamp for overdue state.
+          replace("app/admin/jobs/[reference]/job-file-workspace.tsx", "  CheckCircle2,\n", "")
+          replace("app/admin/jobs/[reference]/job-file-workspace.tsx", "  X,\n", "")
+          replace(
+              "app/admin/jobs/[reference]/job-file-workspace.tsx",
+              '''  currentUserEmail,\n}: {''',
+              '''  currentUserEmail,\n  nowIso,\n}: {''',
+          )
+          replace(
+              "app/admin/jobs/[reference]/job-file-workspace.tsx",
+              '''  currentUserEmail: string;\n}) {''',
+              '''  currentUserEmail: string;\n  nowIso: string;\n}) {''',
+          )
+          replace(
+              "app/admin/jobs/[reference]/job-file-workspace.tsx",
+              '''  const openTasks = useMemo(() => job.tasks.filter((item) => !item.completed), [job.tasks]);\n  const overdueTasks = useMemo(() => openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < Date.now()), [openTasks]);''',
+              '''  const nowMs = Date.parse(nowIso);\n  const openTasks = useMemo(() => job.tasks.filter((item) => !item.completed), [job.tasks]);\n  const overdueTasks = useMemo(() => openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < nowMs), [nowMs, openTasks]);''',
+          )
+          replace(
+              "app/admin/jobs/[reference]/job-file-workspace.tsx",
+              '''<TaskRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>''',
+              '''<TaskRow key={item.id} item={item} busy={busy} nowMs={nowMs} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>''',
+          )
+          replace(
+              "app/admin/jobs/[reference]/job-file-workspace.tsx",
+              '''function TaskRow({ item, busy, onToggle }: { item: JobTask; busy: boolean; onToggle: () => void }) {\n  const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < Date.now();''',
+              '''function TaskRow({ item, busy, nowMs, onToggle }: { item: JobTask; busy: boolean; nowMs: number; onToggle: () => void }) {\n  const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < nowMs;''',
+          )
+          replace(
+              "app/admin/jobs/[reference]/page.tsx",
+              '''        currentUserEmail={access.user.email}\n      />''',
+              '''        currentUserEmail={access.user.email}\n        nowIso={new Date().toISOString()}\n      />''',
+          )
+
+          # Market estimate and partner register: remove stale imports.
+          replace(
+              "app/admin/market-estimate/page.tsx",
+              'import { OpsBadge, OpsEmptyState, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";',
+              'import { OpsBadge, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";',
+          )
+          replace(
+              "app/admin/partners/partners-workspace.tsx",
+              'import { BadgeCheck, Building2, Globe2, Handshake, Mail, MapPin, Pencil, Phone, Plus, Star, TriangleAlert, X } from "lucide-react";',
+              'import { BadgeCheck, Building2, Globe2, Handshake, Mail, Pencil, Phone, Plus, Star, TriangleAlert, X } from "lucide-react";',
+          )
+          replace(
+              "app/admin/partners/partners-workspace.tsx",
+              'import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";',
+              'import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";',
+          )
+
+          # Shipments: restore saved views/columns after hydration and avoid autofocus accessibility issues.
+          replace("app/admin/shipments/shipments-workspace.tsx", "  Settings2,\n", "")
+          replace(
+              "app/admin/shipments/shipments-workspace.tsx",
+              '''  useEffect(() => {\n    setSavedViews(readSavedViews());\n    try {\n      const stored = JSON.parse(window.localStorage.getItem("kcpl-shipment-columns") || "null") as Partial<Record<ColumnKey, boolean>> | null;\n      if (stored) setColumns({ ...defaultColumns, ...stored });\n    } catch { window.localStorage.removeItem("kcpl-shipment-columns"); }\n  }, []);''',
+              '''  useEffect(() => {\n    const frame = window.requestAnimationFrame(() => {\n      setSavedViews(readSavedViews());\n      try {\n        const stored = JSON.parse(window.localStorage.getItem("kcpl-shipment-columns") || "null") as Partial<Record<ColumnKey, boolean>> | null;\n        if (stored) setColumns({ ...defaultColumns, ...stored });\n      } catch { window.localStorage.removeItem("kcpl-shipment-columns"); }\n    });\n    return () => window.cancelAnimationFrame(frame);\n  }, []);''',
+          )
+          replace("app/admin/shipments/shipments-workspace.tsx", '<input autoFocus className="ops-input mt-2"', '<input className="ops-input mt-2"')
+
+          # Global shell: hydrate persisted navigation state asynchronously and use a real backdrop button for the palette.
+          replace(
+              "app/admin/operations-shell.tsx",
+              '''  useEffect(() => {\n    setCollapsed(window.localStorage.getItem("kcpl-ops-sidebar-collapsed") === "1");\n    setFavorites(safeStoredWorkspaces("kcpl-ops-favorites"));\n    setRecents(safeStoredWorkspaces("kcpl-ops-recents"));\n  }, []);''',
+              '''  useEffect(() => {\n    const frame = window.requestAnimationFrame(() => {\n      setCollapsed(window.localStorage.getItem("kcpl-ops-sidebar-collapsed") === "1");\n      setFavorites(safeStoredWorkspaces("kcpl-ops-favorites"));\n      setRecents(safeStoredWorkspaces("kcpl-ops-recents"));\n    });\n    return () => window.cancelAnimationFrame(frame);\n  }, []);''',
+          )
+          replace(
+              "app/admin/operations-shell.tsx",
+              '''  useEffect(() => {\n    if (!activeItem) return;\n    const current = { href: activeItem.href, label: activeItem.label };\n    const next = [current, ...safeStoredWorkspaces("kcpl-ops-recents").filter((item) => item.href !== current.href)].slice(0, 5);\n    window.localStorage.setItem("kcpl-ops-recents", JSON.stringify(next));\n    setRecents(next);\n  }, [activeItem?.href, activeItem?.label]);''',
+              '''  useEffect(() => {\n    if (!activeItem) return;\n    const current = { href: activeItem.href, label: activeItem.label };\n    const next = [current, ...safeStoredWorkspaces("kcpl-ops-recents").filter((item) => item.href !== current.href)].slice(0, 5);\n    window.localStorage.setItem("kcpl-ops-recents", JSON.stringify(next));\n    const frame = window.requestAnimationFrame(() => setRecents(next));\n    return () => window.cancelAnimationFrame(frame);\n  }, [activeItem]);''',
+          )
+          replace(
+              "app/admin/operations-shell.tsx",
+              '''      {paletteOpen ? <div className="fixed inset-0 z-[90] flex items-start justify-center bg-[#6a574b]/15 px-3 pt-[10vh] backdrop-blur-[4px]" onMouseDown={(event) => { if (event.target === event.currentTarget) setPaletteOpen(false); }}>\n        <div className="w-full max-w-[620px] overflow-hidden rounded-[19px] border border-[#e3d9d1] bg-[#fffdfa] shadow-[0_30px_90px_rgba(72,50,36,.19)]">''',
+              '''      {paletteOpen ? <div className="fixed inset-0 z-[90] flex items-start justify-center bg-[#6a574b]/15 px-3 pt-[10vh] backdrop-blur-[4px]">\n        <button type="button" className="absolute inset-0 cursor-default" aria-label="Close command palette" onClick={() => setPaletteOpen(false)}/>\n        <div className="relative z-10 w-full max-w-[620px] overflow-hidden rounded-[19px] border border-[#e3d9d1] bg-[#fffdfa] shadow-[0_30px_90px_rgba(72,50,36,.19)]">''',
+          )
+
+          print("Applied KCPL redesign lint repairs successfully.")
+          PY
+
+      - name: Commit repairs to redesign branch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No repairs were necessary."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/admin
+          git commit -m "Fix redesign lint and hydration patterns"
+          git push origin HEAD:redesign/operations-v3
