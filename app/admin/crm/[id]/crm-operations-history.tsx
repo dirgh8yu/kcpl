@@ -52,7 +52,7 @@ function ModeIcon({ mode }: { mode: string }) {
   return <Truck size={14} />;
 }
 
-export function CrmOperationsHistoryPanel({ history }: { history: CrmOperationsHistory }) {
+export function CrmOperationsHistoryPanel({ history, showCommercial }: { history: CrmOperationsHistory; showCommercial: boolean }) {
   const hasHistory = history.quotes.length > 0 || history.shipments.length > 0;
   return (
     <section className="bg-[#f4f1e9] px-5 pb-14 lg:px-8">
@@ -76,7 +76,7 @@ export function CrmOperationsHistoryPanel({ history }: { history: CrmOperationsH
             <div className="p-6 sm:p-8 xl:border-r xl:border-black/10">
               <div className="mb-5 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><CircleDollarSign size={17} className="text-[#b78a3e]"/><h3 className="text-sm font-black">Quote history</h3></div><span className="text-[10px] font-bold text-black/35">Newest first</span></div>
               <div className="space-y-3">
-                {history.quotes.map((quote) => <QuoteHistoryRow key={quote.reference} quote={quote} />)}
+                {history.quotes.map((quote) => <QuoteHistoryRow key={quote.reference} quote={quote} showCommercial={showCommercial} />)}
               </div>
             </div>
 
@@ -93,7 +93,7 @@ export function CrmOperationsHistoryPanel({ history }: { history: CrmOperationsH
   );
 }
 
-function QuoteHistoryRow({ quote }: { quote: CrmQuoteHistoryItem }) {
+function QuoteHistoryRow({ quote, showCommercial }: { quote: CrmQuoteHistoryItem; showCommercial: boolean }) {
   const style = quoteStatusStyles[quote.status] ?? "border-black/10 bg-stone-50 text-stone-600";
   return (
     <article className="rounded-2xl border border-black/10 bg-[#faf9f5] p-4">
@@ -101,8 +101,8 @@ function QuoteHistoryRow({ quote }: { quote: CrmQuoteHistoryItem }) {
         <div><strong className="text-xs text-[#10263f]">{quote.reference}</strong><div className="mt-2 flex items-center gap-2 text-xs font-bold text-black/55"><ModeIcon mode={quote.mode}/><span>{quote.origin}</span><ArrowRight size={12}/><span>{quote.destination}</span></div></div>
         <span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[.09em] ${style}`}>{quoteStatusLabels[quote.status] ?? quote.status}</span>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-black/10 pt-3 text-[10px]">
-        <div><p className="font-black uppercase tracking-[.1em] text-black/30">Quote value</p><p className="mt-1 font-bold text-black/65">{formatMoney(quote.quoted_amount, quote.currency)}</p></div>
+      <div className={`mt-4 grid gap-3 border-t border-black/10 pt-3 text-[10px] ${showCommercial ? "grid-cols-2" : "grid-cols-1"}`}>
+        {showCommercial ? <div><p className="font-black uppercase tracking-[.1em] text-black/30">Quote value</p><p className="mt-1 font-bold text-black/65">{formatMoney(quote.quoted_amount, quote.currency)}</p></div> : null}
         <div><p className="font-black uppercase tracking-[.1em] text-black/30">Updated</p><p className="mt-1 font-bold text-black/65">{formatDate(quote.updated_at || quote.created_at)}</p></div>
       </div>
       {quote.shipment_reference ? <p className="mt-3 rounded-lg bg-white px-3 py-2 text-[10px] font-bold text-black/50">Shipment: <span className="text-[#10263f]">{quote.shipment_reference}</span></p> : null}
