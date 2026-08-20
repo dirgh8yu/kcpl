@@ -20,5 +20,10 @@
     {
       "binding": "DB"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "DOCUMENTS"
+    }
   ]
 }
