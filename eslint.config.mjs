@@ -37,7 +37,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["app/admin/crm/**/*.tsx"],
+    files: ["app/admin/crm/**/*.tsx", "app/admin/jobs/**/*.tsx"],
     rules: {
       "react/no-unknown-property": ["error", { ignore: ["jsx", "global"] }],
     },
