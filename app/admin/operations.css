@@ -85,13 +85,37 @@ button.ops-metric:hover { background: #fbfbfb; }
 .kcpl-ops input::placeholder, .kcpl-ops textarea::placeholder { color: #a3a9af !important; }
 .kcpl-ops label { color: #5d6670; }
 
-.kcpl-ops [class*="rounded-2xl"] { border-radius: 12px !important; }
+.kcpl-ops [class*="rounded-2xl"], .kcpl-ops [class*="rounded-[28px]"] { border-radius: 12px !important; }
 .kcpl-ops [class*="rounded-xl"] { border-radius: 10px !important; }
 .kcpl-ops [class*="shadow-"] { box-shadow: var(--ops-shadow-xs) !important; }
 .kcpl-ops [class*="border-[#dfe3e8]"] { border-color: var(--ops-border) !important; }
-.kcpl-ops [class*="bg-[#f5f6f7]"] { background: var(--ops-bg) !important; }
+.kcpl-ops [class*="bg-[#f5f6f7]"], .kcpl-ops [class*="bg-[#f4f1e9]"], .kcpl-ops [class*="bg-[#f3f0e7]"] { background: var(--ops-bg) !important; }
 .kcpl-ops [class*="bg-[#f8f9fa]"] { background: #fafafa !important; }
 .kcpl-ops [class*="bg-[#fafbfb]"] { background: #fbfbfb !important; }
+
+/* Compatibility layer for larger workspaces while their behaviour remains untouched. */
+.kcpl-ops main > header:not(.ops-page-header) { padding-top: 16px !important; padding-bottom: 16px !important; color: var(--ops-text) !important; }
+.kcpl-ops main > header:not(.ops-page-header) [class*="text-white"] { color: #616a73 !important; }
+.kcpl-ops main > header:not(.ops-page-header) h1,
+.kcpl-ops main > header:not(.ops-page-header) h2,
+.kcpl-ops main > header:not(.ops-page-header) strong { color: #242a30 !important; }
+.kcpl-ops main > header:not(.ops-page-header) [class*="text-[#d4ad62]"],
+.kcpl-ops main > header:not(.ops-page-header) [class*="text-[#8a6c36]"] { color: #6670a4 !important; }
+.kcpl-ops main > section[class*="bg-[#10263f]"],
+.kcpl-ops main > section[class*="bg-[#0b1724]"] { background: #fff !important; color: var(--ops-text) !important; border-color: var(--ops-border) !important; }
+.kcpl-ops main > section[class*="bg-[#10263f]"] [class*="text-white"],
+.kcpl-ops main > section[class*="bg-[#0b1724]"] [class*="text-white"] { color: #69727b !important; }
+.kcpl-ops main > section[class*="bg-[#10263f]"] [class*="border-white"],
+.kcpl-ops main > section[class*="bg-[#0b1724]"] [class*="border-white"] { border-color: var(--ops-border) !important; }
+.kcpl-ops main > section[class*="bg-[#10263f]"] [class*="bg-white"],
+.kcpl-ops main > section[class*="bg-[#0b1724]"] [class*="bg-white"] { background: #fafafa !important; }
+.kcpl-ops [class*="bg-[linear-gradient"] { background: #f8f9fa !important; color: var(--ops-text) !important; }
+.kcpl-ops [class*="bg-[linear-gradient"] [class*="text-white"] { color: #68717a !important; }
+.kcpl-ops [class*="bg-[linear-gradient"] h1,
+.kcpl-ops [class*="bg-[linear-gradient"] h2,
+.kcpl-ops [class*="bg-[linear-gradient"] strong { color: #272d33 !important; }
+.kcpl-ops [class*="hover:-translate-y"]:hover { transform: none !important; }
+.kcpl-ops [class*="tracking-[.24em]"], .kcpl-ops [class*="tracking-[.22em]"], .kcpl-ops [class*="tracking-[.2em]"] { letter-spacing: .1em !important; }
 
 .kcpl-ops .ops-dense-table thead { position: sticky; top: 0; z-index: 4; }
 .kcpl-ops .ops-dense-table th { background: #fafafa; }
