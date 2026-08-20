@@ -115,9 +115,12 @@ export function OperationsShell({
   }, [allNav, query]);
 
   useEffect(() => {
-    setCollapsed(window.localStorage.getItem("kcpl-ops-sidebar-collapsed") === "1");
-    setFavorites(safeStoredWorkspaces("kcpl-ops-favorites"));
-    setRecents(safeStoredWorkspaces("kcpl-ops-recents"));
+    const frame = window.requestAnimationFrame(() => {
+      setCollapsed(window.localStorage.getItem("kcpl-ops-sidebar-collapsed") === "1");
+      setFavorites(safeStoredWorkspaces("kcpl-ops-favorites"));
+      setRecents(safeStoredWorkspaces("kcpl-ops-recents"));
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -129,8 +132,9 @@ export function OperationsShell({
     const current = { href: activeItem.href, label: activeItem.label };
     const next = [current, ...safeStoredWorkspaces("kcpl-ops-recents").filter((item) => item.href !== current.href)].slice(0, 5);
     window.localStorage.setItem("kcpl-ops-recents", JSON.stringify(next));
-    setRecents(next);
-  }, [activeItem?.href, activeItem?.label]);
+    const frame = window.requestAnimationFrame(() => setRecents(next));
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeItem]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -240,8 +244,9 @@ export function OperationsShell({
 
       <div className={`min-w-0 pt-[58px] transition-[padding] duration-300 ${collapsed ? "lg:pl-[70px]" : "lg:pl-[236px]"}`}>{children}</div>
 
-      {paletteOpen ? <div className="fixed inset-0 z-[90] flex items-start justify-center bg-[#6a574b]/15 px-3 pt-[10vh] backdrop-blur-[4px]" onMouseDown={(event) => { if (event.target === event.currentTarget) setPaletteOpen(false); }}>
-        <div className="w-full max-w-[620px] overflow-hidden rounded-[19px] border border-[#e3d9d1] bg-[#fffdfa] shadow-[0_30px_90px_rgba(72,50,36,.19)]">
+      {paletteOpen ? <div className="fixed inset-0 z-[90] flex items-start justify-center bg-[#6a574b]/15 px-3 pt-[10vh] backdrop-blur-[4px]">
+        <button type="button" className="absolute inset-0 cursor-default" aria-label="Close command palette" onClick={() => setPaletteOpen(false)}/>
+        <div className="relative z-10 w-full max-w-[620px] overflow-hidden rounded-[19px] border border-[#e3d9d1] bg-[#fffdfa] shadow-[0_30px_90px_rgba(72,50,36,.19)]">
           <div className="flex h-14 items-center gap-3 border-b border-[#eee7e1] px-4"><Command size={16} className="text-[#d06b53]"/><input ref={searchInputRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && filteredNav[0]) navigateFromPalette(filteredNav[0].href); }} className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-[#403833] outline-none" placeholder="Search a workspace or action…"/><kbd className="rounded-md border border-[#e9e1da] bg-[#faf7f4] px-2 py-1 text-[8px] font-bold text-[#a49a92]">ESC</kbd></div>
           <div className="max-h-[62vh] overflow-y-auto p-2">
             {!query && favorites.length ? <PaletteSection title="Favourites">{favorites.map((item) => <PaletteRow key={`favorite-${item.href}`} item={allNav.find((nav) => nav.href === item.href)} fallback={item} icon={<Star size={14} fill="currentColor"/>} onOpen={navigateFromPalette}/>)}</PaletteSection> : null}

@@ -5,7 +5,6 @@ import { FormEvent, useMemo, useState } from "react";
 import {
   CalendarClock,
   Check,
-  Clock3,
   LockKeyhole,
   Mail,
   MapPin,

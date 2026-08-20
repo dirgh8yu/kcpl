@@ -7,7 +7,6 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
-  CheckCircle2,
   ClipboardCheck,
   Download,
   FileText,
@@ -21,7 +20,6 @@ import {
   UserRound,
   UsersRound,
   WalletCards,
-  X,
 } from "lucide-react";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "../../crm/crm-data";
 import {
@@ -78,12 +76,14 @@ export function JobFileWorkspace({
   canManageBranches,
   currentUserName,
   currentUserEmail,
+  nowIso,
 }: {
   initialJob: DigitalJobFile;
   role: KcplStaffRole;
   canManageBranches: boolean;
   currentUserName: string;
   currentUserEmail: string;
+  nowIso: string;
 }) {
   const [job, setJob] = useState(initialJob);
   const [busy, setBusy] = useState(false);
@@ -109,8 +109,9 @@ export function JobFileWorkspace({
   const [customs, setCustoms] = useState({ title: "", detail: "", branch: job.primary_branch, required: true });
   const [cost, setCost] = useState({ category: "freight" as JobCostCategory, label: "", vendor: "", amount: "", currency: "NPR" as CrmCurrency, notes: "" });
 
+  const nowMs = Date.parse(nowIso);
   const openTasks = useMemo(() => job.tasks.filter((item) => !item.completed), [job.tasks]);
-  const overdueTasks = useMemo(() => openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < Date.now()), [openTasks]);
+  const overdueTasks = useMemo(() => openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < nowMs), [nowMs, openTasks]);
   const requiredCustoms = useMemo(() => job.customs_steps.filter((item) => item.required), [job.customs_steps]);
   const completedCustoms = requiredCustoms.filter((item) => item.completed).length;
 
@@ -299,7 +300,7 @@ export function JobFileWorkspace({
                 <OpsField label="Detail" className="sm:col-span-2"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField>
                 <div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Create task</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div>
               </form> : null}
-              {job.tasks.length ? <div className="divide-y divide-[#eee7e1]">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</div> : <OpsEmptyState icon={<ClipboardCheck size={18}/>} title="No operational tasks yet" description="Add work here when a shipment needs an owner, a due time or a follow-up."/>}
+              {job.tasks.length ? <div className="divide-y divide-[#eee7e1]">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} nowMs={nowMs} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</div> : <OpsEmptyState icon={<ClipboardCheck size={18}/>} title="No operational tasks yet" description="Add work here when a shipment needs an owner, a due time or a follow-up."/>}
             </OpsSurface>
 
             <OpsSurface eyebrow="Clearance workspace" title="Customs & clearance" description="Required steps stay visible until cleared, without turning the job file into a compliance spreadsheet." action={<OpsButton variant="secondary" size="sm" onClick={() => setCustomsOpen((value) => !value)}><Plus size={12}/>{customsOpen ? "Close" : "Add step"}</OpsButton>}>
@@ -351,8 +352,8 @@ function Fact({ icon, label, value, mono = false }: { icon?: React.ReactNode; la
   return <div><p className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{icon}{label}</p><p className="mt-1.5 break-words text-[10px] font-semibold text-[#5b524b]">{mono ? <OpsMono>{value}</OpsMono> : value}</p></div>;
 }
 
-function TaskRow({ item, busy, onToggle }: { item: JobTask; busy: boolean; onToggle: () => void }) {
-  const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < Date.now();
+function TaskRow({ item, busy, nowMs, onToggle }: { item: JobTask; busy: boolean; nowMs: number; onToggle: () => void }) {
+  const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < nowMs;
   return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : overdue ? "border-[#dda9aa] bg-[#fff0f0] text-transparent" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84] line-through" : "text-[#514840]"}`}>{item.title}</strong>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}<OpsBadge>{item.branch}</OpsBadge></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 text-[8px] text-[#9f958d]">{item.assigned_to_name || item.assigned_to_email || "Unassigned"}{item.due_at ? ` · due ${dateTime(item.due_at)}` : " · no due time"}</p></div></div>;
 }
 

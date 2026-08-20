@@ -120,7 +120,6 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
   useEffect(() => {
     if (!selectedReference) return;
     const controller = new AbortController();
-    setLoading(true);
     fetch(`/api/admin/quotes/${encodeURIComponent(selectedReference)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const data = await response.json() as { quote?: QuoteDetail; error?: string };
@@ -138,7 +137,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
 
   function selectQuote(reference: string) {
     if (reference === selectedReference) return;
-    setDetail(null); setNotice(""); setActiveTab("overview"); setSelectedReference(reference);
+    setLoading(true); setDetail(null); setNotice(""); setActiveTab("overview"); setSelectedReference(reference);
   }
 
   async function saveQuote(event: FormEvent<HTMLFormElement>) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, Building2, Globe2, Handshake, Mail, MapPin, Pencil, Phone, Plus, Star, TriangleAlert, X } from "lucide-react";
+import { BadgeCheck, Building2, Globe2, Handshake, Mail, Pencil, Phone, Plus, Star, TriangleAlert, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { crmCurrencies, kcplBranches, type CrmCurrency } from "../crm/crm-data";
@@ -18,7 +18,7 @@ import {
   type PartnerStatus,
   type PartnerType,
 } from "./partners-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
 
 type PartnerForm = {
   id: string; displayName: string; legalName: string; types: PartnerType[]; modes: PartnerMode[]; status: PartnerStatus; preferred: boolean;

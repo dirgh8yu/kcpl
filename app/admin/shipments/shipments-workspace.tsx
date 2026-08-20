@@ -13,7 +13,6 @@ import {
   MapPin,
   PackageCheck,
   Save,
-  Settings2,
   ShieldAlert,
   SlidersHorizontal,
   UserRound,
@@ -78,11 +77,14 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
 
   useEffect(() => {
-    setSavedViews(readSavedViews());
-    try {
-      const stored = JSON.parse(window.localStorage.getItem("kcpl-shipment-columns") || "null") as Partial<Record<ColumnKey, boolean>> | null;
-      if (stored) setColumns({ ...defaultColumns, ...stored });
-    } catch { window.localStorage.removeItem("kcpl-shipment-columns"); }
+    const frame = window.requestAnimationFrame(() => {
+      setSavedViews(readSavedViews());
+      try {
+        const stored = JSON.parse(window.localStorage.getItem("kcpl-shipment-columns") || "null") as Partial<Record<ColumnKey, boolean>> | null;
+        if (stored) setColumns({ ...defaultColumns, ...stored });
+      } catch { window.localStorage.removeItem("kcpl-shipment-columns"); }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const filtered = useMemo(() => {
@@ -164,7 +166,7 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
         <OpsSurface title="Shipment queue" eyebrow="Live work" description={`${filtered.length} of ${data.jobs.length} active shipments shown.`} flush action={<div className="relative flex items-center gap-2">
           <OpsButton variant="secondary" size="sm" onClick={() => setSaveOpen((current) => !current)}><Save size={12}/>Save view</OpsButton>
           <OpsButton variant="secondary" size="sm" onClick={() => setColumnsOpen((current) => !current)}><Columns3 size={12}/>Columns</OpsButton>
-          {saveOpen ? <div className="absolute right-24 top-9 z-20 w-64 rounded-[14px] border border-[#e4dbd4] bg-[#fffdfa] p-3 shadow-[0_18px_50px_rgba(72,52,39,.14)]"><p className="text-[9px] font-bold text-[#655b53]">Save current filters</p><input autoFocus className="ops-input mt-2" value={viewName} onChange={(event) => setViewName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") saveView(); }} placeholder="e.g. Birgunj customs"/><div className="mt-2 flex justify-end gap-2"><OpsButton size="sm" variant="ghost" onClick={() => setSaveOpen(false)}>Cancel</OpsButton><OpsButton size="sm" variant="primary" onClick={saveView} disabled={!viewName.trim()}>Save</OpsButton></div></div> : null}
+          {saveOpen ? <div className="absolute right-24 top-9 z-20 w-64 rounded-[14px] border border-[#e4dbd4] bg-[#fffdfa] p-3 shadow-[0_18px_50px_rgba(72,52,39,.14)]"><p className="text-[9px] font-bold text-[#655b53]">Save current filters</p><input className="ops-input mt-2" value={viewName} onChange={(event) => setViewName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") saveView(); }} placeholder="e.g. Birgunj customs"/><div className="mt-2 flex justify-end gap-2"><OpsButton size="sm" variant="ghost" onClick={() => setSaveOpen(false)}>Cancel</OpsButton><OpsButton size="sm" variant="primary" onClick={saveView} disabled={!viewName.trim()}>Save</OpsButton></div></div> : null}
           {columnsOpen ? <div className="absolute right-0 top-9 z-20 w-56 rounded-[14px] border border-[#e4dbd4] bg-[#fffdfa] p-2 shadow-[0_18px_50px_rgba(72,52,39,.14)]"><p className="px-2 pb-1.5 pt-1 text-[8px] font-bold uppercase tracking-[.1em] text-[#aaa098]">Visible columns</p>{(Object.keys(defaultColumns) as ColumnKey[]).map((key) => <button key={key} type="button" onClick={() => toggleColumn(key)} className="flex w-full items-center gap-2 rounded-[9px] px-2 py-2 text-left text-[9px] font-semibold capitalize text-[#655b53] hover:bg-[#faf4ef]"><span className={`grid h-4 w-4 place-items-center rounded border ${columns[key] ? "border-[#e2a792] bg-[#fae9e3] text-[#bd624b]" : "border-[#e4ddd6] text-transparent"}`}><Check size={10}/></span>{key}</button>)}</div> : null}
         </div>}>
           <div className="ops-toolbar">
