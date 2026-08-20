@@ -21,6 +21,21 @@ jobs:
         with:
           node-version: 22.13.0
 
+      - name: Probe NRB API
+        shell: bash
+        run: |
+          set +e
+          URL='https://www.nrb.org.np/api/forex/v1/rates?page=1&per_page=10&from=2026-08-14&to=2026-08-20'
+          echo "Requesting $URL"
+          HTTP_CODE=$(curl -L -sS --connect-timeout 15 --max-time 30 -A 'KCPL-Operations/1.0' -H 'Accept: application/json' -D /tmp/nrb-headers.txt -o /tmp/nrb-body.txt -w '%{http_code}' "$URL")
+          echo "HTTP $HTTP_CODE"
+          echo '--- headers ---'
+          cat /tmp/nrb-headers.txt || true
+          echo '--- body ---'
+          head -c 5000 /tmp/nrb-body.txt || true
+          echo
+          exit 0
+
       - name: Install dependencies
         run: npm install
 
