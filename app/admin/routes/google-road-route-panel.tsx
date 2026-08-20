@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock3, Gauge, MapPin, Navigation, Route, TriangleAlert } from "lucide-react";
+import { Clock3, Gauge, Navigation, Route, TriangleAlert } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { GooglePlaceInput } from "./google-place-input";
 
 type Estimate = {
   provider: string;
@@ -102,14 +103,14 @@ export function GoogleRoadRoutePanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-[#8a6c36]"><Route size={15}/><p className="text-[10px] font-black uppercase tracking-[.14em]">Google road route intelligence</p></div>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-[#737f89]">Calculate truck-road distance and transit time without leaving KCPL. Add border or branch stops one per line when the route must pass through them.</p>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-[#737f89]">Start typing an origin or destination to use Google Maps place suggestions, then calculate truck-road distance and transit time. Border or branch stops can still be entered one per line.</p>
           </div>
           <span className={`rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[.08em] ${trafficAware ? "border-indigo-200 bg-indigo-50 text-indigo-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</span>
         </div>
 
         <form onSubmit={calculate} className={`mt-4 grid gap-3 ${compact ? "xl:grid-cols-[1fr_1fr_1fr_auto]" : "xl:grid-cols-[1fr_1fr_1fr_220px]"}`}>
-          <label className="block"><span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">Origin</span><div className="mt-1 flex h-10 items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 focus-within:border-[#aa8748] focus-within:bg-white"><MapPin size={13} className="text-[#9b7a40]"/><input value={origin} onChange={(event) => setOrigin(event.target.value)} className="w-full bg-transparent text-xs outline-none" placeholder="e.g. Kolkata, India" required/></div></label>
-          <label className="block"><span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">Destination</span><div className="mt-1 flex h-10 items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 focus-within:border-[#aa8748] focus-within:bg-white"><Navigation size={13} className="text-[#9b7a40]"/><input value={destination} onChange={(event) => setDestination(event.target.value)} className="w-full bg-transparent text-xs outline-none" placeholder="e.g. Kathmandu, Nepal" required/></div></label>
+          <GooglePlaceInput label="Origin" value={origin} onChange={(value) => setOrigin(value)} placeholder="e.g. Kolkata, India" required />
+          <GooglePlaceInput label="Destination" value={destination} onChange={(value) => setDestination(value)} placeholder="e.g. Kathmandu, Nepal" icon={<Navigation size={13}/>} required />
           <label className="block"><span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8b949c]">Via stops · optional</span><textarea rows={compact ? 1 : 2} value={via} onChange={(event) => setVia(event.target.value)} className={`mt-1 w-full resize-none rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 py-2 text-xs outline-none focus:border-[#aa8748] focus:bg-white ${compact ? "h-10" : "min-h-[62px]"}`} placeholder="Raxaul, India&#10;Birgunj, Nepal"/></label>
           <div className="flex items-end gap-2 xl:flex-col xl:items-stretch xl:justify-end">
             <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfb] px-3 text-[10px] font-semibold text-[#596773]"><input type="checkbox" checked={trafficAware} onChange={(event) => setTrafficAware(event.target.checked)} className="h-3.5 w-3.5 accent-[#10263f]"/><span>Use live traffic <span className="text-[#9a763b]">(Pro)</span></span></label>
