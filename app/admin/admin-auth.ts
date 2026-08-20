@@ -1,4 +1,3 @@
-import { env } from "cloudflare:workers";
 import { ChatGPTUser, chatGPTSignInPath, getChatGPTUser } from "../chatgpt-auth";
 
 export type AdminAccess =
@@ -7,7 +6,8 @@ export type AdminAccess =
   | { kind: "forbidden"; user: ChatGPTUser }
   | { kind: "authorized"; user: ChatGPTUser };
 
-function adminEmails() {
+async function adminEmails() {
+  const { env } = await import("cloudflare:workers");
   const value = (env as unknown as { KCPL_ADMIN_EMAILS?: string }).KCPL_ADMIN_EMAILS ?? "";
   return value
     .split(",")
@@ -19,7 +19,7 @@ export async function getAdminAccess(returnTo = "/admin"): Promise<AdminAccess> 
   const user = await getChatGPTUser();
   if (!user) return { kind: "signed-out", signInPath: chatGPTSignInPath(returnTo) };
 
-  const allowed = adminEmails();
+  const allowed = await adminEmails();
   if (!allowed.length) return { kind: "unconfigured", user };
   if (!allowed.includes(user.email.trim().toLowerCase())) return { kind: "forbidden", user };
   return { kind: "authorized", user };
