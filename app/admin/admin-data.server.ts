@@ -1,273 +1,172 @@
-import { env } from "cloudflare:workers";
-import type { QuoteCommercialInput, QuoteDetail, QuoteNote, QuoteStatus, QuoteSummary } from "./admin-data";
+import { FieldValue } from "firebase-admin/firestore";
+import { firebaseAdminDb } from "../firebase-admin.server";
+import {
+  quoteCurrencies,
+  quoteStatuses,
+  type QuoteCommercialInput,
+  type QuoteCurrency,
+  type QuoteDetail,
+  type QuoteNote,
+  type QuoteStatus,
+  type QuoteSummary,
+} from "./admin-data";
 import { ensureShipmentForWonQuote, getShipmentForQuote } from "../shipment-data.server";
 
-const schema = `
-CREATE TABLE IF NOT EXISTS quote_enquiries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  reference TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  status TEXT NOT NULL DEFAULT 'new',
-  origin TEXT NOT NULL,
-  destination TEXT NOT NULL,
-  mode TEXT NOT NULL,
-  cargo_type TEXT,
-  weight TEXT,
-  weight_unit TEXT,
-  length TEXT,
-  width TEXT,
-  height TEXT,
-  dimension_unit TEXT,
-  timing TEXT,
-  requirements TEXT,
-  contact_name TEXT NOT NULL,
-  contact_email TEXT NOT NULL,
-  company_name TEXT,
-  phone TEXT
-);
-CREATE TABLE IF NOT EXISTS quote_admin_meta (
-  quote_reference TEXT PRIMARY KEY,
-  assigned_to TEXT,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (quote_reference) REFERENCES quote_enquiries(reference) ON DELETE CASCADE
-);
-CREATE TABLE IF NOT EXISTS quote_notes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  quote_reference TEXT NOT NULL,
-  note TEXT NOT NULL,
-  author_name TEXT NOT NULL,
-  author_email TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (quote_reference) REFERENCES quote_enquiries(reference) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_quote_enquiries_created_at ON quote_enquiries(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_quote_enquiries_status ON quote_enquiries(status);
-CREATE INDEX IF NOT EXISTS idx_quote_notes_reference ON quote_notes(quote_reference, created_at DESC);
-`;
-
-const commercialSchema = `
-CREATE TABLE IF NOT EXISTS quote_commercial (
-  quote_reference TEXT PRIMARY KEY,
-  currency TEXT NOT NULL DEFAULT 'USD',
-  quoted_amount TEXT,
-  internal_cost TEXT,
-  valid_until TEXT,
-  customer_note TEXT,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (quote_reference) REFERENCES quote_enquiries(reference) ON DELETE CASCADE
-)
-`;
-
-let schemaReady: Promise<void> | null = null;
-let commercialSchemaReady: Promise<void> | null = null;
-
-function database() {
-  return (env as unknown as { DB?: D1Database }).DB;
+function configured() {
+  return Boolean(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
 }
 
-async function ensureSchema(db: D1Database) {
-  if (!schemaReady) {
-    schemaReady = (async () => {
-      const existing = await db.prepare(`
-        SELECT name
-        FROM sqlite_master
-        WHERE type = 'table'
-          AND name IN ('quote_enquiries', 'quote_admin_meta', 'quote_notes')
-      `).all<{ name: string }>();
-
-      const tableNames = new Set((existing.results ?? []).map((row) => row.name));
-      if (
-        tableNames.has("quote_enquiries") &&
-        tableNames.has("quote_admin_meta") &&
-        tableNames.has("quote_notes")
-      ) {
-        return;
-      }
-
-      await db.exec(schema);
-    })().catch((error) => {
-      schemaReady = null;
-      throw error;
-    });
-  }
-
-  await schemaReady;
+function stringValue(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback;
 }
 
-async function ensureCommercialSchema(db: D1Database) {
-  if (!commercialSchemaReady) {
-    commercialSchemaReady = db.prepare(commercialSchema).run().then(() => undefined).catch((error) => {
-      commercialSchemaReady = null;
-      throw error;
-    });
-  }
-  await commercialSchemaReady;
+function nullableString(value: unknown) {
+  return typeof value === "string" && value.length ? value : null;
+}
+
+function quoteStatus(value: unknown): QuoteStatus {
+  return quoteStatuses.includes(value as QuoteStatus) ? value as QuoteStatus : "new";
+}
+
+function quoteCurrency(value: unknown): QuoteCurrency {
+  return quoteCurrencies.includes(value as QuoteCurrency) ? value as QuoteCurrency : "USD";
+}
+
+function summaryFromData(reference: string, data: Record<string, unknown>): QuoteSummary {
+  return {
+    reference,
+    created_at: stringValue(data.created_at),
+    status: quoteStatus(data.status),
+    origin: stringValue(data.origin),
+    destination: stringValue(data.destination),
+    mode: stringValue(data.mode),
+    contact_name: stringValue(data.contact_name),
+    company_name: nullableString(data.company_name),
+    assigned_to: nullableString(data.assigned_to),
+    note_count: Number(data.note_count ?? 0) || 0,
+  };
+}
+
+function detailFromData(reference: string, data: Record<string, unknown>): Omit<QuoteDetail, "notes" | "shipment"> {
+  return {
+    ...summaryFromData(reference, data),
+    cargo_type: nullableString(data.cargo_type),
+    weight: nullableString(data.weight),
+    weight_unit: nullableString(data.weight_unit),
+    length: nullableString(data.length),
+    width: nullableString(data.width),
+    height: nullableString(data.height),
+    dimension_unit: nullableString(data.dimension_unit),
+    timing: nullableString(data.timing),
+    requirements: nullableString(data.requirements),
+    contact_email: stringValue(data.contact_email),
+    phone: nullableString(data.phone),
+    quote_currency: quoteCurrency(data.quote_currency),
+    quoted_amount: nullableString(data.quoted_amount),
+    internal_cost: nullableString(data.internal_cost),
+    valid_until: nullableString(data.valid_until),
+    customer_quote_note: nullableString(data.customer_quote_note),
+  };
+}
+
+function numericId() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
 }
 
 export async function listQuoteSummaries(): Promise<QuoteSummary[] | null> {
-  const db = database();
-  if (!db) return null;
-  await ensureSchema(db);
+  if (!configured()) return null;
+  const snapshot = await firebaseAdminDb().collection("quotes")
+    .orderBy("created_at", "desc")
+    .limit(200)
+    .get();
 
-  const result = await db.prepare(`
-    SELECT
-      q.reference,
-      q.created_at,
-      q.status,
-      q.origin,
-      q.destination,
-      q.mode,
-      q.contact_name,
-      q.company_name,
-      m.assigned_to,
-      COUNT(n.id) AS note_count
-    FROM quote_enquiries q
-    LEFT JOIN quote_admin_meta m ON m.quote_reference = q.reference
-    LEFT JOIN quote_notes n ON n.quote_reference = q.reference
-    GROUP BY q.reference
-    ORDER BY q.created_at DESC
-    LIMIT 200
-  `).all<QuoteSummary>();
-
-  return result.results ?? [];
+  return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>));
 }
 
 export async function getQuoteDetail(reference: string): Promise<QuoteDetail | null | undefined> {
-  const db = database();
-  if (!db) return undefined;
-  await ensureSchema(db);
-  await ensureCommercialSchema(db);
+  if (!configured()) return undefined;
+  const db = firebaseAdminDb();
+  const normalized = reference.trim().toUpperCase();
+  const quoteSnapshot = await db.collection("quotes").doc(normalized).get();
+  if (!quoteSnapshot.exists) return null;
 
-  const quote = await db.prepare(`
-    SELECT
-      q.reference,
-      q.created_at,
-      q.status,
-      q.origin,
-      q.destination,
-      q.mode,
-      q.cargo_type,
-      q.weight,
-      q.weight_unit,
-      q.length,
-      q.width,
-      q.height,
-      q.dimension_unit,
-      q.timing,
-      q.requirements,
-      q.contact_name,
-      q.contact_email,
-      q.company_name,
-      q.phone,
-      m.assigned_to,
-      COALESCE(c.currency, 'USD') AS quote_currency,
-      c.quoted_amount,
-      c.internal_cost,
-      c.valid_until,
-      c.customer_note AS customer_quote_note,
-      (SELECT COUNT(*) FROM quote_notes n WHERE n.quote_reference = q.reference) AS note_count
-    FROM quote_enquiries q
-    LEFT JOIN quote_admin_meta m ON m.quote_reference = q.reference
-    LEFT JOIN quote_commercial c ON c.quote_reference = q.reference
-    WHERE q.reference = ?
-  `).bind(reference).first<Omit<QuoteDetail, "notes" | "shipment">>();
-
-  if (!quote) return null;
-
-  const notes = await db.prepare(`
-    SELECT id, quote_reference, note, author_name, author_email, created_at
-    FROM quote_notes
-    WHERE quote_reference = ?
-    ORDER BY created_at DESC, id DESC
-  `).bind(reference).all<QuoteNote>();
+  const quote = detailFromData(normalized, quoteSnapshot.data() as Record<string, unknown>);
+  const notesSnapshot = await quoteSnapshot.ref.collection("notes")
+    .orderBy("created_at", "desc")
+    .limit(500)
+    .get();
+  const notes = notesSnapshot.docs.map((doc) => doc.data() as QuoteNote);
 
   let shipment: QuoteDetail["shipment"] = null;
   try {
-    shipment = (await getShipmentForQuote(reference)) ?? null;
+    shipment = (await getShipmentForQuote(normalized)) ?? null;
     if (!shipment && quote.status === "won") {
-      const created = await ensureShipmentForWonQuote(reference);
+      const created = await ensureShipmentForWonQuote(normalized);
       if (created.kind === "created" || created.kind === "ready") shipment = created.shipment ?? null;
     }
   } catch (error) {
-    console.error("Failed to load or initialize KCPL shipment for quote", reference, error);
+    console.error("Failed to load or initialize Firebase shipment for quote", normalized, error);
   }
 
-  return { ...quote, shipment, notes: notes.results ?? [] };
+  return { ...quote, shipment, notes };
 }
 
 export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string) {
-  const db = database();
-  if (!db) return { kind: "unavailable" as const };
-  await ensureSchema(db);
+  if (!configured()) return { kind: "unavailable" as const };
+  const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
+  const snapshot = await ref.get();
+  if (!snapshot.exists) return { kind: "missing" as const };
 
-  const exists = await db.prepare("SELECT reference FROM quote_enquiries WHERE reference = ?").bind(reference).first<{ reference: string }>();
-  if (!exists) return { kind: "missing" as const };
-
-  await db.batch([
-    db.prepare("UPDATE quote_enquiries SET status = ? WHERE reference = ?").bind(status, reference),
-    db.prepare(`
-      INSERT INTO quote_admin_meta (quote_reference, assigned_to, updated_at)
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(quote_reference) DO UPDATE SET
-        assigned_to = excluded.assigned_to,
-        updated_at = excluded.updated_at
-    `).bind(reference, assignedTo || null),
-  ]);
-
+  await ref.update({
+    status,
+    assigned_to: assignedTo || null,
+    updated_at: new Date().toISOString(),
+  });
   return { kind: "updated" as const };
 }
 
 export async function updateQuoteCommercial(reference: string, values: QuoteCommercialInput) {
-  const db = database();
-  if (!db) return { kind: "unavailable" as const };
-  await ensureSchema(db);
-  await ensureCommercialSchema(db);
+  if (!configured()) return { kind: "unavailable" as const };
+  const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
+  const snapshot = await ref.get();
+  if (!snapshot.exists) return { kind: "missing" as const };
 
-  const exists = await db.prepare("SELECT reference FROM quote_enquiries WHERE reference = ?").bind(reference).first<{ reference: string }>();
-  if (!exists) return { kind: "missing" as const };
-
-  await db.prepare(`
-    INSERT INTO quote_commercial (
-      quote_reference, currency, quoted_amount, internal_cost, valid_until, customer_note, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(quote_reference) DO UPDATE SET
-      currency = excluded.currency,
-      quoted_amount = excluded.quoted_amount,
-      internal_cost = excluded.internal_cost,
-      valid_until = excluded.valid_until,
-      customer_note = excluded.customer_note,
-      updated_at = excluded.updated_at
-  `).bind(
-    reference,
-    values.currency,
-    values.quotedAmount || null,
-    values.internalCost || null,
-    values.validUntil || null,
-    values.customerNote || null,
-  ).run();
-
+  await ref.update({
+    quote_currency: values.currency,
+    quoted_amount: values.quotedAmount || null,
+    internal_cost: values.internalCost || null,
+    valid_until: values.validUntil || null,
+    customer_quote_note: values.customerNote || null,
+    updated_at: new Date().toISOString(),
+  });
   return { kind: "updated" as const };
 }
 
 export async function addQuoteNote(reference: string, note: string, authorName: string, authorEmail: string) {
-  const db = database();
-  if (!db) return { kind: "unavailable" as const };
-  await ensureSchema(db);
+  if (!configured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const normalized = reference.trim().toUpperCase();
+  const quoteRef = db.collection("quotes").doc(normalized);
+  const quoteSnapshot = await quoteRef.get();
+  if (!quoteSnapshot.exists) return { kind: "missing" as const };
 
-  const exists = await db.prepare("SELECT reference FROM quote_enquiries WHERE reference = ?").bind(reference).first<{ reference: string }>();
-  if (!exists) return { kind: "missing" as const };
+  const id = numericId();
+  const created: QuoteNote = {
+    id,
+    quote_reference: normalized,
+    note,
+    author_name: authorName,
+    author_email: authorEmail,
+    created_at: new Date().toISOString(),
+  };
 
-  const result = await db.prepare(`
-    INSERT INTO quote_notes (quote_reference, note, author_name, author_email)
-    VALUES (?, ?, ?, ?)
-  `).bind(reference, note, authorName, authorEmail).run();
-
-  const id = Number(result.meta.last_row_id);
-  const created = await db.prepare(`
-    SELECT id, quote_reference, note, author_name, author_email, created_at
-    FROM quote_notes
-    WHERE id = ?
-  `).bind(id).first<QuoteNote>();
+  const batch = db.batch();
+  batch.set(quoteRef.collection("notes").doc(String(id)), created);
+  batch.update(quoteRef, {
+    note_count: FieldValue.increment(1),
+    updated_at: new Date().toISOString(),
+  });
+  await batch.commit();
 
   return { kind: "created" as const, note: created };
 }
