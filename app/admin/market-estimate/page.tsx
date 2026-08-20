@@ -4,7 +4,7 @@ import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
-import { MarketEstimateWorkspace } from "./market-estimate-workspace";
+import { SeaRatesMarketEstimateWorkspace } from "./searates-market-estimate-workspace";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Market Estimate | KCPL Operations", robots: { index: false, follow: false } };
@@ -24,7 +24,7 @@ export default async function MarketEstimatePage() {
       isManagement={staff.permissions.role === "management"}
     >
       <ForexReferencePanel compact/>
-      <MarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
+      <SeaRatesMarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
     </OperationsShell>
   );
 }
