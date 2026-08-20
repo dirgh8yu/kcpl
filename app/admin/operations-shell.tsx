@@ -6,6 +6,7 @@ import {
   BellRing,
   Boxes,
   Building2,
+  Calculator,
   ChartNoAxesCombined,
   HandCoins,
   Handshake,
@@ -29,6 +30,7 @@ type NavItem = {
 const coreNav: NavItem[] = [
   { href: "/admin/command-centre", label: "Operations Home", icon: LayoutDashboard, match: (path) => path.startsWith("/admin/command-centre") },
   { href: "/admin", label: "Enquiries", icon: PackageSearch, match: (path) => path === "/admin" },
+  { href: "/admin/market-estimate", label: "Market Estimate", icon: Calculator, match: (path) => path.startsWith("/admin/market-estimate") },
   { href: "/admin/shipments", label: "Shipments", icon: Boxes, match: (path) => path.startsWith("/admin/shipments") || path.startsWith("/admin/jobs/") },
   { href: "/admin/crm", label: "Customers", icon: Building2, match: (path) => path.startsWith("/admin/crm") },
   { href: "/admin/partners", label: "Partners", icon: Handshake, match: (path) => path.startsWith("/admin/partners") },
