@@ -3,7 +3,7 @@ import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
-import { SeaRatesMarketEstimateWorkspace } from "./searates-market-estimate-workspace";
+import { EasyshipMarketEstimateWorkspace } from "./easyship-market-estimate-workspace";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Market Estimate | KCPL Operations", robots: { index: false, follow: false } };
@@ -22,7 +22,7 @@ export default async function MarketEstimatePage() {
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
-      <SeaRatesMarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
+      <EasyshipMarketEstimateWorkspace roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
     </OperationsShell>
   );
 }
