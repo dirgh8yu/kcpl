@@ -1,4 +1,5 @@
 import { evaluateAutomationRules } from "../../../admin/alerts/alert-engine.server";
+import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
   if (!configured) return json({ ok: false, error: "Automation scheduler authentication is not configured." }, 503);
   if (bearer(request) !== configured) return json({ ok: false, error: "Automation authentication failed." }, 401);
   const result = await evaluateAutomationRules();
-  if (result.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
-  return json({ ok: true, result });
+  const payables = await evaluatePayablesAlerts();
+  if (result.kind !== "completed" || payables.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+  return json({ ok: true, result: { ...result, payable_alerts: payables.active } });
 }
