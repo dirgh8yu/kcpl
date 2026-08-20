@@ -30,6 +30,10 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function activityId(suffix: string) {
+  return `activity-${Date.now()}-${suffix}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 function quoteFromDoc(id: string, data: Record<string, unknown>, customerId: string): CrmQuoteLinkItem {
   const matches = Array.isArray(data.crm_matches) ? data.crm_matches : [];
   const match = matches.find((item) => {
@@ -92,42 +96,54 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
     if (!quoteSnapshot.exists) return { kind: "missing_quote" as const };
 
     const currentCustomerId = nullable(quoteSnapshot.get("customer_id"));
-    if (currentCustomerId === id) return { kind: "linked" as const };
+    const shipmentReference = nullable(quoteSnapshot.get("shipment_reference"));
+    const shipmentRef = shipmentReference ? db.collection("shipments").doc(shipmentReference) : null;
+    const shipmentSnapshot = shipmentRef ? await transaction.get(shipmentRef) : null;
+    const shipmentCustomerId = shipmentSnapshot?.exists ? nullable(shipmentSnapshot.get("customer_id")) : null;
 
-    let previousRef = null as ReturnType<typeof db.collection> extends never ? never : FirebaseFirestore.DocumentReference | null;
-    let previousSnapshot: FirebaseFirestore.DocumentSnapshot | null = null;
-    if (currentCustomerId) {
-      previousRef = db.collection("customers").doc(currentCustomerId);
-      previousSnapshot = await transaction.get(previousRef);
-    }
+    const previousQuoteRef = currentCustomerId && currentCustomerId !== id
+      ? db.collection("customers").doc(currentCustomerId)
+      : null;
+    const previousShipmentRef = shipmentCustomerId && shipmentCustomerId !== id && shipmentCustomerId !== currentCustomerId
+      ? db.collection("customers").doc(shipmentCustomerId)
+      : null;
 
-    transaction.update(quoteRef, {
-      customer_id: id,
-      crm_match_state: "confirmed",
-      crm_linked_at: now,
-      crm_linked_by_name: actor.name,
-      crm_linked_by_email: actor.email,
-      updated_at: now,
-    });
-    transaction.update(targetRef, {
-      quote_count: numberValue(targetSnapshot.get("quote_count")) + 1,
-      updated_at: now,
-    });
-    transaction.create(targetRef.collection("activity").doc(`activity-${Date.now()}-${quoteId}`), {
-      type: "quote_linked",
-      title: `Quote linked: ${quoteId}`,
-      detail: `${text(quoteSnapshot.get("origin"))} → ${text(quoteSnapshot.get("destination"))}`,
-      actor_name: actor.name,
-      actor_email: actor.email,
-      created_at: now,
-    });
+    const previousQuoteSnapshot = previousQuoteRef ? await transaction.get(previousQuoteRef) : null;
+    const previousShipmentSnapshot = previousShipmentRef ? await transaction.get(previousShipmentRef) : null;
+    const quoteAlreadyLinked = currentCustomerId === id;
+    const shipmentAlreadyLinked = !shipmentSnapshot?.exists || shipmentCustomerId === id;
 
-    if (previousRef && previousSnapshot?.exists) {
-      transaction.update(previousRef, {
-        quote_count: Math.max(0, numberValue(previousSnapshot.get("quote_count")) - 1),
+    if (quoteAlreadyLinked && shipmentAlreadyLinked) return { kind: "linked" as const };
+
+    if (!quoteAlreadyLinked) {
+      transaction.update(quoteRef, {
+        customer_id: id,
+        crm_match_state: "confirmed",
+        crm_linked_at: now,
+        crm_linked_by_name: actor.name,
+        crm_linked_by_email: actor.email,
         updated_at: now,
       });
-      transaction.create(previousRef.collection("activity").doc(`activity-${Date.now()}-${quoteId}-moved`), {
+      transaction.update(targetRef, {
+        quote_count: numberValue(targetSnapshot.get("quote_count")) + 1,
+        updated_at: now,
+      });
+      transaction.create(targetRef.collection("activity").doc(activityId(`${quoteId}-linked`)), {
+        type: "quote_linked",
+        title: `Quote linked: ${quoteId}`,
+        detail: `${text(quoteSnapshot.get("origin"))} → ${text(quoteSnapshot.get("destination"))}`,
+        actor_name: actor.name,
+        actor_email: actor.email,
+        created_at: now,
+      });
+    }
+
+    if (previousQuoteRef && previousQuoteSnapshot?.exists) {
+      transaction.update(previousQuoteRef, {
+        quote_count: Math.max(0, numberValue(previousQuoteSnapshot.get("quote_count")) - 1),
+        updated_at: now,
+      });
+      transaction.create(previousQuoteRef.collection("activity").doc(activityId(`${quoteId}-moved`)), {
         type: "quote_unlinked",
         title: `Quote moved: ${quoteId}`,
         detail: `Quote reassigned to ${id}.`,
@@ -135,6 +151,46 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
         actor_email: actor.email,
         created_at: now,
       });
+    }
+
+    if (shipmentRef && shipmentSnapshot?.exists && !shipmentAlreadyLinked) {
+      const delivered = text(shipmentSnapshot.get("status")) === "delivered";
+      transaction.update(shipmentRef, { customer_id: id, updated_at: now });
+
+      const targetActive = numberValue(targetSnapshot.get("active_shipment_count"));
+      const targetCompleted = numberValue(targetSnapshot.get("completed_shipment_count"));
+      transaction.update(targetRef, {
+        active_shipment_count: targetActive + (delivered ? 0 : 1),
+        completed_shipment_count: targetCompleted + (delivered ? 1 : 0),
+        lead_stage: "won",
+        updated_at: now,
+      });
+      transaction.create(targetRef.collection("activity").doc(activityId(`${shipmentReference}-linked`)), {
+        type: "shipment_linked",
+        title: `Shipment linked: ${shipmentReference}`,
+        detail: `Inherited from quote ${quoteId}.`,
+        actor_name: actor.name,
+        actor_email: actor.email,
+        created_at: now,
+      });
+
+      const losingShipmentRef = shipmentCustomerId === currentCustomerId ? previousQuoteRef : previousShipmentRef;
+      const losingShipmentSnapshot = shipmentCustomerId === currentCustomerId ? previousQuoteSnapshot : previousShipmentSnapshot;
+      if (losingShipmentRef && losingShipmentSnapshot?.exists) {
+        transaction.update(losingShipmentRef, {
+          active_shipment_count: Math.max(0, numberValue(losingShipmentSnapshot.get("active_shipment_count")) - (delivered ? 0 : 1)),
+          completed_shipment_count: Math.max(0, numberValue(losingShipmentSnapshot.get("completed_shipment_count")) - (delivered ? 1 : 0)),
+          updated_at: now,
+        });
+        transaction.create(losingShipmentRef.collection("activity").doc(activityId(`${shipmentReference}-moved`)), {
+          type: "shipment_unlinked",
+          title: `Shipment moved: ${shipmentReference}`,
+          detail: `Shipment reassigned to ${id}.`,
+          actor_name: actor.name,
+          actor_email: actor.email,
+          created_at: now,
+        });
+      }
     }
 
     return { kind: "linked" as const };
