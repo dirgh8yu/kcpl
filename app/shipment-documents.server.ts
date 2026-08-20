@@ -86,7 +86,7 @@ export async function uploadShipmentDocument(
     },
   });
 
-  const document: ShipmentDocument & { storage_path: string } = {
+  const document: ShipmentDocument = {
     id,
     shipment_reference: shipment.normalized,
     filename: values.filename,
@@ -95,13 +95,11 @@ export async function uploadShipmentDocument(
     document_type: values.documentType,
     uploaded_at: new Date().toISOString(),
     uploaded_by: values.uploadedBy,
-    storage_path: key,
   };
 
   try {
-    await shipment.ref.collection("documents").doc(String(id)).create(document);
-    const { storage_path: _storagePath, ...publicDocument } = document;
-    return { kind: "created" as const, document: publicDocument };
+    await shipment.ref.collection("documents").doc(String(id)).create({ ...document, storage_path: key });
+    return { kind: "created" as const, document };
   } catch (error) {
     await file.delete({ ignoreNotFound: true }).catch(() => undefined);
     throw error;
