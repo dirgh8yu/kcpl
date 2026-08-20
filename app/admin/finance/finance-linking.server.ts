@@ -75,6 +75,7 @@ export async function confirmInvoiceCustomerForShipment(
   const resolution = await resolveInvoiceCustomerFromShipment(shipmentId);
   if (resolution.kind === "shipment_missing") return resolution;
   if (resolution.kind === "unavailable") return resolution;
+  if (resolution.kind === "not_requested") return { kind: "invalid" as const };
   if (resolution.kind === "resolved") {
     return resolution.customerId === targetCustomerId
       ? { kind: "linked" as const, customerId: resolution.customerId }
