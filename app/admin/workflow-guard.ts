@@ -1,5 +1,6 @@
 import type { ShipmentDocumentType } from "../shipment-document-types";
 import type { ShipmentStatus } from "../shipment-types";
+import type { WorkflowDocumentDirection } from "./workflow-defaults";
 
 export const workflowStageIds = ["won", "setup", "customs", "documents", "transit", "delivery", "pod", "close"] as const;
 export type WorkflowStageId = (typeof workflowStageIds)[number];
@@ -16,9 +17,21 @@ export type WorkflowDocumentState = {
   document_type: ShipmentDocumentType;
   label: string;
   required: boolean;
+  advisory: boolean;
   present: boolean;
   count: number;
   reason: string;
+  source: "core" | "mode" | "route" | "cargo" | "instruction" | "shipment_override";
+};
+
+export type ShipmentDocumentIntelligence = {
+  direction: WorkflowDocumentDirection;
+  origin: string;
+  destination: string;
+  mode: string;
+  cargo_type: string | null;
+  rules_applied: string[];
+  advisories: string[];
 };
 
 export type ShipmentWorkflowReadiness = {
@@ -32,6 +45,7 @@ export type ShipmentWorkflowReadiness = {
   customs_ready: boolean;
   open_tasks: number;
   documents: WorkflowDocumentState[];
+  document_intelligence: ShipmentDocumentIntelligence;
   document_pack_ready: boolean;
   proof_of_delivery_present: boolean;
   invoice_count: number;
