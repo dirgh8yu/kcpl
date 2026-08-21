@@ -13,6 +13,7 @@ export type JobTask = {
   detail: string | null;
   branch: KcplBranch;
   due_at: string | null;
+  assigned_to_uid: string | null;
   assigned_to_name: string | null;
   assigned_to_email: string | null;
   assigned_to_phone: string | null;
@@ -64,9 +65,12 @@ export type DigitalJobFile = {
   carrier_reference: string | null;
   primary_branch: KcplBranch;
   handling_branches: KcplBranch[];
+  assigned_to_uid: string | null;
   assigned_to_name: string | null;
   assigned_to_email: string | null;
   assigned_to_phone: string | null;
+  assigned_to_job_title: string | null;
+  assigned_to_branches: KcplBranch[];
   priority: JobPriority;
   internal_reference: string | null;
   internal_notes: string | null;
