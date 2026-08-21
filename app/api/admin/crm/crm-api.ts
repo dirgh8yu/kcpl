@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
-import { getStaffContext } from "../../../admin/staff-directory.server";
+import { checkCrmCustomerAccess } from "../../../admin/crm/crm-access.server";
+import { getStaffContext, type KcplStaffContext } from "../../../admin/staff-directory.server";
 import type { StaffCapabilities } from "../../../admin/staff-permissions";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
@@ -21,6 +22,14 @@ export function requireCrmCapability(permissions: StaffCapabilities, capability:
   return permissions[capability]
     ? null
     : crmJson({ ok: false, error: "Your KCPL staff role does not allow this action." }, 403);
+}
+
+export async function requireCrmCustomerAccess(customerId: string, staff: KcplStaffContext) {
+  const access = await checkCrmCustomerAccess(customerId, staff);
+  if (access.kind === "ready") return null;
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
+  return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
 }
 
 export function protectCrmWrite(request: Request) {
