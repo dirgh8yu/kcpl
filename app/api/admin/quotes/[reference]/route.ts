@@ -2,6 +2,7 @@ import { getAdminAccess } from "../../../../admin/admin-auth";
 import { quoteCurrencies, type QuoteCurrency, quoteStatuses, type QuoteStatus } from "../../../../admin/admin-data";
 import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
 import { createCrmCustomerFromQuote } from "../../../../admin/crm/crm-quote-links.server";
+import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { ensureShipmentForWonQuote } from "../../../../shipment-data.server";
@@ -42,16 +43,39 @@ function redactCommercial<T extends NonNullable<Awaited<ReturnType<typeof getQuo
   };
 }
 
+async function linkedShipmentAccessError(
+  quote: NonNullable<Awaited<ReturnType<typeof getQuoteDetail>>>,
+  staff: Awaited<ReturnType<typeof getStaffContext>>,
+) {
+  if (!quote.shipment) return null;
+  const access = await checkShipmentBranchAccess(quote.shipment.reference, staff);
+  if (access.kind === "forbidden") {
+    return json({ ok: false, error: "This enquiry has converted to a shipment outside your branch access." }, 403);
+  }
+  if (access.kind === "unavailable") {
+    return json({ ok: false, error: "Shipment branch access could not be verified right now." }, 503);
+  }
+  return null;
+}
+
+async function loadAccessibleQuote(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
+  const quote = await getQuoteDetail(reference);
+  if (quote === undefined) return { response: json({ ok: false, error: "Quote storage is unavailable." }, 503) };
+  if (!quote) return { response: json({ ok: false, error: "Quote not found." }, 404) };
+  const accessError = await linkedShipmentAccessError(quote, staff);
+  if (accessError) return { response: accessError };
+  return { quote };
+}
+
 export async function GET(_request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
 
   const { reference } = await context.params;
   try {
-    const quote = await getQuoteDetail(reference);
-    if (quote === undefined) return json({ ok: false, error: "Quote storage is unavailable." }, 503);
-    if (!quote) return json({ ok: false, error: "Quote not found." }, 404);
-    return json({ ok: true, quote: redactCommercial(quote, auth.staff.permissions.canViewCommercial) });
+    const loaded = await loadAccessibleQuote(reference, auth.staff);
+    if ("response" in loaded) return loaded.response;
+    return json({ ok: true, quote: redactCommercial(loaded.quote, auth.staff.permissions.canViewCommercial) });
   } catch (error) {
     console.error("Failed to load KCPL quote detail", reference, error);
     return json({ ok: false, error: "The enquiry could not be loaded. Please refresh and try again." }, 500);
@@ -64,6 +88,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
+  const loaded = await loadAccessibleQuote(reference, auth.staff);
+  if ("response" in loaded) return loaded.response;
+
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;
@@ -143,7 +170,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (status === "won") {
     try {
       const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName, auth.user.email);
-      if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") shipment = shipmentResult.shipment;
+      if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") {
+        shipment = shipmentResult.shipment;
+        if (shipment) {
+          const shipmentAccess = await checkShipmentBranchAccess(shipment.reference, auth.staff);
+          if (shipmentAccess.kind === "forbidden") {
+            return json({ ok: false, error: "The accepted enquiry created a shipment outside your branch access. A manager must continue this movement." }, 403);
+          }
+          if (shipmentAccess.kind === "unavailable") shipmentWarning = "Shipment branch access could not be verified right now.";
+        }
+      }
       if (shipmentResult.kind === "unavailable") shipmentWarning = "Shipment storage is temporarily unavailable.";
       if (shipmentResult.kind === "customer-required" || shipmentResult.kind === "customer-missing") {
         return json({ ok: false, error: "A valid CRM customer is required before shipment creation.", code: "CUSTOMER_REQUIRED" }, 409);
@@ -172,6 +208,9 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin updates are not accepted." }, 403);
 
   const { reference } = await context.params;
+  const loaded = await loadAccessibleQuote(reference, auth.staff);
+  if ("response" in loaded) return loaded.response;
+
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;
