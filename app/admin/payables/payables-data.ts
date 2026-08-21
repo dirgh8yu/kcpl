@@ -85,6 +85,7 @@ export type CreatePayableInput = {
   supplierName: string;
   supplierBillReference: string;
   shipmentReference: string;
+  branch: KcplBranch;
   billDate: string;
   dueDate: string;
   currency: CrmCurrency;

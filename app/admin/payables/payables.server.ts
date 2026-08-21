@@ -5,6 +5,7 @@ import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { recomputeCustomerFinance } from "../finance/finance.server";
 import { jobCostCategories, type JobCostCategory } from "../job-file";
+import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
 import { type KcplStaffContext } from "../staff-directory.server";
 import {
   payableStatuses,
@@ -15,6 +16,12 @@ import {
   type PayableStatus,
   type PayablesDashboard,
 } from "./payables-data";
+import {
+  normalizeSupplierBillReference,
+  payableDateError,
+  supplierIdentityKey,
+  validPayableCalendarDate,
+} from "./payables-policy";
 
 type Actor = { name: string; email: string };
 
@@ -69,7 +76,7 @@ function operationalDate(date = new Date()) {
 }
 
 function safeDate(value: string, fallback: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : fallback;
+  return validPayableCalendarDate(value) ? value : fallback;
 }
 
 function addDays(date: string, days: number) {
@@ -158,6 +165,18 @@ async function writeJobActivity(shipmentReference: string | null, title: string,
   });
 }
 
+async function writePartnerActivity(partnerId: string | null, title: string, detail: string, actor: Actor) {
+  if (!partnerId || !isPartnerReference(partnerId)) return;
+  await firebaseAdminDb().collection("partners").doc(partnerId).collection("activity").doc(childId("activity")).create({
+    type: "payables_activity",
+    title,
+    detail,
+    actor_name: actor.name,
+    actor_email: actor.email,
+    created_at: new Date().toISOString(),
+  }).catch(() => undefined);
+}
+
 async function syncApprovedBillToJobCost(bill: PayableBill) {
   if (!bill.shipment_reference) return;
   const shipmentRef = firebaseAdminDb().collection("shipments").doc(bill.shipment_reference);
@@ -166,6 +185,7 @@ async function syncApprovedBillToJobCost(bill: PayableBill) {
     category: bill.category,
     label: bill.description,
     vendor: bill.supplier_name,
+    partner_id: isPartnerReference(bill.supplier_id) ? bill.supplier_id : null,
     amount: bill.total,
     currency: bill.currency,
     notes: bill.supplier_bill_reference ? `Supplier bill ${bill.supplier_bill_reference}` : "Accounts Payable bill",
@@ -186,6 +206,23 @@ async function removeBillJobCost(bill: PayableBill) {
 
 async function recomputeLinkedCustomer(bill: PayableBill) {
   if (bill.customer_id) await recomputeCustomerFinance(bill.customer_id);
+}
+
+async function duplicateSupplierBill(supplierKey: string, normalizedReference: string) {
+  if (!supplierKey || !normalizedReference) return null;
+  const db = firebaseAdminDb();
+  const [normalizedSnapshot, legacySnapshot] = await Promise.all([
+    db.collection("payables").where("normalized_supplier_bill_reference", "==", normalizedReference).limit(25).get(),
+    db.collection("payables").where("supplier_bill_reference", "==", normalizedReference).limit(25).get(),
+  ]);
+  const candidates = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+  for (const doc of [...normalizedSnapshot.docs, ...legacySnapshot.docs]) candidates.set(doc.id, doc);
+  for (const doc of candidates.values()) {
+    if (statusValue(doc.get("status")) === "void") continue;
+    const existingKey = text(doc.get("supplier_key")) || supplierIdentityKey(text(doc.get("supplier_id")), text(doc.get("supplier_name")));
+    if (existingKey === supplierKey) return doc.id;
+  }
+  return null;
 }
 
 export async function getPayable(reference: string, context: KcplStaffContext) {
@@ -260,15 +297,19 @@ export async function createPayable(input: CreatePayableInput, actor: Actor, con
   const shipment = shipmentId ? await db.collection("shipments").doc(shipmentId).get() : null;
   if (shipmentId && !shipment?.exists) return { kind: "shipment_missing" as const };
   const shipmentData = shipment?.exists ? shipment.data() as Record<string, unknown> : {};
-  const rawBranch = shipment?.exists ? shipment.get("primary_branch") : "Kathmandu";
+  const rawBranch = shipment?.exists ? shipment.get("primary_branch") : input.branch;
+  if (!kcplBranches.includes(rawBranch as KcplBranch)) return { kind: "invalid_branch" as const };
   if (!canAccessBill(context, rawBranch)) return { kind: "forbidden" as const };
-  const branch = branchValue(rawBranch);
+  const branch = rawBranch as KcplBranch;
 
   const supplierId = input.supplierId.trim().toUpperCase();
-  const supplier = supplierId ? await db.collection("customers").doc(supplierId).get() : null;
+  if (supplierId && !isPartnerReference(supplierId)) return { kind: "supplier_missing" as const };
+  const supplier = supplierId ? await db.collection("partners").doc(supplierId).get() : null;
   if (supplierId && !supplier?.exists) return { kind: "supplier_missing" as const };
+  if (supplier?.exists && !canAccessPartnerOwner(context, supplier.get("owner_branch"))) return { kind: "supplier_forbidden" as const };
   const supplierName = supplier?.exists ? text(supplier.get("display_name"), supplierId) : input.supplierName.trim();
   if (!supplierName) return { kind: "supplier_required" as const };
+  const supplierKey = supplierIdentityKey(supplier?.exists ? supplierId : "", supplierName);
 
   const customerId = nullable(shipmentData.customer_id);
   const customer = customerId ? await db.collection("customers").doc(customerId).get() : null;
@@ -277,18 +318,30 @@ export async function createPayable(input: CreatePayableInput, actor: Actor, con
   if (!Number.isFinite(amount) || amount <= 0) return { kind: "invalid_amount" as const };
   if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) return { kind: "invalid_tax" as const };
 
+  const billDate = input.billDate.trim() || operationalDate();
+  if (!validPayableCalendarDate(billDate)) return { kind: "invalid_bill_date" as const };
+  const termsDays = supplier?.exists ? Math.max(0, Math.round(numberValue(supplier.get("payment_terms_days")))) : 30;
+  const dueDate = input.dueDate.trim() || addDays(billDate, termsDays);
+  const dateError = payableDateError(billDate, dueDate);
+  if (dateError) return { kind: dueDate < billDate ? "due_before_bill_date" as const : "invalid_due_date" as const };
+
+  const supplierBillReference = input.supplierBillReference.trim();
+  const normalizedSupplierBillReference = normalizeSupplierBillReference(supplierBillReference);
+  const duplicateReference = await duplicateSupplierBill(supplierKey, normalizedSupplierBillReference);
+  if (duplicateReference) return { kind: "duplicate_bill" as const, reference: duplicateReference };
+
   const subtotal = Math.round(amount * 100) / 100;
   const taxTotal = Math.round(subtotal * (taxRate / 100) * 100) / 100;
   const total = Math.round((subtotal + taxTotal) * 100) / 100;
-  const billDate = safeDate(input.billDate, operationalDate());
-  const dueDate = safeDate(input.dueDate, addDays(billDate, 30));
   const reference = payableReference();
   const now = new Date().toISOString();
   const document = {
     reference,
     supplier_id: supplier?.exists ? supplierId : null,
+    supplier_key: supplierKey || null,
     supplier_name: supplierName,
-    supplier_bill_reference: input.supplierBillReference.trim() || null,
+    supplier_bill_reference: supplierBillReference || null,
+    normalized_supplier_bill_reference: normalizedSupplierBillReference || null,
     shipment_reference: shipment?.exists ? shipmentId : null,
     customer_id: customerId,
     customer_name: customer?.exists ? text(customer.get("display_name"), customerId ?? "") : null,
@@ -312,7 +365,10 @@ export async function createPayable(input: CreatePayableInput, actor: Actor, con
     updated_at: now,
   };
   await db.collection("payables").doc(reference).create(document);
-  await writeJobActivity(shipment?.exists ? shipmentId : null, `Supplier bill draft created: ${reference}`, `${input.currency} ${total.toFixed(2)} · ${supplierName}`, actor);
+  await Promise.all([
+    writeJobActivity(shipment?.exists ? shipmentId : null, `Supplier bill draft created: ${reference}`, `${input.currency} ${total.toFixed(2)} · ${supplierName}`, actor),
+    writePartnerActivity(supplier?.exists ? supplierId : null, `Supplier bill draft created: ${reference}`, `${input.currency} ${total.toFixed(2)} · ${branch}`, actor),
+  ]);
   return { kind: "created" as const, reference };
 }
 
@@ -332,7 +388,10 @@ export async function approvePayable(reference: string, actor: Actor, context: K
   const approvedBill = { ...loaded.bill, status: nextStatus };
   await syncApprovedBillToJobCost(approvedBill);
   await recomputeLinkedCustomer(approvedBill);
-  await writeJobActivity(approvedBill.shipment_reference, `Supplier bill approved: ${approvedBill.reference}`, `${approvedBill.currency} ${approvedBill.total.toFixed(2)} · ${approvedBill.supplier_name}`, actor);
+  await Promise.all([
+    writeJobActivity(approvedBill.shipment_reference, `Supplier bill approved: ${approvedBill.reference}`, `${approvedBill.currency} ${approvedBill.total.toFixed(2)} · ${approvedBill.supplier_name}`, actor),
+    writePartnerActivity(approvedBill.supplier_id, `Supplier bill approved: ${approvedBill.reference}`, `${approvedBill.currency} ${approvedBill.total.toFixed(2)} · ${approvedBill.branch}`, actor),
+  ]);
   return { kind: "updated" as const };
 }
 
@@ -367,7 +426,10 @@ export async function recordPayablePayment(reference: string, input: { amount: n
   });
   batch.update(billRef, { amount_paid: nextPaid, balance_due: nextBalance, status: nextStatus, updated_at: now });
   await batch.commit();
-  await writeJobActivity(loaded.bill.shipment_reference, `Supplier payment recorded: ${loaded.bill.reference}`, `${loaded.bill.currency} ${amount.toFixed(2)} paid · ${loaded.bill.currency} ${nextBalance.toFixed(2)} remaining`, actor);
+  await Promise.all([
+    writeJobActivity(loaded.bill.shipment_reference, `Supplier payment recorded: ${loaded.bill.reference}`, `${loaded.bill.currency} ${amount.toFixed(2)} paid · ${loaded.bill.currency} ${nextBalance.toFixed(2)} remaining`, actor),
+    writePartnerActivity(loaded.bill.supplier_id, `Supplier payment recorded: ${loaded.bill.reference}`, `${loaded.bill.currency} ${amount.toFixed(2)} paid · ${loaded.bill.currency} ${nextBalance.toFixed(2)} remaining`, actor),
+  ]);
   return { kind: "updated" as const };
 }
 
@@ -387,6 +449,9 @@ export async function voidPayable(reference: string, actor: Actor, context: Kcpl
   });
   await removeBillJobCost(loaded.bill);
   await recomputeLinkedCustomer(loaded.bill);
-  await writeJobActivity(loaded.bill.shipment_reference, `Supplier bill voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)} · ${loaded.bill.supplier_name}`, actor);
+  await Promise.all([
+    writeJobActivity(loaded.bill.shipment_reference, `Supplier bill voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)} · ${loaded.bill.supplier_name}`, actor),
+    writePartnerActivity(loaded.bill.supplier_id, `Supplier bill voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)}`, actor),
+  ]);
   return { kind: "updated" as const };
 }

@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { crmCurrencies, kcplBranches, type CrmCurrency } from "../crm/crm-data";
+import { canAccessBranchValue } from "../branch-access-policy";
+import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
+import type { KcplStaffContext } from "../staff-directory.server";
 import {
   partnerModes,
   partnerStatuses,
@@ -10,11 +12,19 @@ import {
   type PartnerInput,
   type PartnerMode,
   type PartnerOption,
-  type PartnerOwnerBranch,
   type PartnerRecord,
   type PartnerStatus,
   type PartnerType,
 } from "./partners-data";
+import {
+  canAccessPartnerOwner,
+  canAssignPartnerOwner,
+  canEditPartnerNetwork,
+  canViewPartnerFinance,
+  isPartnerReference,
+  normalizePartnerIdentifier,
+  partnerOwnerBranchValue,
+} from "./partner-policy";
 
 type Actor = { name: string; email: string };
 type Exposure = {
@@ -25,6 +35,7 @@ type Exposure = {
   shipments: Set<string>;
   lastActivity: string | null;
 };
+type DuplicateReason = "name" | "tax_id" | "registration_number";
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -65,12 +76,6 @@ function financialCurrency(value: unknown): CrmCurrency | null {
   return crmCurrencies.includes(currency as CrmCurrency) ? currency as CrmCurrency : null;
 }
 
-function ownerBranch(value: unknown): PartnerOwnerBranch {
-  const branch = text(value).trim();
-  if (branch === "Global") return "Global";
-  return kcplBranches.includes(branch as (typeof kcplBranches)[number]) ? branch as (typeof kcplBranches)[number] : "Kathmandu";
-}
-
 function statusValue(value: unknown): PartnerStatus {
   return partnerStatuses.includes(value as PartnerStatus) ? value as PartnerStatus : "active";
 }
@@ -82,6 +87,10 @@ function normalizeName(value: string) {
 function partnerReference() {
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   return `KCPL-P-${date}-${randomBytes(4).toString("hex").toUpperCase()}`;
+}
+
+function childId(prefix: string) {
+  return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`;
 }
 
 function operationalDate(date = new Date()) {
@@ -109,9 +118,13 @@ function addAmount(map: Map<CrmCurrency, number>, currency: CrmCurrency, amount:
 function partnerFromDoc(
   doc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot,
   exposure: Exposure = emptyExposure(),
+  context?: KcplStaffContext,
 ): PartnerRecord {
   const data = (doc.data() ?? {}) as Record<string, unknown>;
   const rating = numberValue(data.service_rating);
+  const commercialVisible = context ? context.permissions.canViewCommercial : true;
+  const financeVisible = context ? canViewPartnerFinance(context.permissions) : true;
+  const updatedAt = text(data.updated_at);
   return {
     id: doc.id,
     display_name: text(data.display_name, "Unnamed partner"),
@@ -122,7 +135,7 @@ function partnerFromDoc(
     status: statusValue(data.status),
     preferred: data.preferred === true,
     country: text(data.country, "Nepal"),
-    owner_branch: ownerBranch(data.owner_branch),
+    owner_branch: partnerOwnerBranchValue(data.owner_branch),
     cities_served: stringArray(data.cities_served),
     countries_served: stringArray(data.countries_served),
     ports_served: stringArray(data.ports_served),
@@ -131,34 +144,36 @@ function partnerFromDoc(
     primary_phone: nullable(data.primary_phone),
     whatsapp: nullable(data.whatsapp),
     website: nullable(data.website),
-    preferred_currency: currencyValue(data.preferred_currency),
-    payment_terms_days: Math.max(0, Math.round(numberValue(data.payment_terms_days))),
+    preferred_currency: commercialVisible ? currencyValue(data.preferred_currency) : "NPR",
+    payment_terms_days: commercialVisible ? Math.max(0, Math.round(numberValue(data.payment_terms_days))) : 0,
     service_rating: rating >= 1 && rating <= 5 ? rating : null,
     registration_number: nullable(data.registration_number),
     tax_id: nullable(data.tax_id),
     contract_reference: nullable(data.contract_reference),
     contract_expiry_date: nullable(data.contract_expiry_date),
     document_url: nullable(data.document_url),
-    commercial_terms: nullable(data.commercial_terms),
+    commercial_terms: commercialVisible ? nullable(data.commercial_terms) : null,
     internal_notes: nullable(data.internal_notes),
     tags: stringArray(data.tags, 50),
     created_at: text(data.created_at),
     created_by_name: text(data.created_by_name, "KCPL Staff"),
     created_by_email: text(data.created_by_email),
-    updated_at: text(data.updated_at),
+    updated_at: updatedAt,
     updated_by_name: text(data.updated_by_name, "KCPL Staff"),
     updated_by_email: text(data.updated_by_email),
-    payable_open: amounts(exposure.open),
-    payable_spend: amounts(exposure.spend),
-    bill_count: exposure.billCount,
-    overdue_bill_count: exposure.overdueBillCount,
-    shipment_count: exposure.shipments.size,
-    last_activity_at: exposure.lastActivity,
+    payable_open: financeVisible ? amounts(exposure.open) : [],
+    payable_spend: financeVisible ? amounts(exposure.spend) : [],
+    bill_count: financeVisible ? exposure.billCount : 0,
+    overdue_bill_count: financeVisible ? exposure.overdueBillCount : 0,
+    shipment_count: financeVisible ? exposure.shipments.size : 0,
+    last_activity_at: exposure.lastActivity ?? (updatedAt || null),
   };
 }
 
 function partnerDocument(input: PartnerInput, actor: Actor, previous?: Record<string, unknown>) {
   const now = new Date().toISOString();
+  const normalizedTaxId = normalizePartnerIdentifier(input.taxId);
+  const normalizedRegistration = normalizePartnerIdentifier(input.registrationNumber);
   return {
     display_name: input.displayName.trim(),
     legal_name: input.legalName.trim() || null,
@@ -181,7 +196,9 @@ function partnerDocument(input: PartnerInput, actor: Actor, previous?: Record<st
     payment_terms_days: Math.max(0, Math.round(input.paymentTermsDays)),
     service_rating: input.serviceRating,
     registration_number: input.registrationNumber.trim() || null,
+    normalized_registration_number: normalizedRegistration || null,
     tax_id: input.taxId.trim() || null,
+    normalized_tax_id: normalizedTaxId || null,
     contract_reference: input.contractReference.trim() || null,
     contract_expiry_date: input.contractExpiryDate.trim() || null,
     document_url: input.documentUrl.trim() || null,
@@ -197,36 +214,76 @@ function partnerDocument(input: PartnerInput, actor: Actor, previous?: Record<st
   };
 }
 
-async function duplicatePartner(normalizedName: string, excludeId?: string) {
-  const snapshot = await firebaseAdminDb().collection("partners").where("normalized_name", "==", normalizedName).limit(3).get();
-  return snapshot.docs.find((doc) => doc.id !== excludeId) ?? null;
+async function duplicatePartner(input: PartnerInput, excludeId?: string) {
+  const db = firebaseAdminDb();
+  const normalizedName = normalizeName(input.displayName);
+  const normalizedTaxId = normalizePartnerIdentifier(input.taxId);
+  const normalizedRegistration = normalizePartnerIdentifier(input.registrationNumber);
+  const checks: Array<Promise<FirebaseFirestore.QuerySnapshot>> = [
+    db.collection("partners").where("normalized_name", "==", normalizedName).limit(3).get(),
+  ];
+  const reasons: DuplicateReason[] = ["name"];
+  if (normalizedTaxId) {
+    checks.push(db.collection("partners").where("normalized_tax_id", "==", normalizedTaxId).limit(3).get());
+    reasons.push("tax_id");
+  }
+  if (normalizedRegistration) {
+    checks.push(db.collection("partners").where("normalized_registration_number", "==", normalizedRegistration).limit(3).get());
+    reasons.push("registration_number");
+  }
+  const snapshots = await Promise.all(checks);
+  for (let index = 0; index < snapshots.length; index += 1) {
+    const duplicate = snapshots[index].docs.find((doc) => doc.id !== excludeId);
+    if (duplicate) return { doc: duplicate, reason: reasons[index] };
+  }
+  return null;
 }
 
-export async function listPartnerDashboard(): Promise<PartnerDashboard | null> {
+async function writePartnerActivity(partnerId: string, title: string, detail: string, actor: Actor) {
+  await firebaseAdminDb().collection("partners").doc(partnerId).collection("activity").doc(childId("activity")).create({
+    type: "partner_activity",
+    title,
+    detail,
+    actor_name: actor.name,
+    actor_email: actor.email,
+    created_at: new Date().toISOString(),
+  });
+}
+
+export async function listPartnerDashboard(context: KcplStaffContext): Promise<PartnerDashboard | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
+  const financeVisible = canViewPartnerFinance(context.permissions);
   const [partnersSnapshot, payablesSnapshot] = await Promise.all([
     db.collection("partners").orderBy("display_name", "asc").limit(2500).get(),
-    db.collection("payables").limit(8000).get(),
+    financeVisible ? db.collection("payables").limit(8000).get() : Promise.resolve(null),
   ]);
 
+  const partnerDocs = partnersSnapshot.docs.filter((doc) => canAccessPartnerOwner(context, doc.get("owner_branch")));
   const exposures = new Map<string, Exposure>();
   const partnerByName = new Map<string, string>();
-  for (const doc of partnersSnapshot.docs) {
+  for (const doc of partnerDocs) {
     const data = doc.data() as Record<string, unknown>;
     exposures.set(doc.id, emptyExposure());
     partnerByName.set(text(data.normalized_name, normalizeName(text(data.display_name))), doc.id);
   }
 
   let unlinkedSupplierBills = 0;
+  let legacyNameLinkedBillCount = 0;
   const today = operationalDate();
-  for (const bill of payablesSnapshot.docs) {
+  for (const bill of payablesSnapshot?.docs ?? []) {
     const data = bill.data() as Record<string, unknown>;
+    if (!canAccessBranchValue(context, data.branch)) continue;
     const status = text(data.status, "draft");
     if (status === "void" || status === "draft") continue;
     const supplierId = nullable(data.supplier_id);
     const supplierName = normalizeName(text(data.supplier_name));
-    const partnerId = supplierId && exposures.has(supplierId) ? supplierId : partnerByName.get(supplierName);
+    let partnerId: string | undefined;
+    if (supplierId && isPartnerReference(supplierId)) partnerId = exposures.has(supplierId) ? supplierId : undefined;
+    else if (supplierName) {
+      partnerId = partnerByName.get(supplierName);
+      if (partnerId) legacyNameLinkedBillCount += 1;
+    }
     if (!partnerId) {
       unlinkedSupplierBills += 1;
       continue;
@@ -249,9 +306,11 @@ export async function listPartnerDashboard(): Promise<PartnerDashboard | null> {
     if (balance > 0.00001 && status !== "paid" && (status === "overdue" || (dueDate && dueDate < today))) exposure.overdueBillCount += 1;
   }
 
-  const partners = partnersSnapshot.docs.map((doc) => partnerFromDoc(doc, exposures.get(doc.id)));
+  const partners = partnerDocs.map((doc) => partnerFromDoc(doc, exposures.get(doc.id), context));
   const openPayables = new Map<CrmCurrency, number>();
-  for (const partner of partners) for (const item of partner.payable_open) addAmount(openPayables, item.currency, item.amount);
+  if (financeVisible) {
+    for (const partner of partners) for (const item of partner.payable_open) addAmount(openPayables, item.currency, item.amount);
+  }
 
   return {
     generated_at: new Date().toISOString(),
@@ -259,44 +318,65 @@ export async function listPartnerDashboard(): Promise<PartnerDashboard | null> {
     active_count: partners.filter((partner) => partner.status === "active").length,
     preferred_count: partners.filter((partner) => partner.preferred && partner.status === "active").length,
     country_count: new Set(partners.filter((partner) => partner.status !== "inactive").map((partner) => partner.country.trim()).filter(Boolean)).size,
-    unlinked_supplier_bills: unlinkedSupplierBills,
-    open_payables: amounts(openPayables),
+    unlinked_supplier_bills: financeVisible ? unlinkedSupplierBills : 0,
+    legacy_name_linked_bill_count: financeVisible ? legacyNameLinkedBillCount : 0,
+    open_payables: financeVisible ? amounts(openPayables) : [],
   };
 }
 
-export async function listPartnerOptions(): Promise<PartnerOption[] | null> {
+export async function listPartnerOptions(context: KcplStaffContext): Promise<PartnerOption[] | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("partners").where("status", "==", "active").limit(2500).get();
   return snapshot.docs
+    .filter((doc) => canAccessPartnerOwner(context, doc.get("owner_branch")))
     .map((doc) => partnerFromDoc(doc))
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
-    .map((partner) => ({ id: partner.id, name: partner.display_name, currency: partner.preferred_currency, payment_terms_days: partner.payment_terms_days }));
+    .map((partner) => ({
+      id: partner.id,
+      name: partner.display_name,
+      currency: partner.preferred_currency,
+      payment_terms_days: partner.payment_terms_days,
+      owner_branch: partner.owner_branch,
+      types: partner.types,
+    }));
 }
 
-export async function createPartner(input: PartnerInput, actor: Actor) {
+export async function getPartnerRecord(id: string, context: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  const normalizedName = normalizeName(input.displayName);
-  const duplicate = await duplicatePartner(normalizedName);
-  if (duplicate) return { kind: "duplicate" as const, partner: partnerFromDoc(duplicate) };
+  const snapshot = await firebaseAdminDb().collection("partners").doc(id.trim().toUpperCase()).get();
+  if (!snapshot.exists) return { kind: "missing" as const };
+  if (!canAccessPartnerOwner(context, snapshot.get("owner_branch"))) return { kind: "forbidden" as const };
+  return { kind: "ready" as const, partner: partnerFromDoc(snapshot, emptyExposure(), context), snapshot };
+}
+
+export async function createPartner(input: PartnerInput, actor: Actor, context: KcplStaffContext) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  if (!canEditPartnerNetwork(context.permissions) || !canAssignPartnerOwner(context, context.permissions, input.ownerBranch)) return { kind: "forbidden" as const };
+  const duplicate = await duplicatePartner(input);
+  if (duplicate) return { kind: "duplicate" as const, reason: duplicate.reason, partner: partnerFromDoc(duplicate.doc, emptyExposure(), context) };
   const id = partnerReference();
   const document = partnerDocument(input, actor);
   const ref = firebaseAdminDb().collection("partners").doc(id);
   await ref.create(document);
+  await writePartnerActivity(id, "Partner record created", `${input.displayName} added to the KCPL operating network.`, actor);
   const saved = await ref.get();
-  return { kind: "created" as const, partner: partnerFromDoc(saved) };
+  return { kind: "created" as const, partner: partnerFromDoc(saved, emptyExposure(), context) };
 }
 
-export async function updatePartner(id: string, input: PartnerInput, actor: Actor) {
+export async function updatePartner(id: string, input: PartnerInput, actor: Actor, context: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  const ref = firebaseAdminDb().collection("partners").doc(id);
+  if (!canEditPartnerNetwork(context.permissions)) return { kind: "forbidden" as const };
+  const ref = firebaseAdminDb().collection("partners").doc(id.trim().toUpperCase());
   const snapshot = await ref.get();
   if (!snapshot.exists) return { kind: "missing" as const };
-  const normalizedName = normalizeName(input.displayName);
-  const duplicate = await duplicatePartner(normalizedName, id);
-  if (duplicate) return { kind: "duplicate" as const, partner: partnerFromDoc(duplicate) };
+  if (!canAccessPartnerOwner(context, snapshot.get("owner_branch"))) return { kind: "forbidden" as const };
+  if (!canAssignPartnerOwner(context, context.permissions, input.ownerBranch)) return { kind: "forbidden_owner" as const };
+  const duplicate = await duplicatePartner(input, snapshot.id);
+  if (duplicate) return { kind: "duplicate" as const, reason: duplicate.reason, partner: partnerFromDoc(duplicate.doc, emptyExposure(), context) };
   const previous = snapshot.data() as Record<string, unknown>;
   const document = partnerDocument(input, actor, previous);
   await ref.set(document, { merge: true });
+  await writePartnerActivity(snapshot.id, "Partner record updated", `${input.displayName} network details were updated.`, actor);
   const saved = await ref.get();
-  return { kind: "updated" as const, partner: partnerFromDoc(saved) };
+  return { kind: "updated" as const, partner: partnerFromDoc(saved, emptyExposure(), context) };
 }
