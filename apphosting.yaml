@@ -6,3 +6,9 @@ runConfig:
   maxInstances: 10
   concurrency: 80
   memoryMiB: 512
+
+env:
+  - variable: KCPL_GPT_ACTION_SECRET
+    secret: KCPL_GPT_ACTION_SECRET
+    availability:
+      - RUNTIME
