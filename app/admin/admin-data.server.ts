@@ -196,9 +196,9 @@ export async function updateQuoteAdmin(
 
   const resolved = await resolveStaffIdentity({ uid: assignee.uid, name: assignee.name, email: assignee.email, phone: assignee.phone });
   const assignedUid = resolved.uid;
-  const assignedName = resolved.name ?? assignee.name.trim() || "";
-  const assignedEmail = resolved.email ?? assignee.email.trim().toLowerCase() || "";
-  const assignedPhone = resolved.phone ?? assignee.phone.trim() || "";
+  const assignedName = resolved.name ?? assignee.name.trim();
+  const assignedEmail = resolved.email ?? assignee.email.trim().toLowerCase();
+  const assignedPhone = resolved.phone ?? assignee.phone.trim();
   await ref.update({
     status,
     assigned_to: assignedName || assignedEmail || null,
