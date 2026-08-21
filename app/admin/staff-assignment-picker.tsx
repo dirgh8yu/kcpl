@@ -15,7 +15,7 @@ export type StaffAssignmentOption = {
   branches: string[];
 };
 
-type StaffAssignmentValue = {
+export type StaffAssignmentValue = {
   name: string;
   email: string;
   phone: string;
@@ -75,6 +75,17 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
     return name ? options.find((option) => option.display_name.toLowerCase() === name) ?? null : null;
   }, [options, value.email, value.name]);
 
+  useEffect(() => {
+    if (!selected) return;
+    const canonical = { name: selected.display_name, email: selected.email, phone: selected.phone ?? "" };
+    if (value.name === canonical.name && value.email === canonical.email && value.phone === canonical.phone) return;
+    onChange(canonical);
+  }, [onChange, selected, value.email, value.name, value.phone]);
+
+  const visibleOptions = useMemo(() => {
+    if (!selected || eligible.some((option) => option.uid === selected.uid)) return eligible;
+    return [selected, ...eligible];
+  }, [eligible, selected]);
   const selectValue = selected?.uid ?? (value.name || value.email ? "__current__" : "");
 
   function choose(uid: string) {
@@ -98,9 +109,9 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
       >
         {allowUnassigned ? <option value="">Unassigned</option> : null}
         {selectValue === "__current__" ? <option value="__current__">{value.name || value.email} · current assignment</option> : null}
-        {eligible.map((option) => (
+        {visibleOptions.map((option) => (
           <option key={option.uid} value={option.uid}>
-            {option.display_name}{option.job_title ? ` · ${option.job_title}` : ""}{option.phone ? ` · ${option.phone}` : ""}
+            {option.display_name}{option.job_title ? ` · ${option.job_title}` : ""}{option.phone ? ` · ${option.phone}` : ""}{branch && !appliesToBranch(option, branch) ? " · outside selected branch" : ""}
           </option>
         ))}
       </select>
