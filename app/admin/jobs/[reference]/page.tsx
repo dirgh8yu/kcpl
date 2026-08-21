@@ -8,6 +8,7 @@ import { getShipmentActivityTimeline } from "../../shipment-activity.server";
 import { OperationsShell } from "../../operations-shell";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
+import { SmartDocumentIntelligence } from "./smart-document-intelligence";
 import { WorkflowSpine } from "./workflow-spine";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
       isManagement={staff.permissions.role === "management"}
     >
       <WorkflowSpine initialWorkflow={workflow.readiness} initialJob={result.job} canOverride={staff.permissions.role === "management"}/>
+      <SmartDocumentIntelligence initialWorkflow={workflow.readiness}/>
       <JobFileWorkspace
         initialJob={result.job}
         role={staff.permissions.role}
