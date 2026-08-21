@@ -9,6 +9,12 @@ export const automationAlertTypes = [
   "invoice_overdue",
   "payable_overdue",
   "credit_limit_exceeded",
+  "shipment_unassigned",
+  "eta_upcoming",
+  "customs_open",
+  "required_document_missing",
+  "pod_missing",
+  "shipment_stalled",
 ] as const;
 export type AutomationAlertType = (typeof automationAlertTypes)[number];
 
@@ -53,4 +59,10 @@ export const automationAlertTypeLabels: Record<AutomationAlertType, string> = {
   invoice_overdue: "Overdue receivable",
   payable_overdue: "Overdue payable",
   credit_limit_exceeded: "Credit control",
+  shipment_unassigned: "Unassigned shipment",
+  eta_upcoming: "ETA approaching",
+  customs_open: "Customs work open",
+  required_document_missing: "Missing documents",
+  pod_missing: "POD missing",
+  shipment_stalled: "Shipment stalled",
 };

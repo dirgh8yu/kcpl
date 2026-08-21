@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
+import { evaluateFreightAutomation } from "../alerts/freight-automation.server";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
@@ -20,6 +21,7 @@ async function loadState(user: StaffUser) {
   try {
     const staff = await getStaffContext(user);
     if (!staff.permissions.canManageJobFile) return { kind: "restricted" as const };
+    await evaluateFreightAutomation();
     const data = await loadCommandCentre(staff);
     if (!data) return { kind: "unavailable" as const };
     return {

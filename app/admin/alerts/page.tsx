@@ -4,6 +4,7 @@ import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
 import { listAutomationAlerts } from "./alert-engine.server";
+import { evaluateFreightAutomation } from "./freight-automation.server";
 import { AlertsWorkspace } from "./alerts-workspace";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ type LoadResult =
 async function loadPage(user: { uid: string; email: string; displayName: string }): Promise<LoadResult> {
   try {
     const staff = await getStaffContext(user);
+    await evaluateFreightAutomation();
     const alerts = await listAutomationAlerts(staff, user.email, true);
     if (!alerts) return { kind: "unavailable" };
     return {
