@@ -1,4 +1,4 @@
-import { isPartnerReference } from "../partners/partner-policy";
+import { isPartnerReference } from "../partners/partner-policy.ts";
 
 export function validPayableCalendarDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
