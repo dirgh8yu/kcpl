@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types";
 import { shipmentStatuses, type ShipmentStatus } from "../shipment-types";
+import { customsClearanceStatusValue, customsReleaseRequired } from "./customs/customs-policy";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "./staff-directory.server";
 import { buildDocumentIntelligence } from "./workflow-defaults";
@@ -91,7 +92,7 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const openTasks = tasksSnapshot.docs.filter((doc) => doc.get("completed") !== true).length;
   const requiredCustoms = customsSnapshot.docs.filter((doc) => doc.get("required") !== false);
   const completedCustoms = requiredCustoms.filter((doc) => doc.get("completed") === true).length;
-  const customsReady = requiredCustoms.length === 0 || completedCustoms === requiredCustoms.length;
+  const customsStepsComplete = requiredCustoms.length === 0 || completedCustoms === requiredCustoms.length;
 
   const documentCounts = new Map<ShipmentDocumentType, number>();
   for (const doc of documentsSnapshot.docs) {
@@ -109,6 +110,13 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     requirements: nullable(source.quote.requirements),
     primaryBranch: source.branch,
   });
+  const customsReleaseIsRequired = customsReleaseRequired(intelligence.direction);
+  const customsClearanceStatus = customsClearanceStatusValue(source.data.customs_clearance_status);
+  const customsChecklistReady = customsReleaseIsRequired
+    ? requiredCustoms.length > 0 && customsStepsComplete
+    : customsStepsComplete;
+  const customsReleased = !customsReleaseIsRequired || customsClearanceStatus === "released";
+  const customsReady = customsChecklistReady && customsReleased;
 
   const requirementOverrides = new Map<ShipmentDocumentType, { required: boolean; reason: string; advisory: boolean; source: "shipment_override" }>();
   for (const doc of requirementsSnapshot.docs) {
@@ -161,7 +169,16 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const blockers: string[] = [];
   const warnings: string[] = [...intelligence.advisories];
   if (!customerLinked) blockers.push("Link this shipment to a CRM customer before controlled operational progression.");
-  if (!customsReady) blockers.push(`${requiredCustoms.length - completedCustoms} required customs step${requiredCustoms.length - completedCustoms === 1 ? " is" : "s are"} still open.`);
+  if (!customsChecklistReady) {
+    if (customsReleaseIsRequired && requiredCustoms.length === 0) blockers.push("International shipment has no required customs checklist. Repair the Job File before controlled progression.");
+    else blockers.push(`${requiredCustoms.length - completedCustoms} required customs step${requiredCustoms.length - completedCustoms === 1 ? " is" : "s are"} still open.`);
+  }
+  if (customsReleaseIsRequired && !customsReleased) {
+    const holdReason = nullable(source.data.customs_hold_reason);
+    blockers.push(customsClearanceStatus === "held"
+      ? `Customs hold must be resolved before final-mile progression${holdReason ? `: ${holdReason}` : "."}`
+      : "Record explicit Customs release before final-mile progression.");
+  }
   if (!documentPackReady) {
     const missing = operationalRequiredDocuments.filter((item) => !item.present).map((item) => item.label);
     blockers.push(`Required document pack incomplete: ${missing.join(", ")}.`);
@@ -172,7 +189,8 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const closeBlockers: string[] = [];
   if (status !== "delivered") closeBlockers.push("Shipment must be marked Delivered before the Job File can close.");
   if (!customerLinked) closeBlockers.push("A CRM customer must be confirmed.");
-  if (!customsReady) closeBlockers.push("All required customs steps must be complete.");
+  if (!customsChecklistReady) closeBlockers.push("All required customs checklist steps must be complete.");
+  if (customsReleaseIsRequired && !customsReleased) closeBlockers.push("Explicit Customs release must be recorded for this international shipment.");
   if (!documentPackReady) closeBlockers.push("All required operational documents must be present.");
   if (!proofOfDeliveryPresent) closeBlockers.push("Proof of Delivery (POD) must be uploaded.");
   if (openTasks > 0) closeBlockers.push(`${openTasks} operational task${openTasks === 1 ? " remains" : "s remain"} open.`);
@@ -180,10 +198,15 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const inTransitOrLater = ["in_transit", "customs_clearance", "out_for_delivery", "delivered"].includes(status);
   const outForDeliveryOrLater = ["out_for_delivery", "delivered"].includes(status);
   const delivered = status === "delivered";
+  const customsStageDetail = !customsChecklistReady
+    ? `${completedCustoms}/${requiredCustoms.length} required customs steps complete.`
+    : customsReleaseIsRequired
+      ? customsReleased ? "Customs checklist complete and explicit release recorded." : `Checklist complete. Customs status is ${customsClearanceStatus.replaceAll("_", " ")}; explicit release is still required.`
+      : "Customs checklist complete. Explicit release is not required by the current lane rule.";
   const stages: WorkflowStage[] = [
     { id: "won", label: "Won", state: "complete", detail: "Shipment and Job File created from an accepted quote." },
     { id: "setup", label: "Setup", state: stageState(customerLinked, !customerLinked), detail: customerLinked ? `CRM customer ${customerId} confirmed.` : "Confirm or create the CRM customer before progression." },
-    { id: "customs", label: "Customs", state: stageState(customsReady, customerLinked && !customsReady), detail: `${completedCustoms}/${requiredCustoms.length} required customs steps complete.` },
+    { id: "customs", label: "Customs", state: stageState(customsReady, customerLinked && !customsReady, customsClearanceStatus === "held"), detail: customsStageDetail },
     { id: "documents", label: "Docs", state: stageState(documentPackReady, customsReady && !documentPackReady), detail: documentPackReady ? "Smart required document pack present." : "Smart document rules identify missing required documents." },
     { id: "transit", label: "Transit", state: stageState(inTransitOrLater, customsReady && documentPackReady && !inTransitOrLater), detail: inTransitOrLater ? "Movement has reached transit/clearance stage." : "Movement milestone not reached yet." },
     { id: "delivery", label: "Delivery", state: stageState(delivered, outForDeliveryOrLater && !delivered), detail: delivered ? "Cargo marked delivered." : status === "out_for_delivery" ? "Final-mile delivery is active." : "Delivery not yet reached." },
@@ -199,6 +222,10 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     assigned_owner: assignedOwner,
     customs_required: requiredCustoms.length,
     customs_completed: completedCustoms,
+    customs_checklist_ready: customsChecklistReady,
+    customs_release_required: customsReleaseIsRequired,
+    customs_clearance_status: customsClearanceStatus,
+    customs_released: customsReleased,
     customs_ready: customsReady,
     open_tasks: openTasks,
     documents,
@@ -255,7 +282,8 @@ export async function validateShipmentTransition(
   }
   if (["out_for_delivery", "delivered"].includes(nextStatus)) {
     if (!readiness.customer_linked) blockers.push("Confirm the CRM customer before final-mile delivery.");
-    if (!readiness.customs_ready) blockers.push("Complete all required customs steps before final-mile delivery.");
+    if (!readiness.customs_checklist_ready) blockers.push("Complete the required customs checklist before final-mile delivery.");
+    if (readiness.customs_release_required && !readiness.customs_released) blockers.push("Record explicit Customs release before final-mile delivery.");
     if (!readiness.document_pack_ready) blockers.push("Complete the required operational document pack before final-mile delivery.");
   }
   if (nextStatus === "delivered" && readiness.status !== "out_for_delivery") {
