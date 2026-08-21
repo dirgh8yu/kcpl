@@ -151,13 +151,20 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   return { ...quote, shipment, notes, communications };
 }
 
-export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string) {
+export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string, allowCommercialTransition: boolean) {
   if (!configured()) return { kind: "unavailable" as const };
   const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
   const snapshot = await ref.get();
   if (!snapshot.exists) return { kind: "missing" as const };
 
   const currentStatus = quoteStatus(snapshot.get("status"));
+  const statusChanged = currentStatus !== status;
+  const commercialStates: QuoteStatus[] = ["quoted", "won", "lost"];
+  const commercialTransition = statusChanged && (commercialStates.includes(currentStatus) || commercialStates.includes(status));
+
+  if (commercialTransition && !allowCommercialTransition) {
+    return { kind: "commercial-required" as const, currentStatus };
+  }
   if (currentStatus === "won" && status !== "won") {
     return { kind: "won-locked" as const, currentStatus };
   }
