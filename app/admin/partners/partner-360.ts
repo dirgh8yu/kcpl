@@ -22,7 +22,7 @@ export type PartnerBillSummary = {
   status: PayableStatus;
   bill_date: string;
   due_date: string;
-  currency: CrmCurrency;
+  currency: CrmCurrency | null;
   total: number;
   amount_paid: number;
   balance_due: number;
