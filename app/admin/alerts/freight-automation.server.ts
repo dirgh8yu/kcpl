@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
-import { defaultDocumentRequirements } from "../workflow-defaults";
+import { buildDocumentIntelligence } from "../workflow-defaults";
 import type { AutomationAlertSeverity, AutomationAlertType } from "./alert-data";
 
 const EXTRA_TYPES: AutomationAlertType[] = [
@@ -157,6 +157,8 @@ export async function evaluateFreightAutomation() {
     const reference = childShipmentId(doc.ref);
     const type = (doc.get("document_type") || doc.id) as ShipmentDocumentType;
     if (!reference || !shipmentDocumentTypeLabels[type]) continue;
+    const source = text(doc.get("source"));
+    if (source === "workflow_default" || source === "smart_rule") continue;
     const map = requirementOverrides.get(reference) ?? new Map<ShipmentDocumentType, boolean>();
     map.set(type, doc.get("required") === true);
     requirementOverrides.set(reference, map);
@@ -194,7 +196,15 @@ export async function evaluateFreightAutomation() {
     const openCustoms = Math.max(0, customs.total - customs.completed);
     const presentDocs = documentsByShipment.get(reference) ?? new Set<ShipmentDocumentType>();
 
-    const requirementMap = new Map(defaultDocumentRequirements(mode).map((item) => [item.documentType, item.required]));
+    const intelligence = buildDocumentIntelligence({
+      mode,
+      origin: nullable(quote?.origin),
+      destination: nullable(quote?.destination),
+      cargoType: nullable(quote?.cargo_type),
+      requirements: nullable(quote?.requirements),
+      primaryBranch: branch,
+    });
+    const requirementMap = new Map(intelligence.requirements.map((item) => [item.documentType, item.required]));
     const overrides = requirementOverrides.get(reference);
     if (overrides) for (const [type, required] of overrides) requirementMap.set(type, required);
     const missingRequired = [...requirementMap.entries()]
@@ -233,7 +243,7 @@ export async function evaluateFreightAutomation() {
         type: "eta_upcoming",
         severity: etaDistance === 0 ? "warning" : "info",
         title: `${etaDistance === 0 ? "ETA today" : "ETA tomorrow"}: ${reference}`,
-        detail: `${eta?.slice(0, 10)} · ${openCustoms ? `${openCustoms} customs step${openCustoms === 1 ? "" : "s"} open · ` : ""}${missingRequired.length ? `${missingRequired.length} required document${missingRequired.length === 1 ? "" : "s"} missing` : "document pack ready"}.`,
+        detail: `${eta?.slice(0, 10)} · ${openCustoms ? `${openCustoms} customs step${openCustoms === 1 ? "" : "s"} open · ` : ""}${missingRequired.length ? `${missingRequired.length} smart-required document${missingRequired.length === 1 ? "" : "s"} missing` : "document pack ready"}.`,
         reference,
         branch,
         assignedName,
@@ -276,8 +286,8 @@ export async function evaluateFreightAutomation() {
         fingerprint: `required-documents-missing:${reference}`,
         type: "required_document_missing",
         severity: status === "out_for_delivery" || etaDistance === 0 ? "critical" : "warning",
-        title: `Required document pack incomplete: ${reference}`,
-        detail: `Missing ${labels.join(", ")}.`,
+        title: `Smart document pack incomplete: ${reference}`,
+        detail: `Missing ${labels.join(", ")}. ${intelligence.direction.replaceAll("_", " ")} · ${mode || "mode not set"}.`,
         reference,
         branch,
         assignedName,
@@ -286,8 +296,8 @@ export async function evaluateFreightAutomation() {
       });
       if (branch) addTask(reference, {
         id: "automation-documents",
-        title: "Complete required shipment document pack",
-        detail: `Upload or verify the missing required documents: ${labels.join(", ")}.`,
+        title: "Complete smart shipment document pack",
+        detail: `Upload or verify the smart-required documents: ${labels.join(", ")}. Rules were calculated from mode, lane, cargo text and shipment instructions.`,
         branch,
         assignedUid,
         assignedName,
