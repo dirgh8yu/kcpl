@@ -144,6 +144,7 @@ export async function POST(request: Request) {
     primaryBranch: primaryBranch as KcplBranch,
     accountManagerName: clean(body.accountManagerName).slice(0, 120),
     accountManagerEmail,
+    accountManagerPhone: clean(body.accountManagerPhone).slice(0, 80),
     billingEmail,
     preferredCurrency: preferredCurrency as CrmCurrency,
     paymentTermsDays: paymentTerms.value ?? "",
