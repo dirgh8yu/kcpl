@@ -76,6 +76,13 @@ export function OpsSurface({
   );
 }
 
+// Compatibility facade for integration panels that were built before the latest
+// Operations UI naming pass. Keeping it here prevents API-backed workspaces from
+// being disconnected during visual refactors.
+export function OpsPanel(props: Parameters<typeof OpsSurface>[0]) {
+  return <OpsSurface {...props}/>;
+}
+
 export function OpsStatStrip({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx("ops-stat-strip", className)}>{children}</div>;
 }
@@ -125,6 +132,10 @@ export function OpsBadge({
   return <span className={cx("ops-badge", className)} data-tone={tone}>{dot ? <i aria-hidden="true"/> : null}{children}</span>;
 }
 
+export function OpsStatusBadge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info" | "violet" }) {
+  return <OpsBadge tone={tone}>{children}</OpsBadge>;
+}
+
 export function OpsSearch({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className={cx("ops-search", className)}>
@@ -160,17 +171,40 @@ export function OpsEmptyState({
   return <div className="ops-empty" data-kind={kind} data-compact={compact || undefined}>{icon ? <div className="ops-empty-icon">{icon}</div> : null}<h3>{title}</h3>{description ? <p>{description}</p> : null}{action ? <div className="ops-empty-action">{action}</div> : null}</div>;
 }
 
+export function OpsErrorState({ title, detail, action, tone = "warning" }: { title: ReactNode; detail?: ReactNode; action?: ReactNode; tone?: "warning" | "danger" | "neutral" }) {
+  return <div className="m-3 rounded-[12px] border border-[#eadfd4] bg-[#fffaf5] p-4" role={tone === "danger" ? "alert" : "status"}>
+    <strong className="block text-[11px] text-[#4b423c]">{title}</strong>
+    {detail ? <p className="mt-1 text-[10px] leading-5 text-[#81776f]">{detail}</p> : null}
+    {action ? <div className="mt-3">{action}</div> : null}
+  </div>;
+}
+
 export function OpsButton({
   children,
-  variant = "secondary",
+  variant,
+  tone,
   size = "md",
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger";
+  tone?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md";
 }) {
-  return <button {...props} className={cx("ops-button", className)} data-variant={variant} data-size={size}>{children}</button>;
+  const resolvedVariant = variant ?? tone ?? "secondary";
+  return <button {...props} className={cx("ops-button", className)} data-variant={resolvedVariant} data-size={size}>{children}</button>;
+}
+
+export function OpsMetricStrip({ children, columns = 4 }: { children: ReactNode; columns?: number }) {
+  return <div className="grid gap-px bg-[#ece7e2]" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns)}, minmax(0, 1fr))` }}>{children}</div>;
+}
+
+export function OpsMetric({ icon, label, value, detail }: { icon?: ReactNode; label: ReactNode; value: ReactNode; detail?: ReactNode }) {
+  return <div className="bg-white p-3.5">
+    <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[.08em] text-[#8f857d]">{icon}{label}</div>
+    <div className="mt-1.5 text-[17px] font-[720] tracking-[-.03em] text-[#3b342f]">{value}</div>
+    {detail ? <div className="mt-1 text-[9px] text-[#91877f]">{detail}</div> : null}
+  </div>;
 }
 
 export function OpsMono({ children, className }: { children: ReactNode; className?: string }) {
