@@ -1,4 +1,6 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { crmCurrencies, type CrmCurrency } from "./crm-data";
+import { createCrmCustomer, findCrmDuplicates } from "./crm-data.server";
 
 type Actor = { name: string; email: string };
 
@@ -195,4 +197,58 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
 
     return { kind: "linked" as const };
   });
+}
+
+export async function createCrmCustomerFromQuote(quoteReference: string, actor: Actor) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const db = firebaseAdminDb();
+  const quoteId = quoteReference.trim().toUpperCase();
+  const quote = await db.collection("quotes").doc(quoteId).get();
+  if (!quote.exists) return { kind: "missing_quote" as const };
+  const currentCustomerId = nullable(quote.get("customer_id"));
+  if (currentCustomerId) return { kind: "already_linked" as const, customerId: currentCustomerId };
+
+  const displayName = text(quote.get("company_name"), text(quote.get("contact_name"), "New customer")).trim();
+  const primaryEmail = text(quote.get("contact_email")).trim().toLowerCase();
+  const primaryPhone = text(quote.get("phone")).trim();
+  const duplicates = await findCrmDuplicates({ displayName, primaryEmail, primaryPhone, taxId: "" });
+  if (duplicates.length) return { kind: "duplicates" as const, matches: duplicates };
+
+  const quoteCurrency = text(quote.get("quote_currency"), "NPR").toUpperCase();
+  const preferredCurrency = crmCurrencies.includes(quoteCurrency as CrmCurrency) ? quoteCurrency as CrmCurrency : "NPR";
+  const created = await createCrmCustomer({
+    entityKind: nullable(quote.get("company_name")) ? "company" : "individual",
+    displayName,
+    legalName: "",
+    tradingName: "",
+    relationshipTypes: ["customer"],
+    accountStatus: "prospect",
+    leadStage: "quote_requested",
+    leadSource: "website",
+    primaryEmail,
+    primaryPhone,
+    website: "",
+    industry: "",
+    taxId: "",
+    country: "Not recorded",
+    primaryBranch: "Kathmandu",
+    accountManagerName: "",
+    accountManagerEmail: "",
+    billingEmail: primaryEmail,
+    preferredCurrency,
+    paymentTermsDays: "",
+    creditLimit: "",
+    outstandingBalance: "",
+    pricingNotes: "",
+    markupPercent: "",
+    preferredCarriers: [],
+    transportPreferences: text(quote.get("mode")) ? [text(quote.get("mode"))] : [],
+    tags: ["website-enquiry"],
+    internalSummary: `Created from ${quoteId}: ${text(quote.get("origin"))} → ${text(quote.get("destination"))}.`,
+  }, actor);
+  if (created.kind !== "created") return created;
+
+  const linked = await linkQuoteToCrmCustomer(created.customer.id, quoteId, actor);
+  if (linked.kind !== "linked") return linked;
+  return { kind: "created_and_linked" as const, customer: created.customer };
 }

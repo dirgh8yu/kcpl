@@ -28,6 +28,12 @@ export type QuoteNote = {
   created_at: string;
 };
 
+export type QuoteCrmMatch = {
+  id: string;
+  display_name: string;
+  reason: string;
+};
+
 export type QuoteDetail = QuoteSummary & {
   cargo_type: string | null;
   weight: string | null;
@@ -45,6 +51,9 @@ export type QuoteDetail = QuoteSummary & {
   internal_cost: string | null;
   valid_until: string | null;
   customer_quote_note: string | null;
+  customer_id: string | null;
+  crm_match_state: string | null;
+  crm_matches: QuoteCrmMatch[];
   shipment: ShipmentDetail | null;
   notes: QuoteNote[];
 };

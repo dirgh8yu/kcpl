@@ -1,21 +1,24 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Building2,
   CalendarDays,
+  CheckCircle2,
   Clock3,
+  Link2,
   Mail,
   MapPin,
   MessageSquareText,
   Package,
   Phone,
+  Plus,
   Send,
   UserRound,
 } from "lucide-react";
 import { quoteCurrencies } from "./admin-data";
-import type { QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
+import type { QuoteCrmMatch, QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 import { AdminShipmentPanel } from "./admin-shipment-panel";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
@@ -100,6 +103,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [noteDraft, setNoteDraft] = useState("");
+  const [manualCustomerId, setManualCustomerId] = useState("");
 
   const statusCounts = useMemo<Record<QuoteStatus, number>>(() => ({
     new: quotes.filter((quote) => quote.status === "new").length,
@@ -118,15 +122,18 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
     });
   }, [query, quotes, statusFilter]);
 
+  const loadDetail = useCallback(async (reference: string, signal?: AbortSignal) => {
+    const response = await fetch(`/api/admin/quotes/${encodeURIComponent(reference)}`, { cache: "no-store", signal });
+    const data = await response.json() as { quote?: QuoteDetail; error?: string };
+    if (!response.ok || !data.quote) throw new Error(data.error || "Could not load the enquiry.");
+    return data.quote;
+  }, []);
+
   useEffect(() => {
     if (!selectedReference) return;
     const controller = new AbortController();
-    fetch(`/api/admin/quotes/${encodeURIComponent(selectedReference)}`, { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        const data = await response.json() as { quote?: QuoteDetail; error?: string };
-        if (!response.ok || !data.quote) throw new Error(data.error || "Could not load the enquiry.");
-        setDetail(data.quote);
-      })
+    loadDetail(selectedReference, controller.signal)
+      .then((quote) => setDetail(quote))
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setDetail(null);
@@ -134,16 +141,65 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [selectedReference]);
+  }, [loadDetail, selectedReference]);
 
   function selectQuote(reference: string) {
     if (reference === selectedReference) return;
-    setLoading(true); setDetail(null); setNotice(""); setActiveTab("overview"); setSelectedReference(reference);
+    setLoading(true); setDetail(null); setNotice(""); setActiveTab("overview"); setManualCustomerId(""); setSelectedReference(reference);
+  }
+
+  async function refreshDetail(message?: string) {
+    if (!detail) return;
+    const next = await loadDetail(detail.reference);
+    setDetail(next);
+    setManualCustomerId("");
+    if (message) setNotice(message);
+    if (next.shipment) setQuotes((current) => current.map((quote) => quote.reference === next.reference ? { ...quote, status: next.status, assigned_to: next.assigned_to } : quote));
+  }
+
+  async function linkCustomer(customerId: string) {
+    if (!detail || !customerId.trim()) return;
+    setSaving(true); setNotice("");
+    try {
+      const id = customerId.trim().toUpperCase();
+      const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(id)}/quote-links`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ quoteReference: detail.reference }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Could not confirm the CRM customer.");
+      await refreshDetail(`CRM customer ${id} confirmed for this enquiry.`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not confirm the CRM customer."); }
+    finally { setSaving(false); }
+  }
+
+  async function createCustomerFromEnquiry() {
+    if (!detail) return;
+    setSaving(true); setNotice("");
+    try {
+      const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "create_customer" }),
+      });
+      const data = await response.json() as { customerId?: string; error?: string; matches?: QuoteCrmMatch[] };
+      if (!response.ok) {
+        if (data.matches?.length) setDetail((current) => current ? { ...current, crm_matches: data.matches ?? current.crm_matches, crm_match_state: "suggested" } : current);
+        throw new Error(data.error || "Could not create the CRM customer.");
+      }
+      await refreshDetail(`Customer ${data.customerId ?? "record"} created and linked to this enquiry.`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not create the CRM customer."); }
+    finally { setSaving(false); }
   }
 
   async function saveQuote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!detail) return;
+    if (detail.status === "won" && !detail.customer_id) {
+      setNotice("Confirm or create the CRM customer before marking this quote Won.");
+      return;
+    }
     setSaving(true); setNotice("");
     try {
       const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
@@ -155,7 +211,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
       setQuotes((current) => current.map((quote) => quote.reference === detail.reference ? { ...quote, status: detail.status, assigned_to: detail.assigned_to } : quote));
       if (data.shipment) {
         setDetail((current) => current ? { ...current, shipment: data.shipment ?? current.shipment } : current);
-        setNotice(`Quote won. Shipment ${data.shipment.reference} is ready.`);
+        setNotice(`Quote won. Shipment ${data.shipment.reference} and its controlled Job File are ready.`);
         setActiveTab("shipment");
       } else setNotice("Enquiry workflow updated.");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Could not save the enquiry workflow."); }
@@ -239,14 +295,14 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
           {!loading && detail ? <>
             <header className="sticky top-[58px] z-20 border-b border-[#e8e0d9] bg-[#fffdfa]/94 px-5 py-4 backdrop-blur-xl lg:top-0">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><OpsMono className="text-[9px] text-[#a06451]">{detail.reference}</OpsMono><OpsBadge tone={statusTone(detail.status)} dot>{statusLabels[detail.status]}</OpsBadge></div><h2 className="mt-2 flex items-center gap-2 text-[22px] font-[735] tracking-[-.045em] text-[#3a322d]"><span className="truncate">{detail.origin}</span><ArrowRight size={15} className="shrink-0 text-[#c87960]"/><span className="truncate">{detail.destination}</span></h2><p className="mt-1 text-[9px] text-[#968c84]">{detail.company_name || detail.contact_name} · received {formatDate(detail.created_at)}</p></div>
+                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><OpsMono className="text-[9px] text-[#a06451]">{detail.reference}</OpsMono><OpsBadge tone={statusTone(detail.status)} dot>{statusLabels[detail.status]}</OpsBadge>{detail.customer_id ? <OpsBadge tone="success">CRM linked</OpsBadge> : <OpsBadge tone="warning">CRM customer required</OpsBadge>}</div><h2 className="mt-2 flex items-center gap-2 text-[22px] font-[735] tracking-[-.045em] text-[#3a322d]"><span className="truncate">{detail.origin}</span><ArrowRight size={15} className="shrink-0 text-[#c87960]"/><span className="truncate">{detail.destination}</span></h2><p className="mt-1 text-[9px] text-[#968c84]">{detail.company_name || detail.contact_name} · received {formatDate(detail.created_at)}</p></div>
                 <div className="flex flex-wrap items-center gap-2"><a href={`mailto:${detail.contact_email}`} className="ops-button" data-variant="secondary" data-size="sm"><Mail size={11}/>Email</a>{detail.phone ? <a href={`tel:${detail.phone}`} className="ops-button" data-variant="secondary" data-size="sm"><Phone size={11}/>Call</a> : null}{detail.quoted_amount ? <OpsButton variant="primary" size="sm" onClick={sendQuote}><Send size={11}/>Prepare quote email</OpsButton> : null}</div>
               </div>
               <nav className="ops-segmented mt-4">{detailTabs.map((tab) => <button key={tab} type="button" data-active={activeTab === tab || undefined} onClick={() => setActiveTab(tab)}>{tab === "activity" ? `Activity${detail.note_count ? ` · ${detail.note_count}` : ""}` : tab}</button>)}</nav>
             </header>
 
             <div className="ops-content ops-stack">
-              {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("add a") ? "warning" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
+              {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("required") || notice.toLowerCase().includes("duplicate") ? "warning" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
 
               {activeTab === "overview" ? <div className="ops-grid-main">
                 <div className="ops-stack">
@@ -258,11 +314,12 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
                 </div>
 
                 <aside className="ops-stack xl:sticky xl:top-[132px]">
-                  <OpsSurface eyebrow="Workflow" title="Ownership & status">
-                    <form onSubmit={saveQuote} className="grid gap-3"><OpsField label="Status"><select value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></OpsField><OpsField label="Assigned to"><input value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></OpsField><OpsButton variant="primary" disabled={saving}>{saving ? "Saving…" : "Save workflow"}</OpsButton></form>
+                  <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
+                  <OpsSurface eyebrow="Workflow" title="Ownership & status" description={detail.customer_id ? "Customer ownership is confirmed. Won conversion can safely create the shipment and Job File." : "Won is intentionally blocked until a CRM customer is confirmed."}>
+                    <form onSubmit={saveQuote} className="grid gap-3"><OpsField label="Status"><select value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></OpsField><OpsField label="Assigned to"><input value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></OpsField><OpsButton variant="primary" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></form>
                   </OpsSurface>
                   <OpsSurface eyebrow="Commercial" title="Quote snapshot"><div className="grid grid-cols-2 gap-2"><Snapshot label="Customer price" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "Not quoted"}/><Snapshot label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"}/></div><OpsButton variant="ghost" size="sm" className="mt-3" onClick={() => setActiveTab("pricing")}>Open pricing workspace <ArrowRight size={11}/></OpsButton></OpsSurface>
-                  {detail.shipment ? <OpsSurface eyebrow="Won business" title={<OpsMono>{detail.shipment.reference}</OpsMono>} description="A shipment and Digital Job File already exist for this quote."><div className="flex flex-wrap gap-2"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div></OpsSurface> : null}
+                  {detail.shipment ? <OpsSurface eyebrow="Won business" title={<OpsMono>{detail.shipment.reference}</OpsMono>} description="A shipment and controlled Digital Job File already exist for this quote."><div className="flex flex-wrap gap-2"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div></OpsSurface> : null}
                 </aside>
               </div> : null}
 
@@ -275,7 +332,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
                 </form>
               </OpsSurface> : null}
 
-              {activeTab === "shipment" ? <OpsSurface eyebrow="Shipment" title={detail.shipment ? <OpsMono>{detail.shipment.reference}</OpsMono> : "Shipment workspace"} description={detail.shipment ? "Continue operational tracking without leaving the enquiry context." : "A shipment is created automatically when the enquiry is saved as Won."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={setNotice}/></OpsSurface> : null}
+              {activeTab === "shipment" ? <OpsSurface eyebrow="Shipment" title={detail.shipment ? <OpsMono>{detail.shipment.reference}</OpsMono> : "Shipment workspace"} description={detail.shipment ? "Continue operational tracking without leaving the enquiry context. Workflow guards apply to controlled status changes." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the CRM customer first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={setNotice}/></OpsSurface> : null}
 
               {activeTab === "activity" ? <OpsSurface eyebrow="Internal activity" title="Notes & decisions" description="A lightweight record of the conversation around this enquiry.">
                 <form onSubmit={addNote} className="flex flex-col gap-2 sm:flex-row"><textarea className="ops-input min-h-[74px] flex-1 resize-y" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Add an internal note, customer callback, pricing decision or follow-up…"/><OpsButton variant="primary" disabled={saving || !noteDraft.trim()}><MessageSquareText size={12}/>Add note</OpsButton></form>
@@ -287,6 +344,17 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
       </div>
     </main>
   );
+}
+
+function CustomerControl({ detail, saving, manualCustomerId, onManualCustomerId, onLink, onCreate }: { detail: QuoteDetail; saving: boolean; manualCustomerId: string; onManualCustomerId: (value: string) => void; onLink: (customerId: string) => void; onCreate: () => void }) {
+  if (detail.customer_id) {
+    return <OpsSurface eyebrow="CRM customer" title="Confirmed account" description="This ownership flows into the shipment, Job File, Customer 360 and Finance."><div className="flex items-center justify-between gap-3 rounded-[11px] border border-[#d8e2d8] bg-[#f4f8f4] p-3"><div className="min-w-0"><p className="flex items-center gap-1.5 text-[9px] font-bold text-[#607563]"><CheckCircle2 size={12}/>Customer linked</p><OpsMono className="mt-1 block truncate text-[9px] text-[#667067]">{detail.customer_id}</OpsMono></div><a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="sm">Customer 360 <ArrowRight size={10}/></a></div></OpsSurface>;
+  }
+
+  return <OpsSurface eyebrow="CRM customer" title="Confirm customer before Won" description="We will never invent the customer relationship. Confirm a suggested account, enter a known KCPL-C reference, or create a new prospect only when no duplicate exists.">
+    {detail.crm_matches.length ? <div className="grid gap-2">{detail.crm_matches.slice(0, 4).map((match) => <button type="button" disabled={saving} key={match.id} onClick={() => onLink(match.id)} className="flex items-center justify-between gap-3 rounded-[11px] border border-[#e7dfd8] bg-[#faf8f5] p-3 text-left transition hover:border-[#d9c2b7] hover:bg-[#fff8f4]"><div className="min-w-0"><p className="truncate text-[9px] font-bold text-[#514840]">{match.display_name}</p><p className="mt-1 text-[8px] text-[#948a82]">Match: {match.reason || "existing CRM details"} · <OpsMono>{match.id}</OpsMono></p></div><span className="shrink-0 text-[8px] font-bold text-[#b36a55]">Confirm</span></button>)}</div> : <div className="rounded-[11px] border border-[#eadfd4] bg-[#fffaf4] p-3 text-[9px] leading-5 text-[#806f60]">No existing CRM match was found for this enquiry.</div>}
+    <div className="mt-3 grid gap-2"><OpsField label="Known customer reference" hint="Optional"><input value={manualCustomerId} onChange={(event) => onManualCustomerId(event.target.value.toUpperCase())} placeholder="KCPL-C-…"/></OpsField><div className="flex flex-wrap gap-2"><OpsButton variant="secondary" size="sm" type="button" disabled={saving || !manualCustomerId.trim()} onClick={() => onLink(manualCustomerId)}><Link2 size={11}/>Link reference</OpsButton><OpsButton variant="primary" size="sm" type="button" disabled={saving} onClick={onCreate}><Plus size={11}/>Create from enquiry</OpsButton></div></div>
+  </OpsSurface>;
 }
 
 function Info({ icon, label, value, href }: { icon?: React.ReactNode; label: string; value: string; href?: string }) {

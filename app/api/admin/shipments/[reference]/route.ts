@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
+import { getShipmentWorkflowReadiness, recordWorkflowOverride, validateShipmentTransition } from "../../../../admin/workflow-guard.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { addShipmentEvent, updateShipment } from "../../../../shipment-data.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../../../shipment-types";
@@ -49,6 +50,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const carrier = clean(body.carrier);
   const carrierReference = clean(body.carrierReference);
   const customerNote = clean(body.customerNote);
+  const overrideReason = clean(body.overrideReason);
 
   if (!shipmentStatuses.includes(status as ShipmentStatus)) return json({ ok: false, error: "Choose a valid shipment status." }, 400);
   if (eta && !/^\d{4}-\d{2}-\d{2}$/.test(eta)) return json({ ok: false, error: "Choose a valid ETA date." }, 400);
@@ -57,6 +59,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (carrierReference.length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
   if (customerNote.length > 2000) return json({ ok: false, error: "Customer update must be 2000 characters or fewer." }, 400);
 
+  const transition = await validateShipmentTransition(reference, status as ShipmentStatus, auth.staff, overrideReason);
+  if (transition.kind === "unavailable") return json({ ok: false, error: "Workflow controls are unavailable." }, 503);
+  if (transition.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (transition.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
+  if (transition.kind === "blocked") {
+    return json({
+      ok: false,
+      error: transition.blockers.join(" "),
+      code: "WORKFLOW_BLOCKED",
+      blockers: transition.blockers,
+      canOverride: transition.canOverride,
+      workflow: transition.readiness,
+    }, 409);
+  }
+
+  const fromStatus = transition.readiness.status;
   const result = await updateShipment(reference, {
     status: status as ShipmentStatus,
     eta,
@@ -68,7 +86,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
 
   if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
-  return json({ ok: true, shipment: result.shipment });
+  if (transition.overrideUsed) {
+    await recordWorkflowOverride(reference, fromStatus, status as ShipmentStatus, transition.overrideReason, { name: auth.user.displayName, email: auth.user.email });
+  }
+  const workflow = await getShipmentWorkflowReadiness(reference, auth.staff);
+  return json({ ok: true, shipment: result.shipment, workflow: workflow.kind === "ready" ? workflow.readiness : null, overrideUsed: transition.overrideUsed });
 }
 
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {

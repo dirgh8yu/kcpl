@@ -4,6 +4,7 @@ import {
   quoteCurrencies,
   quoteStatuses,
   type QuoteCommercialInput,
+  type QuoteCrmMatch,
   type QuoteCurrency,
   type QuoteDetail,
   type QuoteNote,
@@ -30,6 +31,18 @@ function quoteStatus(value: unknown): QuoteStatus {
 
 function quoteCurrency(value: unknown): QuoteCurrency {
   return quoteCurrencies.includes(value as QuoteCurrency) ? value as QuoteCurrency : "USD";
+}
+
+function crmMatches(value: unknown): QuoteCrmMatch[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const data = item as Record<string, unknown>;
+    const id = stringValue(data.id).trim().toUpperCase();
+    const displayName = stringValue(data.display_name).trim();
+    const reason = stringValue(data.reason).trim();
+    return id && displayName ? [{ id, display_name: displayName, reason }] : [];
+  });
 }
 
 function summaryFromData(reference: string, data: Record<string, unknown>): QuoteSummary {
@@ -66,6 +79,9 @@ function detailFromData(reference: string, data: Record<string, unknown>): Omit<
     internal_cost: nullableString(data.internal_cost),
     valid_until: nullableString(data.valid_until),
     customer_quote_note: nullableString(data.customer_quote_note),
+    customer_id: nullableString(data.customer_id),
+    crm_match_state: nullableString(data.crm_match_state),
+    crm_matches: crmMatches(data.crm_matches),
   };
 }
 
@@ -100,7 +116,7 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   let shipment: QuoteDetail["shipment"] = null;
   try {
     shipment = (await getShipmentForQuote(normalized)) ?? null;
-    if (!shipment && quote.status === "won") {
+    if (!shipment && quote.status === "won" && quote.customer_id) {
       const created = await ensureShipmentForWonQuote(normalized);
       if (created.kind === "created" || created.kind === "ready") shipment = created.shipment ?? null;
     }
@@ -116,6 +132,7 @@ export async function updateQuoteAdmin(reference: string, status: QuoteStatus, a
   const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
   const snapshot = await ref.get();
   if (!snapshot.exists) return { kind: "missing" as const };
+  if (status === "won" && !nullableString(snapshot.get("customer_id"))) return { kind: "customer-required" as const };
 
   await ref.update({
     status,
