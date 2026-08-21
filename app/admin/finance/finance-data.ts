@@ -6,6 +6,8 @@ export type FinanceInvoiceStatus = (typeof financeInvoiceStatuses)[number];
 export const financePaymentMethods = ["bank_transfer", "cash", "card", "cheque", "wallet", "adjustment", "other"] as const;
 export type FinancePaymentMethod = (typeof financePaymentMethods)[number];
 
+export type FinanceReceivableRecordType = "invoice" | "opening_balance";
+
 export const financeInvoiceStatusLabels: Record<FinanceInvoiceStatus, string> = {
   draft: "Draft",
   issued: "Issued",
@@ -52,6 +54,10 @@ export type FinancePayment = {
 
 export type FinanceInvoice = {
   reference: string;
+  record_type: FinanceReceivableRecordType;
+  external_invoice_number: string | null;
+  migration_batch_id: string | null;
+  migration_as_of_date: string | null;
   customer_id: string;
   customer_name: string;
   shipment_reference: string | null;
@@ -78,6 +84,7 @@ export type FinanceInvoice = {
 export type FinanceCurrencySummary = {
   currency: CrmCurrency;
   invoiced: number;
+  opening_balance: number;
   collected: number;
   outstanding: number;
   overdue: number;
@@ -86,6 +93,7 @@ export type FinanceCurrencySummary = {
   aging_61_90: number;
   aging_90_plus: number;
   invoice_count: number;
+  opening_balance_count: number;
 };
 
 export type FinanceDashboard = {
@@ -96,6 +104,7 @@ export type FinanceDashboard = {
   unpaid_count: number;
   paid_count: number;
   draft_count: number;
+  opening_balance_count: number;
 };
 
 export type CreateFinanceInvoiceInput = {
