@@ -21,22 +21,37 @@ function shipmentIdFromChild(ref: FirebaseFirestore.DocumentReference) {
   return ref.parent.parent?.id ?? "";
 }
 
+function mergeDocs(...snapshots: FirebaseFirestore.QuerySnapshot[]) {
+  const docs = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+  for (const snapshot of snapshots) {
+    for (const doc of snapshot.docs) docs.set(doc.ref.path, doc);
+  }
+  return [...docs.values()];
+}
+
 export async function listCurrentStaffAssignmentNotifications(context: KcplStaffContext, email: string) {
   if (!firebaseRuntimeConfigured()) return [] as OperationsNotification[];
   const db = firebaseAdminDb();
   const normalizedEmail = email.trim().toLowerCase();
-  const [shipments, jobTasks, customerTasks, receiptsSnapshot, preferences] = await Promise.all([
+  const uid = context.profile.uid;
+  const [shipmentsByUid, shipmentsByEmail, jobTasksByUid, jobTasksByEmail, customerTasksByUid, customerTasksByEmail, receiptsSnapshot, preferences] = await Promise.all([
+    db.collection("shipments").where("job_assigned_to_uid", "==", uid).limit(500).get(),
     db.collection("shipments").where("job_assigned_to_email", "==", normalizedEmail).limit(500).get(),
+    db.collectionGroup("job_tasks").where("assigned_to_uid", "==", uid).limit(1000).get(),
     db.collectionGroup("job_tasks").where("assigned_to_email", "==", normalizedEmail).limit(1000).get(),
+    db.collectionGroup("tasks").where("assigned_to_uid", "==", uid).limit(1000).get(),
     db.collectionGroup("tasks").where("assigned_to_email", "==", normalizedEmail).limit(1000).get(),
-    db.collection("staff_notification_receipts").doc(context.profile.uid).collection("items").limit(1000).get(),
-    getNotificationPreferences(context.profile.uid),
+    db.collection("staff_notification_receipts").doc(uid).collection("items").limit(1000).get(),
+    getNotificationPreferences(uid),
   ]);
+  const shipments = mergeDocs(shipmentsByUid, shipmentsByEmail);
+  const jobTasks = mergeDocs(jobTasksByUid, jobTasksByEmail);
+  const customerTasks = mergeDocs(customerTasksByUid, customerTasksByEmail);
   const receipts = receiptMap(receiptsSnapshot);
   const output: OperationsNotification[] = [];
 
   if (preferences.categories.assignments) {
-    for (const doc of shipments.docs) {
+    for (const doc of shipments) {
       const branch = nullable(doc.get("primary_branch")) as KcplBranch | null;
       if (branch && !staffCanAccessBranch(context, branch)) continue;
       const id = `assignment:shipment:${doc.id}`;
@@ -60,7 +75,7 @@ export async function listCurrentStaffAssignmentNotifications(context: KcplStaff
   }
 
   if (preferences.categories.tasks) {
-    for (const doc of jobTasks.docs) {
+    for (const doc of jobTasks) {
       const shipmentReference = shipmentIdFromChild(doc.ref);
       if (!shipmentReference) continue;
       const branch = nullable(doc.get("branch")) as KcplBranch | null;
@@ -85,7 +100,7 @@ export async function listCurrentStaffAssignmentNotifications(context: KcplStaff
       });
     }
 
-    for (const doc of customerTasks.docs) {
+    for (const doc of customerTasks) {
       const customerId = doc.ref.parent.parent?.id ?? "";
       if (!customerId) continue;
       const customer = await db.collection("customers").doc(customerId).get();
