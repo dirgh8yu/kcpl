@@ -53,6 +53,11 @@ function statusValue(value: unknown): ShipmentStatus {
   return shipmentStatuses.includes(value as ShipmentStatus) ? value as ShipmentStatus : "booking_confirmed";
 }
 
+function shortReference(value: string) {
+  const parts = value.split("-");
+  return parts.length > 2 ? parts.slice(-1)[0] : value;
+}
+
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "private, no-store" } });
 }
@@ -110,16 +115,17 @@ export async function GET() {
     const destination = text(quote.destination, "Destination");
     const status = statusValue(data.status);
     const carrier = nullable(data.carrier);
+    const carrierReference = nullable(data.carrier_reference);
     const currentLocation = nullable(data.current_location);
 
     results.push({
       kind: "shipment",
       id: doc.id,
-      title: doc.id,
-      subtitle: `${customerName} · ${origin} → ${destination}`,
-      meta: `${shipmentStatusLabels[status]} · ${currentLocation || primary}`,
+      title: `${origin} → ${destination}`,
+      subtitle: `${customerName} · ${doc.id}`,
+      meta: [shipmentStatusLabels[status], currentLocation || primary, carrierReference].filter(Boolean).join(" · "),
       href: `/admin/jobs/${encodeURIComponent(doc.id)}`,
-      searchText: [doc.id, quoteReference, customerName, origin, destination, primary, ...handling, carrier ?? "", currentLocation ?? ""].join(" "),
+      searchText: [doc.id, shortReference(doc.id), quoteReference, customerName, customerId ?? "", origin, destination, primary, ...handling, carrier ?? "", carrierReference ?? "", currentLocation ?? "", text(data.internal_job_reference)].join(" "),
       currentLocation,
       exception: status === "exception",
     });
@@ -140,10 +146,10 @@ export async function GET() {
       kind: "customer",
       id: doc.id,
       title: displayName,
-      subtitle: email || phone || `${country} · ${branch}`,
-      meta: `Customer · ${branch}`,
+      subtitle: `${country} · ${branch}${email ? ` · ${email}` : phone ? ` · ${phone}` : ""}`,
+      meta: `Customer · ${doc.id}`,
       href: `/admin/crm/${encodeURIComponent(doc.id)}`,
-      searchText: [doc.id, displayName, text(data.legal_name), email ?? "", phone ?? "", country, branch, text(data.account_manager_name), ...tags].join(" "),
+      searchText: [doc.id, shortReference(doc.id), displayName, text(data.legal_name), text(data.trading_name), email ?? "", phone ?? "", country, branch, text(data.account_manager_name), ...tags].join(" "),
     });
   }
 
@@ -153,16 +159,18 @@ export async function GET() {
     const contact = text(data.contact_name, "Customer");
     const origin = text(data.origin, "Origin");
     const destination = text(data.destination, "Destination");
+    const mode = text(data.mode);
+    const cargo = nullable(data.cargo_type);
     const status = text(data.status, "new");
 
     results.push({
       kind: "enquiry",
       id: doc.id,
-      title: doc.id,
-      subtitle: `${company || contact} · ${origin} → ${destination}`,
-      meta: `Enquiry · ${status.replaceAll("_", " ")}`,
+      title: `${origin} → ${destination}`,
+      subtitle: `${company || contact}${mode ? ` · ${mode.replaceAll("_", " ")}` : ""}${cargo ? ` · ${cargo}` : ""}`,
+      meta: `Enquiry · ${status.replaceAll("_", " ")} · ${doc.id}`,
       href: `/admin?enquiry=${encodeURIComponent(doc.id)}`,
-      searchText: [doc.id, company ?? "", contact, text(data.contact_email), origin, destination, text(data.mode), status].join(" "),
+      searchText: [doc.id, shortReference(doc.id), company ?? "", contact, text(data.contact_email), text(data.phone), origin, destination, mode, cargo ?? "", status].join(" "),
     });
   }
 
