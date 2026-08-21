@@ -10,6 +10,7 @@ import {
   ChartNoAxesCombined,
   ChevronRight,
   Database,
+  FileText,
   HandCoins,
   Handshake,
   LayoutDashboard,
@@ -44,6 +45,7 @@ const operationsNav: NavItem[] = [
   { href: "/admin", label: "Enquiries", icon: PackageSearch, match: (path) => path === "/admin", hint: "Requests, quotes and pricing" },
   { href: "/admin/shipments", label: "Shipments", icon: Boxes, match: (path) => path.startsWith("/admin/shipments") || path.startsWith("/admin/jobs/"), hint: "Movements and Digital Job Files" },
   { href: "/admin/customs", label: "Customs", icon: ShieldCheck, match: (path) => path.startsWith("/admin/customs"), hint: "Clearance queue, documents and customs blockers" },
+  { href: "/admin/documents", label: "Documents", icon: FileText, match: (path) => path.startsWith("/admin/documents"), hint: "Verified shipment documents and review queue" },
   { href: "/admin/alerts", label: "Tasks & alerts", icon: Bell, match: (path) => path.startsWith("/admin/alerts"), hint: "Exceptions, ownership and follow-up" },
 ];
 
