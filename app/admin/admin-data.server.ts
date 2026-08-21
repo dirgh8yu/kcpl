@@ -12,8 +12,9 @@ import {
   type QuoteStatus,
   type QuoteSummary,
 } from "./admin-data";
+import { canAccessQuoteLinkedRecords, strictBranchValue } from "./branch-access-policy";
 import { ensureShipmentForWonQuote, getShipmentForQuote } from "../shipment-data.server";
-import { listStaffProfiles, resolveStaffIdentity, resolveStaffIdentityFromProfiles } from "./staff-directory.server";
+import { listStaffProfiles, resolveStaffIdentity, resolveStaffIdentityFromProfiles, type KcplStaffContext } from "./staff-directory.server";
 import type { KcplStaffProfile } from "./staff-directory";
 
 function configured() {
@@ -127,13 +128,65 @@ function numericId() {
   return Date.now() * 1000 + Math.floor(Math.random() * 1000);
 }
 
-export async function listQuoteSummaries(): Promise<QuoteSummary[] | null> {
+async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>) {
+  const db = firebaseAdminDb();
+  const unique = [...new Set([...ids].map((id) => id.trim()).filter(Boolean))];
+  const output = new Map<string, Record<string, unknown>>();
+  for (let index = 0; index < unique.length; index += 250) {
+    const batch = unique.slice(index, index + 250);
+    const snapshots = await db.getAll(...batch.map((id) => db.collection(collectionName).doc(id)));
+    for (const snapshot of snapshots) {
+      if (snapshot.exists) output.set(snapshot.id, snapshot.data() as Record<string, unknown>);
+    }
+  }
+  return output;
+}
+
+export async function listQuoteSummaries(context: KcplStaffContext): Promise<QuoteSummary[] | null> {
   if (!configured()) return null;
   const [snapshot, profiles] = await Promise.all([
     firebaseAdminDb().collection("quotes").orderBy("created_at", "desc").limit(1000).get(),
     listStaffProfiles(),
   ]);
-  return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>, profiles ?? []));
+
+  if (context.can_access_all_branches) {
+    return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>, profiles ?? []));
+  }
+
+  const rows = snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+  const shipmentReferences = rows.flatMap(({ data }) => {
+    const reference = nullableString(data.shipment_reference);
+    return reference ? [reference] : [];
+  });
+  const shipments = await loadDocumentsByIds("shipments", shipmentReferences);
+  const customerIds = new Set<string>();
+  for (const { data } of rows) {
+    const customerId = nullableString(data.customer_id);
+    if (customerId) customerIds.add(customerId);
+  }
+  for (const shipment of shipments.values()) {
+    const customerId = nullableString(shipment.customer_id);
+    if (customerId) customerIds.add(customerId);
+  }
+  const customers = await loadDocumentsByIds("customers", customerIds);
+
+  return rows.flatMap(({ id, data }) => {
+    const shipmentReference = nullableString(data.shipment_reference);
+    const shipment = shipmentReference ? shipments.get(shipmentReference) : undefined;
+    const quoteCustomerId = nullableString(data.customer_id);
+    const effectiveCustomerId = shipment ? nullableString(shipment.customer_id) ?? quoteCustomerId : quoteCustomerId;
+    const customer = effectiveCustomerId ? customers.get(effectiveCustomerId) : undefined;
+    const allowed = canAccessQuoteLinkedRecords(context, {
+      shipment_reference: shipmentReference,
+      customer_id: quoteCustomerId,
+      shipment_exists: Boolean(shipment),
+      shipment_primary_branch: strictBranchValue(shipment?.primary_branch) ?? customer?.primary_branch,
+      shipment_handling_branches: shipment?.handling_branches,
+      customer_exists: Boolean(customer),
+      customer_branch: customer?.primary_branch,
+    });
+    return allowed ? [summaryFromData(id, data, profiles ?? [])] : [];
+  });
 }
 
 export async function getQuoteDetail(reference: string): Promise<QuoteDetail | null | undefined> {
