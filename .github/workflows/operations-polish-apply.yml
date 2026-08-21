@@ -1,0 +1,383 @@
+name: Apply KCPL operations polish
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - polish/operations-v3-1-work
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: polish/operations-v3-1-work
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Apply product polish
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"missing replacement anchor in {path}: {old[:100]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          search_route = '''import { getAdminAccess } from "../../../admin/admin-auth";
+          import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
+          import { kcplBranches, type KcplBranch } from "../../../admin/crm/crm-data";
+          import { getStaffContext, staffCanAccessBranch } from "../../../admin/staff-directory.server";
+          import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../../shipment-types";
+
+          type SearchResult = {
+            kind: "shipment" | "customer" | "enquiry";
+            id: string;
+            title: string;
+            subtitle: string;
+            meta: string;
+            href: string;
+            searchText: string;
+          };
+
+          function text(value: unknown, fallback = "") {
+            return typeof value === "string" ? value : fallback;
+          }
+
+          function nullable(value: unknown) {
+            const valueText = text(value).trim();
+            return valueText || null;
+          }
+
+          function branchValue(value: unknown): KcplBranch {
+            return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu";
+          }
+
+          function branchArray(value: unknown, primary: KcplBranch): KcplBranch[] {
+            const branches = Array.isArray(value)
+              ? value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch))
+              : [];
+            if (!branches.includes(primary)) branches.unshift(primary);
+            return branches;
+          }
+
+          function statusValue(value: unknown): ShipmentStatus {
+            return shipmentStatuses.includes(value as ShipmentStatus) ? value as ShipmentStatus : "booking_confirmed";
+          }
+
+          function json(body: unknown, status = 200) {
+            return Response.json(body, { status, headers: { "cache-control": "private, no-store" } });
+          }
+
+          export async function GET() {
+            const access = await getAdminAccess();
+            if (access.kind !== "authorized") return json({ ok: false, error: "Sign in is required." }, 401);
+            if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Firebase search is unavailable." }, 503);
+
+            const staff = await getStaffContext(access.user);
+            const db = firebaseAdminDb();
+            const [shipmentsSnapshot, quotesSnapshot, customersSnapshot] = await Promise.all([
+              db.collection("shipments").orderBy("updated_at", "desc").limit(350).get(),
+              db.collection("quotes").orderBy("created_at", "desc").limit(300).get(),
+              db.collection("customers").orderBy("updated_at", "desc").limit(350).get(),
+            ]);
+
+            const quotes = new Map(quotesSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
+            const customers = new Map(customersSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
+            const results: SearchResult[] = [];
+
+            for (const doc of shipmentsSnapshot.docs) {
+              const data = doc.data() as Record<string, unknown>;
+              const primary = branchValue(data.primary_branch);
+              const handling = branchArray(data.handling_branches, primary);
+              if (!staffCanAccessBranch(staff, primary) && !handling.some((branch) => staffCanAccessBranch(staff, branch))) continue;
+              const quoteReference = text(data.quote_reference);
+              const quote = quotes.get(quoteReference) ?? {};
+              const customerId = nullable(data.customer_id);
+              const customer = customerId ? customers.get(customerId) : undefined;
+              const customerName = customer ? text(customer.display_name, "Linked customer") : text(quote.company_name, text(quote.contact_name, "Unlinked customer"));
+              const origin = text(quote.origin, "Origin");
+              const destination = text(quote.destination, "Destination");
+              const status = statusValue(data.status);
+              const carrier = nullable(data.carrier);
+              const currentLocation = nullable(data.current_location);
+              results.push({
+                kind: "shipment",
+                id: doc.id,
+                title: doc.id,
+                subtitle: `${customerName} · ${origin} → ${destination}`,
+                meta: `${shipmentStatusLabels[status]} · ${currentLocation || primary}`,
+                href: `/admin/jobs/${encodeURIComponent(doc.id)}`,
+                searchText: [doc.id, quoteReference, customerName, origin, destination, primary, ...handling, carrier ?? "", currentLocation ?? ""].join(" "),
+              });
+            }
+
+            for (const doc of customersSnapshot.docs) {
+              const data = doc.data() as Record<string, unknown>;
+              if (data.archived === true) continue;
+              const displayName = text(data.display_name, doc.id);
+              const branch = branchValue(data.primary_branch);
+              const email = nullable(data.primary_email);
+              const phone = nullable(data.primary_phone);
+              const country = text(data.country, "Nepal");
+              const tags = Array.isArray(data.tags) ? data.tags.filter((item): item is string => typeof item === "string") : [];
+              results.push({
+                kind: "customer",
+                id: doc.id,
+                title: displayName,
+                subtitle: email || phone || `${country} · ${branch}`,
+                meta: `Customer · ${branch}`,
+                href: `/admin/crm/${encodeURIComponent(doc.id)}`,
+                searchText: [doc.id, displayName, text(data.legal_name), email ?? "", phone ?? "", country, branch, text(data.account_manager_name), ...tags].join(" "),
+              });
+            }
+
+            for (const doc of quotesSnapshot.docs) {
+              const data = doc.data() as Record<string, unknown>;
+              const company = nullable(data.company_name);
+              const contact = text(data.contact_name, "Customer");
+              const origin = text(data.origin, "Origin");
+              const destination = text(data.destination, "Destination");
+              const status = text(data.status, "new");
+              results.push({
+                kind: "enquiry",
+                id: doc.id,
+                title: doc.id,
+                subtitle: `${company || contact} · ${origin} → ${destination}`,
+                meta: `Enquiry · ${status.replaceAll("_", " ")}`,
+                href: `/admin?enquiry=${encodeURIComponent(doc.id)}`,
+                searchText: [doc.id, company ?? "", contact, text(data.contact_email), origin, destination, text(data.mode), status].join(" "),
+              });
+            }
+
+            return json({ ok: true, results });
+          }
+          '''
+          search_path = Path('app/api/admin/search/route.ts')
+          search_path.parent.mkdir(parents=True, exist_ok=True)
+          search_path.write_text(search_route)
+
+          # Enquiry deep-linking from global search.
+          replace_once('app/admin/page.tsx',
+            'export default async function AdminPage() {\n  const access = await getAdminAccess();',
+            'export default async function AdminPage({ searchParams }: { searchParams: Promise<{ enquiry?: string }> }) {\n  const access = await getAdminAccess();')
+          replace_once('app/admin/page.tsx',
+            '  const staff = await getStaffContext(access.user);\n  const result = await loadQuotes();',
+            '  const staff = await getStaffContext(access.user);\n  const { enquiry } = await searchParams;\n  const result = await loadQuotes();')
+          replace_once('app/admin/page.tsx',
+            '      <AdminDashboard initialQuotes={result.quotes} />',
+            '      <AdminDashboard initialQuotes={result.quotes} initialReference={enquiry} />')
+          replace_once('app/admin/admin-dashboard.tsx',
+            'export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[] }) {\n  const [quotes, setQuotes] = useState(initialQuotes);\n  const [selectedReference, setSelectedReference] = useState(initialQuotes[0]?.reference ?? "");',
+            'export function AdminDashboard({ initialQuotes, initialReference }: { initialQuotes: QuoteSummary[]; initialReference?: string }) {\n  const [quotes, setQuotes] = useState(initialQuotes);\n  const preferredReference = initialReference && initialQuotes.some((quote) => quote.reference === initialReference) ? initialReference : initialQuotes[0]?.reference ?? "";\n  const [selectedReference, setSelectedReference] = useState(preferredReference);')
+
+          # Record-aware command palette.
+          replace_once('app/admin/operations-shell.tsx',
+            'type StoredWorkspace = { href: string; label: string };',
+            'type StoredWorkspace = { href: string; label: string };\ntype RecordSearchResult = { kind: "shipment" | "customer" | "enquiry"; id: string; title: string; subtitle: string; meta: string; href: string; searchText: string };')
+          replace_once('app/admin/operations-shell.tsx',
+            '  const [favorites, setFavorites] = useState<StoredWorkspace[]>([]);\n  const [recents, setRecents] = useState<StoredWorkspace[]>([]);',
+            '  const [favorites, setFavorites] = useState<StoredWorkspace[]>([]);\n  const [recents, setRecents] = useState<StoredWorkspace[]>([]);\n  const [recordIndex, setRecordIndex] = useState<RecordSearchResult[]>([]);\n  const [recordIndexLoaded, setRecordIndexLoaded] = useState(false);\n  const [recordIndexLoading, setRecordIndexLoading] = useState(false);')
+          replace_once('app/admin/operations-shell.tsx',
+            '  const filteredNav = useMemo(() => {\n    const needle = query.trim().toLowerCase();\n    if (!needle) return allNav;\n    return allNav.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(needle));\n  }, [allNav, query]);',
+            '  const filteredNav = useMemo(() => {\n    const needle = query.trim().toLowerCase();\n    if (!needle) return allNav;\n    return allNav.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(needle));\n  }, [allNav, query]);\n  const recordResults = useMemo(() => {\n    const needle = query.trim().toLowerCase();\n    if (needle.length < 2) return [];\n    const score = (item: RecordSearchResult) => {\n      const id = item.id.toLowerCase();\n      const title = item.title.toLowerCase();\n      const haystack = `${item.searchText} ${item.subtitle} ${item.meta}`.toLowerCase();\n      if (id === needle || title === needle) return 1000;\n      if (id.startsWith(needle) || title.startsWith(needle)) return 500;\n      if (haystack.includes(needle)) return 100;\n      return 0;\n    };\n    return recordIndex.map((item) => ({ item, score: score(item) })).filter((entry) => entry.score > 0).sort((a, b) => b.score - a.score).slice(0, 12).map((entry) => entry.item);\n  }, [query, recordIndex]);')
+          anchor = '''  useEffect(() => {
+    if (!paletteOpen) return;
+    const frame = window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [paletteOpen]);'''
+          insert = anchor + '''
+
+  useEffect(() => {
+    if (!paletteOpen || recordIndexLoaded || recordIndexLoading) return;
+    const controller = new AbortController();
+    setRecordIndexLoading(true);
+    fetch("/api/admin/search", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const data = await response.json() as { results?: RecordSearchResult[] };
+        if (!response.ok || !data.results) throw new Error("Search index unavailable");
+        setRecordIndex(data.results);
+        setRecordIndexLoaded(true);
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      })
+      .finally(() => setRecordIndexLoading(false));
+    return () => controller.abort();
+  }, [paletteOpen, recordIndexLoaded, recordIndexLoading]);'''
+          replace_once('app/admin/operations-shell.tsx', anchor, insert)
+          replace_once('app/admin/operations-shell.tsx',
+            '  function navigateFromPalette(href: string) {\n    setPaletteOpen(false);\n    setQuery("");\n    window.location.href = href;\n  }',
+            '  function navigateFromPalette(href: string) {\n    setPaletteOpen(false);\n    setQuery("");\n    window.location.href = href;\n  }')
+          replace_once('app/admin/operations-shell.tsx',
+            '<span className="flex-1 text-left text-[10px] font-semibold">Search workspaces</span>',
+            '<span className="flex-1 text-left text-[10px] font-semibold">Search records & workspaces</span>')
+          replace_once('app/admin/operations-shell.tsx',
+            'onKeyDown={(event) => { if (event.key === "Enter" && filteredNav[0]) navigateFromPalette(filteredNav[0].href); }} className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-[#403833] outline-none" placeholder="Search a workspace or action…"',
+            'onKeyDown={(event) => { if (event.key === "Enter") { const href = recordResults[0]?.href ?? filteredNav[0]?.href; if (href) navigateFromPalette(href); } }} className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-[#403833] outline-none" placeholder="Search shipment, customer, enquiry or workspace…"')
+          replace_once('app/admin/operations-shell.tsx',
+            '            <PaletteSection title={query ? "Results" : "All workspaces"}>{filteredNav.length ? filteredNav.map((item) => <PaletteRow key={item.href} item={item} onOpen={navigateFromPalette}/>) : <div className="px-3 py-8 text-center text-[10px] text-[#9d938b]">No workspace matches “{query}”.</div>}</PaletteSection>',
+            '            {query.trim().length >= 2 ? <PaletteSection title="Records">{recordIndexLoading ? <div className="px-3 py-4 text-[9px] text-[#9d938b]">Loading KCPL records…</div> : recordResults.length ? recordResults.map((item) => <RecordRow key={`${item.kind}-${item.id}`} item={item} onOpen={navigateFromPalette}/>) : <div className="px-3 py-4 text-[9px] text-[#9d938b]">No shipment, customer or enquiry matches “{query}”.</div>}</PaletteSection> : null}\n            <PaletteSection title={query ? "Workspaces" : "All workspaces"}>{filteredNav.length ? filteredNav.map((item) => <PaletteRow key={item.href} item={item} onOpen={navigateFromPalette}/>) : query ? <div className="px-3 py-4 text-center text-[9px] text-[#9d938b]">No workspace matches.</div> : null}</PaletteSection>')
+          replace_once('app/admin/operations-shell.tsx',
+            '<span>KCPL command palette</span><span>Type to filter · Enter opens first result</span>',
+            '<span>KCPL command palette</span><span>Records + workspaces · Enter opens best result</span>')
+          record_helper = '''
+function RecordRow({ item, onOpen }: { item: RecordSearchResult; onOpen: (href: string) => void }) {
+  const icon = item.kind === "shipment" ? <Boxes size={14}/> : item.kind === "customer" ? <Building2 size={14}/> : <PackageSearch size={14}/>;
+  const label = item.kind === "shipment" ? "Shipment" : item.kind === "customer" ? "Customer" : "Enquiry";
+  return <button type="button" onClick={() => onOpen(item.href)} className="flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left hover:bg-[#faf4ef]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#fff0ea] text-[#c9654f]">{icon}</span><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><strong className="truncate text-[10px] font-bold text-[#514840]">{item.title}</strong><small className="shrink-0 rounded-full bg-[#f2ece7] px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[.07em] text-[#8e8178]">{label}</small></span><small className="mt-0.5 block truncate text-[8px] text-[#8f857d]">{item.subtitle}</small><small className="mt-0.5 block truncate text-[7px] font-semibold text-[#aca29a]">{item.meta}</small></span><ChevronRight size={12} className="text-[#b3aaa2]"/></button>;
+}
+'''
+          replace_once('app/admin/operations-shell.tsx', '\nfunction PaletteAction({ icon, label, hint, onClick }', record_helper + '\nfunction PaletteAction({ icon, label, hint, onClick }')
+
+          # Role-specific Operations Home defaults and recorded-location map signals.
+          replace_once('app/admin/command-centre/page.tsx',
+            '      roleLabel: kcplStaffRoleLabels[staff.permissions.role],',
+            '      roleLabel: kcplStaffRoleLabels[staff.permissions.role],\n      role: staff.permissions.role,')
+          replace_once('app/admin/command-centre/page.tsx',
+            '<CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel}/>',
+            '<CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel} role={state.role}/>')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx',
+            'import { NepalOperationsMap } from "../../components/operations-map";\nimport { shipmentStatusLabels } from "../../shipment-types";',
+            'import { NepalOperationsMap, type OperationalMapActivity } from "../../components/operations-map";\nimport { networkLocations } from "../../network-data";\nimport { shipmentStatusLabels } from "../../shipment-types";\nimport type { KcplStaffRole } from "../staff-permissions";')
+          role_fn = '''
+function defaultSectionsForRole(role: KcplStaffRole) {
+  if (role === "management") return { ...defaultSections };
+  if (role === "accounts") return { ...defaultSections, network: false, staff: false };
+  if (role === "commercial") return { ...defaultSections, branch: false, staff: false };
+  return { ...defaultSections, staff: false };
+}
+'''
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx', '\ntype SectionKey = keyof typeof defaultSections;\n', '\ntype SectionKey = keyof typeof defaultSections;\n' + role_fn)
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx',
+            'export function CommandCentreWorkspace({ data, roleLabel }: { data: CommandCentreData; roleLabel: string }) {\n  const [customizeOpen, setCustomizeOpen] = useState(false);\n  const [sections, setSections] = useState(defaultSections);',
+            'export function CommandCentreWorkspace({ data, roleLabel, role }: { data: CommandCentreData; roleLabel: string; role: KcplStaffRole }) {\n  const [customizeOpen, setCustomizeOpen] = useState(false);\n  const roleDefaults = useMemo(() => defaultSectionsForRole(role), [role]);\n  const storageKey = `kcpl-ops-home-sections:${role}`;\n  const [sections, setSections] = useState(() => defaultSectionsForRole(role));')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx',
+            '  const recent = useMemo(() => [...data.jobs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 8), [data.jobs]);',
+            '  const recent = useMemo(() => [...data.jobs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 8), [data.jobs]);\n  const mapActivity = useMemo<OperationalMapActivity>(() => Object.fromEntries(networkLocations.map((location) => {\n    const name = location.name.toLowerCase();\n    const matches = data.jobs.filter((job) => job.current_location?.toLowerCase().includes(name));\n    return [location.id, { active: matches.length, exceptions: matches.filter((job) => job.status === "exception").length }];\n  })), [data.jobs]);\n  const mappedMovementCount = useMemo(() => Object.values(mapActivity).reduce((sum, item) => sum + item.active, 0), [mapActivity]);')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx',
+            '      const raw = window.localStorage.getItem("kcpl-ops-home-sections");\n      if (!raw) return;\n      try {\n        setSections({ ...defaultSections, ...JSON.parse(raw) });\n      } catch {\n        window.localStorage.removeItem("kcpl-ops-home-sections");\n      }',
+            '      const raw = window.localStorage.getItem(storageKey);\n      if (!raw) { setSections(roleDefaults); return; }\n      try {\n        setSections({ ...roleDefaults, ...JSON.parse(raw) });\n      } catch {\n        window.localStorage.removeItem(storageKey);\n        setSections(roleDefaults);\n      }')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx', '  }, []);\n\n  function toggleSection', '  }, [roleDefaults, storageKey]);\n\n  function toggleSection')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx', 'window.localStorage.setItem("kcpl-ops-home-sections", JSON.stringify(next));', 'window.localStorage.setItem(storageKey, JSON.stringify(next));')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx',
+            'setSections(defaultSections); window.localStorage.setItem("kcpl-ops-home-sections", JSON.stringify(defaultSections));',
+            'setSections(roleDefaults); window.localStorage.setItem(storageKey, JSON.stringify(roleDefaults));')
+          replace_once('app/admin/command-centre/command-centre-workspace.tsx',
+            '<HomePanel title="KCPL network" eyebrow="Operational map" action={<span className="text-[10px] font-medium text-[#998e85]">Verified branch and counterpart geography</span>}>\n          <NepalOperationsMap variant="home" locationLinkHref="/network#confirmed-locations"/>',
+            '<HomePanel title="KCPL network" eyebrow="Operational map" action={<span className="text-[10px] font-medium text-[#998e85]">{mappedMovementCount} movements mapped from recorded locations</span>}>\n          <NepalOperationsMap variant="home" locationLinkHref="/network#confirmed-locations" activity={mapActivity}/>')
+
+          # Operational activity layer on the existing verified map.
+          replace_once('app/components/operations-map.tsx',
+            'type Position = { x: number; y: number };\ntype Bounds = { west: number; east: number; south: number; north: number };',
+            'type Position = { x: number; y: number };\ntype Bounds = { west: number; east: number; south: number; north: number };\nexport type OperationalMapActivity = Record<string, { active: number; exceptions: number }>;')
+          replace_once('app/components/operations-map.tsx',
+            'export function NepalOperationsMap({ variant = "default", locationLinkHref = "#confirmed-locations" }: { variant?: "default" | "home"; locationLinkHref?: string }) {',
+            'export function NepalOperationsMap({ variant = "default", locationLinkHref = "#confirmed-locations", activity }: { variant?: "default" | "home"; locationLinkHref?: string; activity?: OperationalMapActivity }) {')
+          replace_once('app/components/operations-map.tsx',
+            '          const labelOnLeft = location.id === "kolkata" || location.id === "raxaul";\n          return <motion.button',
+            '          const labelOnLeft = location.id === "kolkata" || location.id === "raxaul";\n          const signal = activity?.[location.id];\n          return <motion.button')
+          replace_once('app/components/operations-map.tsx',
+            '            <span className="satellite-marker-core"/>\n            <span className={`satellite-marker-copy',
+            '            <span className="satellite-marker-core"/>\n            {signal?.active ? <span className={`satellite-marker-activity ${signal.exceptions ? "has-exception" : ""}`} title={`${signal.active} active movement${signal.active === 1 ? "" : "s"} recorded at ${location.name}`}>{signal.active}</span> : null}\n            <span className={`satellite-marker-copy')
+          replace_once('app/components/operations-map.tsx',
+            '      <p className="satellite-location-description">{activeLocation.description}</p>',
+            '      <p className="satellite-location-description">{activeLocation.description}</p>\n      {activity?.[activeLocation.id]?.active ? <p className="satellite-location-activity"><strong>{activity[activeLocation.id].active}</strong> active movement{activity[activeLocation.id].active === 1 ? "" : "s"} currently record this location{activity[activeLocation.id].exceptions ? ` · ${activity[activeLocation.id].exceptions} exception${activity[activeLocation.id].exceptions === 1 ? "" : "s"}` : ""}</p> : null}')
+          replace_once('app/components/operations-map.tsx',
+            '      <span><i className="satellite-legend-customs"/>Customs coverage / operational presence</span>',
+            '      <span><i className="satellite-legend-customs"/>Customs coverage / operational presence</span>\n      {activity ? <span><i className="satellite-legend-live"/>Recorded active movement</span> : null}')
+
+          # Interaction and mobile polish, scoped to the approved Operations OS.
+          css = Path('app/admin/operations-theme.css')
+          css.write_text(css.read_text() + '''
+
+/* Operations v3.1 polish */
+.kcpl-ops .ops-button,
+.kcpl-ops .ops-record-row,
+.kcpl-ops .ops-surface,
+.kcpl-ops .ops-stat,
+.kcpl-ops .ops-filter-pill {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background-color .18s ease, color .18s ease;
+}
+.kcpl-ops .ops-button:not(:disabled):active { transform: translateY(1px) scale(.985); }
+.kcpl-ops .ops-record-row:hover { transform: translateX(2px); }
+.kcpl-ops .ops-surface:hover { border-color: #e1d7ce; }
+.kcpl-ops .satellite-marker-activity {
+  position: absolute;
+  left: 9px;
+  top: -12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid rgba(255,253,251,.95);
+  background: #e97d5d;
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 14px rgba(112,73,55,.18);
+  z-index: 4;
+}
+.kcpl-ops .satellite-marker-activity.has-exception { background: #c85d61; }
+.kcpl-ops .satellite-location-activity {
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid #eadfd6;
+  background: #fbf5f1;
+  padding: 9px 11px;
+  color: #7d6f65;
+  font-size: 9px;
+  line-height: 1.6;
+}
+.kcpl-ops .satellite-location-activity strong { color: #b65f49; }
+.kcpl-ops .satellite-legend-live {
+  background: #e97d5d !important;
+  box-shadow: 0 0 0 3px rgba(233,125,93,.14);
+}
+@media (max-width: 767px) {
+  .kcpl-ops .ops-page-header { padding-left: 16px; padding-right: 16px; }
+  .kcpl-ops .ops-page-header-main { gap: 14px; }
+  .kcpl-ops .ops-page-actions { width: 100%; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .kcpl-ops .ops-page-actions::-webkit-scrollbar { display: none; }
+  .kcpl-ops .ops-page-actions > * { flex: 0 0 auto; }
+  .kcpl-ops .ops-stat-strip { overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .kcpl-ops .ops-stat-strip::-webkit-scrollbar { display: none; }
+  .kcpl-ops .ops-stat { min-width: 126px; scroll-snap-align: start; }
+  .kcpl-ops .ops-content, .kcpl-ops .ops-content-wide { padding-left: 14px; padding-right: 14px; }
+  .kcpl-ops .ops-surface-header { align-items: flex-start; gap: 10px; }
+  .kcpl-ops .ops-surface-action { max-width: 48%; overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-ops *, .kcpl-ops *::before, .kcpl-ops *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+''')
+          PY
+      - name: Install dependencies
+        run: npm install
+      - name: Quality gate
+        run: |
+          npm run lint
+          npx tsc --noEmit
+          npm test
+          git diff --check
+      - name: Commit polish
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Polish KCPL operations navigation, home and live map"
+          git push origin HEAD:polish/operations-v3-1-work
