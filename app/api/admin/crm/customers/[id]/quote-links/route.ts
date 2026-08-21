@@ -1,5 +1,5 @@
 import { linkQuoteToCrmCustomer, listCrmQuoteLinks } from "../../../../../../admin/crm/crm-quote-links.server";
-import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite } from "../../../crm-api";
+import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability } from "../../../crm-api";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeCrm();
@@ -19,6 +19,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeCrm();
   if ("response" in auth) return auth.response;
+  const forbidden = requireCrmCapability(auth.permissions, "canEditCustomer");
+  if (forbidden) return forbidden;
   const blocked = protectCrmWrite(request);
   if (blocked) return blocked;
 
