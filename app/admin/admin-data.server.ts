@@ -13,6 +13,8 @@ import {
   type QuoteSummary,
 } from "./admin-data";
 import { ensureShipmentForWonQuote, getShipmentForQuote } from "../shipment-data.server";
+import { listStaffProfiles, resolveStaffIdentity, resolveStaffIdentityFromProfiles } from "./staff-directory.server";
+import type { KcplStaffProfile } from "./staff-directory";
 
 function configured() {
   return Boolean(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
@@ -46,9 +48,16 @@ function crmMatches(value: unknown): QuoteCrmMatch[] {
   });
 }
 
-function summaryFromData(reference: string, data: Record<string, unknown>): QuoteSummary {
+function summaryFromData(reference: string, data: Record<string, unknown>, profiles: KcplStaffProfile[] = []): QuoteSummary {
   const legacyAssignee = nullableString(data.assigned_to);
-  const assignedName = nullableString(data.assigned_to_name) ?? legacyAssignee;
+  const storedName = nullableString(data.assigned_to_name) ?? legacyAssignee;
+  const identity = resolveStaffIdentityFromProfiles({
+    uid: nullableString(data.assigned_to_uid),
+    name: storedName,
+    email: nullableString(data.assigned_to_email),
+    phone: nullableString(data.assigned_to_phone),
+  }, profiles);
+  const assignedName = identity.name ?? storedName;
   return {
     reference,
     created_at: stringValue(data.created_at),
@@ -63,18 +72,19 @@ function summaryFromData(reference: string, data: Record<string, unknown>): Quot
     phone: nullableString(data.phone),
     customer_id: nullableString(data.customer_id),
     assigned_to: assignedName,
+    assigned_to_uid: identity.uid,
     assigned_to_name: assignedName,
-    assigned_to_email: nullableString(data.assigned_to_email),
-    assigned_to_phone: nullableString(data.assigned_to_phone),
+    assigned_to_email: identity.email,
+    assigned_to_phone: identity.phone,
     note_count: Number(data.note_count ?? 0) || 0,
     email_count: Number(data.email_count ?? 0) || 0,
     last_customer_email_at: nullableString(data.last_customer_email_at),
   };
 }
 
-function detailFromData(reference: string, data: Record<string, unknown>): Omit<QuoteDetail, "notes" | "communications" | "shipment"> {
+function detailFromData(reference: string, data: Record<string, unknown>, profiles: KcplStaffProfile[] = []): Omit<QuoteDetail, "notes" | "communications" | "shipment"> {
   return {
-    ...summaryFromData(reference, data),
+    ...summaryFromData(reference, data, profiles),
     weight: nullableString(data.weight),
     weight_unit: nullableString(data.weight_unit),
     length: nullableString(data.length),
@@ -119,22 +129,24 @@ function numericId() {
 
 export async function listQuoteSummaries(): Promise<QuoteSummary[] | null> {
   if (!configured()) return null;
-  const snapshot = await firebaseAdminDb().collection("quotes")
-    .orderBy("created_at", "desc")
-    .limit(1000)
-    .get();
-
-  return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>));
+  const [snapshot, profiles] = await Promise.all([
+    firebaseAdminDb().collection("quotes").orderBy("created_at", "desc").limit(1000).get(),
+    listStaffProfiles(),
+  ]);
+  return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>, profiles ?? []));
 }
 
 export async function getQuoteDetail(reference: string): Promise<QuoteDetail | null | undefined> {
   if (!configured()) return undefined;
   const db = firebaseAdminDb();
   const normalized = reference.trim().toUpperCase();
-  const quoteSnapshot = await db.collection("quotes").doc(normalized).get();
+  const [quoteSnapshot, profiles] = await Promise.all([
+    db.collection("quotes").doc(normalized).get(),
+    listStaffProfiles(),
+  ]);
   if (!quoteSnapshot.exists) return null;
 
-  const quote = detailFromData(normalized, quoteSnapshot.data() as Record<string, unknown>);
+  const quote = detailFromData(normalized, quoteSnapshot.data() as Record<string, unknown>, profiles ?? []);
   const [notesSnapshot, communicationsSnapshot] = await Promise.all([
     quoteSnapshot.ref.collection("notes").orderBy("created_at", "desc").limit(500).get(),
     quoteSnapshot.ref.collection("communications").orderBy("sent_at", "desc").limit(500).get(),
@@ -159,7 +171,7 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
 export async function updateQuoteAdmin(
   reference: string,
   status: QuoteStatus,
-  assignee: { name: string; email: string; phone: string },
+  assignee: { uid?: string; name: string; email: string; phone: string },
   allowCommercialTransition: boolean,
 ) {
   if (!configured()) return { kind: "unavailable" as const };
@@ -182,12 +194,15 @@ export async function updateQuoteAdmin(
     return { kind: "customer-required" as const, currentStatus };
   }
 
-  const assignedName = assignee.name.trim();
-  const assignedEmail = assignee.email.trim().toLowerCase();
-  const assignedPhone = assignee.phone.trim();
+  const resolved = await resolveStaffIdentity({ uid: assignee.uid, name: assignee.name, email: assignee.email, phone: assignee.phone });
+  const assignedUid = resolved.uid;
+  const assignedName = resolved.name ?? assignee.name.trim() || "";
+  const assignedEmail = resolved.email ?? assignee.email.trim().toLowerCase() || "";
+  const assignedPhone = resolved.phone ?? assignee.phone.trim() || "";
   await ref.update({
     status,
     assigned_to: assignedName || assignedEmail || null,
+    assigned_to_uid: assignedUid,
     assigned_to_name: assignedName || null,
     assigned_to_email: assignedEmail || null,
     assigned_to_phone: assignedPhone || null,
