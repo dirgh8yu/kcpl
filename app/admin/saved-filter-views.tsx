@@ -1,7 +1,7 @@
 "use client";
 
 import { BookmarkPlus, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type SavedFilterView<TStatus extends string> = {
   id: string;
@@ -31,7 +31,16 @@ export function SavedFilterViews<TStatus extends string>({
   status: TStatus;
   onApply: (view: { query: string; status: TStatus }) => void;
 }) {
-  const [views, setViews] = useState<SavedFilterView<TStatus>[]>(() => readViews<TStatus>(storageKey));
+  const [views, setViews] = useState<SavedFilterView<TStatus>[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setViews(readViews<TStatus>(storageKey));
+      setHydrated(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [storageKey]);
 
   function persist(next: SavedFilterView<TStatus>[]) {
     setViews(next);
@@ -55,18 +64,20 @@ export function SavedFilterViews<TStatus extends string>({
     persist(views.filter((view) => view.id !== id));
   }
 
+  if (!hydrated) return null;
+
   if (!views.length) {
-    return <button type="button" onClick={saveCurrent} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#ddd3cb] px-2.5 py-1.5 text-[8px] font-bold text-[#948980] transition hover:border-[#d4b6a8] hover:bg-[#fff8f4] hover:text-[#b96852]"><BookmarkPlus size={10}/>Save current view</button>;
+    return <button type="button" onClick={saveCurrent} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#ddd3cb] px-2.5 py-1.5 text-[9px] font-bold text-[#847a72] transition hover:border-[#d4b6a8] hover:bg-[#fff8f4] hover:text-[#b96852]"><BookmarkPlus size={10}/>Save current view</button>;
   }
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5">
-      <span className="mr-0.5 text-[7px] font-extrabold uppercase tracking-[.1em] text-[#aaa098]">Saved</span>
+      <span className="mr-0.5 text-[9px] font-bold text-[#91877f]">Saved</span>
       {views.map((view) => <span key={view.id} className="group inline-flex items-center overflow-hidden rounded-full border border-[#e6ddd6] bg-white">
-        <button type="button" onClick={() => onApply(view)} className="px-2.5 py-1.5 text-[8px] font-semibold text-[#6f655d] transition hover:bg-[#faf4ef]">{view.name}</button>
-        <button type="button" onClick={() => remove(view.id)} aria-label={`Delete saved view ${view.name}`} className="mr-1 grid h-5 w-5 place-items-center rounded-full text-[#b4aaa2] opacity-60 transition hover:bg-[#fff0eb] hover:text-[#a9584d] group-hover:opacity-100"><X size={9}/></button>
+        <button type="button" onClick={() => onApply(view)} className="px-2.5 py-1.5 text-[9px] font-semibold text-[#6f655d] transition hover:bg-[#faf4ef]">{view.name}</button>
+        <button type="button" onClick={() => remove(view.id)} aria-label={`Delete saved view ${view.name}`} className="mr-1 grid h-5 w-5 place-items-center rounded-full text-[#a79d95] opacity-70 transition hover:bg-[#fff0eb] hover:text-[#a9584d] group-hover:opacity-100"><X size={9}/></button>
       </span>)}
-      <button type="button" onClick={saveCurrent} className="grid h-7 w-7 place-items-center rounded-full border border-dashed border-[#ddd3cb] text-[#9c9189] transition hover:border-[#d4b6a8] hover:bg-[#fff8f4] hover:text-[#b96852]" aria-label="Save current view"><BookmarkPlus size={10}/></button>
+      <button type="button" onClick={saveCurrent} className="grid h-7 w-7 place-items-center rounded-full border border-dashed border-[#ddd3cb] text-[#8f857d] transition hover:border-[#d4b6a8] hover:bg-[#fff8f4] hover:text-[#b96852]" aria-label="Save current view"><BookmarkPlus size={10}/></button>
     </div>
   );
 }
