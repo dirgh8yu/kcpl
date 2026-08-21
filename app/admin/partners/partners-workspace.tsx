@@ -35,6 +35,30 @@ function money(amount: number, currency: string) { try { return new Intl.NumberF
 function dateLabel(value: string | null) { if (!value) return "No activity"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date); }
 function statusTone(status: PartnerStatus): "success" | "warning" | "neutral" { return status === "active" ? "success" : status === "on_hold" ? "warning" : "neutral"; }
 
+function partnerSearchText(p: PartnerRecord) {
+  return [
+    p.id,
+    p.display_name,
+    p.legal_name ?? "",
+    p.country,
+    p.owner_branch,
+    p.primary_contact_name ?? "",
+    p.primary_email ?? "",
+    p.primary_phone ?? "",
+    p.whatsapp ?? "",
+    p.website ?? "",
+    p.cities_served.join(" "),
+    p.countries_served.join(" "),
+    p.ports_served.join(" "),
+    p.tags.join(" "),
+    p.types.map((type) => `${type} ${partnerTypeLabels[type]}`).join(" "),
+    p.modes.map((mode) => `${mode} ${partnerModeLabels[mode]}`).join(" "),
+    partnerStatusLabels[p.status],
+    p.preferred_currency,
+    p.preferred ? "preferred" : "",
+  ].join(" ").toLowerCase();
+}
+
 export function PartnersWorkspace({ dashboard, canEdit }: { dashboard: PartnerDashboard; canEdit: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -47,12 +71,13 @@ export function PartnersWorkspace({ dashboard, canEdit }: { dashboard: PartnerDa
   const [notice, setNotice] = useState("");
 
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return dashboard.partners.filter((p) => {
       if (typeFilter !== "all" && !p.types.includes(typeFilter)) return false;
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
-      if (!needle) return true;
-      return [p.id, p.display_name, p.legal_name ?? "", p.country, p.owner_branch, p.primary_contact_name ?? "", p.primary_email ?? "", p.ports_served.join(" "), p.countries_served.join(" "), p.tags.join(" ")].join(" ").toLowerCase().includes(needle);
+      if (!terms.length) return true;
+      const haystack = partnerSearchText(p);
+      return terms.every((term) => haystack.includes(term));
     });
   }, [dashboard.partners, query, typeFilter, statusFilter]);
 
@@ -95,12 +120,17 @@ export function PartnersWorkspace({ dashboard, canEdit }: { dashboard: PartnerDa
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><PartnerKind title="Carrier" detail="Shipping line, airline or trucking provider"/><PartnerKind title="Agent" detail="International freight or customs counterpart"/><PartnerKind title="Warehouse" detail="Storage, handling or consolidation facility"/><PartnerKind title="Vendor" detail="External operational supplier"/></div>
       </OpsSurface> : null}
 
-      {dashboard.partners.length ? <OpsSurface eyebrow="Network register" title="Partners & vendors" description={`${filtered.length} of ${dashboard.partners.length} records shown.`} flush>
-        <div className="ops-toolbar"><OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search partner, country, port, contact or tag"/><select className="ops-select" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as "all" | PartnerType)}><option value="all">All types</option>{partnerTypes.map((type) => <option key={type} value={type}>{partnerTypeLabels[type]}</option>)}</select><select className="ops-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | PartnerStatus)}><option value="all">All statuses</option>{partnerStatuses.map((status) => <option key={status} value={status}>{partnerStatusLabels[status]}</option>)}</select></div>
-        <div className="ops-table-wrap"><table className="ops-table min-w-[1180px]"><thead><tr><th>Partner</th><th>Coverage</th><th>Services</th><th>Contact</th><th>Owner</th><th>Supplier exposure</th><th>Activity</th><th></th></tr></thead><tbody>{filtered.length ? filtered.map((p) => <tr key={p.id}><td><div className="flex items-center gap-2"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#f2ece7] text-[#8d7264]"><Building2 size={14}/></span><div><div className="flex items-center gap-1.5"><strong>{p.display_name}</strong>{p.preferred ? <Star size={11} fill="currentColor" className="text-[#c5795e]"/> : null}</div><div className="mt-1 flex flex-wrap gap-1"><OpsBadge tone={statusTone(p.status)}>{partnerStatusLabels[p.status]}</OpsBadge>{p.types.slice(0,2).map((type) => <OpsBadge key={type}>{partnerTypeLabels[type]}</OpsBadge>)}</div></div></div></td><td><span className="flex items-center gap-1.5"><Globe2 size={11} className="text-[#a27b68]"/>{p.country}</span><p className="mt-1 max-w-[180px] truncate text-[8px] text-[#9c928a]">{p.countries_served.length ? p.countries_served.join(", ") : "Coverage not specified"}</p></td><td><div className="flex max-w-[180px] flex-wrap gap-1">{p.modes.length ? p.modes.slice(0,4).map((mode) => <OpsBadge key={mode} tone="info">{partnerModeLabels[mode]}</OpsBadge>) : <span className="text-[9px] text-[#9c928a]">Not specified</span>}</div></td><td>{p.primary_contact_name ? <strong>{p.primary_contact_name}</strong> : <span className="text-[#9c928a]">No contact</span>}{p.primary_email ? <p className="mt-1 flex items-center gap-1 text-[8px] text-[#8f857d]"><Mail size={9}/>{p.primary_email}</p> : p.primary_phone ? <p className="mt-1 flex items-center gap-1 text-[8px] text-[#8f857d]"><Phone size={9}/>{p.primary_phone}</p> : null}</td><td><strong>{p.owner_branch}</strong><p className="mt-1 text-[8px] text-[#9c928a]">Terms {p.payment_terms_days}d · {p.preferred_currency}</p></td><td>{p.payable_open.length ? p.payable_open.map((amount) => <p key={amount.currency} className="text-[9px] font-semibold text-[#7b5e4e]">{money(amount.amount, amount.currency)} open</p>) : <span className="text-[9px] text-[#66806b]">No open payable</span>}<p className="mt-1 text-[8px] text-[#9c928a]">{p.bill_count} bills · {p.shipment_count} jobs</p></td><td><span>{dateLabel(p.last_activity_at)}</span>{p.overdue_bill_count ? <p className="mt-1 text-[8px] font-bold text-[#b65355]">{p.overdue_bill_count} overdue bills</p> : null}</td><td>{canEdit ? <OpsButton variant="ghost" size="sm" onClick={() => startEdit(p)}><Pencil size={11}/>Edit</OpsButton> : null}</td></tr>) : <tr><td colSpan={8}><OpsEmptyState kind="search" icon={<Handshake size={18}/>} title="No partners match" description="Change the filters or add a new network record."/></td></tr>}</tbody></table></div>
+      {dashboard.partners.length ? <OpsSurface eyebrow="Network register" title="Partners & vendors" description={`${filtered.length} of ${dashboard.partners.length} records shown. Search covers saved names, countries, cities, ports, services, contacts and relationship types.`} flush>
+        <div className="ops-toolbar"><OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, country, city, port, mode, contact or type"/><select className="ops-select" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as "all" | PartnerType)}><option value="all">All types</option>{partnerTypes.map((type) => <option key={type} value={type}>{partnerTypeLabels[type]}</option>)}</select><select className="ops-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | PartnerStatus)}><option value="all">All statuses</option>{partnerStatuses.map((status) => <option key={status} value={status}>{partnerStatusLabels[status]}</option>)}</select></div>
+        <div className="ops-table-wrap"><table className="ops-table min-w-[1280px]"><thead><tr><th>Partner</th><th>Operating footprint</th><th>Services</th><th>Contact</th><th>KCPL owner</th><th>Supplier exposure</th><th>Activity</th><th></th></tr></thead><tbody>{filtered.length ? filtered.map((p) => <tr key={p.id}><td><div className="flex items-center gap-2"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#f2ece7] text-[#8d7264]"><Building2 size={14}/></span><div><div className="flex items-center gap-1.5"><strong>{p.display_name}</strong>{p.preferred ? <Star size={11} fill="currentColor" className="text-[#c5795e]"/> : null}</div><div className="mt-1 flex max-w-[230px] flex-wrap gap-1"><OpsBadge tone={statusTone(p.status)}>{partnerStatusLabels[p.status]}</OpsBadge>{p.types.slice(0,3).map((type) => <OpsBadge key={type}>{partnerTypeLabels[type]}</OpsBadge>)}{p.types.length > 3 ? <OpsBadge>+{p.types.length - 3}</OpsBadge> : null}</div></div></div></td><td><div className="min-w-[220px]"><span className="flex items-center gap-1.5 font-semibold text-[#4d4843]"><Globe2 size={11} className="text-[#a27b68]"/>{p.country}</span><FootprintLine label="Serves" values={p.countries_served}/><FootprintLine label="Cities" values={p.cities_served}/><FootprintLine label="Ports" values={p.ports_served}/></div></td><td><div className="flex max-w-[210px] flex-wrap gap-1">{p.modes.length ? p.modes.slice(0,5).map((mode) => <OpsBadge key={mode} tone="info">{partnerModeLabels[mode]}</OpsBadge>) : <span className="text-[9px] text-[#9c928a]">No services selected</span>}{p.modes.length > 5 ? <OpsBadge tone="info">+{p.modes.length - 5}</OpsBadge> : null}</div></td><td>{p.primary_contact_name ? <strong>{p.primary_contact_name}</strong> : <span className="text-[#9c928a]">No primary contact</span>}{p.primary_email ? <p className="mt-1 flex items-center gap-1 text-[8px] text-[#8f857d]"><Mail size={9}/>{p.primary_email}</p> : null}{p.primary_phone ? <p className="mt-1 flex items-center gap-1 text-[8px] text-[#8f857d]"><Phone size={9}/>{p.primary_phone}</p> : null}{!p.primary_email && !p.primary_phone && p.whatsapp ? <p className="mt-1 text-[8px] text-[#8f857d]">WhatsApp {p.whatsapp}</p> : null}</td><td><strong>{p.owner_branch}</strong><p className="mt-1 text-[8px] text-[#9c928a]">Terms {p.payment_terms_days}d · {p.preferred_currency}</p></td><td>{p.payable_open.length ? p.payable_open.map((amount) => <p key={amount.currency} className="text-[9px] font-semibold text-[#7b5e4e]">{money(amount.amount, amount.currency)} open</p>) : <span className="text-[9px] text-[#66806b]">No open payable</span>}<p className="mt-1 text-[8px] text-[#9c928a]">{p.bill_count} bills · {p.shipment_count} jobs</p></td><td><span>{dateLabel(p.last_activity_at)}</span>{p.overdue_bill_count ? <p className="mt-1 text-[8px] font-bold text-[#b65355]">{p.overdue_bill_count} overdue bills</p> : null}</td><td>{canEdit ? <OpsButton variant="ghost" size="sm" onClick={() => startEdit(p)}><Pencil size={11}/>Edit</OpsButton> : null}</td></tr>) : <tr><td colSpan={8}><OpsEmptyState kind="search" icon={<Handshake size={18}/>} title="No partners match" description="Try a partner name, country, city, port, service, contact or relationship type, or change the filters."/></td></tr>}</tbody></table></div>
       </OpsSurface> : null}
     </div>
   </OpsPage>;
+}
+
+function FootprintLine({ label, values }: { label: string; values: string[] }) {
+  if (!values.length) return null;
+  return <p className="mt-1 max-w-[240px] text-[8px] leading-4 text-[#857d76]"><span className="font-bold text-[#6f6761]">{label}</span> · {values.join(", ")}</p>;
 }
 
 function PartnerKind({ title, detail }: { title: string; detail: string }) { return <div className="border-l-2 border-[#d8d2cc] pl-3"><strong className="text-[11px] text-[#403a36]">{title}</strong><p className="mt-1 text-[10px] leading-5 text-[#756e67]">{detail}</p></div>; }
