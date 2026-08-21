@@ -172,7 +172,7 @@ async function shipmentBranchesForAlerts(alerts: AutomationAlert[]) {
   return result;
 }
 
-export async function evaluateAutomationRules() {
+export async function evaluateAutomationRules(options: { applyCreditHolds?: boolean } = {}) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const [shipmentsSnapshot, quotesSnapshot, customersSnapshot, invoicesSnapshot, tasksSnapshot, customsSnapshot, existingAlertsSnapshot] = await Promise.all([
@@ -360,7 +360,7 @@ export async function evaluateAutomationRules() {
       action_path: `/admin/crm/${encodeURIComponent(customerId)}`,
       escalated_at: nowIso,
     }));
-    if (text(data.account_status) !== "on_hold") {
+    if (options.applyCreditHolds === true && text(data.account_status) !== "on_hold") {
       const customerRef = db.collection("customers").doc(customerId);
       creditHoldOperations.push((batch) => batch.update(customerRef, { account_status: "on_hold", updated_at: nowIso, credit_hold_automation_at: nowIso }));
       creditHoldOperations.push((batch) => batch.create(customerRef.collection("activity").doc(`activity-${Date.now()}-${randomBytes(4).toString("hex")}`), {
@@ -407,7 +407,7 @@ export async function evaluateAutomationRules() {
   }
 
   for (const [fingerprint, previous] of existing) {
-    if (previous.status === "resolved" || candidates.has(fingerprint)) continue;
+    if (previous.type === "payable_overdue" || previous.status === "resolved" || candidates.has(fingerprint)) continue;
     const ref = db.collection("alerts").doc(previous.id);
     alertOperations.push((batch) => batch.update(ref, {
       status: "resolved",
