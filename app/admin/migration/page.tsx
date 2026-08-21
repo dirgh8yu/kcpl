@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { listMigrationBatches } from "./migration-batches.server";
 import { MigrationWorkspace } from "./migration-workspace";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,10 @@ export default async function MigrationPage() {
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Migration Hub is available only to authorised Management staff."/>;
   const staff = await getStaffContext(access.user);
   if (staff.permissions.role !== "management") return <Gate title="Management access required" detail="Bulk migration can create company master data, so this workspace is restricted to the Management role."/>;
+  const batchDashboard = await listMigrationBatches().catch((error) => {
+    console.error("Failed to preload KCPL migration batch history", error);
+    return null;
+  });
 
   return <OperationsShell
     userName={access.user.displayName}
@@ -19,7 +24,7 @@ export default async function MigrationPage() {
     canManageFinance={staff.permissions.canManageFinance}
     isManagement
   >
-    <MigrationWorkspace/>
+    <MigrationWorkspace initialBatchDashboard={batchDashboard}/>
   </OperationsShell>;
 }
 
