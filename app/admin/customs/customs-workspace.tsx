@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, ClipboardCheck, FileWarning, Landmark, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileWarning, Landmark, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { shipmentStatusLabels } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import type { CustomsAgentOption } from "./customs-clearance";
+import { CustomsClearanceEditor } from "./customs-clearance-editor";
 import type { CustomsDeskRow } from "./customs-data.server";
 
 type RiskFilter = "all" | CustomsDeskRow["risk"];
@@ -27,14 +29,17 @@ function riskTone(risk: CustomsDeskRow["risk"]): "danger" | "warning" | "neutral
 
 function stateTone(state: CustomsDeskRow["state"]): "danger" | "warning" | "success" | "info" {
   if (state === "blocked") return "danger";
-  if (state === "in_progress") return "warning";
-  if (state === "ready") return "success";
+  if (state === "in_progress" || state === "awaiting_release") return "warning";
+  if (state === "released") return "success";
   return "info";
 }
 
 function stateLabel(state: CustomsDeskRow["state"]) {
   if (state === "in_progress") return "In progress";
-  return state.charAt(0).toUpperCase() + state.slice(1);
+  if (state === "awaiting_release") return "Awaiting release";
+  if (state === "released") return "Customs released";
+  if (state === "ready") return "Checklist ready";
+  return "Blocked";
 }
 
 function directionLabel(direction: CustomsDeskRow["document_direction"]) {
@@ -42,7 +47,7 @@ function directionLabel(direction: CustomsDeskRow["document_direction"]) {
   return direction.charAt(0).toUpperCase() + direction.slice(1);
 }
 
-export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[] }) {
+export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[] }) {
   const router = useRouter();
   const rows = initialRows;
   const [query, setQuery] = useState("");
@@ -59,7 +64,8 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
     openSteps: rows.reduce((sum, row) => sum + row.customs_open, 0),
     missingDocs: rows.reduce((sum, row) => sum + row.missing_documents.length, 0),
     integrity: rows.reduce((sum, row) => sum + row.customs_integrity_warnings.length, 0),
-    ready: rows.filter((row) => row.state === "ready").length,
+    awaitingRelease: rows.filter((row) => row.state === "awaiting_release").length,
+    released: rows.filter((row) => row.state === "released").length,
   }), [rows]);
 
   const visible = useMemo(() => {
@@ -81,6 +87,12 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
         row.assigned_to_name ?? "",
         row.assigned_to_email ?? "",
         row.current_location ?? "",
+        row.clearance.status,
+        row.clearance.entry_point ?? "",
+        row.clearance.declaration_reference ?? "",
+        row.clearance.agent_name ?? "",
+        row.clearance.hold_reason ?? "",
+        row.clearance.release_evidence ?? "",
         shipmentStatusLabels[row.status],
         ...row.open_steps.map((step) => `${step.title} ${step.detail ?? ""}`),
         ...row.missing_documents.map((document) => `${document.label} ${document.reason}`),
@@ -102,7 +114,7 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
       });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "Could not complete the customs step.");
-      setNotice({ tone: "success", text: "Customs step completed. The queue is refreshing from the Job File so cross-branch work and document blockers remain accurate." });
+      setNotice({ tone: "success", text: "Customs step completed. The queue is refreshing from the Job File so cross-branch work, documents and release status remain accurate." });
       router.refresh();
     } catch (error) {
       setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Could not complete the customs step." });
@@ -123,7 +135,7 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
       <OpsPageHeader
         eyebrow="Operations"
         title="Customs control"
-        description="Branch-aware clearance work, required documents and ETA pressure in one read-only queue. Completing a step writes to the Digital Job File; simply opening or refreshing this page does not run automation."
+        description="Branch-aware customs work, required documents and explicit release evidence in one control queue. Internal checklist readiness is kept separate from an actual Customs release."
         meta={<><span>{counts.queue} shipments</span><span>{counts.openSteps} required steps open</span><span>{counts.missingDocs} required documents missing</span>{counts.integrity ? <span>{counts.integrity} data integrity warning{counts.integrity === 1 ? "" : "s"}</span> : null}</>}
         actions={<><Link href="/admin/alerts" className="ops-button" data-variant="secondary" data-size="md">Tasks & alerts</Link><OpsButton variant="primary" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh data</OpsButton></>}
       />
@@ -132,19 +144,19 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
         <OpsStat label="Queue" value={counts.queue} icon={<ShieldCheck size={13}/>} active={risk === "all" && state === "all"} onClick={() => { setRisk("all"); setState("all"); }}/>
         <OpsStat label="Critical" value={counts.critical} icon={<AlertTriangle size={13}/>} tone={counts.critical ? "danger" : "neutral"} active={risk === "critical"} onClick={() => setRisk(risk === "critical" ? "all" : "critical")}/>
         <OpsStat label="Blocked" value={counts.blocked} icon={<FileWarning size={13}/>} tone={counts.blocked ? "warning" : "neutral"} active={state === "blocked"} onClick={() => setState(state === "blocked" ? "all" : "blocked")}/>
-        <OpsStat label="Open customs steps" value={counts.openSteps} icon={<ClipboardCheck size={13}/>} tone={counts.openSteps ? "warning" : "neutral"}/>
-        <OpsStat label="Ready to advance" value={counts.ready} icon={<CheckCircle2 size={13}/>} tone="success" active={state === "ready"} onClick={() => setState(state === "ready" ? "all" : "ready")}/>
+        <OpsStat label="Awaiting release" value={counts.awaitingRelease} icon={<Landmark size={13}/>} tone={counts.awaitingRelease ? "warning" : "neutral"} active={state === "awaiting_release"} onClick={() => setState(state === "awaiting_release" ? "all" : "awaiting_release")}/>
+        <OpsStat label="Customs released" value={counts.released} icon={<CheckCircle2 size={13}/>} tone="success" active={state === "released"} onClick={() => setState(state === "released" ? "all" : "released")}/>
       </OpsStatStrip>
 
       <div className="ops-content ops-stack">
         {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 
-        <OpsSurface eyebrow="Clearance queue" title="What customs needs next" description={`${visible.length} shipment${visible.length === 1 ? "" : "s"} match this view. Missing required documents are blockers even when the customs checklist itself is complete.`} flush>
+        <OpsSurface eyebrow="Clearance queue" title="What customs needs next" description={`${visible.length} shipment${visible.length === 1 ? "" : "s"} match this view. International jobs remain awaiting release until Customs release is explicitly recorded.`} flush>
           <div className="ops-toolbar">
-            <label className="relative min-w-[240px] flex-1"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9b9189]"/><input className="ops-input pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, lane, document, owner or warning"/></label>
+            <label className="relative min-w-[240px] flex-1"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9b9189]"/><input className="ops-input pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, declaration, customs point, agent or warning"/></label>
             <select className="ops-select" value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
             <select className="ops-select" value={risk} onChange={(event) => setRisk(event.target.value as RiskFilter)}><option value="all">All risk</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="normal">Normal</option></select>
-            <select className="ops-select" value={state} onChange={(event) => setState(event.target.value as StateFilter)}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="ready">Ready</option><option value="clear">Clear</option></select>
+            <select className="ops-select" value={state} onChange={(event) => setState(event.target.value as StateFilter)}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="awaiting_release">Awaiting release</option><option value="ready">Checklist ready</option><option value="released">Customs released</option></select>
             <OpsButton variant="ghost" size="sm" onClick={reset}>Reset</OpsButton>
           </div>
 
@@ -159,9 +171,9 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
                 </div>
 
                 <div className="rounded-[11px] border border-[#e9e2dc] bg-[#faf8f5] p-3.5">
-                  <div className="flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#887e76]">Customs</span><strong className="text-[11px] text-[#514840]">{row.customs_completed}/{row.customs_required}</strong></div>
+                  <div className="flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#887e76]">Checklist</span><strong className="text-[11px] text-[#514840]">{row.customs_completed}/{row.customs_required}</strong></div>
                   <div className="mt-2"><OpsProgress value={row.customs_completed} max={Math.max(row.customs_required, 1)} tone={row.customs_open ? "warning" : "success"}/></div>
-                  <p className="mt-2 text-[10px] leading-5 text-[#81776f]">{row.customs_open ? `${row.customs_open} required step${row.customs_open === 1 ? "" : "s"} open` : "Required customs steps complete"}</p>
+                  <p className="mt-2 text-[10px] leading-5 text-[#81776f]">{row.customs_open ? `${row.customs_open} required step${row.customs_open === 1 ? "" : "s"} open` : "Required checklist steps complete"}</p>
                   {row.customs_other_branch_open ? <p className="mt-1 text-[10px] font-semibold leading-5 text-[#8c674f]">{row.customs_other_branch_open} open step{row.customs_other_branch_open === 1 ? " is" : "s are"} owned by another branch.</p> : null}
                 </div>
 
@@ -174,6 +186,8 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
                 <div className="flex flex-wrap gap-2 xl:justify-end"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Open Job File</Link></div>
               </div>
 
+              <CustomsClearanceEditor row={row} agents={customsAgents}/>
+
               {row.customs_integrity_warnings.length ? <div className="mt-3 rounded-[11px] border border-[#e7c9c3] bg-[#fff7f5] p-3.5"><p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#a55353]">Data integrity blocker</p>{row.customs_integrity_warnings.map((warning) => <p key={warning} className="mt-1.5 flex items-start gap-2 text-[10px] leading-5 text-[#865f5f]"><AlertTriangle size={11} className="mt-1 shrink-0"/>{warning}</p>)}</div> : null}
               {row.missing_documents.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{row.missing_documents.map((document) => <div key={document.type} className="rounded-[10px] border border-[#eadcc8] bg-[#fffaf2] p-3.5"><div className="flex items-center gap-2"><FileWarning size={12} className="text-[#9c6a30]"/><strong className="text-[11px] text-[#654f35]">{document.label}</strong></div><p className="mt-1.5 text-[10px] leading-5 text-[#806c55]">{document.reason}</p></div>)}</div> : null}
               {row.document_advisories.length ? <div className="mt-3 rounded-[10px] border border-[#ded8cf] bg-[#faf8f5] p-3.5"><p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8f8176]">Compliance review</p>{row.document_advisories.map((advisory) => <p key={advisory} className="mt-1.5 flex items-start gap-2 text-[10px] leading-5 text-[#806a55]"><AlertTriangle size={10} className="mt-1 shrink-0"/>{advisory}</p>)}</div> : null}
@@ -181,9 +195,9 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
               {row.open_steps.length ? <div className="mt-4 grid gap-2 md:grid-cols-2">{row.open_steps.map((step) => {
                 const isBusy = busy === `${row.reference}:${step.id}`;
                 return <div key={step.id} className="flex items-start justify-between gap-3 rounded-[11px] border border-[#eadfd7] bg-[#fffdfa] p-3.5"><div className="min-w-0"><strong className="text-[11px] text-[#514840]">{step.title}</strong><p className="mt-1 text-[10px] leading-5 text-[#81776f]">{step.branch}{step.detail ? ` · ${step.detail}` : ""}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeStep(row, step.id)}><CheckCircle2 size={11}/>{isBusy ? "Saving…" : "Complete"}</OpsButton></div>;
-              })}</div> : row.customs_other_branch_open ? <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#eadcc8] bg-[#fffaf2] p-3 text-[10px] leading-5 text-[#806a55]"><Landmark size={12}/>No open customs steps belong to your branch. Other branch work must finish before this shipment is ready.</div> : row.customs_open ? <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#e7c9c3] bg-[#fff7f5] p-3 text-[10px] leading-5 text-[#865f5f]"><AlertTriangle size={12}/>Open customs work exists but cannot be actioned until its branch assignment is repaired.</div> : <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#d8e2d8] bg-[#f5f9f5] p-3 text-[10px] text-[#617564]"><CheckCircle2 size={12}/>All required customs checklist steps are complete for this shipment.</div>}
+              })}</div> : row.customs_other_branch_open ? <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#eadcc8] bg-[#fffaf2] p-3 text-[10px] leading-5 text-[#806a55]"><Landmark size={12}/>No open customs steps belong to your branch. Other branch work must finish before this shipment is ready.</div> : row.customs_open ? <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#e7c9c3] bg-[#fff7f5] p-3 text-[10px] leading-5 text-[#865f5f]"><AlertTriangle size={12}/>Open customs work exists but cannot be actioned until its branch assignment is repaired.</div> : <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#d8e2d8] bg-[#f5f9f5] p-3 text-[10px] text-[#617564]"><CheckCircle2 size={12}/>All required customs checklist steps are complete. International jobs still require an explicit Customs release record before final-mile progression.</div>}
             </article>
-          ))}</div> : <OpsEmptyState kind="healthy" icon={<ShieldCheck size={18}/>} title="Customs queue is clear" description="No shipments match the current customs filters. Reset the view to confirm whether the whole accessible customs queue is clear." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton>}/>} 
+          ))}</div> : <OpsEmptyState kind="healthy" icon={<ShieldCheck size={18}/>} title="No customs work matches this view" description="Reset the filters to check the full accessible customs queue." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton>}/>} 
         </OpsSurface>
       </div>
     </OpsPage>
