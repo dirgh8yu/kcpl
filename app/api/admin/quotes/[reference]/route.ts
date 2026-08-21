@@ -225,9 +225,10 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     try {
       const customerBranch = auth.staff.can_access_all_branches ? "Kathmandu" : auth.staff.branches[0];
       if (!customerBranch) return json({ ok: false, error: "Your staff profile has no KCPL branch available for this customer." }, 403);
-      const result = await createCrmCustomerFromQuote(reference, { name: auth.user.displayName, email: auth.user.email }, customerBranch);
+      const result = await createCrmCustomerFromQuote(reference, { name: auth.user.displayName, email: auth.user.email }, customerBranch, auth.staff);
       if (result.kind === "unavailable") return json({ ok: false, error: "CRM storage is unavailable." }, 503);
       if (result.kind === "missing_quote") return json({ ok: false, error: "Quote not found." }, 404);
+      if (result.kind === "forbidden") return json({ ok: false, error: "This enquiry has a shipment outside your KCPL branch access." }, 403);
       if (result.kind === "duplicates") return json({ ok: false, error: "Possible CRM matches already exist. Confirm one of them instead of creating a duplicate.", code: "CRM_MATCHES_EXIST", matches: result.matches }, 409);
       if (result.kind === "already_linked") return json({ ok: true, customerId: result.customerId });
       if (result.kind === "created_and_linked") return json({ ok: true, customerId: result.customer.id, customer: result.customer }, 201);

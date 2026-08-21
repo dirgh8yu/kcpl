@@ -1,5 +1,8 @@
+import type { DocumentSnapshot } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { crmCurrencies, type CrmCurrency, type KcplBranch } from "./crm-data";
+import { recomputeCustomerFinance } from "../finance/finance.server";
+import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "./crm-data";
 import { createCrmCustomer, findCrmDuplicates } from "./crm-data.server";
 
 type Actor = { name: string; email: string };
@@ -36,6 +39,26 @@ function activityId(suffix: string) {
   return `activity-${Date.now()}-${suffix}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
+function shipmentVisible(snapshot: DocumentSnapshot, context?: KcplStaffContext) {
+  if (!context) return true;
+  const branch = snapshot.get("primary_branch");
+  if (!kcplBranches.includes(branch as KcplBranch)) return false;
+  return context.can_access_all_branches || staffCanAccessBranch(context, branch as KcplBranch);
+}
+
+async function visibleQuoteDocs(docs: FirebaseFirestore.QueryDocumentSnapshot[], context?: KcplStaffContext) {
+  if (!context) return docs;
+  const references = [...new Set(docs.map((doc) => nullable(doc.get("shipment_reference"))).filter((value): value is string => Boolean(value)))];
+  if (!references.length) return docs;
+  const db = firebaseAdminDb();
+  const snapshots = await db.getAll(...references.map((reference) => db.collection("shipments").doc(reference)));
+  const visibleReferences = new Set(snapshots.filter((snapshot) => snapshot.exists && shipmentVisible(snapshot, context)).map((snapshot) => snapshot.id));
+  return docs.filter((doc) => {
+    const shipmentReference = nullable(doc.get("shipment_reference"));
+    return !shipmentReference || visibleReferences.has(shipmentReference);
+  });
+}
+
 function quoteFromDoc(id: string, data: Record<string, unknown>, customerId: string): CrmQuoteLinkItem {
   const matches = Array.isArray(data.crm_matches) ? data.crm_matches : [];
   const match = matches.find((item) => {
@@ -58,7 +81,7 @@ function quoteFromDoc(id: string, data: Record<string, unknown>, customerId: str
   };
 }
 
-export async function listCrmQuoteLinks(customerId: string) {
+export async function listCrmQuoteLinks(customerId: string, context?: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const id = customerId.trim().toUpperCase();
@@ -67,12 +90,17 @@ export async function listCrmQuoteLinks(customerId: string) {
     db.collection("quotes").where("crm_match_ids", "array-contains", id).limit(100).get(),
   ]);
 
-  const linked = linkedSnapshot.docs
+  const [visibleLinkedDocs, visibleSuggestedDocs] = await Promise.all([
+    visibleQuoteDocs(linkedSnapshot.docs, context),
+    visibleQuoteDocs(suggestedSnapshot.docs, context),
+  ]);
+
+  const linked = visibleLinkedDocs
     .map((doc) => quoteFromDoc(doc.id, doc.data() as Record<string, unknown>, id))
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   const linkedIds = new Set(linked.map((item) => item.reference));
-  const suggested = suggestedSnapshot.docs
+  const suggested = visibleSuggestedDocs
     .filter((doc) => !linkedIds.has(doc.id) && !nullable(doc.get("customer_id")))
     .map((doc) => quoteFromDoc(doc.id, doc.data() as Record<string, unknown>, id))
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -80,7 +108,7 @@ export async function listCrmQuoteLinks(customerId: string) {
   return { linked, suggested };
 }
 
-export async function linkQuoteToCrmCustomer(customerId: string, quoteReference: string, actor: Actor) {
+export async function linkQuoteToCrmCustomer(customerId: string, quoteReference: string, actor: Actor, context?: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const id = customerId.trim().toUpperCase();
@@ -89,7 +117,7 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
   const quoteRef = db.collection("quotes").doc(quoteId);
   const now = new Date().toISOString();
 
-  return db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction) => {
     const [targetSnapshot, quoteSnapshot] = await Promise.all([
       transaction.get(targetRef),
       transaction.get(quoteRef),
@@ -102,6 +130,7 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
     const shipmentRef = shipmentReference ? db.collection("shipments").doc(shipmentReference) : null;
     const shipmentSnapshot = shipmentRef ? await transaction.get(shipmentRef) : null;
     const shipmentCustomerId = shipmentSnapshot?.exists ? nullable(shipmentSnapshot.get("customer_id")) : null;
+    if (shipmentSnapshot?.exists && !shipmentVisible(shipmentSnapshot, context)) return { kind: "forbidden" as const };
 
     const previousQuoteRef = currentCustomerId && currentCustomerId !== id
       ? db.collection("customers").doc(currentCustomerId)
@@ -114,8 +143,9 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
     const previousShipmentSnapshot = previousShipmentRef ? await transaction.get(previousShipmentRef) : null;
     const quoteAlreadyLinked = currentCustomerId === id;
     const shipmentAlreadyLinked = !shipmentSnapshot?.exists || shipmentCustomerId === id;
+    const affectedCustomerIds = [...new Set([id, currentCustomerId, shipmentCustomerId].filter((value): value is string => Boolean(value)))];
 
-    if (quoteAlreadyLinked && shipmentAlreadyLinked) return { kind: "linked" as const };
+    if (quoteAlreadyLinked && shipmentAlreadyLinked) return { kind: "linked" as const, affectedCustomerIds };
 
     if (!quoteAlreadyLinked) {
       transaction.update(quoteRef, {
@@ -195,11 +225,22 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
       }
     }
 
-    return { kind: "linked" as const };
+    return { kind: "linked" as const, affectedCustomerIds };
   });
+
+  if (result.kind === "linked") {
+    await Promise.all(result.affectedCustomerIds.map((customerIdToRefresh) => recomputeCustomerFinance(customerIdToRefresh)));
+    return { kind: "linked" as const };
+  }
+  return result;
 }
 
-export async function createCrmCustomerFromQuote(quoteReference: string, actor: Actor, primaryBranch: KcplBranch = "Kathmandu") {
+export async function createCrmCustomerFromQuote(
+  quoteReference: string,
+  actor: Actor,
+  primaryBranch: KcplBranch = "Kathmandu",
+  context?: KcplStaffContext,
+) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const quoteId = quoteReference.trim().toUpperCase();
@@ -207,6 +248,12 @@ export async function createCrmCustomerFromQuote(quoteReference: string, actor: 
   if (!quote.exists) return { kind: "missing_quote" as const };
   const currentCustomerId = nullable(quote.get("customer_id"));
   if (currentCustomerId) return { kind: "already_linked" as const, customerId: currentCustomerId };
+
+  const shipmentReference = nullable(quote.get("shipment_reference"));
+  if (shipmentReference && context) {
+    const shipment = await db.collection("shipments").doc(shipmentReference).get();
+    if (!shipment.exists || !shipmentVisible(shipment, context)) return { kind: "forbidden" as const };
+  }
 
   const displayName = text(quote.get("company_name"), text(quote.get("contact_name"), "New customer")).trim();
   const primaryEmail = text(quote.get("contact_email")).trim().toLowerCase();
@@ -252,7 +299,7 @@ export async function createCrmCustomerFromQuote(quoteReference: string, actor: 
   }, actor);
   if (created.kind !== "created") return created;
 
-  const linked = await linkQuoteToCrmCustomer(created.customer.id, quoteId, actor);
+  const linked = await linkQuoteToCrmCustomer(created.customer.id, quoteId, actor, context);
   if (linked.kind !== "linked") return linked;
   return { kind: "created_and_linked" as const, customer: created.customer };
 }

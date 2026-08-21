@@ -26,6 +26,7 @@ import {
   type CrmTask,
   type CrmTaskPriority,
 } from "../crm-data";
+import type { CrmCustomerFinanceSnapshot } from "../crm-customer-finance";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 
@@ -51,8 +52,9 @@ function taskSort(tasks: CrmTask[]) {
   });
 }
 
-export function Customer360Workspace({ initialCustomer, userName, userEmail, commercialVisible, creditVisible }: { initialCustomer: CrmCustomerDetail; userName: string; userEmail: string; commercialVisible: boolean; creditVisible: boolean }) {
+export function Customer360Workspace({ initialCustomer, initialFinanceSnapshot, userName, userEmail, commercialVisible, creditVisible }: { initialCustomer: CrmCustomerDetail; initialFinanceSnapshot: CrmCustomerFinanceSnapshot | null; userName: string; userEmail: string; commercialVisible: boolean; creditVisible: boolean }) {
   const [customer, setCustomer] = useState(initialCustomer);
+  const [financeSnapshot, setFinanceSnapshot] = useState(initialFinanceSnapshot);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
@@ -66,13 +68,30 @@ export function Customer360Workspace({ initialCustomer, userName, userEmail, com
   const tasks = useMemo(() => taskSort(customer.tasks), [customer.tasks]);
   const openTasks = tasks.filter((item) => !item.completed);
   const overdueTasks = openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < Date.now());
-  const grossMargin = customer.revenue_total > 0 ? (customer.profit_total / customer.revenue_total) * 100 : 0;
+  const financeRevenue = financeSnapshot?.revenue_total ?? customer.revenue_total;
+  const financeCost = financeSnapshot?.cost_total ?? customer.cost_total;
+  const financeProfit = financeSnapshot?.profit_total ?? customer.profit_total;
+  const financeOutstanding = financeSnapshot?.outstanding_total ?? customer.commercial.outstanding_balance ?? 0;
+  const creditLimit = customer.commercial.credit_limit;
+  const availableCredit = creditLimit === null ? null : creditLimit - financeOutstanding;
+  const creditOverLimit = creditLimit !== null && financeOutstanding > creditLimit;
+  const grossMargin = financeSnapshot?.gross_margin_percent ?? (financeRevenue > 0 ? (financeProfit / financeRevenue) * 100 : 0);
+  const accountRisk = customer.account_status === "blacklisted"
+    ? "This account is blacklisted. New commercial commitments should not proceed."
+    : customer.account_status === "on_hold"
+      ? "This account is on credit hold. Accounts or Management must clear the hold before new exposure."
+      : creditOverLimit
+        ? "Outstanding receivables exceed the approved credit limit."
+        : financeSnapshot && financeSnapshot.overdue_total > 0
+          ? `${financeSnapshot.overdue_invoice_count} overdue invoice${financeSnapshot.overdue_invoice_count === 1 ? "" : "s"} require Accounts follow-up.`
+          : null;
 
   async function refresh() {
     const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customer.id)}`, { cache: "no-store" });
-    const data = await response.json() as { customer?: CrmCustomerDetail; error?: string };
+    const data = await response.json() as { customer?: CrmCustomerDetail; financeSnapshot?: CrmCustomerFinanceSnapshot | null; error?: string };
     if (!response.ok || !data.customer) throw new Error(data.error || "Could not refresh Customer 360.");
     setCustomer(data.customer);
+    setFinanceSnapshot(data.financeSnapshot ?? null);
   }
 
   async function write(path: string, body: Record<string, unknown>, method = "POST") {
@@ -160,7 +179,7 @@ export function Customer360Workspace({ initialCustomer, userName, userEmail, com
           <aside className="ops-stack xl:sticky xl:top-[76px]">
             <OpsSurface eyebrow="Account" title="Relationship snapshot"><div className="grid grid-cols-2 gap-x-4 gap-y-4"><Fact label="Lead stage" value={crmLeadStageLabels[customer.lead_stage]}/><Fact label="Primary branch" value={customer.primary_branch}/><Fact label="Account manager" value={customer.account_manager_name || "Unassigned"}/><Fact label="Manager email" value={customer.account_manager_email || "Not set"}/><Fact label="Manager phone" value={customer.account_manager_phone || "Not set"}/><Fact label="Country" value={customer.country}/><Fact label="Entity" value={customer.entity_kind === "company" ? "Company / organisation" : "Individual"}/><Fact label="Billing email" value={customer.billing_email || "Not set"}/></div>{customer.tags.length ? <div className="mt-4 border-t border-[#eee7e1] pt-4"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{customer.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}</OpsSurface>
 
-            {commercialVisible ? <OpsSurface eyebrow="Commercial" title={`${customer.preferred_currency} account`} description="Commercial data is visible only to authorised roles."><div className="divide-y divide-[#eee7e1]"><MoneyLine label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)}/><MoneyLine label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)}/><MoneyLine label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} strong/><MoneyLine label="Gross margin" value={`${grossMargin.toFixed(1)}%`}/><MoneyLine label="Markup" value={customer.commercial.markup_percent === null ? "Not set" : `${customer.commercial.markup_percent}%`}/>{creditVisible ? <><MoneyLine label="Payment terms" value={customer.commercial.payment_terms_days === null ? "Not set" : `${customer.commercial.payment_terms_days} days`}/><MoneyLine label="Credit limit" value={formatMoney(customer.commercial.credit_limit, customer.preferred_currency)}/><MoneyLine label="Outstanding" value={formatMoney(customer.commercial.outstanding_balance, customer.preferred_currency)}/></> : null}</div>{customer.commercial.pricing_notes ? <div className="mt-4 rounded-[12px] bg-[#faf7f4] p-3"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Pricing note</p><p className="mt-2 text-[9px] leading-5 text-[#756b63]">{customer.commercial.pricing_notes}</p></div> : null}</OpsSurface> : <OpsSurface eyebrow="Commercial" title="Commercial data restricted" description="Your role can work the relationship without receiving pricing, margin or credit data."><div className="flex gap-3 rounded-[12px] bg-[#faf7f4] p-3 text-[#756b63]"><LockKeyhole size={15} className="mt-0.5 shrink-0 text-[#9b745f]"/><p className="text-[9px] leading-5">Sensitive fields are withheld server-side, not merely hidden with CSS.</p></div></OpsSurface>}
+            {commercialVisible ? <OpsSurface eyebrow="Commercial" title={`${customer.preferred_currency} account`} description={financeSnapshot ? `Live branch-aware reconciliation · ${formatDate(financeSnapshot.generated_at)}` : "Commercial data is visible only to authorised roles."}>{accountRisk ? <div className="mb-4 rounded-[12px] border border-[#ead1c8] bg-[#fff6f2] p-3"><p className="text-[8px] font-black uppercase tracking-[.08em] text-[#a45543]">Account attention</p><p className="mt-1.5 text-[9px] leading-5 text-[#71544a]">{accountRisk}</p></div> : null}<div className="divide-y divide-[#eee7e1]"><MoneyLine label="Revenue" value={formatMoney(financeRevenue, customer.preferred_currency)}/><MoneyLine label="Cost" value={formatMoney(financeCost, customer.preferred_currency)}/><MoneyLine label="Gross profit" value={formatMoney(financeProfit, customer.preferred_currency)} strong/><MoneyLine label="Gross margin" value={`${grossMargin.toFixed(1)}%`}/><MoneyLine label="Markup" value={customer.commercial.markup_percent === null ? "Not set" : `${customer.commercial.markup_percent}%`}/>{creditVisible ? <><MoneyLine label="Payment terms" value={customer.commercial.payment_terms_days === null ? "Not set" : `${customer.commercial.payment_terms_days} days`}/><MoneyLine label="Credit limit" value={formatMoney(customer.commercial.credit_limit, customer.preferred_currency)}/><MoneyLine label="Outstanding" value={formatMoney(financeOutstanding, customer.preferred_currency)}/><MoneyLine label="Available credit" value={availableCredit === null ? "Not set" : formatMoney(availableCredit, customer.preferred_currency)}/>{financeSnapshot ? <><MoneyLine label="Collected" value={formatMoney(financeSnapshot.collected_total, customer.preferred_currency)}/><MoneyLine label="Overdue" value={formatMoney(financeSnapshot.overdue_total, customer.preferred_currency)}/><MoneyLine label="Open invoices" value={`${financeSnapshot.open_invoice_count}`}/>{financeSnapshot.oldest_overdue_days !== null ? <MoneyLine label="Oldest overdue" value={`${financeSnapshot.oldest_overdue_days} days`}/> : null}</> : null}</> : null}</div>{financeSnapshot && (financeSnapshot.other_currency_invoice_count || financeSnapshot.other_currency_cost_count || financeSnapshot.integrity_warning_count) ? <div className="mt-4 rounded-[12px] bg-[#faf7f4] p-3"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Reconciliation note</p><p className="mt-2 text-[9px] leading-5 text-[#756b63]">{financeSnapshot.other_currency_invoice_count ? `${financeSnapshot.other_currency_invoice_count} invoice(s) use another currency. ` : ""}{financeSnapshot.other_currency_cost_count ? `${financeSnapshot.other_currency_cost_count} job cost(s) use another currency. ` : ""}{financeSnapshot.integrity_warning_count ? `${financeSnapshot.integrity_warning_count} finance record(s) were excluded because branch data is invalid.` : ""}</p></div> : null}{customer.commercial.pricing_notes ? <div className="mt-4 rounded-[12px] bg-[#faf7f4] p-3"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Pricing note</p><p className="mt-2 text-[9px] leading-5 text-[#756b63]">{customer.commercial.pricing_notes}</p></div> : null}</OpsSurface> : <OpsSurface eyebrow="Commercial" title="Commercial data restricted" description="Your role can work the relationship without receiving pricing, margin or credit data."><div className="flex gap-3 rounded-[12px] bg-[#faf7f4] p-3 text-[#756b63]"><LockKeyhole size={15} className="mt-0.5 shrink-0 text-[#9b745f]"/><p className="text-[9px] leading-5">Sensitive fields are withheld server-side, not merely hidden with CSS.</p></div></OpsSurface>}
 
             <OpsSurface eyebrow="Recent activity" title="Account trail"><div className="divide-y divide-[#eee7e1]">{customer.activity.length ? customer.activity.slice(0, 8).map((item) => <div key={item.id} className="py-3"><div className="flex items-start gap-2.5"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c6755d]"/><div><strong className="text-[9px] text-[#514840]">{item.title}</strong>{item.detail ? <p className="mt-1 text-[8px] leading-4 text-[#8b8179]">{item.detail}</p> : null}<p className="mt-1 text-[8px] text-[#a0968e]">{formatDate(item.created_at)}{item.actor_name ? ` · ${item.actor_name}` : ""}</p></div></div></div>) : <p className="py-4 text-[9px] text-[#91877f]">No activity recorded yet.</p>}</div></OpsSurface>
           </aside>

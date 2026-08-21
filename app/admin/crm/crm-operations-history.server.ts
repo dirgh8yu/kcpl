@@ -2,6 +2,8 @@ import type { DocumentSnapshot } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { quoteCurrencies, quoteStatuses, type QuoteCurrency, type QuoteStatus } from "../admin-data";
+import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { kcplBranches, type KcplBranch } from "./crm-data";
 
 export type CrmQuoteHistoryItem = {
   reference: string;
@@ -57,7 +59,14 @@ function shipmentStatus(value: unknown): ShipmentStatus {
   return shipmentStatuses.includes(value as ShipmentStatus) ? value as ShipmentStatus : "booking_confirmed";
 }
 
-export async function listCrmOperationsHistory(customerId: string): Promise<CrmOperationsHistory | null> {
+function shipmentVisible(snapshot: DocumentSnapshot, context?: KcplStaffContext) {
+  if (!context) return true;
+  const branch = snapshot.get("primary_branch");
+  if (!kcplBranches.includes(branch as KcplBranch)) return false;
+  return context.can_access_all_branches || staffCanAccessBranch(context, branch as KcplBranch);
+}
+
+export async function listCrmOperationsHistory(customerId: string, context?: KcplStaffContext): Promise<CrmOperationsHistory | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const id = customerId.trim().toUpperCase();
@@ -86,7 +95,9 @@ export async function listCrmOperationsHistory(customerId: string): Promise<CrmO
   }).sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
 
   const shipmentDocs = new Map<string, DocumentSnapshot>();
-  ownedShipmentsSnapshot.docs.forEach((doc) => shipmentDocs.set(doc.id, doc));
+  ownedShipmentsSnapshot.docs.forEach((doc) => {
+    if (shipmentVisible(doc, context)) shipmentDocs.set(doc.id, doc);
+  });
 
   const fallbackRefs = quotes
     .map((quote) => quote.shipment_reference)
@@ -97,7 +108,7 @@ export async function listCrmOperationsHistory(customerId: string): Promise<CrmO
   if (fallbackRefs.length) {
     const fallbackSnapshots = await db.getAll(...fallbackRefs);
     fallbackSnapshots.forEach((snapshot) => {
-      if (snapshot.exists) shipmentDocs.set(snapshot.id, snapshot);
+      if (snapshot.exists && shipmentVisible(snapshot, context)) shipmentDocs.set(snapshot.id, snapshot);
     });
   }
 
@@ -134,5 +145,12 @@ export async function listCrmOperationsHistory(customerId: string): Promise<CrmO
     };
   }).sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
 
-  return { quotes, shipments };
+  const visibleShipmentRefs = new Set(shipments.map((shipment) => shipment.reference));
+  const visibleQuotes = context
+    ? quotes.map((quote) => quote.shipment_reference && !visibleShipmentRefs.has(quote.shipment_reference)
+      ? { ...quote, shipment_reference: null }
+      : quote)
+    : quotes;
+
+  return { quotes: visibleQuotes, shipments };
 }
