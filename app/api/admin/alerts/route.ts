@@ -1,6 +1,8 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { evaluateAutomationRules, listAutomationAlerts, updateAutomationAlert } from "../../../admin/alerts/alert-engine.server";
 import { evaluateFreightAutomation } from "../../../admin/alerts/freight-automation.server";
+import { dispatchAllAssignmentEmails } from "../../../admin/notifications/assignment-email.server";
+import { dispatchPendingAlertEmails } from "../../../admin/notifications/notification-email.server";
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
@@ -45,6 +47,10 @@ export async function POST(request: Request) {
         evaluateFreightAutomation(),
       ]);
       if (result.kind !== "completed" || payables.kind !== "completed" || freight.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+      const [alertEmails, assignmentEmails] = await Promise.all([
+        dispatchPendingAlertEmails(),
+        dispatchAllAssignmentEmails(),
+      ]);
       return json({
         ok: true,
         result: {
@@ -54,6 +60,7 @@ export async function POST(request: Request) {
           automatic_tasks_created: freight.tasks_created,
           automatic_tasks_reopened: freight.tasks_reopened,
           automatic_tasks_completed: freight.tasks_auto_completed,
+          notification_emails_sent: (alertEmails.sent ?? 0) + assignmentEmails.sent,
           credit_holds_authorized: auth.staff.permissions.canManageCredit,
         },
       });
