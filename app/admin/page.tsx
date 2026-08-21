@@ -29,17 +29,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (access.kind === "signed-out") return <AdminLoginPage/>;
 
   const staff = await getStaffContext(access.user);
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    isManagement: staff.permissions.role === "management",
+  };
   const { enquiry } = await searchParams;
   const result = await loadQuotes(staff);
-  if (result.kind === "unavailable") return <AdminGate title="Firestore is not available yet" detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment." signOutPath="/api/admin/session?logout=1"/>;
-  if (result.kind === "error") return <AdminGate title="The enquiry desk could not be loaded" detail="KCPL's Firebase data is temporarily unavailable. No enquiry data was exposed." signOutPath="/api/admin/session?logout=1"/>;
+  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><AdminGate title="Firestore is not available yet" detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment. Navigation and search remain available." signOutPath="/api/admin/session?logout=1" embedded/></OperationsShell>;
+  if (result.kind === "error") return <OperationsShell {...shellProps}><AdminGate title="The enquiry desk could not be loaded" detail="KCPL's Firebase data is temporarily unavailable. Navigation and search remain available and no enquiry data was exposed." signOutPath="/api/admin/session?logout=1" embedded/></OperationsShell>;
 
   const requestedReference = enquiry?.trim().toUpperCase();
   const orderedQuotes = requestedReference
     ? [...result.quotes].sort((a, b) => Number(b.reference === requestedReference) - Number(a.reference === requestedReference))
     : result.quotes;
 
-  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}><AdminDashboard initialQuotes={orderedQuotes} canViewCommercial={staff.permissions.canViewCommercial} canEditCommercial={staff.permissions.canEditCommercial}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><AdminDashboard initialQuotes={orderedQuotes} canViewCommercial={staff.permissions.canViewCommercial} canEditCommercial={staff.permissions.canEditCommercial}/></OperationsShell>;
 }
 
 function AdminLoginPage() {
@@ -55,6 +61,6 @@ function AdminLoginPage() {
   </main>;
 }
 
-function AdminGate({ title, detail, signOutPath }: { title: string; detail: string; signOutPath?: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#332d29]"><section className="w-full max-w-xl rounded-[18px] border border-[#e6ddd6] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)] sm:p-10"><span className="grid h-10 w-10 place-items-center rounded-[12px] bg-[#f3e8e1] text-[#b6654f]"><ShieldCheck size={16}/></span><p className="mt-5 text-[10px] font-bold text-[#a45c49]">KCPL Operations</p><h1 className="mt-2 text-[27px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#756d66]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/" className="rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[11px] font-bold text-white">Return to website</Link>{signOutPath ? <a href={signOutPath} className="rounded-[11px] border border-[#e2d9d2] bg-white px-4 py-2.5 text-[11px] font-bold text-[#665c55]">Sign out</a> : null}</div></section></main>;
+function AdminGate({ title, detail, signOutPath, embedded = false }: { title: string; detail: string; signOutPath?: string; embedded?: boolean }) {
+  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#332d29] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[18px] border border-[#e6ddd6] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)] sm:p-10"><span className="grid h-10 w-10 place-items-center rounded-[12px] bg-[#f3e8e1] text-[#b6654f]"><ShieldCheck size={16}/></span><p className="mt-5 text-[10px] font-bold text-[#a45c49]">KCPL Operations</p><h1 className="mt-2 text-[27px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#756d66]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/" className="rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[11px] font-bold text-white">Return to website</Link>{signOutPath ? <a href={signOutPath} className="rounded-[11px] border border-[#e2d9d2] bg-white px-4 py-2.5 text-[11px] font-bold text-[#665c55]">Sign out</a> : null}</div></section></main>;
 }
