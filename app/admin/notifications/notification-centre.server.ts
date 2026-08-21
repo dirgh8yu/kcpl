@@ -36,11 +36,6 @@ function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
 }
 
-function nullable(value: unknown) {
-  const output = text(value).trim();
-  return output || null;
-}
-
 function branchValue(value: unknown): KcplBranch | null {
   return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
 }
