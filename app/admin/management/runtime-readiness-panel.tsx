@@ -23,6 +23,13 @@ function StatusIcon({ status }: { status: ProductionReadinessStatus }) {
   return <ShieldAlert size={14}/>;
 }
 
+async function requestReadiness() {
+  const response = await fetch("/api/admin/readiness", { cache: "no-store" });
+  const data = await response.json() as ReadinessResponse;
+  if (!response.ok || !data.readiness) throw new Error(data.error || "Runtime readiness could not be loaded.");
+  return data.readiness;
+}
+
 export function RuntimeReadinessPanel() {
   const [readiness, setReadiness] = useState<ProductionRuntimeReadiness | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,10 +39,7 @@ export function RuntimeReadinessPanel() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/readiness", { cache: "no-store" });
-      const data = await response.json() as ReadinessResponse;
-      if (!response.ok || !data.readiness) throw new Error(data.error || "Runtime readiness could not be loaded.");
-      setReadiness(data.readiness);
+      setReadiness(await requestReadiness());
     } catch (loadError) {
       setReadiness(null);
       setError(loadError instanceof Error ? loadError.message : "Runtime readiness could not be loaded.");
@@ -44,7 +48,22 @@ export function RuntimeReadinessPanel() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    void requestReadiness()
+      .then((next) => {
+        if (!active) return;
+        setReadiness(next);
+        setLoading(false);
+      })
+      .catch((loadError: unknown) => {
+        if (!active) return;
+        setReadiness(null);
+        setError(loadError instanceof Error ? loadError.message : "Runtime readiness could not be loaded.");
+        setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className="ops-content-wide pb-8">
