@@ -130,13 +130,13 @@ export function normalizeTrackingMilestone(rawStatus: string, explicit?: string 
 }
 
 export function milestoneShipmentStatus(milestone: TrackingMilestone, current: ShipmentStatus): ShipmentStatus {
+  if (current === "delivered") return "delivered";
   if (milestone === "delivered") return "delivered";
   if (milestone === "delivery_refused" || milestone === "exception") return "exception";
   if (milestone === "out_for_delivery" || milestone === "delivery_attempted") return "out_for_delivery";
   if (milestone === "import_customs" || milestone === "export_customs") return "customs_clearance";
   if (["departed", "transshipment", "arrived_destination", "origin_terminal", "picked_up"].includes(milestone)) return "in_transit";
   if (milestone === "pickup_scheduled") return "preparing";
-  if (milestone === "booked") return current === "booking_confirmed" ? current : current;
   return current;
 }
 
