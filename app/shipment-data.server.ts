@@ -248,7 +248,13 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     return { kind: "created" as const, reference };
   });
 
-  if (["missing", "not-won", "customer-required", "customer-missing"].includes(result.kind)) return result;
+  if (
+    result.kind === "missing" ||
+    result.kind === "not-won" ||
+    result.kind === "customer-required" ||
+    result.kind === "customer-missing"
+  ) return result;
+
   return { kind: result.kind, shipment: await loadShipment(result.reference) } as const;
 }
 
