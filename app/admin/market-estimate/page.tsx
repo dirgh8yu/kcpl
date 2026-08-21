@@ -32,7 +32,7 @@ export default async function MarketEstimatePage() {
           title="Market estimate"
           description="Live reference tools are back in the KCPL admin: external freight benchmarking, Nepal Rastra Bank forex, Google road distance/ETA and Google Places-assisted route entry. Reference data remains advisory and never overwrites a customer quote automatically."
           meta={<><OpsBadge tone="accent">{roleLabel}</OpsBadge><span>Live integration workspace</span></>}
-          actions={<div className="flex flex-wrap gap-2"><Link href="/admin/rating" className="ops-button" data-variant="primary" data-size="sm">Open Rate Desk</Link><Link href="/admin/consolidation" className="ops-button" data-variant="secondary" data-size="sm">Load Planner</Link></div>}
+          actions={<div className="flex flex-wrap gap-2"><Link href="/admin/rating" className="ops-button" data-variant="primary" data-size="sm">Open Rate Desk</Link><Link href="/admin/pricing" className="ops-button" data-variant="secondary" data-size="sm">Pricing Desk</Link><Link href="/admin/consolidation" className="ops-button" data-variant="secondary" data-size="sm">Load Planner</Link></div>}
         />
 
         <div className="ops-content ops-stack">
