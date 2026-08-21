@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         automatic_tasks_created: freight.tasks_created,
         automatic_tasks_reopened: freight.tasks_reopened,
         automatic_tasks_completed: freight.tasks_auto_completed,
-        notification_emails_sent: alertEmails.sent + assignmentEmails.sent,
+        notification_emails_sent: (alertEmails.sent ?? 0) + assignmentEmails.sent,
       },
     });
   } catch (error) {
