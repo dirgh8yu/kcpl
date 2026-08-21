@@ -126,7 +126,6 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
     const response = await fetch(`/api/admin/quotes/${encodeURIComponent(reference)}`, { cache: "no-store", signal });
     const data = await response.json() as { quote?: QuoteDetail; error?: string };
     if (!response.ok || !data.quote) throw new Error(data.error || "Could not load the enquiry.");
-    setDetail(data.quote);
     return data.quote;
   }, []);
 
@@ -134,6 +133,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
     if (!selectedReference) return;
     const controller = new AbortController();
     loadDetail(selectedReference, controller.signal)
+      .then((quote) => setDetail(quote))
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setDetail(null);
@@ -151,6 +151,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
   async function refreshDetail(message?: string) {
     if (!detail) return;
     const next = await loadDetail(detail.reference);
+    setDetail(next);
     setManualCustomerId("");
     if (message) setNotice(message);
     if (next.shipment) setQuotes((current) => current.map((quote) => quote.reference === next.reference ? { ...quote, status: next.status, assigned_to: next.assigned_to } : quote));
