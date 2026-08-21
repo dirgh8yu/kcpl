@@ -201,7 +201,9 @@ export async function GET(request: Request) {
       }
     }
 
-    const trimmed = results.slice(0, limit).map(({ searchText: _searchText, ...result }) => result);
+    const trimmed = results.slice(0, limit).map((result) =>
+      Object.fromEntries(Object.entries(result).filter(([key]) => key !== "searchText")),
+    );
     return gptActionJson({
       ok: true,
       query: query || null,
