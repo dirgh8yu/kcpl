@@ -97,6 +97,10 @@ function orderFromData(id: string, data: Record<string, unknown>): TmsOrder | nu
     selected_partner_id: nullable(data.selected_partner_id),
     selected_cost: nullableNumber(data.selected_cost),
     selected_currency: selectedCurrency && crmCurrencies.includes(selectedCurrency as CrmCurrency) ? selectedCurrency as CrmCurrency : null,
+    consolidation_load_id: nullable(data.consolidation_load_id),
+    consolidation_reference: nullable(data.consolidation_reference),
+    is_consolidation_master: data.is_consolidation_master === true,
+    procurement_locked_by_load: data.procurement_locked_by_load === true,
     created_at: text(data.created_at),
     created_by_name: text(data.created_by_name, "KCPL Staff"),
     created_by_email: text(data.created_by_email),
@@ -144,6 +148,10 @@ function canAccessRateCard(staff: KcplStaffContext, card: PartnerBuyRateCard) {
   return card.branch === "Global" || staffCanAccessBranch(staff, card.branch);
 }
 
+function procurementLockedByConsolidation(order: TmsOrder) {
+  return Boolean(order.procurement_locked_by_load && order.consolidation_load_id && !order.is_consolidation_master);
+}
+
 export async function listTmsOrders(staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("transport_orders").orderBy("updated_at", "desc").limit(500).get();
@@ -180,6 +188,10 @@ export async function createTmsOrder(input: TmsOrderInput, actor: Actor, staff: 
     selected_partner_id: null,
     selected_cost: null,
     selected_currency: null,
+    consolidation_load_id: null,
+    consolidation_reference: null,
+    is_consolidation_master: false,
+    procurement_locked_by_load: false,
     created_at: now,
     created_by_name: actor.name,
     created_by_email: actor.email,
@@ -259,7 +271,7 @@ export async function rateTmsOrder(id: string, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const orderResult = await getOrder(id, staff);
   if (orderResult.kind !== "ready") return orderResult;
-  if (["tendering", "booked", "cancelled"].includes(orderResult.order.status)) return { kind: "locked" as const, order: orderResult.order };
+  if (["tendering", "booked", "cancelled"].includes(orderResult.order.status) || procurementLockedByConsolidation(orderResult.order)) return { kind: "locked" as const, order: orderResult.order };
   const rates = await listPartnerBuyRateCards(staff);
   if (rates.kind !== "ready") return rates;
   const results = rateOrder(orderResult.order, rates.rateCards);
@@ -271,7 +283,7 @@ export async function selectTmsRate(id: string, rateCardId: string, actor: Actor
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const orderResult = await getOrder(id, staff);
   if (orderResult.kind !== "ready") return orderResult;
-  if (["tendering", "booked", "cancelled"].includes(orderResult.order.status)) return { kind: "locked" as const, order: orderResult.order };
+  if (["tendering", "booked", "cancelled"].includes(orderResult.order.status) || procurementLockedByConsolidation(orderResult.order)) return { kind: "locked" as const, order: orderResult.order };
   const rates = await listPartnerBuyRateCards(staff);
   if (rates.kind !== "ready") return rates;
   const result = rateOrder(orderResult.order, rates.rateCards).find((item) => item.rate_card_id === rateCardId) as RatingResult | undefined;

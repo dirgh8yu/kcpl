@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { confirmConsolidatedLoadBooking } from "../consolidation/tms-consolidation.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { buildDocumentIntelligence, defaultCustomsSteps, defaultWorkflowTasks } from "../workflow-defaults";
@@ -170,6 +171,7 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
   const order = await orderSnapshot(input.orderId);
   if (!order) return { kind: "missing_order" as const };
   if (!staffCanAccessBranch(staff, order.branch)) return { kind: "forbidden" as const };
+  if (nullable(order.data.consolidation_load_id) && order.data.is_consolidation_master !== true) return { kind: "consolidated_order" as const };
   if (text(order.data.status) !== "selected") return { kind: "rate_required" as const };
   const rateCardId = text(order.data.selected_rate_card_id);
   const partnerId = text(order.data.selected_partner_id).trim().toUpperCase();
@@ -215,6 +217,8 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
     pickup_confirmation: null,
     booked_at: null,
     shipment_reference: null,
+    consolidation_load_id: nullable(order.data.consolidation_load_id),
+    is_consolidation_master: order.data.is_consolidation_master === true,
     created_by_name: actor.name,
     created_by_email: actor.email,
     updated_at: now,
@@ -531,5 +535,25 @@ export async function confirmTmsTenderBooking(tenderIdValue: string, input: Tend
   const order = await orderSnapshot(record.tender.order_id);
   if (!order) return { kind: "missing_order" as const };
   if (text(order.data.status) === "booked" && nullable(order.data.shipment_reference)) return { kind: "booked" as const, shipmentReference: nullable(order.data.shipment_reference)! };
+
+  const loadId = nullable(order.data.consolidation_load_id);
+  if (order.data.is_consolidation_master === true && loadId) {
+    const consolidated = await confirmConsolidatedLoadBooking({
+      loadId,
+      masterOrderId: order.id,
+      tenderId: record.tender.id,
+      tenderReference: record.tender.tender_reference,
+      partnerId: record.tender.partner_id,
+      partnerName: record.tender.partner_name,
+      rateCardId: record.tender.rate_card_id,
+      bookingReference: input.bookingReference,
+      pickupConfirmation: input.pickupConfirmation,
+      amount: commercials.amount,
+      currency: commercials.currency,
+    }, actor, staff);
+    if (consolidated.kind === "booked") return { kind: "booked" as const, shipmentReference: consolidated.masterShipmentReference ?? consolidated.shipmentReferences[0] ?? "", shipmentReferences: consolidated.shipmentReferences, consolidationLoadId: loadId };
+    return consolidated;
+  }
+
   return createBookedShipment(record, order, commercials, input, actor);
 }
