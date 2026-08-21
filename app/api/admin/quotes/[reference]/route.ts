@@ -1,7 +1,8 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
-import { quoteCurrencies, QuoteCurrency, quoteStatuses, QuoteStatus } from "../../../../admin/admin-data";
+import { quoteCurrencies, type QuoteCurrency, quoteStatuses, type QuoteStatus } from "../../../../admin/admin-data";
 import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
 import { createCrmCustomerFromQuote } from "../../../../admin/crm/crm-quote-links.server";
+import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { ensureShipmentForWonQuote } from "../../../../shipment-data.server";
 
@@ -11,7 +12,10 @@ function json(body: unknown, status = 200) {
 
 async function authorize() {
   const access = await getAdminAccess();
-  if (access.kind === "authorized") return { user: access.user };
+  if (access.kind === "authorized") {
+    const staff = await getStaffContext(access.user);
+    return { user: access.user, staff };
+  }
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
 }
@@ -22,6 +26,22 @@ function clean(value: unknown) {
 
 const moneyPattern = /^\d{1,12}(?:\.\d{1,3})?$/;
 
+function validCalendarDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function redactCommercial<T extends NonNullable<Awaited<ReturnType<typeof getQuoteDetail>>>>(quote: T, canViewCommercial: boolean): T {
+  if (canViewCommercial) return quote;
+  return {
+    ...quote,
+    quoted_amount: null,
+    internal_cost: null,
+    customer_quote_note: null,
+  };
+}
+
 export async function GET(_request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
@@ -31,7 +51,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
     const quote = await getQuoteDetail(reference);
     if (quote === undefined) return json({ ok: false, error: "Quote storage is unavailable." }, 503);
     if (!quote) return json({ ok: false, error: "Quote not found." }, 404);
-    return json({ ok: true, quote });
+    return json({ ok: true, quote: redactCommercial(quote, auth.staff.permissions.canViewCommercial) });
   } catch (error) {
     console.error("Failed to load KCPL quote detail", reference, error);
     return json({ ok: false, error: "The enquiry could not be loaded. Please refresh and try again." }, 500);
@@ -52,6 +72,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 
   if (body.action === "commercial") {
+    if (!auth.staff.permissions.canEditCommercial) {
+      return json({ ok: false, error: "Your KCPL staff role does not allow commercial pricing changes." }, 403);
+    }
+
     const currency = clean(body.currency).toUpperCase();
     const quotedAmount = clean(body.quotedAmount);
     const internalCost = clean(body.internalCost);
@@ -61,13 +85,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     if (!quoteCurrencies.includes(currency as QuoteCurrency)) {
       return json({ ok: false, error: "Choose a supported quote currency." }, 400);
     }
-    if (quotedAmount && !moneyPattern.test(quotedAmount)) {
-      return json({ ok: false, error: "Quoted price must be a valid positive amount with up to 3 decimal places." }, 400);
+    if (quotedAmount && (!moneyPattern.test(quotedAmount) || Number(quotedAmount) <= 0)) {
+      return json({ ok: false, error: "Customer price must be greater than zero and use up to 3 decimal places." }, 400);
     }
-    if (internalCost && !moneyPattern.test(internalCost)) {
-      return json({ ok: false, error: "Internal cost must be a valid positive amount with up to 3 decimal places." }, 400);
+    if (internalCost && (!moneyPattern.test(internalCost) || Number(internalCost) < 0)) {
+      return json({ ok: false, error: "Internal cost must be zero or greater and use up to 3 decimal places." }, 400);
     }
-    if (validUntil && !/^\d{4}-\d{2}-\d{2}$/.test(validUntil)) {
+    if (validUntil && !validCalendarDate(validUntil)) {
       return json({ ok: false, error: "Choose a valid quote expiry date." }, 400);
     }
     if (customerNote.length > 4000) {
@@ -95,9 +119,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (!quoteStatuses.includes(status as QuoteStatus)) return json({ ok: false, error: "Choose a valid quote status." }, 400);
   if (assignedTo.length > 120) return json({ ok: false, error: "Assignee must be 120 characters or fewer." }, 400);
 
-  const result = await updateQuoteAdmin(reference, status as QuoteStatus, assignedTo);
+  const result = await updateQuoteAdmin(reference, status as QuoteStatus, assignedTo, auth.staff.permissions.canEditCommercial);
   if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
+  if (result.kind === "commercial-required") {
+    return json({ ok: false, error: "Commercial access is required to move an enquiry into or out of Quoted, Won or Lost.", code: "COMMERCIAL_REQUIRED" }, 403);
+  }
+  if (result.kind === "won-locked") {
+    return json({ ok: false, error: "A Won quote cannot be moved backwards. Continue the accepted movement from its Shipment or Digital Job File.", code: "WON_LOCKED" }, 409);
+  }
   if (result.kind === "customer-required") {
     return json({ ok: false, error: "Confirm or create the CRM customer before marking this quote Won.", code: "CUSTOMER_REQUIRED" }, 409);
   }
@@ -114,7 +144,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
       }
     } catch (error) {
       console.error("Failed to create KCPL shipment from won quote", reference, error);
-      shipmentWarning = "The quote was saved as Won, but the shipment record could not be initialized yet.";
+      shipmentWarning = "The quote was saved as Won, but its shipment could not be initialized yet. Reload the enquiry and retry before continuing operations.";
     }
   }
 
@@ -135,6 +165,9 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   }
 
   if (body.action === "create_customer") {
+    if (!auth.staff.permissions.canEditCustomer) {
+      return json({ ok: false, error: "Your KCPL staff role does not allow customer creation." }, 403);
+    }
     try {
       const result = await createCrmCustomerFromQuote(reference, { name: auth.user.displayName, email: auth.user.email });
       if (result.kind === "unavailable") return json({ ok: false, error: "CRM storage is unavailable." }, 503);
