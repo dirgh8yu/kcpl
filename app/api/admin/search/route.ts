@@ -100,8 +100,8 @@ export async function GET() {
     if (!canAccessBranchSet(staff, primary, handling)) continue;
 
     const customerName = customer ? text(customer.display_name, "Linked customer") : text(quote.company_name, text(quote.contact_name, "Unlinked customer"));
-    const origin = text(quote.origin, "Origin");
-    const destination = text(quote.destination, "Destination");
+    const origin = text(quote.origin, text(data.origin, "Origin"));
+    const destination = text(quote.destination, text(data.destination, "Destination"));
     const status = statusValue(data.status);
     const carrier = nullable(data.carrier);
     const carrierReference = nullable(data.carrier_reference);
@@ -147,6 +147,7 @@ export async function GET() {
 
   for (const doc of documents.quotes) {
     const data = doc.data;
+    if (data.migration_hidden === true) continue;
     const shipmentReference = nullable(data.shipment_reference);
     const shipment = shipmentReference ? shipments.get(shipmentReference) : undefined;
     const quoteCustomerId = nullable(data.customer_id);
