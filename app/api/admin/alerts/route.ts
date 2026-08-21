@@ -18,7 +18,7 @@ async function authorize() {
 export async function GET() {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
-  const alerts = await listAutomationAlerts(auth.staff, auth.user.email);
+  const alerts = await listAutomationAlerts(auth.staff, auth.user.email, true);
   if (!alerts) return json({ ok: false, error: "Alert storage is unavailable." }, 503);
   return json({ ok: true, alerts });
 }
@@ -32,10 +32,15 @@ export async function POST(request: Request) {
   const action = typeof body.action === "string" ? body.action : "";
 
   if (action === "evaluate") {
-    const result = await evaluateAutomationRules();
-    const payables = await evaluatePayablesAlerts();
-    if (result.kind !== "completed" || payables.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
-    return json({ ok: true, result: { ...result, payable_alerts: payables.active } });
+    try {
+      const result = await evaluateAutomationRules({ applyCreditHolds: auth.staff.permissions.canManageCredit });
+      const payables = await evaluatePayablesAlerts();
+      if (result.kind !== "completed" || payables.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+      return json({ ok: true, result: { ...result, payable_alerts: payables.active, credit_holds_authorized: auth.staff.permissions.canManageCredit } });
+    } catch (error) {
+      console.error("KCPL alert evaluation failed", error);
+      return json({ ok: false, error: "Automation checks could not be completed." }, 500);
+    }
   }
 
   if (action === "acknowledge" || action === "resolve") {
@@ -49,6 +54,7 @@ export async function POST(request: Request) {
     );
     if (result.kind === "missing") return json({ ok: false, error: "Alert not found." }, 404);
     if (result.kind === "forbidden") return json({ ok: false, error: "This alert is outside your access." }, 403);
+    if (result.kind === "invalid_state") return json({ ok: false, error: "Resolved alerts cannot be acknowledged." }, 409);
     if (result.kind !== "updated") return json({ ok: false, error: "Alert storage is unavailable." }, 503);
     return json({ ok: true });
   }
