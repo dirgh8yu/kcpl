@@ -1,5 +1,6 @@
 import type { ShipmentDocumentType } from "../shipment-document-types";
 import type { ShipmentStatus } from "../shipment-types";
+import type { CustomsClearanceStatus } from "./customs/customs-policy";
 import type { WorkflowDocumentDirection } from "./workflow-defaults";
 
 export const workflowStageIds = ["won", "setup", "customs", "documents", "transit", "delivery", "pod", "close"] as const;
@@ -42,6 +43,10 @@ export type ShipmentWorkflowReadiness = {
   assigned_owner: boolean;
   customs_required: number;
   customs_completed: number;
+  customs_checklist_ready: boolean;
+  customs_release_required: boolean;
+  customs_clearance_status: CustomsClearanceStatus;
+  customs_released: boolean;
   customs_ready: boolean;
   open_tasks: number;
   documents: WorkflowDocumentState[];
