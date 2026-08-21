@@ -48,6 +48,7 @@ export function OpsSurface({
   children,
   className,
   flush = false,
+  priority = "normal",
 }: {
   title?: ReactNode;
   eyebrow?: string;
@@ -56,9 +57,10 @@ export function OpsSurface({
   children: ReactNode;
   className?: string;
   flush?: boolean;
+  priority?: "normal" | "info" | "success" | "warning" | "danger";
 }) {
   return (
-    <section className={cx("ops-surface", flush && "ops-surface-flush", className)}>
+    <section className={cx("ops-surface", flush && "ops-surface-flush", className)} data-priority={priority}>
       {title || eyebrow || description || action ? (
         <div className="ops-surface-header">
           <div className="min-w-0">
@@ -95,6 +97,7 @@ export function OpsStat({
   active?: boolean;
   onClick?: () => void;
 }) {
+  const zero = typeof value === "number" && value === 0;
   const content = (
     <>
       <span className="ops-stat-top"><span className="ops-stat-label">{icon}{label}</span>{active ? <i aria-hidden="true"/> : null}</span>
@@ -103,9 +106,9 @@ export function OpsStat({
     </>
   );
   if (onClick) {
-    return <button type="button" onClick={onClick} className="ops-stat" data-tone={tone} data-active={active || undefined}>{content}</button>;
+    return <button type="button" onClick={onClick} className="ops-stat" data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{content}</button>;
   }
-  return <div className="ops-stat" data-tone={tone}>{content}</div>;
+  return <div className="ops-stat" data-tone={tone} data-zero={zero || undefined}>{content}</div>;
 }
 
 export function OpsBadge({
@@ -136,11 +139,25 @@ export function OpsField({ label, hint, children, className }: { label: ReactNod
 }
 
 export function OpsNotice({ children, tone = "neutral", onDismiss }: { children: ReactNode; tone?: "neutral" | "success" | "warning" | "danger"; onDismiss?: () => void }) {
-  return <div className="ops-notice" data-tone={tone}><span>{children}</span>{onDismiss ? <button type="button" onClick={onDismiss}>Dismiss</button> : null}</div>;
+  return <div className="ops-notice" data-tone={tone} role={tone === "danger" ? "alert" : "status"}><span>{children}</span>{onDismiss ? <button type="button" onClick={onDismiss}>Dismiss</button> : null}</div>;
 }
 
-export function OpsEmptyState({ icon, title, description, action }: { icon?: ReactNode; title: ReactNode; description?: ReactNode; action?: ReactNode }) {
-  return <div className="ops-empty">{icon ? <div className="ops-empty-icon">{icon}</div> : null}<h3>{title}</h3>{description ? <p>{description}</p> : null}{action ? <div>{action}</div> : null}</div>;
+export function OpsEmptyState({
+  icon,
+  title,
+  description,
+  action,
+  kind = "neutral",
+  compact = false,
+}: {
+  icon?: ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  kind?: "neutral" | "healthy" | "setup" | "search" | "unavailable";
+  compact?: boolean;
+}) {
+  return <div className="ops-empty" data-kind={kind} data-compact={compact || undefined}>{icon ? <div className="ops-empty-icon">{icon}</div> : null}<h3>{title}</h3>{description ? <p>{description}</p> : null}{action ? <div className="ops-empty-action">{action}</div> : null}</div>;
 }
 
 export function OpsButton({

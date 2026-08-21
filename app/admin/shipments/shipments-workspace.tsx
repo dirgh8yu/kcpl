@@ -57,6 +57,20 @@ function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "v
   return "neutral";
 }
 
+function shipmentMilestones(mode: string) {
+  const normalized = mode.toLowerCase();
+  if (normalized.includes("air")) return ["Booked", "Docs", "Export", "Departed", "Arrived", "Customs", "Delivery", "Delivered"];
+  if (normalized.includes("sea") || normalized.includes("ocean")) return ["Booked", "Docs", "Export", "Sailed", "Arrived", "Customs", "Delivery", "Delivered"];
+  if (normalized.includes("road")) return ["Booked", "Docs", "Origin", "Transit", "Customs", "Delivery", "Delivered"];
+  return ["Booked", "Docs", "Transit", "Customs", "Delivery", "Delivered"];
+}
+
+function milestonePosition(status: ShipmentStatus, count: number) {
+  const ratio: Record<Exclude<ShipmentStatus, "exception">, number> = { booking_confirmed: 0, preparing: .18, in_transit: .52, customs_clearance: .72, out_for_delivery: .88, delivered: 1 };
+  if (status === "exception") return -1;
+  return Math.min(count - 1, Math.round(ratio[status] * (count - 1)));
+}
+
 function readSavedViews(): SavedView[] {
   try {
     const value = JSON.parse(window.localStorage.getItem("kcpl-shipment-views") || "[]") as SavedView[];
@@ -179,7 +193,7 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
           <div className="ops-table-wrap">
             <table className="ops-table min-w-[1080px]">
               <thead><tr><th>Shipment</th><th>Customer & route</th>{columns.status ? <th>Status</th> : null}{columns.location ? <th>Current location</th> : null}{columns.branch ? <th>Branch</th> : null}{columns.owner ? <th>Owner</th> : null}{columns.eta ? <th>ETA</th> : null}{columns.work ? <th>Open work</th> : null}<th></th></tr></thead>
-              <tbody>{filtered.length ? filtered.map((job) => <ShipmentRow key={job.reference} job={job} columns={columns} onPreview={() => setSelectedReference(job.reference)}/>) : <tr><td colSpan={colSpan}><OpsEmptyState icon={<PackageCheck size={18}/>} title="No shipments in this view" description="Try another saved view or reset the filters. Nothing has been deleted or hidden from the underlying job files."/></td></tr>}</tbody>
+              <tbody>{filtered.length ? filtered.map((job) => <ShipmentRow key={job.reference} job={job} columns={columns} onPreview={() => setSelectedReference(job.reference)}/>) : <tr><td colSpan={colSpan}><OpsEmptyState kind="search" icon={<PackageCheck size={18}/>} title="No shipments in this view" description="Try another saved view or reset the filters. Nothing has been deleted or hidden from the underlying job files."/></td></tr>}</tbody>
             </table>
           </div>
         </OpsSurface>
@@ -207,14 +221,21 @@ function ShipmentRow({ job, columns, onPreview }: { job: CommandCentreJob; colum
   return <tr>
     <td><div className="flex items-center gap-2.5"><span className={`h-2 w-2 shrink-0 rounded-full ${attention ? "bg-[#c45e60]" : "bg-[#7c987f]"}`}/><div><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="font-bold text-[#443b35]"><OpsMono>{job.reference}</OpsMono></Link><p className="mt-1 text-[8px] text-[#a19890]">Quote <OpsMono>{job.quote_reference || "—"}</OpsMono></p></div></div></td>
     <td><strong className="block max-w-[230px] truncate">{job.customer_name}</strong><p className="mt-1 max-w-[250px] truncate text-[9px] text-[#8f857d]">{job.origin || "Origin?"} → {job.destination || "Destination?"}</p></td>
-    {columns.status ? <td><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></td> : null}
+    {columns.status ? <td><div className="grid gap-2"><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge><ShipmentMilestoneRail job={job}/></div></td> : null}
     {columns.location ? <td><span className="flex max-w-[190px] items-center gap-1.5 truncate"><MapPin size={11} className="shrink-0 text-[#c2745b]"/>{job.current_location || "Not set"}</span>{job.carrier ? <p className="mt-1 max-w-[180px] truncate text-[8px] text-[#9e958d]">{job.carrier}</p> : null}</td> : null}
     {columns.branch ? <td><strong>{job.primary_branch}</strong>{job.handling_branches.length > 1 ? <p className="mt-1 text-[8px] text-[#9e958d]">+{job.handling_branches.length - 1} handling</p> : null}</td> : null}
-    {columns.owner ? <td><span className={owner === "Unassigned" ? "font-bold text-[#b65355]" : ""}>{owner}</span></td> : null}
+    {columns.owner ? <td><span className={owner === "Unassigned" ? "font-bold text-[#9b682b]" : ""}>{owner}</span></td> : null}
     {columns.eta ? <td>{dateOnly(job.eta)}</td> : null}
     {columns.work ? <td><span className={`inline-flex items-center gap-1.5 ${work === "Clear" ? "text-[#66806b]" : attention ? "font-bold text-[#b65355]" : "text-[#9a682f]"}`}><ClipboardList size={11}/>{work}</span></td> : null}
-    <td className="text-right"><OpsButton variant="ghost" size="sm" onClick={onPreview}>Preview <ArrowRight size={11}/></OpsButton></td>
+    <td className="text-right"><div className="flex justify-end gap-1"><OpsButton variant="ghost" size="sm" onClick={onPreview}>Preview</OpsButton><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open job <ArrowRight size={11}/></Link></div></td>
   </tr>;
+}
+
+function ShipmentMilestoneRail({ job }: { job: CommandCentreJob }) {
+  const labels = shipmentMilestones(job.mode);
+  const current = milestonePosition(job.status, labels.length);
+  if (job.status === "exception") return <div className="flex items-center gap-1.5 text-[9px] font-semibold text-[#ae434a]"><AlertTriangle size={10}/>Operational exception</div>;
+  return <div title={labels.join(" → ")} aria-label={`Shipment lifecycle: ${labels.join(", ")}`}><div className="ops-milestones">{labels.map((label, index) => <span key={label} className="ops-milestone" data-state={index < current ? "done" : index === current ? "current" : "pending"}><i aria-hidden="true"/></span>)}</div><p className="mt-1 text-[8px] text-[#8b847d]">{labels[current]}</p></div>;
 }
 
 function PreviewFact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: string; mono?: boolean }) {

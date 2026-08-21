@@ -50,6 +50,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     acknowledged: alerts.filter((alert) => alert.status === "acknowledged").length,
     open: alerts.filter((alert) => alert.status === "open").length,
   };
+  const unresolved = alerts.filter((alert) => alert.status !== "resolved").length;
 
   async function reload() {
     const response = await fetch("/api/admin/alerts", { cache: "no-store" });
@@ -81,8 +82,29 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
   }
 
   function reset() {
-    setQuery(""); setSeverity("all"); setStatus("all"); setFocus("all");
+    setQuery("");
+    setSeverity("all");
+    setStatus("all");
+    setFocus("all");
   }
+
+  const emptyState = unresolved === 0 ? (
+    <OpsEmptyState
+      kind="healthy"
+      icon={<CheckCircle2 size={18}/>}
+      title="All clear ✓"
+      description="No active exceptions require attention. KCPL will surface new operational risk here when a rule is triggered."
+      action={<OpsButton variant="secondary" size="sm" onClick={() => action("evaluate")} disabled={evaluating}>{evaluating ? "Checking…" : "Check now"}</OpsButton>}
+    />
+  ) : (
+    <OpsEmptyState
+      kind="search"
+      icon={<CheckCircle2 size={18}/>}
+      title="No alerts match this view"
+      description="There is active work elsewhere in the queue, but nothing matches the current filters."
+      action={<OpsButton variant="secondary" size="sm" onClick={reset}>Show all alerts</OpsButton>}
+    />
+  );
 
   return (
     <OpsPage>
@@ -90,8 +112,8 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
         eyebrow="Attention desk"
         title="Tasks & alerts"
         description="One operational inbox for exceptions, overdue work, customs risk, quote follow-up and finance escalation. Acknowledge when someone owns it; resolve when the underlying problem is actually handled."
-        meta={<><span>{roleLabel}</span><span>Automation-backed queue</span><span>{alerts.filter((alert) => alert.status !== "resolved").length} unresolved</span></>}
-        actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations home</Link><OpsButton variant="primary" onClick={() => action("evaluate")} disabled={evaluating}><RefreshCw size={13} className={evaluating ? "animate-spin" : ""}/>{evaluating ? "Checking…" : "Run checks"}</OpsButton></>}
+        meta={<><span>{roleLabel}</span><span>Automation-backed queue</span><span>{unresolved} unresolved</span></>}
+        actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations home</Link><OpsButton variant="primary" onClick={() => action("evaluate")} disabled={evaluating}><RefreshCw size={13} className={evaluating ? "animate-spin" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
       />
 
       <OpsStatStrip>
@@ -112,19 +134,25 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
             <OpsButton variant="ghost" size="sm" onClick={reset}>Reset</OpsButton>
           </div>
 
-          {visible.length ? <div className="divide-y divide-[#eee7e1]">{visible.map((alert) => {
-            const busy = busyId === alert.id;
-            return <article key={alert.id} className="group grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[8px_minmax(0,1fr)_auto] lg:items-start">
-              <span className={`hidden h-full min-h-16 w-1.5 rounded-full lg:block ${alert.severity === "critical" ? "bg-[#c15a5d]" : alert.severity === "warning" ? "bg-[#c38a49]" : "bg-[#7895a5]"}`} aria-hidden="true"/>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5"><OpsBadge tone={severityTone(alert.severity)} dot>{alert.severity}</OpsBadge><OpsBadge>{automationAlertTypeLabels[alert.type]}</OpsBadge>{alert.status === "acknowledged" ? <OpsBadge tone="success">Acknowledged</OpsBadge> : alert.status === "resolved" ? <OpsBadge tone="neutral">Resolved</OpsBadge> : null}{alert.escalated_at ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}</div>
-                <h3 className="mt-2.5 text-[13px] font-[720] tracking-[-.018em] text-[#443b35]">{alert.title}</h3>
-                <p className="mt-1 max-w-[920px] text-[10px] leading-5 text-[#81776f]">{alert.detail}</p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[8px] font-semibold text-[#a0968e]"><span>{alert.branch || "No branch"}</span><span>{alert.assigned_to_name || alert.assigned_to_email || "Unassigned"}</span><span>{automationAlertTypeLabels[alert.type]}</span><span>Triggered {dateTime(alert.first_triggered_at)}</span>{alert.parent_reference ? <span>Parent <OpsMono>{alert.parent_reference}</OpsMono></span> : null}<span>Record <OpsMono>{alert.entity_id}</OpsMono></span></div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end"><Link href={alert.action_path} className="ops-button" data-variant="primary" data-size="sm">Open record</Link>{alert.status === "open" ? <OpsButton variant="secondary" size="sm" disabled={busy} onClick={() => action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}{alert.status !== "resolved" ? <OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => action("resolve", alert.id)}><CheckCircle2 size={12}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}</div>
-            </article>;
-          })}</div> : <OpsEmptyState icon={<CheckCircle2 size={18}/>} title="Nothing needs attention in this view" description="The automation engine has no matching work. Change the filters or run the checks again if you want to refresh the queue." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Show all alerts</OpsButton>}/>} 
+          {visible.length ? (
+            <div className="divide-y divide-[#eee7e1]">
+              {visible.map((alert) => {
+                const busy = busyId === alert.id;
+                return (
+                  <article key={alert.id} className="group grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[8px_minmax(0,1fr)_auto] lg:items-start">
+                    <span className={`hidden h-full min-h-16 w-1.5 rounded-full lg:block ${alert.severity === "critical" ? "bg-[#ae434a]" : alert.severity === "warning" ? "bg-[#d29a4b]" : "bg-[#3f7295]"}`} aria-hidden="true"/>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5"><OpsBadge tone={severityTone(alert.severity)} dot>{alert.severity}</OpsBadge><OpsBadge>{automationAlertTypeLabels[alert.type]}</OpsBadge>{alert.status === "acknowledged" ? <OpsBadge tone="success">Acknowledged</OpsBadge> : alert.status === "resolved" ? <OpsBadge tone="neutral">Resolved</OpsBadge> : null}{alert.escalated_at ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}</div>
+                      <h3 className="mt-2.5 text-[13px] font-[720] tracking-[-.018em] text-[#342f2b]">{alert.title}</h3>
+                      <p className="mt-1 max-w-[920px] text-[11px] leading-5 text-[#706963]">{alert.detail}</p>
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-semibold text-[#8d867f]"><span>{alert.branch || "No branch"}</span><span>{alert.assigned_to_name || alert.assigned_to_email || "Unassigned"}</span><span>{automationAlertTypeLabels[alert.type]}</span><span>Triggered {dateTime(alert.first_triggered_at)}</span>{alert.parent_reference ? <span>Parent <OpsMono>{alert.parent_reference}</OpsMono></span> : null}<span>Record <OpsMono>{alert.entity_id}</OpsMono></span></div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end"><Link href={alert.action_path} className="ops-button" data-variant="primary" data-size="sm">Open record</Link>{alert.status === "open" ? <OpsButton variant="secondary" size="sm" disabled={busy} onClick={() => action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}{alert.status !== "resolved" ? <OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => action("resolve", alert.id)}><CheckCircle2 size={12}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}</div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : emptyState}
         </OpsSurface>
       </div>
     </OpsPage>
