@@ -125,20 +125,22 @@ export async function getCrmCustomerFinanceSnapshot(
     return canSeeBranch(context, branch);
   });
 
-  const costSnapshots = await Promise.all(
-    accessibleShipments.map((shipment) => shipment.ref.collection("job_costs").limit(1000).get()),
-  );
-
   let cost = 0;
   let otherCurrencyCostCount = 0;
-  for (const costs of costSnapshots) {
-    for (const item of costs.docs) {
-      const itemCurrency = currencyValue(item.get("currency"));
-      if (itemCurrency !== currency) {
-        otherCurrencyCostCount += 1;
-        continue;
+  for (let index = 0; index < accessibleShipments.length; index += 25) {
+    const batch = accessibleShipments.slice(index, index + 25);
+    const costSnapshots = await Promise.all(
+      batch.map((shipment) => shipment.ref.collection("job_costs").limit(1000).get()),
+    );
+    for (const costs of costSnapshots) {
+      for (const item of costs.docs) {
+        const itemCurrency = currencyValue(item.get("currency"));
+        if (itemCurrency !== currency) {
+          otherCurrencyCostCount += 1;
+          continue;
+        }
+        cost += Math.max(0, numberValue(item.get("amount")));
       }
-      cost += Math.max(0, numberValue(item.get("amount")));
     }
   }
 
