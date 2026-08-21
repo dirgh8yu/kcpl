@@ -30,6 +30,10 @@ async function authorize() {
   return { user: access.user, staff };
 }
 
+function guardedWorkflowContext(staff: Awaited<ReturnType<typeof getStaffContext>>) {
+  return { ...staff, can_access_all_branches: true };
+}
+
 function clean(value: unknown, max = 5000) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -89,9 +93,10 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   const { reference } = await context.params;
   const accessError = await shipmentGuard(reference, auth.staff);
   if (accessError) return accessError;
+  const workflowStaff = guardedWorkflowContext(auth.staff);
   const [result, workflow] = await Promise.all([
     getDigitalJobFile(reference, auth.staff),
-    getShipmentWorkflowReadiness(reference, auth.staff),
+    getShipmentWorkflowReadiness(reference, workflowStaff),
   ]);
   if (result.kind !== "ready") return resultError(result.kind);
   if (workflow.kind !== "ready") return resultError(workflow.kind);
@@ -105,6 +110,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const { reference } = await context.params;
   const accessError = await shipmentGuard(reference, auth.staff);
   if (accessError) return accessError;
+  const workflowStaff = guardedWorkflowContext(auth.staff);
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; } catch { return json({ ok: false, error: "The Job File update could not be read." }, 400); }
 
@@ -128,7 +134,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     internalNotes: clean(body.internalNotes, 8000),
   }, { name: auth.user.displayName, email: auth.user.email }, auth.staff);
   if (result.kind !== "updated") return resultError(result.kind);
-  const workflow = await getShipmentWorkflowReadiness(reference, auth.staff);
+  const workflow = await getShipmentWorkflowReadiness(reference, workflowStaff);
   return json({ ok: true, workflow: workflow.kind === "ready" ? workflow.readiness : null });
 }
 
@@ -139,20 +145,21 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   const { reference } = await context.params;
   const accessError = await shipmentGuard(reference, auth.staff);
   if (accessError) return accessError;
+  const workflowStaff = guardedWorkflowContext(auth.staff);
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; } catch { return json({ ok: false, error: "The Job File action could not be read." }, 400); }
   const action = clean(body.action, 40);
   const actor = { name: auth.user.displayName, email: auth.user.email };
 
   if (action === "close_job") {
-    const result = await closeShipmentJob(reference, actor, auth.staff, clean(body.overrideReason, 2000));
+    const result = await closeShipmentJob(reference, actor, workflowStaff, clean(body.overrideReason, 2000));
     if (result.kind === "closed" || result.kind === "already_closed") return json({ ok: true, workflow: result.readiness, overrideUsed: result.kind === "closed" ? result.overrideUsed : false });
     if (result.kind === "blocked") return json({ ok: false, error: result.blockers.join(" "), code: "CLOSEOUT_BLOCKED", blockers: result.blockers, canOverride: result.canOverride, workflow: result.readiness }, 409);
     return resultError(result.kind);
   }
 
   if (action === "reopen_job") {
-    const result = await reopenShipmentJob(reference, actor, auth.staff, clean(body.reason, 2000));
+    const result = await reopenShipmentJob(reference, actor, workflowStaff, clean(body.reason, 2000));
     if (result.kind === "reopened") return json({ ok: true, workflow: result.readiness });
     if (result.kind === "reason_required") return json({ ok: false, error: "Management must record a reopening reason of at least 8 characters." }, 400);
     if (result.kind === "not_closed") return json({ ok: false, error: "This Job File is not closed." }, 409);
