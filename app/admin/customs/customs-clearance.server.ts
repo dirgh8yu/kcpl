@@ -47,8 +47,9 @@ export async function updateCustomsClearance(
   if (!context.permissions.canManageJobFile) return { kind: "forbidden" as const };
 
   const access = await checkShipmentBranchAccess(reference, context);
-  if (access.kind !== "ready") return access;
-  const shipment = access.snapshot;
+  if (access.kind !== "allowed") return access;
+  const shipment = await firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).get();
+  if (!shipment.exists) return { kind: "missing" as const };
   const validationError = customsClearanceValidationError(input);
   if (validationError) return { kind: "invalid" as const, error: validationError };
 
