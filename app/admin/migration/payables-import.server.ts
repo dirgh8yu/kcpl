@@ -352,7 +352,7 @@ export async function preparePayablesImport(filename: string, csv: string) {
     }
 
     const supplierId = resolved.partner?.id ?? "";
-    const supplierName = resolved.partner?.name ?? valueAt(cells, indexes, "supplier_name") || "Unresolved supplier";
+    const supplierName = resolved.partner?.name ?? (valueAt(cells, indexes, "supplier_name") || "Unresolved supplier");
     const supplierKey = supplierId ? supplierIdentityKey(supplierId, supplierName) : "";
     const normalizedBillReference = supplierBillReference ? normalizeSupplierBillReference(supplierBillReference) : null;
 
