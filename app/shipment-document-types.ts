@@ -1,6 +1,7 @@
 export const shipmentDocumentTypes = [
   "air_waybill",
   "bill_of_lading",
+  "road_consignment_note",
   "commercial_invoice",
   "packing_list",
   "customs_document",
@@ -14,6 +15,7 @@ export type ShipmentDocumentType = (typeof shipmentDocumentTypes)[number];
 export const shipmentDocumentTypeLabels: Record<ShipmentDocumentType, string> = {
   air_waybill: "Air waybill (AWB)",
   bill_of_lading: "Bill of lading (BL)",
+  road_consignment_note: "Road consignment note",
   commercial_invoice: "Commercial invoice",
   packing_list: "Packing list",
   customs_document: "Customs document",
