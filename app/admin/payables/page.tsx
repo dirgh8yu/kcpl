@@ -11,7 +11,7 @@ import { PayablesWorkspace } from "./payables-workspace";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Accounts Payable | KCPL Finance", robots: { index: false, follow: false } };
 
-export default async function PayablesPage({ searchParams }: { searchParams: Promise<{ shipment?: string; partner?: string }> }) {
+export default async function PayablesPage({ searchParams }: { searchParams: Promise<{ shipment?: string; partner?: string; create?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Accounts Payable is available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
@@ -27,6 +27,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   const initialShipment = typeof params.shipment === "string" ? params.shipment.trim().toUpperCase() : "";
   const requestedPartner = typeof params.partner === "string" ? params.partner.trim().toUpperCase() : "";
   const initialPartner = partnerOptions.some((partner) => partner.id === requestedPartner) ? requestedPartner : "";
+  const initialCreate = params.create === "1";
   const branchOptions = (staff.can_access_all_branches ? [...kcplBranches] : staff.branches) as KcplBranch[];
   const defaultBranch = branchOptions[0] ?? "Kathmandu";
 
@@ -42,6 +43,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
         roleLabel={kcplStaffRoleLabels[staff.permissions.role]}
         initialShipment={initialShipment}
         initialPartner={initialPartner}
+        initialCreate={initialCreate}
         partnerOptions={partnerOptions}
         branchOptions={branchOptions}
         defaultBranch={defaultBranch}
