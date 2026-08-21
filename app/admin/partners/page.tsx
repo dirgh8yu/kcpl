@@ -3,6 +3,7 @@ import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { canEditPartnerNetwork, canViewPartnerFinance } from "./partner-policy";
 import { getStaffContext } from "../staff-directory.server";
+import { Partner360Jump } from "./partner-360-jump";
 import { PartnersWorkspace } from "./partners-workspace";
 import { listPartnerDashboard } from "./partners.server";
 
@@ -32,6 +33,7 @@ export default async function PartnersPage() {
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
+      <Partner360Jump partners={dashboard.partners.map((partner) => ({ id: partner.id, display_name: partner.display_name }))}/>
       <PartnersWorkspace
         dashboard={dashboard}
         canEdit={canEdit}
