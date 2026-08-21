@@ -34,8 +34,10 @@ type AutoTaskCondition = {
   title: string;
   detail: string;
   branch: KcplBranch;
+  assignedUid: string | null;
   assignedName: string | null;
   assignedEmail: string | null;
+  assignedPhone: string | null;
   dueHours: number;
 };
 
@@ -179,8 +181,10 @@ export async function evaluateFreightAutomation() {
     const status = text(data.status, "booking_confirmed");
     const isActive = ACTIVE_STATUSES.has(status);
     const branch = shipmentBranch(data);
+    const assignedUid = nullable(data.job_assigned_to_uid);
     const assignedName = nullable(data.job_assigned_to_name);
     const assignedEmail = nullable(data.job_assigned_to_email);
+    const assignedPhone = nullable(data.job_assigned_to_phone);
     const quoteReference = nullable(data.quote_reference);
     const quote = quoteReference ? quotes.get(quoteReference) : undefined;
     const mode = text(quote?.mode);
@@ -215,8 +219,10 @@ export async function evaluateFreightAutomation() {
         title: "Assign operational owner",
         detail: "KCPL Automation detected an active shipment without an operational owner. Assign an eligible staff member from People & branches.",
         branch,
+        assignedUid: null,
         assignedName: null,
         assignedEmail: null,
+        assignedPhone: null,
         dueHours: 8,
       });
     }
@@ -255,8 +261,10 @@ export async function evaluateFreightAutomation() {
         title: "Complete required customs clearance steps",
         detail: `${openCustoms} required customs step${openCustoms === 1 ? " remains" : "s remain"} open. Continue the customs checklist before final-mile progression.`,
         branch,
+        assignedUid,
         assignedName,
         assignedEmail,
+        assignedPhone,
         dueHours: etaDistance === 0 ? 4 : 12,
       });
     }
@@ -281,8 +289,10 @@ export async function evaluateFreightAutomation() {
         title: "Complete required shipment document pack",
         detail: `Upload or verify the missing required documents: ${labels.join(", ")}.`,
         branch,
+        assignedUid,
         assignedName,
         assignedEmail,
+        assignedPhone,
         dueHours: etaDistance === 0 ? 4 : 12,
       });
     }
@@ -305,8 +315,10 @@ export async function evaluateFreightAutomation() {
         title: "Upload Proof of Delivery",
         detail: "The shipment is marked Delivered but no POD is present. Upload delivery evidence before closing the Job File.",
         branch,
+        assignedUid,
         assignedName,
         assignedEmail,
+        assignedPhone,
         dueHours: 4,
       });
     }
@@ -405,15 +417,19 @@ export async function evaluateFreightAutomation() {
       set.add(condition.id);
       const ref = db.collection("shipments").doc(reference).collection("job_tasks").doc(condition.id);
       const snapshot = existingAutoTasks.get(`${reference}:${condition.id}`);
+      const assignment = {
+        assigned_to_uid: condition.assignedUid,
+        assigned_to_name: condition.assignedName,
+        assigned_to_email: condition.assignedEmail,
+        assigned_to_phone: condition.assignedPhone,
+      };
       if (!snapshot) {
         operations.push((batch) => batch.set(ref, {
           title: condition.title,
           detail: condition.detail,
           branch: condition.branch,
           due_at: dueIso(now, condition.dueHours),
-          assigned_to_name: condition.assignedName,
-          assigned_to_email: condition.assignedEmail,
-          assigned_to_phone: null,
+          ...assignment,
           completed: false,
           completed_at: null,
           created_at: nowIso,
@@ -428,8 +444,7 @@ export async function evaluateFreightAutomation() {
           detail: condition.detail,
           branch: condition.branch,
           due_at: dueIso(now, condition.dueHours),
-          assigned_to_name: condition.assignedName,
-          assigned_to_email: condition.assignedEmail,
+          ...assignment,
           completed: false,
           completed_at: null,
           completed_by: null,
@@ -443,8 +458,7 @@ export async function evaluateFreightAutomation() {
           title: condition.title,
           detail: condition.detail,
           branch: condition.branch,
-          assigned_to_name: condition.assignedName,
-          assigned_to_email: condition.assignedEmail,
+          ...assignment,
           automation_generated: true,
           automation_key: condition.id,
         }, { merge: true }));

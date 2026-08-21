@@ -130,6 +130,7 @@ export async function createInvoiceCustomerFromShipmentQuote(
   const primaryBranch: KcplBranch = kcplBranches.includes(rawBranch as KcplBranch) ? rawBranch as KcplBranch : "Kathmandu";
   const rawCurrency = text(quote.get("quote_currency")).toUpperCase();
   const preferredCurrency: CrmCurrency = crmCurrencies.includes(rawCurrency as CrmCurrency) ? rawCurrency as CrmCurrency : "NPR";
+  const accountManagerUid = text(quote.get("assigned_to_uid"));
   const accountManagerName = text(quote.get("assigned_to_name")) || text(quote.get("assigned_to"));
   const accountManagerEmail = text(quote.get("assigned_to_email")).toLowerCase();
   const accountManagerPhone = text(quote.get("assigned_to_phone"));
@@ -158,6 +159,7 @@ export async function createInvoiceCustomerFromShipmentQuote(
     taxId: "",
     country: "Nepal",
     primaryBranch,
+    accountManagerUid,
     accountManagerName,
     accountManagerEmail,
     accountManagerPhone,

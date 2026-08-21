@@ -23,6 +23,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const dueInput = cleanCrmText(body.dueAt, 40);
   const dueAt = normalizeNepalDateTimeInput(dueInput);
   const priority = cleanCrmText(body.priority, 20) || "normal";
+  const assignedToUid = cleanCrmText(body.assignedToUid, 160);
   const assignedToName = cleanCrmText(body.assignedToName, 120);
   const assignedToEmail = cleanCrmText(body.assignedToEmail, 240).toLowerCase();
   const assignedToPhone = cleanCrmText(body.assignedToPhone, 80);
@@ -41,6 +42,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       detail,
       dueAt,
       priority: priority as CrmTaskPriority,
+      assignedToUid,
       assignedToName,
       assignedToEmail,
       assignedToPhone,

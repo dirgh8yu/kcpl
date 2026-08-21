@@ -263,6 +263,7 @@ export async function createCrmCustomerFromQuote(
 
   const quoteCurrency = text(quote.get("quote_currency"), "NPR").toUpperCase();
   const preferredCurrency = crmCurrencies.includes(quoteCurrency as CrmCurrency) ? quoteCurrency as CrmCurrency : "NPR";
+  const accountManagerUid = text(quote.get("assigned_to_uid")).trim();
   const accountManagerName = text(quote.get("assigned_to_name"), text(quote.get("assigned_to"))).trim();
   const accountManagerEmail = text(quote.get("assigned_to_email")).trim().toLowerCase();
   const accountManagerPhone = text(quote.get("assigned_to_phone")).trim();
@@ -282,6 +283,7 @@ export async function createCrmCustomerFromQuote(
     taxId: "",
     country: "Not recorded",
     primaryBranch,
+    accountManagerUid,
     accountManagerName,
     accountManagerEmail,
     accountManagerPhone,

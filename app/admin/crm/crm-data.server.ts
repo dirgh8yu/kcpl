@@ -1,6 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import {
+  listStaffProfiles,
+  resolveStaffIdentity,
+  resolveStaffIdentityFromProfiles,
+  staffCanAccessBranch,
+  type KcplStaffContext,
+} from "../staff-directory.server";
+import type { KcplStaffProfile } from "../staff-directory";
 import {
   crmAccountStatuses,
   crmCommunicationPreferences,
@@ -60,6 +67,7 @@ type AddTaskInput = {
   detail: string;
   dueAt: string;
   priority: CrmTaskPriority;
+  assignedToUid?: string;
   assignedToName: string;
   assignedToEmail: string;
   assignedToPhone: string;
@@ -119,8 +127,14 @@ function childId(prefix: string) {
   return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`;
 }
 
-function summaryFromData(id: string, data: Record<string, unknown>): CrmCustomerSummary {
+function summaryFromData(id: string, data: Record<string, unknown>, profiles: KcplStaffProfile[] = []): CrmCustomerSummary {
   const preferredCurrency = enumValue(data.preferred_currency, crmCurrencies, "NPR") as CrmCurrency;
+  const manager = resolveStaffIdentityFromProfiles({
+    uid: nullableString(data.account_manager_uid),
+    name: nullableString(data.account_manager_name),
+    email: nullableString(data.account_manager_email),
+    phone: nullableString(data.account_manager_phone),
+  }, profiles);
   return {
     id,
     entity_kind: enumValue(data.entity_kind, crmEntityKinds, "company") as CrmEntityKind,
@@ -134,9 +148,12 @@ function summaryFromData(id: string, data: Record<string, unknown>): CrmCustomer
     primary_phone: nullableString(data.primary_phone),
     country: stringValue(data.country, "Nepal"),
     primary_branch: enumValue(data.primary_branch, kcplBranches, "Kathmandu") as KcplBranch,
-    account_manager_name: nullableString(data.account_manager_name),
-    account_manager_email: nullableString(data.account_manager_email),
-    account_manager_phone: nullableString(data.account_manager_phone),
+    account_manager_uid: manager.uid,
+    account_manager_name: manager.name,
+    account_manager_email: manager.email,
+    account_manager_phone: manager.phone,
+    account_manager_job_title: manager.job_title,
+    account_manager_branches: manager.branches,
     tags: stringArray(data.tags),
     quote_count: numberValue(data.quote_count),
     active_shipment_count: numberValue(data.active_shipment_count),
@@ -193,16 +210,23 @@ function activityFromDoc(id: string, data: Record<string, unknown>): CrmActivity
   };
 }
 
-function taskFromDoc(id: string, data: Record<string, unknown>): CrmTask {
+function taskFromDoc(id: string, data: Record<string, unknown>, profiles: KcplStaffProfile[] = []): CrmTask {
+  const assignee = resolveStaffIdentityFromProfiles({
+    uid: nullableString(data.assigned_to_uid),
+    name: nullableString(data.assigned_to_name),
+    email: nullableString(data.assigned_to_email),
+    phone: nullableString(data.assigned_to_phone),
+  }, profiles);
   return {
     id,
     title: stringValue(data.title),
     detail: nullableString(data.detail),
     due_at: nullableString(data.due_at),
     priority: enumValue(data.priority, crmTaskPriorities, "normal") as CrmTaskPriority,
-    assigned_to_name: nullableString(data.assigned_to_name),
-    assigned_to_email: nullableString(data.assigned_to_email),
-    assigned_to_phone: nullableString(data.assigned_to_phone),
+    assigned_to_uid: assignee.uid,
+    assigned_to_name: assignee.name,
+    assigned_to_email: assignee.email,
+    assigned_to_phone: assignee.phone,
     completed: booleanValue(data.completed),
     completed_at: nullableString(data.completed_at),
     completed_by_name: nullableString(data.completed_by_name),
@@ -215,16 +239,16 @@ function taskFromDoc(id: string, data: Record<string, unknown>): CrmTask {
 
 export async function listCrmCustomers(context?: KcplStaffContext): Promise<CrmCustomerSummary[] | null> {
   if (!firebaseRuntimeConfigured()) return null;
-  const snapshot = await firebaseAdminDb().collection("customers")
-    .orderBy("updated_at", "desc")
-    .limit(2000)
-    .get();
+  const [snapshot, profiles] = await Promise.all([
+    firebaseAdminDb().collection("customers").orderBy("updated_at", "desc").limit(2000).get(),
+    listStaffProfiles(),
+  ]);
   return snapshot.docs.flatMap((doc) => {
     const data = doc.data() as Record<string, unknown>;
     if (booleanValue(data.archived)) return [];
     const rawBranch = kcplBranches.includes(data.primary_branch as KcplBranch) ? data.primary_branch as KcplBranch : null;
     if (context && !context.can_access_all_branches && (!rawBranch || !staffCanAccessBranch(context, rawBranch))) return [];
-    return [summaryFromData(doc.id, data)];
+    return [summaryFromData(doc.id, data, profiles ?? [])];
   });
 }
 
@@ -278,6 +302,7 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Ac
   const id = customerReference();
   const now = new Date().toISOString();
   const ref = db.collection("customers").doc(id);
+  const manager = await resolveStaffIdentity({ uid: input.accountManagerUid, name: input.accountManagerName, email: input.accountManagerEmail, phone: input.accountManagerPhone });
 
   const document = {
     schema_version: 1,
@@ -296,9 +321,10 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Ac
     tax_id: input.taxId.trim() || null,
     country: input.country.trim() || "Nepal",
     primary_branch: input.primaryBranch,
-    account_manager_name: input.accountManagerName.trim() || null,
-    account_manager_email: input.accountManagerEmail.trim() || null,
-    account_manager_phone: input.accountManagerPhone.trim() || null,
+    account_manager_uid: manager.uid,
+    account_manager_name: manager.name,
+    account_manager_email: manager.email,
+    account_manager_phone: manager.phone,
     billing_email: input.billingEmail.trim() || null,
     preferred_currency: input.preferredCurrency,
     payment_terms_days: parseOptionalDays(input.paymentTermsDays),
@@ -339,16 +365,34 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Ac
   ));
   await batch.commit();
 
-  return { kind: "created" as const, customer: summaryFromData(id, document) };
+  return { kind: "created" as const, customer: summaryFromData(id, document, manager.uid ? [profileFromResolvedManager(manager)] : []) };
+}
+
+function profileFromResolvedManager(identity: Awaited<ReturnType<typeof resolveStaffIdentity>>): KcplStaffProfile {
+  return {
+    uid: identity.uid ?? "",
+    email: identity.email ?? "",
+    display_name: identity.name ?? "KCPL Staff",
+    job_title: identity.job_title,
+    phone: identity.phone,
+    role: identity.role ?? "operations",
+    branch_scope: identity.branch_scope ?? "selected",
+    branches: identity.branches,
+    active: identity.active ?? true,
+    created_at: "",
+    updated_at: "",
+    updated_by: null,
+  };
 }
 
 export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail | null | undefined> {
   if (!firebaseRuntimeConfigured()) return undefined;
   const ref = firebaseAdminDb().collection("customers").doc(id.trim().toUpperCase());
-  const snapshot = await ref.get();
+  const [snapshot, profiles] = await Promise.all([ref.get(), listStaffProfiles()]);
   if (!snapshot.exists) return null;
   const data = snapshot.data() as Record<string, unknown>;
-  const summary = summaryFromData(snapshot.id, data);
+  const directory = profiles ?? [];
+  const summary = summaryFromData(snapshot.id, data, directory);
 
   const [contactsSnapshot, addressesSnapshot, notesSnapshot, activitySnapshot, tasksSnapshot] = await Promise.all([
     ref.collection("contacts").orderBy("created_at", "asc").limit(200).get(),
@@ -412,7 +456,7 @@ export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail | nu
       created_at: stringValue(doc.get("created_at")),
     })),
     activity: activitySnapshot.docs.map((doc) => activityFromDoc(doc.id, doc.data() as Record<string, unknown>)),
-    tasks: tasksSnapshot.docs.map((doc) => taskFromDoc(doc.id, doc.data() as Record<string, unknown>)),
+    tasks: tasksSnapshot.docs.map((doc) => taskFromDoc(doc.id, doc.data() as Record<string, unknown>, directory)),
   };
 }
 
@@ -552,15 +596,17 @@ export async function addCrmTask(customerId: string, input: AddTaskInput, actor:
 
   const now = new Date().toISOString();
   const id = childId("task");
+  const assignee = await resolveStaffIdentity({ uid: input.assignedToUid, name: input.assignedToName, email: input.assignedToEmail, phone: input.assignedToPhone });
   const task: CrmTask = {
     id,
     title: input.title.trim(),
     detail: input.detail.trim() || null,
     due_at: input.dueAt.trim() || null,
     priority: input.priority,
-    assigned_to_name: input.assignedToName.trim() || null,
-    assigned_to_email: input.assignedToEmail.trim() || null,
-    assigned_to_phone: input.assignedToPhone.trim() || null,
+    assigned_to_uid: assignee.uid,
+    assigned_to_name: assignee.name,
+    assigned_to_email: assignee.email,
+    assigned_to_phone: assignee.phone,
     completed: false,
     completed_at: null,
     completed_by_name: null,

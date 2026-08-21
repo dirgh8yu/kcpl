@@ -11,7 +11,9 @@ import {
   Download,
   FileText,
   Landmark,
+  Mail,
   MapPin,
+  Phone,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -100,6 +102,7 @@ export function JobFileWorkspace({
   const [draft, setDraft] = useState({
     primaryBranch: job.primary_branch,
     handlingBranches: job.handling_branches,
+    assignedToUid: job.assigned_to_uid ?? "",
     assignedToName: job.assigned_to_name ?? "",
     assignedToEmail: job.assigned_to_email ?? "",
     assignedToPhone: job.assigned_to_phone ?? "",
@@ -107,7 +110,7 @@ export function JobFileWorkspace({
     internalReference: job.internal_reference ?? "",
     internalNotes: job.internal_notes ?? "",
   });
-  const [task, setTask] = useState({ title: "", detail: "", branch: job.primary_branch, dueAt: "", assignedToName: currentUserName, assignedToEmail: currentUserEmail, assignedToPhone: "" });
+  const [task, setTask] = useState({ title: "", detail: "", branch: job.primary_branch, dueAt: "", assignedToUid: "", assignedToName: currentUserName, assignedToEmail: currentUserEmail, assignedToPhone: "" });
   const [customs, setCustoms] = useState({ title: "", detail: "", branch: job.primary_branch, required: true });
   const [cost, setCost] = useState({ category: "freight" as JobCostCategory, label: "", vendor: "", amount: "", currency: "NPR" as CrmCurrency, notes: "" });
 
@@ -125,6 +128,7 @@ export function JobFileWorkspace({
     setDraft({
       primaryBranch: data.job.primary_branch,
       handlingBranches: data.job.handling_branches,
+      assignedToUid: data.job.assigned_to_uid ?? "",
       assignedToName: data.job.assigned_to_name ?? "",
       assignedToEmail: data.job.assigned_to_email ?? "",
       assignedToPhone: data.job.assigned_to_phone ?? "",
@@ -193,7 +197,7 @@ export function JobFileWorkspace({
   async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (await action({ action: "add_task", ...task })) {
-      setTask({ title: "", detail: "", branch: job.primary_branch, dueAt: "", assignedToName: currentUserName, assignedToEmail: currentUserEmail, assignedToPhone: "" });
+      setTask({ title: "", detail: "", branch: job.primary_branch, dueAt: "", assignedToUid: "", assignedToName: currentUserName, assignedToEmail: currentUserEmail, assignedToPhone: "" });
       setTaskOpen(false);
       setNotice("Operational task added.");
     }
@@ -283,7 +287,7 @@ export function JobFileWorkspace({
             <OpsField label="Primary branch"><select disabled={!canManageBranches} value={draft.primaryBranch} onChange={(event) => setDraft({ ...draft, primaryBranch: event.target.value as KcplBranch })}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
             <OpsField label="Priority"><select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as JobPriority })}>{jobPriorities.map((priority) => <option key={priority} value={priority}>{jobPriorityLabels[priority]}</option>)}</select></OpsField>
             <OpsField label="Internal reference"><input value={draft.internalReference} onChange={(event) => setDraft({ ...draft, internalReference: event.target.value })} placeholder="Optional internal file/ref"/></OpsField>
-            <div className="md:col-span-2"><OpsField label="Assigned staff" hint="Choose from People & branches. Name, email and phone populate automatically."><StaffAssignmentPicker branch={draft.primaryBranch} value={{ name: draft.assignedToName, email: draft.assignedToEmail, phone: draft.assignedToPhone }} onChange={(staff) => setDraft((current) => ({ ...current, assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField></div>
+            <div className="md:col-span-2"><OpsField label="Assigned staff" hint="Choose from People & branches. Identity and contact details stay synchronized automatically."><StaffAssignmentPicker branch={draft.primaryBranch} value={{ uid: draft.assignedToUid, name: draft.assignedToName, email: draft.assignedToEmail, phone: draft.assignedToPhone }} onChange={(staff) => setDraft((current) => ({ ...current, assignedToUid: staff.uid ?? "", assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField></div>
             <OpsField label="Current handling"><div className="ops-input flex items-center">{job.current_location || "Location not updated"}</div></OpsField>
             <div className="md:col-span-2 xl:col-span-3"><p className="mb-2 text-[9px] font-bold uppercase tracking-[.09em] text-[#9c928a]">Handling branches</p><div className="flex flex-wrap gap-2">{kcplBranches.map((branch) => <button type="button" key={branch} disabled={!canManageBranches} onClick={() => toggleHandlingBranch(branch)} className="ops-badge disabled:opacity-60" data-tone={draft.handlingBranches.includes(branch) ? "accent" : "neutral"}>{draft.handlingBranches.includes(branch) ? <Check size={10}/> : null}{branch}</button>)}</div></div>
             <OpsField label="Internal operating notes" className="md:col-span-2 xl:col-span-3"><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} placeholder="Private handling instructions, counterpart details, exceptions, branch handoff context…"/></OpsField>
@@ -298,7 +302,7 @@ export function JobFileWorkspace({
                 <OpsField label="Task"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField>
                 <OpsField label="Branch"><select value={task.branch} onChange={(event) => setTask({ ...task, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
                 <OpsField label="Due"><input type="datetime-local" value={task.dueAt} onChange={(event) => setTask({ ...task, dueAt: event.target.value })}/></OpsField>
-                <div className="sm:col-span-2"><OpsField label="Assigned to" hint="Choose an active staff member. Contact details come from People & branches."><StaffAssignmentPicker branch={task.branch} compact value={{ name: task.assignedToName, email: task.assignedToEmail, phone: task.assignedToPhone }} onChange={(staff) => setTask((current) => ({ ...current, assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField></div>
+                <div className="sm:col-span-2"><OpsField label="Assigned to" hint="Choose an active staff member. Contact details stay linked to People & branches."><StaffAssignmentPicker branch={task.branch} compact value={{ uid: task.assignedToUid, name: task.assignedToName, email: task.assignedToEmail, phone: task.assignedToPhone }} onChange={(staff) => setTask((current) => ({ ...current, assignedToUid: staff.uid ?? "", assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField></div>
                 <OpsField label="Detail" className="sm:col-span-2"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField>
                 <div className="flex gap-2 sm:col-span-2"><OpsButton variant="primary" disabled={busy}>Create task</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div>
               </form> : null}
@@ -324,8 +328,15 @@ export function JobFileWorkspace({
 
           <aside className="ops-stack xl:sticky xl:top-[76px]">
             <OpsSurface eyebrow="Shipment identity" title={job.customer_name || "Unlinked customer"} description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-4"><Fact icon={<UserRound size={12}/>} label="Customer" value={job.customer_name || "Not linked"}/><Fact label="Quote" value={job.quote_reference} mono/><Fact label="Mode" value={job.mode || "Not set"}/><Fact label="Carrier" value={job.carrier || "Not assigned"}/><Fact label="Carrier ref" value={job.carrier_reference || "Not assigned"} mono/><Fact icon={<MapPin size={12}/>} label="Current location" value={job.current_location || "Not updated"}/><Fact icon={<Landmark size={12}/>} label="Primary branch" value={job.primary_branch}/><Fact icon={<UsersRound size={12}/>} label="Owner" value={job.assigned_to_name || job.assigned_to_email || "Unassigned"}/><Fact label="Owner email" value={job.assigned_to_email || "Not set"}/><Fact label="Owner phone" value={job.assigned_to_phone || "Not set"}/></div>
-              <div className="mt-4 flex flex-wrap gap-2">{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Customer 360</Link> : null}<Link href={`/admin/jobs/${encodeURIComponent(job.reference)}/profitability`} className="ops-button" data-variant="ghost" data-size="sm">Profitability</Link></div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                <Fact icon={<UserRound size={12}/>} label="Customer" value={job.customer_name || "Not linked"}/><Fact label="Quote" value={job.quote_reference} mono/><Fact label="Mode" value={job.mode || "Not set"}/><Fact label="Carrier" value={job.carrier || "Not assigned"}/><Fact label="Carrier ref" value={job.carrier_reference || "Not assigned"} mono/><Fact icon={<MapPin size={12}/>} label="Current location" value={job.current_location || "Not updated"}/><Fact icon={<Landmark size={12}/>} label="Primary branch" value={<Link href={`/admin/branches/${encodeURIComponent(job.primary_branch)}`} className="hover:text-[#a45747] hover:underline">{job.primary_branch}</Link>}/>
+                <Fact icon={<UsersRound size={12}/>} label="Owner" value={job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`} className="hover:text-[#a45747] hover:underline">{job.assigned_to_name || job.assigned_to_email || "Assigned staff"}</Link> : job.assigned_to_name || job.assigned_to_email || "Unassigned"}/>
+                <Fact icon={<Mail size={11}/>} label="Owner email" value={job.assigned_to_email ? <a href={`mailto:${job.assigned_to_email}`} className="hover:text-[#a45747] hover:underline">{job.assigned_to_email}</a> : "Not set"}/>
+                <Fact icon={<Phone size={11}/>} label="Owner phone" value={job.assigned_to_phone ? <a href={`tel:${job.assigned_to_phone}`} className="hover:text-[#a45747] hover:underline">{job.assigned_to_phone}</a> : "Not set"}/>
+                <Fact label="Role / title" value={job.assigned_to_job_title || "Not recorded"}/>
+                <Fact label="Staff branches" value={job.assigned_to_branches.length ? <span className="flex flex-wrap gap-x-2 gap-y-1">{job.assigned_to_branches.map((branch) => <Link key={branch} href={`/admin/branches/${encodeURIComponent(branch)}`} className="hover:text-[#a45747] hover:underline">{branch}</Link>)}</span> : "Not recorded"}/>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Customer 360</Link> : null}{job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`} className="ops-button" data-variant="secondary" data-size="sm">Open staff workload</Link> : null}<Link href={`/admin/jobs/${encodeURIComponent(job.reference)}/profitability`} className="ops-button" data-variant="ghost" data-size="sm">Profitability</Link></div>
             </OpsSurface>
 
             <OpsSurface eyebrow="Document vault" title="Shipment documents" description="Private Firebase Storage files attached to this movement." action={<span className="text-[9px] font-semibold text-[#938981]">{documents.length} files</span>}>
@@ -350,17 +361,18 @@ export function JobFileWorkspace({
   );
 }
 
-function Fact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: string; mono?: boolean }) {
-  return <div><p className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{icon}{label}</p><p className="mt-1.5 break-words text-[10px] font-semibold text-[#5b524b]">{mono ? <OpsMono>{value}</OpsMono> : value}</p></div>;
+function Fact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: React.ReactNode; mono?: boolean }) {
+  return <div><p className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">{icon}{label}</p><div className="mt-1.5 break-words text-[10px] font-semibold text-[#5b524b]">{mono && typeof value === "string" ? <OpsMono>{value}</OpsMono> : value}</div></div>;
 }
 
 function TaskRow({ item, busy, nowMs, onToggle }: { item: JobTask; busy: boolean; nowMs: number; onToggle: () => void }) {
   const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < nowMs;
-  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : overdue ? "border-[#dda9aa] bg-[#fff0f0] text-transparent" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84] line-through" : "text-[#514840]"}`}>{item.title}</strong>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}<OpsBadge>{item.branch}</OpsBadge></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 text-[8px] text-[#9f958d]">{item.assigned_to_name || item.assigned_to_email || "Unassigned"}{item.assigned_to_email ? ` · ${item.assigned_to_email}` : ""}{item.assigned_to_phone ? ` · ${item.assigned_to_phone}` : ""}{item.due_at ? ` · due ${dateTime(item.due_at)}` : " · no due time"}</p></div></div>;
+  const assigneeName = item.assigned_to_name || item.assigned_to_email || "Unassigned";
+  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : overdue ? "border-[#dda9aa] bg-[#fff0f0] text-transparent" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84] line-through" : "text-[#514840]"}`}>{item.title}</strong>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}<Link href={`/admin/branches/${encodeURIComponent(item.branch)}`}><OpsBadge>{item.branch}</OpsBadge></Link></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[8px] text-[#9f958d]">{item.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(item.assigned_to_uid)}`} className="font-semibold hover:text-[#a45747] hover:underline">{assigneeName}</Link> : <span>{assigneeName}</span>}{item.assigned_to_email ? <a href={`mailto:${item.assigned_to_email}`} className="hover:text-[#a45747] hover:underline">{item.assigned_to_email}</a> : null}{item.assigned_to_phone ? <a href={`tel:${item.assigned_to_phone}`} className="hover:text-[#a45747] hover:underline">{item.assigned_to_phone}</a> : null}<span>{item.due_at ? `due ${dateTime(item.due_at)}` : "no due time"}</span></div></div></div>;
 }
 
 function CustomsRow({ item, busy, onToggle }: { item: CustomsStep; busy: boolean; onToggle: () => void }) {
-  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84]" : "text-[#514840]"}`}>{item.title}</strong><OpsBadge tone={item.required ? "warning" : "neutral"}>{item.required ? "Required" : "Optional"}</OpsBadge><OpsBadge>{item.branch}</OpsBadge></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 text-[8px] text-[#9f958d]">{item.completed ? `Cleared ${dateTime(item.completed_at)}${item.completed_by ? ` by ${item.completed_by}` : ""}` : `Added ${dateTime(item.created_at)}`}</p></div></div>;
+  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border ${item.completed ? "border-[#93aa97] bg-[#edf4ee] text-[#637c68]" : "border-[#dcd3cc] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[10px] ${item.completed ? "text-[#968c84]" : "text-[#514840]"}`}>{item.title}</strong><OpsBadge tone={item.required ? "warning" : "neutral"}>{item.required ? "Required" : "Optional"}</OpsBadge><Link href={`/admin/branches/${encodeURIComponent(item.branch)}`}><OpsBadge>{item.branch}</OpsBadge></Link></div>{item.detail ? <p className="mt-1 text-[9px] leading-5 text-[#877d75]">{item.detail}</p> : null}<p className="mt-1.5 text-[8px] text-[#9f958d]">{item.completed ? `Cleared ${dateTime(item.completed_at)}${item.completed_by ? ` by ${item.completed_by}` : ""}` : `Added ${dateTime(item.created_at)}`}</p></div></div>;
 }
 
 function DocumentRow({ document, jobReference, documentBusy, onDelete }: { document: ShipmentDocument; jobReference: string; documentBusy: boolean; onDelete: () => void }) {

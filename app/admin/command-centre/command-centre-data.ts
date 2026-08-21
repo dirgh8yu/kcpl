@@ -13,8 +13,10 @@ export type CommandCentreJob = {
   status: ShipmentStatus;
   primary_branch: KcplBranch;
   handling_branches: KcplBranch[];
+  assigned_to_uid: string | null;
   assigned_to_name: string | null;
   assigned_to_email: string | null;
+  assigned_to_phone: string | null;
   priority: JobPriority;
   eta: string | null;
   current_location: string | null;
@@ -37,8 +39,10 @@ export type CommandCentreBranchLoad = {
 
 export type CommandCentreStaffLoad = {
   key: string;
+  uid: string | null;
   name: string;
   email: string;
+  phone: string | null;
   active_jobs: number;
   urgent_jobs: number;
   open_tasks: number;

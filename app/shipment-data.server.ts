@@ -130,6 +130,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     if (!customerSnapshot.exists) return { kind: "customer-missing" as const };
     const primaryBranch = branchValue(customerSnapshot.get("primary_branch"));
     const mode = stringValue(data.mode);
+    const assignedUid = stringValue(data.assigned_to_uid).trim();
     const assignedName = stringValue(data.assigned_to_name, stringValue(data.assigned_to)).trim();
     const assignedEmail = stringValue(data.assigned_to_email).trim().toLowerCase();
     const assignedPhone = stringValue(data.assigned_to_phone).trim();
@@ -156,6 +157,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
       primary_branch: primaryBranch,
       handling_branches: [primaryBranch],
       job_priority: "standard",
+      job_assigned_to_uid: assignedUid || null,
       job_assigned_to_name: assignedName || null,
       job_assigned_to_email: assignedEmail || null,
       job_assigned_to_phone: assignedPhone || null,
@@ -185,6 +187,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
         detail: task.detail,
         branch: task.branch,
         due_at: null,
+        assigned_to_uid: null,
         assigned_to_name: null,
         assigned_to_email: null,
         assigned_to_phone: null,
