@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Mail, Phone, UserRound } from "lucide-react";
 import { OpsNotice } from "./operations-ui";
@@ -16,6 +17,7 @@ export type StaffAssignmentOption = {
 };
 
 export type StaffAssignmentValue = {
+  uid?: string;
   name: string;
   email: string;
   phone: string;
@@ -33,8 +35,8 @@ type Props = {
 let cachedOptions: StaffAssignmentOption[] | null = null;
 let pendingOptions: Promise<StaffAssignmentOption[]> | null = null;
 
-async function loadOptions() {
-  if (cachedOptions) return cachedOptions;
+async function loadOptions(force = false) {
+  if (!force && cachedOptions) return cachedOptions;
   if (pendingOptions) return pendingOptions;
   pendingOptions = fetch("/api/admin/staff/options", { cache: "no-store" })
     .then(async (response) => {
@@ -60,7 +62,7 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
 
   useEffect(() => {
     let alive = true;
-    loadOptions()
+    loadOptions(true)
       .then((next) => { if (alive) { setOptions(next); setError(""); } })
       .catch((err) => { if (alive) setError(err instanceof Error ? err.message : "Could not load the KCPL staff directory."); })
       .finally(() => { if (alive) setLoading(false); });
@@ -69,18 +71,23 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
 
   const eligible = useMemo(() => options.filter((option) => appliesToBranch(option, branch)), [branch, options]);
   const selected = useMemo(() => {
+    const uid = value.uid?.trim();
+    if (uid) {
+      const byUid = options.find((option) => option.uid === uid);
+      if (byUid) return byUid;
+    }
     const email = value.email.trim().toLowerCase();
     if (email) return options.find((option) => option.email.toLowerCase() === email) ?? null;
     const name = value.name.trim().toLowerCase();
     return name ? options.find((option) => option.display_name.toLowerCase() === name) ?? null : null;
-  }, [options, value.email, value.name]);
+  }, [options, value.email, value.name, value.uid]);
 
   useEffect(() => {
     if (!selected) return;
-    const canonical = { name: selected.display_name, email: selected.email, phone: selected.phone ?? "" };
-    if (value.name === canonical.name && value.email === canonical.email && value.phone === canonical.phone) return;
+    const canonical = { uid: selected.uid, name: selected.display_name, email: selected.email, phone: selected.phone ?? "" };
+    if (value.uid === canonical.uid && value.name === canonical.name && value.email === canonical.email && value.phone === canonical.phone) return;
     onChange(canonical);
-  }, [onChange, selected, value.email, value.name, value.phone]);
+  }, [onChange, selected, value.email, value.name, value.phone, value.uid]);
 
   const visibleOptions = useMemo(() => {
     if (!selected || eligible.some((option) => option.uid === selected.uid)) return eligible;
@@ -90,13 +97,13 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
 
   function choose(uid: string) {
     if (!uid) {
-      onChange({ name: "", email: "", phone: "" });
+      onChange({ uid: "", name: "", email: "", phone: "" });
       return;
     }
     if (uid === "__current__") return;
     const option = options.find((item) => item.uid === uid);
     if (!option) return;
-    onChange({ name: option.display_name, email: option.email, phone: option.phone ?? "" });
+    onChange({ uid: option.uid, name: option.display_name, email: option.email, phone: option.phone ?? "" });
   }
 
   return (
@@ -121,11 +128,15 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
       {(selected || value.name || value.email || value.phone) ? (
         <div className={`rounded-[10px] border border-[#e9e2dc] bg-[#faf8f5] ${compact ? "px-2.5 py-2" : "px-3 py-2.5"}`}>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#6f6760]">
-            <span className="flex items-center gap-1.5 font-semibold text-[#514a44]"><UserRound size={11}/>{selected?.display_name || value.name || "Staff member"}</span>
-            {(selected?.email || value.email) ? <span className="flex items-center gap-1.5"><Mail size={10}/>{selected?.email || value.email}</span> : null}
-            {(selected?.phone || value.phone) ? <span className="flex items-center gap-1.5"><Phone size={10}/>{selected?.phone || value.phone}</span> : <span className="text-[#9a918a]">No phone saved</span>}
+            {selected ? (
+              <Link href={`/admin/workload/${encodeURIComponent(selected.uid)}`} className="flex items-center gap-1.5 font-semibold text-[#514a44] hover:text-[#a45747] hover:underline">
+                <UserRound size={11}/>{selected.display_name}
+              </Link>
+            ) : <span className="flex items-center gap-1.5 font-semibold text-[#514a44]"><UserRound size={11}/>{value.name || "Staff member"}</span>}
+            {(selected?.email || value.email) ? <a href={`mailto:${selected?.email || value.email}`} className="flex items-center gap-1.5 hover:text-[#a45747] hover:underline"><Mail size={10}/>{selected?.email || value.email}</a> : null}
+            {(selected?.phone || value.phone) ? <a href={`tel:${selected?.phone || value.phone}`} className="flex items-center gap-1.5 hover:text-[#a45747] hover:underline"><Phone size={10}/>{selected?.phone || value.phone}</a> : <span className="text-[#9a918a]">No phone saved</span>}
           </div>
-          {selected ? <p className="mt-1.5 text-[9px] text-[#958c85]">{selected.job_title || "KCPL staff"} · {selected.branch_scope === "all" ? "All branches" : selected.branches.join(", ") || "No branch recorded"}</p> : null}
+          {selected ? <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[9px] text-[#958c85]"><span>{selected.job_title || "KCPL staff"}</span><span>·</span>{selected.branch_scope === "all" ? <span>All branches</span> : selected.branches.length ? selected.branches.map((staffBranch, index) => <span key={staffBranch} className="inline-flex items-center gap-1">{index ? <span>·</span> : null}<Link href={`/admin/branches/${encodeURIComponent(staffBranch)}`} className="hover:text-[#a45747] hover:underline">{staffBranch}</Link></span>) : <span>No branch recorded</span>}</div> : null}
         </div>
       ) : null}
     </div>
