@@ -41,6 +41,10 @@ export type TmsOrder = {
   selected_partner_id: string | null;
   selected_cost: number | null;
   selected_currency: CrmCurrency | null;
+  consolidation_load_id?: string | null;
+  consolidation_reference?: string | null;
+  is_consolidation_master?: boolean;
+  procurement_locked_by_load?: boolean;
   created_at: string;
   created_by_name: string;
   created_by_email: string;
