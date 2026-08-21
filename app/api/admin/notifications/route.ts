@@ -35,11 +35,29 @@ function combineNotifications(base: OperationsNotification[], assignments: Opera
 }
 
 async function currentNotifications(auth: Exclude<Awaited<ReturnType<typeof authorize>>, { response: Response }>) {
-  const [base, assignments] = await Promise.all([
+  const [baseResult, assignmentsResult] = await Promise.allSettled([
     listOperationsNotifications(auth.staff, auth.user.email),
     listCurrentStaffAssignmentNotifications(auth.staff, auth.user.email),
   ]);
+
+  if (baseResult.status === "rejected") {
+    console.error("KCPL notification centre base feed failed", baseResult.reason);
+    return null;
+  }
+  const base = baseResult.value;
   if (!base) return null;
+
+  let assignments: OperationsNotification[] = [];
+  if (assignmentsResult.status === "fulfilled") {
+    assignments = assignmentsResult.value;
+  } else {
+    // Assignment notifications use several collection-group queries. A missing
+    // index or temporary Firestore failure must not take down the entire
+    // notification endpoint every minute; keep the primary notification feed
+    // available and log the failed supplemental source for diagnosis.
+    console.error("KCPL assignment notification feed failed", assignmentsResult.reason);
+  }
+
   const notifications = combineNotifications(base.notifications, assignments);
   return {
     notifications,
@@ -49,11 +67,16 @@ async function currentNotifications(auth: Exclude<Awaited<ReturnType<typeof auth
 }
 
 export async function GET() {
-  const auth = await authorize();
-  if ("response" in auth) return auth.response;
-  const result = await currentNotifications(auth);
-  if (!result) return json({ ok: false, error: "Notification storage is unavailable." }, 503);
-  return json({ ok: true, ...result, email_configured: transactionalEmailConfigured() });
+  try {
+    const auth = await authorize();
+    if ("response" in auth) return auth.response;
+    const result = await currentNotifications(auth);
+    if (!result) return json({ ok: false, error: "Notification storage is temporarily unavailable." }, 503);
+    return json({ ok: true, ...result, email_configured: transactionalEmailConfigured() });
+  } catch (error) {
+    console.error("KCPL notification endpoint failed", error);
+    return json({ ok: false, error: "Notification service is temporarily unavailable." }, 503);
+  }
 }
 
 export async function POST(request: Request) {
