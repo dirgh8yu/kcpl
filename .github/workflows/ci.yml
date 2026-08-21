@@ -24,6 +24,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Capture refreshed lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-16-2-11-lockfile
+          path: package-lock.json
+          retention-days: 1
+
       - name: Lint
         run: npm run lint
 
