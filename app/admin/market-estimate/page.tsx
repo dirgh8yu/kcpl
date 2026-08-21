@@ -6,18 +6,43 @@ import { OperationsShell } from "../operations-shell";
 import { OpsBadge, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import { GoogleRoadRoutePanel } from "../routes/google-road-route-panel";
 import { getStaffContext } from "../staff-directory.server";
-import { kcplStaffRoleLabels } from "../staff-permissions";
+import { kcplStaffRoleLabels, staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { MarketEstimateWorkspace } from "./market-estimate-workspace";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Market Estimate | KCPL Operations", robots: { index: false, follow: false } };
 
+type StaffResult =
+  | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }
+  | { kind: "error"; permissions: StaffCapabilities };
+
+async function resolveStaff(user: { uid: string; email: string; displayName: string }): Promise<StaffResult> {
+  try {
+    return { kind: "ready", staff: await getStaffContext(user) };
+  } catch (error) {
+    console.error("Failed to resolve KCPL staff context for Market Estimate", error);
+    return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) };
+  }
+}
+
 export default async function MarketEstimatePage() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Use an authorised KCPL staff account to access commercial tools."/>;
 
-  const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canViewCommercial) return <Gate title="Commercial access required" detail="Market intelligence tools are available to Management, Accounts and Commercial roles."/>;
+  const staffResult = await resolveStaff(access.user);
+  if (staffResult.kind === "error") {
+    const permissions = staffResult.permissions;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} isManagement={permissions.role === "management"}><Gate title="Market tools could not be loaded" detail="KCPL staff or integration data is temporarily unavailable. Navigation and search remain available while the service recovers." embedded/></OperationsShell>;
+  }
+
+  const staff = staffResult.staff;
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    isManagement: staff.permissions.role === "management",
+  };
+  if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Market intelligence tools are available to Management, Accounts and Commercial roles." embedded/></OperationsShell>;
 
   const roleLabel = kcplStaffRoleLabels[staff.permissions.role];
   const routesConfigured = Boolean(process.env.GOOGLE_MAPS_ROUTES_API_KEY?.trim());
@@ -25,7 +50,7 @@ export default async function MarketEstimatePage() {
   const emailConfigured = Boolean(process.env.SENDGRID_API_KEY?.trim() && process.env.KCPL_EMAIL_FROM?.trim());
 
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+    <OperationsShell {...shellProps}>
       <OpsPage>
         <OpsPageHeader
           eyebrow="Commercial intelligence"
@@ -69,6 +94,6 @@ function IntegrationCard({ icon, title, detail, state }: { icon: React.ReactNode
   </div>;
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#332d29]"><section className="w-full max-w-xl rounded-[18px] border border-[#e7dfd8] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[9px] font-extrabold uppercase tracking-[.13em] text-[#bd644e]">KCPL Operations</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><Link href="/admin" className="mt-6 inline-flex rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[10px] font-bold text-white">Back to enquiries</Link></section></main>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#332d29] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[18px] border border-[#e7dfd8] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[9px] font-extrabold uppercase tracking-[.13em] text-[#bd644e]">KCPL Operations</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><Link href="/admin" className="mt-6 inline-flex rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[10px] font-bold text-white">Back to enquiries</Link></section></main>;
 }
