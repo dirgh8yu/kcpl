@@ -34,6 +34,19 @@ export const shipmentDocumentTypeLabels: Record<ShipmentDocumentType, string> = 
   other: "Other document",
 };
 
+export const shipmentDocumentReviewStatuses = ["received", "under_review", "verified", "rejected", "superseded", "deleted"] as const;
+export type ShipmentDocumentReviewStatus = (typeof shipmentDocumentReviewStatuses)[number];
+export type ShipmentDocumentEffectiveStatus = ShipmentDocumentReviewStatus | "expired";
+
+export const shipmentDocumentReviewStatusLabels: Record<ShipmentDocumentReviewStatus, string> = {
+  received: "Received",
+  under_review: "Under review",
+  verified: "Verified",
+  rejected: "Rejected",
+  superseded: "Superseded",
+  deleted: "Deleted",
+};
+
 export type ShipmentDocument = {
   id: number;
   shipment_reference: string;
@@ -43,4 +56,21 @@ export type ShipmentDocument = {
   document_type: ShipmentDocumentType;
   uploaded_at: string;
   uploaded_by: string;
+  uploaded_by_email?: string | null;
+  review_status?: ShipmentDocumentReviewStatus;
+  customer_safe?: boolean;
+  review_note?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_by_email?: string | null;
+  verified_at?: string | null;
+  verified_by?: string | null;
+  verified_by_email?: string | null;
+  expires_on?: string | null;
+  supersedes_document_id?: number | null;
+  superseded_by_document_id?: number | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  deleted_by_email?: string | null;
+  sha256?: string | null;
 };

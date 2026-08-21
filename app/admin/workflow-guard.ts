@@ -21,6 +21,8 @@ export type WorkflowDocumentState = {
   advisory: boolean;
   present: boolean;
   count: number;
+  uploaded_count: number;
+  verified_count: number;
   reason: string;
   source: "core" | "mode" | "route" | "cargo" | "instruction" | "shipment_override";
 };
