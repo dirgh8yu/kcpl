@@ -24,36 +24,22 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           path = Path('app/admin/crm/crm-dashboard.tsx')
           text = path.read_text()
-          old = 'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {'
-          new = 'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean }) {'
-          if old not in text:
-              raise SystemExit('CrmDashboard signature not found')
-          text = text.replace(old, new, 1)
-          old = ': selected ? <CustomerOverview customer={selected} onNew={openNew}/>'
-          new = ': selected ? <CustomerOverview customer={selected} onNew={openNew} commercialVisible={commercialVisible}/>'
-          if old not in text:
-              raise SystemExit('CustomerOverview call not found')
-          text = text.replace(old, new, 1)
-          old = 'function CustomerOverview({ customer, onNew }: { customer: CrmCustomerSummary; onNew: () => void }) {'
-          new = 'function CustomerOverview({ customer, onNew, commercialVisible }: { customer: CrmCustomerSummary; onNew: () => void; commercialVisible: boolean }) {'
-          if old not in text:
-              raise SystemExit('CustomerOverview signature not found')
-          text = text.replace(old, new, 1)
-          # Hide the commercial surface rather than rendering redacted zeroes.
-          marker = '<OpsSurface eyebrow="Commercial" title="Commercial snapshot"'
-          pos = text.find(marker)
-          if pos == -1:
-              raise SystemExit('Commercial snapshot surface not found')
-          start = text.rfind('<', 0, pos)
-          # The commercial surface sits as a direct sibling and ends at its closing OpsSurface.
-          end = text.find('</OpsSurface>', pos)
-          if end == -1:
-              raise SystemExit('Commercial snapshot closing surface not found')
-          end += len('</OpsSurface>')
-          surface = text[start:end]
-          text = text[:start] + '{commercialVisible ? ' + surface + ' : null}' + text[end:]
+          replacements = [
+            ('export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {', 'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean }) {'),
+            (': selected ? <CustomerOverview customer={selected} onNew={openNew}/>', ': selected ? <CustomerOverview customer={selected} onNew={openNew} commercialVisible={commercialVisible}/>'),
+            ('function CustomerOverview({ customer, onNew }: { customer: CrmCustomerSummary; onNew: () => void }) {', 'function CustomerOverview({ customer, onNew, commercialVisible }: { customer: CrmCustomerSummary; onNew: () => void; commercialVisible: boolean }) {'),
+          ]
+          for old, new in replacements:
+            if old not in text:
+              raise SystemExit(f'Customer dashboard contract block not found: {old[:70]}')
+            text = text.replace(old, new, 1)
+          pattern = r'(<OpsSurface eyebrow="Commercial" title=\{`\$\{customer\.preferred_currency\} account`\}.*?</OpsSurface>)'
+          text, count = re.subn(pattern, r'{commercialVisible ? \1 : null}', text, count=1, flags=re.S)
+          if count != 1:
+            raise SystemExit('Customer commercial surface not found')
           path.write_text(text)
           PY
           git config user.name "github-actions[bot]"
