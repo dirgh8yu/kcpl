@@ -15,6 +15,22 @@ import {
   strictBranchArray,
   strictBranchValue,
 } from "../app/admin/branch-access-policy.ts";
+import {
+  canAccessPartnerOwner,
+  canAssignPartnerOwner,
+  canEditPartnerNetwork,
+  canViewPartnerFinance,
+  isPartnerReference,
+  normalizePartnerIdentifier,
+  partnerOwnerBranchValue,
+  validPartnerCalendarDate,
+} from "../app/admin/partners/partner-policy.ts";
+import {
+  normalizeSupplierBillReference,
+  payableDateError,
+  supplierIdentityKey,
+  validPayableCalendarDate,
+} from "../app/admin/payables/payables-policy.ts";
 
 // Keep this suite self-contained so it can run before the Next.js production build.
 const cleanEnv = () => ({ NODE_ENV: "production" });
@@ -22,6 +38,7 @@ const cleanEnv = () => ({ NODE_ENV: "production" });
 const kathmanduScope = { can_access_all_branches: false, branches: ["Kathmandu"] };
 const accountsKathmandu = { ...kathmanduScope, permissions: staffCapabilitiesForRole("accounts") };
 const operationsKathmandu = { ...kathmanduScope, permissions: staffCapabilitiesForRole("operations") };
+const commercialKathmandu = { ...kathmanduScope, permissions: staffCapabilitiesForRole("commercial") };
 const managementScope = { can_access_all_branches: true, branches: ["Kathmandu", "Birgunj", "Surkhet", "Nepalgunj", "Raxaul", "Kolkata"], permissions: staffCapabilitiesForRole("management") };
 
 test("unconfigured staff role defaults to Operations, never Management", () => {
@@ -193,4 +210,52 @@ test("CRM date helpers reject impossible dates and normalize Nepal-local follow-
   assert.equal(validCalendarDate("2026-02-28"), true);
   assert.equal(normalizeNepalDateTimeInput("2026-08-21T10:30"), "2026-08-21T04:45:00.000Z");
   assert.equal(normalizeNepalDateTimeInput("2026-02-31T10:30"), null);
+});
+
+test("partner ownership is branch-scoped while Global remains operationally visible", () => {
+  assert.equal(partnerOwnerBranchValue("Kathmandu"), "Kathmandu");
+  assert.equal(partnerOwnerBranchValue("Global"), "Global");
+  assert.equal(partnerOwnerBranchValue("kathmandu"), null);
+  assert.equal(canAccessPartnerOwner(kathmanduScope, "Kathmandu"), true);
+  assert.equal(canAccessPartnerOwner(kathmanduScope, "Birgunj"), false);
+  assert.equal(canAccessPartnerOwner(kathmanduScope, "Global"), true);
+  assert.equal(canAccessPartnerOwner(kathmanduScope, undefined), false);
+  assert.equal(canAccessPartnerOwner(managementScope, undefined), true);
+});
+
+test("partner edit and finance privileges remain separate", () => {
+  assert.equal(canEditPartnerNetwork(operationsKathmandu.permissions), false);
+  assert.equal(canEditPartnerNetwork(commercialKathmandu.permissions), true);
+  assert.equal(canViewPartnerFinance(commercialKathmandu.permissions), false);
+  assert.equal(canViewPartnerFinance(accountsKathmandu.permissions), true);
+});
+
+test("restricted partner editors cannot assign Global or another branch", () => {
+  assert.equal(canAssignPartnerOwner(commercialKathmandu, commercialKathmandu.permissions, "Kathmandu"), true);
+  assert.equal(canAssignPartnerOwner(commercialKathmandu, commercialKathmandu.permissions, "Birgunj"), false);
+  assert.equal(canAssignPartnerOwner(commercialKathmandu, commercialKathmandu.permissions, "Global"), false);
+  assert.equal(canAssignPartnerOwner(managementScope, managementScope.permissions, "Global"), true);
+  assert.equal(canAssignPartnerOwner(managementScope, managementScope.permissions, "Birgunj"), true);
+});
+
+test("partner identifiers and contract dates fail closed", () => {
+  assert.equal(isPartnerReference("KCPL-P-20260822-ABC123"), true);
+  assert.equal(isPartnerReference("KCPL-C-20260822-ABC123"), false);
+  assert.equal(normalizePartnerIdentifier(" NP- 12 / ab "), "NP12AB");
+  assert.equal(validPartnerCalendarDate("2026-02-31"), false);
+  assert.equal(validPartnerCalendarDate("2026-02-28"), true);
+});
+
+test("payable dates reject impossible dates and due-before-bill", () => {
+  assert.equal(validPayableCalendarDate("2026-02-31"), false);
+  assert.equal(validPayableCalendarDate("2026-02-28"), true);
+  assert.match(payableDateError("2026-02-31", "2026-03-30"), /bill date/i);
+  assert.match(payableDateError("2026-03-20", "2026-03-19"), /cannot be before/i);
+  assert.equal(payableDateError("2026-03-20", "2026-04-19"), null);
+});
+
+test("supplier bill identity prefers Partner references over name fallback", () => {
+  assert.equal(supplierIdentityKey("KCPL-P-20260822-ABC123", "Example Carrier"), "KCPL-P-20260822-ABC123");
+  assert.equal(supplierIdentityKey("", "  Example   Carrier "), "NAME:example carrier");
+  assert.equal(normalizeSupplierBillReference(" inv  001 / a "), "INV001/A");
 });
