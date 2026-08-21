@@ -63,11 +63,11 @@ export function OperationsNotificationCentre() {
   }, []);
 
   useEffect(() => {
-    void load();
+    const initial = window.setTimeout(() => void load(), 0);
     const interval = window.setInterval(() => void load(), 30_000);
     function focus() { void load(); }
     window.addEventListener("focus", focus);
-    return () => { window.clearInterval(interval); window.removeEventListener("focus", focus); };
+    return () => { window.clearTimeout(initial); window.clearInterval(interval); window.removeEventListener("focus", focus); };
   }, [load]);
 
   useEffect(() => {
