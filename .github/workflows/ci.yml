@@ -19,15 +19,47 @@ jobs:
           ref: audit/customers-v1
           fetch-depth: 0
 
-      - name: Apply Part 3A customer core patch
+      - name: Apply Customer dashboard permission contract
         if: github.actor != 'github-actions[bot]'
         run: |
-          awk '/python - <<'\''PY'\''/{flag=1;next}/^          PY$/{flag=0}flag{sub(/^          /,""); print}' .github/workflows/part3a-core-apply.yml > /tmp/part3a_apply.py
-          python /tmp/part3a_apply.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app/admin/crm/crm-dashboard.tsx')
+          text = path.read_text()
+          old = 'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {'
+          new = 'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean }) {'
+          if old not in text:
+              raise SystemExit('CrmDashboard signature not found')
+          text = text.replace(old, new, 1)
+          old = ': selected ? <CustomerOverview customer={selected} onNew={openNew}/>'
+          new = ': selected ? <CustomerOverview customer={selected} onNew={openNew} commercialVisible={commercialVisible}/>'
+          if old not in text:
+              raise SystemExit('CustomerOverview call not found')
+          text = text.replace(old, new, 1)
+          old = 'function CustomerOverview({ customer, onNew }: { customer: CrmCustomerSummary; onNew: () => void }) {'
+          new = 'function CustomerOverview({ customer, onNew, commercialVisible }: { customer: CrmCustomerSummary; onNew: () => void; commercialVisible: boolean }) {'
+          if old not in text:
+              raise SystemExit('CustomerOverview signature not found')
+          text = text.replace(old, new, 1)
+          # Hide the commercial surface rather than rendering redacted zeroes.
+          marker = '<OpsSurface eyebrow="Commercial" title="Commercial snapshot"'
+          pos = text.find(marker)
+          if pos == -1:
+              raise SystemExit('Commercial snapshot surface not found')
+          start = text.rfind('<', 0, pos)
+          # The commercial surface sits as a direct sibling and ends at its closing OpsSurface.
+          end = text.find('</OpsSurface>', pos)
+          if end == -1:
+              raise SystemExit('Commercial snapshot closing surface not found')
+          end += len('</OpsSurface>')
+          surface = text[start:end]
+          text = text[:start] + '{commercialVisible ? ' + surface + ' : null}' + text[end:]
+          path.write_text(text)
+          PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app tests
-          git commit -m "Harden customer RBAC and CRM data truth"
+          git add app/admin/crm/crm-dashboard.tsx
+          git commit -m "Respect commercial visibility in Customers"
           git push origin HEAD:audit/customers-v1
 
       - name: Setup Node
