@@ -20,6 +20,7 @@ import {
   Plus,
   ReceiptText,
   Search,
+  ShieldCheck,
   Star,
   UsersRound,
   X,
@@ -41,6 +42,7 @@ const operationsNav: NavItem[] = [
   { href: "/admin/command-centre", label: "Home", icon: LayoutDashboard, match: (path) => path.startsWith("/admin/command-centre"), hint: "Operational day and exceptions" },
   { href: "/admin", label: "Enquiries", icon: PackageSearch, match: (path) => path === "/admin", hint: "Requests, quotes and pricing" },
   { href: "/admin/shipments", label: "Shipments", icon: Boxes, match: (path) => path.startsWith("/admin/shipments") || path.startsWith("/admin/jobs/"), hint: "Movements and Digital Job Files" },
+  { href: "/admin/customs", label: "Customs", icon: ShieldCheck, match: (path) => path.startsWith("/admin/customs"), hint: "Clearance queue, documents and customs blockers" },
   { href: "/admin/alerts", label: "Tasks & alerts", icon: Bell, match: (path) => path.startsWith("/admin/alerts"), hint: "Exceptions, ownership and follow-up" },
 ];
 
