@@ -61,6 +61,7 @@ type AddTaskInput = {
   priority: CrmTaskPriority;
   assignedToName: string;
   assignedToEmail: string;
+  assignedToPhone: string;
 };
 
 function stringValue(value: unknown, fallback = "") {
@@ -134,6 +135,7 @@ function summaryFromData(id: string, data: Record<string, unknown>): CrmCustomer
     primary_branch: enumValue(data.primary_branch, kcplBranches, "Kathmandu") as KcplBranch,
     account_manager_name: nullableString(data.account_manager_name),
     account_manager_email: nullableString(data.account_manager_email),
+    account_manager_phone: nullableString(data.account_manager_phone),
     tags: stringArray(data.tags),
     quote_count: numberValue(data.quote_count),
     active_shipment_count: numberValue(data.active_shipment_count),
@@ -199,6 +201,7 @@ function taskFromDoc(id: string, data: Record<string, unknown>): CrmTask {
     priority: enumValue(data.priority, crmTaskPriorities, "normal") as CrmTaskPriority,
     assigned_to_name: nullableString(data.assigned_to_name),
     assigned_to_email: nullableString(data.assigned_to_email),
+    assigned_to_phone: nullableString(data.assigned_to_phone),
     completed: booleanValue(data.completed),
     completed_at: nullableString(data.completed_at),
     completed_by_name: nullableString(data.completed_by_name),
@@ -290,6 +293,7 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Ac
     primary_branch: input.primaryBranch,
     account_manager_name: input.accountManagerName.trim() || null,
     account_manager_email: input.accountManagerEmail.trim() || null,
+    account_manager_phone: input.accountManagerPhone.trim() || null,
     billing_email: input.billingEmail.trim() || null,
     preferred_currency: input.preferredCurrency,
     payment_terms_days: parseOptionalDays(input.paymentTermsDays),
@@ -551,6 +555,7 @@ export async function addCrmTask(customerId: string, input: AddTaskInput, actor:
     priority: input.priority,
     assigned_to_name: input.assignedToName.trim() || null,
     assigned_to_email: input.assignedToEmail.trim() || null,
+    assigned_to_phone: input.assignedToPhone.trim() || null,
     completed: false,
     completed_at: null,
     completed_by_name: null,
