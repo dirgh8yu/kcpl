@@ -110,6 +110,7 @@ export type CrmTask = {
   detail: string | null;
   due_at: string | null;
   priority: CrmTaskPriority;
+  assigned_to_uid: string | null;
   assigned_to_name: string | null;
   assigned_to_email: string | null;
   assigned_to_phone: string | null;
@@ -145,9 +146,12 @@ export type CrmCustomerSummary = {
   primary_phone: string | null;
   country: string;
   primary_branch: KcplBranch;
+  account_manager_uid: string | null;
   account_manager_name: string | null;
   account_manager_email: string | null;
   account_manager_phone: string | null;
+  account_manager_job_title: string | null;
+  account_manager_branches: KcplBranch[];
   tags: string[];
   quote_count: number;
   active_shipment_count: number;
@@ -204,6 +208,7 @@ export type CrmCreateCustomerInput = {
   taxId: string;
   country: string;
   primaryBranch: KcplBranch;
+  accountManagerUid?: string;
   accountManagerName: string;
   accountManagerEmail: string;
   accountManagerPhone: string;
