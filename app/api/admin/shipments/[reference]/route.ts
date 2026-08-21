@@ -140,7 +140,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   const location = clean(body.location);
   const details = clean(body.details);
   const eventTime = clean(body.eventTime);
-  const normalizedEventTime = eventTime ? normalizeNepalEventTime(eventTime) : "";
+  const normalizedEventTime = eventTime ? (normalizeNepalEventTime(eventTime) ?? "") : "";
 
   if (!title) return json({ ok: false, error: "Add an event title." }, 400);
   if (title.length > 180) return json({ ok: false, error: "Event title must be 180 characters or fewer." }, 400);
