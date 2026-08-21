@@ -35,7 +35,7 @@ type NoticeState = { message: string; tone: NoticeTone };
 const modeLabels: Record<string, string> = { air: "Air freight", sea: "Sea freight", road: "Road freight", rail: "Rail freight", multimodal: "Multimodal freight", unsure: "Mode not decided" };
 
 function modeLabel(mode: string) {
-  return modeLabels[mode.toLowerCase()] ?? mode || "Freight";
+  return (modeLabels[mode.toLowerCase()] ?? mode) || "Freight";
 }
 
 function statusTone(status: QuoteStatus): "neutral" | "info" | "warning" | "success" {
