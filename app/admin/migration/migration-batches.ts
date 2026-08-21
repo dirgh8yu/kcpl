@@ -25,6 +25,11 @@ export type MigrationBatchSummary = {
   created_at: string;
   completed_at: string | null;
   error: string | null;
+  rollback_status: string | null;
+  rollback_recovery_id: string | null;
+  rollback_completed_at: string | null;
+  rollback_error: string | null;
+  rollback_reversed_record_keys: string[];
   created_records: MigrationCreatedRecord[];
   detail_metrics: Array<{ label: string; value: number }>;
 };

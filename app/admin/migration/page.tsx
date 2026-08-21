@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive } from "lucide-react";
+import { Archive, RotateCcw } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
@@ -26,8 +26,9 @@ export default async function MigrationPage() {
     isManagement
   >
     <MigrationWorkspace initialBatchDashboard={batchDashboard}/>
-    <div className="fixed bottom-5 right-5 z-40 hidden sm:block">
-      <Link href="/admin/migration/archive" className="ops-button shadow-[0_10px_30px_rgba(98,62,45,.18)]" data-variant="primary" data-size="md"><Archive size={13}/>Stage 4B · Paper Archive</Link>
+    <div className="fixed bottom-5 right-5 z-40 hidden items-center gap-2 sm:flex">
+      <Link href="/admin/migration/archive" className="ops-button shadow-[0_10px_30px_rgba(98,62,45,.12)]" data-variant="secondary" data-size="md"><Archive size={13}/>Paper Archive</Link>
+      {staff.permissions.canManageFinance ? <Link href="/admin/migration/recovery" className="ops-button shadow-[0_10px_30px_rgba(98,62,45,.18)]" data-variant="primary" data-size="md"><RotateCcw size={13}/>Stage 4C · Recovery</Link> : null}
     </div>
   </OperationsShell>;
 }
