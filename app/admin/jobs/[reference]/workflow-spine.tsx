@@ -37,14 +37,6 @@ function stageTone(state: ShipmentWorkflowReadiness["stages"][number]["state"]) 
   return "border-[#e9e2dc] bg-[#faf8f5] text-[#91877f]";
 }
 
-function nextMilestone(status: ShipmentStatus): ShipmentStatus | null {
-  if (status === "booking_confirmed") return "preparing";
-  if (status === "preparing") return "in_transit";
-  if (status === "in_transit" || status === "customs_clearance") return "out_for_delivery";
-  if (status === "out_for_delivery") return "delivered";
-  return null;
-}
-
 function isFailure(message: string) {
   const value = message.toLowerCase();
   return value.includes("could not") || value.includes("blocked") || value.includes("failed") || value.includes("required");
@@ -242,7 +234,6 @@ export function WorkflowSpine({ initialWorkflow, initialJob, canOverride }: { in
   const requiredDocs = workflow.documents.filter((item) => item.required);
   const presentDocs = requiredDocs.filter((item) => item.present).length;
   const operationalMissingDocs = workflow.documents.filter((item) => item.required && item.document_type !== "proof_of_delivery" && !item.present);
-  const podDocument = workflow.documents.find((item) => item.document_type === "proof_of_delivery");
   const openCustoms = job.customs_steps.filter((item) => item.required && !item.completed);
   const openTasks = job.tasks.filter((item) => !item.completed);
   const stagePercent = Math.round((workflow.stages.filter((stage) => stage.state === "complete").length / workflow.stages.length) * 100);
