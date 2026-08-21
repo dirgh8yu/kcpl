@@ -4,6 +4,7 @@ import type { FinancePaymentMethod } from "../finance/finance-data";
 
 export const payableStatuses = ["draft", "approved", "partially_paid", "paid", "overdue", "void"] as const;
 export type PayableStatus = (typeof payableStatuses)[number];
+export type PayableRecordType = "bill" | "opening_balance";
 
 export const payableStatusLabels: Record<PayableStatus, string> = {
   draft: "Draft",
@@ -30,6 +31,7 @@ export type PayablePayment = {
 
 export type PayableBill = {
   reference: string;
+  record_type: PayableRecordType;
   supplier_id: string | null;
   supplier_name: string;
   supplier_bill_reference: string | null;
@@ -50,6 +52,8 @@ export type PayableBill = {
   amount_paid: number;
   balance_due: number;
   notes: string | null;
+  migration_batch_id: string | null;
+  migration_as_of_date: string | null;
   created_by_name: string;
   created_by_email: string;
   created_at: string;
@@ -60,6 +64,7 @@ export type PayableBill = {
 export type PayableCurrencySummary = {
   currency: CrmCurrency;
   billed: number;
+  opening_balance: number;
   paid: number;
   outstanding: number;
   overdue: number;
@@ -68,6 +73,7 @@ export type PayableCurrencySummary = {
   aging_61_90: number;
   aging_90_plus: number;
   bill_count: number;
+  opening_balance_count: number;
 };
 
 export type PayablesDashboard = {
@@ -78,6 +84,7 @@ export type PayablesDashboard = {
   unpaid_count: number;
   paid_count: number;
   draft_count: number;
+  opening_balance_count: number;
 };
 
 export type CreatePayableInput = {
