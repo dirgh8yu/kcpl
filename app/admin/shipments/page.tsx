@@ -34,6 +34,7 @@ export default async function ShipmentsPage() {
 
   return <OperationsShell {...shellProps}>
     <ShipmentsWorkspace data={data} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
+    <div className="fixed bottom-5 right-5 z-40"><Link href="/admin/visibility" className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Live visibility</Link></div>
   </OperationsShell>;
 }
 
