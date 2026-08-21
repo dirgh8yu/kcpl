@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
 import { getStaffContext } from "../../staff-directory.server";
+import type { CrmCustomerSummary } from "../crm-data";
 import { crmDashboardStats } from "../crm-data.server";
 import { CrmDashboard } from "../crm-dashboard";
 
@@ -14,7 +15,7 @@ export default async function NewCustomerPage() {
   const staff = await getStaffContext(access.user);
   if (!staff.permissions.canEditCustomer) return <Gate title="Customer editing is restricted" detail="Your current KCPL role has read-only customer access."/>;
 
-  const customers = [];
+  const customers: CrmCustomerSummary[] = [];
   return (
     <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
       <CrmDashboard initialCustomers={customers} initialStats={crmDashboardStats(customers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
