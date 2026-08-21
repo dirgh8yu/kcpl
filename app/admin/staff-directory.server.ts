@@ -13,6 +13,26 @@ export type { KcplStaffContext } from "./staff-directory";
 type StaffUser = { uid: string; email: string; displayName: string };
 type Actor = { name: string; email: string };
 
+export type StaffIdentitySnapshot = {
+  uid?: string | null;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
+
+export type ResolvedStaffIdentity = {
+  uid: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  job_title: string | null;
+  role: KcplStaffRole | null;
+  branch_scope: "all" | "selected" | null;
+  branches: KcplBranch[];
+  active: boolean | null;
+  resolved_from_directory: boolean;
+};
+
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
 }
@@ -69,10 +89,71 @@ async function canBootstrapEmptyStaffDirectory(email: string) {
 }
 
 export async function staffProfileByUid(uid: string, email = "") {
-  if (!firebaseRuntimeConfigured()) return null;
-  const snapshot = await firebaseAdminDb().collection("staff_profiles").doc(uid).get();
+  if (!firebaseRuntimeConfigured() || !uid.trim()) return null;
+  const snapshot = await firebaseAdminDb().collection("staff_profiles").doc(uid.trim()).get();
   if (!snapshot.exists) return null;
-  return profileFromData(uid, snapshot.data() as Record<string, unknown>, staffCapabilitiesForEmail(email).role);
+  return profileFromData(uid.trim(), snapshot.data() as Record<string, unknown>, staffCapabilitiesForEmail(email).role);
+}
+
+export async function staffProfileByEmail(email: string) {
+  if (!firebaseRuntimeConfigured()) return null;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  const snapshot = await firebaseAdminDb().collection("staff_profiles").where("email", "==", normalized).limit(1).get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  return profileFromData(doc.id, doc.data() as Record<string, unknown>, "operations");
+}
+
+export function resolveStaffIdentityFromProfiles(
+  snapshot: StaffIdentitySnapshot,
+  profiles: KcplStaffProfile[],
+): ResolvedStaffIdentity {
+  const uid = snapshot.uid?.trim() || "";
+  const email = snapshot.email?.trim().toLowerCase() || "";
+  const name = snapshot.name?.trim() || "";
+  let profile = uid ? profiles.find((item) => item.uid === uid) : undefined;
+  if (!profile && email) profile = profiles.find((item) => item.email.toLowerCase() === email);
+  if (!profile && name) {
+    const matches = profiles.filter((item) => item.display_name.trim().toLowerCase() === name.toLowerCase());
+    if (matches.length === 1) profile = matches[0];
+  }
+
+  if (profile) {
+    return {
+      uid: profile.uid,
+      name: profile.display_name,
+      email: profile.email,
+      phone: profile.phone,
+      job_title: profile.job_title,
+      role: profile.role,
+      branch_scope: profile.branch_scope,
+      branches: profile.branches,
+      active: profile.active,
+      resolved_from_directory: true,
+    };
+  }
+
+  return {
+    uid: uid || null,
+    name: name || null,
+    email: email || null,
+    phone: snapshot.phone?.trim() || null,
+    job_title: null,
+    role: null,
+    branch_scope: null,
+    branches: [],
+    active: null,
+    resolved_from_directory: false,
+  };
+}
+
+export async function resolveStaffIdentity(snapshot: StaffIdentitySnapshot) {
+  if (!firebaseRuntimeConfigured()) return resolveStaffIdentityFromProfiles(snapshot, []);
+  const uid = snapshot.uid?.trim() || "";
+  const email = snapshot.email?.trim().toLowerCase() || "";
+  const direct = uid ? await staffProfileByUid(uid, email) : email ? await staffProfileByEmail(email) : null;
+  return resolveStaffIdentityFromProfiles(snapshot, direct ? [direct] : []);
 }
 
 export async function isActiveStaffProfile(uid: string, email: string) {
@@ -152,6 +233,108 @@ export async function listStaffProfiles() {
   return snapshot.docs.map((doc) => profileFromData(doc.id, doc.data() as Record<string, unknown>, "operations"));
 }
 
+async function matchingAssignmentRefs(
+  base: FirebaseFirestore.Query,
+  uidField: string,
+  emailField: string,
+  uid: string,
+  emails: string[],
+) {
+  const snapshots = await Promise.all([
+    base.where(uidField, "==", uid).limit(5000).get(),
+    ...emails.map((email) => base.where(emailField, "==", email).limit(5000).get()),
+  ]);
+  const refs = new Map<string, FirebaseFirestore.DocumentReference>();
+  for (const snapshot of snapshots) {
+    for (const doc of snapshot.docs) refs.set(doc.ref.path, doc.ref);
+  }
+  return [...refs.values()];
+}
+
+async function updateAssignmentRefs(refs: FirebaseFirestore.DocumentReference[], update: Record<string, unknown>) {
+  const db = firebaseAdminDb();
+  for (let offset = 0; offset < refs.length; offset += 400) {
+    const batch = db.batch();
+    for (const ref of refs.slice(offset, offset + 400)) batch.update(ref, update);
+    await batch.commit();
+  }
+  return refs.length;
+}
+
+export async function synchronizeStaffIdentityAssignments(profile: KcplStaffProfile, previousEmail = "") {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const, updated: 0 };
+  const db = firebaseAdminDb();
+  const emails = [...new Set([profile.email, previousEmail].map((value) => value.trim().toLowerCase()).filter(Boolean))];
+  const identity = {
+    uid: profile.uid,
+    name: profile.display_name,
+    email: profile.email,
+    phone: profile.phone,
+  };
+
+  const [quotes, shipments, jobTasks, customers, crmTasks] = await Promise.all([
+    matchingAssignmentRefs(db.collection("quotes"), "assigned_to_uid", "assigned_to_email", profile.uid, emails),
+    matchingAssignmentRefs(db.collection("shipments"), "job_assigned_to_uid", "job_assigned_to_email", profile.uid, emails),
+    matchingAssignmentRefs(db.collectionGroup("job_tasks"), "assigned_to_uid", "assigned_to_email", profile.uid, emails),
+    matchingAssignmentRefs(db.collection("customers"), "account_manager_uid", "account_manager_email", profile.uid, emails),
+    matchingAssignmentRefs(db.collectionGroup("tasks"), "assigned_to_uid", "assigned_to_email", profile.uid, emails),
+  ]);
+
+  const counts = await Promise.all([
+    updateAssignmentRefs(quotes, {
+      assigned_to_uid: identity.uid,
+      assigned_to: identity.name || identity.email,
+      assigned_to_name: identity.name,
+      assigned_to_email: identity.email,
+      assigned_to_phone: identity.phone,
+    }),
+    updateAssignmentRefs(shipments, {
+      job_assigned_to_uid: identity.uid,
+      job_assigned_to_name: identity.name,
+      job_assigned_to_email: identity.email,
+      job_assigned_to_phone: identity.phone,
+    }),
+    updateAssignmentRefs(jobTasks, {
+      assigned_to_uid: identity.uid,
+      assigned_to_name: identity.name,
+      assigned_to_email: identity.email,
+      assigned_to_phone: identity.phone,
+    }),
+    updateAssignmentRefs(customers, {
+      account_manager_uid: identity.uid,
+      account_manager_name: identity.name,
+      account_manager_email: identity.email,
+      account_manager_phone: identity.phone,
+    }),
+    updateAssignmentRefs(crmTasks, {
+      assigned_to_uid: identity.uid,
+      assigned_to_name: identity.name,
+      assigned_to_email: identity.email,
+      assigned_to_phone: identity.phone,
+    }),
+  ]);
+
+  return { kind: "updated" as const, updated: counts.reduce((sum, count) => sum + count, 0) };
+}
+
+export async function ensureStaffAssignmentUidMigration(profiles?: KcplStaffProfile[]) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const, migrated: 0 };
+  const db = firebaseAdminDb();
+  const markerRef = db.collection("system_migrations").doc("staff_assignment_identity_v1");
+  const marker = await markerRef.get();
+  if (marker.exists && marker.get("completed") === true) return { kind: "ready" as const, migrated: 0 };
+
+  const directory = profiles ?? await listStaffProfiles();
+  if (!directory) return { kind: "unavailable" as const, migrated: 0 };
+  let migrated = 0;
+  for (const profile of directory) {
+    const result = await synchronizeStaffIdentityAssignments(profile, profile.email);
+    migrated += result.updated;
+  }
+  await markerRef.set({ completed: true, completed_at: new Date().toISOString(), migrated_records: migrated }, { merge: true });
+  return { kind: "completed" as const, migrated };
+}
+
 export async function saveStaffProfile(input: StaffProfileInput, actor: Actor) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const email = input.email.trim().toLowerCase();
@@ -165,6 +348,7 @@ export async function saveStaffProfile(input: StaffProfileInput, actor: Actor) {
   const db = firebaseAdminDb();
   const ref = db.collection("staff_profiles").doc(authUser.uid);
   const previous = await ref.get();
+  const previousEmail = previous.exists ? text(previous.get("email")).trim().toLowerCase() : "";
   const now = new Date().toISOString();
   const branches = input.branchScope === "all"
     ? [...kcplBranches]
@@ -184,7 +368,13 @@ export async function saveStaffProfile(input: StaffProfileInput, actor: Actor) {
     updated_by: actor.email,
   };
   await ref.set(document, { merge: true });
-  return { kind: previous.exists ? "updated" as const : "created" as const, profile: profileFromData(authUser.uid, document, input.role) };
+  const profile = profileFromData(authUser.uid, document, input.role);
+  try {
+    await synchronizeStaffIdentityAssignments(profile, previousEmail);
+  } catch (error) {
+    console.error("KCPL staff identity synchronization failed", profile.uid, error);
+  }
+  return { kind: previous.exists ? "updated" as const : "created" as const, profile };
 }
 
 export async function deactivateStaffProfile(uid: string, actor: Actor) {
