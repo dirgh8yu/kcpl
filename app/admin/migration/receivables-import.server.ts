@@ -19,7 +19,6 @@ type CustomerRecord = {
   name: string;
   normalizedName: string;
   branch: KcplBranch | null;
-  preferredCurrency: CrmCurrency;
   archived: boolean;
 };
 type ShipmentRecord = { id: string; customerId: string | null; branch: KcplBranch | null; quoteReference: string | null };
@@ -153,14 +152,11 @@ async function loadCustomers() {
   const byName = new Map<string, CustomerRecord[]>();
   for (const doc of snapshot.docs) {
     const name = text(doc.get("display_name")) || doc.id;
-    const preferredRaw = text(doc.get("preferred_currency")).toUpperCase();
-    const preferredCurrency = crmCurrencies.includes(preferredRaw as CrmCurrency) ? preferredRaw as CrmCurrency : "NPR";
     const record: CustomerRecord = {
       id: doc.id,
       name,
       normalizedName: text(doc.get("normalized_name")) || normalize(name),
       branch: branchValue(doc.get("primary_branch")),
-      preferredCurrency,
       archived: doc.get("archived") === true,
     };
     byId.set(doc.id.toUpperCase(), record);
@@ -328,7 +324,7 @@ export async function prepareReceivablesImport(filename: string, csv: string) {
     }
 
     const customerId = resolved.customer?.id ?? "";
-    const customerName = resolved.customer?.name ?? valueAt(cells, indexes, "customer_name") || "Unresolved customer";
+    const customerName = resolved.customer?.name ?? (valueAt(cells, indexes, "customer_name") || "Unresolved customer");
     const branch = shipment?.branch ?? resolved.customer?.branch ?? null;
 
     if (!issues.length && recordType && currency && customerId) {
