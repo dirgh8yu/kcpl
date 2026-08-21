@@ -1,4 +1,4 @@
-import { adminSecurityConfigIssues } from "./admin/admin-security-config";
+import { adminSecurityConfigIssues } from "./admin/admin-security-config.ts";
 
 type RuntimeEnv = Record<string, string | undefined>;
 
