@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { resolveStaffIdentity } from "../staff-directory.server";
 import type {
   CrmAccountStatus,
   CrmCurrency,
@@ -28,6 +29,7 @@ export type CrmCustomerUpdateInput = {
   taxId: string;
   country: string;
   primaryBranch: KcplBranch;
+  accountManagerUid?: string;
   accountManagerName: string;
   accountManagerEmail: string;
   accountManagerPhone: string;
@@ -66,6 +68,7 @@ export async function updateCrmCustomer(
   const id = customerId.trim().toUpperCase();
   const customerRef = db.collection("customers").doc(id);
   const now = new Date().toISOString();
+  const manager = await resolveStaffIdentity({ uid: input.accountManagerUid, name: input.accountManagerName, email: input.accountManagerEmail, phone: input.accountManagerPhone });
 
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(customerRef);
@@ -87,9 +90,10 @@ export async function updateCrmCustomer(
       tax_id: input.taxId.trim() || null,
       country: input.country.trim() || "Nepal",
       primary_branch: input.primaryBranch,
-      account_manager_name: input.accountManagerName.trim() || null,
-      account_manager_email: input.accountManagerEmail.trim() || null,
-      account_manager_phone: input.accountManagerPhone.trim() || null,
+      account_manager_uid: manager.uid,
+      account_manager_name: manager.name,
+      account_manager_email: manager.email,
+      account_manager_phone: manager.phone,
       billing_email: input.billingEmail.trim() || null,
       tags: input.tags,
       transport_preferences: input.transportPreferences,
