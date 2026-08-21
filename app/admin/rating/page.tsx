@@ -29,6 +29,9 @@ export default async function RatingPage() {
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
+      <div className="px-4 pt-4 lg:px-5">
+        <div className="flex justify-end"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="sm">Open Tender Desk →</Link></div>
+      </div>
       <TmsRatingWorkspace
         initialOrders={orders.orders}
         initialRateCards={rateCards.rateCards}

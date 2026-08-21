@@ -16,7 +16,7 @@ export const tmsRateUnitLabels: Record<TmsRateUnit, string> = {
   per_shipment: "Per shipment",
 };
 
-export type TmsOrderStatus = "draft" | "rated" | "selected" | "cancelled";
+export type TmsOrderStatus = "draft" | "rated" | "selected" | "tendering" | "booked" | "cancelled";
 
 export type TmsOrder = {
   id: string;
