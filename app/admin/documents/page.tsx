@@ -12,23 +12,29 @@ export default async function DocumentsPage() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The Document Vault is available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageJobFile) return <Gate title="Document Vault unavailable" detail="Shipment document access is not available for this staff role."/>;
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    isManagement: staff.permissions.role === "management",
+  };
+  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Shipment document access is not available for this staff role." embedded/></OperationsShell>;
 
-  const dashboard = await listDocumentVault(staff);
-  if (!dashboard) return <Gate title="Document Vault unavailable" detail="Firestore is not available for shipment document control in this deployment."/>;
+  try {
+    const dashboard = await listDocumentVault(staff);
+    if (!dashboard) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Firestore is not available for shipment document control in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
 
-  return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff={staff.permissions.canManageStaff}
-      canManageFinance={staff.permissions.canManageFinance}
-      isManagement={staff.permissions.role === "management"}
-    >
-      <DocumentsWorkspace dashboard={dashboard} role={staff.permissions.role} currentUserEmail={access.user.email}/>
-    </OperationsShell>
-  );
+    return (
+      <OperationsShell {...shellProps}>
+        <DocumentsWorkspace dashboard={dashboard} role={staff.permissions.role} currentUserEmail={access.user.email}/>
+      </OperationsShell>
+    );
+  } catch (error) {
+    console.error("Failed to load KCPL Document Vault", error);
+    return <OperationsShell {...shellProps}><Gate title="Document Vault could not be loaded" detail="KCPL document data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+  }
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#514840]"><section className="w-full max-w-xl rounded-[15px] border border-[#e6ded7] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Document Vault</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="primary" data-size="md">Operations home</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="md">Shipments</Link></div></section></main>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#514840] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[15px] border border-[#e6ded7] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Document Vault</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="primary" data-size="md">Operations home</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="md">Shipments</Link></div></section></main>;
 }
