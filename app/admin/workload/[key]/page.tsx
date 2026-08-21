@@ -119,7 +119,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   );
   const assignedJobs = data.jobs.filter((job) => assignedTo(job, targetEmail, targetName));
   const accessibleReferences = new Set(data.jobs.map((job) => job.reference));
-  const now = Date.now();
+  const now = Date.parse(data.generated_at);
 
   const taskSnapshot = await firebaseAdminDb().collectionGroup("job_tasks").limit(8000).get();
   const tasks: StaffTask[] = taskSnapshot.docs.flatMap((doc) => {
@@ -146,9 +146,10 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
     }];
   }).sort((a, b) => Number(b.overdue) - Number(a.overdue) || (a.dueAt || "9999").localeCompare(b.dueAt || "9999") || a.title.localeCompare(b.title));
 
-  const responsibility: KcplBranch[] = profile
+  const responsibilitySource: KcplBranch[] = profile
     ? (profile.branch_scope === "all" || profile.role === "management" ? [...kcplBranches] : profile.branches)
     : [...new Set(assignedJobs.flatMap(branchSetForJob))];
+  const responsibility = responsibilitySource.filter((branch) => data.accessible_branches.includes(branch));
 
   const overdueTasks = tasks.filter((task) => task.overdue).length;
   const urgentJobs = assignedJobs.filter((job) => job.priority === "urgent" || job.status === "exception").length;
@@ -203,7 +204,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
             </OpsSurface>
 
             <div className="ops-stack">
-              <OpsSurface eyebrow="Responsibility" title="Branch access" description={profile ? "Branches assigned to this staff profile." : "Branches inferred from currently assigned movements."} flush>
+              <OpsSurface eyebrow="Responsibility" title="Branch access" description={profile ? "Branches assigned to this staff profile within your own accessible scope." : "Branches inferred from currently assigned movements."} flush>
                 {responsibility.length ? <div className="divide-y divide-[#e9e5e0]">{responsibility.map((branch) => {
                   const jobsAtBranch = assignedJobs.filter((job) => job.primary_branch === branch || job.handling_branches.includes(branch)).length;
                   return <Link key={branch} href={`/admin/branches/${encodeURIComponent(branch)}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#faf9f7]"><span className="flex items-center gap-2 text-[11px] font-semibold text-[#4e4944]"><Landmark size={12} className="text-[#7c756e]"/>{branch}</span><span className="flex items-center gap-2 text-[10px] text-[#817a73]">{jobsAtBranch} active<ArrowUpRight size={11}/></span></Link>;
