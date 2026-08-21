@@ -174,7 +174,7 @@ export function OperationsNotificationCentre() {
           }) : <div className="px-5 py-10 text-center"><Bell size={18} className="mx-auto text-[#b4aaa2]"/><p className="mt-3 text-[10px] font-bold text-[#625a54]">No notifications yet</p><p className="mt-1 text-[9px] text-[#948b83]">Operational assignments and alerts will appear here.</p></div>}
         </div>
 
-        <div className="flex items-center justify-between border-t border-[#eee8e2] bg-[#faf8f6] px-4 py-2.5"><span className="text-[8px] text-[#9b928a]">Auto-refreshes every 30 seconds</span><button type="button" onClick={() => { setOpen(false); router.push("/admin/alerts"); }} className="text-[9px] font-bold text-[#b65e4a]">Open Tasks & alerts</button></div>
+        <div className="flex items-center justify-between border-t border-[#eee8e2] bg-[#faf8f6] px-4 py-2.5"><span className="text-[8px] text-[#9b928a]">Showing latest 12</span><button type="button" onClick={() => { setOpen(false); router.push("/admin/notifications"); }} className="text-[9px] font-bold text-[#b65e4a]">Open notification centre</button></div>
       </div> : null}
     </div>
   );
