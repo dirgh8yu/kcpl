@@ -2,6 +2,7 @@ import { getAdminAccess } from "../../../admin/admin-auth";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { canAccessBranchSet, canAccessBranchValue, canAccessQuoteLinkedRecords, strictBranchArray, strictBranchValue } from "../../../admin/branch-access-policy";
 import { getStaffContext } from "../../../admin/staff-directory.server";
+import { staffCapabilitiesForEmail } from "../../../admin/staff-permissions";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../../shipment-types";
 
 type SearchResult = {
@@ -22,6 +23,12 @@ type SearchDocuments = {
   shipments: IndexedDoc[];
   quotes: IndexedDoc[];
   customers: IndexedDoc[];
+};
+
+type SearchPermissions = {
+  canManageFinance: boolean;
+  canManageStaff: boolean;
+  isManagement: boolean;
 };
 
 let cachedDocuments: SearchDocuments | null = null;
@@ -48,6 +55,15 @@ function shortReference(value: string) {
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "private, no-store" } });
+}
+
+function fallbackPermissions(email: string): SearchPermissions {
+  const permissions = staffCapabilitiesForEmail(email);
+  return {
+    canManageFinance: permissions.canManageFinance,
+    canManageStaff: permissions.canManageStaff,
+    isManagement: permissions.role === "management",
+  };
 }
 
 async function loadSearchDocuments() {
@@ -80,10 +96,40 @@ async function loadSearchDocuments() {
 export async function GET() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return json({ ok: false, error: "Sign in is required." }, 401);
-  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Firebase search is unavailable." }, 503);
 
-  const staff = await getStaffContext(access.user);
-  const documents = await loadSearchDocuments();
+  let staff;
+  try {
+    staff = await getStaffContext(access.user);
+  } catch (error) {
+    console.error("KCPL search could not resolve staff context", error);
+    return json({
+      ok: true,
+      degraded: true,
+      permissions: fallbackPermissions(access.user.email),
+      results: [],
+    });
+  }
+
+  const permissions: SearchPermissions = {
+    canManageFinance: staff.permissions.canManageFinance,
+    canManageStaff: staff.permissions.canManageStaff,
+    isManagement: staff.permissions.role === "management",
+  };
+
+  // Workspace discovery must remain available even when Firebase record search
+  // is unavailable. The route-level permission checks remain the authority.
+  if (!firebaseRuntimeConfigured()) {
+    return json({ ok: true, degraded: true, permissions, results: [] });
+  }
+
+  let documents: SearchDocuments;
+  try {
+    documents = await loadSearchDocuments();
+  } catch (error) {
+    console.error("KCPL search record index is unavailable", error);
+    return json({ ok: true, degraded: true, permissions, results: [] });
+  }
+
   const shipments = new Map(documents.shipments.map((doc) => [doc.id, doc.data]));
   const quotes = new Map(documents.quotes.map((doc) => [doc.id, doc.data]));
   const customers = new Map(documents.customers.map((doc) => [doc.id, doc.data]));
@@ -183,13 +229,5 @@ export async function GET() {
     });
   }
 
-  return json({
-    ok: true,
-    permissions: {
-      canManageFinance: staff.permissions.canManageFinance,
-      canManageStaff: staff.permissions.canManageStaff,
-      isManagement: staff.permissions.role === "management",
-    },
-    results,
-  });
+  return json({ ok: true, permissions, results });
 }
