@@ -8,6 +8,7 @@ import {
 } from "../app/admin/staff-permissions.ts";
 import { adminSecurityConfigIssues } from "../app/admin/admin-security-config.ts";
 
+// Keep this suite self-contained so it can run before the Next.js production build.
 const cleanEnv = () => ({ NODE_ENV: "production" });
 
 test("unconfigured staff role defaults to Operations, never Management", () => {
