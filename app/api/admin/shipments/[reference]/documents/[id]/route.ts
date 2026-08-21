@@ -2,7 +2,17 @@ import { getAdminAccess } from "../../../../../../admin/admin-auth";
 import { getStaffContext } from "../../../../../../admin/staff-directory.server";
 import { checkShipmentBranchAccess } from "../../../../../../admin/shipment-access.server";
 import { isTrustedSameOriginRequest } from "../../../../../../request-security";
-import { deleteShipmentDocument, getShipmentDocumentFile } from "../../../../../../shipment-documents.server";
+import {
+  canDeleteShipmentDocument,
+  shipmentDocumentTransitionError,
+} from "../../../../../../shipment-document-policy";
+import { shipmentDocumentReviewStatuses, type ShipmentDocumentReviewStatus } from "../../../../../../shipment-document-types";
+import {
+  deleteShipmentDocument,
+  getShipmentDocumentFile,
+  getShipmentDocumentMetadata,
+  updateShipmentDocumentControl,
+} from "../../../../../../shipment-documents.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -30,6 +40,10 @@ function documentId(value: string) {
 function contentDisposition(filename: string) {
   const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+function clean(value: unknown, max = 4000) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
@@ -62,6 +76,54 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   }
 }
 
+export async function PATCH(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
+  const auth = await authorize();
+  if ("response" in auth) return auth.response;
+  if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin document reviews are not accepted." }, 403);
+
+  const { reference, id } = await context.params;
+  const accessError = await guard(reference, auth.staff);
+  if (accessError) return accessError;
+  const parsedId = documentId(id);
+  if (parsedId === null) return json({ ok: false, error: "Document not found." }, 404);
+
+  let body: Record<string, unknown>;
+  try { body = await request.json() as Record<string, unknown>; } catch { return json({ ok: false, error: "The document review could not be read." }, 400); }
+  const status = clean(body.status, 40);
+  const reviewNote = clean(body.reviewNote, 4000);
+  const expiresOn = clean(body.expiresOn, 10);
+  const customerSafe = body.customerSafe === true;
+  if (!shipmentDocumentReviewStatuses.includes(status as ShipmentDocumentReviewStatus)) return json({ ok: false, error: "Choose a valid document review status." }, 400);
+
+  try {
+    const metadata = await getShipmentDocumentMetadata(reference, parsedId);
+    if (metadata.kind === "unavailable") return json({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
+    if (metadata.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
+    const error = shipmentDocumentTransitionError({
+      from: metadata.document.review_status,
+      to: status,
+      role: auth.staff.permissions.role,
+      actorEmail: auth.user.email,
+      uploadedByEmail: metadata.document.uploaded_by_email,
+      reviewNote,
+      expiresOn,
+    });
+    if (error) return json({ ok: false, error }, 403);
+
+    const result = await updateShipmentDocumentControl(reference, parsedId, {
+      status: status as ShipmentDocumentReviewStatus,
+      customerSafe,
+      reviewNote,
+      expiresOn,
+    }, { name: auth.user.displayName, email: auth.user.email });
+    if (result.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
+    return json({ ok: true, document: result.document });
+  } catch (error) {
+    console.error("Failed to review KCPL Firebase shipment document", error);
+    return json({ ok: false, error: "The document review could not be saved." }, 500);
+  }
+}
+
 export async function DELETE(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
@@ -74,10 +136,21 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
   if (parsedId === null) return json({ ok: false, error: "Document not found." }, 404);
 
   try {
+    const metadata = await getShipmentDocumentMetadata(reference, parsedId);
+    if (metadata.kind === "unavailable") return json({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
+    if (metadata.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
+    const allowed = canDeleteShipmentDocument({
+      role: auth.staff.permissions.role,
+      actorEmail: auth.user.email,
+      uploadedByEmail: metadata.document.uploaded_by_email,
+      status: metadata.document.review_status,
+    });
+    if (!allowed) return json({ ok: false, error: "Only Management can delete reviewed documents. Operations may delete only their own still-unreviewed upload." }, 403);
+
     const result = await deleteShipmentDocument(reference, parsedId, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
-    return json({ ok: true });
+    return json({ ok: true, storageDeleted: result.storageDeleted, warning: result.storageDeleted ? null : "The document is tombstoned and inaccessible, but Storage cleanup is pending." });
   } catch (error) {
     console.error("Failed to delete KCPL Firebase shipment document", error);
     return json({ ok: false, error: "The document could not be deleted." }, 500);
