@@ -20,6 +20,10 @@ function branchValue(value: unknown): KcplBranch | null {
   return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
 }
 
+function isOpeningBalance(snapshot: FirebaseFirestore.QueryDocumentSnapshot) {
+  return snapshot.get("record_type") === "opening_balance" || snapshot.get("migration_record_type") === "opening_balance";
+}
+
 function operationalDate(date = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kathmandu",
@@ -101,7 +105,7 @@ export async function getCrmCustomerFinanceSnapshot(
     const total = Math.max(0, numberValue(invoice.get("total")));
     const paid = Math.max(0, numberValue(invoice.get("amount_paid")));
     const balance = Math.max(0, numberValue(invoice.get("balance_due")));
-    revenue += total;
+    if (!isOpeningBalance(invoice)) revenue += total;
     collected += paid;
     outstanding += balance;
 

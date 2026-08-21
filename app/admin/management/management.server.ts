@@ -221,13 +221,16 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     const currency = financialCurrency(data.currency);
     if (!currency) continue;
 
-    const total = numberValue(data.total);
     const balance = Math.max(0, numberValue(data.balance_due));
     const due = datePart(data.due_date);
     const snapshot = current(currency);
     snapshot.receivables += balance;
     if (balance > 0 && due && due < today) snapshot.overdue_receivables += balance;
 
+    const openingBalance = data.record_type === "opening_balance" || data.migration_record_type === "opening_balance";
+    if (openingBalance) continue;
+
+    const total = numberValue(data.total);
     const shipmentReference = text(data.shipment_reference);
     if (shipmentReference) {
       const lifetimeJob = jobMeta(lifetimeJobMoney, shipmentReference, currency);
