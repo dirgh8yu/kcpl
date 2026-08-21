@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../../shipment-document-policy";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { buildDocumentIntelligence } from "../workflow-defaults";
@@ -142,14 +143,17 @@ export async function evaluateFreightAutomation() {
     customsByShipment.set(reference, current);
   }
 
-  const documentsByShipment = new Map<string, Set<ShipmentDocumentType>>();
+  const documentsByShipment = new Map<string, { uploaded: Set<ShipmentDocumentType>; verified: Set<ShipmentDocumentType> }>();
   for (const doc of documentsSnapshot.docs) {
     const reference = childShipmentId(doc.ref);
     const type = doc.get("document_type") as ShipmentDocumentType;
     if (!reference || !shipmentDocumentTypeLabels[type]) continue;
-    const set = documentsByShipment.get(reference) ?? new Set<ShipmentDocumentType>();
-    set.add(type);
-    documentsByShipment.set(reference, set);
+    const reviewStatus = shipmentDocumentReviewStatusValue(doc.get("review_status"));
+    if (["deleted", "superseded"].includes(reviewStatus)) continue;
+    const state = documentsByShipment.get(reference) ?? { uploaded: new Set<ShipmentDocumentType>(), verified: new Set<ShipmentDocumentType>() };
+    state.uploaded.add(type);
+    if (shipmentDocumentCountsAsReady({ status: reviewStatus, expiresOn: nullable(doc.get("expires_on")), today })) state.verified.add(type);
+    documentsByShipment.set(reference, state);
   }
 
   const requirementOverrides = new Map<string, Map<ShipmentDocumentType, boolean>>();
@@ -194,7 +198,8 @@ export async function evaluateFreightAutomation() {
     const etaDistance = eta ? etaDays(eta, today) : null;
     const customs = customsByShipment.get(reference) ?? { total: 0, completed: 0, openTitles: [] };
     const openCustoms = Math.max(0, customs.total - customs.completed);
-    const presentDocs = documentsByShipment.get(reference) ?? new Set<ShipmentDocumentType>();
+    const documentState = documentsByShipment.get(reference) ?? { uploaded: new Set<ShipmentDocumentType>(), verified: new Set<ShipmentDocumentType>() };
+    const presentDocs = documentState.verified;
 
     const intelligence = buildDocumentIntelligence({
       mode,
@@ -243,7 +248,7 @@ export async function evaluateFreightAutomation() {
         type: "eta_upcoming",
         severity: etaDistance === 0 ? "warning" : "info",
         title: `${etaDistance === 0 ? "ETA today" : "ETA tomorrow"}: ${reference}`,
-        detail: `${eta?.slice(0, 10)} · ${openCustoms ? `${openCustoms} customs step${openCustoms === 1 ? "" : "s"} open · ` : ""}${missingRequired.length ? `${missingRequired.length} smart-required document${missingRequired.length === 1 ? "" : "s"} missing` : "document pack ready"}.`,
+        detail: `${eta?.slice(0, 10)} · ${openCustoms ? `${openCustoms} customs step${openCustoms === 1 ? "" : "s"} open · ` : ""}${missingRequired.length ? `${missingRequired.length} required document${missingRequired.length === 1 ? "" : "s"} missing or awaiting verification` : "verified document pack ready"}.`,
         reference,
         branch,
         assignedName,
@@ -281,13 +286,17 @@ export async function evaluateFreightAutomation() {
 
     const docsUrgent = isActive && missingRequired.length > 0 && (status !== "booking_confirmed" || (etaDistance !== null && etaDistance <= 2));
     if (docsUrgent) {
-      const labels = missingRequired.map((type) => shipmentDocumentTypeLabels[type]);
+      const missing = missingRequired.filter((type) => !documentState.uploaded.has(type));
+      const awaitingVerification = missingRequired.filter((type) => documentState.uploaded.has(type));
+      const detailParts: string[] = [];
+      if (missing.length) detailParts.push(`Missing ${missing.map((type) => shipmentDocumentTypeLabels[type]).join(", ")}.`);
+      if (awaitingVerification.length) detailParts.push(`Awaiting verification: ${awaitingVerification.map((type) => shipmentDocumentTypeLabels[type]).join(", ")}.`);
       addCandidate({
         fingerprint: `required-documents-missing:${reference}`,
         type: "required_document_missing",
         severity: status === "out_for_delivery" || etaDistance === 0 ? "critical" : "warning",
-        title: `Smart document pack incomplete: ${reference}`,
-        detail: `Missing ${labels.join(", ")}. ${intelligence.direction.replaceAll("_", " ")} · ${mode || "mode not set"}.`,
+        title: `Verified document pack incomplete: ${reference}`,
+        detail: `${detailParts.join(" ")} ${intelligence.direction.replaceAll("_", " ")} · ${mode || "mode not set"}.`,
         reference,
         branch,
         assignedName,
@@ -296,8 +305,8 @@ export async function evaluateFreightAutomation() {
       });
       if (branch) addTask(reference, {
         id: "automation-documents",
-        title: "Complete smart shipment document pack",
-        detail: `Upload or verify the smart-required documents: ${labels.join(", ")}. Rules were calculated from mode, lane, cargo text and shipment instructions.`,
+        title: "Complete and verify shipment document pack",
+        detail: `Upload or verify the required documents: ${missingRequired.map((type) => shipmentDocumentTypeLabels[type]).join(", ")}. Rules were calculated from mode, lane, cargo text and shipment instructions.`,
         branch,
         assignedUid,
         assignedName,
@@ -308,12 +317,13 @@ export async function evaluateFreightAutomation() {
     }
 
     if (status === "delivered" && !presentDocs.has("proof_of_delivery")) {
+      const podUploaded = documentState.uploaded.has("proof_of_delivery");
       addCandidate({
         fingerprint: `pod-missing:${reference}`,
         type: "pod_missing",
         severity: "critical",
-        title: `Delivered shipment missing POD: ${reference}`,
-        detail: "Upload Proof of Delivery before operational closeout.",
+        title: `Delivered shipment missing verified POD: ${reference}`,
+        detail: podUploaded ? "Proof of Delivery is uploaded but still requires verification before operational closeout." : "Upload and verify Proof of Delivery before operational closeout.",
         reference,
         branch,
         assignedName,
@@ -322,8 +332,8 @@ export async function evaluateFreightAutomation() {
       });
       if (branch) addTask(reference, {
         id: "automation-pod",
-        title: "Upload Proof of Delivery",
-        detail: "The shipment is marked Delivered but no POD is present. Upload delivery evidence before closing the Job File.",
+        title: "Capture and verify Proof of Delivery",
+        detail: podUploaded ? "The shipment is Delivered and POD is received but not verified. Verify the delivery evidence before closing the Job File." : "The shipment is Delivered but no verified POD is present. Upload and verify delivery evidence before closing the Job File.",
         branch,
         assignedUid,
         assignedName,
