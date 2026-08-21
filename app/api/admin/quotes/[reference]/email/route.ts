@@ -39,6 +39,17 @@ function dateOnly(value: string | null) {
   return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "UTC" }).format(date);
 }
 
+function todayInNepal() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kathmandu",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
 function quoteMessage(quote: NonNullable<Awaited<ReturnType<typeof getQuoteDetail>>>) {
   const price = money(quote.quoted_amount || "", quote.quote_currency);
   const validity = dateOnly(quote.valid_until);
@@ -80,28 +91,28 @@ function quoteMessage(quote: NonNullable<Awaited<ReturnType<typeof getQuoteDetai
 
   const html = `<!doctype html>
 <html>
-  <body style="margin:0;background:#f3f5f6;font-family:Arial,Helvetica,sans-serif;color:#10263f;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f5f6;padding:28px 12px;">
+  <body style="margin:0;background:#f5f3f0;font-family:Arial,Helvetica,sans-serif;color:#26221f;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f3f0;padding:28px 12px;">
       <tr><td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #dfe3e8;border-radius:12px;overflow:hidden;">
-          <tr><td style="padding:22px 26px;background:#10263f;color:#ffffff;">
-            <div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#d7b66f;font-weight:700;">Kapileshwor Cargo Pvt. Ltd.</div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #ddd8d2;border-radius:12px;overflow:hidden;">
+          <tr><td style="padding:22px 26px;background:#df7159;color:#ffffff;">
+            <div style="font-size:11px;letter-spacing:.8px;font-weight:700;">Kapileshwor Cargo Pvt. Ltd.</div>
             <div style="margin-top:7px;font-size:24px;font-weight:700;">Freight quotation</div>
-            <div style="margin-top:5px;font-size:13px;color:#c8d1da;">${safe.reference}</div>
+            <div style="margin-top:5px;font-size:13px;color:#fff1ec;">${safe.reference}</div>
           </td></tr>
           <tr><td style="padding:26px;">
             <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Dear ${safe.greetingName},</p>
-            <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#52606d;">Thank you for your freight enquiry with KCPL. Please find the commercial summary of our quotation below.</p>
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #e2e6e9;border-radius:8px;overflow:hidden;">
-              <tr><td style="padding:11px 14px;background:#f8f9fa;font-size:11px;color:#7a858f;width:34%;border-bottom:1px solid #e7eaed;">Route</td><td style="padding:11px 14px;font-size:13px;font-weight:700;border-bottom:1px solid #e7eaed;">${safe.origin} → ${safe.destination}</td></tr>
-              <tr><td style="padding:11px 14px;background:#f8f9fa;font-size:11px;color:#7a858f;border-bottom:1px solid #e7eaed;">Mode</td><td style="padding:11px 14px;font-size:13px;font-weight:700;border-bottom:1px solid #e7eaed;">${safe.mode}</td></tr>
-              <tr><td style="padding:11px 14px;background:#f8f9fa;font-size:11px;color:#7a858f;border-bottom:1px solid #e7eaed;">Quoted price</td><td style="padding:11px 14px;font-size:18px;font-weight:800;color:#8a672e;border-bottom:1px solid #e7eaed;">${safe.price}</td></tr>
-              <tr><td style="padding:11px 14px;background:#f8f9fa;font-size:11px;color:#7a858f;">Valid until</td><td style="padding:11px 14px;font-size:13px;font-weight:700;">${safe.validity}</td></tr>
+            <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#625b55;">Thank you for your freight enquiry with KCPL. Please find the commercial summary of our quotation below.</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #e5e0db;border-radius:8px;overflow:hidden;">
+              <tr><td style="padding:11px 14px;background:#f8f6f3;font-size:11px;color:#77706a;width:34%;border-bottom:1px solid #ebe6e1;">Route</td><td style="padding:11px 14px;font-size:13px;font-weight:700;border-bottom:1px solid #ebe6e1;">${safe.origin} → ${safe.destination}</td></tr>
+              <tr><td style="padding:11px 14px;background:#f8f6f3;font-size:11px;color:#77706a;border-bottom:1px solid #ebe6e1;">Mode</td><td style="padding:11px 14px;font-size:13px;font-weight:700;border-bottom:1px solid #ebe6e1;">${safe.mode}</td></tr>
+              <tr><td style="padding:11px 14px;background:#f8f6f3;font-size:11px;color:#77706a;border-bottom:1px solid #ebe6e1;">Quoted price</td><td style="padding:11px 14px;font-size:18px;font-weight:800;color:#a95440;border-bottom:1px solid #ebe6e1;">${safe.price}</td></tr>
+              <tr><td style="padding:11px 14px;background:#f8f6f3;font-size:11px;color:#77706a;">Valid until</td><td style="padding:11px 14px;font-size:13px;font-weight:700;">${safe.validity}</td></tr>
             </table>
-            ${safe.note ? `<div style="margin-top:20px;padding:14px 16px;border-left:3px solid #b78a3e;background:#fffaf0;font-size:13px;line-height:1.7;color:#5c5548;">${safe.note}</div>` : ""}
-            <p style="margin:22px 0 0;font-size:14px;line-height:1.7;color:#52606d;">Please reply to this email if you would like to proceed or if you need any changes to the quotation.</p>
+            ${safe.note ? `<div style="margin-top:20px;padding:14px 16px;border-left:3px solid #df7159;background:#fff6f2;font-size:13px;line-height:1.7;color:#5e554f;">${safe.note}</div>` : ""}
+            <p style="margin:22px 0 0;font-size:14px;line-height:1.7;color:#625b55;">Please reply to this email if you would like to proceed or if you need any changes to the quotation.</p>
           </td></tr>
-          <tr><td style="padding:18px 26px;border-top:1px solid #e7eaed;background:#fbfbfa;font-size:11px;line-height:1.6;color:#7c8790;">
+          <tr><td style="padding:18px 26px;border-top:1px solid #ebe6e1;background:#faf9f7;font-size:11px;line-height:1.6;color:#817a73;">
             Kapileshwor Cargo Pvt. Ltd. (KCPL)<br>Kathmandu, Nepal
           </td></tr>
         </table>
@@ -128,7 +139,13 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (quote === undefined) return json({ ok: false, error: "Quote storage is unavailable." }, 503);
   if (!quote) return json({ ok: false, error: "Quote not found." }, 404);
   if (!quote.contact_email.trim()) return json({ ok: false, error: "This enquiry does not have a customer email address." }, 400);
-  if (!quote.quoted_amount?.trim()) return json({ ok: false, error: "Add and save a quoted price before sending the customer email." }, 400);
+  if (!quote.quoted_amount?.trim() || Number(quote.quoted_amount) <= 0) return json({ ok: false, error: "Add and save a customer price greater than zero before sending the quote email." }, 400);
+  if (quote.valid_until && quote.valid_until < todayInNepal()) {
+    return json({ ok: false, error: "This quote has expired. Update the validity date before sending it to the customer." }, 409);
+  }
+  if (quote.status === "lost") {
+    return json({ ok: false, error: "This enquiry is marked Lost. Reopen it before sending another customer quote." }, 409);
+  }
 
   const message = quoteMessage(quote);
   try {
@@ -152,7 +169,6 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       sentAt: delivered.acceptedAt,
       actorName: access.user.displayName,
       actorEmail: access.user.email,
-      previousStatus: quote.status,
     });
     if (recorded.kind === "missing") {
       return json({ ok: false, error: "The email was accepted by SendGrid, but the quote audit record could not be saved because the quote no longer exists." }, 409);
@@ -164,6 +180,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       sentAt: delivered.acceptedAt,
       messageId: delivered.messageId,
       status: recorded.status,
+      communication: recorded.communication,
     });
   } catch (error) {
     if (error instanceof EmailConfigurationError) {
