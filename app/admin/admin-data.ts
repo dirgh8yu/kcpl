@@ -20,7 +20,7 @@ export type QuoteSummary = {
   phone: string | null;
   customer_id: string | null;
   assigned_to: string | null;
-  assigned_to_uid: string | null;
+  assigned_to_uid?: string | null;
   assigned_to_name: string | null;
   assigned_to_email: string | null;
   assigned_to_phone: string | null;
