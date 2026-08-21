@@ -1,4 +1,4 @@
-import { canAccessBranchValue, strictBranchValue, type BranchAccessScope } from "../branch-access-policy";
+import { canAccessBranchValue, strictBranchValue, type BranchAccessScope } from "../branch-access-policy.ts";
 import type { StaffCapabilities } from "../staff-permissions";
 import type { PartnerOwnerBranch } from "./partners-data";
 
