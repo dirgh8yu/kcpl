@@ -6,6 +6,7 @@ import { payableStatuses, type PayableStatus } from "../../payables/payables-dat
 import { normalizeSupplierBillReference, normalizeSupplierName, supplierIdentityKey } from "../../payables/payables-policy";
 import type { KcplStaffContext } from "../../staff-directory.server";
 import { canAccessPartnerOwner, isPartnerReference, partnerOwnerBranchValue } from "../partner-policy";
+import { isDuplicateSupplierIdentityCandidate } from "./supplier-reconciliation-policy";
 import type {
   SupplierLegacyIdentityKind,
   SupplierReconciliationBill,
@@ -171,6 +172,7 @@ export async function reconcileSupplierBill(input: {
       if (currentPartner.exists) return { kind: "already_linked_other" as const };
     }
 
+    const partnerName = text(partner.get("display_name"), partnerId);
     const supplierBillReference = nullable(bill.get("supplier_bill_reference"));
     const normalizedBillReference = supplierBillReference ? normalizeSupplierBillReference(supplierBillReference) : "";
     if (normalizedBillReference) {
@@ -182,19 +184,21 @@ export async function reconcileSupplierBill(input: {
       ]);
       const candidates = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
       for (const doc of [...normalizedMatches.docs, ...rawMatches.docs]) candidates.set(doc.id, doc);
-      const targetName = normalizeSupplierName(text(partner.get("display_name"), partnerId));
       for (const candidate of candidates.values()) {
         if (candidate.id === billReference || payableStatus(candidate.get("status")) === "void") continue;
-        const candidateId = nullable(candidate.get("supplier_id"));
-        const candidateName = normalizeSupplierName(text(candidate.get("supplier_name")));
-        if (candidateId === partnerId || (!candidateId || !isPartnerReference(candidateId)) && candidateName === targetName) {
+        if (isDuplicateSupplierIdentityCandidate({
+          candidateSupplierId: nullable(candidate.get("supplier_id")),
+          candidateSupplierName: text(candidate.get("supplier_name")),
+          targetPartnerId: partnerId,
+          targetPartnerName: partnerName,
+          originalSupplierName: currentSupplierName,
+        })) {
           return { kind: "duplicate_supplier_bill" as const };
         }
       }
     }
 
     const now = new Date().toISOString();
-    const partnerName = text(partner.get("display_name"), partnerId);
     const shipmentReference = nullable(bill.get("shipment_reference"));
     const costRef = shipmentReference
       ? db.collection("shipments").doc(shipmentReference).collection("job_costs").doc(`payable_${billReference}`)
