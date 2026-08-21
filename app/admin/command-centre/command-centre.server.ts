@@ -50,22 +50,51 @@ function shipmentIdFromChild(path: FirebaseFirestore.DocumentReference) {
   return path.parent.parent?.id ?? "";
 }
 
+function timestamp(value: string) {
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : 0;
+}
+
+async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>) {
+  const db = firebaseAdminDb();
+  const uniqueIds = [...new Set([...ids].map((id) => id.trim()).filter(Boolean))];
+  const result = new Map<string, Record<string, unknown>>();
+
+  // Firestore batchGet is substantially cheaper and safer than reading an
+  // arbitrary slice of an entire collection as the company grows.
+  for (let index = 0; index < uniqueIds.length; index += 250) {
+    const batch = uniqueIds.slice(index, index + 250);
+    const snapshots = await db.getAll(...batch.map((id) => db.collection(collectionName).doc(id)));
+    for (const snapshot of snapshots) {
+      if (snapshot.exists) result.set(snapshot.id, snapshot.data() as Record<string, unknown>);
+    }
+  }
+  return result;
+}
+
 export async function loadCommandCentre(context: KcplStaffContext): Promise<CommandCentreData | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
-  const [shipmentsSnapshot, quotesSnapshot, customersSnapshot, tasksSnapshot, customsSnapshot, staffProfiles] = await Promise.all([
+  const [shipmentsSnapshot, tasksSnapshot, customsSnapshot, staffProfiles] = await Promise.all([
     db.collection("shipments").limit(2000).get(),
-    db.collection("quotes").limit(2500).get(),
-    db.collection("customers").limit(2500).get(),
     db.collectionGroup("job_tasks").limit(8000).get(),
     db.collectionGroup("customs_steps").limit(5000).get(),
     listStaffProfiles(),
   ]);
 
-  const quotes = new Map(quotesSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
-  const customers = new Map(customersSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
-  const now = Date.now();
   const today = operationalDate();
+  const now = Date.now();
+
+  const accessibleShipmentRows = shipmentsSnapshot.docs.flatMap((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    const status = statusValue(data.status);
+    if (status === "delivered") return [];
+    const primary = branchValue(data.primary_branch);
+    const handling = branchArray(data.handling_branches, primary);
+    const allowed = staffCanAccessBranch(context, primary) || handling.some((branch) => staffCanAccessBranch(context, branch));
+    return allowed ? [{ id: doc.id, data, status, primary, handling }] : [];
+  });
+  const accessibleShipmentIds = new Set(accessibleShipmentRows.map((row) => row.id));
 
   const taskStats = new Map<string, { open: number; overdue: number }>();
   const staffTaskStats = new Map<string, { name: string; email: string; open: number; overdue: number }>();
@@ -73,9 +102,11 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     const data = doc.data() as Record<string, unknown>;
     if (data.completed === true) continue;
     const shipmentId = shipmentIdFromChild(doc.ref);
-    if (!shipmentId) continue;
+    if (!shipmentId || !accessibleShipmentIds.has(shipmentId)) continue;
+
     const dueAt = nullable(data.due_at);
-    const overdue = Boolean(dueAt && new Date(dueAt).getTime() < now);
+    const dueTime = dueAt ? Date.parse(dueAt) : Number.NaN;
+    const overdue = Number.isFinite(dueTime) && dueTime < now;
     const stats = taskStats.get(shipmentId) ?? { open: 0, overdue: 0 };
     stats.open += 1;
     if (overdue) stats.overdue += 1;
@@ -97,31 +128,32 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     const data = doc.data() as Record<string, unknown>;
     if (data.required === false) continue;
     const shipmentId = shipmentIdFromChild(doc.ref);
-    if (!shipmentId) continue;
+    if (!shipmentId || !accessibleShipmentIds.has(shipmentId)) continue;
     const stats = customsStats.get(shipmentId) ?? { open: 0, total: 0 };
     stats.total += 1;
     if (data.completed !== true) stats.open += 1;
     customsStats.set(shipmentId, stats);
   }
 
-  const jobs: CommandCentreJob[] = [];
-  for (const doc of shipmentsSnapshot.docs) {
-    const data = doc.data() as Record<string, unknown>;
-    const status = statusValue(data.status);
-    if (status === "delivered") continue;
-    const primary = branchValue(data.primary_branch);
-    const handling = branchArray(data.handling_branches, primary);
-    const allowed = staffCanAccessBranch(context, primary) || handling.some((branch) => staffCanAccessBranch(context, branch));
-    if (!allowed) continue;
+  const quoteReferences = accessibleShipmentRows.map((row) => text(row.data.quote_reference));
+  const customerIds = accessibleShipmentRows.flatMap((row) => {
+    const id = nullable(row.data.customer_id);
+    return id ? [id] : [];
+  });
+  const [quotes, customers] = await Promise.all([
+    loadDocumentsByIds("quotes", quoteReferences),
+    loadDocumentsByIds("customers", customerIds),
+  ]);
 
+  const jobs: CommandCentreJob[] = accessibleShipmentRows.map(({ id, data, status, primary, handling }) => {
     const quoteReference = text(data.quote_reference);
     const quote = quotes.get(quoteReference) ?? {};
     const customerId = nullable(data.customer_id);
     const customer = customerId ? customers.get(customerId) : undefined;
-    const task = taskStats.get(doc.id) ?? { open: 0, overdue: 0 };
-    const customs = customsStats.get(doc.id) ?? { open: 0, total: 0 };
-    jobs.push({
-      reference: doc.id,
+    const task = taskStats.get(id) ?? { open: 0, overdue: 0 };
+    const customs = customsStats.get(id) ?? { open: 0, total: 0 };
+    return {
+      reference: id,
       quote_reference: quoteReference,
       customer_id: customerId,
       customer_name: customer ? text(customer.display_name, "Linked customer") : text(quote.company_name, text(quote.contact_name, "Unlinked customer")),
@@ -142,8 +174,8 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       required_customs_open: customs.open,
       required_customs_total: customs.total,
       updated_at: text(data.updated_at),
-    });
-  }
+    };
+  });
 
   jobs.sort((a, b) => {
     const score = (job: CommandCentreJob) =>
@@ -152,7 +184,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       job.overdue_tasks * 10 +
       job.required_customs_open * 4 +
       (!job.assigned_to_name && !job.assigned_to_email ? 3 : 0);
-    return score(b) - score(a) || b.updated_at.localeCompare(a.updated_at);
+    return score(b) - score(a) || timestamp(b.updated_at) - timestamp(a.updated_at);
   });
 
   const accessibleBranches = context.can_access_all_branches ? [...kcplBranches] : context.branches;
@@ -166,7 +198,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       customs_blockers: branchJobs.reduce((sum, job) => sum + job.required_customs_open, 0),
       deliveries_today: branchJobs.filter((job) => job.eta?.slice(0, 10) === today).length,
     };
-  }).sort((a, b) => b.active_jobs - a.active_jobs || b.overdue_tasks - a.overdue_tasks);
+  }).sort((a, b) => b.active_jobs - a.active_jobs || b.overdue_tasks - a.overdue_tasks || a.branch.localeCompare(b.branch));
 
   const staffMap = new Map<string, CommandCentreStaffLoad>();
   for (const profile of staffProfiles ?? []) {
@@ -202,7 +234,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     if (job.priority === "urgent" || job.status === "exception") existing.urgent_jobs += 1;
     staffMap.set(key, existing);
   }
-  const staffLoad = [...staffMap.values()].sort((a, b) => b.overdue_tasks - a.overdue_tasks || b.urgent_jobs - a.urgent_jobs || b.active_jobs - a.active_jobs);
+  const staffLoad = [...staffMap.values()].sort((a, b) => b.overdue_tasks - a.overdue_tasks || b.urgent_jobs - a.urgent_jobs || b.active_jobs - a.active_jobs || a.name.localeCompare(b.name));
 
   return {
     generated_at: new Date().toISOString(),
