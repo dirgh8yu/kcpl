@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Landmark, LoaderCircle, PackageCheck, ReceiptText, Upload, UsersRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, History, Landmark, LoaderCircle, PackageCheck, ReceiptText, Upload, UsersRound } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
 import type { CustomerImportPreview, CustomerImportResult, CustomerImportStatus } from "./customer-import";
+import { MigrationBatchHistory } from "./migration-batch-history";
+import type { MigrationBatchDashboard } from "./migration-batches";
 import { PayablesImportPanel } from "./payables-import-panel";
 import { ReceivablesImportPanel } from "./receivables-import-panel";
 import { ShipmentImportPanel } from "./shipment-import-panel";
@@ -21,7 +23,7 @@ function statusLabel(status: CustomerImportStatus) {
   return "Invalid";
 }
 
-export function MigrationWorkspace() {
+export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDashboard: MigrationBatchDashboard | null }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CustomerImportPreview | null>(null);
   const [result, setResult] = useState<CustomerImportResult | null>(null);
@@ -69,30 +71,34 @@ export function MigrationWorkspace() {
     <OpsPageHeader
       eyebrow="Organisation · Migration Hub"
       title="Paper → KCPL migration"
-      description="Move KCPL records into the operating system in controlled stages. Customer and shipment masters are established, Stage 3A handles money owed to KCPL, and Stage 3B now brings supplier bills and opening payables into Accounts Payable without inventing historical transactions."
-      meta={<><span>Management only</span><span>Stage 3B of 4</span><span>No writes before preview</span></>}
-      actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Shipment template</a><a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Receivables template</a><a href="/api/admin/migration/payables" className="ops-button" data-variant="primary" data-size="md" download><Download size={13}/>Payables template</a></>}
+      description="Move KCPL records into the operating system in controlled stages. Customers, shipments, receivables and payables are established. Stage 4A now gives Management one authoritative ledger of every migration batch before paper archive and rollback controls are introduced."
+      meta={<><span>Management only</span><span>Stage 4A of 4</span><span>Evidence before rollback</span></>}
+      actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Shipment template</a><a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Receivables template</a><a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Payables template</a></>}
     />
 
     <OpsStatStrip>
       <OpsStat label="Stage 1" value="Customers" detail="Complete · still available" icon={<UsersRound size={13}/>} tone="success"/>
       <OpsStat label="Stage 2" value="Shipments" detail="Complete · still available" icon={<PackageCheck size={13}/>} tone="success"/>
       <OpsStat label="Stage 3A" value="Receivables" detail="Complete · still available" icon={<Landmark size={13}/>} tone="success"/>
-      <OpsStat label="Stage 3B" value="Payables" detail="Active now" icon={<ReceiptText size={13}/>} tone="success"/>
-      <OpsStat label="Stage 4" value="Archive" detail="Paper files + rollback" />
+      <OpsStat label="Stage 3B" value="Payables" detail="Complete · still available" icon={<ReceiptText size={13}/>} tone="success"/>
+      <OpsStat label="Stage 4A" value="Batch history" detail="Active now" icon={<History size={13}/>} tone="success"/>
+      <OpsStat label="Stage 4B/4C" value="Archive + recovery" detail="Later" />
     </OpsStatStrip>
 
     <div className="ops-content-wide ops-stack">
-      <OpsSurface eyebrow="Stage plan" title="One migration layer at a time" description="Stage 3 is now complete in two controlled lanes. Receivables preserve customer debt without fake revenue, while payables preserve supplier debt without turning opening balances into fake job costs.">
-        <div className="grid gap-2 md:grid-cols-5">
+      <OpsSurface eyebrow="Stage plan" title="One migration layer at a time" description="Stage 4 is deliberately split again. First KCPL gets a reliable batch ledger. Scanned paper archive comes next, then destructive recovery controls only after the evidence layer exists.">
+        <div className="grid gap-2 md:grid-cols-4 xl:grid-cols-7">
           <Stage number="01" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
           <Stage number="02" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="complete"/>
           <Stage number="03A" title="Receivables opening" detail="Open customer invoices and auditable customer opening balances." state="complete"/>
-          <Stage number="03B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="active"/>
-          <Stage number="04" title="Paper archive" detail="Archived Job Files, scanned documents, batch history and rollback tools."/>
+          <Stage number="03B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="complete"/>
+          <Stage number="04A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="active"/>
+          <Stage number="04B" title="Paper archive" detail="Scanned historical files with controlled metadata and storage."/>
+          <Stage number="04C" title="Recovery" detail="Dry-run rollback checks, safe reversal and recovery audit trail."/>
         </div>
       </OpsSurface>
 
+      <MigrationBatchHistory initialDashboard={initialBatchDashboard}/>
       <PayablesImportPanel/>
       <ReceivablesImportPanel/>
       <ShipmentImportPanel/>
@@ -122,7 +128,7 @@ export function MigrationWorkspace() {
               <li>• Branch must match a KCPL branch in the template vocabulary.</li>
               <li>• Name, email, phone and tax ID are checked against existing CRM records and earlier rows in the same CSV.</li>
               <li>• Invalid and possible-duplicate rows are never imported automatically.</li>
-              <li>• Every confirmed import receives a migration batch ID for later audit and rollback work.</li>
+              <li>• Every confirmed import receives a migration batch ID and appears in Stage 4A automatically.</li>
             </ul>
           </div>
         </div>
