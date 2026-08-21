@@ -26,6 +26,10 @@ import {
   validPartnerCalendarDate,
 } from "../app/admin/partners/partner-policy.ts";
 import {
+  isDuplicateSupplierIdentityCandidate,
+  normalizeReconciliationSupplierName,
+} from "../app/admin/partners/reconciliation/supplier-reconciliation-policy.ts";
+import {
   normalizeSupplierBillReference,
   payableDateError,
   supplierIdentityKey,
@@ -258,4 +262,18 @@ test("supplier bill identity prefers Partner references over name fallback", () 
   assert.equal(supplierIdentityKey("KCPL-P-20260822-ABC123", "Example Carrier"), "KCPL-P-20260822-ABC123");
   assert.equal(supplierIdentityKey("", "  Example   Carrier "), "NAME:example carrier");
   assert.equal(normalizeSupplierBillReference(" inv  001 / a "), "INV001/A");
+});
+
+test("supplier reconciliation duplicate matching covers legacy and canonical names", () => {
+  const base = {
+    targetPartnerId: "KCPL-P-20260822-DHL",
+    targetPartnerName: "DHL Express Nepal",
+    originalSupplierName: "DHL Nepal Pvt Ltd",
+  };
+  assert.equal(normalizeReconciliationSupplierName("  DHL   Nepal Pvt Ltd  "), "dhl nepal pvt ltd");
+  assert.equal(isDuplicateSupplierIdentityCandidate({ ...base, candidateSupplierId: "KCPL-P-20260822-DHL", candidateSupplierName: "Anything" }), true);
+  assert.equal(isDuplicateSupplierIdentityCandidate({ ...base, candidateSupplierId: null, candidateSupplierName: "DHL Express Nepal" }), true);
+  assert.equal(isDuplicateSupplierIdentityCandidate({ ...base, candidateSupplierId: "KCPL-C-OLD", candidateSupplierName: "DHL Nepal Pvt Ltd" }), true);
+  assert.equal(isDuplicateSupplierIdentityCandidate({ ...base, candidateSupplierId: "KCPL-P-OTHER", candidateSupplierName: "DHL Nepal Pvt Ltd" }), false);
+  assert.equal(isDuplicateSupplierIdentityCandidate({ ...base, candidateSupplierId: null, candidateSupplierName: "Unrelated Carrier" }), false);
 });
