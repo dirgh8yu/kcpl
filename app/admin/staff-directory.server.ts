@@ -58,8 +58,12 @@ function configuredAdminEmails() {
   );
 }
 
+function isConfiguredAdmin(email: string) {
+  return configuredAdminEmails().has(email.trim().toLowerCase());
+}
+
 async function canBootstrapEmptyStaffDirectory(email: string) {
-  if (!configuredAdminEmails().has(email.trim().toLowerCase())) return false;
+  if (!isConfiguredAdmin(email)) return false;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").limit(1).get();
   return snapshot.empty;
 }
@@ -79,6 +83,21 @@ export async function isActiveStaffProfile(uid: string, email: string) {
 export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext> {
   const profile = await staffProfileByUid(user.uid, user.email);
   if (profile) {
+    if (isConfiguredAdmin(user.email)) {
+      const managementProfile: KcplStaffProfile = {
+        ...profile,
+        role: "management",
+        branch_scope: "all",
+        branches: [...kcplBranches],
+      };
+      return {
+        profile: managementProfile,
+        permissions: staffCapabilitiesForRole("management"),
+        can_access_all_branches: true,
+        branches: [...kcplBranches],
+      };
+    }
+
     const permissions = staffCapabilitiesForRole(profile.role);
     const canAccessAll = profile.branch_scope === "all" || profile.role === "management";
     return {
@@ -93,10 +112,11 @@ export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext
   const bootstrapManagement = explicitlyConfiguredRole === null
     ? await canBootstrapEmptyStaffDirectory(user.email)
     : false;
-  const fallbackRole: KcplStaffRole = bootstrapManagement
+  const configuredAdmin = isConfiguredAdmin(user.email);
+  const fallbackRole: KcplStaffRole = configuredAdmin || bootstrapManagement
     ? "management"
     : explicitlyConfiguredRole ?? "operations";
-  const hasExplicitFallbackAccess = bootstrapManagement || explicitlyConfiguredRole !== null;
+  const hasExplicitFallbackAccess = configuredAdmin || bootstrapManagement || explicitlyConfiguredRole !== null;
   const permissions = staffCapabilitiesForRole(fallbackRole);
   const effectiveProfile: KcplStaffProfile = {
     uid: user.uid,
