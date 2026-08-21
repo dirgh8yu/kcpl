@@ -1,1 +1,0 @@
-Temporary Part 3A customer hardening trigger. Removed before review.
