@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../shipment-document-policy";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types";
 import { shipmentStatuses, type ShipmentStatus } from "../shipment-types";
 import { customsClearanceStatusValue, customsReleaseRequired } from "./customs/customs-policy";
@@ -37,6 +38,12 @@ function statusValue(value: unknown): ShipmentStatus {
 
 function childId(prefix: string) {
   return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`;
+}
+
+function operationalDate(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kathmandu", year: "numeric", month: "2-digit", day: "2-digit" });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 async function loadWorkflowSource(reference: string, context?: KcplStaffContext) {
@@ -94,12 +101,19 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const completedCustoms = requiredCustoms.filter((doc) => doc.get("completed") === true).length;
   const customsStepsComplete = requiredCustoms.length === 0 || completedCustoms === requiredCustoms.length;
 
-  const documentCounts = new Map<ShipmentDocumentType, number>();
+  const today = operationalDate();
+  const uploadedDocumentCounts = new Map<ShipmentDocumentType, number>();
+  const verifiedDocumentCounts = new Map<ShipmentDocumentType, number>();
   for (const doc of documentsSnapshot.docs) {
     const type = doc.get("document_type");
     if (!shipmentDocumentTypeLabels[type as ShipmentDocumentType]) continue;
+    const reviewStatus = shipmentDocumentReviewStatusValue(doc.get("review_status"));
+    if (["deleted", "superseded"].includes(reviewStatus)) continue;
     const typed = type as ShipmentDocumentType;
-    documentCounts.set(typed, (documentCounts.get(typed) ?? 0) + 1);
+    uploadedDocumentCounts.set(typed, (uploadedDocumentCounts.get(typed) ?? 0) + 1);
+    if (shipmentDocumentCountsAsReady({ status: reviewStatus, expiresOn: nullable(doc.get("expires_on")), today })) {
+      verifiedDocumentCounts.set(typed, (verifiedDocumentCounts.get(typed) ?? 0) + 1);
+    }
   }
 
   const intelligence = buildDocumentIntelligence({
@@ -143,20 +157,26 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   }
   for (const [type, override] of requirementOverrides) baseRequirements.set(type, override);
 
-  const documents: WorkflowDocumentState[] = [...baseRequirements.entries()].map(([documentType, requirement]) => ({
-    document_type: documentType,
-    label: shipmentDocumentTypeLabels[documentType],
-    required: requirement.required,
-    advisory: requirement.advisory,
-    present: (documentCounts.get(documentType) ?? 0) > 0,
-    count: documentCounts.get(documentType) ?? 0,
-    reason: requirement.reason,
-    source: requirement.source,
-  }));
+  const documents: WorkflowDocumentState[] = [...baseRequirements.entries()].map(([documentType, requirement]) => {
+    const uploadedCount = uploadedDocumentCounts.get(documentType) ?? 0;
+    const verifiedCount = verifiedDocumentCounts.get(documentType) ?? 0;
+    return {
+      document_type: documentType,
+      label: shipmentDocumentTypeLabels[documentType],
+      required: requirement.required,
+      advisory: requirement.advisory,
+      present: verifiedCount > 0,
+      count: uploadedCount,
+      uploaded_count: uploadedCount,
+      verified_count: verifiedCount,
+      reason: requirement.reason,
+      source: requirement.source,
+    };
+  });
 
   const operationalRequiredDocuments = documents.filter((item) => item.required && item.document_type !== "proof_of_delivery");
   const documentPackReady = operationalRequiredDocuments.every((item) => item.present);
-  const proofOfDeliveryPresent = (documentCounts.get("proof_of_delivery") ?? 0) > 0;
+  const proofOfDeliveryPresent = (verifiedDocumentCounts.get("proof_of_delivery") ?? 0) > 0;
 
   const invoices = invoicesSnapshot.docs.map((doc) => text(doc.get("status"), "draft"));
   const invoiceCount = invoices.filter((statusItem) => statusItem !== "void").length;
@@ -180,8 +200,9 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
       : "Record explicit Customs release before final-mile progression.");
   }
   if (!documentPackReady) {
-    const missing = operationalRequiredDocuments.filter((item) => !item.present).map((item) => item.label);
-    blockers.push(`Required document pack incomplete: ${missing.join(", ")}.`);
+    const unresolved = operationalRequiredDocuments.filter((item) => !item.present);
+    const descriptions = unresolved.map((item) => item.uploaded_count > 0 ? `${item.label} (uploaded, verification required)` : item.label);
+    blockers.push(`Required document pack incomplete: ${descriptions.join(", ")}.`);
   }
   if (!assignedOwner) warnings.push("No operational owner is assigned to this Job File.");
   if (!billingReady) warnings.push(invoiceCount ? "Finance exists, but no invoice has been issued yet." : "No customer invoice has been created yet. Finance can continue in parallel with operations.");
@@ -191,8 +212,8 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   if (!customerLinked) closeBlockers.push("A CRM customer must be confirmed.");
   if (!customsChecklistReady) closeBlockers.push("All required customs checklist steps must be complete.");
   if (customsReleaseIsRequired && !customsReleased) closeBlockers.push("Explicit Customs release must be recorded for this international shipment.");
-  if (!documentPackReady) closeBlockers.push("All required operational documents must be present.");
-  if (!proofOfDeliveryPresent) closeBlockers.push("Proof of Delivery (POD) must be uploaded.");
+  if (!documentPackReady) closeBlockers.push("All required operational documents must be verified and unexpired.");
+  if (!proofOfDeliveryPresent) closeBlockers.push("A verified Proof of Delivery (POD) must be present.");
   if (openTasks > 0) closeBlockers.push(`${openTasks} operational task${openTasks === 1 ? " remains" : "s remain"} open.`);
 
   const inTransitOrLater = ["in_transit", "customs_clearance", "out_for_delivery", "delivered"].includes(status);
@@ -207,10 +228,10 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     { id: "won", label: "Won", state: "complete", detail: "Shipment and Job File created from an accepted quote." },
     { id: "setup", label: "Setup", state: stageState(customerLinked, !customerLinked), detail: customerLinked ? `CRM customer ${customerId} confirmed.` : "Confirm or create the CRM customer before progression." },
     { id: "customs", label: "Customs", state: stageState(customsReady, customerLinked && !customsReady, customsClearanceStatus === "held"), detail: customsStageDetail },
-    { id: "documents", label: "Docs", state: stageState(documentPackReady, customsReady && !documentPackReady), detail: documentPackReady ? "Smart required document pack present." : "Smart document rules identify missing required documents." },
+    { id: "documents", label: "Docs", state: stageState(documentPackReady, customsReady && !documentPackReady), detail: documentPackReady ? "Verified required document pack is present." : "Required files are missing, unverified or expired." },
     { id: "transit", label: "Transit", state: stageState(inTransitOrLater, customsReady && documentPackReady && !inTransitOrLater), detail: inTransitOrLater ? "Movement has reached transit/clearance stage." : "Movement milestone not reached yet." },
     { id: "delivery", label: "Delivery", state: stageState(delivered, outForDeliveryOrLater && !delivered), detail: delivered ? "Cargo marked delivered." : status === "out_for_delivery" ? "Final-mile delivery is active." : "Delivery not yet reached." },
-    { id: "pod", label: "POD", state: stageState(proofOfDeliveryPresent, delivered && !proofOfDeliveryPresent, delivered && !proofOfDeliveryPresent), detail: proofOfDeliveryPresent ? "Proof of Delivery captured." : "POD required for operational closeout." },
+    { id: "pod", label: "POD", state: stageState(proofOfDeliveryPresent, delivered && !proofOfDeliveryPresent, delivered && !proofOfDeliveryPresent), detail: proofOfDeliveryPresent ? "Verified Proof of Delivery captured." : "Verified POD required for operational closeout." },
     { id: "close", label: "Close", state: stageState(jobClosed, delivered && proofOfDeliveryPresent && !jobClosed, closeBlockers.length > 0 && delivered), detail: jobClosed ? `Job closed ${jobClosedAt}.` : closeBlockers.length ? `${closeBlockers.length} closeout blocker${closeBlockers.length === 1 ? "" : "s"}.` : "Ready for operational closeout." },
   ];
 
@@ -284,7 +305,7 @@ export async function validateShipmentTransition(
     if (!readiness.customer_linked) blockers.push("Confirm the CRM customer before final-mile delivery.");
     if (!readiness.customs_checklist_ready) blockers.push("Complete the required customs checklist before final-mile delivery.");
     if (readiness.customs_release_required && !readiness.customs_released) blockers.push("Record explicit Customs release before final-mile delivery.");
-    if (!readiness.document_pack_ready) blockers.push("Complete the required operational document pack before final-mile delivery.");
+    if (!readiness.document_pack_ready) blockers.push("Verify the required operational document pack before final-mile delivery.");
   }
   if (nextStatus === "delivered" && readiness.status !== "out_for_delivery") {
     blockers.push("Move the shipment to Out for delivery before marking it Delivered.");
