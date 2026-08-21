@@ -218,6 +218,7 @@ export function OperationsShell({
               <MenuLink href="/admin/partners/new" icon={<Handshake size={14}/>} label="New partner" detail="Add an agent, carrier or vendor" close={() => setCreateOpen(false)}/>
               <MenuLink href="/admin/market-estimate" icon={<Calculator size={14}/>} label="Market estimate" detail="Build a rate estimate" close={() => setCreateOpen(false)}/>
               {canManageFinance ? <MenuLink href="/admin/finance/new" icon={<ReceiptText size={14}/>} label="New receivable" detail="Create a customer invoice" close={() => setCreateOpen(false)}/> : null}
+              {canManageFinance ? <MenuLink href="/admin/payables?create=1" icon={<HandCoins size={14}/>} label="New supplier bill" detail="Record a supplier payable" close={() => setCreateOpen(false)}/> : null}
             </div> : null}
           </div>
         </div>

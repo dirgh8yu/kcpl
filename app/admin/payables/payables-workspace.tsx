@@ -57,11 +57,12 @@ type PayableForm = {
   notes: string;
 };
 
-export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", initialPartner = "", partnerOptions, branchOptions, defaultBranch }: {
+export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", initialPartner = "", initialCreate = false, partnerOptions, branchOptions, defaultBranch }: {
   dashboard: PayablesDashboard;
   roleLabel: string;
   initialShipment?: string;
   initialPartner?: string;
+  initialCreate?: boolean;
   partnerOptions: PartnerOption[];
   branchOptions: KcplBranch[];
   defaultBranch: KcplBranch;
@@ -71,7 +72,7 @@ export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", 
   const initialPartnerRecord = partnerOptions.find((partner) => partner.id === initialPartner);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | PayableStatus>("all");
-  const [createOpen, setCreateOpen] = useState(Boolean(initialShipment || initialPartner));
+  const [createOpen, setCreateOpen] = useState(Boolean(initialCreate || initialShipment || initialPartner));
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState<PayableForm>(() => ({
