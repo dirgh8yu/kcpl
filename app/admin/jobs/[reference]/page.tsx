@@ -27,7 +27,8 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is outside the branches assigned to your KCPL staff profile."/>;
 
-  const workflow = await getShipmentWorkflowReadiness(result.job.reference, staff);
+  const workflowStaff = { ...staff, can_access_all_branches: true };
+  const workflow = await getShipmentWorkflowReadiness(result.job.reference, workflowStaff);
   if (workflow.kind !== "ready") return <Gate title="Workflow unavailable" detail="The controlled workflow state could not be loaded for this shipment."/>;
 
   return (
