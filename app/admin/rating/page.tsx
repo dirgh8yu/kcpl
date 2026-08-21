@@ -21,33 +21,37 @@ export default async function RatingPage() {
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Rate comparison contains supplier commercial pricing and is restricted to Commercial, Accounts and Management." embedded/></OperationsShell>;
 
+  let orders: Awaited<ReturnType<typeof listTmsOrders>>;
+  let rateCards: Awaited<ReturnType<typeof listPartnerBuyRateCards>>;
+  let partners: Awaited<ReturnType<typeof listPartnerDashboard>>;
   try {
-    const [orders, rateCards, partners] = await Promise.all([
+    [orders, rateCards, partners] = await Promise.all([
       listTmsOrders(staff),
       listPartnerBuyRateCards(staff),
       listPartnerDashboard(staff),
     ]);
-    if (orders.kind !== "ready" || rateCards.kind !== "ready" || !partners) return <OperationsShell {...shellProps}><Gate title="Rate Desk unavailable" detail="KCPL order or partner pricing storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
-
-    return (
-      <OperationsShell {...shellProps}>
-        <div className="px-4 pt-4 lg:px-5">
-          <div className="flex justify-end"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="sm">Open Tender Desk →</Link></div>
-        </div>
-        <TmsRatingWorkspace
-          initialOrders={orders.orders}
-          initialRateCards={rateCards.rateCards}
-          partners={partners.partners.filter((partner) => partner.status === "active").map((partner) => ({ id: partner.id, name: partner.display_name }))}
-          branches={staff.branches}
-          canUseGlobalBranch={staff.permissions.role === "management" || staff.can_access_all_branches}
-          canManageRateCards={staff.permissions.canManageRateCards}
-        />
-      </OperationsShell>
-    );
   } catch (error) {
     console.error("Failed to load KCPL Rate Desk", error);
     return <OperationsShell {...shellProps}><Gate title="Rate Desk could not be loaded" detail="KCPL pricing data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
+
+  if (orders.kind !== "ready" || rateCards.kind !== "ready" || !partners) return <OperationsShell {...shellProps}><Gate title="Rate Desk unavailable" detail="KCPL order or partner pricing storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+
+  return (
+    <OperationsShell {...shellProps}>
+      <div className="px-4 pt-4 lg:px-5">
+        <div className="flex justify-end"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="sm">Open Tender Desk →</Link></div>
+      </div>
+      <TmsRatingWorkspace
+        initialOrders={orders.orders}
+        initialRateCards={rateCards.rateCards}
+        partners={partners.partners.filter((partner) => partner.status === "active").map((partner) => ({ id: partner.id, name: partner.display_name }))}
+        branches={staff.branches}
+        canUseGlobalBranch={staff.permissions.role === "management" || staff.can_access_all_branches}
+        canManageRateCards={staff.permissions.canManageRateCards}
+      />
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
