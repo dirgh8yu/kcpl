@@ -18,6 +18,8 @@ import {
 import type { StaffCapabilities } from "../../../../../admin/staff-permissions";
 import { archiveCrmCustomer, updateCrmCustomer } from "../../../../../admin/crm/crm-customer-management.server";
 import { getCrmCustomer } from "../../../../../admin/crm/crm-data.server";
+import { checkCrmCustomerAccess, staffCanUseCrmBranch } from "../../../../../admin/crm/crm-access.server";
+import { crmAccountStatusChangeError, hasCustomerRelationship } from "../../../../../admin/crm/crm-policy";
 import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, validEmail } from "../../crm-api";
 
 function redactCustomer(customer: CrmCustomerDetail, permissions: StaffCapabilities): CrmCustomerDetail {
@@ -64,6 +66,10 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if ("response" in auth) return auth.response;
 
   const { id } = await context.params;
+  const access = await checkCrmCustomerAccess(id, auth.staff);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
+  if (access.kind === "forbidden") return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
   try {
     const customer = await getCrmCustomer(id);
     if (customer === undefined) return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
@@ -82,6 +88,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (writeError) return writeError;
   const capabilityError = requireCrmCapability(auth.permissions, "canEditCustomer");
   if (capabilityError) return capabilityError;
+  const { id } = await context.params;
+  const access = await checkCrmCustomerAccess(id, auth.staff);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
+  if (access.kind === "forbidden") return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
 
   let body: Record<string, unknown>;
   try {
@@ -103,11 +114,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     .filter((item): item is CrmRelationshipType => crmRelationshipTypes.includes(item as CrmRelationshipType));
 
   if (!crmEntityKinds.includes(entityKind as CrmEntityKind)) return crmJson({ ok: false, error: "Choose a valid record type." }, 400);
-  if (!relationshipTypes.length) return crmJson({ ok: false, error: "Choose at least one relationship type." }, 400);
+  if (!hasCustomerRelationship(relationshipTypes)) return crmJson({ ok: false, error: "Customer records must keep the Customer relationship. Suppliers, carriers, agents and vendors belong in Partners." }, 400);
   if (!crmAccountStatuses.includes(accountStatus as CrmAccountStatus)) return crmJson({ ok: false, error: "Choose a valid account status." }, 400);
   if (!crmLeadStages.includes(leadStage as CrmLeadStage)) return crmJson({ ok: false, error: "Choose a valid lead stage." }, 400);
   if (leadSource && !crmLeadSources.includes(leadSource as CrmLeadSource)) return crmJson({ ok: false, error: "Choose a valid lead source." }, 400);
   if (!kcplBranches.includes(primaryBranch as KcplBranch)) return crmJson({ ok: false, error: "Choose a valid KCPL branch." }, 400);
+  if (!staffCanUseCrmBranch(auth.staff, primaryBranch)) return crmJson({ ok: false, error: "You cannot move this customer to a branch outside your KCPL access." }, 403);
+  const currentStatus = crmAccountStatuses.includes(access.snapshot.get("account_status") as CrmAccountStatus) ? access.snapshot.get("account_status") as CrmAccountStatus : "prospect";
+  const statusError = crmAccountStatusChangeError(currentStatus, accountStatus as CrmAccountStatus, auth.permissions);
+  if (statusError) return crmJson({ ok: false, error: statusError }, 403);
 
   const primaryEmail = cleanCrmText(body.primaryEmail, 254).toLowerCase();
   const billingEmail = cleanCrmText(body.billingEmail, 254).toLowerCase();
@@ -117,23 +132,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 
   const includesCommercial = ["preferredCurrency", "pricingNotes", "markupPercent", "preferredCarriers"].some((key) => key in body);
-  const includesCredit = ["paymentTermsDays", "creditLimit", "outstandingBalance"].some((key) => key in body);
+  if (cleanCrmText(body.outstandingBalance)) return crmJson({ ok: false, error: "Outstanding balance is calculated from Receivables and cannot be edited in CRM." }, 400);
+  const includesCredit = ["paymentTermsDays", "creditLimit"].some((key) => key in body);
   if (includesCommercial && !auth.permissions.canEditCommercial) return crmJson({ ok: false, error: "Your KCPL role cannot edit commercial pricing." }, 403);
   if (includesCredit && !auth.permissions.canManageCredit) return crmJson({ ok: false, error: "Your KCPL role cannot edit customer credit controls." }, 403);
 
   let paymentTermsDays: number | null | undefined;
   let creditLimit: number | null | undefined;
-  let outstandingBalance: number | null | undefined;
   let markupPercent: number | null | undefined;
 
   if (includesCredit) {
     const paymentTerms = optionalNumber(body.paymentTermsDays, { integer: true, max: 3650 });
     const credit = optionalNumber(body.creditLimit);
-    const outstanding = optionalNumber(body.outstandingBalance);
-    if (paymentTerms.error || credit.error || outstanding.error) return crmJson({ ok: false, error: paymentTerms.error || credit.error || outstanding.error }, 400);
+    if (paymentTerms.error || credit.error) return crmJson({ ok: false, error: paymentTerms.error || credit.error }, 400);
     paymentTermsDays = paymentTerms.value;
     creditLimit = credit.value;
-    outstandingBalance = outstanding.value;
   }
 
   if (includesCommercial) {
@@ -143,7 +156,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     markupPercent = markup.value;
   }
 
-  const { id } = await context.params;
   try {
     const result = await updateCrmCustomer(id, {
       entityKind: entityKind as CrmEntityKind,
@@ -174,7 +186,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         markupPercent,
         preferredCarriers: stringArray(body.preferredCarriers),
       } : {}),
-      ...(includesCredit ? { paymentTermsDays, creditLimit, outstandingBalance } : {}),
+      ...(includesCredit ? { paymentTermsDays, creditLimit } : {}),
     }, { name: auth.user.displayName, email: auth.user.email }, {
       allowCommercial: auth.permissions.canEditCommercial,
       allowCredit: auth.permissions.canManageCredit,
@@ -199,6 +211,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   if (capabilityError) return capabilityError;
 
   const { id } = await context.params;
+  const access = await checkCrmCustomerAccess(id, auth.staff);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
+  if (access.kind === "forbidden") return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
   try {
     const result = await archiveCrmCustomer(id, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);

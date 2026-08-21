@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { getStaffContext } from "../../staff-directory.server";
-import { staffCapabilitiesForEmail, type StaffCapabilities } from "../../staff-permissions";
+import type { StaffCapabilities } from "../../staff-permissions";
 import { OperationsShell } from "../../operations-shell";
+import { checkCrmCustomerAccess } from "../crm-access.server";
 import { getCrmCustomer } from "../crm-data.server";
 import { listCrmQuoteLinks, type CrmQuoteLinkItem } from "../crm-quote-links.server";
 import { listCrmOperationsHistory, type CrmOperationsHistory } from "../crm-operations-history.server";
@@ -39,8 +40,12 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   if (access.kind !== "authorized") return <CustomerGate title="Sign in to KCPL Operations" detail="Customer 360 is available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
-  const permissions = staffCapabilitiesForEmail(access.user.email);
+  const permissions = staff.permissions;
   const { id } = await params;
+  const customerAccess = await checkCrmCustomerAccess(id, staff);
+  if (customerAccess.kind === "unavailable") return <CustomerGate title="Firestore is unavailable" detail="The CRM backend is not available for this deployment."/>;
+  if (customerAccess.kind === "missing") return <CustomerGate title="Customer not found" detail="This CRM record does not exist or has been archived."/>;
+  if (customerAccess.kind === "forbidden") return <CustomerGate title="Customer access restricted" detail="This customer belongs to a KCPL branch outside your assigned access."/>;
   let customer: CrmCustomerDetail | null | undefined;
   let linked: CrmQuoteLinkItem[] = [];
   let suggested: CrmQuoteLinkItem[] = [];

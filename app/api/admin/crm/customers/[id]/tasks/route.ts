@@ -1,12 +1,15 @@
 import { crmTaskPriorities, type CrmTaskPriority } from "../../../../../../admin/crm/crm-data";
 import { addCrmTask, setCrmTaskCompleted } from "../../../../../../admin/crm/crm-data.server";
-import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, validEmail } from "../../../crm-api";
+import { normalizeNepalDateTimeInput } from "../../../../../../admin/crm/crm-policy";
+import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess, validEmail } from "../../../crm-api";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeCrm();
   if ("response" in auth) return auth.response;
   const blocked = protectCrmWrite(request);
   if (blocked) return blocked;
+  const capabilityError = requireCrmCapability(auth.permissions, "canEditCustomer");
+  if (capabilityError) return capabilityError;
 
   let body: Record<string, unknown>;
   try {
@@ -17,7 +20,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   const title = cleanCrmText(body.title, 180);
   const detail = cleanCrmText(body.detail, 3000);
-  const dueAt = cleanCrmText(body.dueAt, 40);
+  const dueInput = cleanCrmText(body.dueAt, 40);
+  const dueAt = normalizeNepalDateTimeInput(dueInput);
   const priority = cleanCrmText(body.priority, 20) || "normal";
   const assignedToName = cleanCrmText(body.assignedToName, 120);
   const assignedToEmail = cleanCrmText(body.assignedToEmail, 240).toLowerCase();
@@ -25,10 +29,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   if (!title) return crmJson({ ok: false, error: "Enter a follow-up title." }, 400);
   if (!crmTaskPriorities.includes(priority as CrmTaskPriority)) return crmJson({ ok: false, error: "Choose a valid priority." }, 400);
-  if (dueAt && Number.isNaN(new Date(dueAt).getTime())) return crmJson({ ok: false, error: "Choose a valid due date/time." }, 400);
+  if (dueAt === null) return crmJson({ ok: false, error: "Choose a valid due date/time." }, 400);
   if (!validEmail(assignedToEmail)) return crmJson({ ok: false, error: "Enter a valid assignee email." }, 400);
 
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await addCrmTask(id, {
       title,
@@ -53,6 +59,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if ("response" in auth) return auth.response;
   const blocked = protectCrmWrite(request);
   if (blocked) return blocked;
+  const capabilityError = requireCrmCapability(auth.permissions, "canEditCustomer");
+  if (capabilityError) return capabilityError;
 
   let body: Record<string, unknown>;
   try {
@@ -66,6 +74,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (typeof body.completed !== "boolean") return crmJson({ ok: false, error: "Choose whether the follow-up is complete." }, 400);
 
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await setCrmTaskCompleted(id, taskId, body.completed, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);

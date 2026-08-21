@@ -1,12 +1,14 @@
 import { crmCommunicationPreferences, type CrmCommunicationPreference } from "../../../../../../admin/crm/crm-data";
 import { addCrmContact } from "../../../../../../admin/crm/crm-data.server";
-import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, validEmail } from "../../../crm-api";
+import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess, validEmail } from "../../../crm-api";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeCrm();
   if ("response" in auth) return auth.response;
   const blocked = protectCrmWrite(request);
   if (blocked) return blocked;
+  const capabilityError = requireCrmCapability(auth.permissions, "canEditCustomer");
+  if (capabilityError) return capabilityError;
 
   let body: Record<string, unknown>;
   try {
@@ -31,6 +33,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await addCrmContact(id, {
       name,

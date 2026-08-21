@@ -1,6 +1,6 @@
 import { crmCustomerDocumentTypes, type CrmCustomerDocumentType } from "../../../../../../admin/crm/crm-customer-document-types";
 import { listCrmCustomerDocuments, uploadCrmCustomerDocument } from "../../../../../../admin/crm/crm-customer-documents.server";
-import { authorizeCrm, crmJson, protectCrmWrite, requireCrmCapability } from "../../../crm-api";
+import { authorizeCrm, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess } from "../../../crm-api";
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
@@ -29,6 +29,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const capabilityError = requireCrmCapability(auth.permissions, "canManageCustomerDocuments");
   if (capabilityError) return capabilityError;
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await listCrmCustomerDocuments(id);
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
@@ -62,6 +64,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!inferredType) return crmJson({ ok: false, error: "Use PDF, JPG, PNG, WEBP, Word, Excel, CSV or TXT files." }, 415);
 
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await uploadCrmCustomerDocument(id, {
       filename: file.name.trim(),

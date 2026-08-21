@@ -223,7 +223,9 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       return json({ ok: false, error: "Your KCPL staff role does not allow customer creation." }, 403);
     }
     try {
-      const result = await createCrmCustomerFromQuote(reference, { name: auth.user.displayName, email: auth.user.email });
+      const customerBranch = auth.staff.can_access_all_branches ? "Kathmandu" : auth.staff.branches[0];
+      if (!customerBranch) return json({ ok: false, error: "Your staff profile has no KCPL branch available for this customer." }, 403);
+      const result = await createCrmCustomerFromQuote(reference, { name: auth.user.displayName, email: auth.user.email }, customerBranch);
       if (result.kind === "unavailable") return json({ ok: false, error: "CRM storage is unavailable." }, 503);
       if (result.kind === "missing_quote") return json({ ok: false, error: "Quote not found." }, 404);
       if (result.kind === "duplicates") return json({ ok: false, error: "Possible CRM matches already exist. Confirm one of them instead of creating a duplicate.", code: "CRM_MATCHES_EXIST", matches: result.matches }, 409);

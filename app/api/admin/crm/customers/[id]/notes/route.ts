@@ -1,11 +1,13 @@
 import { addCrmNote } from "../../../../../../admin/crm/crm-data.server";
-import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite } from "../../../crm-api";
+import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess } from "../../../crm-api";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeCrm();
   if ("response" in auth) return auth.response;
   const blocked = protectCrmWrite(request);
   if (blocked) return blocked;
+  const capabilityError = requireCrmCapability(auth.permissions, "canEditCustomer");
+  if (capabilityError) return capabilityError;
 
   let body: Record<string, unknown>;
   try {
@@ -18,6 +20,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!note) return crmJson({ ok: false, error: "Write a note before saving." }, 400);
 
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await addCrmNote(id, note, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);

@@ -38,7 +38,6 @@ export type CrmCustomerUpdateInput = {
   preferredCurrency?: CrmCurrency;
   paymentTermsDays?: number | null;
   creditLimit?: number | null;
-  outstandingBalance?: number | null;
   pricingNotes?: string;
   markupPercent?: number | null;
   preferredCarriers?: string[];
@@ -114,7 +113,6 @@ export async function updateCrmCustomer(
     if (options.allowCredit) {
       if (input.paymentTermsDays !== undefined) update.payment_terms_days = input.paymentTermsDays;
       if (input.creditLimit !== undefined) update.credit_limit = input.creditLimit;
-      if (input.outstandingBalance !== undefined) update.outstanding_balance = input.outstandingBalance;
     }
 
     transaction.update(customerRef, update);

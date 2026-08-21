@@ -7,6 +7,7 @@ import {
   staffRoleForEmail,
 } from "../app/admin/staff-permissions.ts";
 import { adminSecurityConfigIssues } from "../app/admin/admin-security-config.ts";
+import { crmAccountStatusChangeError, hasCustomerRelationship, normalizeNepalDateTimeInput, validCalendarDate } from "../app/admin/crm/crm-policy.ts";
 
 // Keep this suite self-contained so it can run before the Next.js production build.
 const cleanEnv = () => ({ NODE_ENV: "production" });
@@ -85,4 +86,27 @@ test("short automation secrets warn without disabling admin access", () => {
   });
   assert.ok(issues.some((issue) => issue.severity === "warning" && issue.key === "KCPL_AUTOMATION_SECRET"));
   assert.equal(issues.some((issue) => issue.severity === "error" && issue.key === "KCPL_AUTOMATION_SECRET"), false);
+});
+
+
+test("customer records cannot lose their buyer relationship", () => {
+  assert.equal(hasCustomerRelationship(["customer"]), true);
+  assert.equal(hasCustomerRelationship(["supplier"]), false);
+});
+
+test("credit holds require credit-control permission and blacklisting requires Management", () => {
+  const operations = staffCapabilitiesForRole("operations");
+  const accounts = staffCapabilitiesForRole("accounts");
+  const management = staffCapabilitiesForRole("management");
+  assert.ok(crmAccountStatusChangeError("active", "on_hold", operations));
+  assert.equal(crmAccountStatusChangeError("active", "on_hold", accounts), null);
+  assert.ok(crmAccountStatusChangeError("active", "blacklisted", accounts));
+  assert.equal(crmAccountStatusChangeError("active", "blacklisted", management), null);
+});
+
+test("CRM date helpers reject impossible dates and normalize Nepal-local follow-ups", () => {
+  assert.equal(validCalendarDate("2026-02-31"), false);
+  assert.equal(validCalendarDate("2026-02-28"), true);
+  assert.equal(normalizeNepalDateTimeInput("2026-08-21T10:30"), "2026-08-21T04:45:00.000Z");
+  assert.equal(normalizeNepalDateTimeInput("2026-02-31T10:30"), null);
 });

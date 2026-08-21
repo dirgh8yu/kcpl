@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import {
   crmAccountStatuses,
   crmCommunicationPreferences,
@@ -212,15 +213,19 @@ function taskFromDoc(id: string, data: Record<string, unknown>): CrmTask {
   };
 }
 
-export async function listCrmCustomers(): Promise<CrmCustomerSummary[] | null> {
+export async function listCrmCustomers(context?: KcplStaffContext): Promise<CrmCustomerSummary[] | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("customers")
     .orderBy("updated_at", "desc")
-    .limit(500)
+    .limit(2000)
     .get();
-  return snapshot.docs
-    .map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>))
-    .filter((customer) => !customer.archived);
+  return snapshot.docs.flatMap((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    if (booleanValue(data.archived)) return [];
+    const rawBranch = kcplBranches.includes(data.primary_branch as KcplBranch) ? data.primary_branch as KcplBranch : null;
+    if (context && !context.can_access_all_branches && (!rawBranch || !staffCanAccessBranch(context, rawBranch))) return [];
+    return [summaryFromData(doc.id, data)];
+  });
 }
 
 export function crmDashboardStats(customers: CrmCustomerSummary[]): CrmDashboardStats {
@@ -298,7 +303,7 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Ac
     preferred_currency: input.preferredCurrency,
     payment_terms_days: parseOptionalDays(input.paymentTermsDays),
     credit_limit: parseOptionalMoney(input.creditLimit),
-    outstanding_balance: parseOptionalMoney(input.outstandingBalance),
+    outstanding_balance: 0,
     pricing_notes: input.pricingNotes.trim() || null,
     markup_percent: parseOptionalPercent(input.markupPercent),
     preferred_carriers: input.preferredCarriers,

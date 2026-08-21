@@ -22,7 +22,7 @@ export default async function CrmPage() {
   let customers: CrmCustomerSummary[] | null = null;
   let loadFailed = false;
   try {
-    customers = await listCrmCustomers();
+    customers = await listCrmCustomers(staff);
   } catch (error) {
     loadFailed = true;
     console.error("Failed to load KCPL CRM workspace", error);
@@ -31,6 +31,10 @@ export default async function CrmPage() {
   if (loadFailed) return <CrmGate title="The CRM could not be loaded." detail="KCPL customer data is temporarily unavailable. No customer information was exposed." />;
   if (customers === null) return <CrmGate title="Firestore is not available yet." detail="The CRM is ready, but Firebase customer storage is not available for this deployment." />;
 
+  const safeCustomers = staff.permissions.canViewCommercial
+    ? customers
+    : customers.map((customer) => ({ ...customer, revenue_total: 0, cost_total: 0, profit_total: 0 }));
+
   return (
     <OperationsShell
       userName={access.user.displayName}
@@ -38,8 +42,8 @@ export default async function CrmPage() {
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
-      <CrmCustomerJump customers={customers} />
-      <CrmDashboard initialCustomers={customers} initialStats={crmDashboardStats(customers)} userName={access.user.displayName} userEmail={access.user.email} />
+      <CrmCustomerJump customers={safeCustomers} />
+      <CrmDashboard initialCustomers={safeCustomers} initialStats={crmDashboardStats(safeCustomers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial} />
     </OperationsShell>
   );
 }

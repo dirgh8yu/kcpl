@@ -1,5 +1,5 @@
 import { deleteCrmCustomerDocument, getCrmCustomerDocumentFile } from "../../../../../../../admin/crm/crm-customer-documents.server";
-import { authorizeCrm, crmJson, protectCrmWrite, requireCrmCapability } from "../../../../crm-api";
+import { authorizeCrm, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess } from "../../../../crm-api";
 
 function documentId(value: string) {
   return /^\d+$/.test(value) ? Number(value) : null;
@@ -17,6 +17,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (capabilityError) return capabilityError;
 
   const { id, documentId: rawId } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   const parsedId = documentId(rawId);
   if (parsedId === null) return crmJson({ ok: false, error: "Document not found." }, 404);
   try {
@@ -47,6 +49,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   if (capabilityError) return capabilityError;
 
   const { id, documentId: rawId } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   const parsedId = documentId(rawId);
   if (parsedId === null) return crmJson({ ok: false, error: "Document not found." }, 404);
   try {
