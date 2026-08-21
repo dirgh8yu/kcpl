@@ -6,17 +6,16 @@ import type { KcplStaffRole } from "../staff-permissions";
 type HomeSections = {
   attention: boolean;
   movement: boolean;
-  network: boolean;
   branch: boolean;
   staff: boolean;
   recent: boolean;
 };
 
 const defaults: Record<KcplStaffRole, HomeSections> = {
-  management: { attention: true, movement: true, network: true, branch: true, staff: true, recent: true },
-  accounts: { attention: true, movement: true, network: false, branch: true, staff: false, recent: true },
-  commercial: { attention: true, movement: true, network: true, branch: false, staff: false, recent: true },
-  operations: { attention: true, movement: true, network: true, branch: true, staff: false, recent: true },
+  management: { attention: true, movement: true, branch: true, staff: true, recent: true },
+  accounts: { attention: true, movement: true, branch: true, staff: false, recent: true },
+  commercial: { attention: true, movement: true, branch: false, staff: false, recent: true },
+  operations: { attention: true, movement: true, branch: true, staff: false, recent: true },
 };
 
 const sharedKey = "kcpl-ops-home-sections";
