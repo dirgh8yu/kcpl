@@ -1,7 +1,7 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
-import { kcplBranches, type KcplBranch } from "../../../admin/crm/crm-data";
-import { getStaffContext, staffCanAccessBranch } from "../../../admin/staff-directory.server";
+import { canAccessBranchSet, canAccessBranchValue, canAccessQuoteLinkedRecords, strictBranchArray, strictBranchValue } from "../../../admin/branch-access-policy";
+import { getStaffContext } from "../../../admin/staff-directory.server";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../../shipment-types";
 
 type SearchResult = {
@@ -35,18 +35,6 @@ function text(value: unknown, fallback = "") {
 function nullable(value: unknown) {
   const valueText = text(value).trim();
   return valueText || null;
-}
-
-function branchValue(value: unknown): KcplBranch {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu";
-}
-
-function branchArray(value: unknown, primary: KcplBranch): KcplBranch[] {
-  const branches = Array.isArray(value)
-    ? value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch))
-    : [];
-  if (!branches.includes(primary)) branches.unshift(primary);
-  return branches;
 }
 
 function statusValue(value: unknown): ShipmentStatus {
@@ -96,20 +84,21 @@ export async function GET() {
 
   const staff = await getStaffContext(access.user);
   const documents = await loadSearchDocuments();
+  const shipments = new Map(documents.shipments.map((doc) => [doc.id, doc.data]));
   const quotes = new Map(documents.quotes.map((doc) => [doc.id, doc.data]));
   const customers = new Map(documents.customers.map((doc) => [doc.id, doc.data]));
   const results: SearchResult[] = [];
 
   for (const doc of documents.shipments) {
     const data = doc.data;
-    const primary = branchValue(data.primary_branch);
-    const handling = branchArray(data.handling_branches, primary);
-    if (!staffCanAccessBranch(staff, primary) && !handling.some((branch) => staffCanAccessBranch(staff, branch))) continue;
-
     const quoteReference = text(data.quote_reference);
     const quote = quotes.get(quoteReference) ?? {};
     const customerId = nullable(data.customer_id);
     const customer = customerId ? customers.get(customerId) : undefined;
+    const primary = strictBranchValue(data.primary_branch) ?? strictBranchValue(customer?.primary_branch);
+    const handling = strictBranchArray(data.handling_branches);
+    if (!canAccessBranchSet(staff, primary, handling)) continue;
+
     const customerName = customer ? text(customer.display_name, "Linked customer") : text(quote.company_name, text(quote.contact_name, "Unlinked customer"));
     const origin = text(quote.origin, "Origin");
     const destination = text(quote.destination, "Destination");
@@ -117,15 +106,16 @@ export async function GET() {
     const carrier = nullable(data.carrier);
     const carrierReference = nullable(data.carrier_reference);
     const currentLocation = nullable(data.current_location);
+    const branchLabel = primary ?? handling[0] ?? "Branch data incomplete";
 
     results.push({
       kind: "shipment",
       id: doc.id,
       title: `${origin} → ${destination}`,
       subtitle: `${customerName} · ${doc.id}`,
-      meta: [shipmentStatusLabels[status], currentLocation || primary, carrierReference].filter(Boolean).join(" · "),
+      meta: [shipmentStatusLabels[status], currentLocation || branchLabel, carrierReference].filter(Boolean).join(" · "),
       href: `/admin/jobs/${encodeURIComponent(doc.id)}`,
-      searchText: [doc.id, shortReference(doc.id), quoteReference, customerName, customerId ?? "", origin, destination, primary, ...handling, carrier ?? "", carrierReference ?? "", currentLocation ?? "", text(data.internal_job_reference)].join(" "),
+      searchText: [doc.id, shortReference(doc.id), quoteReference, customerName, customerId ?? "", origin, destination, branchLabel, ...handling, carrier ?? "", carrierReference ?? "", currentLocation ?? "", text(data.internal_job_reference)].join(" "),
       currentLocation,
       exception: status === "exception",
     });
@@ -134,9 +124,11 @@ export async function GET() {
   for (const doc of documents.customers) {
     const data = doc.data;
     if (data.archived === true) continue;
+    if (!canAccessBranchValue(staff, data.primary_branch)) continue;
 
     const displayName = text(data.display_name, doc.id);
-    const branch = branchValue(data.primary_branch);
+    const branch = strictBranchValue(data.primary_branch);
+    const branchLabel = branch ?? "Branch data incomplete";
     const email = nullable(data.primary_email);
     const phone = nullable(data.primary_phone);
     const country = text(data.country, "Nepal");
@@ -146,15 +138,31 @@ export async function GET() {
       kind: "customer",
       id: doc.id,
       title: displayName,
-      subtitle: `${country} · ${branch}${email ? ` · ${email}` : phone ? ` · ${phone}` : ""}`,
+      subtitle: `${country} · ${branchLabel}${email ? ` · ${email}` : phone ? ` · ${phone}` : ""}`,
       meta: `Customer · ${doc.id}`,
       href: `/admin/crm/${encodeURIComponent(doc.id)}`,
-      searchText: [doc.id, shortReference(doc.id), displayName, text(data.legal_name), text(data.trading_name), email ?? "", phone ?? "", country, branch, text(data.account_manager_name), ...tags].join(" "),
+      searchText: [doc.id, shortReference(doc.id), displayName, text(data.legal_name), text(data.trading_name), email ?? "", phone ?? "", country, branchLabel, text(data.account_manager_name), ...tags].join(" "),
     });
   }
 
   for (const doc of documents.quotes) {
     const data = doc.data;
+    const shipmentReference = nullable(data.shipment_reference);
+    const shipment = shipmentReference ? shipments.get(shipmentReference) : undefined;
+    const quoteCustomerId = nullable(data.customer_id);
+    const effectiveCustomerId = shipment ? nullable(shipment.customer_id) ?? quoteCustomerId : quoteCustomerId;
+    const customer = effectiveCustomerId ? customers.get(effectiveCustomerId) : undefined;
+    const visible = canAccessQuoteLinkedRecords(staff, {
+      shipment_reference: shipmentReference,
+      customer_id: quoteCustomerId,
+      shipment_exists: Boolean(shipment),
+      shipment_primary_branch: strictBranchValue(shipment?.primary_branch) ?? customer?.primary_branch,
+      shipment_handling_branches: shipment?.handling_branches,
+      customer_exists: Boolean(customer),
+      customer_branch: customer?.primary_branch,
+    });
+    if (!visible) continue;
+
     const company = nullable(data.company_name);
     const contact = text(data.contact_name, "Customer");
     const origin = text(data.origin, "Origin");
