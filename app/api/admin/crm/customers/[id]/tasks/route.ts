@@ -21,6 +21,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const priority = cleanCrmText(body.priority, 20) || "normal";
   const assignedToName = cleanCrmText(body.assignedToName, 120);
   const assignedToEmail = cleanCrmText(body.assignedToEmail, 240).toLowerCase();
+  const assignedToPhone = cleanCrmText(body.assignedToPhone, 80);
 
   if (!title) return crmJson({ ok: false, error: "Enter a follow-up title." }, 400);
   if (!crmTaskPriorities.includes(priority as CrmTaskPriority)) return crmJson({ ok: false, error: "Choose a valid priority." }, 400);
@@ -36,6 +37,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       priority: priority as CrmTaskPriority,
       assignedToName,
       assignedToEmail,
+      assignedToPhone,
     }, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
