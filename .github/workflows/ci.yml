@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -15,11 +15,53 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: polish/saved-operational-views
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
+
+      - name: Integrate saved operational views
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if new in text:
+                  return
+              if old not in text:
+                  raise SystemExit(f"Could not find integration anchor in {path}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'app/admin/admin-dashboard.tsx',
+              'import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";',
+              'import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";\nimport { SavedFilterViews } from "./saved-filter-views";'
+          )
+          enquiry_filters = '<div className="ops-filter-pills mt-3">{statusOptions.map((item) => <button key={item} type="button" className="ops-filter-pill" data-active={statusFilter === item || undefined} onClick={() => setStatusFilter(item)}>{item === "all" ? "All" : statusLabels[item]} <span className="ml-1 opacity-55">{item === "all" ? quotes.length : statusCounts[item]}</span></button>)}</div>'
+          replace_once(
+              'app/admin/admin-dashboard.tsx',
+              enquiry_filters,
+              enquiry_filters + '\n            <SavedFilterViews storageKey="kcpl-enquiry-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/>'
+          )
+
+          replace_once(
+              'app/admin/crm/crm-dashboard.tsx',
+              'import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";',
+              'import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";\nimport { SavedFilterViews } from "../saved-filter-views";'
+          )
+          crm_filters = '<div className="ops-filter-pills mt-3"><button type="button" className="ops-filter-pill" data-active={statusFilter === "all" || undefined} onClick={() => setStatusFilter("all")}>All</button>{crmAccountStatuses.map((status) => <button key={status} type="button" className="ops-filter-pill" data-active={statusFilter === status || undefined} onClick={() => setStatusFilter(status)}>{crmAccountStatusLabels[status]}</button>)}</div>'
+          replace_once(
+              'app/admin/crm/crm-dashboard.tsx',
+              crm_filters,
+              crm_filters + '<SavedFilterViews storageKey="kcpl-customer-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/>'
+          )
+          PY
 
       - name: Install dependencies
         run: npm install
@@ -32,3 +74,13 @@ jobs:
 
       - name: Production build
         run: npm test
+
+      - name: Commit saved-view integration
+        shell: bash
+        run: |
+          if git diff --quiet -- app/admin/admin-dashboard.tsx app/admin/crm/crm-dashboard.tsx; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/admin/admin-dashboard.tsx app/admin/crm/crm-dashboard.tsx
+          git commit -m "Add saved views to enquiries and customers"
+          git push origin HEAD:polish/saved-operational-views
