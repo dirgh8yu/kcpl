@@ -2,19 +2,15 @@
 
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   CalendarDays,
   Check,
   CheckCircle2,
-  Clock3,
   Landmark,
   PackageCheck,
   RefreshCw,
   Settings2,
-  ShieldAlert,
-  UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NepalOperationsMap } from "../../components/operations-map";
