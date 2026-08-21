@@ -18,6 +18,7 @@ import {
   type CrmRelationshipType,
 } from "../crm-data";
 import { kcplStaffRoleLabels, type StaffCapabilities } from "../../staff-permissions";
+import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 
 function csv(values: string[]) {
   return values.join(", ");
@@ -50,6 +51,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
     primaryBranch: customer.primary_branch,
     accountManagerName: customer.account_manager_name ?? "",
     accountManagerEmail: customer.account_manager_email ?? "",
+    accountManagerPhone: customer.account_manager_phone ?? "",
     billingEmail: customer.billing_email ?? "",
     tags: csv(customer.tags),
     transportPreferences: csv(customer.transport_preferences),
@@ -174,8 +176,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
             <Field label="Industry"><input className="crm360-input" value={form.industry} onChange={(event) => field("industry", event.target.value)} /></Field>
             <Field label="PAN / VAT / Tax ID"><input className="crm360-input" value={form.taxId} onChange={(event) => field("taxId", event.target.value)} /></Field>
             <Field label="Tags"><input className="crm360-input" value={form.tags} onChange={(event) => field("tags", event.target.value)} placeholder="VIP, Importer, China Trade" /></Field>
-            <Field label="Account manager"><input className="crm360-input" value={form.accountManagerName} onChange={(event) => field("accountManagerName", event.target.value)} /></Field>
-            <Field label="Manager email"><input type="email" className="crm360-input" value={form.accountManagerEmail} onChange={(event) => field("accountManagerEmail", event.target.value)} /></Field>
+            <div className="md:col-span-2 xl:col-span-2"><Field label="Account manager"><StaffAssignmentPicker branch={form.primaryBranch} value={{ name: form.accountManagerName, email: form.accountManagerEmail, phone: form.accountManagerPhone }} onChange={(staff) => setForm((current) => ({ ...current, accountManagerName: staff.name, accountManagerEmail: staff.email, accountManagerPhone: staff.phone }))}/></Field></div>
             <Field label="Transport preferences"><input className="crm360-input" value={form.transportPreferences} onChange={(event) => field("transportPreferences", event.target.value)} /></Field>
           </div>
 

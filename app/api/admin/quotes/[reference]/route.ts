@@ -115,11 +115,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 
   const status = clean(body.status);
-  const assignedTo = clean(body.assignedTo);
+  const assignedToName = clean(body.assignedToName || body.assignedTo).slice(0, 160);
+  const assignedToEmail = clean(body.assignedToEmail).toLowerCase().slice(0, 240);
+  const assignedToPhone = clean(body.assignedToPhone).slice(0, 80);
   if (!quoteStatuses.includes(status as QuoteStatus)) return json({ ok: false, error: "Choose a valid quote status." }, 400);
-  if (assignedTo.length > 120) return json({ ok: false, error: "Assignee must be 120 characters or fewer." }, 400);
+  if (assignedToEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assignedToEmail)) return json({ ok: false, error: "Choose a staff member with a valid email address." }, 400);
 
-  const result = await updateQuoteAdmin(reference, status as QuoteStatus, assignedTo, auth.staff.permissions.canEditCommercial);
+  const result = await updateQuoteAdmin(reference, status as QuoteStatus, {
+    name: assignedToName,
+    email: assignedToEmail,
+    phone: assignedToPhone,
+  }, auth.staff.permissions.canEditCommercial);
   if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
   if (result.kind === "commercial-required") {
@@ -148,7 +154,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     }
   }
 
-  return json({ ok: true, status, assignedTo, shipment, shipmentWarning });
+  return json({
+    ok: true,
+    status,
+    assignedTo: assignedToName || assignedToEmail || "",
+    assignedToName,
+    assignedToEmail,
+    assignedToPhone,
+    shipment,
+    shipmentWarning,
+  });
 }
 
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {

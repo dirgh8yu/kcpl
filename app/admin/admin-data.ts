@@ -20,6 +20,9 @@ export type QuoteSummary = {
   phone: string | null;
   customer_id: string | null;
   assigned_to: string | null;
+  assigned_to_name: string | null;
+  assigned_to_email: string | null;
+  assigned_to_phone: string | null;
   note_count: number;
   email_count: number;
   last_customer_email_at: string | null;

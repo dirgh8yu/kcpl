@@ -130,6 +130,9 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     if (!customerSnapshot.exists) return { kind: "customer-missing" as const };
     const primaryBranch = branchValue(customerSnapshot.get("primary_branch"));
     const mode = stringValue(data.mode);
+    const assignedName = stringValue(data.assigned_to_name, stringValue(data.assigned_to)).trim();
+    const assignedEmail = stringValue(data.assigned_to_email).trim().toLowerCase();
+    const assignedPhone = stringValue(data.assigned_to_phone).trim();
 
     const reference = shipmentReference();
     const createdAt = new Date().toISOString();
@@ -153,8 +156,9 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
       primary_branch: primaryBranch,
       handling_branches: [primaryBranch],
       job_priority: "standard",
-      job_assigned_to_name: null,
-      job_assigned_to_email: null,
+      job_assigned_to_name: assignedName || null,
+      job_assigned_to_email: assignedEmail || null,
+      job_assigned_to_phone: assignedPhone || null,
       internal_job_reference: null,
       internal_job_notes: null,
       workflow_version: 1,
@@ -183,6 +187,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
         due_at: null,
         assigned_to_name: null,
         assigned_to_email: null,
+        assigned_to_phone: null,
         completed: false,
         completed_at: null,
         completed_by: null,
@@ -222,7 +227,9 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     transaction.create(shipmentRef.collection("job_activity").doc(`activity-${crypto.randomUUID()}`), {
       type: "workflow_initialized",
       title: "Controlled workflow initialized",
-      detail: "Default operational tasks, customs controls and document requirements were created from the accepted quote.",
+      detail: assignedName || assignedEmail
+        ? `Default workflow initialized. Job ownership carried forward from enquiry owner ${assignedName || assignedEmail}.`
+        : "Default operational tasks, customs controls and document requirements were created from the accepted quote.",
       actor_name: authorName || "KCPL Operations",
       actor_email: authorEmail || null,
       created_at: createdAt,

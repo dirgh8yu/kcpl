@@ -22,6 +22,7 @@ import type { QuoteCrmMatch, QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSumma
 import { AdminShipmentPanel } from "./admin-shipment-panel";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
+import { StaffAssignmentPicker } from "./staff-assignment-picker";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 const statusLabels: Record<QuoteStatus, string> = { new: "New", reviewing: "Reviewing", quoted: "Quoted", won: "Won", lost: "Lost" };
@@ -123,6 +124,9 @@ function summaryFromDetail(detail: QuoteDetail): QuoteSummary {
     phone: detail.phone,
     customer_id: detail.customer_id,
     assigned_to: detail.assigned_to,
+    assigned_to_name: detail.assigned_to_name,
+    assigned_to_email: detail.assigned_to_email,
+    assigned_to_phone: detail.assigned_to_phone,
     note_count: detail.note_count,
     email_count: detail.email_count,
     last_customer_email_at: detail.last_customer_email_at,
@@ -178,6 +182,8 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
         quote.cargo_type ?? "",
         quote.customer_id ?? "",
         quote.assigned_to ?? "",
+        quote.assigned_to_email ?? "",
+        quote.assigned_to_phone ?? "",
         modeLabel(quote.mode),
         statusLabels[quote.status],
       ].join(" ").toLowerCase();
@@ -292,15 +298,33 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
     try {
       const response = await fetch(`/api/admin/quotes/${encodeURIComponent(detail.reference)}`, {
         method: "PATCH", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "workflow", status: detail.status, assignedTo: detail.assigned_to ?? "" }),
+        body: JSON.stringify({
+          action: "workflow",
+          status: detail.status,
+          assignedToName: detail.assigned_to_name ?? detail.assigned_to ?? "",
+          assignedToEmail: detail.assigned_to_email ?? "",
+          assignedToPhone: detail.assigned_to_phone ?? "",
+        }),
       });
-      const data = await response.json() as { status?: QuoteStatus; assignedTo?: string; shipment?: QuoteDetail["shipment"]; shipmentWarning?: string | null; error?: string };
+      const data = await response.json() as {
+        status?: QuoteStatus;
+        assignedTo?: string;
+        assignedToName?: string;
+        assignedToEmail?: string;
+        assignedToPhone?: string;
+        shipment?: QuoteDetail["shipment"];
+        shipmentWarning?: string | null;
+        error?: string;
+      };
       if (!response.ok) throw new Error(data.error || "Could not save the enquiry workflow.");
 
       const nextDetail: QuoteDetail = {
         ...detail,
         status: data.status ?? detail.status,
         assigned_to: data.assignedTo ?? detail.assigned_to,
+        assigned_to_name: data.assignedToName ?? detail.assigned_to_name,
+        assigned_to_email: data.assignedToEmail ?? detail.assigned_to_email,
+        assigned_to_phone: data.assignedToPhone ?? detail.assigned_to_phone,
         shipment: data.shipment ?? detail.shipment,
       };
       setDetail(nextDetail);
@@ -450,7 +474,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                 <aside className="ops-stack xl:sticky xl:top-[132px]">
                   <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
                   <OpsSurface eyebrow="Workflow" title="Ownership & status" description={detail.status === "won" ? "This quote is accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer ownership is confirmed. Commercial staff can progress the enquiry through Quoted, Won or Lost." : "Confirm the CRM customer before marking this enquiry Won."}>
-                    <form onSubmit={saveQuote} className="grid gap-3"><OpsField label="Status" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or Digital Job File." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField><OpsField label="Assigned to"><input value={detail.assigned_to ?? ""} onChange={(event) => setDetail({ ...detail, assigned_to: event.target.value })} placeholder="Staff member or branch" maxLength={120}/></OpsField><OpsButton variant="primary" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></form>
+                    <form onSubmit={saveQuote} className="grid gap-3"><OpsField label="Status" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or Digital Job File." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField><OpsField label="Assigned to" hint="Choose from People & branches. Name, email and phone populate automatically."><StaffAssignmentPicker compact value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField><OpsButton variant="primary" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></form>
                   </OpsSurface>
                   {canViewCommercial ? <OpsSurface eyebrow="Commercial" title="Quote snapshot"><div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-[#e5e0db] bg-[#e5e0db]"><Snapshot label="Customer price" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "Not quoted"}/><Snapshot label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"}/></div><OpsButton variant="ghost" size="sm" className="mt-3" onClick={() => setActiveTab("pricing")}>Open pricing <ArrowRight size={11}/></OpsButton></OpsSurface> : null}
                   {detail.shipment ? <OpsSurface eyebrow="Converted shipment" title={<OpsMono>{detail.shipment.reference}</OpsMono>} description="A controlled shipment and Digital Job File exist for this accepted quote."><div className="flex flex-wrap gap-2"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div></OpsSurface> : null}

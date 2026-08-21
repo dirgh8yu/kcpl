@@ -30,6 +30,7 @@ export type CrmCustomerUpdateInput = {
   primaryBranch: KcplBranch;
   accountManagerName: string;
   accountManagerEmail: string;
+  accountManagerPhone: string;
   billingEmail: string;
   tags: string[];
   transportPreferences: string[];
@@ -89,6 +90,7 @@ export async function updateCrmCustomer(
       primary_branch: input.primaryBranch,
       account_manager_name: input.accountManagerName.trim() || null,
       account_manager_email: input.accountManagerEmail.trim() || null,
+      account_manager_phone: input.accountManagerPhone.trim() || null,
       billing_email: input.billingEmail.trim() || null,
       tags: input.tags,
       transport_preferences: input.transportPreferences,
