@@ -59,6 +59,10 @@ const relationshipNav: NavItem[] = [
 ];
 
 const marketNav: NavItem = { href: "/admin/market-estimate", label: "Market estimate", icon: Calculator, match: (path) => path.startsWith("/admin/market-estimate"), hint: "Rates, currencies and market inputs" };
+const rateDeskNav: NavItem = { href: "/admin/rating", label: "Rate Desk", icon: Calculator, match: (path) => path.startsWith("/admin/rating"), hint: "Transport orders, buy rates and rate selection" };
+const pricingDeskNav: NavItem = { href: "/admin/pricing", label: "Pricing Desk", icon: ReceiptText, match: (path) => path.startsWith("/admin/pricing"), hint: "Customer sell pricing, margin rules and approvals" };
+const tenderDeskNav: NavItem = { href: "/admin/tenders", label: "Tender Desk", icon: Handshake, match: (path) => path.startsWith("/admin/tenders"), hint: "Carrier tenders, counter-offers and booking" };
+const loadPlannerNav: NavItem = { href: "/admin/consolidation", label: "Load Planner", icon: Boxes, match: (path) => path.startsWith("/admin/consolidation"), hint: "Consolidation, capacity and master load planning" };
 
 function safeStoredWorkspaces(key: string): StoredWorkspace[] {
   try {
@@ -94,6 +98,10 @@ export function OperationsShell({
   const groups = useMemo<NavGroup[]>(() => {
     const commercial: NavItem[] = [
       marketNav,
+      rateDeskNav,
+      pricingDeskNav,
+      tenderDeskNav,
+      loadPlannerNav,
       ...(canManageFinance ? [
         { href: "/admin/finance", label: "Receivables", icon: ReceiptText, match: (path: string) => path.startsWith("/admin/finance"), hint: "Invoices, aging and collections" },
         { href: "/admin/payables", label: "Payables", icon: HandCoins, match: (path: string) => path.startsWith("/admin/payables"), hint: "Supplier bills and obligations" },

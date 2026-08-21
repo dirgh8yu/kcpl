@@ -65,6 +65,7 @@ const coreWorkspaces: Workspace[] = [
   { href: "/admin/partners", label: "Partners", hint: "Agents, carriers, vendors and counterparts", icon: Handshake },
   { href: "/admin/market-estimate", label: "Market estimate", hint: "Rates, currencies and market inputs", icon: Calculator },
   { href: "/admin/rating", label: "Rate Desk", hint: "Transport orders, multimodal buy rates and rate selection", icon: Calculator },
+  { href: "/admin/pricing", label: "Pricing Desk", hint: "Customer sell pricing, margin rules and approvals", icon: ReceiptText },
   { href: "/admin/tenders", label: "Tender Desk", hint: "Carrier tenders, counter-offers, expiry and booking", icon: Handshake },
   { href: "/admin/consolidation", label: "Load Planner", hint: "Consolidation, capacity, stops and master load planning", icon: Boxes },
   { href: "/admin/finance", label: "Receivables", hint: "Invoices, aging and collections", icon: ReceiptText, visible: (permissions) => permissions.canManageFinance },
