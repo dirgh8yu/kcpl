@@ -163,6 +163,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       primaryBranch: primaryBranch as KcplBranch,
       accountManagerName: cleanCrmText(body.accountManagerName, 120),
       accountManagerEmail,
+      accountManagerPhone: cleanCrmText(body.accountManagerPhone, 80),
       billingEmail,
       tags: stringArray(body.tags),
       transportPreferences: stringArray(body.transportPreferences),
