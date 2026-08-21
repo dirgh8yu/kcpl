@@ -16,6 +16,18 @@ type SearchResult = {
   exception?: boolean;
 };
 
+type IndexedDoc = { id: string; data: Record<string, unknown> };
+type SearchDocuments = {
+  expiresAt: number;
+  shipments: IndexedDoc[];
+  quotes: IndexedDoc[];
+  customers: IndexedDoc[];
+};
+
+let cachedDocuments: SearchDocuments | null = null;
+let pendingDocuments: Promise<SearchDocuments> | null = null;
+const indexTtlMs = 20_000;
+
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
 }
@@ -45,25 +57,46 @@ function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "private, no-store" } });
 }
 
+async function loadSearchDocuments() {
+  const now = Date.now();
+  if (cachedDocuments && cachedDocuments.expiresAt > now) return cachedDocuments;
+  if (pendingDocuments) return pendingDocuments;
+
+  pendingDocuments = (async () => {
+    const db = firebaseAdminDb();
+    const [shipmentsSnapshot, quotesSnapshot, customersSnapshot] = await Promise.all([
+      db.collection("shipments").orderBy("updated_at", "desc").limit(350).get(),
+      db.collection("quotes").orderBy("created_at", "desc").limit(300).get(),
+      db.collection("customers").orderBy("updated_at", "desc").limit(350).get(),
+    ]);
+    const next: SearchDocuments = {
+      expiresAt: Date.now() + indexTtlMs,
+      shipments: shipmentsSnapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> })),
+      quotes: quotesSnapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> })),
+      customers: customersSnapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> })),
+    };
+    cachedDocuments = next;
+    return next;
+  })().finally(() => {
+    pendingDocuments = null;
+  });
+
+  return pendingDocuments;
+}
+
 export async function GET() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return json({ ok: false, error: "Sign in is required." }, 401);
   if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Firebase search is unavailable." }, 503);
 
   const staff = await getStaffContext(access.user);
-  const db = firebaseAdminDb();
-  const [shipmentsSnapshot, quotesSnapshot, customersSnapshot] = await Promise.all([
-    db.collection("shipments").orderBy("updated_at", "desc").limit(350).get(),
-    db.collection("quotes").orderBy("created_at", "desc").limit(300).get(),
-    db.collection("customers").orderBy("updated_at", "desc").limit(350).get(),
-  ]);
-
-  const quotes = new Map(quotesSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
-  const customers = new Map(customersSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
+  const documents = await loadSearchDocuments();
+  const quotes = new Map(documents.quotes.map((doc) => [doc.id, doc.data]));
+  const customers = new Map(documents.customers.map((doc) => [doc.id, doc.data]));
   const results: SearchResult[] = [];
 
-  for (const doc of shipmentsSnapshot.docs) {
-    const data = doc.data() as Record<string, unknown>;
+  for (const doc of documents.shipments) {
+    const data = doc.data;
     const primary = branchValue(data.primary_branch);
     const handling = branchArray(data.handling_branches, primary);
     if (!staffCanAccessBranch(staff, primary) && !handling.some((branch) => staffCanAccessBranch(staff, branch))) continue;
@@ -92,8 +125,8 @@ export async function GET() {
     });
   }
 
-  for (const doc of customersSnapshot.docs) {
-    const data = doc.data() as Record<string, unknown>;
+  for (const doc of documents.customers) {
+    const data = doc.data;
     if (data.archived === true) continue;
 
     const displayName = text(data.display_name, doc.id);
@@ -114,8 +147,8 @@ export async function GET() {
     });
   }
 
-  for (const doc of quotesSnapshot.docs) {
-    const data = doc.data() as Record<string, unknown>;
+  for (const doc of documents.quotes) {
+    const data = doc.data;
     const company = nullable(data.company_name);
     const contact = text(data.contact_name, "Customer");
     const origin = text(data.origin, "Origin");
