@@ -60,6 +60,7 @@ const coreWorkspaces: Workspace[] = [
   { href: "/admin/customs", label: "Customs", hint: "Clearance queue, documents and customs blockers", icon: ShieldCheck },
   { href: "/admin/documents", label: "Documents", hint: "Verified shipment documents and review queue", icon: FileText },
   { href: "/admin/alerts", label: "Tasks & alerts", hint: "Ownership, exceptions and follow-up", icon: BellRing },
+  { href: "/admin/notifications", label: "Notifications", hint: "Complete assignment and automation notification history", icon: BellRing },
   { href: "/admin/crm", label: "Customers", hint: "Customer accounts and Customer 360", icon: Building2 },
   { href: "/admin/partners", label: "Partners", hint: "Agents, carriers, vendors and counterparts", icon: Handshake },
   { href: "/admin/market-estimate", label: "Market estimate", hint: "Rates, currencies and market inputs", icon: Calculator },
