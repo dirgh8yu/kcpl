@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { crmCurrencies, type CrmCurrency } from "../../../admin/crm/crm-data";
 import { getStaffContext } from "../../../admin/staff-directory.server";
+import { sendTmsTenderEmail } from "../../../admin/tenders/tms-tender-email.server";
 import { tmsTenderChannels, type TmsTenderChannel } from "../../../admin/tenders/tms-tendering";
 import {
   cancelTmsTender,
@@ -61,7 +62,15 @@ export async function POST(request: Request) {
     if (result.kind === "recipient_required") return json({ ok: false, error: "A valid recipient email is required for an email tender." }, 400);
     if (result.kind === "invalid_deadline") return json({ ok: false, error: "Tender response deadline must be in the future." }, 400);
     if (result.kind !== "created") return json({ ok: false, error: "The tender could not be created." }, 400);
-    return json({ ok: true, tender: result.tender }, 201);
+
+    if (channel === "email") {
+      const delivery = await sendTmsTenderEmail(result.tender, actor);
+      if (delivery.kind === "not_configured") return json({ ok: false, tender: result.tender, error: "Tender record created, but SendGrid is not configured. Cancel it or send the tender manually." }, 503);
+      if (delivery.kind === "recipient_required") return json({ ok: false, tender: result.tender, error: "Tender record created, but the recipient email is missing." }, 400);
+      if (delivery.kind === "failed") return json({ ok: false, tender: result.tender, error: `Tender record created, but email delivery failed: ${delivery.error}` }, 502);
+      return json({ ok: true, tender: result.tender, emailSent: true, messageId: delivery.messageId }, 201);
+    }
+    return json({ ok: true, tender: result.tender, emailSent: false }, 201);
   }
 
   if (action === "respond") {
