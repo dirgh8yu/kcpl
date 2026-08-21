@@ -8,9 +8,21 @@ import {
 } from "../app/admin/staff-permissions.ts";
 import { adminSecurityConfigIssues } from "../app/admin/admin-security-config.ts";
 import { crmAccountStatusChangeError, hasCustomerRelationship, normalizeNepalDateTimeInput, validCalendarDate } from "../app/admin/crm/crm-policy.ts";
+import {
+  canAccessBranchSet,
+  canAccessBranchValue,
+  canAccessQuoteLinkedRecords,
+  strictBranchArray,
+  strictBranchValue,
+} from "../app/admin/branch-access-policy.ts";
 
 // Keep this suite self-contained so it can run before the Next.js production build.
 const cleanEnv = () => ({ NODE_ENV: "production" });
+
+const kathmanduScope = { can_access_all_branches: false, branches: ["Kathmandu"] };
+const accountsKathmandu = { ...kathmanduScope, permissions: staffCapabilitiesForRole("accounts") };
+const operationsKathmandu = { ...kathmanduScope, permissions: staffCapabilitiesForRole("operations") };
+const managementScope = { can_access_all_branches: true, branches: ["Kathmandu", "Birgunj", "Surkhet", "Nepalgunj", "Raxaul", "Kolkata"], permissions: staffCapabilitiesForRole("management") };
 
 test("unconfigured staff role defaults to Operations, never Management", () => {
   assert.equal(staffRoleForEmail("user@example.com", cleanEnv()), "operations");
@@ -39,6 +51,79 @@ test("Operations capability does not inherit commercial, finance or staff-manage
   assert.equal(permissions.canManageFinance, false);
   assert.equal(permissions.canManageStaff, false);
   assert.equal(permissions.canArchiveCustomer, false);
+});
+
+test("branch parser never aliases malformed data to Kathmandu", () => {
+  assert.equal(strictBranchValue("Kathmandu"), "Kathmandu");
+  assert.equal(strictBranchValue("kathmandu"), null);
+  assert.equal(strictBranchValue(""), null);
+  assert.equal(strictBranchValue(undefined), null);
+  assert.deepEqual(strictBranchArray(["Kathmandu", "Birgunj", "Kathmandu", "unknown"]), ["Kathmandu", "Birgunj"]);
+});
+
+test("restricted staff can access their primary or handling branch only", () => {
+  assert.equal(canAccessBranchValue(kathmanduScope, "Kathmandu"), true);
+  assert.equal(canAccessBranchValue(kathmanduScope, "Birgunj"), false);
+  assert.equal(canAccessBranchValue(kathmanduScope, undefined), false);
+  assert.equal(canAccessBranchSet(kathmanduScope, "Birgunj", ["Kathmandu"]), true);
+  assert.equal(canAccessBranchSet(kathmanduScope, "Birgunj", ["Surkhet"]), false);
+  assert.equal(canAccessBranchSet(kathmanduScope, "invalid", []), false);
+});
+
+test("Management keeps all-branch recovery access even when branch data is malformed", () => {
+  assert.equal(canAccessBranchValue(managementScope, "Birgunj"), true);
+  assert.equal(canAccessBranchValue(managementScope, undefined), true);
+  assert.equal(canAccessBranchSet(managementScope, undefined, []), true);
+});
+
+test("linked enquiries inherit shipment or customer branch scope and fail closed when links are broken", () => {
+  assert.equal(canAccessQuoteLinkedRecords(kathmanduScope, {
+    shipment_reference: "KCPL-S-1",
+    customer_id: "KCPL-C-1",
+    shipment_exists: true,
+    shipment_primary_branch: "Birgunj",
+    shipment_handling_branches: ["Kathmandu"],
+    customer_exists: true,
+    customer_branch: "Birgunj",
+  }), true);
+  assert.equal(canAccessQuoteLinkedRecords(kathmanduScope, {
+    shipment_reference: "KCPL-S-2",
+    customer_id: "KCPL-C-2",
+    shipment_exists: true,
+    shipment_primary_branch: "Birgunj",
+    shipment_handling_branches: [],
+    customer_exists: true,
+    customer_branch: "Birgunj",
+  }), false);
+  assert.equal(canAccessQuoteLinkedRecords(kathmanduScope, {
+    shipment_reference: "KCPL-S-MISSING",
+    customer_id: null,
+    shipment_exists: false,
+  }), false);
+  assert.equal(canAccessQuoteLinkedRecords(kathmanduScope, {
+    shipment_reference: null,
+    customer_id: "KCPL-C-MISSING",
+    customer_exists: false,
+  }), false);
+  assert.equal(canAccessQuoteLinkedRecords(kathmanduScope, {
+    shipment_reference: null,
+    customer_id: null,
+  }), true);
+  assert.equal(canAccessQuoteLinkedRecords(managementScope, {
+    shipment_reference: "KCPL-S-MISSING",
+    customer_id: null,
+    shipment_exists: false,
+  }), true);
+});
+
+test("role and branch matrix keeps finance privilege separate from location scope", () => {
+  assert.equal(operationsKathmandu.permissions.canManageFinance, false);
+  assert.equal(canAccessBranchValue(operationsKathmandu, "Kathmandu"), true);
+  assert.equal(accountsKathmandu.permissions.canManageFinance, true);
+  assert.equal(canAccessBranchValue(accountsKathmandu, "Kathmandu"), true);
+  assert.equal(canAccessBranchValue(accountsKathmandu, "Birgunj"), false);
+  assert.equal(managementScope.permissions.canManageFinance, true);
+  assert.equal(canAccessBranchValue(managementScope, "Birgunj"), true);
 });
 
 test("invalid admin email configuration is a blocking configuration error", () => {
@@ -87,7 +172,6 @@ test("short automation secrets warn without disabling admin access", () => {
   assert.ok(issues.some((issue) => issue.severity === "warning" && issue.key === "KCPL_AUTOMATION_SECRET"));
   assert.equal(issues.some((issue) => issue.severity === "error" && issue.key === "KCPL_AUTOMATION_SECRET"), false);
 });
-
 
 test("customer records cannot lose their buyer relationship", () => {
   assert.equal(hasCustomerRelationship(["customer"]), true);

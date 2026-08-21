@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { canAccessBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { type KcplStaffContext } from "../staff-directory.server";
 import {
   financeInvoiceStatuses,
   financePaymentMethods,
@@ -148,8 +149,8 @@ function canAccessFinance(context: KcplStaffContext) {
   return context.permissions.canManageFinance;
 }
 
-function canAccessInvoice(context: KcplStaffContext, branch: KcplBranch) {
-  return canAccessFinance(context) && staffCanAccessBranch(context, branch);
+function canAccessInvoice(context: KcplStaffContext, branch: unknown) {
+  return canAccessFinance(context) && canAccessBranchValue(context, branch);
 }
 
 async function writeCustomerActivity(customerId: string, title: string, detail: string, actor: Actor) {
@@ -223,8 +224,8 @@ export async function getFinanceInvoice(reference: string, context: KcplStaffCon
   if (!canAccessFinance(context)) return { kind: "forbidden" as const };
   const snapshot = await firebaseAdminDb().collection("invoices").doc(reference.trim().toUpperCase()).get();
   if (!snapshot.exists) return { kind: "missing" as const };
+  if (!canAccessInvoice(context, snapshot.get("branch"))) return { kind: "forbidden" as const };
   const invoice = await invoiceFromSnapshot(snapshot);
-  if (!canAccessInvoice(context, invoice.branch)) return { kind: "forbidden" as const };
   return { kind: "ready" as const, invoice };
 }
 
@@ -237,8 +238,8 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
   let changedStatuses = 0;
 
   for (const doc of snapshot.docs) {
+    if (!canAccessInvoice(context, doc.get("branch"))) continue;
     const invoice = await invoiceFromSnapshot(doc, false);
-    if (!canAccessInvoice(context, invoice.branch)) continue;
     invoices.push(invoice);
     const stored = invoiceStatus(doc.get("status"));
     if (stored !== invoice.status) {
@@ -296,8 +297,9 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
   if (!customerId) return { kind: "customer_required" as const };
   const customer = await db.collection("customers").doc(customerId).get();
   if (!customer.exists) return { kind: "customer_missing" as const };
-  const branch = shipment?.exists ? branchValue(shipment.get("primary_branch")) : branchValue(customer.get("primary_branch"));
-  if (!canAccessInvoice(context, branch)) return { kind: "forbidden" as const };
+  const rawBranch = shipment?.exists ? shipment.get("primary_branch") : customer.get("primary_branch");
+  if (!canAccessInvoice(context, rawBranch)) return { kind: "forbidden" as const };
+  const branch = branchValue(rawBranch);
 
   const quoteReference = shipment?.exists ? nullable(shipment.get("quote_reference")) : null;
   const quote = quoteReference ? await db.collection("quotes").doc(quoteReference).get() : null;

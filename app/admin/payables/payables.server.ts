@@ -1,10 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { canAccessBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { recomputeCustomerFinance } from "../finance/finance.server";
 import { jobCostCategories, type JobCostCategory } from "../job-file";
-import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { type KcplStaffContext } from "../staff-directory.server";
 import {
   payableStatuses,
   type CreatePayableInput,
@@ -141,8 +142,8 @@ function canAccessPayables(context: KcplStaffContext) {
   return context.permissions.canManageFinance;
 }
 
-function canAccessBill(context: KcplStaffContext, branch: KcplBranch) {
-  return canAccessPayables(context) && staffCanAccessBranch(context, branch);
+function canAccessBill(context: KcplStaffContext, branch: unknown) {
+  return canAccessPayables(context) && canAccessBranchValue(context, branch);
 }
 
 async function writeJobActivity(shipmentReference: string | null, title: string, detail: string, actor: Actor) {
@@ -192,8 +193,8 @@ export async function getPayable(reference: string, context: KcplStaffContext) {
   if (!canAccessPayables(context)) return { kind: "forbidden" as const };
   const snapshot = await firebaseAdminDb().collection("payables").doc(reference.trim().toUpperCase()).get();
   if (!snapshot.exists) return { kind: "missing" as const };
+  if (!canAccessBill(context, snapshot.get("branch"))) return { kind: "forbidden" as const };
   const bill = await payableFromSnapshot(snapshot);
-  if (!canAccessBill(context, bill.branch)) return { kind: "forbidden" as const };
   return { kind: "ready" as const, bill };
 }
 
@@ -206,8 +207,8 @@ export async function listPayablesDashboard(context: KcplStaffContext): Promise<
   let changedStatuses = 0;
 
   for (const doc of snapshot.docs) {
+    if (!canAccessBill(context, doc.get("branch"))) continue;
     const bill = await payableFromSnapshot(doc, false);
-    if (!canAccessBill(context, bill.branch)) continue;
     bills.push(bill);
     const stored = statusValue(doc.get("status"));
     if (stored !== bill.status) {
@@ -259,8 +260,9 @@ export async function createPayable(input: CreatePayableInput, actor: Actor, con
   const shipment = shipmentId ? await db.collection("shipments").doc(shipmentId).get() : null;
   if (shipmentId && !shipment?.exists) return { kind: "shipment_missing" as const };
   const shipmentData = shipment?.exists ? shipment.data() as Record<string, unknown> : {};
-  const branch = shipment?.exists ? branchValue(shipment.get("primary_branch")) : "Kathmandu";
-  if (!canAccessBill(context, branch)) return { kind: "forbidden" as const };
+  const rawBranch = shipment?.exists ? shipment.get("primary_branch") : "Kathmandu";
+  if (!canAccessBill(context, rawBranch)) return { kind: "forbidden" as const };
+  const branch = branchValue(rawBranch);
 
   const supplierId = input.supplierId.trim().toUpperCase();
   const supplier = supplierId ? await db.collection("customers").doc(supplierId).get() : null;

@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../../../admin/admin-auth";
 import { getQuoteDetail } from "../../../../../admin/admin-data.server";
+import { checkQuoteBranchAccess } from "../../../../../admin/quote-access.server";
 import { recordQuoteEmail } from "../../../../../admin/quote-communications.server";
 import { getStaffContext } from "../../../../../admin/staff-directory.server";
 import { EmailConfigurationError, EmailDeliveryError, sendTransactionalEmail } from "../../../../../integrations/sendgrid-email.server";
@@ -135,6 +136,11 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (!staff.permissions.canEditCommercial) return json({ ok: false, error: "Commercial edit access is required to send customer quotes." }, 403);
 
   const { reference } = await context.params;
+  const branchAccess = await checkQuoteBranchAccess(reference, staff);
+  if (branchAccess.kind === "unavailable") return json({ ok: false, error: "Enquiry branch access could not be verified right now." }, 503);
+  if (branchAccess.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
+  if (branchAccess.kind === "forbidden") return json({ ok: false, error: "This enquiry is outside your KCPL branch access." }, 403);
+
   const quote = await getQuoteDetail(reference);
   if (quote === undefined) return json({ ok: false, error: "Quote storage is unavailable." }, 503);
   if (!quote) return json({ ok: false, error: "Quote not found." }, 404);
