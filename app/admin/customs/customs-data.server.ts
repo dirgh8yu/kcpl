@@ -200,7 +200,6 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
     const allSteps = customs.get(reference) ?? [];
     if (!allSteps.length && status !== "customs_clearance") continue;
 
-    const validRequiredSteps = allSteps.filter((step) => step.required && step.branch);
     const invalidRequiredSteps = allSteps.filter((step) => step.required && !step.branch);
     const openAll = allSteps.filter((step) => step.required && !step.completed);
     const visibleOpen = openAll.filter((step): step is RawCustomsStep & { branch: KcplBranch } => Boolean(
