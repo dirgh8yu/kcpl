@@ -50,6 +50,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     acknowledged: alerts.filter((alert) => alert.status === "acknowledged").length,
     open: alerts.filter((alert) => alert.status === "open").length,
   };
+  const unresolved = alerts.filter((alert) => alert.status !== "resolved").length;
 
   async function reload() {
     const response = await fetch("/api/admin/alerts", { cache: "no-store" });
@@ -91,7 +92,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
         title="Tasks & alerts"
         description="One operational inbox for exceptions, overdue work, customs risk, quote follow-up and finance escalation. Acknowledge when someone owns it; resolve when the underlying problem is actually handled."
         meta={<><span>{roleLabel}</span><span>Automation-backed queue</span><span>{alerts.filter((alert) => alert.status !== "resolved").length} unresolved</span></>}
-        actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations home</Link><OpsButton variant="primary" onClick={() => action("evaluate")} disabled={evaluating}><RefreshCw size={13} className={evaluating ? "animate-spin" : ""}/>{evaluating ? "Checking…" : "Run checks"}</OpsButton></>}
+        actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations home</Link><OpsButton variant="primary" onClick={() => action("evaluate")} disabled={evaluating}><RefreshCw size={13} className={evaluating ? "animate-spin" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
       />
 
       <OpsStatStrip>
@@ -124,7 +125,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
               </div>
               <div className="flex flex-wrap items-center gap-2 lg:justify-end"><Link href={alert.action_path} className="ops-button" data-variant="primary" data-size="sm">Open record</Link>{alert.status === "open" ? <OpsButton variant="secondary" size="sm" disabled={busy} onClick={() => action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}{alert.status !== "resolved" ? <OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => action("resolve", alert.id)}><CheckCircle2 size={12}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}</div>
             </article>;
-          })}</div> : <OpsEmptyState icon={<CheckCircle2 size={18}/>} title="Nothing needs attention in this view" description="The automation engine has no matching work. Change the filters or run the checks again if you want to refresh the queue." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Show all alerts</OpsButton>}/>} 
+          })}</div> : {unresolved === 0 ? <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={18}/>} title="All clear ✓" description="No active exceptions require attention. KCPL will surface new operational risk here when a rule is triggered." action={<OpsButton variant="secondary" size="sm" onClick={() => action("evaluate")} disabled={evaluating}>{evaluating ? "Checking…" : "Check now"}</OpsButton>}/> : <OpsEmptyState kind="search" icon={<CheckCircle2 size={18}/>} title="No alerts match this view" description="There is active work elsewhere in the queue, but nothing matches the current filters." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Show all alerts</OpsButton>/>}} 
         </OpsSurface>
       </div>
     </OpsPage>

@@ -278,10 +278,9 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
             {filtered.length ? filtered.map((quote) => {
               const selected = selectedReference === quote.reference;
               return <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className="ops-record-row block w-full border-b border-[#eee7e1] px-4 py-3.5 text-left" data-selected={selected || undefined}>
-                <div className="flex items-center justify-between gap-2"><OpsMono className="truncate text-[10px] text-[#514840]">{quote.reference}</OpsMono><OpsBadge tone={statusTone(quote.status)} dot>{statusLabels[quote.status]}</OpsBadge></div>
-                <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#514840]"><span className="truncate">{quote.origin}</span><ArrowRight size={11} className="shrink-0 text-[#c47b64]"/><span className="truncate">{quote.destination}</span></div>
-                <p className="mt-1 truncate text-[9px] text-[#857b73]">{quote.company_name || quote.contact_name}{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</p>
-                <div className="mt-2 flex items-center justify-between text-[8px] text-[#a0968e]"><span>{formatDate(quote.created_at)}</span>{quote.note_count ? <span className="flex items-center gap-1"><MessageSquareText size={10}/>{quote.note_count}</span> : null}</div>
+                <div className="flex items-center justify-between gap-2"><div className="ops-route min-w-0 text-[12px]"><span className="truncate">{quote.origin}</span><ArrowRight size={11} className="ops-route-arrow shrink-0"/><span className="truncate">{quote.destination}</span></div><OpsBadge tone={statusTone(quote.status)} dot>{statusLabels[quote.status]}</OpsBadge></div>
+                <p className="mt-1.5 truncate text-[10px] font-semibold text-[#5f5953]">{quote.company_name || quote.contact_name} · {modeLabels[quote.mode] ?? quote.mode}</p>
+                <div className="mt-2 flex items-center justify-between gap-3 text-[9px] text-[#8b847d]"><span className="min-w-0 truncate"><OpsMono>{quote.reference}</OpsMono>{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</span><span className="flex shrink-0 items-center gap-2"><span>{formatDate(quote.created_at)}</span>{quote.note_count ? <span className="flex items-center gap-1"><MessageSquareText size={10}/>{quote.note_count}</span> : null}</span></div>
               </button>;
             }) : <OpsEmptyState title="No enquiries match" description="Try a different status or search term."/>}
           </div>

@@ -12,14 +12,12 @@ import {
   crmLeadStageLabels,
   crmLeadStages,
   crmRelationshipLabels,
-  crmRelationshipTypes,
   kcplBranches,
   type CrmAccountStatus,
   type CrmCreateCustomerInput,
   type CrmCustomerSummary,
   type CrmDashboardStats,
   type CrmDuplicateMatch,
-  type CrmRelationshipType,
 } from "./crm-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
@@ -56,12 +54,13 @@ function computeStats(customers: CrmCustomerSummary[]): CrmDashboardStats {
 function csv(value: string) { return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))]; }
 
 export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {
-  const [customers, setCustomers] = useState(initialCustomers);
-  const [stats, setStats] = useState(initialStats);
-  const [selectedId, setSelectedId] = useState(initialCustomers[0]?.id ?? "");
+  const buyerCustomers = initialCustomers.filter((customer) => customer.relationship_types.includes("customer"));
+  const [customers, setCustomers] = useState(buyerCustomers);
+  const [stats, setStats] = useState(buyerCustomers.length === initialCustomers.length ? initialStats : computeStats(buyerCustomers));
+  const [selectedId, setSelectedId] = useState(buyerCustomers[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | CrmAccountStatus>("all");
-  const [showCreate, setShowCreate] = useState(initialCustomers.length === 0);
+  const [showCreate, setShowCreate] = useState(buyerCustomers.length === 0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [form, setForm] = useState<CrmCreateCustomerInput>({ ...emptyForm, accountManagerName: userName, accountManagerEmail: userEmail });
   const [tagDraft, setTagDraft] = useState("");
@@ -86,10 +85,6 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
     setDuplicates([]);
   }
 
-  function toggleRelationship(type: CrmRelationshipType) {
-    setForm((current) => ({ ...current, relationshipTypes: current.relationshipTypes.includes(type) ? current.relationshipTypes.filter((item) => item !== type) : [...current.relationshipTypes, type] }));
-    setDuplicates([]);
-  }
 
   function resetForm() {
     setForm({ ...emptyForm, accountManagerName: userName, accountManagerEmail: userEmail });
@@ -118,7 +113,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
   return (
     <main className="min-h-[calc(100vh-58px)] bg-[#f8f6f3]">
       <section className="border-b border-[#e8e0d9] bg-[#fffdfa]/72 px-5 py-6 backdrop-blur-xl lg:px-8">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-end justify-between gap-5"><div><p className="ops-eyebrow">Relationships</p><h1 className="mt-2 text-[31px] font-[730] tracking-[-.045em] text-[#332d29]">Customers</h1><p className="mt-2 max-w-2xl text-[11px] leading-5 text-[#887e76]">A quiet account index for customers, suppliers, carriers, agents and partners. Open Customer 360 when you need the full relationship history.</p></div><div className="flex items-center gap-2"><span className="hidden text-[9px] font-semibold text-[#9b9189] sm:inline">Working as {userName}</span><OpsButton variant="primary" onClick={openNew}><Plus size={13}/>New record</OpsButton></div></div>
+        <div className="mx-auto flex max-w-[1680px] flex-wrap items-end justify-between gap-5"><div><p className="ops-eyebrow">Relationships</p><h1 className="mt-2 text-[31px] font-[730] tracking-[-.045em] text-[#332d29]">Customers</h1><p className="mt-2 max-w-2xl text-[11px] leading-5 text-[#887e76]">Customer accounts that buy KCPL freight and logistics services. Carriers, agents, transporters, suppliers and overseas counterparts live in Partners.</p></div><div className="flex items-center gap-2"><span className="hidden text-[9px] font-semibold text-[#9b9189] sm:inline">Working as {userName}</span><OpsButton variant="primary" onClick={openNew}><Plus size={13}/>New record</OpsButton></div></div>
       </section>
 
       <OpsStatStrip>
@@ -133,14 +128,14 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
       <div className="grid min-h-[calc(100vh-214px)] xl:grid-cols-[350px_minmax(0,1fr)]">
         <aside className="min-h-0 border-r border-[#e7dfd8] bg-[#fffdfa]/72">
           <div className="sticky top-[58px] z-10 border-b border-[#e9e2dc] bg-[#fffdfa]/94 p-4 backdrop-blur-xl"><OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, contact, branch or tag"/><div className="ops-filter-pills mt-3"><button type="button" className="ops-filter-pill" data-active={statusFilter === "all" || undefined} onClick={() => setStatusFilter("all")}>All</button>{crmAccountStatuses.map((status) => <button key={status} type="button" className="ops-filter-pill" data-active={statusFilter === status || undefined} onClick={() => setStatusFilter(status)}>{crmAccountStatusLabels[status]}</button>)}</div><SavedFilterViews storageKey="kcpl-customer-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/></div>
-          <div>{filtered.length ? filtered.map((customer) => <button key={customer.id} type="button" onClick={() => { setSelectedId(customer.id); setShowCreate(false); setNotice(""); }} className="ops-record-row block w-full border-b border-[#eee7e1] px-4 py-3.5 text-left" data-selected={selectedId === customer.id && !showCreate || undefined}><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-[#f1ebe6] text-[#8c7162]">{customer.entity_kind === "company" ? <Building2 size={15}/> : <UserRound size={15}/>}</span><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><strong className="truncate text-[11px] text-[#4c433d]">{customer.display_name}</strong><OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge></div><p className="mt-1 truncate text-[9px] text-[#8d837b]">{customer.primary_email || customer.primary_phone || customer.country}</p><p className="mt-1.5 text-[8px] font-semibold text-[#a19890]">{customer.primary_branch}{customer.account_manager_name ? ` · ${customer.account_manager_name}` : ""}</p></div></div></button>) : <OpsEmptyState title="No records match" description="Change the filter or add a new relationship."/>}</div>
+          <div>{filtered.length ? filtered.map((customer) => <button key={customer.id} type="button" onClick={() => { setSelectedId(customer.id); setShowCreate(false); setNotice(""); }} className="ops-record-row block w-full border-b border-[#eee7e1] px-4 py-3.5 text-left" data-selected={selectedId === customer.id && !showCreate || undefined}><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-[#f1ebe6] text-[#8c7162]">{customer.entity_kind === "company" ? <Building2 size={15}/> : <UserRound size={15}/>}</span><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><strong className="truncate text-[11px] text-[#4c433d]">{customer.display_name}</strong><OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge></div><p className="mt-1 truncate text-[9px] text-[#8d837b]">{customer.primary_email || customer.primary_phone || customer.country}</p><p className="mt-1.5 text-[8px] font-semibold text-[#a19890]">{customer.primary_branch}{customer.account_manager_name ? ` · ${customer.account_manager_name}` : ""}</p></div></div></button>) : <OpsEmptyState kind="search" title="No customers match" description="Change the filter or create a customer account."/>}</div>
         </aside>
 
         <section className="min-w-0 p-5 lg:p-7 xl:p-8">
           {notice ? <div className="mb-4"><OpsNotice tone={duplicates.length ? "warning" : notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
-          {showCreate ? <CreateCustomerForm form={form} setField={setField} toggleRelationship={toggleRelationship} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/>
+          {showCreate ? <CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/>
             : selected ? <CustomerOverview customer={selected} onNew={openNew}/>
-            : <OpsEmptyState icon={<UsersRound size={19}/>} title="Build the customer graph" description="Create the first CRM record to connect enquiries, shipments, contacts, commercial terms and activity." action={<OpsButton variant="primary" onClick={openNew}>Create record</OpsButton>}/>} 
+            : <OpsEmptyState kind="setup" icon={<UsersRound size={19}/>} title="Add the first KCPL customer" description="Customer accounts connect enquiries, shipments, contacts, commercial terms and activity. Agents, carriers and vendors belong in Partners." action={<OpsButton variant="primary" onClick={openNew}>Create customer</OpsButton>}/>} 
         </section>
       </div>
     </main>
@@ -160,10 +155,9 @@ function CustomerOverview({ customer, onNew }: { customer: CrmCustomerSummary; o
   </div>;
 }
 
-function CreateCustomerForm({ form, setField, toggleRelationship, tagDraft, setTagDraft, carrierDraft, setCarrierDraft, transportDraft, setTransportDraft, saving, duplicates, advancedOpen, setAdvancedOpen, onSubmit, onCancel }: {
+function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraft, setCarrierDraft, transportDraft, setTransportDraft, saving, duplicates, advancedOpen, setAdvancedOpen, onSubmit, onCancel }: {
   form: CrmCreateCustomerInput;
   setField: <K extends keyof CrmCreateCustomerInput>(key: K, value: CrmCreateCustomerInput[K]) => void;
-  toggleRelationship: (type: CrmRelationshipType) => void;
   tagDraft: string; setTagDraft: (value: string) => void;
   carrierDraft: string; setCarrierDraft: (value: string) => void;
   transportDraft: string; setTransportDraft: (value: string) => void;
@@ -177,7 +171,7 @@ function CreateCustomerForm({ form, setField, toggleRelationship, tagDraft, setT
     <form onSubmit={(event) => onSubmit(event, false)} className="ops-stack">
       <OpsSurface eyebrow="Identity" title="Who is this?">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><OpsField label="Record type"><select value={form.entityKind} onChange={(event) => setField("entityKind", event.target.value as CrmCreateCustomerInput["entityKind"])}>{crmEntityKinds.map((kind) => <option value={kind} key={kind}>{kind === "company" ? "Company / organisation" : "Individual"}</option>)}</select></OpsField><OpsField label="Display name"><input required value={form.displayName} onChange={(event) => setField("displayName", event.target.value)} placeholder="Customer or organisation name"/></OpsField><OpsField label="Legal name"><input value={form.legalName} onChange={(event) => setField("legalName", event.target.value)}/></OpsField><OpsField label="Primary email"><input type="email" value={form.primaryEmail} onChange={(event) => setField("primaryEmail", event.target.value)}/></OpsField><OpsField label="Primary phone"><input value={form.primaryPhone} onChange={(event) => setField("primaryPhone", event.target.value)}/></OpsField><OpsField label="Country"><input value={form.country} onChange={(event) => setField("country", event.target.value)}/></OpsField></div>
-        <div className="mt-4"><p className="mb-2 text-[9px] font-bold text-[#655c54]">Relationship</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} className="ops-badge" data-tone={form.relationshipTypes.includes(type) ? "accent" : "neutral"}>{form.relationshipTypes.includes(type) ? <span>✓</span> : null}{crmRelationshipLabels[type]}</button>)}</div></div>
+        <div className="mt-4 flex flex-wrap items-center gap-2"><OpsBadge tone="info">Customer</OpsBadge><span className="text-[10px] text-[#756e67]">This workspace is for buyers of KCPL services. Operational suppliers and counterparts belong in Partners.</span></div>
       </OpsSurface>
 
       <OpsSurface eyebrow="Ownership" title="How KCPL will manage the account"><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><OpsField label="Account status"><select value={form.accountStatus} onChange={(event) => setField("accountStatus", event.target.value as CrmCreateCustomerInput["accountStatus"])}>{crmAccountStatuses.map((status) => <option value={status} key={status}>{crmAccountStatusLabels[status]}</option>)}</select></OpsField><OpsField label="Lead stage"><select value={form.leadStage} onChange={(event) => setField("leadStage", event.target.value as CrmCreateCustomerInput["leadStage"])}>{crmLeadStages.map((stage) => <option value={stage} key={stage}>{crmLeadStageLabels[stage]}</option>)}</select></OpsField><OpsField label="Lead source"><select value={form.leadSource} onChange={(event) => setField("leadSource", event.target.value as CrmCreateCustomerInput["leadSource"])}><option value="">Not set</option>{crmLeadSources.map((source) => <option value={source} key={source}>{source.replaceAll("_", " ")}</option>)}</select></OpsField><OpsField label="Primary branch"><select value={form.primaryBranch} onChange={(event) => setField("primaryBranch", event.target.value as CrmCreateCustomerInput["primaryBranch"])}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField><OpsField label="Account manager"><input value={form.accountManagerName} onChange={(event) => setField("accountManagerName", event.target.value)}/></OpsField><OpsField label="Manager email"><input type="email" value={form.accountManagerEmail} onChange={(event) => setField("accountManagerEmail", event.target.value)}/></OpsField></div><OpsField label="Internal summary" className="mt-4"><textarea value={form.internalSummary} onChange={(event) => setField("internalSummary", event.target.value)} placeholder="What should another KCPL staff member know before speaking with this account?"/></OpsField></OpsSurface>
