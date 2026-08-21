@@ -4,8 +4,10 @@ import { getStaffContext } from "../../staff-directory.server";
 import { checkShipmentBranchAccess } from "../../shipment-access.server";
 import { getDigitalJobFile } from "../../job-file.server";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
+import { getShipmentActivityTimeline } from "../../shipment-activity.server";
 import { OperationsShell } from "../../operations-shell";
 import { JobFileWorkspace } from "./job-file-workspace";
+import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
 import { WorkflowSpine } from "./workflow-spine";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +30,10 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is outside the branches assigned to your KCPL staff profile."/>;
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const workflow = await getShipmentWorkflowReadiness(result.job.reference, workflowStaff);
+  const [workflow, activity] = await Promise.all([
+    getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
+    getShipmentActivityTimeline(result.job.reference, staff),
+  ]);
   if (workflow.kind !== "ready") return <Gate title="Workflow unavailable" detail="The controlled workflow state could not be loaded for this shipment."/>;
 
   return (
@@ -47,6 +52,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
         currentUserEmail={access.user.email}
         nowIso={new Date().toISOString()}
       />
+      {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline}/> : null}
       {staff.permissions.canManageJobCosts ? (
         <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
           <Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm">Job profitability</Link>

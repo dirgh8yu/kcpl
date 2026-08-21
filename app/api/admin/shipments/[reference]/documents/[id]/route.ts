@@ -74,7 +74,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
   if (parsedId === null) return json({ ok: false, error: "Document not found." }, 404);
 
   try {
-    const result = await deleteShipmentDocument(reference, parsedId);
+    const result = await deleteShipmentDocument(reference, parsedId, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
     return json({ ok: true });

@@ -1,5 +1,7 @@
 import { firebaseAdminDb, firebaseAdminStorage, firebaseStorageBucketName } from "./firebase-admin.server";
-import type { ShipmentDocument, ShipmentDocumentType } from "./shipment-document-types";
+import { shipmentDocumentTypeLabels, type ShipmentDocument, type ShipmentDocumentType } from "./shipment-document-types";
+
+type DocumentActor = { name: string; email?: string };
 
 function configured() {
   return Boolean(
@@ -25,6 +27,10 @@ function normalizeReference(reference: string) {
 
 function numericId() {
   return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
+
+function activityId() {
+  return `activity-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 async function shipmentRef(reference: string) {
@@ -64,6 +70,7 @@ export async function uploadShipmentDocument(
     sizeBytes: number;
     documentType: ShipmentDocumentType;
     uploadedBy: string;
+    uploadedByEmail?: string;
     data: ArrayBuffer;
   },
 ) {
@@ -86,6 +93,7 @@ export async function uploadShipmentDocument(
     },
   });
 
+  const uploadedAt = new Date().toISOString();
   const document: ShipmentDocument = {
     id,
     shipment_reference: shipment.normalized,
@@ -93,12 +101,15 @@ export async function uploadShipmentDocument(
     content_type: values.contentType,
     size_bytes: values.sizeBytes,
     document_type: values.documentType,
-    uploaded_at: new Date().toISOString(),
+    uploaded_at: uploadedAt,
     uploaded_by: values.uploadedBy,
   };
 
   try {
-    await shipment.ref.collection("documents").doc(String(id)).create({ ...document, storage_path: key });
+    const batch = firebaseAdminDb().batch();
+    batch.create(shipment.ref.collection("documents").doc(String(id)), { ...document, uploaded_by_email: values.uploadedByEmail || null, storage_path: key });
+    batch.update(shipment.ref, { updated_at: uploadedAt });
+    await batch.commit();
     return { kind: "created" as const, document };
   } catch (error) {
     await file.delete({ ignoreNotFound: true }).catch(() => undefined);
@@ -122,7 +133,7 @@ export async function getShipmentDocumentFile(reference: string, id: number) {
   return { kind: "ready" as const, document, bytes };
 }
 
-export async function deleteShipmentDocument(reference: string, id: number) {
+export async function deleteShipmentDocument(reference: string, id: number, actor?: DocumentActor) {
   if (!configured()) return { kind: "unavailable" as const };
   const shipment = await shipmentRef(reference);
   if (!shipment) return { kind: "missing" as const };
@@ -133,6 +144,20 @@ export async function deleteShipmentDocument(reference: string, id: number) {
   const document = snapshot.data() as ShipmentDocument & { storage_path: string };
 
   await storageBucket().file(document.storage_path).delete({ ignoreNotFound: true });
-  await documentRef.delete();
+  const now = new Date().toISOString();
+  const batch = firebaseAdminDb().batch();
+  batch.delete(documentRef);
+  batch.create(shipment.ref.collection("job_activity").doc(activityId()), {
+    type: "document_deleted",
+    title: `${shipmentDocumentTypeLabels[document.document_type]} deleted`,
+    detail: document.filename,
+    actor_name: actor?.name || "KCPL Staff",
+    actor_email: actor?.email || null,
+    document_type: document.document_type,
+    document_id: String(id),
+    created_at: now,
+  });
+  batch.update(shipment.ref, { updated_at: now });
+  await batch.commit();
   return { kind: "deleted" as const };
 }
