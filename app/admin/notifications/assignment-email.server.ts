@@ -8,6 +8,8 @@ import { listCurrentStaffAssignmentNotifications } from "./assignment-notificati
 import { getNotificationPreferences } from "./notification-centre.server";
 import type { OperationsNotification } from "./notification-data";
 
+const ASSIGNMENT_EMAIL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 function deliveryId(value: string) {
   return createHash("sha256").update(value).digest("hex").slice(0, 48);
 }
@@ -29,6 +31,11 @@ function absoluteActionPath(path: string) {
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] || character);
+}
+
+function recentEnoughForAssignmentEmail(item: OperationsNotification) {
+  const created = Date.parse(item.created_at);
+  return Number.isFinite(created) && Date.now() - created <= ASSIGNMENT_EMAIL_WINDOW_MS;
 }
 
 async function recordShipmentEmail(item: OperationsNotification, recipient: string, messageId: string | null) {
@@ -53,6 +60,7 @@ async function recordShipmentEmail(item: OperationsNotification, recipient: stri
 }
 
 async function sendAssignmentEmail(profile: KcplStaffProfile, item: OperationsNotification) {
+  if (!recentEnoughForAssignmentEmail(item)) return false;
   const preferences = await getNotificationPreferences(profile.uid);
   if (preferences.email_mode !== "important" || !preferences.categories[item.category]) return false;
   if (item.resolved) return false;
