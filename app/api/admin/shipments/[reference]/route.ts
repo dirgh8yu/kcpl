@@ -29,6 +29,34 @@ function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function validDateOnly(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function normalizeNepalEventTime(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) return null;
+  const withSeconds = value.length === 16 ? `${value}:00` : value;
+  const date = new Date(`${withSeconds}+05:45`);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kathmandu",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const roundTrip = `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}`;
+  if (roundTrip !== withSeconds) return null;
+  return date.toISOString();
+}
+
 export async function PATCH(request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
@@ -53,7 +81,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const overrideReason = clean(body.overrideReason);
 
   if (!shipmentStatuses.includes(status as ShipmentStatus)) return json({ ok: false, error: "Choose a valid shipment status." }, 400);
-  if (eta && !/^\d{4}-\d{2}-\d{2}$/.test(eta)) return json({ ok: false, error: "Choose a valid ETA date." }, 400);
+  if (eta && !validDateOnly(eta)) return json({ ok: false, error: "Choose a valid ETA calendar date." }, 400);
   if (currentLocation.length > 180) return json({ ok: false, error: "Current location must be 180 characters or fewer." }, 400);
   if (carrier.length > 160) return json({ ok: false, error: "Carrier must be 160 characters or fewer." }, 400);
   if (carrierReference.length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
@@ -112,16 +140,17 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   const location = clean(body.location);
   const details = clean(body.details);
   const eventTime = clean(body.eventTime);
+  const normalizedEventTime = eventTime ? normalizeNepalEventTime(eventTime) : "";
 
   if (!title) return json({ ok: false, error: "Add an event title." }, 400);
   if (title.length > 180) return json({ ok: false, error: "Event title must be 180 characters or fewer." }, 400);
   if (location.length > 180) return json({ ok: false, error: "Event location must be 180 characters or fewer." }, 400);
   if (details.length > 2000) return json({ ok: false, error: "Event details must be 2000 characters or fewer." }, 400);
-  if (eventTime && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(eventTime)) {
-    return json({ ok: false, error: "Choose a valid event date and time." }, 400);
+  if (eventTime && !normalizedEventTime) {
+    return json({ ok: false, error: "Choose a valid Nepal-time event date and time." }, 400);
   }
 
-  const result = await addShipmentEvent(reference, { title, location, details, eventTime }, auth.user.displayName);
+  const result = await addShipmentEvent(reference, { title, location, details, eventTime: normalizedEventTime }, auth.user.displayName);
   if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   return json({ ok: true, event: result.event }, 201);
