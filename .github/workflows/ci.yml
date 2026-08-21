@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -15,6 +15,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: audit/customer360-reconciliation-v1
+          fetch-depth: 0
+
+      - name: Apply Part 3A2 integrations
+        if: github.actor != 'github-actions[bot]'
+        run: |
+          python .github/part3a2-apply.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          git commit -m "Wire Customer 360 live finance reconciliation"
+          git push origin HEAD:audit/customer360-reconciliation-v1
 
       - name: Setup Node
         uses: actions/setup-node@v4
