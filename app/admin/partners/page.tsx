@@ -33,7 +33,10 @@ export default async function PartnersPage() {
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
-      <Partner360Jump partners={dashboard.partners.map((partner) => ({ id: partner.id, display_name: partner.display_name }))}/>
+      <Partner360Jump
+        partners={dashboard.partners.map((partner) => ({ id: partner.id, display_name: partner.display_name }))}
+        canReconcile={staff.permissions.canManageFinance}
+      />
       <PartnersWorkspace
         dashboard={dashboard}
         canEdit={canEdit}
