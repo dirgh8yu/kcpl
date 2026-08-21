@@ -108,16 +108,6 @@ export async function uploadShipmentDocument(
   try {
     const batch = firebaseAdminDb().batch();
     batch.create(shipment.ref.collection("documents").doc(String(id)), { ...document, uploaded_by_email: values.uploadedByEmail || null, storage_path: key });
-    batch.create(shipment.ref.collection("job_activity").doc(activityId()), {
-      type: "document_uploaded",
-      title: `${shipmentDocumentTypeLabels[values.documentType]} uploaded`,
-      detail: values.filename,
-      actor_name: values.uploadedBy || "KCPL Staff",
-      actor_email: values.uploadedByEmail || null,
-      document_type: values.documentType,
-      document_id: String(id),
-      created_at: uploadedAt,
-    });
     batch.update(shipment.ref, { updated_at: uploadedAt });
     await batch.commit();
     return { kind: "created" as const, document };
