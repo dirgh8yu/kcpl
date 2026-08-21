@@ -10,6 +10,7 @@ import {
   type PartnerStatus,
   type PartnerType,
 } from "../../../admin/partners/partners-data";
+import { canEditPartnerNetwork, validPartnerCalendarDate } from "../../../admin/partners/partner-policy";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
@@ -22,7 +23,7 @@ export async function authorizePartnerRequest(edit = false) {
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   if (access.kind !== "authorized") return { response: json({ ok: false, error: "KCPL admin access is not configured." }, 503) };
   const staff = await getStaffContext(access.user);
-  if (edit && staff.permissions.role === "operations") return { response: json({ ok: false, error: "Your KCPL role has read-only partner network access." }, 403) };
+  if (edit && !canEditPartnerNetwork(staff.permissions)) return { response: json({ ok: false, error: "Your KCPL role has read-only partner network access." }, 403) };
   return { user: access.user, staff };
 }
 
@@ -86,10 +87,10 @@ export function parsePartnerInput(body: Record<string, unknown>): { input?: Part
 
   const rawRating = body.serviceRating;
   const serviceRating = rawRating === null || rawRating === undefined || rawRating === "" ? null : Number(rawRating);
-  if (serviceRating !== null && (!Number.isFinite(serviceRating) || serviceRating < 1 || serviceRating > 5)) return { error: "Service rating must be between 1 and 5." };
+  if (serviceRating !== null && (!Number.isInteger(serviceRating) || serviceRating < 1 || serviceRating > 5)) return { error: "Service rating must be a whole number from 1 to 5." };
 
   const contractExpiryDate = clean(body.contractExpiryDate, 10);
-  if (contractExpiryDate && !/^\d{4}-\d{2}-\d{2}$/.test(contractExpiryDate)) return { error: "Contract expiry date is invalid." };
+  if (contractExpiryDate && !validPartnerCalendarDate(contractExpiryDate)) return { error: "Choose a real contract expiry date." };
 
   const website = url(body.website, "Website");
   if (website.error) return { error: website.error };
