@@ -208,7 +208,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
       {showCreate && canManage ? <OpsSurface className="mt-4" eyebrow="Consolidation planning" title="Create master load" description="Choose at least two compatible orders. Same-branch, mode, equipment, temperature and capacity rules are enforced server-side.">
         <form onSubmit={createLoad} className="grid gap-4">
           <div className="grid gap-3 md:grid-cols-3">
-            <OpsField label="Load name"><input value={name} onChange={(event) => setName(event.target.value)} placeholder="KTM–Kolkata groupage 22 Aug"/></OpsField>
+            <OpsField label="Load name"><input value={name} onChange={(event) => setName(event.target.value)} placeholder="KTM-Kolkata groupage 22 Aug"/></OpsField>
             <OpsField label="Master mode"><select value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></OpsField>
             <OpsField label="Equipment"><input value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="Truck, 40HC, ULD…"/></OpsField>
             <OpsField label="Weight capacity kg"><input type="number" min="0" step="0.01" value={capacityWeight} onChange={(event) => setCapacityWeight(event.target.value)} placeholder="Optional"/></OpsField>
@@ -219,7 +219,10 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[.09em] text-[#7a7069]">House orders</p>
             <div className="grid max-h-[280px] gap-2 overflow-auto rounded-[12px] border border-[#e8e0d9] bg-[#fcfbf9] p-3 md:grid-cols-2">
-              {eligibleOrders.length ? eligibleOrders.map((order) => <label key={order.id} className="flex cursor-pointer items-start gap-2 rounded-[10px] border border-[#ece5df] bg-white p-3 text-[10px]"><input type="checkbox" checked={selectedOrderIds.includes(order.id)} onChange={(event) => setSelectedOrderIds((current) => event.target.checked ? [...current, order.id] : current.filter((id) => id !== order.id))}/><span><OpsMono>{order.id}</OpsMono><strong className="mt-1 block text-[#4c433d]">{order.origin} → {order.destination}</strong><span className="mt-1 block text-[#8a8078]">{order.branch} · {modeLabel(order.mode)} · {order.weight_kg.toFixed(1)} kg · {order.volume_cbm.toFixed(3)} CBM{order.customer_name ? ` · ${order.customer_name}` : " · customer not linked"}</span></span></label>) : <OpsEmptyState title="No eligible orders" description="Create transport orders or resolve their current tender/booking state before consolidating."/>}
+              {eligibleOrders.length ? eligibleOrders.map((order) => {
+                const checkboxId = `load-order-${order.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+                return <label key={order.id} htmlFor={checkboxId} className="flex cursor-pointer items-start gap-2 rounded-[10px] border border-[#ece5df] bg-white p-3 text-[10px]"><input id={checkboxId} type="checkbox" checked={selectedOrderIds.includes(order.id)} onChange={(event) => setSelectedOrderIds((current) => event.target.checked ? [...current, order.id] : current.filter((id) => id !== order.id))}/><span><OpsMono>{order.id}</OpsMono><strong className="mt-1 block text-[#4c433d]">{order.origin} → {order.destination}</strong><span className="mt-1 block text-[#8a8078]">{order.branch} · {modeLabel(order.mode)} · {order.weight_kg.toFixed(1)} kg · {order.volume_cbm.toFixed(3)} CBM{order.customer_name ? ` · ${order.customer_name}` : " · customer not linked"}</span></span></label>;
+              }) : <OpsEmptyState title="No eligible orders" description="Create transport orders or resolve their current tender/booking state before consolidating."/>}
             </div>
           </div>
           <div className="flex justify-end gap-2"><OpsButton type="button" onClick={() => setShowCreate(false)}>Cancel</OpsButton><OpsButton type="submit" variant="primary" disabled={busy || selectedOrderIds.length < 2}>Create load ({selectedOrderIds.length})</OpsButton></div>
