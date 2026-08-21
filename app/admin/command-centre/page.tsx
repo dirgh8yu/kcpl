@@ -5,6 +5,7 @@ import { kcplStaffRoleLabels } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
 import { loadCommandCentre } from "./command-centre.server";
 import { CommandCentreWorkspace } from "./command-centre-workspace";
+import { RoleHomeDefaults } from "./role-home-defaults";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -23,6 +24,7 @@ async function loadState(user: StaffUser) {
     return {
       kind: "ready" as const,
       data,
+      role: staff.permissions.role,
       roleLabel: kcplStaffRoleLabels[staff.permissions.role],
       canManageStaff: staff.permissions.canManageStaff,
       canManageFinance: staff.permissions.canManageFinance,
@@ -50,6 +52,7 @@ export default async function CommandCentrePage() {
       canManageFinance={state.canManageFinance}
       isManagement={state.isManagement}
     >
+      <RoleHomeDefaults role={state.role}/>
       <CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel}/>
     </OperationsShell>
   );
