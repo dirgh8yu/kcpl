@@ -21,19 +21,22 @@ export default async function ConsolidationPage() {
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Consolidation planning contains procurement-sensitive transport orders and costs." embedded/></OperationsShell>;
 
+  let loads: Awaited<ReturnType<typeof listConsolidationLoads>>;
+  let orders: Awaited<ReturnType<typeof listTmsOrders>>;
   try {
-    const [loads, orders] = await Promise.all([listConsolidationLoads(staff), listTmsOrders(staff)]);
-    if (loads.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Load Planner unavailable" detail="KCPL consolidation or transport-order storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
-
-    return (
-      <OperationsShell {...shellProps}>
-        <TmsConsolidationWorkspace initialLoads={loads.loads} initialOrders={orders.orders} canManage={staff.permissions.canEditCommercial}/>
-      </OperationsShell>
-    );
+    [loads, orders] = await Promise.all([listConsolidationLoads(staff), listTmsOrders(staff)]);
   } catch (error) {
     console.error("Failed to load KCPL Load Planner", error);
     return <OperationsShell {...shellProps}><Gate title="Load Planner could not be loaded" detail="KCPL consolidation data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
+
+  if (loads.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Load Planner unavailable" detail="KCPL consolidation or transport-order storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+
+  return (
+    <OperationsShell {...shellProps}>
+      <TmsConsolidationWorkspace initialLoads={loads.loads} initialOrders={orders.orders} canManage={staff.permissions.canEditCommercial}/>
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
