@@ -148,12 +148,13 @@ export async function listQuoteSummaries(context: KcplStaffContext): Promise<Quo
     firebaseAdminDb().collection("quotes").orderBy("created_at", "desc").limit(1000).get(),
     listStaffProfiles(),
   ]);
+  const visibleDocs = snapshot.docs.filter((doc) => doc.get("migration_hidden") !== true);
 
   if (context.can_access_all_branches) {
-    return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>, profiles ?? []));
+    return visibleDocs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>, profiles ?? []));
   }
 
-  const rows = snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+  const rows = visibleDocs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
   const shipmentReferences = rows.flatMap(({ data }) => {
     const reference = nullableString(data.shipment_reference);
     return reference ? [reference] : [];
@@ -197,7 +198,7 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
     db.collection("quotes").doc(normalized).get(),
     listStaffProfiles(),
   ]);
-  if (!quoteSnapshot.exists) return null;
+  if (!quoteSnapshot.exists || quoteSnapshot.get("migration_hidden") === true) return null;
 
   const quote = detailFromData(normalized, quoteSnapshot.data() as Record<string, unknown>, profiles ?? []);
   const [notesSnapshot, communicationsSnapshot] = await Promise.all([

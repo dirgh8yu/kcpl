@@ -77,10 +77,11 @@ export async function listCrmOperationsHistory(customerId: string, context?: Kcp
   ]);
 
   const quoteDataByReference = new Map<string, Record<string, unknown>>();
-  const quotes = quotesSnapshot.docs.map((doc): CrmQuoteHistoryItem => {
+  const quotes = quotesSnapshot.docs.flatMap((doc): CrmQuoteHistoryItem[] => {
     const data = doc.data() as Record<string, unknown>;
     quoteDataByReference.set(doc.id, data);
-    return {
+    if (data.migration_hidden === true) return [];
+    return [{
       reference: doc.id,
       created_at: text(data.created_at),
       updated_at: text(data.updated_at),
@@ -91,7 +92,7 @@ export async function listCrmOperationsHistory(customerId: string, context?: Kcp
       currency: quoteCurrency(data.quote_currency),
       quoted_amount: nullable(data.quoted_amount),
       shipment_reference: nullable(data.shipment_reference),
-    };
+    }];
   }).sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
 
   const shipmentDocs = new Map<string, DocumentSnapshot>();
@@ -129,9 +130,10 @@ export async function listCrmOperationsHistory(customerId: string, context?: Kcp
     const data = doc.data() as Record<string, unknown>;
     const quoteReference = text(data.quote_reference);
     const quote = quoteDataByReference.get(quoteReference) ?? {};
+    const hiddenMigrationQuote = quote.migration_hidden === true;
     return {
       reference: doc.id,
-      quote_reference: quoteReference,
+      quote_reference: hiddenMigrationQuote ? text(data.migration_legacy_quote_reference) : quoteReference,
       created_at: text(data.created_at),
       updated_at: text(data.updated_at),
       status: shipmentStatus(data.status),
@@ -139,9 +141,9 @@ export async function listCrmOperationsHistory(customerId: string, context?: Kcp
       current_location: nullable(data.current_location),
       carrier: nullable(data.carrier),
       carrier_reference: nullable(data.carrier_reference),
-      origin: text(quote.origin),
-      destination: text(quote.destination),
-      mode: text(quote.mode),
+      origin: text(quote.origin, text(data.origin)),
+      destination: text(quote.destination, text(data.destination)),
+      mode: text(quote.mode, text(data.mode)),
     };
   }).sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
 

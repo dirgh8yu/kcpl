@@ -189,9 +189,9 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
       customerId,
       customerName: text(customer?.display_name, text(quote.company_name, text(quote.contact_name, customerId ?? "Unlinked customer"))),
       branch: branchValue(shipment.primary_branch ?? customer?.primary_branch),
-      origin: text(quote.origin, "Origin"),
-      destination: text(quote.destination, "Destination"),
-      mode: text(quote.mode, "Not set"),
+      origin: text(quote.origin, text(shipment.origin, "Origin")),
+      destination: text(quote.destination, text(shipment.destination, "Destination")),
+      mode: text(quote.mode, text(shipment.mode, "Not set")),
       status: text(shipment.status, "booking_confirmed"),
       currency,
       revenue: 0,
@@ -392,7 +392,7 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   let quoteLost = 0;
   let quoteOpen = 0;
   for (const [, data] of quotes) {
-    if (!inRange(data.created_at, range)) continue;
+    if (data.migration_hidden === true || !inRange(data.created_at, range)) continue;
     quoteTotal += 1;
     const status = text(data.status);
     if (status === "won") quoteWon += 1;
