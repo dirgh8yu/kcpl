@@ -2,6 +2,7 @@ import { getAdminAccess } from "../../../admin/admin-auth";
 import { crmCurrencies, type CrmCurrency } from "../../../admin/crm/crm-data";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { sendTmsTenderEmail } from "../../../admin/tenders/tms-tender-email.server";
+import { reconcileExpiredTmsTenders } from "../../../admin/tenders/tms-tender-expiry.server";
 import { tmsTenderChannels, type TmsTenderChannel } from "../../../admin/tenders/tms-tendering";
 import {
   cancelTmsTender,
@@ -29,6 +30,7 @@ async function auth() {
 export async function GET() {
   const access = await auth();
   if ("response" in access) return access.response;
+  await reconcileExpiredTmsTenders();
   const result = await listTmsTenders(access.staff);
   if (result.kind !== "ready") return json({ ok: false, error: "Tender storage is unavailable." }, 503);
   return json({ ok: true, tenders: result.tenders, canManageTenders: access.staff.permissions.canEditCommercial });
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
   try { body = await request.json() as Record<string, unknown>; } catch { return json({ ok: false, error: "The request could not be read." }, 400); }
   const action = clean(body.action, 40);
   const actor = { name: access.user.displayName, email: access.user.email };
+  await reconcileExpiredTmsTenders();
 
   if (action === "create") {
     const channel = clean(body.channel, 20) as TmsTenderChannel;
