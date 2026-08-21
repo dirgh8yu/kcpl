@@ -13,8 +13,8 @@ const EXTRA_TYPES: AutomationAlertType[] = [
   "pod_missing",
   "shipment_stalled",
 ];
-
 const ACTIVE_STATUSES = new Set(["booking_confirmed", "preparing", "in_transit", "customs_clearance", "out_for_delivery", "exception"]);
+const MAX_BATCH_WRITES = 400;
 
 type AlertCandidate = {
   fingerprint: string;
@@ -38,6 +38,8 @@ type AutoTaskCondition = {
   assignedEmail: string | null;
   dueHours: number;
 };
+
+type BatchOperation = (batch: FirebaseFirestore.WriteBatch) => void;
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -99,15 +101,25 @@ function dueIso(now: Date, hours: number) {
   return new Date(now.getTime() + hours * 3_600_000).toISOString();
 }
 
+async function commitOperations(operations: BatchOperation[]) {
+  const db = firebaseAdminDb();
+  for (let index = 0; index < operations.length; index += MAX_BATCH_WRITES) {
+    const batch = db.batch();
+    for (const operation of operations.slice(index, index + MAX_BATCH_WRITES)) operation(batch);
+    await batch.commit();
+  }
+}
+
 export async function evaluateFreightAutomation() {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
-  const [shipmentsSnapshot, quotesSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot, existingAlertsSnapshot] = await Promise.all([
+  const [shipmentsSnapshot, quotesSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot, autoTasksSnapshot, existingAlertsSnapshot] = await Promise.all([
     db.collection("shipments").limit(2500).get(),
     db.collection("quotes").limit(3000).get(),
     db.collectionGroup("customs_steps").limit(10000).get(),
     db.collectionGroup("documents").limit(15000).get(),
     db.collectionGroup("document_requirements").limit(5000).get(),
+    db.collectionGroup("job_tasks").where("automation_generated", "==", true).limit(10000).get(),
     db.collection("alerts").limit(5000).get(),
   ]);
 
@@ -179,7 +191,8 @@ export async function evaluateFreightAutomation() {
     const presentDocs = documentsByShipment.get(reference) ?? new Set<ShipmentDocumentType>();
 
     const requirementMap = new Map(defaultDocumentRequirements(mode).map((item) => [item.documentType, item.required]));
-    for (const [type, required] of requirementOverrides.get(reference) ?? []) requirementMap.set(type, required);
+    const overrides = requirementOverrides.get(reference);
+    if (overrides) for (const [type, required] of overrides) requirementMap.set(type, required);
     const missingRequired = [...requirementMap.entries()]
       .filter(([type, required]) => required && type !== "proof_of_delivery" && !presentDocs.has(type))
       .map(([type]) => type);
@@ -319,8 +332,9 @@ export async function evaluateFreightAutomation() {
     }
   }
 
+  const existingAlerts = new Map(existingAlertsSnapshot.docs.map((doc) => [doc.id, doc]));
   const existingExtra = existingAlertsSnapshot.docs.filter((doc) => EXTRA_TYPES.includes(doc.get("type") as AutomationAlertType));
-  const batch = db.batch();
+  const operations: BatchOperation[] = [];
   let created = 0;
   let updated = 0;
   let resolved = 0;
@@ -328,10 +342,10 @@ export async function evaluateFreightAutomation() {
   for (const candidate of candidates.values()) {
     const id = alertId(candidate.fingerprint);
     const ref = db.collection("alerts").doc(id);
-    const existing = existingAlertsSnapshot.docs.find((doc) => doc.id === id);
+    const existing = existingAlerts.get(id);
     const existingStatus = existing?.get("status");
     const firstTriggered = existing?.get("first_triggered_at") || nowIso;
-    batch.set(ref, {
+    operations.push((batch) => batch.set(ref, {
       fingerprint: candidate.fingerprint,
       type: candidate.type,
       severity: candidate.severity,
@@ -356,21 +370,27 @@ export async function evaluateFreightAutomation() {
       resolved_by_name: null,
       resolved_by_email: null,
       automation_source: "freight_ops",
-    }, { merge: true });
+    }, { merge: true }));
     if (existing) updated += 1; else created += 1;
   }
 
   for (const existing of existingExtra) {
     const fingerprint = text(existing.get("fingerprint"), existing.id);
     if (candidates.has(fingerprint) || existing.get("status") === "resolved") continue;
-    batch.set(existing.ref, {
+    operations.push((batch) => batch.set(existing.ref, {
       status: "resolved",
       resolved_at: nowIso,
       resolved_by_name: "KCPL Automation",
       resolved_by_email: "automation@kcpl.internal",
       last_triggered_at: existing.get("last_triggered_at") || nowIso,
-    }, { merge: true });
+    }, { merge: true }));
     resolved += 1;
+  }
+
+  const existingAutoTasks = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+  for (const task of autoTasksSnapshot.docs) {
+    const reference = childShipmentId(task.ref);
+    if (reference) existingAutoTasks.set(`${reference}:${task.id}`, task);
   }
 
   let tasksCreated = 0;
@@ -384,9 +404,9 @@ export async function evaluateFreightAutomation() {
     for (const condition of conditions) {
       set.add(condition.id);
       const ref = db.collection("shipments").doc(reference).collection("job_tasks").doc(condition.id);
-      const snapshot = await ref.get();
-      if (!snapshot.exists) {
-        batch.set(ref, {
+      const snapshot = existingAutoTasks.get(`${reference}:${condition.id}`);
+      if (!snapshot) {
+        operations.push((batch) => batch.set(ref, {
           title: condition.title,
           detail: condition.detail,
           branch: condition.branch,
@@ -400,10 +420,10 @@ export async function evaluateFreightAutomation() {
           created_by: "automation@kcpl.internal",
           automation_generated: true,
           automation_key: condition.id,
-        });
+        }));
         tasksCreated += 1;
       } else if (snapshot.get("completed") === true) {
-        batch.set(ref, {
+        operations.push((batch) => batch.set(ref, {
           title: condition.title,
           detail: condition.detail,
           branch: condition.branch,
@@ -416,10 +436,10 @@ export async function evaluateFreightAutomation() {
           automation_generated: true,
           automation_key: condition.id,
           automation_reopened_at: nowIso,
-        }, { merge: true });
+        }, { merge: true }));
         tasksReopened += 1;
       } else {
-        batch.set(ref, {
+        operations.push((batch) => batch.set(ref, {
           title: condition.title,
           detail: condition.detail,
           branch: condition.branch,
@@ -427,27 +447,25 @@ export async function evaluateFreightAutomation() {
           assigned_to_email: condition.assignedEmail,
           automation_generated: true,
           automation_key: condition.id,
-        }, { merge: true });
+        }, { merge: true }));
       }
     }
   }
 
-  for (const shipment of shipmentsSnapshot.docs) {
-    const autoTasks = await shipment.ref.collection("job_tasks").where("automation_generated", "==", true).limit(20).get();
-    const active = activeTaskIds.get(shipment.id) ?? new Set<string>();
-    for (const task of autoTasks.docs) {
-      if (active.has(task.id) || task.get("completed") === true) continue;
-      batch.set(task.ref, {
-        completed: true,
-        completed_at: nowIso,
-        completed_by: "automation@kcpl.internal",
-        automation_resolved_at: nowIso,
-      }, { merge: true });
-      tasksAutoCompleted += 1;
-    }
+  for (const task of autoTasksSnapshot.docs) {
+    const reference = childShipmentId(task.ref);
+    const active = activeTaskIds.get(reference) ?? new Set<string>();
+    if (!reference || active.has(task.id) || task.get("completed") === true) continue;
+    operations.push((batch) => batch.set(task.ref, {
+      completed: true,
+      completed_at: nowIso,
+      completed_by: "automation@kcpl.internal",
+      automation_resolved_at: nowIso,
+    }, { merge: true }));
+    tasksAutoCompleted += 1;
   }
 
-  await batch.commit();
+  await commitOperations(operations);
   return {
     kind: "completed" as const,
     active: candidates.size,
