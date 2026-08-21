@@ -13,7 +13,6 @@ import {
   Settings2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { NepalOperationsMap } from "../../components/operations-map";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono } from "../operations-ui";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
@@ -21,7 +20,6 @@ import type { CommandCentreData, CommandCentreJob } from "./command-centre-data"
 const defaultSections = {
   attention: true,
   movement: true,
-  network: true,
   branch: true,
   staff: true,
   recent: true,
@@ -170,7 +168,7 @@ export function CommandCentreWorkspace({ data, roleLabel }: { data: CommandCentr
               <OpsButton variant="secondary" aria-expanded={customizeOpen} aria-controls="home-section-controls" onClick={() => setCustomizeOpen((current) => !current)}><Settings2 size={13}/>Customize</OpsButton>
               {customizeOpen ? <div id="home-section-controls" className="absolute right-0 top-11 z-30 w-64 rounded-[12px] border border-[#d9d3cd] bg-white p-2 shadow-[0_20px_60px_rgba(54,43,34,.15)]">
                 <p className="px-2 pb-2 pt-1 text-[10px] font-bold text-[#817a73]">Home sections</p>
-                {(Object.keys(defaultSections) as SectionKey[]).map((key) => <button key={key} type="button" onClick={() => toggleSection(key)} className="flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2 text-left text-[11px] font-semibold capitalize text-[#504a45] hover:bg-[#f7f5f2]"><span className={`grid h-5 w-5 place-items-center rounded-[5px] border ${sections[key] ? "border-[#d99b88] bg-[#fbe9e3] text-[#ad5844]" : "border-[#dcd6d0] bg-white text-transparent"}`}><Check size={12}/></span>{key === "branch" ? "Branch pressure" : key === "staff" ? "Staff workload" : key === "network" ? "Network map" : key === "recent" ? "Recent movement" : key}</button>)}
+                {(Object.keys(defaultSections) as SectionKey[]).map((key) => <button key={key} type="button" onClick={() => toggleSection(key)} className="flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2 text-left text-[11px] font-semibold capitalize text-[#504a45] hover:bg-[#f7f5f2]"><span className={`grid h-5 w-5 place-items-center rounded-[5px] border ${sections[key] ? "border-[#d99b88] bg-[#fbe9e3] text-[#ad5844]" : "border-[#dcd6d0] bg-white text-transparent"}`}><Check size={12}/></span>{key === "branch" ? "Branch pressure" : key === "staff" ? "Staff workload" : key === "recent" ? "Recent movement" : key}</button>)}
                 <button type="button" onClick={() => { setSections(defaultSections); window.localStorage.setItem(`kcpl-ops-home-sections:${roleLabel.toLowerCase()}`, JSON.stringify(defaultSections)); }} className="mt-1 w-full rounded-[8px] px-2.5 py-2 text-left text-[10px] font-semibold text-[#8b6257] hover:bg-[#f7f5f2]">Reset view</button>
               </div> : null}
             </div>
@@ -197,10 +195,6 @@ export function CommandCentreWorkspace({ data, roleLabel }: { data: CommandCentr
             <div className="border-t border-[#e9e5e0] bg-[#faf9f7] p-3"><div className="grid gap-1"><QuickLink href="/admin" label="Review enquiries" detail="Price and convert freight requests"/><QuickLink href="/admin/alerts" label="Tasks & alerts" detail="Open the operational attention inbox"/></div></div>
           </HomePanel> : null}
         </div> : null}
-
-        {sections.network ? <HomePanel title="KCPL operating network" eyebrow="Branches & movement" action={<span className="text-[10px] font-medium text-[#766f68]">Recorded operational location, not GPS tracking</span>}>
-          <NepalOperationsMap variant="home" locationLinkHref="/network#confirmed-locations"/>
-        </HomePanel> : null}
 
         {(sections.branch || sections.staff) ? <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(390px,.75fr)]">
           {sections.branch ? <HomePanel title="Branch pressure" eyebrow="Network load">
