@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, PackageCheck, Upload, UsersRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Landmark, LoaderCircle, PackageCheck, Upload, UsersRound } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
 import type { CustomerImportPreview, CustomerImportResult, CustomerImportStatus } from "./customer-import";
+import { ReceivablesImportPanel } from "./receivables-import-panel";
 import { ShipmentImportPanel } from "./shipment-import-panel";
 
 function statusTone(status: CustomerImportStatus): "success" | "warning" | "danger" {
@@ -67,34 +68,35 @@ export function MigrationWorkspace() {
     <OpsPageHeader
       eyebrow="Organisation · Migration Hub"
       title="Paper → KCPL migration"
-      description="Move KCPL records into the operating system in controlled stages. Stage 1 customer migration remains available and Stage 2 now adds safe active and historical shipment migration without touching finance or paper archives."
-      meta={<><span>Management only</span><span>Stage 2 of 4</span><span>No writes before preview</span></>}
-      actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="primary" data-size="md" download><Download size={13}/>Shipment template</a></>}
+      description="Move KCPL records into the operating system in controlled stages. Customers and shipments are established; Stage 3A now brings current customer receivables into Finance without importing supplier payables or the full paper archive yet."
+      meta={<><span>Management only</span><span>Stage 3A of 4</span><span>No writes before preview</span></>}
+      actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Shipment template</a><a href="/api/admin/migration/receivables" className="ops-button" data-variant="primary" data-size="md" download><Download size={13}/>Receivables template</a></>}
     />
 
     <OpsStatStrip>
       <OpsStat label="Stage 1" value="Customers" detail="Complete · still available" icon={<UsersRound size={13}/>} tone="success"/>
-      <OpsStat label="Stage 2" value="Shipments" detail="Active now" icon={<PackageCheck size={13}/>} tone="success"/>
-      <OpsStat label="Stage 3" value="Finance" detail="Not built yet" />
+      <OpsStat label="Stage 2" value="Shipments" detail="Complete · still available" icon={<PackageCheck size={13}/>} tone="success"/>
+      <OpsStat label="Stage 3A" value="Receivables" detail="Active now" icon={<Landmark size={13}/>} tone="success"/>
       <OpsStat label="Stage 4" value="Archive" detail="Paper files + rollback" />
     </OpsStatStrip>
 
     <div className="ops-content-wide ops-stack">
-      <OpsSurface eyebrow="Stage plan" title="One migration layer at a time" description="Customer master data is established first. Stage 2 can now attach real shipment history to those customers while finance and scanned paper archives remain isolated for later releases.">
+      <OpsSurface eyebrow="Stage plan" title="One migration layer at a time" description="Stage 3 is deliberately split. Receivables and customer opening balances are enabled first; supplier payables remain isolated until Stage 3A is proven against real KCPL balances.">
         <div className="grid gap-2 md:grid-cols-4">
           <Stage number="01" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
-          <Stage number="02" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="active"/>
-          <Stage number="03" title="Finance opening data" detail="Receivables, supplier bills and opening balances with finance controls."/>
+          <Stage number="02" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="complete"/>
+          <Stage number="03A" title="Receivables opening" detail="Open invoices and auditable customer opening balances. Supplier payables stay out for now." state="active"/>
           <Stage number="04" title="Paper archive" detail="Archived Job Files, scanned documents, batch history and rollback tools."/>
         </div>
       </OpsSurface>
 
+      <ReceivablesImportPanel/>
       <ShipmentImportPanel/>
 
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
       {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} customers imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> recorded {result.duplicates} possible duplicate{result.duplicates === 1 ? "" : "s"} and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"}. <Link href="/admin/crm" className="font-bold underline">Open Customers</Link>.</OpsNotice> : null}
 
-      <OpsSurface eyebrow="Stage 1 · Customer master" title="Customer CSV intake → validate → preview → confirm" description="Stage 1 stays available because every Stage 2 shipment must resolve to an existing CRM customer. Import missing customers here first." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={12}/>Download customer template</a>}>
+      <OpsSurface eyebrow="Stage 1 · Customer master" title="Customer CSV intake → validate → preview → confirm" description="Stage 1 stays available because every Stage 2 shipment and Stage 3A receivable must resolve to an existing CRM customer. Import missing customers here first." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={12}/>Download customer template</a>}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div>
             <label className="block rounded-[14px] border border-dashed border-[#d8cec6] bg-[#fbf8f5] p-6 text-center transition hover:border-[#caa797] hover:bg-[#fffaf7]">
