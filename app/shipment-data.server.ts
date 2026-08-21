@@ -1,4 +1,6 @@
 import { firebaseAdminDb } from "./firebase-admin.server";
+import { kcplBranches, type KcplBranch } from "./admin/crm/crm-data";
+import { defaultCustomsSteps, defaultDocumentRequirements, defaultWorkflowTasks } from "./admin/workflow-defaults";
 import {
   shipmentStatusLabels,
   shipmentStatuses,
@@ -25,6 +27,10 @@ function stringValue(value: unknown, fallback = "") {
 function numberValue(value: unknown) {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function branchValue(value: unknown): KcplBranch {
+  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu";
 }
 
 function shipmentStatus(value: unknown): ShipmentStatus {
@@ -118,9 +124,12 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     if (existingReference) return { kind: "ready" as const, reference: existingReference };
 
     const customerId = nullableString(data.customer_id);
-    const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
-    const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
-    const primaryBranch = customerSnapshot?.exists ? stringValue(customerSnapshot.get("primary_branch"), "Kathmandu") : "Kathmandu";
+    if (!customerId) return { kind: "customer-required" as const };
+    const customerRef = db.collection("customers").doc(customerId);
+    const customerSnapshot = await transaction.get(customerRef);
+    if (!customerSnapshot.exists) return { kind: "customer-missing" as const };
+    const primaryBranch = branchValue(customerSnapshot.get("primary_branch"));
+    const mode = stringValue(data.mode);
 
     const reference = shipmentReference();
     const createdAt = new Date().toISOString();
@@ -131,7 +140,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
       shipment_reference: reference,
       title: shipmentStatusLabels.booking_confirmed,
       location: nullableString(data.origin),
-      details: "KCPL has opened the shipment record and begun coordinating the movement.",
+      details: "KCPL has opened the shipment record and initialized its controlled operational workflow.",
       event_time: createdAt,
       created_at: createdAt,
       author_name: authorName || "KCPL Operations",
@@ -148,6 +157,12 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
       job_assigned_to_email: null,
       internal_job_reference: null,
       internal_job_notes: null,
+      workflow_version: 1,
+      job_closed_at: null,
+      job_closed_by_name: null,
+      job_closed_by_email: null,
+      job_close_note: null,
+      job_close_overridden: false,
       created_at: createdAt,
       updated_at: createdAt,
       status: "booking_confirmed",
@@ -158,30 +173,82 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
       customer_note: null,
     });
     transaction.set(shipmentRef.collection("events").doc(String(eventId)), initialEvent);
-    transaction.update(quoteRef, { shipment_reference: reference, updated_at: createdAt });
 
-    if (customerRef && customerSnapshot?.exists) {
-      const currentAccountStatus = stringValue(customerSnapshot.get("account_status"));
-      transaction.update(customerRef, {
-        active_shipment_count: numberValue(customerSnapshot.get("active_shipment_count")) + 1,
-        lead_stage: "won",
-        ...(currentAccountStatus === "prospect" || currentAccountStatus === "dormant" ? { account_status: "active" } : {}),
-        updated_at: createdAt,
-      });
-      transaction.create(customerRef.collection("activity").doc(crmActivityId(reference)), {
-        type: "shipment_created",
-        title: `Shipment opened: ${reference}`,
-        detail: `${stringValue(data.origin)} → ${stringValue(data.destination)} · from ${normalized}`,
-        actor_name: authorName || "KCPL Operations",
-        actor_email: authorEmail || null,
+    for (const task of defaultWorkflowTasks(mode, primaryBranch)) {
+      const id = `task-${crypto.randomUUID()}`;
+      transaction.create(shipmentRef.collection("job_tasks").doc(id), {
+        title: task.title,
+        detail: task.detail,
+        branch: task.branch,
+        due_at: null,
+        assigned_to_name: null,
+        assigned_to_email: null,
+        completed: false,
+        completed_at: null,
+        completed_by: null,
         created_at: createdAt,
+        created_by: authorEmail || "workflow@kcpl.internal",
+        workflow_seeded: true,
       });
     }
+
+    for (const step of defaultCustomsSteps(mode, primaryBranch)) {
+      const id = `customs-${crypto.randomUUID()}`;
+      transaction.create(shipmentRef.collection("customs_steps").doc(id), {
+        title: step.title,
+        detail: step.detail,
+        branch: step.branch,
+        required: step.required,
+        completed: false,
+        completed_at: null,
+        completed_by: null,
+        created_at: createdAt,
+        created_by: authorEmail || "workflow@kcpl.internal",
+        workflow_seeded: true,
+      });
+    }
+
+    for (const requirement of defaultDocumentRequirements(mode)) {
+      transaction.set(shipmentRef.collection("document_requirements").doc(requirement.documentType), {
+        document_type: requirement.documentType,
+        required: requirement.required,
+        reason: requirement.reason,
+        source: "workflow_default",
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+    }
+
+    transaction.create(shipmentRef.collection("job_activity").doc(`activity-${crypto.randomUUID()}`), {
+      type: "workflow_initialized",
+      title: "Controlled workflow initialized",
+      detail: "Default operational tasks, customs controls and document requirements were created from the accepted quote.",
+      actor_name: authorName || "KCPL Operations",
+      actor_email: authorEmail || null,
+      created_at: createdAt,
+    });
+    transaction.update(quoteRef, { shipment_reference: reference, updated_at: createdAt });
+
+    const currentAccountStatus = stringValue(customerSnapshot.get("account_status"));
+    transaction.update(customerRef, {
+      active_shipment_count: numberValue(customerSnapshot.get("active_shipment_count")) + 1,
+      lead_stage: "won",
+      ...(currentAccountStatus === "prospect" || currentAccountStatus === "dormant" ? { account_status: "active" } : {}),
+      updated_at: createdAt,
+    });
+    transaction.create(customerRef.collection("activity").doc(crmActivityId(reference)), {
+      type: "shipment_created",
+      title: `Shipment opened: ${reference}`,
+      detail: `${stringValue(data.origin)} → ${stringValue(data.destination)} · from ${normalized}`,
+      actor_name: authorName || "KCPL Operations",
+      actor_email: authorEmail || null,
+      created_at: createdAt,
+    });
 
     return { kind: "created" as const, reference };
   });
 
-  if (result.kind === "missing" || result.kind === "not-won") return result;
+  if (["missing", "not-won", "customer-required", "customer-missing"].includes(result.kind)) return result;
   return { kind: result.kind, shipment: await loadShipment(result.reference) } as const;
 }
 
