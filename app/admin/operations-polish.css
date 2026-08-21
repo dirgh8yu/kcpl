@@ -1,0 +1,158 @@
+/* KCPL Operations v3.1 refinement layer. Scoped so the public site is untouched. */
+.kcpl-ops .ops-button,
+.kcpl-ops .ops-record-row,
+.kcpl-ops .ops-surface,
+.kcpl-ops .ops-stat,
+.kcpl-ops .ops-filter-pill,
+.kcpl-ops .ops-badge {
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease,
+    background-color .18s ease,
+    color .18s ease;
+}
+
+.kcpl-ops .ops-button:not(:disabled):active {
+  transform: translateY(1px) scale(.985);
+}
+
+.kcpl-ops .ops-record-row:hover {
+  transform: translateX(2px);
+}
+
+.kcpl-ops .ops-surface:hover {
+  border-color: #e1d7ce;
+}
+
+.kcpl-ops .ops-search:focus-within,
+.kcpl-ops .ops-input:focus,
+.kcpl-ops .ops-select:focus,
+.kcpl-ops .ops-field input:focus,
+.kcpl-ops .ops-field select:focus,
+.kcpl-ops .ops-field textarea:focus {
+  box-shadow: 0 0 0 3px rgba(233, 125, 93, .09);
+}
+
+.kcpl-ops .satellite-marker-activity {
+  position: absolute;
+  left: 9px;
+  top: -12px;
+  z-index: 4;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid rgba(255, 253, 251, .96);
+  border-radius: 999px;
+  background: #e97d5d;
+  box-shadow: 0 4px 14px rgba(112, 73, 55, .18);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.kcpl-ops .satellite-marker-activity.has-exception {
+  background: #c85d61;
+}
+
+.kcpl-ops .satellite-location-activity {
+  margin-top: 12px;
+  padding: 9px 11px;
+  border: 1px solid #eadfd6;
+  border-radius: 12px;
+  background: #fbf5f1;
+  color: #7d6f65;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.kcpl-ops .satellite-location-activity strong {
+  color: #b65f49;
+}
+
+.kcpl-ops .satellite-legend-live {
+  background: #e97d5d !important;
+  box-shadow: 0 0 0 3px rgba(233, 125, 93, .14);
+}
+
+@media (max-width: 1023px) {
+  .kcpl-ops .ops-grid-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kcpl-ops .ops-split {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .kcpl-ops .ops-page-header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .kcpl-ops .ops-page-header-main {
+    gap: 14px;
+  }
+
+  .kcpl-ops .ops-page-actions {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .kcpl-ops .ops-page-actions::-webkit-scrollbar,
+  .kcpl-ops .ops-stat-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .kcpl-ops .ops-page-actions > * {
+    flex: 0 0 auto;
+  }
+
+  .kcpl-ops .ops-stat-strip {
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .kcpl-ops .ops-stat {
+    min-width: 126px;
+    scroll-snap-align: start;
+  }
+
+  .kcpl-ops .ops-content,
+  .kcpl-ops .ops-content-wide {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .kcpl-ops .ops-surface-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .kcpl-ops .ops-surface-action {
+    max-width: 48%;
+    overflow-x: auto;
+  }
+
+  .kcpl-ops .ops-toolbar {
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-ops *,
+  .kcpl-ops *::before,
+  .kcpl-ops *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
