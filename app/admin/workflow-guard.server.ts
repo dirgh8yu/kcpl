@@ -4,7 +4,7 @@ import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipme
 import { shipmentStatuses, type ShipmentStatus } from "../shipment-types";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "./staff-directory.server";
-import { defaultDocumentRequirements } from "./workflow-defaults";
+import { buildDocumentIntelligence } from "./workflow-defaults";
 import type { ShipmentWorkflowReadiness, WorkflowDocumentState, WorkflowStage } from "./workflow-guard";
 
 type Actor = { name: string; email: string };
@@ -101,28 +101,49 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     documentCounts.set(typed, (documentCounts.get(typed) ?? 0) + 1);
   }
 
-  const requirementOverrides = new Map<ShipmentDocumentType, { required: boolean; reason: string }>();
+  const intelligence = buildDocumentIntelligence({
+    mode: text(source.quote.mode),
+    origin: nullable(source.quote.origin),
+    destination: nullable(source.quote.destination),
+    cargoType: nullable(source.quote.cargo_type),
+    requirements: nullable(source.quote.requirements),
+    primaryBranch: source.branch,
+  });
+
+  const requirementOverrides = new Map<ShipmentDocumentType, { required: boolean; reason: string; advisory: boolean; source: "shipment_override" }>();
   for (const doc of requirementsSnapshot.docs) {
     const documentType = (doc.get("document_type") || doc.id) as ShipmentDocumentType;
     if (!shipmentDocumentTypeLabels[documentType]) continue;
+    const storedSource = text(doc.get("source"));
+    if (storedSource === "workflow_default" || storedSource === "smart_rule") continue;
     requirementOverrides.set(documentType, {
       required: doc.get("required") === true,
-      reason: text(doc.get("reason"), "Shipment-specific requirement"),
+      advisory: doc.get("advisory") === true,
+      reason: text(doc.get("reason"), "Shipment-specific document requirement"),
+      source: "shipment_override",
     });
   }
 
-  const defaults = defaultDocumentRequirements(text(source.quote.mode));
-  const baseRequirements = new Map<ShipmentDocumentType, { required: boolean; reason: string }>();
-  for (const item of defaults) baseRequirements.set(item.documentType, { required: item.required, reason: item.reason });
+  const baseRequirements = new Map<ShipmentDocumentType, { required: boolean; reason: string; advisory: boolean; source: WorkflowDocumentState["source"] }>();
+  for (const item of intelligence.requirements) {
+    baseRequirements.set(item.documentType, {
+      required: item.required,
+      reason: item.reason,
+      advisory: item.advisory === true,
+      source: item.source,
+    });
+  }
   for (const [type, override] of requirementOverrides) baseRequirements.set(type, override);
 
   const documents: WorkflowDocumentState[] = [...baseRequirements.entries()].map(([documentType, requirement]) => ({
     document_type: documentType,
     label: shipmentDocumentTypeLabels[documentType],
     required: requirement.required,
+    advisory: requirement.advisory,
     present: (documentCounts.get(documentType) ?? 0) > 0,
     count: documentCounts.get(documentType) ?? 0,
     reason: requirement.reason,
+    source: requirement.source,
   }));
 
   const operationalRequiredDocuments = documents.filter((item) => item.required && item.document_type !== "proof_of_delivery");
@@ -138,7 +159,7 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const jobClosedAt = nullable(source.data.job_closed_at);
   const jobClosed = Boolean(jobClosedAt);
   const blockers: string[] = [];
-  const warnings: string[] = [];
+  const warnings: string[] = [...intelligence.advisories];
   if (!customerLinked) blockers.push("Link this shipment to a CRM customer before controlled operational progression.");
   if (!customsReady) blockers.push(`${requiredCustoms.length - completedCustoms} required customs step${requiredCustoms.length - completedCustoms === 1 ? " is" : "s are"} still open.`);
   if (!documentPackReady) {
@@ -163,7 +184,7 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     { id: "won", label: "Won", state: "complete", detail: "Shipment and Job File created from an accepted quote." },
     { id: "setup", label: "Setup", state: stageState(customerLinked, !customerLinked), detail: customerLinked ? `CRM customer ${customerId} confirmed.` : "Confirm or create the CRM customer before progression." },
     { id: "customs", label: "Customs", state: stageState(customsReady, customerLinked && !customsReady), detail: `${completedCustoms}/${requiredCustoms.length} required customs steps complete.` },
-    { id: "documents", label: "Docs", state: stageState(documentPackReady, customsReady && !documentPackReady), detail: documentPackReady ? "Required operational document pack present." : "Required documents are still missing." },
+    { id: "documents", label: "Docs", state: stageState(documentPackReady, customsReady && !documentPackReady), detail: documentPackReady ? "Smart required document pack present." : "Smart document rules identify missing required documents." },
     { id: "transit", label: "Transit", state: stageState(inTransitOrLater, customsReady && documentPackReady && !inTransitOrLater), detail: inTransitOrLater ? "Movement has reached transit/clearance stage." : "Movement milestone not reached yet." },
     { id: "delivery", label: "Delivery", state: stageState(delivered, outForDeliveryOrLater && !delivered), detail: delivered ? "Cargo marked delivered." : status === "out_for_delivery" ? "Final-mile delivery is active." : "Delivery not yet reached." },
     { id: "pod", label: "POD", state: stageState(proofOfDeliveryPresent, delivered && !proofOfDeliveryPresent, delivered && !proofOfDeliveryPresent), detail: proofOfDeliveryPresent ? "Proof of Delivery captured." : "POD required for operational closeout." },
@@ -181,6 +202,15 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     customs_ready: customsReady,
     open_tasks: openTasks,
     documents,
+    document_intelligence: {
+      direction: intelligence.direction,
+      origin: text(source.quote.origin),
+      destination: text(source.quote.destination),
+      mode: text(source.quote.mode),
+      cargo_type: nullable(source.quote.cargo_type),
+      rules_applied: intelligence.rulesApplied,
+      advisories: intelligence.advisories,
+    },
     document_pack_ready: documentPackReady,
     proof_of_delivery_present: proofOfDeliveryPresent,
     invoice_count: invoiceCount,

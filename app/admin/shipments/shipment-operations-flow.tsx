@@ -76,12 +76,12 @@ function nextAction(workflow: ShipmentWorkflowReadiness, job: DigitalJobFile): N
   }
   if (!workflow.document_pack_ready) {
     const missing = workflow.documents.filter((item) => item.required && item.document_type !== "proof_of_delivery" && !item.present).map((item) => item.label);
-    return { title: "Complete the document pack", detail: missing.length ? `Missing: ${missing.join(", ")}.` : "One or more required shipment documents are missing.", tone: "warning" };
+    return { title: "Complete the smart document pack", detail: missing.length ? `Missing: ${missing.join(", ")}.` : "One or more smart-required shipment documents are missing.", tone: "warning" };
   }
   if (workflow.status === "out_for_delivery" && !workflow.proof_of_delivery_present) return { title: "Final mile active", detail: "Delivery is in progress. Capture Proof of Delivery immediately after handover.", tone: "info" };
   if (workflow.status === "delivered" && !workflow.proof_of_delivery_present) return { title: "Upload Proof of Delivery", detail: "Delivery is recorded but POD is still required before operational closeout.", tone: "warning" };
   if (workflow.open_tasks > 0) return { title: "Finish remaining operational work", detail: `${workflow.open_tasks} open task${workflow.open_tasks === 1 ? " remains" : "s remain"} on this shipment.`, tone: "warning" };
-  if (workflow.can_close) return { title: "Ready for operational closeout", detail: "Customs, documents, POD and operational tasks are complete.", tone: "success" };
+  if (workflow.can_close) return { title: "Ready for operational closeout", detail: "Customs, smart-required documents, POD and operational tasks are complete.", tone: "success" };
   return { title: `Continue from ${shipmentStatusLabels[job.status]}`, detail: "The movement is operationally clear. Advance the next milestone from the Digital Job File when the real-world event occurs.", tone: "success" };
 }
 
@@ -97,13 +97,18 @@ function gateTone(ok: boolean, danger = false) {
   return danger ? "border-[#efcfcc] bg-[#fff6f4]" : "border-[#eadcc8] bg-[#fffaf2]";
 }
 
+function directionLabel(value: ShipmentWorkflowReadiness["document_intelligence"]["direction"]) {
+  if (value === "cross_trade") return "Cross-trade";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { job: CommandCentreJob; operationalDate: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    setLoading(true);
+    setLoading((current) => current || !snapshot);
     try {
       const response = await fetch(`/api/admin/jobs/${encodeURIComponent(fallbackJob.reference)}`, { cache: "no-store" });
       const payload = await response.json() as { ok?: boolean; workflow?: ShipmentWorkflowReadiness; job?: DigitalJobFile; error?: string };
@@ -115,7 +120,7 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
     } finally {
       setLoading(false);
     }
-  }, [fallbackJob.reference]);
+  }, [fallbackJob.reference, snapshot]);
 
   useEffect(() => {
     let active = true;
@@ -136,6 +141,7 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
   const action = useMemo(() => workflow && liveJob ? nextAction(workflow, liveJob) : null, [liveJob, workflow]);
   const operationalRequiredDocs = workflow?.documents.filter((item) => item.required && item.document_type !== "proof_of_delivery") ?? [];
   const presentOperationalDocs = operationalRequiredDocs.filter((item) => item.present).length;
+  const advisoryDocs = workflow?.documents.filter((item) => item.advisory && !item.present) ?? [];
   const customsOpen = workflow ? Math.max(0, workflow.customs_required - workflow.customs_completed) : fallbackJob.required_customs_open;
   const etaDate = (liveJob?.eta ?? fallbackJob.eta)?.slice(0, 10) ?? "";
   const etaUrgent = Boolean(etaDate && etaDate <= operationalDate && (liveJob?.status ?? fallbackJob.status) !== "delivered");
@@ -154,8 +160,8 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
 
   return <section className="rounded-[14px] border border-[#e5ddd6] bg-[#fffdfa] p-4 shadow-[0_8px_28px_rgba(70,52,40,.035)]">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="ops-eyebrow">Live operations flow</p><h3 className="mt-1 text-[13px] font-[740] text-[#49413b]">One shipment, one control strip</h3><p className="mt-1 text-[9px] leading-4 text-[#8b8179]">Movement, ownership, customs, documents, tasks and billing readiness share one live view.</p></div>
-      <div className="flex items-center gap-2"><OpsBadge tone={workflow.blockers.length || liveJob.status === "exception" ? "warning" : "success"}>{workflow.blockers.length || liveJob.status === "exception" ? "Action required" : "Operationally clear"}</OpsBadge><OpsButton variant="ghost" size="sm" onClick={() => void refresh()} disabled={loading}><RefreshCw size={11}/>{loading ? "Refreshing" : "Refresh"}</OpsButton></div>
+      <div><p className="ops-eyebrow">Live operations flow</p><h3 className="mt-1 text-[13px] font-[740] text-[#49413b]">One shipment, one control strip</h3><p className="mt-1 text-[9px] leading-4 text-[#8b8179]">Movement, ownership, customs, smart documents, tasks and billing readiness share one live view.</p></div>
+      <div className="flex flex-wrap items-center gap-2"><OpsBadge tone="info">{directionLabel(workflow.document_intelligence.direction)}</OpsBadge><OpsBadge tone={workflow.blockers.length || liveJob.status === "exception" ? "warning" : "success"}>{workflow.blockers.length || liveJob.status === "exception" ? "Action required" : "Operationally clear"}</OpsBadge><OpsButton variant="ghost" size="sm" onClick={() => void refresh()} disabled={loading}><RefreshCw size={11}/>{loading ? "Refreshing" : "Refresh"}</OpsButton></div>
     </div>
 
     <div className="mt-4 overflow-x-auto pb-1">
@@ -172,10 +178,16 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
       <Gate icon={<UserRound size={11}/>} label="Owner" value={owner} ok={workflow.assigned_owner}/>
       <Gate icon={<ShieldCheck size={11}/>} label="Customs" value={`${workflow.customs_completed}/${workflow.customs_required} complete`} ok={workflow.customs_ready} danger={customsOpen > 0 && (liveJob.status === "customs_clearance" || etaUrgent)}/>
-      <Gate icon={<FileCheck2 size={11}/>} label="Documents" value={`${presentOperationalDocs}/${operationalRequiredDocs.length} ready`} ok={workflow.document_pack_ready}/>
+      <Gate icon={<FileCheck2 size={11}/>} label="Smart documents" value={`${presentOperationalDocs}/${operationalRequiredDocs.length} ready${advisoryDocs.length ? ` · ${advisoryDocs.length} review` : ""}`} ok={workflow.document_pack_ready}/>
       <Gate icon={<ClipboardList size={11}/>} label="Tasks" value={openTasks ? `${openTasks} open` : "Clear"} ok={openTasks === 0}/>
       <Gate icon={<CalendarDays size={11}/>} label="ETA" value={dateOnly(liveJob.eta)} ok={!etaUrgent} danger={etaUrgent}/>
       <Gate icon={<WalletCards size={11}/>} label="Billing" value={workflow.billing_ready ? `${workflow.issued_invoice_count} issued` : `${workflow.invoice_count} invoice${workflow.invoice_count === 1 ? "" : "s"}`} ok={workflow.billing_ready}/>
+    </div>
+
+    <div className="mt-4 rounded-[11px] border border-[#e9e1da] bg-[#faf8f5] p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[8px] font-bold uppercase tracking-[.07em] text-[#9a7065]">Document intelligence</p><p className="mt-1 text-[8px] leading-4 text-[#827870]">Rules recalculate from mode, route, cargo text and shipment instructions. Advisory items do not block the movement unless promoted to a required rule.</p></div><OpsBadge>{workflow.document_intelligence.rules_applied.length} rules</OpsBadge></div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">{workflow.documents.filter((item) => item.required || item.advisory).map((item) => <div key={item.document_type} className="rounded-[9px] border border-[#e8e0d9] bg-white p-2.5"><div className="flex items-center justify-between gap-2"><strong className="text-[9px] text-[#554c46]">{item.label}</strong><OpsBadge tone={item.present ? "success" : item.required ? "warning" : "neutral"}>{item.present ? "Present" : item.required ? "Required" : "Review"}</OpsBadge></div><p className="mt-1.5 text-[8px] leading-4 text-[#8a8078]">{item.reason}</p></div>)}</div>
+      {workflow.document_intelligence.advisories.length ? <div className="mt-3 space-y-1">{workflow.document_intelligence.advisories.map((advisory) => <p key={advisory} className="flex items-start gap-1.5 text-[8px] leading-4 text-[#8a6738]"><AlertTriangle size={9} className="mt-0.5 shrink-0"/>{advisory}</p>)}</div> : null}
     </div>
 
     <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-[#eee7e1] pt-4">

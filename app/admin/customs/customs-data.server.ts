@@ -3,7 +3,7 @@ import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shi
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
-import { defaultDocumentRequirements } from "../workflow-defaults";
+import { buildDocumentIntelligence, type WorkflowDocumentDirection } from "../workflow-defaults";
 
 export type CustomsDeskStep = {
   id: string;
@@ -31,9 +31,11 @@ export type CustomsDeskRow = {
   customs_completed: number;
   customs_open: number;
   open_steps: CustomsDeskStep[];
-  missing_documents: { type: ShipmentDocumentType; label: string }[];
+  missing_documents: { type: ShipmentDocumentType; label: string; reason: string }[];
   document_required: number;
   document_present: number;
+  document_direction: WorkflowDocumentDirection;
+  document_advisories: string[];
   state: "blocked" | "in_progress" | "ready" | "clear";
   risk: "critical" | "warning" | "normal";
 };
@@ -125,13 +127,15 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
     documents.set(reference, set);
   }
 
-  const overrides = new Map<string, Map<ShipmentDocumentType, boolean>>();
+  const overrides = new Map<string, Map<ShipmentDocumentType, { required: boolean; reason: string }>>();
   for (const doc of requirementsSnapshot.docs) {
     const reference = shipmentIdFromChild(doc.ref);
     const type = (doc.get("document_type") || doc.id) as ShipmentDocumentType;
     if (!reference || !shipmentDocumentTypeLabels[type]) continue;
-    const map = overrides.get(reference) ?? new Map<ShipmentDocumentType, boolean>();
-    map.set(type, doc.get("required") === true);
+    const source = text(doc.get("source"));
+    if (source === "workflow_default" || source === "smart_rule") continue;
+    const map = overrides.get(reference) ?? new Map<ShipmentDocumentType, { required: boolean; reason: string }>();
+    map.set(type, { required: doc.get("required") === true, reason: text(doc.get("reason"), "Shipment-specific requirement") });
     overrides.set(reference, map);
   }
 
@@ -155,11 +159,21 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
     const quoteReference = text(data.quote_reference);
     const quote = quotes.get(quoteReference);
     const mode = text(quote?.mode);
+    const origin = text(quote?.origin, "Origin");
+    const destination = text(quote?.destination, "Destination");
+    const intelligence = buildDocumentIntelligence({
+      mode,
+      origin,
+      destination,
+      cargoType: nullable(quote?.cargo_type),
+      requirements: nullable(quote?.requirements),
+      primaryBranch: primary,
+    });
     const presentDocs = documents.get(reference) ?? new Set<ShipmentDocumentType>();
-    const requirements = new Map(defaultDocumentRequirements(mode).map((item) => [item.documentType, item.required]));
-    for (const [type, required] of overrides.get(reference) ?? []) requirements.set(type, required);
-    const requiredTypes = [...requirements.entries()].filter(([, required]) => required).map(([type]) => type);
-    const missing = requiredTypes.filter((type) => !presentDocs.has(type));
+    const requirements = new Map(intelligence.requirements.map((item) => [item.documentType, { required: item.required, reason: item.reason }]));
+    for (const [type, override] of overrides.get(reference) ?? []) requirements.set(type, override);
+    const requiredEntries = [...requirements.entries()].filter(([, rule]) => rule.required);
+    const missing = requiredEntries.filter(([type]) => !presentDocs.has(type));
     const eta = nullable(data.eta);
     const etaDistance = daysUntil(eta, today);
 
@@ -177,8 +191,8 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       reference,
       quote_reference: quoteReference,
       customer_name: text(customer?.display_name, text(quote?.company_name, text(quote?.contact_name, "Customer"))),
-      origin: text(quote?.origin, "Origin"),
-      destination: text(quote?.destination, "Destination"),
+      origin,
+      destination,
       mode: mode || "Not set",
       status,
       eta,
@@ -191,9 +205,11 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       customs_completed: steps.length - openSteps.length,
       customs_open: openSteps.length,
       open_steps: openSteps,
-      missing_documents: missing.map((type) => ({ type, label: shipmentDocumentTypeLabels[type] })),
-      document_required: requiredTypes.length,
-      document_present: requiredTypes.length - missing.length,
+      missing_documents: missing.map(([type, rule]) => ({ type, label: shipmentDocumentTypeLabels[type], reason: rule.reason })),
+      document_required: requiredEntries.length,
+      document_present: requiredEntries.length - missing.length,
+      document_direction: intelligence.direction,
+      document_advisories: intelligence.advisories,
       state,
       risk,
     });

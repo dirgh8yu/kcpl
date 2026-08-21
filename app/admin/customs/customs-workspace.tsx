@@ -36,6 +36,11 @@ function stateLabel(state: CustomsDeskRow["state"]) {
   return state.charAt(0).toUpperCase() + state.slice(1);
 }
 
+function directionLabel(direction: CustomsDeskRow["document_direction"]) {
+  if (direction === "cross_trade") return "Cross-trade";
+  return direction.charAt(0).toUpperCase() + direction.slice(1);
+}
+
 export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[] }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -69,13 +74,15 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
         row.origin,
         row.destination,
         row.mode,
+        row.document_direction,
         row.branch ?? "",
         row.assigned_to_name ?? "",
         row.assigned_to_email ?? "",
         row.current_location ?? "",
         shipmentStatusLabels[row.status],
         ...row.open_steps.map((step) => `${step.title} ${step.detail ?? ""}`),
-        ...row.missing_documents.map((document) => document.label),
+        ...row.missing_documents.map((document) => `${document.label} ${document.reason}`),
+        ...row.document_advisories,
       ].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
@@ -122,8 +129,8 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
       <OpsPageHeader
         eyebrow="Operations"
         title="Customs Desk"
-        description="One live queue for customs clearance, missing documents, ETA pressure and branch ownership. Complete clearance work here or open the Digital Job File for deeper handling."
-        meta={<><span>{counts.queue} shipments in customs queue</span><span>{counts.openSteps} required steps open</span><span>{counts.missingDocs} required documents missing</span><span>Live Firebase records</span></>}
+        description="One live queue for customs clearance, smart document readiness, ETA pressure and branch ownership. Document rules recalculate from mode, lane, cargo text and shipment instructions."
+        meta={<><span>{counts.queue} shipments in customs queue</span><span>{counts.openSteps} required steps open</span><span>{counts.missingDocs} smart-required documents missing</span><span>Live Firebase records</span></>}
         actions={<><Link href="/admin/alerts" className="ops-button" data-variant="secondary" data-size="md">Tasks & alerts</Link><OpsButton variant="primary" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh queue</OpsButton></>}
       />
 
@@ -140,7 +147,7 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
 
         <OpsSurface eyebrow="Clearance queue" title="What customs needs next" description={`${visible.length} shipment${visible.length === 1 ? "" : "s"} match this view. Critical ETA and final-mile blockers stay at the top.`} flush>
           <div className="ops-toolbar">
-            <label className="relative min-w-[240px] flex-1"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9b9189]"/><input className="ops-input pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, owner, route, customs step…"/></label>
+            <label className="relative min-w-[240px] flex-1"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9b9189]"/><input className="ops-input pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, lane, document rule, owner…"/></label>
             <select className="ops-select" value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
             <select className="ops-select" value={risk} onChange={(event) => setRisk(event.target.value as RiskFilter)}><option value="all">All risk</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="normal">Normal</option></select>
             <select className="ops-select" value={state} onChange={(event) => setState(event.target.value as StateFilter)}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="ready">Ready</option><option value="clear">Clear</option></select>
@@ -151,7 +158,7 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
             <article key={row.reference} className="px-4 py-4 sm:px-5">
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_220px_220px_auto] xl:items-start">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><OpsBadge tone={riskTone(row.risk)} dot>{row.risk}</OpsBadge><OpsBadge tone={stateTone(row.state)}>{stateLabel(row.state)}</OpsBadge><OpsBadge>{shipmentStatusLabels[row.status]}</OpsBadge>{row.branch ? <OpsBadge><Landmark size={10}/>{row.branch}</OpsBadge> : null}</div>
+                  <div className="flex flex-wrap items-center gap-2"><OpsBadge tone={riskTone(row.risk)} dot>{row.risk}</OpsBadge><OpsBadge tone={stateTone(row.state)}>{stateLabel(row.state)}</OpsBadge><OpsBadge>{shipmentStatusLabels[row.status]}</OpsBadge><OpsBadge tone="info">{directionLabel(row.document_direction)}</OpsBadge>{row.branch ? <OpsBadge><Landmark size={10}/>{row.branch}</OpsBadge> : null}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2"><h3 className="text-[13px] font-[730] text-[#3e3833]"><OpsMono>{row.reference}</OpsMono></h3><span className="text-[10px] text-[#928880]">{row.origin} → {row.destination} · {row.mode}</span></div>
                   <p className="mt-1 text-[10px] font-semibold text-[#625a53]">{row.customer_name}</p>
                   <p className="mt-1.5 text-[9px] text-[#918880]">{row.assigned_to_name || row.assigned_to_email ? `Owner ${row.assigned_to_name || row.assigned_to_email}` : "No operational owner"}{row.current_location ? ` · ${row.current_location}` : ""}{row.eta ? ` · ETA ${dateLabel(row.eta)}` : " · ETA not set"}</p>
@@ -164,20 +171,23 @@ export function CustomsWorkspace({ initialRows }: { initialRows: CustomsDeskRow[
                 </div>
 
                 <div className="rounded-[11px] border border-[#e9e2dc] bg-[#faf8f5] p-3">
-                  <div className="flex items-center justify-between gap-2"><span className="text-[8px] font-bold uppercase tracking-[.07em] text-[#948a82]">Documents</span><strong className="text-[10px] text-[#514840]">{row.document_present}/{row.document_required}</strong></div>
+                  <div className="flex items-center justify-between gap-2"><span className="text-[8px] font-bold uppercase tracking-[.07em] text-[#948a82]">Smart documents</span><strong className="text-[10px] text-[#514840]">{row.document_present}/{row.document_required}</strong></div>
                   <div className="mt-2"><OpsProgress value={row.document_present} max={Math.max(row.document_required, 1)} tone={row.missing_documents.length ? "warning" : "success"}/></div>
-                  <p className="mt-2 text-[8px] leading-4 text-[#8f857d]">{row.missing_documents.length ? `Missing: ${row.missing_documents.map((item) => item.label).join(", ")}` : "Required document pack complete"}</p>
+                  <p className="mt-2 text-[8px] leading-4 text-[#8f857d]">{row.missing_documents.length ? `Missing: ${row.missing_documents.map((item) => item.label).join(", ")}` : "Smart-required document pack complete"}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-2 xl:justify-end"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Open Job File</Link></div>
               </div>
+
+              {row.missing_documents.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{row.missing_documents.map((document) => <div key={document.type} className="rounded-[10px] border border-[#eadcc8] bg-[#fffaf2] p-3"><div className="flex items-center gap-2"><FileWarning size={11} className="text-[#9c6a30]"/><strong className="text-[9px] text-[#654f35]">{document.label}</strong></div><p className="mt-1.5 text-[8px] leading-4 text-[#8a7359]">{document.reason}</p></div>)}</div> : null}
+              {row.document_advisories.length ? <div className="mt-3 rounded-[10px] border border-[#ded8cf] bg-[#faf8f5] p-3"><p className="text-[8px] font-bold uppercase tracking-[.07em] text-[#8f8176]">Compliance review</p>{row.document_advisories.map((advisory) => <p key={advisory} className="mt-1.5 flex items-start gap-1.5 text-[8px] leading-4 text-[#806a55]"><AlertTriangle size={9} className="mt-0.5 shrink-0"/>{advisory}</p>)}</div> : null}
 
               {row.open_steps.length ? <div className="mt-4 grid gap-2 md:grid-cols-2">{row.open_steps.map((step) => {
                 const isBusy = busy === `${row.reference}:${step.id}`;
                 return <div key={step.id} className="flex items-start justify-between gap-3 rounded-[11px] border border-[#eadfd7] bg-[#fffdfa] p-3"><div className="min-w-0"><strong className="text-[10px] text-[#514840]">{step.title}</strong><p className="mt-1 text-[8px] leading-4 text-[#8e847c]">{step.branch}{step.detail ? ` · ${step.detail}` : ""}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeStep(row, step.id)}><CheckCircle2 size={11}/>{isBusy ? "Saving…" : "Complete"}</OpsButton></div>;
               })}</div> : <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#d8e2d8] bg-[#f5f9f5] p-3 text-[9px] text-[#617564]"><CheckCircle2 size={12}/>All required customs checklist steps are complete for this shipment.</div>}
             </article>
-          ))}</div> : <OpsEmptyState kind="healthy" icon={<ShieldCheck size={18}/>} title="Customs queue is clear" description="No shipments match the current customs filters. When clearance work or missing customs documents need attention, they will appear here automatically." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton>}/>} 
+          ))}</div> : <OpsEmptyState kind="healthy" icon={<ShieldCheck size={18}/>} title="Customs queue is clear" description="No shipments match the current customs filters. When clearance work or smart-required documents need attention, they will appear here automatically." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton>}/>} 
         </OpsSurface>
       </div>
     </OpsPage>
