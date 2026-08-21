@@ -5,9 +5,10 @@ export function customsDeskState(input: {
   requiredSteps: number;
   openSteps: number;
   missingDocuments: number;
+  integrityIssues: number;
   shipmentInCustoms: boolean;
 }): CustomsDeskState {
-  if (input.missingDocuments > 0) return "blocked";
+  if (input.missingDocuments > 0 || input.integrityIssues > 0) return "blocked";
   if (input.openSteps > 0) return "in_progress";
   if (input.requiredSteps > 0 || input.shipmentInCustoms) return "ready";
   return "clear";
@@ -17,9 +18,10 @@ export function customsDeskRisk(input: {
   status: string;
   openSteps: number;
   missingDocuments: number;
+  integrityIssues: number;
   etaDays: number | null;
 }): CustomsDeskRisk {
-  const hasBlocker = input.openSteps > 0 || input.missingDocuments > 0;
+  const hasBlocker = input.openSteps > 0 || input.missingDocuments > 0 || input.integrityIssues > 0;
   if (!hasBlocker) return "normal";
   if (input.status === "out_for_delivery") return "critical";
   if (input.etaDays !== null && input.etaDays <= 0) return "critical";
