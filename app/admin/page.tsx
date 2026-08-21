@@ -3,7 +3,7 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { AdminDashboard } from "./admin-dashboard";
 import { getAdminAccess } from "./admin-auth";
 import { AdminLogin } from "./admin-login";
-import { getStaffContext } from "./staff-directory.server";
+import { getStaffContext, type KcplStaffContext } from "./staff-directory.server";
 import type { QuoteSummary } from "./admin-data";
 import { OperationsShell } from "./operations-shell";
 
@@ -12,10 +12,10 @@ export const metadata = { title: "Enquiries | KCPL Operations", robots: { index:
 
 type QuoteLoadResult = { kind: "ready"; quotes: QuoteSummary[] } | { kind: "unavailable" } | { kind: "error" };
 
-async function loadQuotes(): Promise<QuoteLoadResult> {
+async function loadQuotes(staff: KcplStaffContext): Promise<QuoteLoadResult> {
   try {
     const { listQuoteSummaries } = await import("./admin-data.server");
-    const quotes = await listQuoteSummaries();
+    const quotes = await listQuoteSummaries(staff);
     return quotes === null ? { kind: "unavailable" } : { kind: "ready", quotes };
   } catch (error) {
     console.error("Failed to load KCPL Firebase enquiry desk", error);
@@ -30,7 +30,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   const staff = await getStaffContext(access.user);
   const { enquiry } = await searchParams;
-  const result = await loadQuotes();
+  const result = await loadQuotes(staff);
   if (result.kind === "unavailable") return <AdminGate title="Firestore is not available yet" detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment." signOutPath="/api/admin/session?logout=1"/>;
   if (result.kind === "error") return <AdminGate title="The enquiry desk could not be loaded" detail="KCPL's Firebase data is temporarily unavailable. No enquiry data was exposed." signOutPath="/api/admin/session?logout=1"/>;
 
