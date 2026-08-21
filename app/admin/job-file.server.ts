@@ -2,7 +2,14 @@ import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "./crm/crm-data";
 import { shipmentStatuses, type ShipmentStatus } from "../shipment-types";
-import { staffCanAccessBranch, type KcplStaffContext } from "./staff-directory.server";
+import {
+  listStaffProfiles,
+  resolveStaffIdentity,
+  resolveStaffIdentityFromProfiles,
+  staffCanAccessBranch,
+  type KcplStaffContext,
+} from "./staff-directory.server";
+import type { KcplStaffProfile } from "./staff-directory";
 import {
   jobCostCategories,
   jobPriorities,
@@ -63,16 +70,23 @@ function childId(prefix: string) {
   return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`;
 }
 
-function taskFromDoc(id: string, data: Record<string, unknown>): JobTask {
+function taskFromDoc(id: string, data: Record<string, unknown>, profiles: KcplStaffProfile[] = []): JobTask {
+  const identity = resolveStaffIdentityFromProfiles({
+    uid: nullable(data.assigned_to_uid),
+    name: nullable(data.assigned_to_name),
+    email: nullable(data.assigned_to_email),
+    phone: nullable(data.assigned_to_phone),
+  }, profiles);
   return {
     id,
     title: text(data.title),
     detail: nullable(data.detail),
     branch: branchValue(data.branch),
     due_at: nullable(data.due_at),
-    assigned_to_name: nullable(data.assigned_to_name),
-    assigned_to_email: nullable(data.assigned_to_email),
-    assigned_to_phone: nullable(data.assigned_to_phone),
+    assigned_to_uid: identity.uid,
+    assigned_to_name: identity.name,
+    assigned_to_email: identity.email,
+    assigned_to_phone: identity.phone,
     completed: booleanValue(data.completed),
     completed_at: nullable(data.completed_at),
     created_at: text(data.created_at),
@@ -142,7 +156,7 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
 
   const quoteReference = text(shipmentData.quote_reference);
   const customerId = nullable(shipmentData.customer_id);
-  const [quote, customer, tasksSnapshot, customsSnapshot, costsSnapshot, invoicesSnapshot] = await Promise.all([
+  const [quote, customer, tasksSnapshot, customsSnapshot, costsSnapshot, invoicesSnapshot, staffProfiles] = await Promise.all([
     quoteReference ? db.collection("quotes").doc(quoteReference).get() : Promise.resolve(null),
     customerId ? db.collection("customers").doc(customerId).get() : Promise.resolve(null),
     shipmentRef.collection("job_tasks").orderBy("created_at", "desc").limit(500).get(),
@@ -153,12 +167,21 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
     context.permissions.canManageJobCosts
       ? db.collection("invoices").where("shipment_reference", "==", id).limit(500).get()
       : Promise.resolve(null),
+    listStaffProfiles(),
   ]);
 
+  const profiles = staffProfiles ?? [];
   const quoteData = quote?.exists ? quote.data() as Record<string, unknown> : {};
-  const tasks = tasksSnapshot.docs.map((doc) => taskFromDoc(doc.id, doc.data() as Record<string, unknown>));
+  const tasks = tasksSnapshot.docs.map((doc) => taskFromDoc(doc.id, doc.data() as Record<string, unknown>, profiles));
   const customsSteps = customsSnapshot.docs.map((doc) => customsFromDoc(doc.id, doc.data() as Record<string, unknown>));
   const costs = costsSnapshot ? costsSnapshot.docs.map((doc) => costFromDoc(doc.id, doc.data() as Record<string, unknown>)) : [];
+  const owner = resolveStaffIdentityFromProfiles({
+    uid: nullable(shipmentData.job_assigned_to_uid),
+    name: nullable(shipmentData.job_assigned_to_name),
+    email: nullable(shipmentData.job_assigned_to_email),
+    phone: nullable(shipmentData.job_assigned_to_phone),
+  }, profiles);
+
   const costTotals: Partial<Record<CrmCurrency, number>> = {};
   for (const cost of costs) costTotals[cost.currency] = (costTotals[cost.currency] ?? 0) + cost.amount;
 
@@ -201,9 +224,12 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
     carrier_reference: nullable(shipmentData.carrier_reference),
     primary_branch: primary,
     handling_branches: handling,
-    assigned_to_name: nullable(shipmentData.job_assigned_to_name),
-    assigned_to_email: nullable(shipmentData.job_assigned_to_email),
-    assigned_to_phone: nullable(shipmentData.job_assigned_to_phone),
+    assigned_to_uid: owner.uid,
+    assigned_to_name: owner.name,
+    assigned_to_email: owner.email,
+    assigned_to_phone: owner.phone,
+    assigned_to_job_title: owner.job_title,
+    assigned_to_branches: owner.branches,
     priority: priorityValue(shipmentData.job_priority),
     internal_reference: nullable(shipmentData.internal_job_reference),
     internal_notes: nullable(shipmentData.internal_job_notes),
@@ -225,6 +251,7 @@ export async function updateDigitalJobFile(
   values: {
     primaryBranch?: KcplBranch;
     handlingBranches?: KcplBranch[];
+    assignedToUid?: string;
     assignedToName: string;
     assignedToEmail: string;
     assignedToPhone: string;
@@ -240,10 +267,12 @@ export async function updateDigitalJobFile(
   const db = firebaseAdminDb();
   const ref = db.collection("shipments").doc(loaded.job.reference);
   const now = new Date().toISOString();
+  const owner = await resolveStaffIdentity({ uid: values.assignedToUid, name: values.assignedToName, email: values.assignedToEmail, phone: values.assignedToPhone });
   const update: Record<string, unknown> = {
-    job_assigned_to_name: values.assignedToName.trim() || null,
-    job_assigned_to_email: values.assignedToEmail.trim() || null,
-    job_assigned_to_phone: values.assignedToPhone.trim() || null,
+    job_assigned_to_uid: owner.uid,
+    job_assigned_to_name: owner.name,
+    job_assigned_to_email: owner.email,
+    job_assigned_to_phone: owner.phone,
     job_priority: values.priority,
     internal_job_reference: values.internalReference.trim() || null,
     internal_job_notes: values.internalNotes.trim() || null,
@@ -268,7 +297,7 @@ export async function updateDigitalJobFile(
 }
 
 export async function addJobTask(reference: string, input: {
-  title: string; detail: string; branch: KcplBranch; dueAt: string; assignedToName: string; assignedToEmail: string; assignedToPhone: string;
+  title: string; detail: string; branch: KcplBranch; dueAt: string; assignedToUid?: string; assignedToName: string; assignedToEmail: string; assignedToPhone: string;
 }, actor: Actor, context: KcplStaffContext) {
   const loaded = await getDigitalJobFile(reference, context);
   if (loaded.kind !== "ready") return loaded;
@@ -276,13 +305,31 @@ export async function addJobTask(reference: string, input: {
   const ref = firebaseAdminDb().collection("shipments").doc(loaded.job.reference);
   const id = childId("task");
   const now = new Date().toISOString();
+  const assignee = await resolveStaffIdentity({ uid: input.assignedToUid, name: input.assignedToName, email: input.assignedToEmail, phone: input.assignedToPhone });
   const task = {
     title: input.title.trim(), detail: input.detail.trim() || null, branch: input.branch, due_at: input.dueAt || null,
-    assigned_to_name: input.assignedToName.trim() || null, assigned_to_email: input.assignedToEmail.trim() || null, assigned_to_phone: input.assignedToPhone.trim() || null,
+    assigned_to_uid: assignee.uid, assigned_to_name: assignee.name, assigned_to_email: assignee.email, assigned_to_phone: assignee.phone,
     completed: false, completed_at: null, created_at: now, created_by: actor.email,
   };
   await ref.collection("job_tasks").doc(id).create(task);
-  return { kind: "created" as const, task: taskFromDoc(id, task) };
+  return { kind: "created" as const, task: taskFromDoc(id, task, assignee.uid ? [profilesForResolved(assignee)] : []) };
+}
+
+function profilesForResolved(identity: Awaited<ReturnType<typeof resolveStaffIdentity>>): KcplStaffProfile {
+  return {
+    uid: identity.uid ?? "",
+    email: identity.email ?? "",
+    display_name: identity.name ?? "KCPL Staff",
+    job_title: identity.job_title,
+    phone: identity.phone,
+    role: identity.role ?? "operations",
+    branch_scope: identity.branch_scope ?? "selected",
+    branches: identity.branches,
+    active: identity.active ?? true,
+    created_at: "",
+    updated_at: "",
+    updated_by: null,
+  };
 }
 
 export async function toggleJobTask(reference: string, taskId: string, completed: boolean, actor: Actor, context: KcplStaffContext) {
