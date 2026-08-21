@@ -14,16 +14,13 @@ function nullable(value: unknown) {
   return valueText || null;
 }
 
-function branchValue(value: unknown): KcplBranch {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu";
+function branchValue(value: unknown): KcplBranch | null {
+  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
 }
 
-function branchArray(value: unknown, primary: KcplBranch): KcplBranch[] {
-  const branches = Array.isArray(value)
-    ? value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch))
-    : [];
-  if (!branches.includes(primary)) branches.unshift(primary);
-  return branches;
+function branchArray(value: unknown): KcplBranch[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))];
 }
 
 function priorityValue(value: unknown): JobPriority {
@@ -53,6 +50,12 @@ function shipmentIdFromChild(path: FirebaseFirestore.DocumentReference) {
 function timestamp(value: string) {
   const time = Date.parse(value);
   return Number.isFinite(time) ? time : 0;
+}
+
+function hasCustomsRisk(job: CommandCentreJob, today: string) {
+  if (job.required_customs_open <= 0) return false;
+  const etaDate = job.eta?.slice(0, 10) ?? "";
+  return job.status === "customs_clearance" || Boolean(etaDate && etaDate <= today);
 }
 
 async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>) {
@@ -89,10 +92,18 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     const data = doc.data() as Record<string, unknown>;
     const status = statusValue(data.status);
     if (status === "delivered") return [];
-    const primary = branchValue(data.primary_branch);
-    const handling = branchArray(data.handling_branches, primary);
-    const allowed = staffCanAccessBranch(context, primary) || handling.some((branch) => staffCanAccessBranch(context, branch));
-    return allowed ? [{ id: doc.id, data, status, primary, handling }] : [];
+    const primaryValue = branchValue(data.primary_branch);
+    const handlingValue = branchArray(data.handling_branches);
+    const accessBranches = [...new Set([...(primaryValue ? [primaryValue] : []), ...handlingValue])];
+    const allowed = context.can_access_all_branches || accessBranches.some((branch) => staffCanAccessBranch(context, branch));
+    if (!allowed) return [];
+    // All-branch users can still repair legacy records with missing branch data.
+    // Restricted users fail closed above instead of having malformed records
+    // silently treated as Kathmandu work.
+    const primary = primaryValue ?? handlingValue[0] ?? "Kathmandu";
+    const handling = [...handlingValue];
+    if (!handling.includes(primary)) handling.unshift(primary);
+    return [{ id: doc.id, data, status, primary, handling }];
   });
   const accessibleShipmentIds = new Set(accessibleShipmentRows.map((row) => row.id));
 
@@ -182,7 +193,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       (job.status === "exception" ? 100 : 0) +
       (job.priority === "urgent" ? 50 : job.priority === "high" ? 20 : 0) +
       job.overdue_tasks * 10 +
-      job.required_customs_open * 4 +
+      (hasCustomsRisk(job, today) ? job.required_customs_open * 4 : 0) +
       (!job.assigned_to_name && !job.assigned_to_email ? 3 : 0);
     return score(b) - score(a) || timestamp(b.updated_at) - timestamp(a.updated_at);
   });
@@ -195,7 +206,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       active_jobs: branchJobs.length,
       urgent_jobs: branchJobs.filter((job) => job.priority === "urgent" || job.status === "exception").length,
       overdue_tasks: branchJobs.reduce((sum, job) => sum + job.overdue_tasks, 0),
-      customs_blockers: branchJobs.reduce((sum, job) => sum + job.required_customs_open, 0),
+      customs_blockers: branchJobs.filter((job) => hasCustomsRisk(job, today)).reduce((sum, job) => sum + job.required_customs_open, 0),
       deliveries_today: branchJobs.filter((job) => job.eta?.slice(0, 10) === today).length,
     };
   }).sort((a, b) => b.active_jobs - a.active_jobs || b.overdue_tasks - a.overdue_tasks || a.branch.localeCompare(b.branch));
@@ -244,7 +255,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       active_jobs: jobs.length,
       urgent_jobs: jobs.filter((job) => job.priority === "urgent").length,
       overdue_tasks: jobs.reduce((sum, job) => sum + job.overdue_tasks, 0),
-      customs_blockers: jobs.reduce((sum, job) => sum + job.required_customs_open, 0),
+      customs_blockers: jobs.filter((job) => hasCustomsRisk(job, today)).reduce((sum, job) => sum + job.required_customs_open, 0),
       deliveries_today: jobs.filter((job) => job.eta?.slice(0, 10) === today).length,
       unassigned_jobs: jobs.filter((job) => !job.assigned_to_name && !job.assigned_to_email).length,
       exception_jobs: jobs.filter((job) => job.status === "exception").length,
