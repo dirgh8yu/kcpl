@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels } from "../staff-permissions";
@@ -38,12 +39,12 @@ async function loadState(user: StaffUser) {
 
 export default async function CommandCentrePage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations." detail="Operations Home is available only to authorised KCPL staff." />;
+  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Operations Home is available only to authorised KCPL staff." />;
 
   const state = await loadState(access.user);
-  if (state.kind === "restricted") return <Gate title="Operations Home access is restricted." detail="Your staff role does not currently include operational Job File access." />;
-  if (state.kind === "unavailable") return <Gate title="Firestore is unavailable." detail="The operational dashboard backend is not available for this deployment." />;
-  if (state.kind === "error") return <Gate title="Operations Home could not be loaded." detail="KCPL operational data is temporarily unavailable. No operations data was exposed." />;
+  if (state.kind === "restricted") return <Gate title="Operations Home is restricted" detail="Your current staff role does not include operational Job File access." />;
+  if (state.kind === "unavailable") return <Gate title="Operations data is unavailable" detail="The Firebase operational data service is not available for this deployment." />;
+  if (state.kind === "error") return <Gate title="Operations Home could not be loaded" detail="KCPL operational data is temporarily unavailable. No operational records were exposed." />;
 
   return (
     <OperationsShell
@@ -60,12 +61,13 @@ export default async function CommandCentrePage() {
 
 function Gate({ title, detail }: { title: string; detail: string }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]">
-      <section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8 sm:p-10">
-        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Operations</p>
-        <h1 className="mt-3 text-2xl font-bold tracking-[-.03em]">{title}</h1>
-        <p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p>
-        <div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Back to Operations</Link><Link href="/" className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Website</Link></div>
+    <main className="grid min-h-screen place-items-center bg-[#f3f1ee] p-6 text-[#26221f]">
+      <section className="w-full max-w-xl rounded-[16px] border border-[#ddd8d2] bg-white p-8 shadow-[0_12px_36px_rgba(54,43,34,.06)] sm:p-10">
+        <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[#fbebe6] text-[#b45c47]"><ShieldCheck size={17}/></span>
+        <p className="mt-5 text-[10px] font-bold text-[#8f8179]">KCPL Operations</p>
+        <h1 className="mt-2 text-[28px] font-[730] leading-tight tracking-[-.04em] text-[#26221f]">{title}</h1>
+        <p className="mt-3 text-[13px] leading-6 text-[#736d67]">{detail}</p>
+        <div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="ops-button" data-variant="primary" data-size="md">Open Enquiries</Link><Link href="/" className="ops-button" data-variant="secondary" data-size="md">KCPL website</Link></div>
       </section>
     </main>
   );
