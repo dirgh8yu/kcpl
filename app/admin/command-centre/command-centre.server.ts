@@ -1,7 +1,12 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { jobPriorities, type JobPriority } from "../job-file";
-import { staffCanAccessBranch, listStaffProfiles, type KcplStaffContext } from "../staff-directory.server";
+import {
+  staffCanAccessBranch,
+  listStaffProfiles,
+  resolveStaffIdentityFromProfiles,
+  type KcplStaffContext,
+} from "../staff-directory.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { CommandCentreBranchLoad, CommandCentreData, CommandCentreJob, CommandCentreStaffLoad } from "./command-centre-data";
 
@@ -63,8 +68,6 @@ async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>)
   const uniqueIds = [...new Set([...ids].map((id) => id.trim()).filter(Boolean))];
   const result = new Map<string, Record<string, unknown>>();
 
-  // Firestore batchGet is substantially cheaper and safer than reading an
-  // arbitrary slice of an entire collection as the company grows.
   for (let index = 0; index < uniqueIds.length; index += 250) {
     const batch = uniqueIds.slice(index, index + 250);
     const snapshots = await db.getAll(...batch.map((id) => db.collection(collectionName).doc(id)));
@@ -85,6 +88,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     listStaffProfiles(),
   ]);
 
+  const directory = staffProfiles ?? [];
   const today = operationalDate();
   const now = Date.now();
 
@@ -97,9 +101,6 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     const accessBranches = [...new Set([...(primaryValue ? [primaryValue] : []), ...handlingValue])];
     const allowed = context.can_access_all_branches || accessBranches.some((branch) => staffCanAccessBranch(context, branch));
     if (!allowed) return [];
-    // All-branch users can still repair legacy records with missing branch data.
-    // Restricted users fail closed above instead of having malformed records
-    // silently treated as Kathmandu work.
     const primary = primaryValue ?? handlingValue[0] ?? "Kathmandu";
     const handling = [...handlingValue];
     if (!handling.includes(primary)) handling.unshift(primary);
@@ -108,7 +109,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
   const accessibleShipmentIds = new Set(accessibleShipmentRows.map((row) => row.id));
 
   const taskStats = new Map<string, { open: number; overdue: number }>();
-  const staffTaskStats = new Map<string, { name: string; email: string; open: number; overdue: number }>();
+  const staffTaskStats = new Map<string, { uid: string | null; name: string; email: string; phone: string | null; open: number; overdue: number }>();
   for (const doc of tasksSnapshot.docs) {
     const data = doc.data() as Record<string, unknown>;
     if (data.completed === true) continue;
@@ -123,11 +124,16 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     if (overdue) stats.overdue += 1;
     taskStats.set(shipmentId, stats);
 
-    const email = text(data.assigned_to_email).trim().toLowerCase();
-    const name = text(data.assigned_to_name, email || "Unassigned").trim() || "Unassigned";
-    if (email || name !== "Unassigned") {
-      const key = email || name.toLowerCase();
-      const staff = staffTaskStats.get(key) ?? { name, email, open: 0, overdue: 0 };
+    const identity = resolveStaffIdentityFromProfiles({
+      uid: nullable(data.assigned_to_uid),
+      name: nullable(data.assigned_to_name),
+      email: nullable(data.assigned_to_email),
+      phone: nullable(data.assigned_to_phone),
+    }, directory);
+    const name = identity.name ?? identity.email ?? "Unassigned";
+    if (identity.uid || identity.email || name !== "Unassigned") {
+      const key = identity.uid || identity.email || name.toLowerCase();
+      const staff = staffTaskStats.get(key) ?? { uid: identity.uid, name, email: identity.email ?? "", phone: identity.phone, open: 0, overdue: 0 };
       staff.open += 1;
       if (overdue) staff.overdue += 1;
       staffTaskStats.set(key, staff);
@@ -163,6 +169,12 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     const customer = customerId ? customers.get(customerId) : undefined;
     const task = taskStats.get(id) ?? { open: 0, overdue: 0 };
     const customs = customsStats.get(id) ?? { open: 0, total: 0 };
+    const owner = resolveStaffIdentityFromProfiles({
+      uid: nullable(data.job_assigned_to_uid),
+      name: nullable(data.job_assigned_to_name),
+      email: nullable(data.job_assigned_to_email),
+      phone: nullable(data.job_assigned_to_phone),
+    }, directory);
     return {
       reference: id,
       quote_reference: quoteReference,
@@ -174,8 +186,10 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       status,
       primary_branch: primary,
       handling_branches: handling,
-      assigned_to_name: nullable(data.job_assigned_to_name),
-      assigned_to_email: nullable(data.job_assigned_to_email),
+      assigned_to_uid: owner.uid,
+      assigned_to_name: owner.name,
+      assigned_to_email: owner.email,
+      assigned_to_phone: owner.phone,
       priority: priorityValue(data.job_priority),
       eta: nullable(data.eta),
       current_location: nullable(data.current_location),
@@ -212,15 +226,17 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
   }).sort((a, b) => b.active_jobs - a.active_jobs || b.overdue_tasks - a.overdue_tasks || a.branch.localeCompare(b.branch));
 
   const staffMap = new Map<string, CommandCentreStaffLoad>();
-  for (const profile of staffProfiles ?? []) {
+  for (const profile of directory) {
     if (!profile.active) continue;
     if (!context.can_access_all_branches && profile.branch_scope === "selected" && !profile.branches.some((branch) => context.branches.includes(branch))) continue;
-    const key = profile.email || profile.uid;
-    const task = staffTaskStats.get(profile.email.toLowerCase());
+    const key = profile.uid || profile.email;
+    const task = staffTaskStats.get(profile.uid) ?? staffTaskStats.get(profile.email.toLowerCase());
     staffMap.set(key, {
       key,
+      uid: profile.uid,
       name: profile.display_name,
       email: profile.email,
+      phone: profile.phone,
       active_jobs: 0,
       urgent_jobs: 0,
       open_tasks: task?.open ?? 0,
@@ -230,12 +246,14 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
   for (const job of jobs) {
     const email = job.assigned_to_email?.toLowerCase() ?? "";
     const name = job.assigned_to_name ?? "Unassigned";
-    if (!email && name === "Unassigned") continue;
-    const key = email || name.toLowerCase();
+    if (!job.assigned_to_uid && !email && name === "Unassigned") continue;
+    const key = job.assigned_to_uid || email || name.toLowerCase();
     const existing = staffMap.get(key) ?? {
       key,
+      uid: job.assigned_to_uid,
       name,
       email,
+      phone: job.assigned_to_phone,
       active_jobs: 0,
       urgent_jobs: 0,
       open_tasks: staffTaskStats.get(key)?.open ?? 0,
