@@ -4,6 +4,7 @@ import { listCrmCustomers } from "../crm/crm-data.server";
 import { OperationsShell } from "../operations-shell";
 import { listTmsOrders } from "../rating/tms-rating.server";
 import { getStaffContext } from "../staff-directory.server";
+import { reconcileExpiredTmsTenders } from "./tms-tender-expiry.server";
 import { listTmsTenders } from "./tms-tendering.server";
 import { TmsTenderWorkspace } from "./tms-tender-workspace";
 
@@ -16,6 +17,7 @@ export default async function TenderDeskPage() {
   const staff = await getStaffContext(access.user);
   if (!staff.permissions.canViewCommercial) return <Gate title="Commercial access required" detail="Tendering contains supplier commercial pricing and procurement decisions."/>;
 
+  await reconcileExpiredTmsTenders();
   const [orders, tenders, customers] = await Promise.all([
     listTmsOrders(staff),
     listTmsTenders(staff),
