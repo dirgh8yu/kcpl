@@ -20,25 +20,28 @@ export default async function CustomsPage() {
     canManageFinance: staff.permissions.canManageFinance,
     isManagement: staff.permissions.role === "management",
   };
+  let rows: Awaited<ReturnType<typeof listCustomsDeskRows>>;
+  let partnerOptions: Awaited<ReturnType<typeof listPartnerOptions>>;
   try {
-    const [rows, partnerOptions] = await Promise.all([
+    [rows, partnerOptions] = await Promise.all([
       listCustomsDeskRows(staff),
       listPartnerOptions(staff),
     ]);
-    if (!rows) return <OperationsShell {...shellProps}><Gate title="Customs Control unavailable" detail="Firestore is not available for customs operations in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
-    const customsAgents = (partnerOptions ?? [])
-      .filter((partner) => partner.types.includes("customs_agent") || partner.types.includes("clearing_partner"))
-      .map((partner) => ({ id: partner.id, name: partner.name }));
-
-    return (
-      <OperationsShell {...shellProps}>
-        <CustomsWorkspace initialRows={rows} customsAgents={customsAgents}/>
-      </OperationsShell>
-    );
   } catch (error) {
     console.error("Failed to load KCPL Customs Control", error);
     return <OperationsShell {...shellProps}><Gate title="Customs Control could not be loaded" detail="KCPL customs data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
+
+  if (!rows) return <OperationsShell {...shellProps}><Gate title="Customs Control unavailable" detail="Firestore is not available for customs operations in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+  const customsAgents = (partnerOptions ?? [])
+    .filter((partner) => partner.types.includes("customs_agent") || partner.types.includes("clearing_partner"))
+    .map((partner) => ({ id: partner.id, name: partner.name }));
+
+  return (
+    <OperationsShell {...shellProps}>
+      <CustomsWorkspace initialRows={rows} customsAgents={customsAgents}/>
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
