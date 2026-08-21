@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { BadgeDollarSign, CheckCircle2, CircleAlert, FilePlus2, RefreshCw, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
@@ -49,7 +49,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
   const [orders, setOrders] = useState(initialOrders);
   const [customers, setCustomers] = useState(initialCustomers);
   const [rules, setRules] = useState(initialRules);
-  const [selectedOrderId, setSelectedOrderId] = useState(initialOrders.find((order) => order.customer_id)?.id ?? initialOrders[0]?.id ?? "");
+  const [selectedOrderId, setSelectedOrderId] = useState("");
   const [sellCurrency, setSellCurrency] = useState<CrmCurrency>("NPR");
   const [fxRate, setFxRate] = useState("");
   const [markupPercent, setMarkupPercent] = useState("");
@@ -76,7 +76,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
   const approvalCount = orders.filter((order) => order.pricing_status === "approval_required").length;
   const quotedCount = orders.filter((order) => order.pricing_status === "quoted").length;
 
-  const defaults = useMemo(() => rulePricingDefaults(matchedRule, customer?.markup_percent ?? null), [matchedRule, customer?.markup_percent]);
+  const defaults = rulePricingDefaults(matchedRule, customer?.markup_percent ?? null);
 
   function loadDefaults(order: PricingOrderCandidate) {
     const nextCustomer = customers.find((item) => item.id === order.customer_id) ?? null;
