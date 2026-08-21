@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: polish/operations-v3-1-work
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -24,12 +26,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Capture refreshed lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: next-16-2-11-lockfile
-          path: package-lock.json
-          retention-days: 1
+      - name: Commit refreshed lockfile
+        shell: bash
+        run: |
+          if git diff --quiet -- package-lock.json; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "Refresh lockfile for Next.js 16.2.11"
+          git push origin HEAD:polish/operations-v3-1-work
 
       - name: Lint
         run: npm run lint
