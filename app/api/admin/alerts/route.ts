@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { evaluateAutomationRules, listAutomationAlerts, updateAutomationAlert } from "../../../admin/alerts/alert-engine.server";
+import { evaluateFreightAutomation } from "../../../admin/alerts/freight-automation.server";
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
@@ -18,6 +19,11 @@ async function authorize() {
 export async function GET() {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
+  try {
+    await evaluateFreightAutomation();
+  } catch (error) {
+    console.error("KCPL proactive freight automation refresh failed", error);
+  }
   const alerts = await listAutomationAlerts(auth.staff, auth.user.email, true);
   if (!alerts) return json({ ok: false, error: "Alert storage is unavailable." }, 503);
   return json({ ok: true, alerts });
@@ -33,10 +39,24 @@ export async function POST(request: Request) {
 
   if (action === "evaluate") {
     try {
-      const result = await evaluateAutomationRules({ applyCreditHolds: auth.staff.permissions.canManageCredit });
-      const payables = await evaluatePayablesAlerts();
-      if (result.kind !== "completed" || payables.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
-      return json({ ok: true, result: { ...result, payable_alerts: payables.active, credit_holds_authorized: auth.staff.permissions.canManageCredit } });
+      const [result, payables, freight] = await Promise.all([
+        evaluateAutomationRules({ applyCreditHolds: auth.staff.permissions.canManageCredit }),
+        evaluatePayablesAlerts(),
+        evaluateFreightAutomation(),
+      ]);
+      if (result.kind !== "completed" || payables.kind !== "completed" || freight.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+      return json({
+        ok: true,
+        result: {
+          ...result,
+          payable_alerts: payables.active,
+          freight_alerts: freight.active,
+          automatic_tasks_created: freight.tasks_created,
+          automatic_tasks_reopened: freight.tasks_reopened,
+          automatic_tasks_completed: freight.tasks_auto_completed,
+          credit_holds_authorized: auth.staff.permissions.canManageCredit,
+        },
+      });
     } catch (error) {
       console.error("KCPL alert evaluation failed", error);
       return json({ ok: false, error: "Automation checks could not be completed." }, 500);
