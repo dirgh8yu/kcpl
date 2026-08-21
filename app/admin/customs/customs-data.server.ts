@@ -1,4 +1,5 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../../shipment-document-policy";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shipment-document-types";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { branchAccessSet, canAccessBranchSet, strictBranchValue } from "../branch-access-policy";
@@ -37,7 +38,7 @@ export type CustomsDeskRow = {
   customs_other_branch_open: number;
   open_steps: CustomsDeskStep[];
   customs_integrity_warnings: string[];
-  missing_documents: { type: ShipmentDocumentType; label: string; reason: string }[];
+  missing_documents: { type: ShipmentDocumentType; label: string; reason: string; uploaded: boolean }[];
   document_required: number;
   document_present: number;
   document_direction: WorkflowDocumentDirection;
@@ -58,7 +59,8 @@ type RawCustomsStep = {
 };
 
 type ShipmentChildren = {
-  documents: Set<ShipmentDocumentType>;
+  uploadedDocuments: Set<ShipmentDocumentType>;
+  verifiedDocuments: Set<ShipmentDocumentType>;
   requirements: Map<ShipmentDocumentType, { required: boolean; reason: string }>;
 };
 
@@ -113,6 +115,7 @@ async function getAllInChunks(refs: FirebaseFirestore.DocumentReference[], size 
 async function loadDocumentsAndOverrides(shipmentRefs: FirebaseFirestore.DocumentReference[]) {
   const result = new Map<string, ShipmentChildren>();
   const chunkSize = 30;
+  const today = operationalDate();
   for (let index = 0; index < shipmentRefs.length; index += chunkSize) {
     const chunk = shipmentRefs.slice(index, index + chunkSize);
     const rows = await Promise.all(chunk.map(async (ref) => {
@@ -120,10 +123,15 @@ async function loadDocumentsAndOverrides(shipmentRefs: FirebaseFirestore.Documen
         ref.collection("documents").get(),
         ref.collection("document_requirements").get(),
       ]);
-      const documents = new Set<ShipmentDocumentType>();
+      const uploadedDocuments = new Set<ShipmentDocumentType>();
+      const verifiedDocuments = new Set<ShipmentDocumentType>();
       for (const doc of documentsSnapshot.docs) {
         const type = doc.get("document_type") as ShipmentDocumentType;
-        if (shipmentDocumentTypeLabels[type]) documents.add(type);
+        if (!shipmentDocumentTypeLabels[type]) continue;
+        const reviewStatus = shipmentDocumentReviewStatusValue(doc.get("review_status"));
+        if (["deleted", "superseded"].includes(reviewStatus)) continue;
+        uploadedDocuments.add(type);
+        if (shipmentDocumentCountsAsReady({ status: reviewStatus, expiresOn: nullable(doc.get("expires_on")), today })) verifiedDocuments.add(type);
       }
       const requirements = new Map<ShipmentDocumentType, { required: boolean; reason: string }>();
       for (const doc of requirementsSnapshot.docs) {
@@ -136,9 +144,9 @@ async function loadDocumentsAndOverrides(shipmentRefs: FirebaseFirestore.Documen
           reason: text(doc.get("reason"), "Shipment-specific requirement"),
         });
       }
-      return { id: ref.id, documents, requirements };
+      return { id: ref.id, uploadedDocuments, verifiedDocuments, requirements };
     }));
-    for (const row of rows) result.set(row.id, { documents: row.documents, requirements: row.requirements });
+    for (const row of rows) result.set(row.id, { uploadedDocuments: row.uploadedDocuments, verifiedDocuments: row.verifiedDocuments, requirements: row.requirements });
   }
   return result;
 }
@@ -249,11 +257,15 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
     }
     if (clearance.status === "held" && !clearance.hold_reason) integrityWarnings.push("Customs is marked Held but no hold reason is recorded.");
 
-    const child = childData.get(reference) ?? { documents: new Set<ShipmentDocumentType>(), requirements: new Map<ShipmentDocumentType, { required: boolean; reason: string }>() };
+    const child = childData.get(reference) ?? {
+      uploadedDocuments: new Set<ShipmentDocumentType>(),
+      verifiedDocuments: new Set<ShipmentDocumentType>(),
+      requirements: new Map<ShipmentDocumentType, { required: boolean; reason: string }>(),
+    };
     const requirements = new Map(intelligence.requirements.map((item) => [item.documentType, { required: item.required, reason: item.reason }]));
     for (const [type, override] of child.requirements) requirements.set(type, override);
     const requiredEntries = [...requirements.entries()].filter(([, rule]) => rule.required);
-    const missing = requiredEntries.filter(([type]) => !child.documents.has(type));
+    const missing = requiredEntries.filter(([type]) => !child.verifiedDocuments.has(type));
     const eta = nullable(shipment.get("eta"));
     const etaDistance = daysUntil(eta, today);
     if (eta && etaDistance === null) integrityWarnings.push("ETA is invalid and cannot be used for customs urgency calculations.");
@@ -297,7 +309,12 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       customs_other_branch_open: hiddenOpen,
       open_steps: openSteps,
       customs_integrity_warnings: integrityWarnings,
-      missing_documents: missing.map(([type, rule]) => ({ type, label: shipmentDocumentTypeLabels[type], reason: rule.reason })),
+      missing_documents: missing.map(([type, rule]) => ({
+        type,
+        label: shipmentDocumentTypeLabels[type],
+        reason: child.uploadedDocuments.has(type) ? `${rule.reason} File received, but verification is still required.` : rule.reason,
+        uploaded: child.uploadedDocuments.has(type),
+      })),
       document_required: requiredEntries.length,
       document_present: requiredEntries.length - missing.length,
       document_direction: intelligence.direction,
