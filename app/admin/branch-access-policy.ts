@@ -1,8 +1,9 @@
-import { kcplBranches, type KcplBranch } from "./crm/crm-data";
+const branchValues = ["Kathmandu", "Birgunj", "Surkhet", "Nepalgunj", "Raxaul", "Kolkata"] as const;
+export type AccessBranch = (typeof branchValues)[number];
 
 export type BranchAccessScope = {
   can_access_all_branches: boolean;
-  branches: readonly KcplBranch[];
+  branches: readonly AccessBranch[];
 };
 
 export type QuoteLinkedAccessInput = {
@@ -15,16 +16,16 @@ export type QuoteLinkedAccessInput = {
   customer_branch?: unknown;
 };
 
-export function strictBranchValue(value: unknown): KcplBranch | null {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
+export function strictBranchValue(value: unknown): AccessBranch | null {
+  return branchValues.includes(value as AccessBranch) ? value as AccessBranch : null;
 }
 
-export function strictBranchArray(value: unknown): KcplBranch[] {
+export function strictBranchArray(value: unknown): AccessBranch[] {
   if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))];
+  return [...new Set(value.filter((item): item is AccessBranch => branchValues.includes(item as AccessBranch)))];
 }
 
-export function branchAccessSet(primary: unknown, handling: unknown): KcplBranch[] {
+export function branchAccessSet(primary: unknown, handling: unknown): AccessBranch[] {
   const parsedPrimary = strictBranchValue(primary);
   return [...new Set([...(parsedPrimary ? [parsedPrimary] : []), ...strictBranchArray(handling)])];
 }
