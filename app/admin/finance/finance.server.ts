@@ -14,6 +14,7 @@ import {
   type FinanceInvoiceStatus,
   type FinancePayment,
   type FinancePaymentMethod,
+  type FinanceReceivableRecordType,
 } from "./finance-data";
 
 type Actor = { name: string; email: string };
@@ -42,6 +43,10 @@ function branchValue(value: unknown): KcplBranch {
 
 function invoiceStatus(value: unknown): FinanceInvoiceStatus {
   return financeInvoiceStatuses.includes(value as FinanceInvoiceStatus) ? value as FinanceInvoiceStatus : "draft";
+}
+
+function receivableRecordType(value: unknown): FinanceReceivableRecordType {
+  return value === "opening_balance" ? "opening_balance" : "invoice";
 }
 
 function paymentMethod(value: unknown): FinancePaymentMethod {
@@ -121,6 +126,10 @@ async function invoiceFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
   const dueDate = text(data.due_date);
   return {
     reference: snapshot.id,
+    record_type: receivableRecordType(data.record_type ?? data.migration_record_type),
+    external_invoice_number: nullable(data.external_invoice_number ?? data.migration_source_invoice_number),
+    migration_batch_id: nullable(data.migration_batch_id),
+    migration_as_of_date: nullable(data.migration_as_of_date),
     customer_id: text(data.customer_id),
     customer_name: text(data.customer_name, "Customer"),
     shipment_reference: nullable(data.shipment_reference),
@@ -196,7 +205,9 @@ export async function recomputeCustomerFinance(customerId: string) {
     if (currencyValue(invoice.get("currency")) !== currency) continue;
     const status = invoiceStatus(invoice.get("status"));
     if (status === "draft" || status === "void") continue;
-    revenue += numberValue(invoice.get("total"));
+    if (receivableRecordType(invoice.get("record_type") ?? invoice.get("migration_record_type")) !== "opening_balance") {
+      revenue += numberValue(invoice.get("total"));
+    }
     outstanding += Math.max(0, numberValue(invoice.get("balance_due")));
   }
 
@@ -253,12 +264,17 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
   for (const invoice of invoices) {
     let summary = summaries.get(invoice.currency);
     if (!summary) {
-      summary = { currency: invoice.currency, invoiced: 0, collected: 0, outstanding: 0, overdue: 0, aging_0_30: 0, aging_31_60: 0, aging_61_90: 0, aging_90_plus: 0, invoice_count: 0 };
+      summary = { currency: invoice.currency, invoiced: 0, opening_balance: 0, collected: 0, outstanding: 0, overdue: 0, aging_0_30: 0, aging_31_60: 0, aging_61_90: 0, aging_90_plus: 0, invoice_count: 0, opening_balance_count: 0 };
       summaries.set(invoice.currency, summary);
     }
     if (invoice.status === "draft" || invoice.status === "void") continue;
-    summary.invoice_count += 1;
-    summary.invoiced += invoice.total;
+    if (invoice.record_type === "opening_balance") {
+      summary.opening_balance_count += 1;
+      summary.opening_balance += invoice.total;
+    } else {
+      summary.invoice_count += 1;
+      summary.invoiced += invoice.total;
+    }
     summary.collected += invoice.amount_paid;
     summary.outstanding += invoice.balance_due;
     if (invoice.status === "overdue" && invoice.balance_due > 0) {
@@ -280,6 +296,7 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
     unpaid_count: invoices.filter((invoice) => ["issued", "partially_paid", "overdue"].includes(invoice.status)).length,
     paid_count: invoices.filter((invoice) => invoice.status === "paid").length,
     draft_count: invoices.filter((invoice) => invoice.status === "draft").length,
+    opening_balance_count: invoices.filter((invoice) => invoice.record_type === "opening_balance" && invoice.status !== "void").length,
   };
 }
 
@@ -332,6 +349,10 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
   const now = new Date().toISOString();
   const document = {
     reference,
+    record_type: "invoice",
+    external_invoice_number: null,
+    migration_batch_id: null,
+    migration_as_of_date: null,
     customer_id: customerId,
     customer_name: text(customer.get("display_name"), customerId),
     shipment_reference: shipment?.exists ? shipmentId : null,
