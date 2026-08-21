@@ -1,6 +1,8 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../../firebase-admin.server";
 import { gptActionJson, requireGptAction } from "../../../../gpt-action-auth.server";
 
+type SubcollectionDoc = Record<string, unknown> & { id: string };
+
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
 }
@@ -37,9 +39,12 @@ function documentEffectiveStatus(document: Record<string, unknown>) {
   return status;
 }
 
-async function subcollection(reference: string, name: string, limit = 250) {
+async function subcollection(reference: string, name: string, limit = 250): Promise<SubcollectionDoc[]> {
   const snapshot = await firebaseAdminDb().collection("shipments").doc(reference).collection(name).limit(limit).get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }));
+  return snapshot.docs.map((doc) => ({
+    ...(doc.data() as Record<string, unknown>),
+    id: doc.id,
+  }));
 }
 
 export async function GET(request: Request, context: { params: Promise<{ reference: string }> }) {
