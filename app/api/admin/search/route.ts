@@ -128,7 +128,7 @@ export async function GET() {
       title: doc.id,
       subtitle: `${company || contact} · ${origin} → ${destination}`,
       meta: `Enquiry · ${status.replaceAll("_", " ")}`,
-      href: "/admin",
+      href: `/admin?enquiry=${encodeURIComponent(doc.id)}`,
       searchText: [doc.id, company ?? "", contact, text(data.contact_email), origin, destination, text(data.mode), status].join(" "),
     });
   }
