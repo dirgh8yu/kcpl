@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
-import { recordTrackingEvent, runTrackingHealthSweep } from "../../../admin/visibility/tracking-visibility.server";
+import { runTrackingHealthSweep } from "../../../admin/visibility/tracking-visibility.server";
+import { recordOrderedTrackingEvent } from "../../../admin/visibility/tracking-ingest.server";
 import { trackingSources, type TrackingSource } from "../../../admin/visibility/tracking-visibility";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const source: TrackingSource = trackingSources.includes(sourceText) && sourceText !== "manual" ? sourceText : "webhook";
   if (!reference || !rawStatus) return json({ ok: false, error: "reference and rawStatus are required." }, 400);
   const provider = clean(body.provider, 180) || "External tracking feed";
-  const result = await recordTrackingEvent(reference, {
+  const result = await recordOrderedTrackingEvent(reference, {
     rawStatus,
     milestone: clean(body.milestone, 60) || null,
     title: clean(body.title, 240),
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (result.kind === "invalid_coordinates") return json({ ok: false, error: "Tracking coordinates are invalid." }, 400);
   if (result.kind === "invalid_source") return json({ ok: false, error: "Tracking source is invalid." }, 400);
-  if (result.kind === "duplicate") return json({ ok: true, duplicate: true, event: result.event });
+  if (result.kind === "duplicate") return json({ ok: true, duplicate: true, event: "event" in result ? result.event : undefined });
   if (result.kind !== "created") return json({ ok: false, error: "Tracking event could not be recorded." }, 409);
-  return json({ ok: true, event: result.event, status: result.status, openedExceptions: result.opened_exceptions }, 201);
+  return json({ ok: true, event: result.event, status: result.status, historical: "historical" in result ? result.historical : false, openedExceptions: result.opened_exceptions }, 201);
 }
