@@ -20,19 +20,21 @@ export default async function DocumentsPage() {
   };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Shipment document access is not available for this staff role." embedded/></OperationsShell>;
 
+  let dashboard: Awaited<ReturnType<typeof listDocumentVault>>;
   try {
-    const dashboard = await listDocumentVault(staff);
-    if (!dashboard) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Firestore is not available for shipment document control in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
-
-    return (
-      <OperationsShell {...shellProps}>
-        <DocumentsWorkspace dashboard={dashboard} role={staff.permissions.role} currentUserEmail={access.user.email}/>
-      </OperationsShell>
-    );
+    dashboard = await listDocumentVault(staff);
   } catch (error) {
     console.error("Failed to load KCPL Document Vault", error);
     return <OperationsShell {...shellProps}><Gate title="Document Vault could not be loaded" detail="KCPL document data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
+
+  if (!dashboard) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Firestore is not available for shipment document control in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+
+  return (
+    <OperationsShell {...shellProps}>
+      <DocumentsWorkspace dashboard={dashboard} role={staff.permissions.role} currentUserEmail={access.user.email}/>
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
