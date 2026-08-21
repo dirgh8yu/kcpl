@@ -23,6 +23,14 @@ test("customer lane rule outranks global and branch rules", () => {
   assert.equal(resolvePricingRule(rules, context)?.id, "R3");
 });
 
+test("inactive specific rules never override an active broader rule", () => {
+  const rules = [
+    baseRule,
+    { ...baseRule, id: "R2", name: "Inactive customer lane", active: false, scope: "customer_lane", customer_id: "KCPL-C-1", origin: "Kathmandu", destination: "Kolkata", mode: "road", markup_percent: 2 },
+  ];
+  assert.equal(resolvePricingRule(rules, context)?.id, "R1");
+});
+
 test("markup pricing includes marked-up accessorials and fixed markup", () => {
   const result = calculateSellPrice({
     buy_cost: 1000, buy_currency: "USD", sell_currency: "USD", fx_rate: 1, markup_percent: 20,
