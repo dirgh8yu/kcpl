@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
+  Archive,
   BellRing,
   Boxes,
   Building2,
@@ -10,12 +11,17 @@ import {
   ChartNoAxesCombined,
   ChevronRight,
   Command,
+  Database,
+  FileText,
   HandCoins,
   Handshake,
   LayoutDashboard,
+  ListChecks,
   PackageSearch,
   ReceiptText,
+  RotateCcw,
   Search,
+  ShieldCheck,
   Star,
   UsersRound,
 } from "lucide-react";
@@ -51,13 +57,19 @@ const coreWorkspaces: Workspace[] = [
   { href: "/admin/command-centre", label: "Home", hint: "Operational day, movement and exceptions", icon: LayoutDashboard },
   { href: "/admin", label: "Enquiries", hint: "Requests, quotes and pricing", icon: PackageSearch },
   { href: "/admin/shipments", label: "Shipments", hint: "Movement queue and Digital Job Files", icon: Boxes },
+  { href: "/admin/customs", label: "Customs", hint: "Clearance queue, documents and customs blockers", icon: ShieldCheck },
+  { href: "/admin/documents", label: "Documents", hint: "Verified shipment documents and review queue", icon: FileText },
   { href: "/admin/alerts", label: "Tasks & alerts", hint: "Ownership, exceptions and follow-up", icon: BellRing },
   { href: "/admin/crm", label: "Customers", hint: "Customer accounts and Customer 360", icon: Building2 },
   { href: "/admin/partners", label: "Partners", hint: "Agents, carriers, vendors and counterparts", icon: Handshake },
   { href: "/admin/market-estimate", label: "Market estimate", hint: "Rates, currencies and market inputs", icon: Calculator },
   { href: "/admin/finance", label: "Receivables", hint: "Invoices, aging and collections", icon: ReceiptText, visible: (permissions) => permissions.canManageFinance },
   { href: "/admin/payables", label: "Payables", hint: "Supplier bills and obligations", icon: HandCoins, visible: (permissions) => permissions.canManageFinance },
-  { href: "/admin/management", label: "Management", hint: "Operational and commercial analytics", icon: ChartNoAxesCombined, visible: (permissions) => permissions.isManagement },
+  { href: "/admin/partners/reconciliation", label: "Supplier reconciliation", hint: "Resolve legacy supplier bills against Partner records", icon: ListChecks, visible: (permissions) => permissions.canManageFinance },
+  { href: "/admin/management", label: "Management", hint: "Analytics, profitability and production runtime readiness", icon: ChartNoAxesCombined, visible: (permissions) => permissions.isManagement },
+  { href: "/admin/migration", label: "Migration Hub", hint: "Controlled paper-to-KCPL data migration", icon: Database, visible: (permissions) => permissions.isManagement },
+  { href: "/admin/migration/archive", label: "Paper archive", hint: "Historical paper evidence and linked digital records", icon: Archive, visible: (permissions) => permissions.isManagement },
+  { href: "/admin/migration/recovery", label: "Migration recovery", hint: "Dry-run and controlled rollback of migration batches", icon: RotateCcw, visible: (permissions) => permissions.isManagement && permissions.canManageFinance },
   { href: "/admin/staff", label: "People & branches", hint: "Access, staff and branch ownership", icon: UsersRound, visible: (permissions) => permissions.canManageStaff },
 ];
 

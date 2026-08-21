@@ -4,6 +4,7 @@ import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { buildManagementAnalytics, resolveManagementRange } from "./management.server";
 import { ManagementWorkspace } from "./management-workspace";
+import { RuntimeReadinessPanel } from "./runtime-readiness-panel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Executive Dashboard | KCPL", robots: { index: false, follow: false } };
@@ -33,6 +34,7 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
       isManagement
     >
       <ManagementWorkspace analytics={analytics}/>
+      <RuntimeReadinessPanel/>
     </OperationsShell>
   );
 }
