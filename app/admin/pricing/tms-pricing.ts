@@ -90,6 +90,11 @@ export type PricingPreview = {
   result: PricingResult;
 };
 
+export type PricingForexRate = {
+  currency: string;
+  midpoint_per_unit: number;
+};
+
 function key(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -117,6 +122,19 @@ export function resolvePricingRule(rules: PricingRule[], context: PricingContext
   return rules
     .filter((rule) => pricingRuleMatches(rule, context))
     .sort((a, b) => specificity(b) - specificity(a) || b.updated_at.localeCompare(a.updated_at))[0] ?? null;
+}
+
+export function deriveNrbMidpointFxRate(buyCurrency: CrmCurrency, sellCurrency: CrmCurrency, rates: PricingForexRate[]) {
+  if (buyCurrency === sellCurrency) return 1;
+  const nprPerUnit = (currency: CrmCurrency) => {
+    if (currency === "NPR") return 1;
+    const rate = rates.find((item) => item.currency.trim().toUpperCase() === currency);
+    return rate && Number.isFinite(rate.midpoint_per_unit) && rate.midpoint_per_unit > 0 ? rate.midpoint_per_unit : null;
+  };
+  const buyNpr = nprPerUnit(buyCurrency);
+  const sellNpr = nprPerUnit(sellCurrency);
+  if (!buyNpr || !sellNpr) return null;
+  return buyNpr / sellNpr;
 }
 
 function moneyRound(value: number, currency: CrmCurrency) {
