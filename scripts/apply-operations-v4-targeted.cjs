@@ -15,152 +15,53 @@ function replaceExact(source, from, to, label) {
 
 const lines = (...items) => items.join('\n');
 
-patch('app/admin/admin-dashboard.tsx', (source) => {
-  const oldRow = lines(
-    '                <div className="flex items-center justify-between gap-2"><OpsMono className="truncate text-[10px] text-[#514840]">{quote.reference}</OpsMono><OpsBadge tone={statusTone(quote.status)} dot>{statusLabels[quote.status]}</OpsBadge></div>',
-    '                <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#514840]"><span className="truncate">{quote.origin}</span><ArrowRight size={11} className="shrink-0 text-[#c47b64]"/><span className="truncate">{quote.destination}</span></div>',
-    '                <p className="mt-1 truncate text-[9px] text-[#857b73]">{quote.company_name || quote.contact_name}{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</p>',
-    '                <div className="mt-2 flex items-center justify-between text-[8px] text-[#a0968e]"><span>{formatDate(quote.created_at)}</span>{quote.note_count ? <span className="flex items-center gap-1"><MessageSquareText size={10}/>{quote.note_count}</span> : null}</div>'
-  );
-  const newRow = lines(
-    '                <div className="flex items-center justify-between gap-2"><div className="ops-route min-w-0 text-[12px]"><span className="truncate">{quote.origin}</span><ArrowRight size={11} className="ops-route-arrow shrink-0"/><span className="truncate">{quote.destination}</span></div><OpsBadge tone={statusTone(quote.status)} dot>{statusLabels[quote.status]}</OpsBadge></div>',
-    '                <p className="mt-1.5 truncate text-[10px] font-semibold text-[#5f5953]">{quote.company_name || quote.contact_name} · {modeLabels[quote.mode] ?? quote.mode}</p>',
-    '                <div className="mt-2 flex items-center justify-between gap-3 text-[9px] text-[#8b847d]"><span className="min-w-0 truncate"><OpsMono>{quote.reference}</OpsMono>{quote.assigned_to ? ` · ${quote.assigned_to}` : ""}</span><span className="flex shrink-0 items-center gap-2"><span>{formatDate(quote.created_at)}</span>{quote.note_count ? <span className="flex items-center gap-1"><MessageSquareText size={10}/>{quote.note_count}</span> : null}</span></div>'
-  );
-  return replaceExact(source, oldRow, newRow, 'enquiry inbox row');
-});
-
-patch('app/admin/shipments/shipments-workspace.tsx', (source) => {
-  let next = source;
-  const helperAnchor = lines(
-    'function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "violet" | "success" | "danger" {',
-    '  if (status === "delivered") return "success";',
-    '  if (status === "exception") return "danger";',
-    '  if (status === "customs_clearance") return "violet";',
-    '  if (status === "preparing") return "warning";',
-    '  if (status === "booking_confirmed" || status === "in_transit" || status === "out_for_delivery") return "info";',
-    '  return "neutral";',
-    '}'
-  );
-  const helperBlock = lines(
-    helperAnchor,
-    '',
-    'function shipmentMilestones(mode: string) {',
-    '  const normalized = mode.toLowerCase();',
-    '  if (normalized.includes("air")) return ["Booked", "Docs", "Export", "Departed", "Arrived", "Customs", "Delivery", "Delivered"];',
-    '  if (normalized.includes("sea") || normalized.includes("ocean")) return ["Booked", "Docs", "Export", "Sailed", "Arrived", "Customs", "Delivery", "Delivered"];',
-    '  if (normalized.includes("road")) return ["Booked", "Docs", "Origin", "Transit", "Customs", "Delivery", "Delivered"];',
-    '  return ["Booked", "Docs", "Transit", "Customs", "Delivery", "Delivered"];',
-    '}',
-    '',
-    'function milestonePosition(status: ShipmentStatus, count: number) {',
-    '  const ratio: Record<Exclude<ShipmentStatus, "exception">, number> = { booking_confirmed: 0, preparing: .18, in_transit: .52, customs_clearance: .72, out_for_delivery: .88, delivered: 1 };',
-    '  if (status === "exception") return -1;',
-    '  return Math.min(count - 1, Math.round(ratio[status] * (count - 1)));',
-    '}'
-  );
-  next = replaceExact(next, helperAnchor, helperBlock, 'shipment milestone helpers');
-  next = replaceExact(next, '{columns.status ? <td><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></td> : null}', '{columns.status ? <td><div className="grid gap-2"><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge><ShipmentMilestoneRail job={job}/></div></td> : null}', 'shipment status rail');
-  next = replaceExact(next, 'className={owner === "Unassigned" ? "font-bold text-[#b65355]" : ""}', 'className={owner === "Unassigned" ? "font-bold text-[#9b682b]" : ""}', 'unassigned owner semantics');
-  next = replaceExact(next, '<OpsEmptyState icon={<PackageCheck size={18}/>} title="No shipments in this view" description="Try another saved view or reset the filters. Nothing has been deleted or hidden from the underlying job files."/>', '<OpsEmptyState kind="search" icon={<PackageCheck size={18}/>} title="No shipments in this view" description="Try another saved view or reset the filters. Nothing has been deleted or hidden from the underlying job files."/>', 'shipment empty state');
-  next = replaceExact(next, '<td className="text-right"><OpsButton variant="ghost" size="sm" onClick={onPreview}>Preview <ArrowRight size={11}/></OpsButton></td>', '<td className="text-right"><div className="flex justify-end gap-1"><OpsButton variant="ghost" size="sm" onClick={onPreview}>Preview</OpsButton><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open job <ArrowRight size={11}/></Link></div></td>', 'shipment quick actions');
-  const componentAnchor = 'function PreviewFact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: string; mono?: boolean }) {';
-  const componentBlock = lines(
-    'function ShipmentMilestoneRail({ job }: { job: CommandCentreJob }) {',
-    '  const labels = shipmentMilestones(job.mode);',
-    '  const current = milestonePosition(job.status, labels.length);',
-    '  if (job.status === "exception") return <div className="flex items-center gap-1.5 text-[9px] font-semibold text-[#ae434a]"><AlertTriangle size={10}/>Operational exception</div>;',
-    '  return <div title={labels.join(" → ")} aria-label={`Shipment lifecycle: ${labels.join(", ")}`}><div className="ops-milestones">{labels.map((label, index) => <span key={label} className="ops-milestone" data-state={index < current ? "done" : index === current ? "current" : "pending"}><i aria-hidden="true"/></span>)}</div><p className="mt-1 text-[8px] text-[#8b847d]">{labels[current]}</p></div>;',
-    '}',
-    '',
-    componentAnchor
-  );
-  next = replaceExact(next, componentAnchor, componentBlock, 'shipment milestone component');
-  return next;
-});
-
 patch('app/admin/alerts/alerts-workspace.tsx', (source) => {
-  let next = replaceExact(source, '{evaluating ? "Checking…" : "Run checks"}', '{evaluating ? "Checking…" : "Check now"}', 'alert check action');
-  const countsBlock = lines(
-    '  const counts = {',
-    '    critical: alerts.filter((alert) => alert.severity === "critical" && alert.status !== "resolved").length,',
-    '    warning: alerts.filter((alert) => alert.severity === "warning" && alert.status !== "resolved").length,',
-    '    acknowledged: alerts.filter((alert) => alert.status === "acknowledged").length,',
-    '    open: alerts.filter((alert) => alert.status === "open").length,',
-    '  };'
-  );
-  next = replaceExact(next, countsBlock, countsBlock + '\n  const unresolved = alerts.filter((alert) => alert.status !== "resolved").length;', 'alert unresolved count');
-  const oldEmpty = '<OpsEmptyState icon={<CheckCircle2 size={18}/>} title="Nothing needs attention in this view" description="The automation engine has no matching work. Change the filters or run the checks again if you want to refresh the queue." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Show all alerts</OpsButton>}/>';
-  const newEmpty = '{unresolved === 0 ? <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={18}/>} title="All clear ✓" description="No active exceptions require attention. KCPL will surface new operational risk here when a rule is triggered." action={<OpsButton variant="secondary" size="sm" onClick={() => action("evaluate")} disabled={evaluating}>{evaluating ? "Checking…" : "Check now"}</OpsButton>}/> : <OpsEmptyState kind="search" icon={<CheckCircle2 size={18}/>} title="No alerts match this view" description="There is active work elsewhere in the queue, but nothing matches the current filters." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Show all alerts</OpsButton>/>}';
-  next = replaceExact(next, oldEmpty, newEmpty, 'alert empty state');
-  return next;
-});
-
-patch('app/admin/crm/crm-dashboard.tsx', (source) => {
-  let next = source;
-  next = replaceExact(next, '  crmRelationshipTypes,\n', '', 'customer relationship types import');
-  next = replaceExact(next, '  type CrmRelationshipType,\n', '', 'customer relationship type import');
-  const init = lines(
-    'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {',
-    '  const [customers, setCustomers] = useState(initialCustomers);',
-    '  const [stats, setStats] = useState(initialStats);',
-    '  const [selectedId, setSelectedId] = useState(initialCustomers[0]?.id ?? "");'
-  );
-  const initNew = lines(
-    'export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {',
-    '  const buyerCustomers = initialCustomers.filter((customer) => customer.relationship_types.includes("customer"));',
-    '  const [customers, setCustomers] = useState(buyerCustomers);',
-    '  const [stats, setStats] = useState(buyerCustomers.length === initialCustomers.length ? initialStats : computeStats(buyerCustomers));',
-    '  const [selectedId, setSelectedId] = useState(buyerCustomers[0]?.id ?? "");'
-  );
-  next = replaceExact(next, init, initNew, 'customer-only state');
-  next = replaceExact(next, 'const [showCreate, setShowCreate] = useState(initialCustomers.length === 0);', 'const [showCreate, setShowCreate] = useState(buyerCustomers.length === 0);', 'customer create empty state');
-  const toggle = lines(
-    '  function toggleRelationship(type: CrmRelationshipType) {',
-    '    setForm((current) => ({ ...current, relationshipTypes: current.relationshipTypes.includes(type) ? current.relationshipTypes.filter((item) => item !== type) : [...current.relationshipTypes, type] }));',
-    '    setDuplicates([]);',
-    '  }',
-    ''
-  );
-  next = replaceExact(next, toggle, '', 'customer relation toggle');
-  next = replaceExact(next, 'A quiet account index for customers, suppliers, carriers, agents and partners. Open Customer 360 when you need the full relationship history.', 'Customer accounts that buy KCPL freight and logistics services. Carriers, agents, transporters, suppliers and overseas counterparts live in Partners.', 'customer description');
-  next = replaceExact(next, ' toggleRelationship={toggleRelationship}', '', 'customer form prop');
-  next = replaceExact(next, 'function CreateCustomerForm({ form, setField, toggleRelationship, tagDraft, setTagDraft, carrierDraft, setCarrierDraft, transportDraft, setTransportDraft, saving, duplicates, advancedOpen, setAdvancedOpen, onSubmit, onCancel }: {', 'function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraft, setCarrierDraft, transportDraft, setTransportDraft, saving, duplicates, advancedOpen, setAdvancedOpen, onSubmit, onCancel }: {', 'customer form signature');
-  next = replaceExact(next, '  toggleRelationship: (type: CrmRelationshipType) => void;\n', '', 'customer form type prop');
-  const relationPicker = '<div className="mt-4"><p className="mb-2 text-[9px] font-bold text-[#655c54]">Relationship</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} className="ops-badge" data-tone={form.relationshipTypes.includes(type) ? "accent" : "neutral"}>{form.relationshipTypes.includes(type) ? <span>✓</span> : null}{crmRelationshipLabels[type]}</button>)}</div></div>';
-  const relationFixed = '<div className="mt-4 flex flex-wrap items-center gap-2"><OpsBadge tone="info">Customer</OpsBadge><span className="text-[10px] text-[#756e67]">This workspace is for buyers of KCPL services. Operational suppliers and counterparts belong in Partners.</span></div>';
-  next = replaceExact(next, relationPicker, relationFixed, 'customer relationship picker');
-  next = replaceExact(next, '<OpsEmptyState title="No records match" description="Change the filter or add a new relationship."/>', '<OpsEmptyState kind="search" title="No customers match" description="Change the filter or create a customer account."/>', 'customer search empty');
-  next = replaceExact(next, '<OpsEmptyState icon={<UsersRound size={19}/>} title="Build the customer graph" description="Create the first CRM record to connect enquiries, shipments, contacts, commercial terms and activity." action={<OpsButton variant="primary" onClick={openNew}>Create record</OpsButton>}/>', '<OpsEmptyState kind="setup" icon={<UsersRound size={19}/>} title="Add the first KCPL customer" description="Customer accounts connect enquiries, shipments, contacts, commercial terms and activity. Agents, carriers and vendors belong in Partners." action={<OpsButton variant="primary" onClick={openNew}>Create customer</OpsButton>}/>', 'customer setup empty');
+  let next = replaceExact(source, '})}</div> : {unresolved === 0 ?', '})}</div> : unresolved === 0 ?', 'alerts nested ternary start');
+  next = replaceExact(next, '</OpsButton>/>}} \n        </OpsSurface>', '</OpsButton>/>} \n        </OpsSurface>', 'alerts nested ternary end');
   return next;
 });
 
 patch('app/admin/partners/partners-workspace.tsx', (source) => {
   let next = source;
-  const stats = '<OpsStatStrip><OpsStat label="Active network" value={dashboard.active_count} icon={<Handshake size={13}/>} tone="success"/><OpsStat label="Preferred" value={dashboard.preferred_count} icon={<BadgeCheck size={13}/>} tone="accent"/><OpsStat label="Countries" value={dashboard.country_count} icon={<Globe2 size={13}/>} /><OpsStat label="Unlinked supplier bills" value={dashboard.unlinked_supplier_bills} icon={<TriangleAlert size={13}/>} tone={dashboard.unlinked_supplier_bills ? "warning" : "neutral"}/><OpsStat label="Partner records" value={dashboard.partners.length} icon={<Building2 size={13}/>} /></OpsStatStrip>';
-  next = replaceExact(next, stats, '{dashboard.partners.length ? ' + stats + ' : null}', 'partner adaptive stats');
   const registerStart = '      <OpsSurface eyebrow="Network register" title="Partners & vendors" description={`${filtered.length} of ${dashboard.partners.length} records shown.`} flush>';
-  const onboarding = lines(
-    '      {!dashboard.partners.length && !formOpen ? <OpsSurface eyebrow="Operating network" title="Build your operating network" description="Add the carriers, agents, transporters, warehouses and international counterparts KCPL works with to move freight." action={canEdit ? <OpsButton variant="primary" onClick={startCreate}><Plus size={12}/>Add first partner</OpsButton> : null}>',
-    '        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><PartnerKind title="Carrier" detail="Shipping line, airline or trucking provider"/><PartnerKind title="Agent" detail="International freight or customs counterpart"/><PartnerKind title="Warehouse" detail="Storage, handling or consolidation facility"/><PartnerKind title="Vendor" detail="External operational supplier"/></div>',
-    '      </OpsSurface> : null}',
-    '',
-    registerStart
-  );
-  next = replaceExact(next, registerStart, onboarding, 'partner onboarding');
-  next = replaceExact(next, '<OpsEmptyState icon={<Handshake size={18}/>} title="No partners match" description="Change the filters or add a new network record."/>', '<OpsEmptyState kind="search" icon={<Handshake size={18}/>} title="No partners match" description="Change the filters or add a new network record."/>', 'partner search empty');
-  const toggleAnchor = 'function Toggle({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {';
-  const helper = lines(
-    'function PartnerKind({ title, detail }: { title: string; detail: string }) { return <div className="border-l-2 border-[#d8d2cc] pl-3"><strong className="text-[11px] text-[#403a36]">{title}</strong><p className="mt-1 text-[10px] leading-5 text-[#756e67]">{detail}</p></div>; }',
-    '',
-    toggleAnchor
-  );
-  next = replaceExact(next, toggleAnchor, helper, 'partner kind helper');
+  next = replaceExact(next, registerStart, '      {dashboard.partners.length ? <OpsSurface eyebrow="Network register" title="Partners & vendors" description={`${filtered.length} of ${dashboard.partners.length} records shown.`} flush>', 'partner register start');
+  next = replaceExact(next, '      </OpsSurface>\n    </div>\n  </OpsPage>;', '      </OpsSurface> : null}\n    </div>\n  </OpsPage>;', 'partner register end');
   return next;
 });
 
-patch('app/admin/finance/finance-workspace.tsx', (source) => {
-  let next = replaceExact(source, 'eyebrow="Finance" title="Accounts Receivable"', 'eyebrow="Commercial" title="Receivables"', 'receivables title');
-  next = replaceExact(next, '<OpsEmptyState title="No invoices match" description="Change the filters or create a new invoice draft."/>', '<OpsEmptyState kind="search" title="No receivables match" description="Change the filters or create a new invoice draft."/>', 'receivables empty');
+patch('app/admin/jobs/[reference]/workflow-spine.tsx', (source) => {
+  const oldStages = lines(
+    '      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">',
+    '        {workflow.stages.map((stage, index) => <div key={stage.id} className={`rounded-[12px] border p-3 ${stageTone(stage.state)}`}>',
+    '          <div className="flex items-center justify-between gap-2"><span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current/20">{stageIcon(stage.state)}</span><span className="text-[8px] font-bold tabular-nums opacity-55">{String(index + 1).padStart(2, "0")}</span></div>',
+    '          <p className="mt-2 text-[9px] font-bold uppercase tracking-[.06em]">{stage.label}</p>',
+    '          <p className="mt-1.5 text-[8px] leading-4 opacity-80">{stage.detail}</p>',
+    '        </div>)}',
+    '      </div>',
+    '      <div className="mt-3"><OpsProgress value={stagePercent}/></div>'
+  );
+  const newStages = lines(
+    '      <div className="overflow-x-auto pb-1">',
+    '        <div className="flex min-w-[820px] items-start">',
+    '          {workflow.stages.map((stage, index) => <div key={stage.id} className="relative min-w-0 flex-1 px-1">',
+    '            {index < workflow.stages.length - 1 ? <span className={`absolute left-[calc(50%+13px)] right-[calc(-50%+13px)] top-[13px] h-[2px] ${stage.state === "complete" ? "bg-[#a9c7b2]" : "bg-[#ddd8d2]"}`} aria-hidden="true"/> : null}',
+    '            <div className="relative z-10 flex flex-col items-center text-center">',
+    '              <span className={`inline-flex h-[27px] w-[27px] items-center justify-center rounded-full border bg-white ${stageTone(stage.state)}`}>{stageIcon(stage.state)}</span>',
+    '              <span className="mt-2 text-[10px] font-bold text-[#49433e]">{stage.label}</span>',
+    '              <span className="mt-1 max-w-[120px] text-[8px] leading-4 text-[#817a73]">{stage.detail}</span>',
+    '            </div>',
+    '          </div>)}',
+    '        </div>',
+    '      </div>',
+    '      <div className="mt-4"><OpsProgress value={stagePercent}/></div>'
+  );
+  return replaceExact(source, oldStages, newStages, 'job workflow journey');
+});
+
+patch('app/admin/jobs/[reference]/page.tsx', (source) => {
+  let next = source;
+  next = replaceExact(next, 'className="rounded-[10px] border border-[#e5ddd6] bg-[#fffdfa] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#5b514a] shadow-lg"', 'className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm"', 'job profitability action');
+  next = replaceExact(next, 'className="rounded-[10px] border border-[#d4dfd5] bg-[#f3f8f3] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#5e7462] shadow-lg"', 'className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm"', 'job invoice action');
+  next = replaceExact(next, 'className="rounded-[10px] border border-[#eadcc4] bg-[#fff9ee] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#8a6836] shadow-lg"', 'className="ops-button border-[#ead5b1] bg-[#fff8ec] text-[#8d5d22] shadow-[0_8px_28px_rgba(54,43,34,.08)]" data-variant="secondary" data-size="sm"', 'job payable action');
   return next;
 });
