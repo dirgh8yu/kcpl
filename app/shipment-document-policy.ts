@@ -1,15 +1,13 @@
 import type { KcplStaffRole } from "./admin/staff-permissions";
-import {
-  shipmentDocumentReviewStatuses,
-  type ShipmentDocumentEffectiveStatus,
-  type ShipmentDocumentReviewStatus,
-} from "./shipment-document-types";
+import type { ShipmentDocumentEffectiveStatus, ShipmentDocumentReviewStatus } from "./shipment-document-types";
+
+const reviewStatuses = ["received", "under_review", "verified", "rejected", "superseded", "deleted"] as const satisfies readonly ShipmentDocumentReviewStatus[];
 
 export const shipmentDocumentVisibilities = ["internal", "customer_safe"] as const;
 export type ShipmentDocumentVisibility = (typeof shipmentDocumentVisibilities)[number];
 
 export function shipmentDocumentReviewStatusValue(value: unknown): ShipmentDocumentReviewStatus {
-  return shipmentDocumentReviewStatuses.includes(value as ShipmentDocumentReviewStatus)
+  return reviewStatuses.includes(value as ShipmentDocumentReviewStatus)
     ? value as ShipmentDocumentReviewStatus
     : "received";
 }
