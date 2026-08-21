@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.0.0
+  version: 1.0.1
   description: >-
     Read-only access to authorised Kapileshwor Cargo operational data. Use these
     actions for current KCPL shipments, Job Files, customers, quotes and operations briefings.
@@ -21,8 +21,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/HealthResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/gpt/briefing:
     get:
       operationId: getKcplOperationsBriefing
@@ -36,8 +41,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/BriefingResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/gpt/search:
     get:
       operationId: searchKcplOperations
@@ -82,8 +92,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/SearchResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/gpt/jobs/{reference}:
     get:
       operationId: getKcplJobFile
@@ -105,11 +120,151 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/JobFileResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Shipment not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        service:
+          type: string
+        firebaseConfigured:
+          type: boolean
+        mode:
+          type: string
+      additionalProperties: true
+    BriefingResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+        sampledShipmentCount:
+          type: integer
+        activeShipmentCount:
+          type: integer
+        statusCounts:
+          type: object
+          properties: {}
+          additionalProperties:
+            type: integer
+        activeShipmentsByPrimaryBranch:
+          type: object
+          properties: {}
+          additionalProperties:
+            type: integer
+        attentionCount:
+          type: integer
+        attention:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        note:
+          type: string
+      additionalProperties: true
+    SearchResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        query:
+          type: string
+        kind:
+          type: string
+        status:
+          type: string
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+      additionalProperties: true
+    JobFileResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        job:
+          type: object
+          properties: {}
+          additionalProperties: true
+        route:
+          type: object
+          properties: {}
+          additionalProperties: true
+        customer:
+          type: object
+          properties: {}
+          additionalProperties: true
+        readiness:
+          type: object
+          properties: {}
+          additionalProperties: true
+        tasks:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        customsSteps:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        documentRequirements:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        documents:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        events:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        activity:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+      additionalProperties: true
+    ErrorResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        error:
+          type: string
+      additionalProperties: true
   securitySchemes:
     KcplApiKey:
       type: apiKey
