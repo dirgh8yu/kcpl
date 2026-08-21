@@ -101,6 +101,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       sizeBytes: file.size,
       documentType: documentType as ShipmentDocumentType,
       uploadedBy: auth.user.displayName,
+      uploadedByEmail: auth.user.email,
       data: await file.arrayBuffer(),
     });
     if (result.kind === "unavailable") return json({ ok: false, error: "Firebase Storage is not configured yet." }, 503);
