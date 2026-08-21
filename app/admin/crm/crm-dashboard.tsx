@@ -54,7 +54,7 @@ function computeStats(customers: CrmCustomerSummary[]): CrmDashboardStats {
 
 function csv(value: string) { return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))]; }
 
-export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string }) {
+export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean }) {
   const buyerCustomers = initialCustomers.filter((customer) => customer.relationship_types.includes("customer"));
   const [customers, setCustomers] = useState(buyerCustomers);
   const [stats, setStats] = useState(buyerCustomers.length === initialCustomers.length ? initialStats : computeStats(buyerCustomers));
@@ -134,7 +134,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
         <section className="min-w-0 p-5 lg:p-7 xl:p-8">
           {notice ? <div className="mb-4"><OpsNotice tone={duplicates.length ? "warning" : notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
           {showCreate ? <CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/>
-            : selected ? <CustomerOverview customer={selected} onNew={openNew}/>
+            : selected ? <CustomerOverview customer={selected} onNew={openNew} commercialVisible={commercialVisible}/>
             : <OpsEmptyState kind="setup" icon={<UsersRound size={19}/>} title="Add the first KCPL customer" description="Customer accounts connect enquiries, shipments, contacts, commercial terms and activity. Agents, carriers and vendors belong in Partners." action={<OpsButton variant="primary" onClick={openNew}>Create customer</OpsButton>}/>} 
         </section>
       </div>
@@ -142,7 +142,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
   );
 }
 
-function CustomerOverview({ customer, onNew }: { customer: CrmCustomerSummary; onNew: () => void }) {
+function CustomerOverview({ customer, onNew, commercialVisible }: { customer: CrmCustomerSummary; onNew: () => void; commercialVisible: boolean }) {
   const grossMargin = customer.revenue_total > 0 ? (customer.profit_total / customer.revenue_total) * 100 : 0;
   return <div className="mx-auto max-w-6xl ops-stack">
     <div className="flex flex-wrap items-start justify-between gap-5"><div><div className="flex flex-wrap items-center gap-2"><OpsMono className="text-[9px] text-[#9b7060]">{customer.id}</OpsMono><OpsBadge tone={statusTone(customer.account_status)} dot>{crmAccountStatusLabels[customer.account_status]}</OpsBadge>{customer.relationship_types.map((type) => <OpsBadge key={type}>{crmRelationshipLabels[type]}</OpsBadge>)}</div><h2 className="mt-3 text-[30px] font-[735] tracking-[-.045em] text-[#39312c]">{customer.display_name}</h2><p className="mt-2 text-[10px] text-[#8b8179]">{customer.primary_email || "No primary email"}{customer.primary_phone ? ` · ${customer.primary_phone}` : ""} · {customer.country}</p></div><div className="flex gap-2"><OpsButton variant="secondary" onClick={onNew}><Plus size={12}/>New record</OpsButton><Link href={`/admin/crm/${encodeURIComponent(customer.id)}`} className="ops-button" data-variant="primary" data-size="md">Open Customer 360 <ArrowRight size={12}/></Link></div></div>
@@ -150,7 +150,7 @@ function CustomerOverview({ customer, onNew }: { customer: CrmCustomerSummary; o
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MiniStat icon={<BadgeDollarSign size={14}/>} label="Quotes" value={customer.quote_count}/><MiniStat icon={<Globe2 size={14}/>} label="Active shipments" value={customer.active_shipment_count}/><MiniStat icon={<Sparkles size={14}/>} label="Completed jobs" value={customer.completed_shipment_count}/><MiniStat icon={<Clock3 size={14}/>} label="Follow-ups" value={customer.follow_up_count} warn={customer.follow_up_count > 0}/></div>
 
     <div className="ops-grid-main"><OpsSurface eyebrow="Account" title="Relationship snapshot"><div className="grid gap-x-8 gap-y-5 sm:grid-cols-2"><Fact label="Lead stage" value={crmLeadStageLabels[customer.lead_stage]}/><Fact label="Primary branch" value={customer.primary_branch}/><Fact label="Account manager" value={customer.account_manager_name || "Unassigned"}/><Fact label="Manager email" value={customer.account_manager_email || "Not set"}/><Fact label="Manager phone" value={customer.account_manager_phone || "Not set"}/><Fact label="Country" value={customer.country}/><Fact label="Entity" value={customer.entity_kind === "company" ? "Company / organisation" : "Individual"}/><Fact label="Updated" value={customer.updated_at ? new Date(customer.updated_at).toLocaleDateString("en-AU") : "Just created"}/></div>{customer.tags.length ? <div className="mt-5 border-t border-[#eee7e1] pt-4"><p className="text-[8px] font-bold uppercase tracking-[.08em] text-[#9c928a]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{customer.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}</OpsSurface>
-      <OpsSurface eyebrow="Commercial" title={`${customer.preferred_currency} account`} description="Headline lifetime totals for quick context. Full terms and rate cards live inside Customer 360."><div className="divide-y divide-[#eee7e1]"><MoneyLine label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)}/><MoneyLine label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)}/><MoneyLine label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} strong/><MoneyLine label="Gross margin" value={`${grossMargin.toFixed(1)}%`}/></div></OpsSurface>
+      {commercialVisible ? <OpsSurface eyebrow="Commercial" title={`${customer.preferred_currency} account`} description="Headline lifetime totals for quick context. Full terms and rate cards live inside Customer 360."><div className="divide-y divide-[#eee7e1]"><MoneyLine label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)}/><MoneyLine label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)}/><MoneyLine label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} strong/><MoneyLine label="Gross margin" value={`${grossMargin.toFixed(1)}%`}/></div></OpsSurface> : null}
     </div>
   </div>;
 }

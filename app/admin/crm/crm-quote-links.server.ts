@@ -1,5 +1,5 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { crmCurrencies, type CrmCurrency } from "./crm-data";
+import { crmCurrencies, type CrmCurrency, type KcplBranch } from "./crm-data";
 import { createCrmCustomer, findCrmDuplicates } from "./crm-data.server";
 
 type Actor = { name: string; email: string };
@@ -199,7 +199,7 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
   });
 }
 
-export async function createCrmCustomerFromQuote(quoteReference: string, actor: Actor) {
+export async function createCrmCustomerFromQuote(quoteReference: string, actor: Actor, primaryBranch: KcplBranch = "Kathmandu") {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const quoteId = quoteReference.trim().toUpperCase();
@@ -234,7 +234,7 @@ export async function createCrmCustomerFromQuote(quoteReference: string, actor: 
     industry: "",
     taxId: "",
     country: "Not recorded",
-    primaryBranch: "Kathmandu",
+    primaryBranch,
     accountManagerName,
     accountManagerEmail,
     accountManagerPhone,

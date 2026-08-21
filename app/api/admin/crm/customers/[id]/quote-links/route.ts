@@ -1,10 +1,12 @@
 import { linkQuoteToCrmCustomer, listCrmQuoteLinks } from "../../../../../../admin/crm/crm-quote-links.server";
-import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability } from "../../../crm-api";
+import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess } from "../../../crm-api";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeCrm();
   if ("response" in auth) return auth.response;
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
 
   try {
     const result = await listCrmQuoteLinks(id);
@@ -35,6 +37,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!quoteReference) return crmJson({ ok: false, error: "Choose a quote to link." }, 400);
 
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await linkQuoteToCrmCustomer(id, quoteReference, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);

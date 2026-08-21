@@ -1,12 +1,13 @@
 import { crmCurrencies, type CrmCurrency } from "../../../../../../admin/crm/crm-data";
 import { crmRateModes, crmRateUnits, type CrmRateCardInput, type CrmRateMode, type CrmRateUnit } from "../../../../../../admin/crm/crm-rate-cards";
 import { createCrmRateCard, listCrmRateCards } from "../../../../../../admin/crm/crm-rate-cards.server";
-import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability } from "../../../crm-api";
+import { validCalendarDate } from "../../../../../../admin/crm/crm-policy";
+import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, requireCrmCustomerAccess } from "../../../crm-api";
 
 function optionalNumber(value: unknown) {
   if (value === null || value === undefined || value === "") return { value: null as number | null };
   const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? { value: parsed } : { error: "Rates must be positive numbers." };
+  return Number.isFinite(parsed) && parsed >= 0 ? { value: parsed } : { error: "Rates must be zero or greater." };
 }
 
 function parseRateCard(body: Record<string, unknown>) {
@@ -30,7 +31,7 @@ function parseRateCard(body: Record<string, unknown>) {
   const validFrom = cleanCrmText(body.validFrom, 10);
   const validUntil = cleanCrmText(body.validUntil, 10);
   for (const value of [validFrom, validUntil]) {
-    if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return { error: "Rate validity dates must be valid dates." };
+    if (value && !validCalendarDate(value)) return { error: "Rate validity dates must be real calendar dates." };
   }
   if (validFrom && validUntil && validUntil < validFrom) return { error: "Valid until cannot be before valid from." };
 
@@ -59,6 +60,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const capabilityError = requireCrmCapability(auth.permissions, "canViewCommercial");
   if (capabilityError) return capabilityError;
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await listCrmRateCards(id);
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
@@ -83,6 +86,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const parsed = parseRateCard(body);
   if (!parsed.input) return crmJson({ ok: false, error: parsed.error }, 400);
   const { id } = await context.params;
+  const accessError = await requireCrmCustomerAccess(id, auth.staff);
+  if (accessError) return accessError;
   try {
     const result = await createCrmRateCard(id, parsed.input, { name: auth.user.displayName, email: auth.user.email });
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);

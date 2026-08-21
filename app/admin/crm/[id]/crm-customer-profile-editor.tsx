@@ -59,7 +59,6 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
     preferredCurrency: customer.preferred_currency,
     paymentTermsDays: customer.commercial.payment_terms_days?.toString() ?? "",
     creditLimit: customer.commercial.credit_limit?.toString() ?? "",
-    outstandingBalance: customer.commercial.outstanding_balance?.toString() ?? "",
     pricingNotes: customer.commercial.pricing_notes ?? "",
     markupPercent: customer.commercial.markup_percent?.toString() ?? "",
     preferredCarriers: csv(customer.commercial.preferred_carriers),
@@ -70,6 +69,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
   }
 
   function toggleRelationship(type: CrmRelationshipType) {
+    if (type === "customer") return;
     setForm((current) => ({
       ...current,
       relationshipTypes: current.relationshipTypes.includes(type)
@@ -99,7 +99,6 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
       if (!permissions.canManageCredit) {
         delete payload.paymentTermsDays;
         delete payload.creditLimit;
-        delete payload.outstandingBalance;
       }
 
       const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customer.id)}`, {
@@ -165,7 +164,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
             <Field label="Primary branch"><select className="crm360-input" value={form.primaryBranch} onChange={(event) => field("primaryBranch", event.target.value)}>{kcplBranches.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
           </div>
 
-          <div><p className="mb-2 text-[9px] font-black uppercase tracking-[.13em] text-black/40">Relationships</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} className={`rounded-full border px-3 py-1.5 text-[9px] font-black ${form.relationshipTypes.includes(type) ? "border-[#10263f] bg-[#10263f] text-white" : "border-black/10 bg-[#faf9f5] text-black/50"}`}>{crmRelationshipLabels[type]}</button>)}</div></div>
+          <div><p className="mb-2 text-[9px] font-black uppercase tracking-[.13em] text-black/40">Relationships</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} disabled={type === "customer"} className={`rounded-full border px-3 py-1.5 text-[9px] font-black ${form.relationshipTypes.includes(type) ? "border-[#10263f] bg-[#10263f] text-white" : "border-black/10 bg-[#faf9f5] text-black/50"}`}>{crmRelationshipLabels[type]}</button>)}</div></div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field label="Primary email"><input type="email" className="crm360-input" value={form.primaryEmail} onChange={(event) => field("primaryEmail", event.target.value)} /></Field>
@@ -192,7 +191,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
           {permissions.canManageCredit ? <div className="rounded-2xl border border-black/10 bg-[#faf9f5] p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-black/40">Credit control</p><div className="mt-4 grid gap-3 md:grid-cols-3">
             <Field label="Payment terms days"><input inputMode="numeric" className="crm360-input" value={form.paymentTermsDays} onChange={(event) => field("paymentTermsDays", event.target.value)} /></Field>
             <Field label="Credit limit"><input inputMode="decimal" className="crm360-input" value={form.creditLimit} onChange={(event) => field("creditLimit", event.target.value)} /></Field>
-            <Field label="Outstanding balance"><input inputMode="decimal" className="crm360-input" value={form.outstandingBalance} onChange={(event) => field("outstandingBalance", event.target.value)} /></Field>
+            <Field label="Outstanding balance"><div className="crm360-input flex items-center bg-[#f4f1ed] text-[#6f6862]">{customer.commercial.outstanding_balance === null ? "No receivable balance" : `${customer.preferred_currency} ${customer.commercial.outstanding_balance.toLocaleString("en-AU", { maximumFractionDigits: 2 })}`} · calculated from Receivables</div></Field>
           </div></div> : null}
 
           <div className="flex justify-end"><button type="submit" disabled={busy || !form.relationshipTypes.length} className="flex items-center gap-2 rounded-xl bg-[#10263f] px-5 py-3 text-xs font-black text-white disabled:opacity-50"><Save size={14} />{busy ? "Saving…" : "Save customer"}</button></div>
