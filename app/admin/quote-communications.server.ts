@@ -1,6 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
-import type { QuoteStatus } from "./admin-data";
+import { quoteStatuses, type QuoteStatus } from "./admin-data";
 
 type QuoteEmailAuditInput = {
   reference: string;
@@ -12,12 +12,15 @@ type QuoteEmailAuditInput = {
   sentAt: string;
   actorName: string;
   actorEmail: string;
-  previousStatus: QuoteStatus;
 };
 
 function communicationId(sentAt: string) {
   const safeTime = sentAt.replace(/[^0-9]/g, "").slice(0, 17);
   return `email-${safeTime}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function currentStatus(value: unknown): QuoteStatus {
+  return quoteStatuses.includes(value as QuoteStatus) ? value as QuoteStatus : "new";
 }
 
 export async function recordQuoteEmail(input: QuoteEmailAuditInput) {
@@ -27,9 +30,11 @@ export async function recordQuoteEmail(input: QuoteEmailAuditInput) {
   const quote = await quoteRef.get();
   if (!quote.exists) return { kind: "missing" as const };
 
-  const nextStatus: QuoteStatus = input.previousStatus === "new" || input.previousStatus === "reviewing"
-    ? "quoted"
-    : input.previousStatus;
+  // Derive the transition from the current database value, not a status that
+  // was read before the email provider call. This prevents a concurrent Won or
+  // Lost decision from being accidentally overwritten back to Quoted.
+  const before = currentStatus(quote.get("status"));
+  const nextStatus: QuoteStatus = before === "new" || before === "reviewing" ? "quoted" : before;
   const id = communicationId(input.sentAt);
   const communication = {
     id,
