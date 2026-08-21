@@ -1,0 +1,16 @@
+/* Shared production fixes for KCPL Operations. Keep narrow and intentional. */
+
+/*
+ * Table headers live inside .ops-table-wrap, which is the nearest overflow
+ * container because it provides horizontal scrolling. A 58px sticky offset
+ * therefore pushes the header 58px down inside every card and overlays the
+ * first data row. Keep the header anchored to the top of its own table
+ * viewport instead of the global application header.
+ */
+.kcpl-ops .ops-table-wrap {
+  position: relative;
+}
+
+.kcpl-ops .ops-table thead th {
+  top: 0;
+}
