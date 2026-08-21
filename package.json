@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-strip-types --test tests/rbac-security.test.mjs tests/customs-policy.test.mjs tests/document-policy.test.mjs tests/migration-recovery-policy.test.mjs",
+    "test": "node --experimental-strip-types --test tests/rbac-security.test.mjs tests/customs-policy.test.mjs tests/document-policy.test.mjs tests/migration-recovery-policy.test.mjs tests/production-readiness.test.mjs",
     "lint": "eslint . --ignore-pattern .next"
   },
   "dependencies": {
@@ -31,7 +31,7 @@
     "eslint": "9.39.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react": "7.37.5",
-    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-hooks": "7.0.1",
     "globals": "16.4.0",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
