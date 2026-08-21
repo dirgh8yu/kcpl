@@ -5,9 +5,11 @@ import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
 import { MobileQuoteCta } from "./components/mobile-quote-cta";
 import { StructuredData } from "./components/structured-data";
+import { OperationsGlobalSearch } from "./admin/operations-global-search";
 import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
 import "./globals.css";
 import "./admin/operations-theme.css";
+import "./admin/operations-polish.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -71,6 +73,7 @@ export default function RootLayout({
       <body className={`${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
         <StructuredData data={organizationSchema} />
         {children}
+        <OperationsGlobalSearch />
         <MobileQuoteCta />
         <Suspense fallback={null}><Analytics /></Suspense>
       </body>

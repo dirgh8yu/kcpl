@@ -23,17 +23,23 @@ async function loadQuotes(): Promise<QuoteLoadResult> {
   }
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ enquiry?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind === "unconfigured") return <AdminGate title="Firebase admin access needs configuration" detail="Configure the Firebase project in App Hosting, then create the initial staff account in Firebase Authentication. KCPL_ADMIN_EMAILS can be used as the bootstrap management allowlist."/>;
   if (access.kind === "signed-out") return <AdminLoginPage/>;
 
   const staff = await getStaffContext(access.user);
+  const { enquiry } = await searchParams;
   const result = await loadQuotes();
   if (result.kind === "unavailable") return <AdminGate title="Firestore is not available yet" detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment." signOutPath="/api/admin/session?logout=1"/>;
   if (result.kind === "error") return <AdminGate title="The enquiry desk could not be loaded" detail="KCPL's Firebase data is temporarily unavailable. No quote data was exposed." signOutPath="/api/admin/session?logout=1"/>;
 
-  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}><AdminDashboard initialQuotes={result.quotes}/></OperationsShell>;
+  const requestedReference = enquiry?.trim().toUpperCase();
+  const orderedQuotes = requestedReference
+    ? [...result.quotes].sort((a, b) => Number(b.reference === requestedReference) - Number(a.reference === requestedReference))
+    : result.quotes;
+
+  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}><AdminDashboard initialQuotes={orderedQuotes}/></OperationsShell>;
 }
 
 function AdminLoginPage() {
