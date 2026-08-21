@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
+import { listCurrentStaffAssignmentNotifications } from "../../../admin/notifications/assignment-notifications.server";
 import {
   getNotificationPreferences,
   listOperationsNotifications,
@@ -10,6 +11,7 @@ import {
   notificationCategories,
   notificationEmailModes,
   type NotificationPreferences,
+  type OperationsNotification,
 } from "../../../admin/notifications/notification-data";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { transactionalEmailConfigured } from "../../../integrations/sendgrid-email.server";
@@ -26,10 +28,30 @@ async function authorize() {
   return { user: access.user, staff };
 }
 
+function combineNotifications(base: OperationsNotification[], assignments: OperationsNotification[]) {
+  const byId = new Map<string, OperationsNotification>();
+  for (const item of [...base, ...assignments]) byId.set(item.id, item);
+  return [...byId.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 250);
+}
+
+async function currentNotifications(auth: Exclude<Awaited<ReturnType<typeof authorize>>, { response: Response }>) {
+  const [base, assignments] = await Promise.all([
+    listOperationsNotifications(auth.staff, auth.user.email),
+    listCurrentStaffAssignmentNotifications(auth.staff, auth.user.email),
+  ]);
+  if (!base) return null;
+  const notifications = combineNotifications(base.notifications, assignments);
+  return {
+    notifications,
+    unread_count: notifications.filter((item) => !item.read_at && !item.resolved).length,
+    preferences: base.preferences,
+  };
+}
+
 export async function GET() {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
-  const result = await listOperationsNotifications(auth.staff, auth.user.email);
+  const result = await currentNotifications(auth);
   if (!result) return json({ ok: false, error: "Notification storage is unavailable." }, 503);
   return json({ ok: true, ...result, email_configured: transactionalEmailConfigured() });
 }
@@ -51,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   if (action === "mark_all_read") {
-    const current = await listOperationsNotifications(auth.staff, auth.user.email);
+    const current = await currentNotifications(auth);
     if (!current) return json({ ok: false, error: "Notification storage is unavailable." }, 503);
     const ids = current.notifications.filter((item) => !item.read_at && !item.resolved).map((item) => item.id);
     const result = await markAllNotificationsRead(auth.staff.profile.uid, ids);
