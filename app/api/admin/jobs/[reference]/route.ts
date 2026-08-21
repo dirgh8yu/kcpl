@@ -134,6 +134,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const result = await updateDigitalJobFile(reference, {
     primaryBranch: primaryBranch ? primaryBranch as KcplBranch : undefined,
     handlingBranches,
+    assignedToUid: clean(body.assignedToUid, 160),
     assignedToName: clean(body.assignedToName, 160),
     assignedToEmail,
     assignedToPhone: clean(body.assignedToPhone, 80),
@@ -190,6 +191,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       detail: clean(body.detail, 5000),
       branch: branch as KcplBranch,
       dueAt,
+      assignedToUid: clean(body.assignedToUid, 160),
       assignedToName: clean(body.assignedToName, 160),
       assignedToEmail,
       assignedToPhone: clean(body.assignedToPhone, 80),
