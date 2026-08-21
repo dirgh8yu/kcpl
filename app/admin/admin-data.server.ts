@@ -47,6 +47,8 @@ function crmMatches(value: unknown): QuoteCrmMatch[] {
 }
 
 function summaryFromData(reference: string, data: Record<string, unknown>): QuoteSummary {
+  const legacyAssignee = nullableString(data.assigned_to);
+  const assignedName = nullableString(data.assigned_to_name) ?? legacyAssignee;
   return {
     reference,
     created_at: stringValue(data.created_at),
@@ -60,7 +62,10 @@ function summaryFromData(reference: string, data: Record<string, unknown>): Quot
     company_name: nullableString(data.company_name),
     phone: nullableString(data.phone),
     customer_id: nullableString(data.customer_id),
-    assigned_to: nullableString(data.assigned_to),
+    assigned_to: assignedName,
+    assigned_to_name: assignedName,
+    assigned_to_email: nullableString(data.assigned_to_email),
+    assigned_to_phone: nullableString(data.assigned_to_phone),
     note_count: Number(data.note_count ?? 0) || 0,
     email_count: Number(data.email_count ?? 0) || 0,
     last_customer_email_at: nullableString(data.last_customer_email_at),
@@ -151,7 +156,12 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   return { ...quote, shipment, notes, communications };
 }
 
-export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string, allowCommercialTransition: boolean) {
+export async function updateQuoteAdmin(
+  reference: string,
+  status: QuoteStatus,
+  assignee: { name: string; email: string; phone: string },
+  allowCommercialTransition: boolean,
+) {
   if (!configured()) return { kind: "unavailable" as const };
   const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
   const snapshot = await ref.get();
@@ -172,9 +182,15 @@ export async function updateQuoteAdmin(reference: string, status: QuoteStatus, a
     return { kind: "customer-required" as const, currentStatus };
   }
 
+  const assignedName = assignee.name.trim();
+  const assignedEmail = assignee.email.trim().toLowerCase();
+  const assignedPhone = assignee.phone.trim();
   await ref.update({
     status,
-    assigned_to: assignedTo || null,
+    assigned_to: assignedName || assignedEmail || null,
+    assigned_to_name: assignedName || null,
+    assigned_to_email: assignedEmail || null,
+    assigned_to_phone: assignedPhone || null,
     updated_at: new Date().toISOString(),
   });
   return { kind: "updated" as const, currentStatus };
