@@ -5,7 +5,9 @@ import { branchAccessSet, canAccessBranchSet, strictBranchValue } from "../branc
 import type { KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { buildDocumentIntelligence, type WorkflowDocumentDirection } from "../workflow-defaults";
-import { customsDeskRisk, customsDeskState } from "./customs-policy";
+import { customsClearanceFromShipment } from "./customs-clearance.server";
+import type { CustomsClearanceRecord } from "./customs-clearance";
+import { customsDeskRisk, customsDeskState, customsReleaseRequired, type CustomsDeskRisk, type CustomsDeskState } from "./customs-policy";
 
 export type CustomsDeskStep = {
   id: string;
@@ -40,8 +42,10 @@ export type CustomsDeskRow = {
   document_present: number;
   document_direction: WorkflowDocumentDirection;
   document_advisories: string[];
-  state: "blocked" | "in_progress" | "ready" | "clear";
-  risk: "critical" | "warning" | "normal";
+  release_required: boolean;
+  clearance: CustomsClearanceRecord;
+  state: CustomsDeskState;
+  risk: CustomsDeskRisk;
 };
 
 type RawCustomsStep = {
@@ -235,6 +239,16 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       requirements: nullable(quote?.get("requirements")),
       primaryBranch: primary,
     });
+    const releaseRequired = customsReleaseRequired(intelligence.direction);
+    if (releaseRequired && !allSteps.length) integrityWarnings.push("No required customs checklist exists for this international shipment. Repair the Job File before release.");
+
+    const clearance = customsClearanceFromShipment(shipment);
+    if (clearance.status === "released") {
+      if (!clearance.entry_point) integrityWarnings.push("Customs is marked Released but no customs or border point is recorded.");
+      if (!clearance.declaration_reference && !clearance.release_evidence) integrityWarnings.push("Customs is marked Released without a declaration/reference or release-evidence note.");
+    }
+    if (clearance.status === "held" && !clearance.hold_reason) integrityWarnings.push("Customs is marked Held but no hold reason is recorded.");
+
     const child = childData.get(reference) ?? { documents: new Set<ShipmentDocumentType>(), requirements: new Map<ShipmentDocumentType, { required: boolean; reason: string }>() };
     const requirements = new Map(intelligence.requirements.map((item) => [item.documentType, { required: item.required, reason: item.reason }]));
     for (const [type, override] of child.requirements) requirements.set(type, override);
@@ -250,6 +264,8 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       missingDocuments: missing.length,
       integrityIssues: integrityWarnings.length,
       shipmentInCustoms: status === "customs_clearance",
+      releaseRequired,
+      clearanceStatus: clearance.status,
     });
     const risk = customsDeskRisk({
       status,
@@ -257,6 +273,8 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       missingDocuments: missing.length,
       integrityIssues: integrityWarnings.length,
       etaDays: etaDistance,
+      releaseRequired,
+      clearanceStatus: clearance.status,
     });
 
     rows.push({
@@ -284,13 +302,17 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       document_present: requiredEntries.length - missing.length,
       document_direction: intelligence.direction,
       document_advisories: intelligence.advisories,
+      release_required: releaseRequired,
+      clearance,
       state,
       risk,
     });
   }
 
   const riskOrder = { critical: 3, warning: 2, normal: 1 } as const;
+  const stateOrder: Record<CustomsDeskState, number> = { blocked: 5, in_progress: 4, awaiting_release: 3, ready: 2, released: 1 };
   return rows.sort((a, b) => riskOrder[b.risk] - riskOrder[a.risk]
+    || stateOrder[b.state] - stateOrder[a.state]
     || b.customs_open - a.customs_open
     || (a.eta ?? "9999-12-31").localeCompare(b.eta ?? "9999-12-31")
     || a.reference.localeCompare(b.reference));
