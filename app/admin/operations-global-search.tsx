@@ -64,6 +64,9 @@ const coreWorkspaces: Workspace[] = [
   { href: "/admin/crm", label: "Customers", hint: "Customer accounts and Customer 360", icon: Building2 },
   { href: "/admin/partners", label: "Partners", hint: "Agents, carriers, vendors and counterparts", icon: Handshake },
   { href: "/admin/market-estimate", label: "Market estimate", hint: "Rates, currencies and market inputs", icon: Calculator },
+  { href: "/admin/rating", label: "Rate Desk", hint: "Transport orders, multimodal buy rates and rate selection", icon: Calculator },
+  { href: "/admin/tenders", label: "Tender Desk", hint: "Carrier tenders, counter-offers, expiry and booking", icon: Handshake },
+  { href: "/admin/consolidation", label: "Load Planner", hint: "Consolidation, capacity, stops and master load planning", icon: Boxes },
   { href: "/admin/finance", label: "Receivables", hint: "Invoices, aging and collections", icon: ReceiptText, visible: (permissions) => permissions.canManageFinance },
   { href: "/admin/payables", label: "Payables", hint: "Supplier bills and obligations", icon: HandCoins, visible: (permissions) => permissions.canManageFinance },
   { href: "/admin/partners/reconciliation", label: "Supplier reconciliation", hint: "Resolve legacy supplier bills against Partner records", icon: ListChecks, visible: (permissions) => permissions.canManageFinance },
@@ -117,6 +120,7 @@ export function OperationsGlobalSearch() {
   const [permissions, setPermissions] = useState<SearchPermissions>(emptyPermissions);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [recordSearchUnavailable, setRecordSearchUnavailable] = useState(false);
   const [recents, setRecents] = useState<RecentRecord[]>([]);
   const [favorites, setFavorites] = useState<StoredWorkspace[]>([]);
   const [recentWorkspaces, setRecentWorkspaces] = useState<StoredWorkspace[]>([]);
@@ -142,15 +146,19 @@ export function OperationsGlobalSearch() {
   const loadIndex = useCallback(async () => {
     if (loaded || loading) return;
     setLoading(true);
+    setRecordSearchUnavailable(false);
     try {
       const response = await fetch("/api/admin/search", { cache: "no-store" });
-      const data = await response.json() as { results?: SearchResult[]; permissions?: SearchPermissions };
+      const data = await response.json() as { results?: SearchResult[]; permissions?: SearchPermissions; degraded?: boolean };
       if (!response.ok || !data.results) throw new Error("KCPL search is unavailable.");
       setIndex(data.results);
       setPermissions(data.permissions ?? emptyPermissions);
+      setRecordSearchUnavailable(Boolean(data.degraded));
       setLoaded(true);
     } catch {
       setIndex([]);
+      setRecordSearchUnavailable(true);
+      setLoaded(true);
     } finally {
       setLoading(false);
     }
@@ -257,13 +265,14 @@ export function OperationsGlobalSearch() {
         </div>
 
         <div className="max-h-[68vh] overflow-y-auto p-2">
+          {recordSearchUnavailable ? <div className="mx-2 mt-2 rounded-[9px] border border-[#eadfd6] bg-[#fff9f5] px-3 py-2 text-[10px] leading-5 text-[#7c6559]">Record search is temporarily unavailable. All available workspaces below remain usable.</div> : null}
           {!query && recents.length ? <SearchSection title="Recent records">{recents.map((item) => <RecordRow key={`${item.kind}-${item.id}`} item={item} onOpen={() => openRecord(item)}/>)}</SearchSection> : null}
           {!query && favoriteItems.length ? <SearchSection title="Pinned workspaces">{favoriteItems.map((item) => <WorkspaceRow key={`fav-${item.href}`} item={item} onOpen={() => openHref(item.href)} pinned/>)}</SearchSection> : null}
           {!query && !favoriteItems.length && recentWorkspaceItems.length ? <SearchSection title="Recent workspaces">{recentWorkspaceItems.map((item) => <WorkspaceRow key={`recent-${item.href}`} item={item} onOpen={() => openHref(item.href)}/>)}</SearchSection> : null}
 
           {query.trim().length >= 2 ? (
             <SearchSection title="Records">
-              {loading ? <SearchMessage>Loading KCPL records…</SearchMessage> : recordResults.length ? recordResults.map((item) => <RecordRow key={`${item.kind}-${item.id}`} item={item} onOpen={() => openRecord(item)}/>) : <SearchMessage>No shipment, customer or enquiry matches “{query}”.</SearchMessage>}
+              {loading ? <SearchMessage>Loading KCPL records…</SearchMessage> : recordSearchUnavailable ? <SearchMessage>Record search is unavailable right now. Workspace search still works.</SearchMessage> : recordResults.length ? recordResults.map((item) => <RecordRow key={`${item.kind}-${item.id}`} item={item} onOpen={() => openRecord(item)}/>) : <SearchMessage>No shipment, customer or enquiry matches “{query}”.</SearchMessage>}
             </SearchSection>
           ) : null}
 
