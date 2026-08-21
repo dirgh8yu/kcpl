@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: KCPL Operations API
+  version: 1.0.0
+  description: >-
+    Read-only access to authorised Kapileshwor Cargo operational data. Use these
+    actions for current KCPL shipments, Job Files, customers, quotes and operations briefings.
+servers:
+  - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
+security:
+  - KcplApiKey: []
+paths:
+  /api/gpt/health:
+    get:
+      operationId: checkKcplConnection
+      summary: Check the KCPL connection
+      description: Verify that the protected KCPL GPT gateway and Firebase runtime are available.
+      responses:
+        "200":
+          description: KCPL gateway status.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /api/gpt/briefing:
+    get:
+      operationId: getKcplOperationsBriefing
+      summary: Get the KCPL operations briefing
+      description: >-
+        Return shipment status totals, branch workload and shipments requiring
+        attention. Use this for morning briefings, operational overviews and exception checks.
+      responses:
+        "200":
+          description: Current KCPL operations briefing.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /api/gpt/search:
+    get:
+      operationId: searchKcplOperations
+      summary: Search KCPL operations
+      description: >-
+        Search recent shipments, customers and quotes. Use a shipment reference,
+        customer name, route, carrier, branch, status, contact detail or other identifying text.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Free-text search. Leave blank only when recent records are useful.
+          schema:
+            type: string
+            maxLength: 180
+        - name: kind
+          in: query
+          required: false
+          description: Restrict the search to one record type.
+          schema:
+            type: string
+            enum: [all, shipment, customer, quote]
+            default: all
+        - name: status
+          in: query
+          required: false
+          description: Exact internal shipment or quote status when the user asks for one status.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 40
+            default: 15
+      responses:
+        "200":
+          description: Matching KCPL records.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /api/gpt/jobs/{reference}:
+    get:
+      operationId: getKcplJobFile
+      summary: Get a KCPL Job File
+      description: >-
+        Retrieve a shipment Job File with route, customer, tasks, customs controls,
+        document requirements, document verification state, events and activity.
+        Use this after identifying a shipment reference.
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: Full KCPL shipment reference.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current KCPL Job File.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Shipment not found.
+components:
+  securitySchemes:
+    KcplApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
