@@ -1,15 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
-import { kcplBranches, type KcplBranch } from "./crm/crm-data";
-import { staffCanAccessBranch, type KcplStaffContext } from "./staff-directory.server";
-
-function branchValue(value: unknown): KcplBranch | null {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
-}
-
-function branchArray(value: unknown) {
-  if (!Array.isArray(value)) return [] as KcplBranch[];
-  return [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))];
-}
+import { branchAccessSet, canAccessBranchSet, strictBranchArray, strictBranchValue } from "./branch-access-policy";
+import { type KcplBranch } from "./crm/crm-data";
+import { type KcplStaffContext } from "./staff-directory.server";
 
 export async function checkShipmentBranchAccess(reference: string, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
@@ -18,22 +10,23 @@ export async function checkShipmentBranchAccess(reference: string, staff: KcplSt
   const shipment = await db.collection("shipments").doc(normalized).get();
   if (!shipment.exists) return { kind: "missing" as const };
 
-  let primary = branchValue(shipment.get("primary_branch"));
+  let primary = strictBranchValue(shipment.get("primary_branch"));
   const customerId = typeof shipment.get("customer_id") === "string" ? shipment.get("customer_id") as string : "";
   if (!primary && customerId) {
     const customer = await db.collection("customers").doc(customerId).get();
-    if (customer.exists) primary = branchValue(customer.get("primary_branch"));
+    if (customer.exists) primary = strictBranchValue(customer.get("primary_branch"));
   }
 
-  const handling = branchArray(shipment.get("handling_branches"));
-  const accessBranches = [...new Set([...(primary ? [primary] : []), ...handling])];
-  const allowed = staff.can_access_all_branches || accessBranches.some((branch) => staffCanAccessBranch(staff, branch));
+  const handling = strictBranchArray(shipment.get("handling_branches"));
+  const accessBranches = branchAccessSet(primary, handling);
+  const allowed = canAccessBranchSet(staff, primary, handling);
 
   if (!allowed) return { kind: "forbidden" as const };
   return {
     kind: "allowed" as const,
-    primaryBranch: primary,
+    primaryBranch: primary as KcplBranch | null,
     handlingBranches: handling,
+    accessBranches,
     branchDataComplete: Boolean(primary || handling.length),
   };
 }
