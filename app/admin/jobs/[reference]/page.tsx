@@ -38,7 +38,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
     >
-      <WorkflowSpine initialWorkflow={workflow.readiness} canOverride={staff.permissions.role === "management"}/>
+      <WorkflowSpine initialWorkflow={workflow.readiness} initialJob={result.job} canOverride={staff.permissions.role === "management"}/>
       <JobFileWorkspace
         initialJob={result.job}
         role={staff.permissions.role}
