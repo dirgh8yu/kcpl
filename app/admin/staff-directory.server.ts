@@ -1,6 +1,7 @@
 import { firebaseAdminAuth, firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
 import {
+  configuredStaffRoleForEmail,
   kcplStaffRoles,
   staffCapabilitiesForEmail,
   staffCapabilitiesForRole,
@@ -48,6 +49,21 @@ function profileFromData(uid: string, data: Record<string, unknown>, fallbackRol
   };
 }
 
+function configuredAdminEmails() {
+  return new Set(
+    (process.env.KCPL_ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+async function canBootstrapEmptyStaffDirectory(email: string) {
+  if (!configuredAdminEmails().has(email.trim().toLowerCase())) return false;
+  const snapshot = await firebaseAdminDb().collection("staff_profiles").limit(1).get();
+  return snapshot.empty;
+}
+
 export async function staffProfileByUid(uid: string, email = "") {
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").doc(uid).get();
@@ -61,29 +77,46 @@ export async function isActiveStaffProfile(uid: string, email: string) {
 }
 
 export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext> {
-  const fallback = staffCapabilitiesForEmail(user.email);
   const profile = await staffProfileByUid(user.uid, user.email);
-  const effectiveProfile: KcplStaffProfile = profile ?? {
+  if (profile) {
+    const permissions = staffCapabilitiesForRole(profile.role);
+    const canAccessAll = profile.branch_scope === "all" || profile.role === "management";
+    return {
+      profile,
+      permissions,
+      can_access_all_branches: canAccessAll,
+      branches: canAccessAll ? [...kcplBranches] : profile.branches,
+    };
+  }
+
+  const explicitlyConfiguredRole = configuredStaffRoleForEmail(user.email);
+  const bootstrapManagement = explicitlyConfiguredRole === null
+    ? await canBootstrapEmptyStaffDirectory(user.email)
+    : false;
+  const fallbackRole: KcplStaffRole = bootstrapManagement
+    ? "management"
+    : explicitlyConfiguredRole ?? "operations";
+  const hasExplicitFallbackAccess = bootstrapManagement || explicitlyConfiguredRole !== null;
+  const permissions = staffCapabilitiesForRole(fallbackRole);
+  const effectiveProfile: KcplStaffProfile = {
     uid: user.uid,
     email: user.email.toLowerCase(),
     display_name: user.displayName,
     job_title: null,
     phone: null,
-    role: fallback.role,
-    branch_scope: "all",
-    branches: [...kcplBranches],
+    role: fallbackRole,
+    branch_scope: hasExplicitFallbackAccess ? "all" : "selected",
+    branches: hasExplicitFallbackAccess ? [...kcplBranches] : [],
     active: true,
     created_at: "",
     updated_at: "",
     updated_by: null,
   };
-  const permissions = profile ? staffCapabilitiesForRole(profile.role) : fallback;
-  const canAccessAll = effectiveProfile.branch_scope === "all" || effectiveProfile.role === "management";
   return {
     profile: effectiveProfile,
     permissions,
-    can_access_all_branches: canAccessAll,
-    branches: canAccessAll ? [...kcplBranches] : effectiveProfile.branches,
+    can_access_all_branches: hasExplicitFallbackAccess,
+    branches: hasExplicitFallbackAccess ? [...kcplBranches] : [],
   };
 }
 
