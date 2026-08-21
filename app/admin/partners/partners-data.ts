@@ -66,7 +66,7 @@ export type PartnerRecord = {
   status: PartnerStatus;
   preferred: boolean;
   country: string;
-  owner_branch: PartnerOwnerBranch;
+  owner_branch: PartnerOwnerBranch | null;
   cities_served: string[];
   countries_served: string[];
   ports_served: string[];
@@ -107,6 +107,7 @@ export type PartnerDashboard = {
   preferred_count: number;
   country_count: number;
   unlinked_supplier_bills: number;
+  legacy_name_linked_bill_count: number;
   open_payables: PartnerCurrencyAmount[];
 };
 
@@ -145,4 +146,6 @@ export type PartnerOption = {
   name: string;
   currency: CrmCurrency;
   payment_terms_days: number;
+  owner_branch: PartnerOwnerBranch | null;
+  types: PartnerType[];
 };
