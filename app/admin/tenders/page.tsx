@@ -23,29 +23,33 @@ export default async function TenderDeskPage() {
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Tendering contains supplier commercial pricing and procurement decisions." embedded/></OperationsShell>;
 
+  let orders: Awaited<ReturnType<typeof listTmsOrders>>;
+  let tenders: Awaited<ReturnType<typeof listTmsTenders>>;
+  let customers: Awaited<ReturnType<typeof listCrmCustomers>>;
   try {
     await reconcileExpiredTmsTenders();
-    const [orders, tenders, customers] = await Promise.all([
+    [orders, tenders, customers] = await Promise.all([
       listTmsOrders(staff),
       listTmsTenders(staff),
       listCrmCustomers(staff),
     ]);
-    if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Tender Desk unavailable" detail="KCPL order, tender or customer storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
-
-    return (
-      <OperationsShell {...shellProps}>
-        <TmsTenderWorkspace
-          initialOrders={orders.orders}
-          initialTenders={tenders.tenders}
-          customers={customers.map((customer) => ({ id: customer.id, name: customer.display_name, branch: customer.primary_branch }))}
-          canManage={staff.permissions.canEditCommercial}
-        />
-      </OperationsShell>
-    );
   } catch (error) {
     console.error("Failed to load KCPL Tender Desk", error);
     return <OperationsShell {...shellProps}><Gate title="Tender Desk could not be loaded" detail="KCPL tender data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
+
+  if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Tender Desk unavailable" detail="KCPL order, tender or customer storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+
+  return (
+    <OperationsShell {...shellProps}>
+      <TmsTenderWorkspace
+        initialOrders={orders.orders}
+        initialTenders={tenders.tenders}
+        customers={customers.map((customer) => ({ id: customer.id, name: customer.display_name, branch: customer.primary_branch }))}
+        canManage={staff.permissions.canEditCommercial}
+      />
+    </OperationsShell>
+  );
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
