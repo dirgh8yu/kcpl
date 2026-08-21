@@ -112,6 +112,7 @@ export type CrmTask = {
   priority: CrmTaskPriority;
   assigned_to_name: string | null;
   assigned_to_email: string | null;
+  assigned_to_phone: string | null;
   completed: boolean;
   completed_at: string | null;
   completed_by_name: string | null;
@@ -146,6 +147,7 @@ export type CrmCustomerSummary = {
   primary_branch: KcplBranch;
   account_manager_name: string | null;
   account_manager_email: string | null;
+  account_manager_phone: string | null;
   tags: string[];
   quote_count: number;
   active_shipment_count: number;
@@ -204,6 +206,7 @@ export type CrmCreateCustomerInput = {
   primaryBranch: KcplBranch;
   accountManagerName: string;
   accountManagerEmail: string;
+  accountManagerPhone: string;
   billingEmail: string;
   preferredCurrency: CrmCurrency;
   paymentTermsDays: string;
