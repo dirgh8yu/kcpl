@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Archive,
   Bell,
   Boxes,
   Building2,
@@ -14,6 +15,7 @@ import {
   HandCoins,
   Handshake,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Menu,
   PackageSearch,
@@ -21,6 +23,7 @@ import {
   PanelLeftOpen,
   Plus,
   ReceiptText,
+  RotateCcw,
   Search,
   ShieldCheck,
   Star,
@@ -51,7 +54,7 @@ const operationsNav: NavItem[] = [
 
 const relationshipNav: NavItem[] = [
   { href: "/admin/crm", label: "Customers", icon: Building2, match: (path) => path.startsWith("/admin/crm"), hint: "Customer accounts and Customer 360" },
-  { href: "/admin/partners", label: "Partners", icon: Handshake, match: (path) => path.startsWith("/admin/partners"), hint: "Agents, carriers, vendors and counterparts" },
+  { href: "/admin/partners", label: "Partners", icon: Handshake, match: (path) => path.startsWith("/admin/partners") && !path.startsWith("/admin/partners/reconciliation"), hint: "Agents, carriers, vendors and counterparts" },
 ];
 
 const marketNav: NavItem = { href: "/admin/market-estimate", label: "Market estimate", icon: Calculator, match: (path) => path.startsWith("/admin/market-estimate"), hint: "Rates, currencies and market inputs" };
@@ -93,12 +96,17 @@ export function OperationsShell({
       ...(canManageFinance ? [
         { href: "/admin/finance", label: "Receivables", icon: ReceiptText, match: (path: string) => path.startsWith("/admin/finance"), hint: "Invoices, aging and collections" },
         { href: "/admin/payables", label: "Payables", icon: HandCoins, match: (path: string) => path.startsWith("/admin/payables"), hint: "Supplier bills and obligations" },
+        { href: "/admin/partners/reconciliation", label: "Supplier reconciliation", icon: ListChecks, match: (path: string) => path.startsWith("/admin/partners/reconciliation"), hint: "Resolve legacy supplier bills against Partner records" },
       ] : []),
     ];
     const organisation: NavItem[] = [
       ...(isManagement ? [
         { href: "/admin/management", label: "Management", icon: ChartNoAxesCombined, match: (path: string) => path.startsWith("/admin/management"), hint: "Operational and commercial analytics" },
-        { href: "/admin/migration", label: "Migration Hub", icon: Database, match: (path: string) => path.startsWith("/admin/migration"), hint: "Controlled paper-to-KCPL data migration" },
+        { href: "/admin/migration", label: "Migration Hub", icon: Database, match: (path: string) => path === "/admin/migration" || path.startsWith("/admin/migration/batches/"), hint: "Controlled paper-to-KCPL data migration" },
+        { href: "/admin/migration/archive", label: "Paper archive", icon: Archive, match: (path: string) => path.startsWith("/admin/migration/archive"), hint: "Historical paper evidence and linked digital records" },
+      ] : []),
+      ...(isManagement && canManageFinance ? [
+        { href: "/admin/migration/recovery", label: "Migration recovery", icon: RotateCcw, match: (path: string) => path.startsWith("/admin/migration/recovery"), hint: "Dry-run and controlled rollback of migration batches" },
       ] : []),
       ...(canManageStaff ? [{ href: "/admin/staff", label: "People & branches", icon: UsersRound, match: (path: string) => path.startsWith("/admin/staff"), hint: "Access, teams and branch ownership" }] : []),
     ];
