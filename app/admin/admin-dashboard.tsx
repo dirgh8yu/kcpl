@@ -18,6 +18,7 @@ import { quoteCurrencies } from "./admin-data";
 import type { QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 import { AdminShipmentPanel } from "./admin-shipment-panel";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";
+import { SavedFilterViews } from "./saved-filter-views";
 
 const statusLabels: Record<QuoteStatus, string> = { new: "New", reviewing: "Reviewing", quoted: "Quoted", won: "Won", lost: "Lost" };
 const statusOptions: Array<"all" | QuoteStatus> = ["all", "new", "reviewing", "quoted", "won", "lost"];
@@ -214,6 +215,7 @@ export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[
             <div className="flex items-end justify-between gap-3"><div><p className="ops-eyebrow">Enquiry desk</p><h1 className="mt-1 text-[18px] font-[730] tracking-[-.035em] text-[#3b342f]">Freight requests</h1></div><span className="text-[9px] font-semibold text-[#9c928a]">{filtered.length}/{quotes.length}</span></div>
             <OpsSearch className="mt-3" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search reference, customer or route"/>
             <div className="ops-filter-pills mt-3">{statusOptions.map((item) => <button key={item} type="button" className="ops-filter-pill" data-active={statusFilter === item || undefined} onClick={() => setStatusFilter(item)}>{item === "all" ? "All" : statusLabels[item]} <span className="ml-1 opacity-55">{item === "all" ? quotes.length : statusCounts[item]}</span></button>)}</div>
+            <SavedFilterViews storageKey="kcpl-enquiry-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
