@@ -14,8 +14,9 @@ async function authorizeArchive() {
   return { user: access.user };
 }
 
-function downloadName(filename: string) {
-  return filename.replace(/["\\\r\n]/g, "-").slice(0, 180) || "kcpl-archive-document";
+function contentDisposition(filename: string) {
+  const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_").slice(0, 180) || "kcpl-archive-document";
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -27,12 +28,12 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     if (result.kind === "unavailable") return json({ ok: false, error: "Firebase Storage is not configured for the paper archive." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Archive record not found." }, 404);
     if (result.kind === "object-missing") return json({ ok: false, error: "Archive metadata exists but the stored file is missing." }, 410);
-    return new Response(result.bytes, {
+    return new Response(new Uint8Array(result.bytes), {
       status: 200,
       headers: {
         "content-type": result.record.content_type,
         "content-length": String(result.bytes.byteLength),
-        "content-disposition": `attachment; filename="${downloadName(result.record.filename)}"`,
+        "content-disposition": contentDisposition(result.record.filename),
         "cache-control": "private, no-store",
         "x-content-type-options": "nosniff",
       },
