@@ -63,15 +63,6 @@ function eventId(prefix = "evt") { return `${prefix}-${Date.now()}-${randomBytes
 function bridgeQuoteReference(orderId: string) { return `TMSQ-${orderId.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 120); }
 function masterBridgeQuoteReference(id: string) { return `TMSQ-MASTER-${id.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 120); }
 
-function capacityFromData(data: Record<string, unknown>): LoadCapacity {
-  return {
-    weight_kg: nullableNum(data.capacity_weight_kg),
-    volume_cbm: nullableNum(data.capacity_volume_cbm),
-    pieces: nullableNum(data.capacity_pieces),
-    containers: nullableNum(data.capacity_containers),
-  };
-}
-
 function orderFromSnapshot(id: string, data: Record<string, unknown>): (TmsOrder & { consolidation_load_id?: string | null; is_consolidation_master?: boolean }) | null {
   const branch = branchValue(data.branch);
   const mode = modeValue(data.mode);
