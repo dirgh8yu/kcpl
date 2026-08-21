@@ -96,7 +96,7 @@ export function shipmentExceptionTransitionAllowed(current: ShipmentExceptionSta
   if (current === next) return true;
   if (current === "open") return next === "monitoring" || next === "resolved";
   if (current === "monitoring") return next === "open" || next === "resolved";
-  return next === "open";
+  return false;
 }
 
 export function shipmentExceptionResolutionValid(next: ShipmentExceptionStatus, resolution: string) {
