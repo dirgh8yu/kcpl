@@ -66,7 +66,7 @@ export function NotificationsWorkspace() {
     return () => { window.clearTimeout(initial); window.clearInterval(interval); window.removeEventListener("focus", focus); };
   }, [load]);
 
-  const notifications = data?.notifications ?? [];
+  const notifications = useMemo(() => data?.notifications ?? [], [data?.notifications]);
   const filtered = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return notifications.filter((item) => {
