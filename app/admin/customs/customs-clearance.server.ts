@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { checkShipmentBranchAccess } from "../shipment-access.server";
+import { canAccessBranchSet } from "../branch-access-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { getPartnerRecord } from "../partners/partners.server";
 import { customsClearanceStatusValue, customsClearanceValidationError } from "./customs-policy";
@@ -46,10 +46,10 @@ export async function updateCustomsClearance(
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!context.permissions.canManageJobFile) return { kind: "forbidden" as const };
 
-  const access = await checkShipmentBranchAccess(reference, context);
-  if (access.kind !== "allowed") return access;
   const shipment = await firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).get();
   if (!shipment.exists) return { kind: "missing" as const };
+  if (!canAccessBranchSet(context, shipment.get("primary_branch"), shipment.get("handling_branches"))) return { kind: "forbidden" as const };
+
   const validationError = customsClearanceValidationError(input);
   if (validationError) return { kind: "invalid" as const, error: validationError };
 
