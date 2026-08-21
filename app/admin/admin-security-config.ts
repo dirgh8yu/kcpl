@@ -1,4 +1,4 @@
-import { staffRoleEnvironmentVariables } from "./staff-permissions";
+import { staffRoleEnvironmentVariables } from "./staff-permissions.ts";
 
 type RuntimeEnv = Record<string, string | undefined>;
 
