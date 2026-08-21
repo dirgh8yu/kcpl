@@ -1,6 +1,8 @@
 export const kcplStaffRoles = ["management", "accounts", "commercial", "operations"] as const;
 export type KcplStaffRole = (typeof kcplStaffRoles)[number];
 
+type RuntimeEnv = Record<string, string | undefined>;
+
 export type StaffCapabilities = {
   role: KcplStaffRole;
   canViewCommercial: boolean;
@@ -16,37 +18,40 @@ export type StaffCapabilities = {
   canManageFinance: boolean;
 };
 
-function emailSet(name: string) {
+export const staffRoleEnvironmentVariables: ReadonlyArray<readonly [KcplStaffRole, string]> = [
+  ["management", "KCPL_MANAGEMENT_EMAILS"],
+  ["accounts", "KCPL_ACCOUNTS_EMAILS"],
+  ["commercial", "KCPL_COMMERCIAL_EMAILS"],
+  ["operations", "KCPL_OPERATIONS_EMAILS"],
+] as const;
+
+function emailSet(name: string, env: RuntimeEnv = process.env) {
   return new Set(
-    (process.env[name] ?? "")
+    (env[name] ?? "")
       .split(",")
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean),
   );
 }
 
-function explicitRoleConfigPresent() {
-  return [
-    "KCPL_MANAGEMENT_EMAILS",
-    "KCPL_ACCOUNTS_EMAILS",
-    "KCPL_COMMERCIAL_EMAILS",
-    "KCPL_OPERATIONS_EMAILS",
-  ].some((name) => Boolean((process.env[name] ?? "").trim()));
+export function configuredStaffRoleForEmail(email: string, env: RuntimeEnv = process.env): KcplStaffRole | null {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+
+  const matches = staffRoleEnvironmentVariables
+    .filter(([, variable]) => emailSet(variable, env).has(normalized))
+    .map(([role]) => role);
+
+  // Configuration conflicts deliberately fail closed instead of relying on
+  // environment-variable ordering to decide a user's privilege level.
+  return matches.length === 1 ? matches[0] : null;
 }
 
-export function staffRoleForEmail(email: string): KcplStaffRole {
-  const normalized = email.trim().toLowerCase();
-
-  // Backwards compatibility: before explicit role lists are configured, all
-  // existing KCPL admins keep the same full access they already had.
-  if (!explicitRoleConfigPresent()) return "management";
-
-  if (emailSet("KCPL_MANAGEMENT_EMAILS").has(normalized)) return "management";
-  if (emailSet("KCPL_ACCOUNTS_EMAILS").has(normalized)) return "accounts";
-  if (emailSet("KCPL_COMMERCIAL_EMAILS").has(normalized)) return "commercial";
-  if (emailSet("KCPL_OPERATIONS_EMAILS").has(normalized)) return "operations";
-
-  return "operations";
+export function staffRoleForEmail(email: string, env: RuntimeEnv = process.env): KcplStaffRole {
+  // Firestore staff_profiles is the normal source of truth. Environment role
+  // lists are an explicit fallback for bootstrap/recovery only. An authorised
+  // user without either receives the least-privileged role, never Management.
+  return configuredStaffRoleForEmail(email, env) ?? "operations";
 }
 
 export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities {
@@ -71,8 +76,8 @@ export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities
   };
 }
 
-export function staffCapabilitiesForEmail(email: string): StaffCapabilities {
-  return staffCapabilitiesForRole(staffRoleForEmail(email));
+export function staffCapabilitiesForEmail(email: string, env: RuntimeEnv = process.env): StaffCapabilities {
+  return staffCapabilitiesForRole(staffRoleForEmail(email, env));
 }
 
 export const kcplStaffRoleLabels: Record<KcplStaffRole, string> = {
