@@ -6,6 +6,7 @@ import { Analytics } from "./components/analytics";
 import { MobileQuoteCta } from "./components/mobile-quote-cta";
 import { StructuredData } from "./components/structured-data";
 import { OperationsGlobalSearch } from "./admin/operations-global-search";
+import { OperationsNavigationFallback } from "./admin/operations-navigation-fallback";
 import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
 import "./globals.css";
 import "./admin/operations-theme.css";
@@ -74,6 +75,7 @@ export default function RootLayout({
       <body className={`${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
         <StructuredData data={organizationSchema} />
         {children}
+        <OperationsNavigationFallback />
         <OperationsGlobalSearch />
         <MobileQuoteCta />
         <Suspense fallback={null}><Analytics /></Suspense>
