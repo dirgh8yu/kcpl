@@ -276,6 +276,7 @@ export async function listPartnerDashboard(context: KcplStaffContext): Promise<P
     if (!canAccessBranchValue(context, data.branch)) continue;
     const status = text(data.status, "draft");
     if (status === "void" || status === "draft") continue;
+    const openingBalance = text(data.record_type || data.migration_record_type) === "opening_balance";
     const supplierId = nullable(data.supplier_id);
     const supplierName = normalizeName(text(data.supplier_name));
     let partnerId: string | undefined;
@@ -293,17 +294,17 @@ export async function listPartnerDashboard(context: KcplStaffContext): Promise<P
     const currency = financialCurrency(data.currency);
     const total = numberValue(data.total);
     const balance = Math.max(0, numberValue(data.balance_due));
-    exposure.billCount += 1;
+    if (!openingBalance) exposure.billCount += 1;
     const shipment = nullable(data.shipment_reference);
-    if (shipment) exposure.shipments.add(shipment);
+    if (!openingBalance && shipment) exposure.shipments.add(shipment);
     const activity = text(data.updated_at, text(data.created_at));
     if (activity && (!exposure.lastActivity || activity > exposure.lastActivity)) exposure.lastActivity = activity;
     if (currency) {
-      addAmount(exposure.spend, currency, total);
+      if (!openingBalance) addAmount(exposure.spend, currency, total);
       if (balance > 0.00001 && status !== "paid") addAmount(exposure.open, currency, balance);
     }
     const dueDate = text(data.due_date);
-    if (balance > 0.00001 && status !== "paid" && (status === "overdue" || (dueDate && dueDate < today))) exposure.overdueBillCount += 1;
+    if (!openingBalance && balance > 0.00001 && status !== "paid" && (status === "overdue" || (dueDate && dueDate < today))) exposure.overdueBillCount += 1;
   }
 
   const partners = partnerDocs.map((doc) => partnerFromDoc(doc, exposures.get(doc.id), context));
