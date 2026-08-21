@@ -73,6 +73,7 @@ function orderFromData(id: string, data: Record<string, unknown>): TmsOrder | nu
   const branch = validBranch(data.branch);
   if (!branch) return null;
   const selectedCurrency = nullable(data.selected_currency);
+  const status = text(data.status);
   return {
     id,
     branch,
@@ -91,7 +92,7 @@ function orderFromData(id: string, data: Record<string, unknown>): TmsOrder | nu
     temperature_requirement: nullable(data.temperature_requirement),
     carrier_requirement: nullable(data.carrier_requirement),
     notes: nullable(data.notes),
-    status: ["draft", "rated", "selected", "cancelled"].includes(text(data.status)) ? text(data.status) as TmsOrder["status"] : "draft",
+    status: ["draft", "rated", "selected", "tendering", "booked", "cancelled"].includes(status) ? status as TmsOrder["status"] : "draft",
     selected_rate_card_id: nullable(data.selected_rate_card_id),
     selected_partner_id: nullable(data.selected_partner_id),
     selected_cost: nullableNumber(data.selected_cost),
@@ -258,6 +259,7 @@ export async function rateTmsOrder(id: string, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const orderResult = await getOrder(id, staff);
   if (orderResult.kind !== "ready") return orderResult;
+  if (["tendering", "booked", "cancelled"].includes(orderResult.order.status)) return { kind: "locked" as const, order: orderResult.order };
   const rates = await listPartnerBuyRateCards(staff);
   if (rates.kind !== "ready") return rates;
   const results = rateOrder(orderResult.order, rates.rateCards);
@@ -269,6 +271,7 @@ export async function selectTmsRate(id: string, rateCardId: string, actor: Actor
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const orderResult = await getOrder(id, staff);
   if (orderResult.kind !== "ready") return orderResult;
+  if (["tendering", "booked", "cancelled"].includes(orderResult.order.status)) return { kind: "locked" as const, order: orderResult.order };
   const rates = await listPartnerBuyRateCards(staff);
   if (rates.kind !== "ready") return rates;
   const result = rateOrder(orderResult.order, rates.rateCards).find((item) => item.rate_card_id === rateCardId) as RatingResult | undefined;
