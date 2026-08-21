@@ -35,6 +35,25 @@ export type PricingContext = {
   mode: TmsMode;
 };
 
+export type PricingOrderCandidate = PricingContext & {
+  id: string;
+  customer_name: string | null;
+  buy_cost: number;
+  buy_currency: CrmCurrency;
+  status: string;
+  pricing_status: "unpriced" | "priced" | "approval_required" | "quoted";
+  quoted_reference: string | null;
+};
+
+export type CustomerPricingProfile = {
+  id: string;
+  display_name: string;
+  preferred_currency: CrmCurrency;
+  markup_percent: number | null;
+  pricing_notes: string | null;
+  primary_branch: KcplBranch;
+};
+
 export type PricingInput = {
   buy_cost: number;
   buy_currency: CrmCurrency;
@@ -61,6 +80,14 @@ export type PricingResult = {
   minimum_sell_price: number;
   approval_required: boolean;
   approval_reasons: string[];
+};
+
+export type PricingPreview = {
+  order: PricingOrderCandidate;
+  customer: CustomerPricingProfile | null;
+  rule: PricingRule | null;
+  input: PricingInput;
+  result: PricingResult;
 };
 
 function key(value: string | null | undefined) {
