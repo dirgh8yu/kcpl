@@ -13,10 +13,16 @@ export type QuoteSummary = {
   origin: string;
   destination: string;
   mode: string;
+  cargo_type: string | null;
   contact_name: string;
+  contact_email: string;
   company_name: string | null;
+  phone: string | null;
+  customer_id: string | null;
   assigned_to: string | null;
   note_count: number;
+  email_count: number;
+  last_customer_email_at: string | null;
 };
 
 export type QuoteNote = {
@@ -28,6 +34,24 @@ export type QuoteNote = {
   created_at: string;
 };
 
+export type QuoteCommunication = {
+  id: string;
+  quote_reference: string;
+  type: "quote_email" | string;
+  channel: "email" | string;
+  direction: "outbound" | "inbound" | string;
+  to: string;
+  from: string;
+  subject: string;
+  provider: string;
+  provider_message_id: string | null;
+  status: string;
+  sent_at: string;
+  actor_name: string;
+  actor_email: string;
+  created_at: string;
+};
+
 export type QuoteCrmMatch = {
   id: string;
   display_name: string;
@@ -35,7 +59,6 @@ export type QuoteCrmMatch = {
 };
 
 export type QuoteDetail = QuoteSummary & {
-  cargo_type: string | null;
   weight: string | null;
   weight_unit: string | null;
   length: string | null;
@@ -44,18 +67,16 @@ export type QuoteDetail = QuoteSummary & {
   dimension_unit: string | null;
   timing: string | null;
   requirements: string | null;
-  contact_email: string;
-  phone: string | null;
   quote_currency: QuoteCurrency;
   quoted_amount: string | null;
   internal_cost: string | null;
   valid_until: string | null;
   customer_quote_note: string | null;
-  customer_id: string | null;
   crm_match_state: string | null;
   crm_matches: QuoteCrmMatch[];
   shipment: ShipmentDetail | null;
   notes: QuoteNote[];
+  communications: QuoteCommunication[];
 };
 
 export type QuoteCommercialInput = {

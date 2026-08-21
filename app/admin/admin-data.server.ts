@@ -4,6 +4,7 @@ import {
   quoteCurrencies,
   quoteStatuses,
   type QuoteCommercialInput,
+  type QuoteCommunication,
   type QuoteCrmMatch,
   type QuoteCurrency,
   type QuoteDetail,
@@ -22,7 +23,7 @@ function stringValue(value: unknown, fallback = "") {
 }
 
 function nullableString(value: unknown) {
-  return typeof value === "string" && value.length ? value : null;
+  return typeof value === "string" && value.trim().length ? value.trim() : null;
 }
 
 function quoteStatus(value: unknown): QuoteStatus {
@@ -53,17 +54,22 @@ function summaryFromData(reference: string, data: Record<string, unknown>): Quot
     origin: stringValue(data.origin),
     destination: stringValue(data.destination),
     mode: stringValue(data.mode),
+    cargo_type: nullableString(data.cargo_type),
     contact_name: stringValue(data.contact_name),
+    contact_email: stringValue(data.contact_email),
     company_name: nullableString(data.company_name),
+    phone: nullableString(data.phone),
+    customer_id: nullableString(data.customer_id),
     assigned_to: nullableString(data.assigned_to),
     note_count: Number(data.note_count ?? 0) || 0,
+    email_count: Number(data.email_count ?? 0) || 0,
+    last_customer_email_at: nullableString(data.last_customer_email_at),
   };
 }
 
-function detailFromData(reference: string, data: Record<string, unknown>): Omit<QuoteDetail, "notes" | "shipment"> {
+function detailFromData(reference: string, data: Record<string, unknown>): Omit<QuoteDetail, "notes" | "communications" | "shipment"> {
   return {
     ...summaryFromData(reference, data),
-    cargo_type: nullableString(data.cargo_type),
     weight: nullableString(data.weight),
     weight_unit: nullableString(data.weight_unit),
     length: nullableString(data.length),
@@ -72,16 +78,33 @@ function detailFromData(reference: string, data: Record<string, unknown>): Omit<
     dimension_unit: nullableString(data.dimension_unit),
     timing: nullableString(data.timing),
     requirements: nullableString(data.requirements),
-    contact_email: stringValue(data.contact_email),
-    phone: nullableString(data.phone),
     quote_currency: quoteCurrency(data.quote_currency),
     quoted_amount: nullableString(data.quoted_amount),
     internal_cost: nullableString(data.internal_cost),
     valid_until: nullableString(data.valid_until),
     customer_quote_note: nullableString(data.customer_quote_note),
-    customer_id: nullableString(data.customer_id),
     crm_match_state: nullableString(data.crm_match_state),
     crm_matches: crmMatches(data.crm_matches),
+  };
+}
+
+function communicationFromData(id: string, data: Record<string, unknown>): QuoteCommunication {
+  return {
+    id,
+    quote_reference: stringValue(data.quote_reference),
+    type: stringValue(data.type, "quote_email"),
+    channel: stringValue(data.channel, "email"),
+    direction: stringValue(data.direction, "outbound"),
+    to: stringValue(data.to),
+    from: stringValue(data.from),
+    subject: stringValue(data.subject),
+    provider: stringValue(data.provider),
+    provider_message_id: nullableString(data.provider_message_id),
+    status: stringValue(data.status),
+    sent_at: stringValue(data.sent_at, stringValue(data.created_at)),
+    actor_name: stringValue(data.actor_name),
+    actor_email: stringValue(data.actor_email),
+    created_at: stringValue(data.created_at, stringValue(data.sent_at)),
   };
 }
 
@@ -93,7 +116,7 @@ export async function listQuoteSummaries(): Promise<QuoteSummary[] | null> {
   if (!configured()) return null;
   const snapshot = await firebaseAdminDb().collection("quotes")
     .orderBy("created_at", "desc")
-    .limit(200)
+    .limit(1000)
     .get();
 
   return snapshot.docs.map((doc) => summaryFromData(doc.id, doc.data() as Record<string, unknown>));
@@ -107,11 +130,12 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   if (!quoteSnapshot.exists) return null;
 
   const quote = detailFromData(normalized, quoteSnapshot.data() as Record<string, unknown>);
-  const notesSnapshot = await quoteSnapshot.ref.collection("notes")
-    .orderBy("created_at", "desc")
-    .limit(500)
-    .get();
+  const [notesSnapshot, communicationsSnapshot] = await Promise.all([
+    quoteSnapshot.ref.collection("notes").orderBy("created_at", "desc").limit(500).get(),
+    quoteSnapshot.ref.collection("communications").orderBy("sent_at", "desc").limit(500).get(),
+  ]);
   const notes = notesSnapshot.docs.map((doc) => doc.data() as QuoteNote);
+  const communications = communicationsSnapshot.docs.map((doc) => communicationFromData(doc.id, doc.data() as Record<string, unknown>));
 
   let shipment: QuoteDetail["shipment"] = null;
   try {
@@ -124,22 +148,36 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
     console.error("Failed to load or initialize Firebase shipment for quote", normalized, error);
   }
 
-  return { ...quote, shipment, notes };
+  return { ...quote, shipment, notes, communications };
 }
 
-export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string) {
+export async function updateQuoteAdmin(reference: string, status: QuoteStatus, assignedTo: string, allowCommercialTransition: boolean) {
   if (!configured()) return { kind: "unavailable" as const };
   const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
   const snapshot = await ref.get();
   if (!snapshot.exists) return { kind: "missing" as const };
-  if (status === "won" && !nullableString(snapshot.get("customer_id"))) return { kind: "customer-required" as const };
+
+  const currentStatus = quoteStatus(snapshot.get("status"));
+  const statusChanged = currentStatus !== status;
+  const commercialStates: QuoteStatus[] = ["quoted", "won", "lost"];
+  const commercialTransition = statusChanged && (commercialStates.includes(currentStatus) || commercialStates.includes(status));
+
+  if (commercialTransition && !allowCommercialTransition) {
+    return { kind: "commercial-required" as const, currentStatus };
+  }
+  if (currentStatus === "won" && status !== "won") {
+    return { kind: "won-locked" as const, currentStatus };
+  }
+  if (status === "won" && !nullableString(snapshot.get("customer_id"))) {
+    return { kind: "customer-required" as const, currentStatus };
+  }
 
   await ref.update({
     status,
     assigned_to: assignedTo || null,
     updated_at: new Date().toISOString(),
   });
-  return { kind: "updated" as const };
+  return { kind: "updated" as const, currentStatus };
 }
 
 export async function updateQuoteCommercial(reference: string, values: QuoteCommercialInput) {

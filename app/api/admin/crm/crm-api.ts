@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
-import { staffCapabilitiesForEmail, type StaffCapabilities } from "../../../admin/staff-permissions";
+import { getStaffContext } from "../../../admin/staff-directory.server";
+import type { StaffCapabilities } from "../../../admin/staff-permissions";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
 export function crmJson(body: unknown, status = 200) {
@@ -9,7 +10,8 @@ export function crmJson(body: unknown, status = 200) {
 export async function authorizeCrm() {
   const access = await getAdminAccess();
   if (access.kind === "authorized") {
-    return { user: access.user, permissions: staffCapabilitiesForEmail(access.user.email) };
+    const staff = await getStaffContext(access.user);
+    return { user: access.user, permissions: staff.permissions, staff };
   }
   if (access.kind === "signed-out") return { response: crmJson({ ok: false, error: "Sign in is required." }, 401) };
   return { response: crmJson({ ok: false, error: "Admin access is not configured." }, 503) };
