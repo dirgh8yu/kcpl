@@ -9,6 +9,7 @@ import {
   Calculator,
   ChartNoAxesCombined,
   ChevronRight,
+  Database,
   HandCoins,
   Handshake,
   LayoutDashboard,
@@ -93,7 +94,10 @@ export function OperationsShell({
       ] : []),
     ];
     const organisation: NavItem[] = [
-      ...(isManagement ? [{ href: "/admin/management", label: "Management", icon: ChartNoAxesCombined, match: (path: string) => path.startsWith("/admin/management"), hint: "Operational and commercial analytics" }] : []),
+      ...(isManagement ? [
+        { href: "/admin/management", label: "Management", icon: ChartNoAxesCombined, match: (path: string) => path.startsWith("/admin/management"), hint: "Operational and commercial analytics" },
+        { href: "/admin/migration", label: "Migration Hub", icon: Database, match: (path: string) => path.startsWith("/admin/migration"), hint: "Controlled paper-to-KCPL data migration" },
+      ] : []),
       ...(canManageStaff ? [{ href: "/admin/staff", label: "People & branches", icon: UsersRound, match: (path: string) => path.startsWith("/admin/staff"), hint: "Access, teams and branch ownership" }] : []),
     ];
     return [
