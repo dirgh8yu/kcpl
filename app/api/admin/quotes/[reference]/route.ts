@@ -2,6 +2,7 @@ import { getAdminAccess } from "../../../../admin/admin-auth";
 import { quoteCurrencies, type QuoteCurrency, quoteStatuses, type QuoteStatus } from "../../../../admin/admin-data";
 import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
 import { createCrmCustomerFromQuote } from "../../../../admin/crm/crm-quote-links.server";
+import { checkQuoteBranchAccess } from "../../../../admin/quote-access.server";
 import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
@@ -43,27 +44,15 @@ function redactCommercial<T extends NonNullable<Awaited<ReturnType<typeof getQuo
   };
 }
 
-async function linkedShipmentAccessError(
-  quote: NonNullable<Awaited<ReturnType<typeof getQuoteDetail>>>,
-  staff: Awaited<ReturnType<typeof getStaffContext>>,
-) {
-  if (!quote.shipment) return null;
-  const access = await checkShipmentBranchAccess(quote.shipment.reference, staff);
-  if (access.kind === "forbidden") {
-    return json({ ok: false, error: "This enquiry has converted to a shipment outside your branch access." }, 403);
-  }
-  if (access.kind === "unavailable") {
-    return json({ ok: false, error: "Shipment branch access could not be verified right now." }, 503);
-  }
-  return null;
-}
-
 async function loadAccessibleQuote(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
+  const branchAccess = await checkQuoteBranchAccess(reference, staff);
+  if (branchAccess.kind === "unavailable") return { response: json({ ok: false, error: "Enquiry branch access could not be verified right now." }, 503) };
+  if (branchAccess.kind === "missing") return { response: json({ ok: false, error: "Quote not found." }, 404) };
+  if (branchAccess.kind === "forbidden") return { response: json({ ok: false, error: "This enquiry is outside your KCPL branch access." }, 403) };
+
   const quote = await getQuoteDetail(reference);
   if (quote === undefined) return { response: json({ ok: false, error: "Quote storage is unavailable." }, 503) };
   if (!quote) return { response: json({ ok: false, error: "Quote not found." }, 404) };
-  const accessError = await linkedShipmentAccessError(quote, staff);
-  if (accessError) return { response: accessError };
   return { quote };
 }
 
