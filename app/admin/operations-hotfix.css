@@ -14,3 +14,19 @@
 .kcpl-ops .ops-table thead th {
   top: 0;
 }
+
+/*
+ * The Command Centre hero used overflow:hidden to crop its decorative contour.
+ * The Customize menu is absolutely positioned inside that hero, so the same
+ * overflow rule clipped every menu item below the hero boundary. Allow the
+ * interactive menu to escape the hero while keeping the decorative contour
+ * visually cropped to the same area.
+ */
+.kcpl-ops .ops-command-hero {
+  overflow: visible;
+  z-index: 20;
+}
+
+.kcpl-ops .ops-command-hero::after {
+  clip-path: inset(0 0 70px 0);
+}
