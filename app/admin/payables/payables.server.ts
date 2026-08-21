@@ -13,6 +13,7 @@ import {
   type PayableBill,
   type PayableCurrencySummary,
   type PayablePayment,
+  type PayableRecordType,
   type PayableStatus,
   type PayablesDashboard,
 } from "./payables-data";
@@ -53,6 +54,10 @@ function categoryValue(value: unknown): JobCostCategory {
 
 function statusValue(value: unknown): PayableStatus {
   return payableStatuses.includes(value as PayableStatus) ? value as PayableStatus : "draft";
+}
+
+function recordTypeValue(value: unknown): PayableRecordType {
+  return text(value) === "opening_balance" ? "opening_balance" : "bill";
 }
 
 function paymentMethod(value: unknown): FinancePaymentMethod {
@@ -117,6 +122,7 @@ async function payableFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
   const balanceDue = numberValue(data.balance_due);
   return {
     reference: snapshot.id,
+    record_type: recordTypeValue(data.record_type ?? data.migration_record_type),
     supplier_id: nullable(data.supplier_id),
     supplier_name: text(data.supplier_name, "Supplier"),
     supplier_bill_reference: nullable(data.supplier_bill_reference),
@@ -137,6 +143,8 @@ async function payableFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     amount_paid: numberValue(data.amount_paid),
     balance_due: balanceDue,
     notes: nullable(data.notes),
+    migration_batch_id: nullable(data.migration_batch_id),
+    migration_as_of_date: nullable(data.migration_as_of_date),
     created_by_name: text(data.created_by_name, "KCPL Accounts"),
     created_by_email: text(data.created_by_email),
     created_at: text(data.created_at),
@@ -178,7 +186,7 @@ async function writePartnerActivity(partnerId: string | null, title: string, det
 }
 
 async function syncApprovedBillToJobCost(bill: PayableBill) {
-  if (!bill.shipment_reference) return;
+  if (bill.record_type === "opening_balance" || !bill.shipment_reference) return;
   const shipmentRef = firebaseAdminDb().collection("shipments").doc(bill.shipment_reference);
   const costRef = shipmentRef.collection("job_costs").doc(`payable_${bill.reference}`);
   await costRef.set({
@@ -199,13 +207,13 @@ async function syncApprovedBillToJobCost(bill: PayableBill) {
 }
 
 async function removeBillJobCost(bill: PayableBill) {
-  if (!bill.shipment_reference) return;
+  if (bill.record_type === "opening_balance" || !bill.shipment_reference) return;
   await firebaseAdminDb().collection("shipments").doc(bill.shipment_reference)
     .collection("job_costs").doc(`payable_${bill.reference}`).delete().catch(() => undefined);
 }
 
 async function recomputeLinkedCustomer(bill: PayableBill) {
-  if (bill.customer_id) await recomputeCustomerFinance(bill.customer_id);
+  if (bill.record_type !== "opening_balance" && bill.customer_id) await recomputeCustomerFinance(bill.customer_id);
 }
 
 async function duplicateSupplierBill(supplierKey: string, normalizedReference: string) {
@@ -259,13 +267,18 @@ export async function listPayablesDashboard(context: KcplStaffContext): Promise<
   for (const bill of bills) {
     let summary = summaries.get(bill.currency);
     if (!summary) {
-      summary = { currency: bill.currency, billed: 0, paid: 0, outstanding: 0, overdue: 0, aging_0_30: 0, aging_31_60: 0, aging_61_90: 0, aging_90_plus: 0, bill_count: 0 };
+      summary = { currency: bill.currency, billed: 0, opening_balance: 0, paid: 0, outstanding: 0, overdue: 0, aging_0_30: 0, aging_31_60: 0, aging_61_90: 0, aging_90_plus: 0, bill_count: 0, opening_balance_count: 0 };
       summaries.set(bill.currency, summary);
     }
     if (bill.status === "draft" || bill.status === "void") continue;
-    summary.bill_count += 1;
-    summary.billed += bill.total;
-    summary.paid += bill.amount_paid;
+    if (bill.record_type === "opening_balance") {
+      summary.opening_balance += bill.balance_due;
+      summary.opening_balance_count += 1;
+    } else {
+      summary.bill_count += 1;
+      summary.billed += bill.total;
+      summary.paid += bill.amount_paid;
+    }
     summary.outstanding += bill.balance_due;
     if (bill.status === "overdue" && bill.balance_due > 0) {
       summary.overdue += bill.balance_due;
@@ -286,6 +299,7 @@ export async function listPayablesDashboard(context: KcplStaffContext): Promise<
     unpaid_count: bills.filter((bill) => ["approved", "partially_paid", "overdue"].includes(bill.status)).length,
     paid_count: bills.filter((bill) => bill.status === "paid").length,
     draft_count: bills.filter((bill) => bill.status === "draft").length,
+    opening_balance_count: bills.filter((bill) => bill.record_type === "opening_balance" && bill.status !== "void").length,
   };
 }
 
@@ -337,6 +351,7 @@ export async function createPayable(input: CreatePayableInput, actor: Actor, con
   const now = new Date().toISOString();
   const document = {
     reference,
+    record_type: "bill",
     supplier_id: supplier?.exists ? supplierId : null,
     supplier_key: supplierKey || null,
     supplier_name: supplierName,
@@ -450,8 +465,8 @@ export async function voidPayable(reference: string, actor: Actor, context: Kcpl
   await removeBillJobCost(loaded.bill);
   await recomputeLinkedCustomer(loaded.bill);
   await Promise.all([
-    writeJobActivity(loaded.bill.shipment_reference, `Supplier bill voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)} · ${loaded.bill.supplier_name}`, actor),
-    writePartnerActivity(loaded.bill.supplier_id, `Supplier bill voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)}`, actor),
+    writeJobActivity(loaded.bill.shipment_reference, `${loaded.bill.record_type === "opening_balance" ? "Opening payable" : "Supplier bill"} voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)} · ${loaded.bill.supplier_name}`, actor),
+    writePartnerActivity(loaded.bill.supplier_id, `${loaded.bill.record_type === "opening_balance" ? "Opening payable" : "Supplier bill"} voided: ${loaded.bill.reference}`, `${loaded.bill.currency} ${loaded.bill.total.toFixed(2)}`, actor),
   ]);
   return { kind: "updated" as const };
 }
