@@ -8,7 +8,7 @@ function branchValue(value: unknown): KcplBranch | null {
 
 function branchArray(value: unknown) {
   if (!Array.isArray(value)) return [] as KcplBranch[];
-  return value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch));
+  return [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))];
 }
 
 export async function checkShipmentBranchAccess(reference: string, staff: KcplStaffContext) {
@@ -24,14 +24,16 @@ export async function checkShipmentBranchAccess(reference: string, staff: KcplSt
     const customer = await db.collection("customers").doc(customerId).get();
     if (customer.exists) primary = branchValue(customer.get("primary_branch"));
   }
-  primary ||= "Kathmandu";
-  const handling = branchArray(shipment.get("handling_branches"));
-  if (!handling.includes(primary)) handling.unshift(primary);
 
-  const allowed = staff.can_access_all_branches
-    || staffCanAccessBranch(staff, primary)
-    || handling.some((branch) => staffCanAccessBranch(staff, branch));
-  return allowed
-    ? { kind: "allowed" as const, primaryBranch: primary, handlingBranches: handling }
-    : { kind: "forbidden" as const };
+  const handling = branchArray(shipment.get("handling_branches"));
+  const accessBranches = [...new Set([...(primary ? [primary] : []), ...handling])];
+  const allowed = staff.can_access_all_branches || accessBranches.some((branch) => staffCanAccessBranch(staff, branch));
+
+  if (!allowed) return { kind: "forbidden" as const };
+  return {
+    kind: "allowed" as const,
+    primaryBranch: primary,
+    handlingBranches: handling,
+    branchDataComplete: Boolean(primary || handling.length),
+  };
 }

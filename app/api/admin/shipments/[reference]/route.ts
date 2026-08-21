@@ -6,6 +6,8 @@ import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { addShipmentEvent, updateShipment } from "../../../../shipment-data.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../../../shipment-types";
 
+const NEPAL_OFFSET_MINUTES = 5 * 60 + 45;
+
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
 }
@@ -25,8 +27,41 @@ async function branchGuard(reference: string, staff: Awaited<ReturnType<typeof g
   return null;
 }
 
+function guardedWorkflowContext(staff: Awaited<ReturnType<typeof getStaffContext>>) {
+  // checkShipmentBranchAccess already validated primary + handling branches.
+  // The workflow guard still contains an older primary-only branch check, so
+  // widen branch scope only for this already-authorised shipment operation.
+  return { ...staff, can_access_all_branches: true };
+}
+
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function validDateParts(year: number, month: number, day: number) {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function isValidDateOnly(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  return validDateParts(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
+function normalizeNepalDateTime(value: string) {
+  if (!value) return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] ?? "0");
+  if (!validDateParts(year, month, day) || hour > 23 || minute > 59 || second > 59) return null;
+  const utcMs = Date.UTC(year, month - 1, day, hour, minute, second) - NEPAL_OFFSET_MINUTES * 60_000;
+  return new Date(utcMs).toISOString();
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ reference: string }> }) {
@@ -37,6 +72,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const { reference } = await context.params;
   const branchError = await branchGuard(reference, auth.staff);
   if (branchError) return branchError;
+  const workflowStaff = guardedWorkflowContext(auth.staff);
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;
@@ -53,13 +89,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const overrideReason = clean(body.overrideReason);
 
   if (!shipmentStatuses.includes(status as ShipmentStatus)) return json({ ok: false, error: "Choose a valid shipment status." }, 400);
-  if (eta && !/^\d{4}-\d{2}-\d{2}$/.test(eta)) return json({ ok: false, error: "Choose a valid ETA date." }, 400);
+  if (eta && !isValidDateOnly(eta)) return json({ ok: false, error: "Choose a real ETA calendar date." }, 400);
   if (currentLocation.length > 180) return json({ ok: false, error: "Current location must be 180 characters or fewer." }, 400);
   if (carrier.length > 160) return json({ ok: false, error: "Carrier must be 160 characters or fewer." }, 400);
   if (carrierReference.length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
   if (customerNote.length > 2000) return json({ ok: false, error: "Customer update must be 2000 characters or fewer." }, 400);
 
-  const transition = await validateShipmentTransition(reference, status as ShipmentStatus, auth.staff, overrideReason);
+  const transition = await validateShipmentTransition(reference, status as ShipmentStatus, workflowStaff, overrideReason);
   if (transition.kind === "unavailable") return json({ ok: false, error: "Workflow controls are unavailable." }, 503);
   if (transition.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (transition.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
@@ -89,7 +125,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (transition.overrideUsed) {
     await recordWorkflowOverride(reference, fromStatus, status as ShipmentStatus, transition.overrideReason, { name: auth.user.displayName, email: auth.user.email });
   }
-  const workflow = await getShipmentWorkflowReadiness(reference, auth.staff);
+  const workflow = await getShipmentWorkflowReadiness(reference, workflowStaff);
   return json({ ok: true, shipment: result.shipment, workflow: workflow.kind === "ready" ? workflow.readiness : null, overrideUsed: transition.overrideUsed });
 }
 
@@ -111,15 +147,14 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   const title = clean(body.title);
   const location = clean(body.location);
   const details = clean(body.details);
-  const eventTime = clean(body.eventTime);
+  const eventTimeInput = clean(body.eventTime);
+  const eventTime = normalizeNepalDateTime(eventTimeInput);
 
   if (!title) return json({ ok: false, error: "Add an event title." }, 400);
   if (title.length > 180) return json({ ok: false, error: "Event title must be 180 characters or fewer." }, 400);
   if (location.length > 180) return json({ ok: false, error: "Event location must be 180 characters or fewer." }, 400);
   if (details.length > 2000) return json({ ok: false, error: "Event details must be 2000 characters or fewer." }, 400);
-  if (eventTime && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(eventTime)) {
-    return json({ ok: false, error: "Choose a valid event date and time." }, 400);
-  }
+  if (eventTime === null) return json({ ok: false, error: "Choose a real event date and time." }, 400);
 
   const result = await addShipmentEvent(reference, { title, location, details, eventTime }, auth.user.displayName);
   if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
