@@ -1,3 +1,4 @@
+# Temporary applicator for KCPL Operations v3.1 polish.
 name: Apply KCPL operations polish
 
 on:
@@ -166,7 +167,6 @@ jobs:
           search_path.parent.mkdir(parents=True, exist_ok=True)
           search_path.write_text(search_route)
 
-          # Enquiry deep-linking from global search.
           replace_once('app/admin/page.tsx',
             'export default async function AdminPage() {\n  const access = await getAdminAccess();',
             'export default async function AdminPage({ searchParams }: { searchParams: Promise<{ enquiry?: string }> }) {\n  const access = await getAdminAccess();')
@@ -180,7 +180,6 @@ jobs:
             'export function AdminDashboard({ initialQuotes }: { initialQuotes: QuoteSummary[] }) {\n  const [quotes, setQuotes] = useState(initialQuotes);\n  const [selectedReference, setSelectedReference] = useState(initialQuotes[0]?.reference ?? "");',
             'export function AdminDashboard({ initialQuotes, initialReference }: { initialQuotes: QuoteSummary[]; initialReference?: string }) {\n  const [quotes, setQuotes] = useState(initialQuotes);\n  const preferredReference = initialReference && initialQuotes.some((quote) => quote.reference === initialReference) ? initialReference : initialQuotes[0]?.reference ?? "";\n  const [selectedReference, setSelectedReference] = useState(preferredReference);')
 
-          # Record-aware command palette.
           replace_once('app/admin/operations-shell.tsx',
             'type StoredWorkspace = { href: string; label: string };',
             'type StoredWorkspace = { href: string; label: string };\ntype RecordSearchResult = { kind: "shipment" | "customer" | "enquiry"; id: string; title: string; subtitle: string; meta: string; href: string; searchText: string };')
@@ -216,9 +215,6 @@ jobs:
   }, [paletteOpen, recordIndexLoaded, recordIndexLoading]);'''
           replace_once('app/admin/operations-shell.tsx', anchor, insert)
           replace_once('app/admin/operations-shell.tsx',
-            '  function navigateFromPalette(href: string) {\n    setPaletteOpen(false);\n    setQuery("");\n    window.location.href = href;\n  }',
-            '  function navigateFromPalette(href: string) {\n    setPaletteOpen(false);\n    setQuery("");\n    window.location.href = href;\n  }')
-          replace_once('app/admin/operations-shell.tsx',
             '<span className="flex-1 text-left text-[10px] font-semibold">Search workspaces</span>',
             '<span className="flex-1 text-left text-[10px] font-semibold">Search records & workspaces</span>')
           replace_once('app/admin/operations-shell.tsx',
@@ -239,7 +235,6 @@ function RecordRow({ item, onOpen }: { item: RecordSearchResult; onOpen: (href: 
 '''
           replace_once('app/admin/operations-shell.tsx', '\nfunction PaletteAction({ icon, label, hint, onClick }', record_helper + '\nfunction PaletteAction({ icon, label, hint, onClick }')
 
-          # Role-specific Operations Home defaults and recorded-location map signals.
           replace_once('app/admin/command-centre/page.tsx',
             '      roleLabel: kcplStaffRoleLabels[staff.permissions.role],',
             '      roleLabel: kcplStaffRoleLabels[staff.permissions.role],\n      role: staff.permissions.role,')
@@ -276,7 +271,6 @@ function defaultSectionsForRole(role: KcplStaffRole) {
             '<HomePanel title="KCPL network" eyebrow="Operational map" action={<span className="text-[10px] font-medium text-[#998e85]">Verified branch and counterpart geography</span>}>\n          <NepalOperationsMap variant="home" locationLinkHref="/network#confirmed-locations"/>',
             '<HomePanel title="KCPL network" eyebrow="Operational map" action={<span className="text-[10px] font-medium text-[#998e85]">{mappedMovementCount} movements mapped from recorded locations</span>}>\n          <NepalOperationsMap variant="home" locationLinkHref="/network#confirmed-locations" activity={mapActivity}/>')
 
-          # Operational activity layer on the existing verified map.
           replace_once('app/components/operations-map.tsx',
             'type Position = { x: number; y: number };\ntype Bounds = { west: number; east: number; south: number; north: number };',
             'type Position = { x: number; y: number };\ntype Bounds = { west: number; east: number; south: number; north: number };\nexport type OperationalMapActivity = Record<string, { active: number; exceptions: number }>;')
@@ -296,7 +290,6 @@ function defaultSectionsForRole(role: KcplStaffRole) {
             '      <span><i className="satellite-legend-customs"/>Customs coverage / operational presence</span>',
             '      <span><i className="satellite-legend-customs"/>Customs coverage / operational presence</span>\n      {activity ? <span><i className="satellite-legend-live"/>Recorded active movement</span> : null}')
 
-          # Interaction and mobile polish, scoped to the approved Operations OS.
           css = Path('app/admin/operations-theme.css')
           css.write_text(css.read_text() + '''
 
@@ -311,57 +304,25 @@ function defaultSectionsForRole(role: KcplStaffRole) {
 .kcpl-ops .ops-button:not(:disabled):active { transform: translateY(1px) scale(.985); }
 .kcpl-ops .ops-record-row:hover { transform: translateX(2px); }
 .kcpl-ops .ops-surface:hover { border-color: #e1d7ce; }
-.kcpl-ops .satellite-marker-activity {
-  position: absolute;
-  left: 9px;
-  top: -12px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  border: 2px solid rgba(255,253,251,.95);
-  background: #e97d5d;
-  color: white;
-  font-size: 8px;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 4px 14px rgba(112,73,55,.18);
-  z-index: 4;
+.kcpl-ops .satellite-marker-activity { position:absolute; left:9px; top:-12px; min-width:18px; height:18px; padding:0 5px; display:grid; place-items:center; border-radius:999px; border:2px solid rgba(255,253,251,.95); background:#e97d5d; color:white; font-size:8px; font-weight:800; line-height:1; box-shadow:0 4px 14px rgba(112,73,55,.18); z-index:4; }
+.kcpl-ops .satellite-marker-activity.has-exception { background:#c85d61; }
+.kcpl-ops .satellite-location-activity { margin-top:12px; border-radius:12px; border:1px solid #eadfd6; background:#fbf5f1; padding:9px 11px; color:#7d6f65; font-size:9px; line-height:1.6; }
+.kcpl-ops .satellite-location-activity strong { color:#b65f49; }
+.kcpl-ops .satellite-legend-live { background:#e97d5d !important; box-shadow:0 0 0 3px rgba(233,125,93,.14); }
+@media (max-width:767px) {
+  .kcpl-ops .ops-page-header { padding-left:16px; padding-right:16px; }
+  .kcpl-ops .ops-page-header-main { gap:14px; }
+  .kcpl-ops .ops-page-actions { width:100%; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+  .kcpl-ops .ops-page-actions::-webkit-scrollbar { display:none; }
+  .kcpl-ops .ops-page-actions > * { flex:0 0 auto; }
+  .kcpl-ops .ops-stat-strip { overflow-x:auto; scroll-snap-type:x proximity; scrollbar-width:none; }
+  .kcpl-ops .ops-stat-strip::-webkit-scrollbar { display:none; }
+  .kcpl-ops .ops-stat { min-width:126px; scroll-snap-align:start; }
+  .kcpl-ops .ops-content, .kcpl-ops .ops-content-wide { padding-left:14px; padding-right:14px; }
+  .kcpl-ops .ops-surface-header { align-items:flex-start; gap:10px; }
+  .kcpl-ops .ops-surface-action { max-width:48%; overflow-x:auto; }
 }
-.kcpl-ops .satellite-marker-activity.has-exception { background: #c85d61; }
-.kcpl-ops .satellite-location-activity {
-  margin-top: 12px;
-  border-radius: 12px;
-  border: 1px solid #eadfd6;
-  background: #fbf5f1;
-  padding: 9px 11px;
-  color: #7d6f65;
-  font-size: 9px;
-  line-height: 1.6;
-}
-.kcpl-ops .satellite-location-activity strong { color: #b65f49; }
-.kcpl-ops .satellite-legend-live {
-  background: #e97d5d !important;
-  box-shadow: 0 0 0 3px rgba(233,125,93,.14);
-}
-@media (max-width: 767px) {
-  .kcpl-ops .ops-page-header { padding-left: 16px; padding-right: 16px; }
-  .kcpl-ops .ops-page-header-main { gap: 14px; }
-  .kcpl-ops .ops-page-actions { width: 100%; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-  .kcpl-ops .ops-page-actions::-webkit-scrollbar { display: none; }
-  .kcpl-ops .ops-page-actions > * { flex: 0 0 auto; }
-  .kcpl-ops .ops-stat-strip { overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
-  .kcpl-ops .ops-stat-strip::-webkit-scrollbar { display: none; }
-  .kcpl-ops .ops-stat { min-width: 126px; scroll-snap-align: start; }
-  .kcpl-ops .ops-content, .kcpl-ops .ops-content-wide { padding-left: 14px; padding-right: 14px; }
-  .kcpl-ops .ops-surface-header { align-items: flex-start; gap: 10px; }
-  .kcpl-ops .ops-surface-action { max-width: 48%; overflow-x: auto; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .kcpl-ops *, .kcpl-ops *::before, .kcpl-ops *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-}
+@media (prefers-reduced-motion:reduce) { .kcpl-ops *, .kcpl-ops *::before, .kcpl-ops *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; } }
 ''')
           PY
       - name: Install dependencies
