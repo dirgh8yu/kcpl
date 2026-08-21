@@ -166,7 +166,7 @@ function partnerFromDoc(
     bill_count: financeVisible ? exposure.billCount : 0,
     overdue_bill_count: financeVisible ? exposure.overdueBillCount : 0,
     shipment_count: financeVisible ? exposure.shipments.size : 0,
-    last_activity_at: exposure.lastActivity ?? updatedAt || null,
+    last_activity_at: exposure.lastActivity ?? (updatedAt || null),
   };
 }
 
