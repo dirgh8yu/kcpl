@@ -142,6 +142,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 
   const status = clean(body.status);
+  const assignedToUid = clean(body.assignedToUid).slice(0, 160);
   const assignedToName = clean(body.assignedToName || body.assignedTo).slice(0, 160);
   const assignedToEmail = clean(body.assignedToEmail).toLowerCase().slice(0, 240);
   const assignedToPhone = clean(body.assignedToPhone).slice(0, 80);
@@ -149,6 +150,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (assignedToEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assignedToEmail)) return json({ ok: false, error: "Choose a staff member with a valid email address." }, 400);
 
   const result = await updateQuoteAdmin(reference, status as QuoteStatus, {
+    uid: assignedToUid,
     name: assignedToName,
     email: assignedToEmail,
     phone: assignedToPhone,
@@ -194,6 +196,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     ok: true,
     status,
     assignedTo: assignedToName || assignedToEmail || "",
+    assignedToUid,
     assignedToName,
     assignedToEmail,
     assignedToPhone,
