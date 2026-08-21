@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
   BadgeCheck,
-  Building2,
-  CalendarClock,
   ExternalLink,
   Globe2,
   Mail,
