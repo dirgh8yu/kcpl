@@ -65,10 +65,6 @@ function normalize(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function normalizePhone(value: string) {
-  return value.replace(/[^\d+]/g, "").trim();
-}
-
 function parseCsv(source: string) {
   const rows: string[][] = [];
   let row: string[] = [];
