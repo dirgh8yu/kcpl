@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { getStaffContext } from "../../../admin/staff-directory.server";
-import { getShipmentTrackingVisibility, listTrackingVisibility, recordTrackingEvent, runTrackingHealthSweep } from "../../../admin/visibility/tracking-visibility.server";
+import { getShipmentTrackingVisibility, listTrackingVisibility, runTrackingHealthSweep } from "../../../admin/visibility/tracking-visibility.server";
+import { recordOrderedTrackingEvent } from "../../../admin/visibility/tracking-ingest.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     const reference = clean(body.reference, 160);
     const rawStatus = clean(body.rawStatus, 300);
     if (!reference || !rawStatus) return json({ ok: false, error: "Shipment reference and tracking status are required." }, 400);
-    const result = await recordTrackingEvent(reference, {
+    const result = await recordOrderedTrackingEvent(reference, {
       rawStatus,
       milestone: clean(body.milestone, 60) || null,
       title: clean(body.title, 240),
