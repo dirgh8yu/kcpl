@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -15,11 +15,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: redesign/operations-os-v4
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
+
+      - name: Apply final UI cleanup
+        if: github.actor != 'github-actions[bot]'
+        run: node scripts/apply-operations-v4-targeted.cjs
+
+      - name: Commit final UI cleanup
+        if: github.actor != 'github-actions[bot]'
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/admin/alerts/alerts-workspace.tsx app/admin/partners/partners-workspace.tsx 'app/admin/jobs/[reference]/workflow-spine.tsx' 'app/admin/jobs/[reference]/page.tsx'
+            git commit -m "Finish KCPL v4 workspace cleanup"
+            git pull --rebase origin redesign/operations-os-v4
+            git push origin HEAD:redesign/operations-os-v4
+          fi
 
       - name: Install dependencies
         run: npm install
