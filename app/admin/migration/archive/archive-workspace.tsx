@@ -52,11 +52,23 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
     notes: "",
   });
 
-  const records = dashboard?.records ?? [];
+  const records = useMemo(() => dashboard?.records ?? [], [dashboard]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return records;
-    return records.filter((record) => [record.id, record.title, record.filename, record.branch, record.entity_reference, record.entity_label, record.physical_reference, record.sha256].some((value) => value?.toLowerCase().includes(needle)));
+    return records.filter((record) => [
+      record.id,
+      record.title,
+      record.filename,
+      record.branch,
+      record.entity_reference,
+      record.entity_label,
+      record.physical_reference,
+      record.sha256,
+      record.recovery_id,
+      record.recovery_original_entity_reference,
+      record.recovery_original_entity_label,
+    ].some((value) => value?.toLowerCase().includes(needle)));
   }, [query, records]);
 
   async function refresh() {
@@ -107,20 +119,22 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
   }
 
   const linkedCount = records.filter((record) => record.entity_type !== "general").length;
+  const recoveredCount = records.filter((record) => Boolean(record.recovery_id)).length;
   const branchCount = new Set(records.map((record) => record.branch)).size;
 
   return <OpsPage>
     <OpsPageHeader
       eyebrow="Migration Hub · Stage 4B"
       title="Paper Archive"
-      description="Preserve KCPL's historical paper trail in Firebase Storage with searchable metadata, record links and a SHA-256 integrity fingerprint. Stage 4B stores evidence only. Rollback remains a separate Stage 4C control."
+      description="Preserve KCPL's historical paper trail in Firebase Storage with searchable metadata, record links and a SHA-256 integrity fingerprint. Stage 4C recovery never deletes this evidence; when a linked record is safely reversed, its archive evidence is re-linked to the migration batch."
       meta={<><span>Management only</span><span>20 MB per file</span><span>No destructive archive actions</span></>}
-      actions={<><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link><OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === "refresh" ? <LoaderCircle size={12} className="animate-spin"/> : <RefreshCw size={12}/>}Refresh</OpsButton></>}
+      actions={<><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link><OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === "refresh" ? <LoaderCircle size={12} className="animate-spin"/> : <RefreshCw size={12}/>}Refresh</OpsButton></>}
     />
 
     <OpsStatStrip>
       <OpsStat label="Archived files" value={String(records.length)} detail="Historical evidence retained" icon={<Archive size={13}/>} tone="success"/>
       <OpsStat label="Linked records" value={String(linkedCount)} detail="Connected to KCPL entities" icon={<FileCheck2 size={13}/>} tone="success"/>
+      <OpsStat label="Recovery preserved" value={String(recoveredCount)} detail="Re-linked by Stage 4C" icon={<ShieldCheck size={13}/>} tone="success"/>
       <OpsStat label="Branches represented" value={String(branchCount)} detail="Based on archive metadata" />
       <OpsStat label="Storage" value={dashboard?.storage_available ? "Ready" : "Unavailable"} detail="Firebase Storage" icon={<ShieldCheck size={13}/>} tone={dashboard?.storage_available ? "success" : "danger"}/>
     </OpsStatStrip>
@@ -139,7 +153,7 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
             <OpsField label="KCPL branch"><select value={form.branch} onChange={(event) => setForm({ ...form, branch: event.target.value })}>{kcplBranches.map((branch) => <option key={branch} value={branch}>{branch}</option>)}</select></OpsField>
             <OpsField label="Document date"><input type="date" value={form.documentDate} onChange={(event) => setForm({ ...form, documentDate: event.target.value })}/></OpsField>
             <OpsField label="Physical box / folder"><input maxLength={120} value={form.physicalReference} onChange={(event) => setForm({ ...form, physicalReference: event.target.value })} placeholder="Box 12 · Shelf B"/></OpsField>
-            <OpsField label="Link to" ><select value={form.entityType} onChange={(event) => setForm({ ...form, entityType: event.target.value as ArchiveEntityType, entityReference: "" })}>{archiveEntityTypes.map((type) => <option key={type} value={type}>{archiveEntityTypeLabels[type]}</option>)}</select></OpsField>
+            <OpsField label="Link to"><select value={form.entityType} onChange={(event) => setForm({ ...form, entityType: event.target.value as ArchiveEntityType, entityReference: "" })}>{archiveEntityTypes.map((type) => <option key={type} value={type}>{archiveEntityTypeLabels[type]}</option>)}</select></OpsField>
             <OpsField label="KCPL record reference"><input disabled={form.entityType === "general"} required={form.entityType !== "general"} value={form.entityReference} onChange={(event) => setForm({ ...form, entityReference: event.target.value })} placeholder={form.entityType === "general" ? "Not required" : "Exact record ID / reference"}/></OpsField>
             <OpsField label="Archive notes" className="sm:col-span-2"><textarea rows={3} maxLength={1000} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder="What the paper is, where it came from, and anything Management should know."/></OpsField>
           </div>
@@ -152,17 +166,17 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
               <span className="mt-1 block text-[8px] leading-4 text-[#8c827a]">PDF, image, Word, Excel, CSV or TXT · up to 20 MB</span>
             </label>
             {file ? <div className="mt-3 rounded-[11px] border border-[#e7dfd8] bg-white p-3 text-[9px] text-[#756b64]"><strong className="block text-[#514840]">{bytes(file.size)}</strong><span>{file.type || "Type inferred from extension"}</span></div> : null}
-            <div className="mt-4 rounded-[11px] border border-[#e7dfd8] bg-white p-3 text-[8px] leading-4 text-[#7e746d]"><strong className="block text-[9px] text-[#514840]">Archive integrity</strong>KCPL stores a SHA-256 fingerprint with every file. Stage 4B intentionally has no delete button, so the archive becomes a stable evidence layer before recovery tooling is introduced.</div>
+            <div className="mt-4 rounded-[11px] border border-[#e7dfd8] bg-white p-3 text-[8px] leading-4 text-[#7e746d]"><strong className="block text-[9px] text-[#514840]">Archive integrity</strong>KCPL stores a SHA-256 fingerprint with every file. Stage 4C cannot erase archived evidence. If its linked source record is reversed, the archive keeps the original link metadata and moves its live link to the migration batch.</div>
             <OpsButton variant="primary" className="mt-4 w-full justify-center" disabled={!file || !form.title.trim() || Boolean(busy) || dashboard?.storage_available === false}>{busy === "upload" ? <LoaderCircle size={12} className="animate-spin"/> : <Archive size={12}/>}Archive paper file</OpsButton>
           </div>
         </form>
       </OpsSurface>
 
       <OpsSurface eyebrow="Archive register" title="Historical evidence" description={`${filtered.length} of ${records.length} archived file${records.length === 1 ? "" : "s"} shown.`} action={<label className="relative block min-w-[240px]"><Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9b9088]"/><input aria-label="Search paper archive" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search archive..." className="w-full rounded-[10px] border border-[#e3dbd4] bg-white py-2 pl-8 pr-3 text-[9px] outline-none focus:border-[#c69b89]"/></label>} flush>
-        {filtered.length ? <div className="ops-table-wrap"><table className="ops-table min-w-[1120px]"><thead><tr><th>Archive ID</th><th>Document</th><th>Linked record</th><th>Branch / source</th><th>Integrity</th><th>Archived by</th><th></th></tr></thead><tbody>{filtered.map((record) => {
+        {filtered.length ? <div className="ops-table-wrap"><table className="ops-table min-w-[1160px]"><thead><tr><th>Archive ID</th><th>Document</th><th>Linked record</th><th>Branch / source</th><th>Integrity</th><th>Archived by</th><th></th></tr></thead><tbody>{filtered.map((record) => {
           const href = archiveEntityHref(record);
-          return <tr key={record.id}><td><OpsMono>{record.id}</OpsMono><p className="mt-1 text-[8px] text-[#948a82]">{dateTime(record.uploaded_at)} NPT</p></td><td><strong className="text-[10px] text-[#514840]">{record.title}</strong><p className="mt-1 text-[8px] text-[#948a82]">{archiveCategoryLabels[record.category]} · {dateOnly(record.document_date)} · {bytes(record.size_bytes)}</p><p className="mt-1 max-w-[280px] truncate text-[8px] text-[#a0968e]">{record.filename}</p></td><td>{record.entity_reference ? <>{href ? <Link href={href} className="font-bold text-[#b5654f] hover:underline">{record.entity_label || record.entity_reference}</Link> : <strong>{record.entity_label || record.entity_reference}</strong>}<p className="mt-1 text-[8px] text-[#948a82]">{archiveEntityTypeLabels[record.entity_type]} · <OpsMono>{record.entity_reference}</OpsMono></p></> : <OpsBadge tone="neutral">General archive</OpsBadge>}</td><td><strong className="text-[9px] text-[#5b524b]">{record.branch}</strong><p className="mt-1 text-[8px] text-[#948a82]">{record.physical_reference || "No physical reference"}</p></td><td><OpsBadge tone="success"><ShieldCheck size={9}/>SHA-256</OpsBadge><p title={record.sha256} className="mt-1 max-w-[170px] truncate font-mono text-[7px] text-[#9d938b]">{record.sha256 || "Fingerprint unavailable"}</p></td><td><strong className="text-[9px] text-[#5b524b]">{record.uploaded_by_name}</strong><p className="mt-1 text-[8px] text-[#948a82]">{record.uploaded_by_email}</p></td><td><a href={`/api/admin/migration/archive/${encodeURIComponent(record.id)}/download`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={11}/>Download</a></td></tr>;
-        })}</tbody></table></div> : <OpsEmptyState icon={<FileText size={17}/>} title={records.length ? "No archive matches" : "Paper archive is empty"} description={records.length ? "Try a different archive ID, title, branch, record reference or physical folder." : "Upload the first historical KCPL paper file above. It will appear here with its provenance and integrity fingerprint."}/>} 
+          return <tr key={record.id}><td><OpsMono>{record.id}</OpsMono><p className="mt-1 text-[8px] text-[#948a82]">{dateTime(record.uploaded_at)} NPT</p>{record.recovery_id ? <p className="mt-1"><OpsBadge tone="warning">Recovery preserved</OpsBadge></p> : null}</td><td><strong className="text-[10px] text-[#514840]">{record.title}</strong><p className="mt-1 text-[8px] text-[#948a82]">{archiveCategoryLabels[record.category]} · {dateOnly(record.document_date)} · {bytes(record.size_bytes)}</p><p className="mt-1 max-w-[280px] truncate text-[8px] text-[#a0968e]">{record.filename}</p></td><td>{record.entity_reference ? <>{href ? <Link href={href} className="font-bold text-[#b5654f] hover:underline">{record.entity_label || record.entity_reference}</Link> : <strong>{record.entity_label || record.entity_reference}</strong>}<p className="mt-1 text-[8px] text-[#948a82]">{archiveEntityTypeLabels[record.entity_type]} · <OpsMono>{record.entity_reference}</OpsMono></p>{record.recovery_original_entity_reference ? <div className="mt-2 rounded-[8px] border border-[#eadfd8] bg-[#fff8f4] px-2 py-1.5 text-[8px] leading-4 text-[#7d6f66]"><strong>Original pre-recovery link:</strong> {record.recovery_original_entity_label || record.recovery_original_entity_reference}{record.recovery_original_entity_type ? ` · ${archiveEntityTypeLabels[record.recovery_original_entity_type]}` : ""}<br/><OpsMono>{record.recovery_original_entity_reference}</OpsMono>{record.recovery_id ? <> · Recovery <OpsMono>{record.recovery_id}</OpsMono></> : null}</div> : null}</> : <OpsBadge tone="neutral">General archive</OpsBadge>}</td><td><strong className="text-[9px] text-[#5b524b]">{record.branch}</strong><p className="mt-1 text-[8px] text-[#948a82]">{record.physical_reference || "No physical reference"}</p>{record.recovery_relinked_at ? <p className="mt-1 text-[8px] text-[#9b8174]">Re-linked {dateTime(record.recovery_relinked_at)} NPT</p> : null}</td><td><OpsBadge tone="success"><ShieldCheck size={9}/>SHA-256</OpsBadge><p title={record.sha256} className="mt-1 max-w-[170px] truncate font-mono text-[7px] text-[#9d938b]">{record.sha256 || "Fingerprint unavailable"}</p></td><td><strong className="text-[9px] text-[#5b524b]">{record.uploaded_by_name}</strong><p className="mt-1 text-[8px] text-[#948a82]">{record.uploaded_by_email}</p>{record.recovery_relinked_by_name ? <p className="mt-1 text-[8px] text-[#9b8174]">Recovery: {record.recovery_relinked_by_name}</p> : null}</td><td><a href={`/api/admin/migration/archive/${encodeURIComponent(record.id)}/download`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={11}/>Download</a></td></tr>;
+        })}</tbody></table></div> : <OpsEmptyState icon={<FileText size={17}/>} title={records.length ? "No archive matches" : "Paper archive is empty"} description={records.length ? "Try a different archive ID, title, branch, record reference, recovery ID or physical folder." : "Upload the first historical KCPL paper file above. It will appear here with its provenance and integrity fingerprint."}/>} 
       </OpsSurface>
     </div>
   </OpsPage>;

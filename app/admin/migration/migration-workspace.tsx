@@ -71,8 +71,8 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
     <OpsPageHeader
       eyebrow="Organisation · Migration Hub"
       title="Paper → KCPL migration"
-      description="Move KCPL records into the operating system in controlled stages. Customers, shipments, receivables and payables are established. Stage 4A now gives Management one authoritative ledger of every migration batch before paper archive and rollback controls are introduced."
-      meta={<><span>Management only</span><span>Stage 4A of 4</span><span>Evidence before rollback</span></>}
+      description="KCPL now has the complete staged migration stack: controlled master-data imports, historical shipments, opening receivables and payables, an authoritative batch ledger, preserved paper evidence and fail-closed rollback recovery. The original import lanes remain available for ongoing digitisation."
+      meta={<><span>Management only</span><span>Stages 1–4 live</span><span>Dry-run recovery · no force delete</span></>}
       actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Shipment template</a><a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Receivables template</a><a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Payables template</a></>}
     />
 
@@ -81,20 +81,21 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
       <OpsStat label="Stage 2" value="Shipments" detail="Complete · still available" icon={<PackageCheck size={13}/>} tone="success"/>
       <OpsStat label="Stage 3A" value="Receivables" detail="Complete · still available" icon={<Landmark size={13}/>} tone="success"/>
       <OpsStat label="Stage 3B" value="Payables" detail="Complete · still available" icon={<ReceiptText size={13}/>} tone="success"/>
-      <OpsStat label="Stage 4A" value="Batch history" detail="Active now" icon={<History size={13}/>} tone="success"/>
-      <OpsStat label="Stage 4B/4C" value="Archive + recovery" detail="Later" />
+      <OpsStat label="Stage 4A" value="Batch history" detail="Complete · evidence ledger" icon={<History size={13}/>} tone="success"/>
+      <OpsStat label="Stage 4B" value="Paper archive" detail="Complete · evidence preserved" tone="success"/>
+      <OpsStat label="Stage 4C" value="Recovery" detail="Active · dry run first" tone="success"/>
     </OpsStatStrip>
 
     <div className="ops-content-wide ops-stack">
-      <OpsSurface eyebrow="Stage plan" title="One migration layer at a time" description="Stage 4 is deliberately split again. First KCPL gets a reliable batch ledger. Scanned paper archive comes next, then destructive recovery controls only after the evidence layer exists.">
+      <OpsSurface eyebrow="Stage plan" title="A complete migration safety chain" description="The stages now work as one chain: import carefully, retain an authoritative batch inventory, preserve source evidence, then permit rollback only when the live records still prove they are safe to reverse.">
         <div className="grid gap-2 md:grid-cols-4 xl:grid-cols-7">
           <Stage number="01" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
           <Stage number="02" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="complete"/>
           <Stage number="03A" title="Receivables opening" detail="Open customer invoices and auditable customer opening balances." state="complete"/>
           <Stage number="03B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="complete"/>
-          <Stage number="04A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="active"/>
-          <Stage number="04B" title="Paper archive" detail="Scanned historical files with controlled metadata and storage."/>
-          <Stage number="04C" title="Recovery" detail="Dry-run rollback checks, safe reversal and recovery audit trail."/>
+          <Stage number="04A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="complete"/>
+          <Stage number="04B" title="Paper archive" detail="Scanned historical files with controlled metadata, integrity fingerprints and stable storage." state="complete"/>
+          <Stage number="04C" title="Recovery" detail="Expiring dry-run plans, dependency blockers, exact confirmation and audited reversal." state="active"/>
         </div>
       </OpsSurface>
 
@@ -128,7 +129,7 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
               <li>• Branch must match a KCPL branch in the template vocabulary.</li>
               <li>• Name, email, phone and tax ID are checked against existing CRM records and earlier rows in the same CSV.</li>
               <li>• Invalid and possible-duplicate rows are never imported automatically.</li>
-              <li>• Every confirmed import receives a migration batch ID and appears in Stage 4A automatically.</li>
+              <li>• Every confirmed import receives a migration batch ID and appears in the Migration Control Centre automatically.</li>
             </ul>
           </div>
         </div>

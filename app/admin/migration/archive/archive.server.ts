@@ -56,6 +56,10 @@ function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function entityType(value: unknown): ArchiveEntityType | null {
+  return archiveEntityTypes.includes(value as ArchiveEntityType) ? value as ArchiveEntityType : null;
+}
+
 function safeFilename(filename: string) {
   const tail = filename.split(/[\\/]/).pop() || "archive-document";
   const cleaned = tail.normalize("NFKD").replace(/\p{Cc}/gu, "").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 140);
@@ -78,7 +82,7 @@ function recordFromSnapshot(id: string, data: FirebaseFirestore.DocumentData): P
     branch: kcplBranches.includes(data.branch as KcplBranch) ? data.branch as KcplBranch : "Kathmandu",
     physical_reference: text(data.physical_reference) || null,
     notes: text(data.notes) || null,
-    entity_type: archiveEntityTypes.includes(data.entity_type as ArchiveEntityType) ? data.entity_type as ArchiveEntityType : "general",
+    entity_type: entityType(data.entity_type) ?? "general",
     entity_reference: text(data.entity_reference) || null,
     entity_label: text(data.entity_label) || null,
     filename: text(data.filename) || "Archived document",
@@ -88,6 +92,13 @@ function recordFromSnapshot(id: string, data: FirebaseFirestore.DocumentData): P
     uploaded_at: text(data.uploaded_at),
     uploaded_by_name: text(data.uploaded_by_name) || "KCPL Management",
     uploaded_by_email: text(data.uploaded_by_email),
+    recovery_id: text(data.recovery_id) || null,
+    recovery_original_entity_type: entityType(data.recovery_original_entity_type),
+    recovery_original_entity_reference: text(data.recovery_original_entity_reference) || null,
+    recovery_original_entity_label: text(data.recovery_original_entity_label) || null,
+    recovery_relinked_at: text(data.recovery_relinked_at) || null,
+    recovery_relinked_by_name: text(data.recovery_relinked_by_name) || null,
+    recovery_relinked_by_email: text(data.recovery_relinked_by_email) || null,
   };
 }
 
@@ -98,16 +109,16 @@ export async function listPaperArchive(): Promise<PaperArchiveDashboard | null> 
   return { records, storage_available: paperArchiveStorageAvailable(), total: records.length };
 }
 
-async function resolveEntity(entityType: ArchiveEntityType, rawReference: string | null) {
-  if (entityType === "general") return { reference: null, label: null };
+async function resolveEntity(entityTypeValue: ArchiveEntityType, rawReference: string | null) {
+  if (entityTypeValue === "general") return { reference: null, label: null };
   const reference = text(rawReference);
   if (!reference) throw new Error("Choose a linked record reference for this archive item.");
 
-  const collection = entityType === "customer" ? "customers"
-    : entityType === "shipment" ? "shipments"
-      : entityType === "partner" ? "partners"
-        : entityType === "receivable" ? "invoices"
-          : entityType === "payable" ? "payables"
+  const collection = entityTypeValue === "customer" ? "customers"
+    : entityTypeValue === "shipment" ? "shipments"
+      : entityTypeValue === "partner" ? "partners"
+        : entityTypeValue === "receivable" ? "invoices"
+          : entityTypeValue === "payable" ? "payables"
             : "migration_batches";
 
   const candidates = [...new Set([reference, reference.toUpperCase()])];
@@ -116,16 +127,16 @@ async function resolveEntity(entityType: ArchiveEntityType, rawReference: string
     const current = await firebaseAdminDb().collection(collection).doc(candidate).get();
     if (current.exists) { snapshot = current; break; }
   }
-  if (!snapshot?.exists) throw new Error(`Linked ${entityType.replaceAll("_", " ")} record ${reference} was not found.`);
+  if (!snapshot?.exists) throw new Error(`Linked ${entityTypeValue.replaceAll("_", " ")} record ${reference} was not found.`);
 
   const data = snapshot.data() ?? {};
-  const label = entityType === "customer" || entityType === "partner"
+  const label = entityTypeValue === "customer" || entityTypeValue === "partner"
     ? text(data.display_name) || snapshot.id
-    : entityType === "receivable"
+    : entityTypeValue === "receivable"
       ? text(data.external_invoice_number) || text(data.reference) || snapshot.id
-      : entityType === "payable"
+      : entityTypeValue === "payable"
         ? text(data.supplier_bill_reference) || text(data.reference) || snapshot.id
-        : entityType === "migration_batch"
+        : entityTypeValue === "migration_batch"
           ? text(data.batch_id) || snapshot.id
           : text(data.reference) || snapshot.id;
   return { reference: snapshot.id, label };
@@ -185,6 +196,13 @@ export async function createPaperArchiveRecord(input: ArchiveCreateInput, actor:
     uploaded_at: now,
     uploaded_by_name: actor.name || "KCPL Management",
     uploaded_by_email: actor.email,
+    recovery_id: null,
+    recovery_original_entity_type: null,
+    recovery_original_entity_reference: null,
+    recovery_original_entity_label: null,
+    recovery_relinked_at: null,
+    recovery_relinked_by_name: null,
+    recovery_relinked_by_email: null,
   };
 
   try {

@@ -90,6 +90,11 @@ function batchFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot, generat
     created_at: createdAt,
     completed_at: nullable(data.completed_at),
     error: nullable(data.error),
+    rollback_status: nullable(data.rollback_status),
+    rollback_recovery_id: nullable(data.rollback_recovery_id),
+    rollback_completed_at: nullable(data.rollback_completed_at),
+    rollback_error: nullable(data.rollback_error),
+    rollback_reversed_record_keys: stringArray(data.rollback_reversed_record_keys),
     created_records: createdRecords(data),
     detail_metrics: detailMetrics(data),
   };

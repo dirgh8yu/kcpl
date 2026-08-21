@@ -45,6 +45,13 @@ export type PaperArchiveRecord = {
   uploaded_at: string;
   uploaded_by_name: string;
   uploaded_by_email: string;
+  recovery_id: string | null;
+  recovery_original_entity_type: ArchiveEntityType | null;
+  recovery_original_entity_reference: string | null;
+  recovery_original_entity_label: string | null;
+  recovery_relinked_at: string | null;
+  recovery_relinked_by_name: string | null;
+  recovery_relinked_by_email: string | null;
 };
 
 export type PaperArchiveDashboard = {

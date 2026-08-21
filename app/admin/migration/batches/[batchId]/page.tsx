@@ -7,6 +7,7 @@ import { OpsBadge, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, Op
 import { getStaffContext } from "../../../staff-directory.server";
 import { getMigrationBatch } from "../../migration-batches.server";
 import type { MigrationBatchStatus } from "../../migration-batches";
+import { RecoveryPanel } from "../../recovery/recovery-panel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Migration Batch | KCPL Operations", robots: { index: false, follow: false } };
@@ -49,33 +50,36 @@ export default async function MigrationBatchPage({ params }: { params: Promise<{
       <OpsPageHeader
         eyebrow={`Migration Control Centre · ${batch.stage_label}`}
         title={<OpsMono>{batch.id}</OpsMono>}
-        description={`${batch.type_label} migration batch${batch.source_filename ? ` from ${batch.source_filename}` : ""}. This Stage 4A view is read-only and preserves the evidence needed for later recovery tooling.`}
-        meta={<><OpsBadge tone={tone(batch.status)} dot>{statusLabel(batch.status)}</OpsBadge><span>{batch.imported_count} records imported</span><span>{batch.created_by_name}</span></>}
-        actions={<Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Back to Migration Hub</Link>}
+        description={`${batch.type_label} migration batch${batch.source_filename ? ` from ${batch.source_filename}` : ""}. Stage 4C can now generate a non-destructive dry run and reverse only records that still prove they are untouched products of this exact migration batch.`}
+        meta={<><OpsBadge tone={tone(batch.status)} dot>{statusLabel(batch.status)}</OpsBadge><span>{batch.imported_count} records imported</span><span>{batch.created_by_name}</span>{batch.rollback_status ? <OpsBadge tone={batch.rollback_status === "completed" ? "success" : batch.rollback_status === "partial_failure" ? "warning" : "info"}>Recovery {batch.rollback_status.replaceAll("_", " ")}</OpsBadge> : null}</>}
+        actions={<div className="flex flex-wrap gap-2"><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Back to Migration Hub</Link></div>}
       />
 
       <div className="ops-content-wide ops-stack">
-        {batch.status === "partial_failure" || batch.status === "interrupted" ? <OpsNotice tone="warning"><strong>Recovery candidate.</strong> This batch needs review before any retry or rollback. Stage 4A intentionally does not delete records. Stage 4C will add controlled recovery after the paper archive layer is in place.</OpsNotice> : null}
+        {batch.status === "partial_failure" || batch.status === "interrupted" ? <OpsNotice tone="warning"><strong>Recovery candidate.</strong> Stage 4C will inspect only the records already captured in this batch inventory. It will not guess missing records or reconstruct ownership from names.</OpsNotice> : null}
         {batch.error ? <OpsNotice tone="danger"><strong>Recorded batch error:</strong> {batch.error}</OpsNotice> : null}
+        {batch.rollback_error ? <OpsNotice tone="warning"><strong>Last recovery issue:</strong> {batch.rollback_error}</OpsNotice> : null}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Card icon={<FileSpreadsheet size={14}/>} label="Source" value={batch.source_filename || "No filename"} detail={`${batch.total_rows} rows detected`}/>
           <Card icon={<CheckCircle2 size={14}/>} label="Imported" value={String(batch.imported_count)} detail={`${batch.ready_rows} ready at preview`}/>
           <Card icon={<Clock3 size={14}/>} label="Created" value={dateTime(batch.created_at)} detail={batch.created_by_email || "No actor email"}/>
-          <Card icon={<Archive size={14}/>} label="Completed" value={dateTime(batch.completed_at)} detail={`${batch.duplicate_rows} duplicates · ${batch.invalid_rows} invalid`}/>
+          <Card icon={<Archive size={14}/>} label="Recovery" value={batch.rollback_status ? batch.rollback_status.replaceAll("_", " ") : "Not started"} detail={batch.rollback_completed_at ? dateTime(batch.rollback_completed_at) : `${batch.duplicate_rows} duplicates · ${batch.invalid_rows} invalid`}/>
         </div>
 
         {batch.detail_metrics.length ? <OpsSurface eyebrow="Batch composition" title="What this batch created"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{batch.detail_metrics.map((item) => <div key={item.label} className="rounded-[12px] border border-[#e9e1db] bg-[#faf8f5] p-4"><p className="text-[8px] font-bold uppercase tracking-[.07em] text-[#998f87]">{item.label}</p><strong className="mt-1 block text-[18px] text-[#514840]">{item.value}</strong></div>)}</div></OpsSurface> : null}
 
-        <OpsSurface eyebrow="Created records" title="Objects written by this migration batch" description="These links are the authoritative Stage 4A inventory. Later rollback checks will operate from this batch-to-record relationship, not from guesses or name matching." flush>
-          {batch.created_records.length ? <div className="ops-table-wrap"><table className="ops-table min-w-[760px]"><thead><tr><th>Type</th><th>Record</th><th>Current system location</th></tr></thead><tbody>{batch.created_records.map((record) => <tr key={`${record.kind}-${record.id}`}><td><OpsBadge tone="neutral">{record.kind}</OpsBadge></td><td><OpsMono>{record.id}</OpsMono></td><td><Link href={record.href} className="font-bold text-[#b5654f]">Open record</Link></td></tr>)}</tbody></table></div> : <div className="p-5"><OpsEmptyState icon={<Database size={17}/>} title="No created-record inventory" description="This batch does not expose a created-record list. Older or interrupted migration batches may have stopped before writing record references."/></div>}
+        <OpsSurface eyebrow="Created records" title="Objects written by this migration batch" description="This inventory is the recovery boundary. Stage 4C never expands it using fuzzy matching, filenames, customer names or supplier names." flush>
+          {batch.created_records.length ? <div className="ops-table-wrap"><table className="ops-table min-w-[760px]"><thead><tr><th>Type</th><th>Record</th><th>Current system location</th></tr></thead><tbody>{batch.created_records.map((record) => <tr key={`${record.kind}-${record.id}`}><td><OpsBadge tone="neutral">{record.kind}</OpsBadge></td><td><OpsMono>{record.id}</OpsMono></td><td><Link href={record.href} className="font-bold text-[#b5654f]">Open record</Link></td></tr>)}</tbody></table></div> : <div className="p-5"><OpsEmptyState icon={<Database size={17}/>} title="No created-record inventory" description="Automatic rollback is disabled when the batch cannot prove which objects it created."/></div>}
         </OpsSurface>
 
-        <OpsSurface eyebrow="Stage 4 safety model" title="Evidence first, destructive controls later" description="Rollback is deliberately not enabled in Stage 4A.">
+        {staff.permissions.canManageFinance ? <RecoveryPanel batchId={batch.id} rollbackStatus={batch.rollback_status}/> : <OpsNotice tone="warning">Stage 4C recovery also requires finance authority because a batch may contain receivables or payables.</OpsNotice>}
+
+        <OpsSurface eyebrow="Stage 4 safety model" title="Recovery that fails closed" description="A rollback is allowed only when the dry run proves the current records are still safe to reverse.">
           <div className="grid gap-3 md:grid-cols-3">
-            <Safety title="Batch identity" detail="Every imported object is traced back to its migration batch ID and source file."/>
-            <Safety title="Failure visibility" detail="Partial failures and stale running batches are surfaced without silently changing their stored status."/>
-            <Safety title="Recovery boundary" detail="Stage 4C will only consider records proven to belong to this batch and will validate post-import activity before reversal."/>
+            <Safety title="Batch identity" detail="Every record must still carry the exact migration_batch_id recorded by the source batch."/>
+            <Safety title="Post-import protection" detail="Edits, payments, shipment progress, documents, costs, CRM dependencies and other activity turn into blockers instead of being deleted."/>
+            <Safety title="Evidence preservation" detail="Paper Archive files are never deleted. Direct entity links are re-homed to the migration batch before the entity is reversed."/>
           </div>
         </OpsSurface>
       </div>
@@ -84,7 +88,7 @@ export default async function MigrationBatchPage({ params }: { params: Promise<{
 }
 
 function Card({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: string; detail: string }) {
-  return <div className="rounded-[14px] border border-[#e8e0d9] bg-[#fffdfa] p-4"><div className="flex items-center gap-2 text-[#b5654f]">{icon}<span className="text-[8px] font-bold uppercase tracking-[.08em]">{label}</span></div><strong className="mt-2 block text-[12px] text-[#514840]">{value}</strong><p className="mt-1 text-[8px] leading-4 text-[#91877f]">{detail}</p></div>;
+  return <div className="rounded-[14px] border border-[#e8e0d9] bg-[#fffdfa] p-4"><div className="flex items-center gap-2 text-[#b5654f]">{icon}<span className="text-[8px] font-bold uppercase tracking-[.08em]">{label}</span></div><strong className="mt-2 block text-[12px] capitalize text-[#514840]">{value}</strong><p className="mt-1 text-[8px] leading-4 text-[#91877f]">{detail}</p></div>;
 }
 
 function Safety({ title, detail }: { title: string; detail: string }) {
