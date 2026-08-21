@@ -103,7 +103,7 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    setLoading((current) => current || !snapshot);
+    setLoading(true);
     try {
       const response = await fetch(`/api/admin/jobs/${encodeURIComponent(fallbackJob.reference)}`, { cache: "no-store" });
       const payload = await response.json() as { ok?: boolean; workflow?: ShipmentWorkflowReadiness; job?: DigitalJobFile; error?: string };
@@ -115,7 +115,7 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
     } finally {
       setLoading(false);
     }
-  }, [fallbackJob.reference, snapshot]);
+  }, [fallbackJob.reference]);
 
   useEffect(() => {
     let active = true;
