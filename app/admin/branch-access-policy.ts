@@ -5,6 +5,16 @@ export type BranchAccessScope = {
   branches: readonly KcplBranch[];
 };
 
+export type QuoteLinkedAccessInput = {
+  shipment_reference: string | null;
+  customer_id: string | null;
+  shipment_exists?: boolean;
+  shipment_primary_branch?: unknown;
+  shipment_handling_branches?: unknown;
+  customer_exists?: boolean;
+  customer_branch?: unknown;
+};
+
 export function strictBranchValue(value: unknown): KcplBranch | null {
   return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
 }
@@ -28,4 +38,17 @@ export function canAccessBranchValue(scope: BranchAccessScope, branch: unknown) 
 export function canAccessBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
   if (scope.can_access_all_branches) return true;
   return branchAccessSet(primary, handling).some((branch) => scope.branches.includes(branch));
+}
+
+export function canAccessQuoteLinkedRecords(scope: BranchAccessScope, input: QuoteLinkedAccessInput) {
+  if (scope.can_access_all_branches) return true;
+  if (input.shipment_reference) {
+    if (!input.shipment_exists) return false;
+    return canAccessBranchSet(scope, input.shipment_primary_branch, input.shipment_handling_branches);
+  }
+  if (input.customer_id) {
+    if (!input.customer_exists) return false;
+    return canAccessBranchValue(scope, input.customer_branch);
+  }
+  return true;
 }
