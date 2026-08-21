@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
-import { getStaffContext } from "../../staff-directory.server";
+import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.server";
 import { checkShipmentBranchAccess } from "../../shipment-access.server";
 import { getDigitalJobFile } from "../../job-file.server";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { getShipmentActivityTimeline } from "../../shipment-activity.server";
+import { getShipmentExceptions } from "../../shipment-exceptions.server";
 import { OperationsShell } from "../../operations-shell";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
+import { ShipmentExceptionControl } from "./shipment-exception-control";
 import { SmartDocumentIntelligence } from "./smart-document-intelligence";
 import { WorkflowSpine } from "./workflow-spine";
 
@@ -31,11 +33,15 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is outside the branches assigned to your KCPL staff profile."/>;
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const [workflow, activity] = await Promise.all([
+  const [workflow, activity, exceptionCases] = await Promise.all([
     getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
     getShipmentActivityTimeline(result.job.reference, staff),
+    getShipmentExceptions(result.job.reference, staff),
   ]);
   if (workflow.kind !== "ready") return <Gate title="Workflow unavailable" detail="The controlled workflow state could not be loaded for this shipment."/>;
+
+  const exceptionBranches = [...new Set([result.job.primary_branch, ...result.job.handling_branches])]
+    .filter((branch) => staffCanAccessBranch(staff, branch));
 
   return (
     <OperationsShell
@@ -46,6 +52,16 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
     >
       <WorkflowSpine initialWorkflow={workflow.readiness} initialJob={result.job} canOverride={staff.permissions.role === "management"}/>
       <SmartDocumentIntelligence initialWorkflow={workflow.readiness}/>
+      {exceptionCases.kind === "ready" && exceptionBranches.length ? (
+        <ShipmentExceptionControl
+          reference={result.job.reference}
+          branches={exceptionBranches}
+          initialExceptions={exceptionCases.exceptions}
+          initialSummary={exceptionCases.summary}
+          currentUserName={access.user.displayName}
+          currentUserEmail={access.user.email}
+        />
+      ) : null}
       <JobFileWorkspace
         initialJob={result.job}
         role={staff.permissions.role}
