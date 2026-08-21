@@ -50,6 +50,7 @@ const operationsNav: NavItem[] = [
   { href: "/admin/customs", label: "Customs", icon: ShieldCheck, match: (path) => path.startsWith("/admin/customs"), hint: "Clearance queue, documents and customs blockers" },
   { href: "/admin/documents", label: "Documents", icon: FileText, match: (path) => path.startsWith("/admin/documents"), hint: "Verified shipment documents and review queue" },
   { href: "/admin/alerts", label: "Tasks & alerts", icon: Bell, match: (path) => path.startsWith("/admin/alerts"), hint: "Exceptions, ownership and follow-up" },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell, match: (path) => path.startsWith("/admin/notifications"), hint: "Complete assignment and automation notification history" },
 ];
 
 const relationshipNav: NavItem[] = [
@@ -212,9 +213,9 @@ export function OperationsShell({
             <button type="button" onClick={() => setCreateOpen((current) => !current)} className="flex h-9 items-center gap-1.5 rounded-[9px] bg-[#df7159] px-3.5 text-[11px] font-bold text-white shadow-[0_4px_12px_rgba(177,78,58,.12)] hover:bg-[#cf624d]"><Plus size={13}/><span className="hidden sm:inline">Create</span></button>
             {createOpen ? <div className="absolute right-0 top-11 w-64 overflow-hidden rounded-[12px] border border-[#ddd7d1] bg-white p-1.5 shadow-[0_22px_62px_rgba(54,43,34,.16)]">
               <p className="px-3 pb-1 pt-2 text-[9px] font-bold uppercase tracking-[.07em] text-[#8f8881]">Create or start</p>
-              <MenuLink href="/admin" icon={<PackageSearch size={14}/>} label="New enquiry / quote" detail="Work an incoming freight request" close={() => setCreateOpen(false)}/>
-              <MenuLink href="/admin/crm" icon={<Building2 size={14}/>} label="New customer" detail="Create a customer account" close={() => setCreateOpen(false)}/>
-              <MenuLink href="/admin/partners" icon={<Handshake size={14}/>} label="New partner" detail="Add an agent, carrier or vendor" close={() => setCreateOpen(false)}/>
+              <MenuLink href="/admin" icon={<PackageSearch size={14}/>} label="Enquiry desk" detail="Work an incoming freight request" close={() => setCreateOpen(false)}/>
+              <MenuLink href="/admin/crm/new" icon={<Building2 size={14}/>} label="New customer" detail="Create a customer account" close={() => setCreateOpen(false)}/>
+              <MenuLink href="/admin/partners/new" icon={<Handshake size={14}/>} label="New partner" detail="Add an agent, carrier or vendor" close={() => setCreateOpen(false)}/>
               <MenuLink href="/admin/market-estimate" icon={<Calculator size={14}/>} label="Market estimate" detail="Build a rate estimate" close={() => setCreateOpen(false)}/>
               {canManageFinance ? <MenuLink href="/admin/finance/new" icon={<ReceiptText size={14}/>} label="New receivable" detail="Create a customer invoice" close={() => setCreateOpen(false)}/> : null}
             </div> : null}
