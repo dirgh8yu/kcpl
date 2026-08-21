@@ -72,6 +72,7 @@ function taskFromDoc(id: string, data: Record<string, unknown>): JobTask {
     due_at: nullable(data.due_at),
     assigned_to_name: nullable(data.assigned_to_name),
     assigned_to_email: nullable(data.assigned_to_email),
+    assigned_to_phone: nullable(data.assigned_to_phone),
     completed: booleanValue(data.completed),
     completed_at: nullable(data.completed_at),
     created_at: text(data.created_at),
@@ -202,6 +203,7 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
     handling_branches: handling,
     assigned_to_name: nullable(shipmentData.job_assigned_to_name),
     assigned_to_email: nullable(shipmentData.job_assigned_to_email),
+    assigned_to_phone: nullable(shipmentData.job_assigned_to_phone),
     priority: priorityValue(shipmentData.job_priority),
     internal_reference: nullable(shipmentData.internal_job_reference),
     internal_notes: nullable(shipmentData.internal_job_notes),
@@ -225,6 +227,7 @@ export async function updateDigitalJobFile(
     handlingBranches?: KcplBranch[];
     assignedToName: string;
     assignedToEmail: string;
+    assignedToPhone: string;
     priority: JobPriority;
     internalReference: string;
     internalNotes: string;
@@ -240,6 +243,7 @@ export async function updateDigitalJobFile(
   const update: Record<string, unknown> = {
     job_assigned_to_name: values.assignedToName.trim() || null,
     job_assigned_to_email: values.assignedToEmail.trim() || null,
+    job_assigned_to_phone: values.assignedToPhone.trim() || null,
     job_priority: values.priority,
     internal_job_reference: values.internalReference.trim() || null,
     internal_job_notes: values.internalNotes.trim() || null,
@@ -264,7 +268,7 @@ export async function updateDigitalJobFile(
 }
 
 export async function addJobTask(reference: string, input: {
-  title: string; detail: string; branch: KcplBranch; dueAt: string; assignedToName: string; assignedToEmail: string;
+  title: string; detail: string; branch: KcplBranch; dueAt: string; assignedToName: string; assignedToEmail: string; assignedToPhone: string;
 }, actor: Actor, context: KcplStaffContext) {
   const loaded = await getDigitalJobFile(reference, context);
   if (loaded.kind !== "ready") return loaded;
@@ -274,7 +278,7 @@ export async function addJobTask(reference: string, input: {
   const now = new Date().toISOString();
   const task = {
     title: input.title.trim(), detail: input.detail.trim() || null, branch: input.branch, due_at: input.dueAt || null,
-    assigned_to_name: input.assignedToName.trim() || null, assigned_to_email: input.assignedToEmail.trim() || null,
+    assigned_to_name: input.assignedToName.trim() || null, assigned_to_email: input.assignedToEmail.trim() || null, assigned_to_phone: input.assignedToPhone.trim() || null,
     completed: false, completed_at: null, created_at: now, created_by: actor.email,
   };
   await ref.collection("job_tasks").doc(id).create(task);
