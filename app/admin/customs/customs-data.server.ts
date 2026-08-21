@@ -1,9 +1,11 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shipment-document-types";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
-import { kcplBranches, type KcplBranch } from "../crm/crm-data";
+import { branchAccessSet, canAccessBranchSet, strictBranchValue } from "../branch-access-policy";
+import type { KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { buildDocumentIntelligence, type WorkflowDocumentDirection } from "../workflow-defaults";
+import { customsDeskRisk, customsDeskState } from "./customs-policy";
 
 export type CustomsDeskStep = {
   id: string;
@@ -30,7 +32,9 @@ export type CustomsDeskRow = {
   customs_required: number;
   customs_completed: number;
   customs_open: number;
+  customs_other_branch_open: number;
   open_steps: CustomsDeskStep[];
+  customs_integrity_warnings: string[];
   missing_documents: { type: ShipmentDocumentType; label: string; reason: string }[];
   document_required: number;
   document_present: number;
@@ -40,6 +44,20 @@ export type CustomsDeskRow = {
   risk: "critical" | "warning" | "normal";
 };
 
+type RawCustomsStep = {
+  id: string;
+  title: string;
+  detail: string | null;
+  branch: KcplBranch | null;
+  required: boolean;
+  completed: boolean;
+};
+
+type ShipmentChildren = {
+  documents: Set<ShipmentDocumentType>;
+  requirements: Map<ShipmentDocumentType, { required: boolean; reason: string }>;
+};
+
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
 }
@@ -47,15 +65,6 @@ function text(value: unknown, fallback = "") {
 function nullable(value: unknown) {
   const valueText = text(value).trim();
   return valueText || null;
-}
-
-function branchValue(value: unknown): KcplBranch | null {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null;
-}
-
-function branchList(value: unknown) {
-  if (!Array.isArray(value)) return [] as KcplBranch[];
-  return [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))];
 }
 
 function statusValue(value: unknown): ShipmentStatus {
@@ -75,7 +84,10 @@ function operationalDate(date = new Date()) {
 function dateOnlyMs(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return Number.NaN;
-  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return date.getUTCFullYear() === Number(match[1]) && date.getUTCMonth() === Number(match[2]) - 1 && date.getUTCDate() === Number(match[3])
+    ? date.getTime()
+    : Number.NaN;
 }
 
 function daysUntil(value: string | null, today: string) {
@@ -85,126 +97,188 @@ function daysUntil(value: string | null, today: string) {
   return Number.isFinite(target) && Number.isFinite(current) ? Math.round((target - current) / 86_400_000) : null;
 }
 
+async function getAllInChunks(refs: FirebaseFirestore.DocumentReference[], size = 200) {
+  const db = firebaseAdminDb();
+  const snapshots: FirebaseFirestore.DocumentSnapshot[] = [];
+  for (let index = 0; index < refs.length; index += size) {
+    snapshots.push(...await db.getAll(...refs.slice(index, index + size)));
+  }
+  return snapshots;
+}
+
+async function loadDocumentsAndOverrides(shipmentRefs: FirebaseFirestore.DocumentReference[]) {
+  const result = new Map<string, ShipmentChildren>();
+  const chunkSize = 30;
+  for (let index = 0; index < shipmentRefs.length; index += chunkSize) {
+    const chunk = shipmentRefs.slice(index, index + chunkSize);
+    const rows = await Promise.all(chunk.map(async (ref) => {
+      const [documentsSnapshot, requirementsSnapshot] = await Promise.all([
+        ref.collection("documents").get(),
+        ref.collection("document_requirements").get(),
+      ]);
+      const documents = new Set<ShipmentDocumentType>();
+      for (const doc of documentsSnapshot.docs) {
+        const type = doc.get("document_type") as ShipmentDocumentType;
+        if (shipmentDocumentTypeLabels[type]) documents.add(type);
+      }
+      const requirements = new Map<ShipmentDocumentType, { required: boolean; reason: string }>();
+      for (const doc of requirementsSnapshot.docs) {
+        const type = (doc.get("document_type") || doc.id) as ShipmentDocumentType;
+        if (!shipmentDocumentTypeLabels[type]) continue;
+        const source = text(doc.get("source"));
+        if (source === "workflow_default" || source === "smart_rule") continue;
+        requirements.set(type, {
+          required: doc.get("required") === true,
+          reason: text(doc.get("reason"), "Shipment-specific requirement"),
+        });
+      }
+      return { id: ref.id, documents, requirements };
+    }));
+    for (const row of rows) result.set(row.id, { documents: row.documents, requirements: row.requirements });
+  }
+  return result;
+}
+
 export async function listCustomsDeskRows(context: KcplStaffContext): Promise<CustomsDeskRow[] | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
-  const [shipmentsSnapshot, quotesSnapshot, customersSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot] = await Promise.all([
-    db.collection("shipments").limit(2500).get(),
-    db.collection("quotes").limit(3000).get(),
-    db.collection("customers").limit(3000).get(),
-    db.collectionGroup("customs_steps").limit(10000).get(),
-    db.collectionGroup("documents").limit(15000).get(),
-    db.collectionGroup("document_requirements").limit(5000).get(),
+
+  const [customsSnapshot, inCustomsSnapshot] = await Promise.all([
+    db.collectionGroup("customs_steps").get(),
+    db.collection("shipments").where("status", "==", "customs_clearance").get(),
   ]);
 
-  const quotes = new Map(quotesSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
-  const customers = new Map(customersSnapshot.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
-  const customs = new Map<string, CustomsDeskStep[]>();
+  const customs = new Map<string, RawCustomsStep[]>();
+  const candidateIds = new Set<string>(inCustomsSnapshot.docs.map((doc) => doc.id));
   for (const doc of customsSnapshot.docs) {
     if (doc.get("required") === false) continue;
     const reference = shipmentIdFromChild(doc.ref);
     if (!reference) continue;
-    const branch = branchValue(doc.get("branch"));
-    if (!branch) continue;
+    candidateIds.add(reference);
     const steps = customs.get(reference) ?? [];
     steps.push({
       id: doc.id,
       title: text(doc.get("title"), "Customs step"),
       detail: nullable(doc.get("detail")),
-      branch,
+      branch: strictBranchValue(doc.get("branch")),
+      required: true,
       completed: doc.get("completed") === true,
     });
     customs.set(reference, steps);
   }
 
-  const documents = new Map<string, Set<ShipmentDocumentType>>();
-  for (const doc of documentsSnapshot.docs) {
-    const reference = shipmentIdFromChild(doc.ref);
-    const type = doc.get("document_type") as ShipmentDocumentType;
-    if (!reference || !shipmentDocumentTypeLabels[type]) continue;
-    const set = documents.get(reference) ?? new Set<ShipmentDocumentType>();
-    set.add(type);
-    documents.set(reference, set);
-  }
+  if (!candidateIds.size) return [];
+  const knownCustomsShipments = new Map(inCustomsSnapshot.docs.map((doc) => [doc.id, doc as FirebaseFirestore.DocumentSnapshot]));
+  const missingRefs = [...candidateIds]
+    .filter((id) => !knownCustomsShipments.has(id))
+    .map((id) => db.collection("shipments").doc(id));
+  for (const snapshot of await getAllInChunks(missingRefs)) if (snapshot.exists) knownCustomsShipments.set(snapshot.id, snapshot);
 
-  const overrides = new Map<string, Map<ShipmentDocumentType, { required: boolean; reason: string }>>();
-  for (const doc of requirementsSnapshot.docs) {
-    const reference = shipmentIdFromChild(doc.ref);
-    const type = (doc.get("document_type") || doc.id) as ShipmentDocumentType;
-    if (!reference || !shipmentDocumentTypeLabels[type]) continue;
-    const source = text(doc.get("source"));
-    if (source === "workflow_default" || source === "smart_rule") continue;
-    const map = overrides.get(reference) ?? new Map<ShipmentDocumentType, { required: boolean; reason: string }>();
-    map.set(type, { required: doc.get("required") === true, reason: text(doc.get("reason"), "Shipment-specific requirement") });
-    overrides.set(reference, map);
-  }
+  const accessibleShipments = [...knownCustomsShipments.values()].filter((shipment) => {
+    if (!shipment.exists) return false;
+    const status = statusValue(shipment.get("status"));
+    if (status === "delivered") return false;
+    return canAccessBranchSet(context, shipment.get("primary_branch"), shipment.get("handling_branches"));
+  });
+  if (!accessibleShipments.length) return [];
+
+  const quoteIds = [...new Set(accessibleShipments.map((shipment) => nullable(shipment.get("quote_reference"))).filter((value): value is string => Boolean(value)))];
+  const customerIds = [...new Set(accessibleShipments.map((shipment) => nullable(shipment.get("customer_id"))).filter((value): value is string => Boolean(value)))];
+  const [quoteSnapshots, customerSnapshots, childData] = await Promise.all([
+    getAllInChunks(quoteIds.map((id) => db.collection("quotes").doc(id))),
+    getAllInChunks(customerIds.map((id) => db.collection("customers").doc(id))),
+    loadDocumentsAndOverrides(accessibleShipments.map((shipment) => shipment.ref)),
+  ]);
+  const quotes = new Map(quoteSnapshots.filter((doc) => doc.exists).map((doc) => [doc.id, doc]));
+  const customers = new Map(customerSnapshots.filter((doc) => doc.exists).map((doc) => [doc.id, doc]));
 
   const today = operationalDate();
   const rows: CustomsDeskRow[] = [];
-  for (const shipment of shipmentsSnapshot.docs) {
-    const data = shipment.data() as Record<string, unknown>;
-    const status = statusValue(data.status);
-    if (status === "delivered") continue;
-    const customerId = nullable(data.customer_id);
-    const customer = customerId ? customers.get(customerId) : undefined;
-    const primary = branchValue(data.primary_branch) ?? branchValue(customer?.primary_branch);
-    const handling = branchList(data.handling_branches);
-    const accessBranches = [...new Set([...(primary ? [primary] : []), ...handling])];
-    if (!context.can_access_all_branches && !accessBranches.some((branch) => staffCanAccessBranch(context, branch))) continue;
-
+  for (const shipment of accessibleShipments) {
+    const status = statusValue(shipment.get("status"));
     const reference = shipment.id;
-    const steps = customs.get(reference) ?? [];
-    if (!steps.length && status !== "customs_clearance") continue;
-    const openSteps = steps.filter((step) => !step.completed);
-    const quoteReference = text(data.quote_reference);
+    const allSteps = customs.get(reference) ?? [];
+    if (!allSteps.length && status !== "customs_clearance") continue;
+
+    const invalidRequiredSteps = allSteps.filter((step) => step.required && !step.branch);
+    const openAll = allSteps.filter((step) => step.required && !step.completed);
+    const visibleOpen = openAll.filter((step): step is RawCustomsStep & { branch: KcplBranch } => Boolean(
+      step.branch && (context.can_access_all_branches || staffCanAccessBranch(context, step.branch)),
+    ));
+    const hiddenOpen = openAll.filter((step) => step.branch && !visibleOpen.some((visible) => visible.id === step.id)).length;
+    const openSteps: CustomsDeskStep[] = visibleOpen.map((step) => ({
+      id: step.id,
+      title: step.title,
+      detail: step.detail,
+      branch: step.branch,
+      completed: false,
+    }));
+    const integrityWarnings: string[] = [];
+    if (invalidRequiredSteps.length) integrityWarnings.push(`${invalidRequiredSteps.length} required customs step${invalidRequiredSteps.length === 1 ? " has" : "s have"} an invalid or missing branch assignment.`);
+
+    const quoteReference = text(shipment.get("quote_reference"));
     const quote = quotes.get(quoteReference);
-    const mode = text(quote?.mode);
-    const origin = text(quote?.origin, "Origin");
-    const destination = text(quote?.destination, "Destination");
+    const customerId = nullable(shipment.get("customer_id"));
+    const customer = customerId ? customers.get(customerId) : undefined;
+    const primary = strictBranchValue(shipment.get("primary_branch"));
+    const accessBranches = branchAccessSet(shipment.get("primary_branch"), shipment.get("handling_branches"));
+    if (!primary && !accessBranches.length) integrityWarnings.push("Shipment branch ownership is missing or invalid. Management should repair the Job File branch assignment.");
+
+    const mode = text(quote?.get("mode"));
+    const origin = text(quote?.get("origin"), "Origin");
+    const destination = text(quote?.get("destination"), "Destination");
     const intelligence = buildDocumentIntelligence({
       mode,
       origin,
       destination,
-      cargoType: nullable(quote?.cargo_type),
-      requirements: nullable(quote?.requirements),
+      cargoType: nullable(quote?.get("cargo_type")),
+      requirements: nullable(quote?.get("requirements")),
       primaryBranch: primary,
     });
-    const presentDocs = documents.get(reference) ?? new Set<ShipmentDocumentType>();
+    const child = childData.get(reference) ?? { documents: new Set<ShipmentDocumentType>(), requirements: new Map<ShipmentDocumentType, { required: boolean; reason: string }>() };
     const requirements = new Map(intelligence.requirements.map((item) => [item.documentType, { required: item.required, reason: item.reason }]));
-    for (const [type, override] of overrides.get(reference) ?? []) requirements.set(type, override);
+    for (const [type, override] of child.requirements) requirements.set(type, override);
     const requiredEntries = [...requirements.entries()].filter(([, rule]) => rule.required);
-    const missing = requiredEntries.filter(([type]) => !presentDocs.has(type));
-    const eta = nullable(data.eta);
+    const missing = requiredEntries.filter(([type]) => !child.documents.has(type));
+    const eta = nullable(shipment.get("eta"));
     const etaDistance = daysUntil(eta, today);
+    if (eta && etaDistance === null) integrityWarnings.push("ETA is invalid and cannot be used for customs urgency calculations.");
 
-    let state: CustomsDeskRow["state"] = "clear";
-    if (openSteps.length && missing.length) state = "blocked";
-    else if (openSteps.length) state = "in_progress";
-    else if (steps.length && !missing.length) state = "ready";
-
-    let risk: CustomsDeskRow["risk"] = "normal";
-    if (status === "out_for_delivery" && openSteps.length) risk = "critical";
-    else if (etaDistance !== null && etaDistance <= 0 && (openSteps.length || missing.length)) risk = "critical";
-    else if (status === "customs_clearance" || (etaDistance !== null && etaDistance <= 2 && (openSteps.length || missing.length))) risk = "warning";
+    const state = customsDeskState({
+      requiredSteps: allSteps.filter((step) => step.required).length,
+      openSteps: openAll.length,
+      missingDocuments: missing.length,
+      integrityIssues: integrityWarnings.length,
+      shipmentInCustoms: status === "customs_clearance",
+    });
+    const risk = customsDeskRisk({
+      status,
+      openSteps: openAll.length,
+      missingDocuments: missing.length,
+      integrityIssues: integrityWarnings.length,
+      etaDays: etaDistance,
+    });
 
     rows.push({
       reference,
       quote_reference: quoteReference,
-      customer_name: text(customer?.display_name, text(quote?.company_name, text(quote?.contact_name, "Customer"))),
+      customer_name: text(customer?.get("display_name"), text(quote?.get("company_name"), text(quote?.get("contact_name"), "Customer"))),
       origin,
       destination,
       mode: mode || "Not set",
       status,
       eta,
-      current_location: nullable(data.current_location),
-      branch: primary ?? handling[0] ?? null,
+      current_location: nullable(shipment.get("current_location")),
+      branch: primary ?? accessBranches[0] ?? null,
       handling_branches: accessBranches,
-      assigned_to_name: nullable(data.job_assigned_to_name),
-      assigned_to_email: nullable(data.job_assigned_to_email),
-      customs_required: steps.length,
-      customs_completed: steps.length - openSteps.length,
-      customs_open: openSteps.length,
+      assigned_to_name: nullable(shipment.get("job_assigned_to_name")),
+      assigned_to_email: nullable(shipment.get("job_assigned_to_email")),
+      customs_required: allSteps.filter((step) => step.required).length,
+      customs_completed: allSteps.filter((step) => step.required && step.completed).length,
+      customs_open: openAll.length,
+      customs_other_branch_open: hiddenOpen,
       open_steps: openSteps,
+      customs_integrity_warnings: integrityWarnings,
       missing_documents: missing.map(([type, rule]) => ({ type, label: shipmentDocumentTypeLabels[type], reason: rule.reason })),
       document_required: requiredEntries.length,
       document_present: requiredEntries.length - missing.length,

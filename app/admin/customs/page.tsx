@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
-import { evaluateFreightAutomation } from "../alerts/freight-automation.server";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { listCustomsDeskRows } from "./customs-data.server";
@@ -14,11 +13,6 @@ export default async function CustomsPage() {
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The Customs Desk is available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
-  try {
-    await evaluateFreightAutomation();
-  } catch (error) {
-    console.error("KCPL freight automation refresh failed while loading Customs Desk", error);
-  }
   const rows = await listCustomsDeskRows(staff);
   if (!rows) return <Gate title="Customs Desk unavailable" detail="Firestore is not available for customs operations in this deployment."/>;
 
