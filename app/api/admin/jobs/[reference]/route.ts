@@ -2,6 +2,7 @@ import { getAdminAccess } from "../../../../admin/admin-auth";
 import { getStaffContext, staffCanAccessBranch } from "../../../../admin/staff-directory.server";
 import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
 import { firebaseAdminDb } from "../../../../firebase-admin.server";
+import { recomputeCustomerFinance } from "../../../../admin/finance/finance.server";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "../../../../admin/crm/crm-data";
 import {
   addCustomsStep,
@@ -85,6 +86,12 @@ async function childBranchGuard(reference: string, collection: "job_tasks" | "cu
 
 async function touchShipment(reference: string) {
   await firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).update({ updated_at: new Date().toISOString() });
+}
+
+async function refreshShipmentCustomerFinance(reference: string) {
+  const shipment = await firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).get();
+  const customerId = typeof shipment.get("customer_id") === "string" ? shipment.get("customer_id").trim().toUpperCase() : "";
+  if (customerId) await recomputeCustomerFinance(customerId);
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ reference: string }> }) {
@@ -251,6 +258,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     }, actor, auth.staff);
     if (result.kind !== "created") return resultError(result.kind);
     await touchShipment(reference);
+    await refreshShipmentCustomerFinance(reference);
     return json({ ok: true, cost: result.cost }, 201);
   }
 

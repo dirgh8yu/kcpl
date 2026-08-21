@@ -18,6 +18,9 @@ import {
 import type { StaffCapabilities } from "../../../../../admin/staff-permissions";
 import { archiveCrmCustomer, updateCrmCustomer } from "../../../../../admin/crm/crm-customer-management.server";
 import { getCrmCustomer } from "../../../../../admin/crm/crm-data.server";
+import { getCrmCustomerFinanceSnapshot } from "../../../../../admin/crm/crm-customer-finance.server";
+import type { CrmCustomerFinanceSnapshot } from "../../../../../admin/crm/crm-customer-finance";
+import { recomputeCustomerFinance } from "../../../../../admin/finance/finance.server";
 import { checkCrmCustomerAccess, staffCanUseCrmBranch } from "../../../../../admin/crm/crm-access.server";
 import { crmAccountStatusChangeError, hasCustomerRelationship } from "../../../../../admin/crm/crm-policy";
 import { authorizeCrm, cleanCrmText, crmJson, protectCrmWrite, requireCrmCapability, validEmail } from "../../crm-api";
@@ -44,6 +47,17 @@ function redactCustomer(customer: CrmCustomerDetail, permissions: StaffCapabilit
           markup_percent: null,
           preferred_carriers: [],
         },
+  };
+}
+
+function applyFinanceSnapshot(customer: CrmCustomerDetail, snapshot: CrmCustomerFinanceSnapshot | null) {
+  if (!snapshot) return customer;
+  return {
+    ...customer,
+    revenue_total: snapshot.revenue_total,
+    cost_total: snapshot.cost_total,
+    profit_total: snapshot.profit_total,
+    commercial: { ...customer.commercial, outstanding_balance: snapshot.outstanding_total },
   };
 }
 
@@ -74,7 +88,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const customer = await getCrmCustomer(id);
     if (customer === undefined) return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
     if (!customer || customer.archived) return crmJson({ ok: false, error: "Customer record not found." }, 404);
-    return crmJson({ ok: true, customer: redactCustomer(customer, auth.permissions), permissions: auth.permissions });
+    const financeSnapshot = auth.permissions.canViewCommercial
+      ? await getCrmCustomerFinanceSnapshot(id, auth.staff) ?? null
+      : null;
+    const reconciled = applyFinanceSnapshot(customer, financeSnapshot);
+    return crmJson({ ok: true, customer: redactCustomer(reconciled, auth.permissions), financeSnapshot, permissions: auth.permissions });
   } catch (error) {
     console.error("Failed to load KCPL CRM customer", id, error);
     return crmJson({ ok: false, error: "The customer record could not be loaded." }, 500);
@@ -123,6 +141,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const currentStatus = crmAccountStatuses.includes(access.snapshot.get("account_status") as CrmAccountStatus) ? access.snapshot.get("account_status") as CrmAccountStatus : "prospect";
   const statusError = crmAccountStatusChangeError(currentStatus, accountStatus as CrmAccountStatus, auth.permissions);
   if (statusError) return crmJson({ ok: false, error: statusError }, 403);
+  const currentPreferredCurrency = crmCurrencies.includes(access.snapshot.get("preferred_currency") as CrmCurrency)
+    ? access.snapshot.get("preferred_currency") as CrmCurrency
+    : "NPR";
 
   const primaryEmail = cleanCrmText(body.primaryEmail, 254).toLowerCase();
   const billingEmail = cleanCrmText(body.billingEmail, 254).toLowerCase();
@@ -194,8 +215,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
+    if (includesCommercial && preferredCurrency !== currentPreferredCurrency) await recomputeCustomerFinance(id);
     const customer = await getCrmCustomer(id);
-    return crmJson({ ok: true, customer: customer ? redactCustomer(customer, auth.permissions) : null });
+    const financeSnapshot = auth.permissions.canViewCommercial
+      ? await getCrmCustomerFinanceSnapshot(id, auth.staff) ?? null
+      : null;
+    const reconciled = customer ? applyFinanceSnapshot(customer, financeSnapshot) : null;
+    return crmJson({ ok: true, customer: reconciled ? redactCustomer(reconciled, auth.permissions) : null, financeSnapshot });
   } catch (error) {
     console.error("Failed to update KCPL CRM customer", id, error);
     return crmJson({ ok: false, error: "The customer record could not be updated." }, 500);
