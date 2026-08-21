@@ -57,7 +57,7 @@ export function PayableWorkspace({ bill, roleLabel }: { bill: PayableBill; roleL
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.toLowerCase().includes("failed") || notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
-      {openingBalance ? <OpsNotice tone="info"><strong>Migration opening payable.</strong> This is the supplier balance KCPL owed as at {dateLabel(asOfDate)}. It affects outstanding payables and aging, but it is not treated as a historical supplier bill or Job File cost.{bill.migration_batch_id ? <> Migration batch <OpsMono>{bill.migration_batch_id}</OpsMono>.</> : null}</OpsNotice> : null}
+      {openingBalance ? <OpsNotice tone="neutral"><strong>Migration opening payable.</strong> This is the supplier balance KCPL owed as at {dateLabel(asOfDate)}. It affects outstanding payables and aging, but it is not treated as a historical supplier bill or Job File cost.{bill.migration_batch_id ? <> Migration batch <OpsMono>{bill.migration_batch_id}</OpsMono>.</> : null}</OpsNotice> : null}
       <div className="ops-grid-main">
         <div className="ops-stack">
           <OpsSurface eyebrow={openingBalance ? "Supplier opening balance" : "Supplier bill"} title={bill.supplier_name} description={openingBalance ? `Ledger opening as at ${dateLabel(asOfDate)}.` : bill.supplier_bill_reference ? `Vendor reference ${bill.supplier_bill_reference}` : "No vendor bill reference supplied."}>
