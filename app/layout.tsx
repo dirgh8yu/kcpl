@@ -10,6 +10,7 @@ import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
 import "./globals.css";
 import "./admin/operations-theme.css";
 import "./admin/operations-polish.css";
+import "./admin/operations-hotfix.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
