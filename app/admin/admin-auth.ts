@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { adminSecurityConfigurationValid } from "./admin-security-config";
 import { isActiveStaffProfile, staffProfileByUid } from "./staff-directory.server";
 
 export const ADMIN_SESSION_COOKIE = "kcpl_admin_session";
@@ -26,7 +27,7 @@ function allowedAdminEmails() {
 }
 
 export function firebaseAdminConfigured() {
-  return firebaseRuntimeConfigured();
+  return firebaseRuntimeConfigured() && adminSecurityConfigurationValid();
 }
 
 export function isAllowedAdminEmail(email: string | undefined | null) {
