@@ -129,6 +129,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     handlingBranches,
     assignedToName: clean(body.assignedToName, 160),
     assignedToEmail,
+    assignedToPhone: clean(body.assignedToPhone, 80),
     priority: priority as JobPriority,
     internalReference: clean(body.internalReference, 160),
     internalNotes: clean(body.internalNotes, 8000),
@@ -184,6 +185,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       dueAt,
       assignedToName: clean(body.assignedToName, 160),
       assignedToEmail,
+      assignedToPhone: clean(body.assignedToPhone, 80),
     }, actor, auth.staff);
     if (result.kind !== "created") return resultError(result.kind);
     await touchShipment(reference);
