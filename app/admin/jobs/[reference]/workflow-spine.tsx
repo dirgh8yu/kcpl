@@ -90,14 +90,19 @@ export function WorkflowSpine({ initialWorkflow, canOverride }: { initialWorkflo
     >
       {notice ? <div className="mb-4"><OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("blocked") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-        {workflow.stages.map((stage, index) => <div key={stage.id} className={`rounded-[12px] border p-3 ${stageTone(stage.state)}`}>
-          <div className="flex items-center justify-between gap-2"><span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current/20">{stageIcon(stage.state)}</span><span className="text-[8px] font-bold tabular-nums opacity-55">{String(index + 1).padStart(2, "0")}</span></div>
-          <p className="mt-2 text-[9px] font-bold uppercase tracking-[.06em]">{stage.label}</p>
-          <p className="mt-1.5 text-[8px] leading-4 opacity-80">{stage.detail}</p>
-        </div>)}
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-[820px] items-start">
+          {workflow.stages.map((stage, index) => <div key={stage.id} className="relative min-w-0 flex-1 px-1">
+            {index < workflow.stages.length - 1 ? <span className={`absolute left-[calc(50%+13px)] right-[calc(-50%+13px)] top-[13px] h-[2px] ${stage.state === "complete" ? "bg-[#a9c7b2]" : "bg-[#ddd8d2]"}`} aria-hidden="true"/> : null}
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <span className={`inline-flex h-[27px] w-[27px] items-center justify-center rounded-full border bg-white ${stageTone(stage.state)}`}>{stageIcon(stage.state)}</span>
+              <span className="mt-2 text-[10px] font-bold text-[#49433e]">{stage.label}</span>
+              <span className="mt-1 max-w-[120px] text-[8px] leading-4 text-[#817a73]">{stage.detail}</span>
+            </div>
+          </div>)}
+        </div>
       </div>
-      <div className="mt-3"><OpsProgress value={stagePercent}/></div>
+      <div className="mt-4"><OpsProgress value={stagePercent}/></div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
         <div className="rounded-[13px] border border-[#e9e2dc] bg-[#faf8f5] p-4">

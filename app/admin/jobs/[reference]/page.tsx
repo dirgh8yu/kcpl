@@ -42,11 +42,11 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
       />
       {staff.permissions.canManageJobCosts ? (
         <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
-          <Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="rounded-[10px] border border-[#e5ddd6] bg-[#fffdfa] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#5b514a] shadow-lg">Job profitability</Link>
+          <Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm">Job profitability</Link>
           {staff.permissions.canManageFinance ? (
             <>
-              <Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="rounded-[10px] border border-[#d4dfd5] bg-[#f3f8f3] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#5e7462] shadow-lg">Create invoice</Link>
-              <Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="rounded-[10px] border border-[#eadcc4] bg-[#fff9ee] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#8a6836] shadow-lg">Add supplier bill</Link>
+              <Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Create invoice</Link>
+              <Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button border-[#ead5b1] bg-[#fff8ec] text-[#8d5d22] shadow-[0_8px_28px_rgba(54,43,34,.08)]" data-variant="secondary" data-size="sm">Add supplier bill</Link>
             </>
           ) : null}
         </div>
