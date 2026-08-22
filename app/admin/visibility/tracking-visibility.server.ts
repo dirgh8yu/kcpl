@@ -1,14 +1,22 @@
+import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import type { ShipmentEvent, ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
-import { shipmentStatuses, type ShipmentEvent, type ShipmentStatus } from "../../shipment-types";
+import {
+  canonicalShipmentStatus,
+  deriveExternalObservationExceptions,
+  evaluateExternalPromotion,
+  externalObservationIsLate,
+  externalObservationIsMachine,
+  externalObservationIsNewer,
+  type ExternalDerivedExceptionPlan,
+} from "./external-workflow-state";
 import {
   confidenceValue,
   etaDeltaHours,
   isTrackingStale,
-  milestoneShipmentStatus,
   normalizeTrackingMilestone,
-  shouldOpenEtaDelayException,
   summarizeVisibility,
   trackingMilestoneLabels,
   trackingSources,
@@ -20,6 +28,16 @@ import {
 } from "./tracking-visibility";
 
 type Actor = { name: string; email: string };
+
+type ReadyShipmentScope = {
+  kind: "ready";
+  id: string;
+  ref: FirebaseFirestore.DocumentReference;
+  snapshot: FirebaseFirestore.DocumentSnapshot;
+  data: Record<string, unknown>;
+  primary: KcplBranch;
+  branches: KcplBranch[];
+};
 
 export type RecordTrackingInput = {
   rawStatus: string;
@@ -38,19 +56,51 @@ export type RecordTrackingInput = {
 };
 
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
-function nullable(value: unknown) { const v = text(value).trim(); return v || null; }
+function nullable(value: unknown) { const output = text(value).trim(); return output || null; }
 function numberValue(value: unknown) { const parsed = typeof value === "number" ? value : Number(value); return Number.isFinite(parsed) ? parsed : null; }
 function branchValue(value: unknown): KcplBranch | null { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null; }
 function branchList(value: unknown): KcplBranch[] { return Array.isArray(value) ? [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))] : []; }
-function statusValue(value: unknown): ShipmentStatus { return shipmentStatuses.includes(value as ShipmentStatus) ? value as ShipmentStatus : "booking_confirmed"; }
+function statusValue(value: unknown): ShipmentStatus { return canonicalShipmentStatus(value) ?? "booking_confirmed"; }
 function sourceValue(value: unknown): TrackingSource | null { return trackingSources.includes(value as TrackingSource) ? value as TrackingSource : null; }
 function trackingMilestoneValue(value: unknown): TrackingMilestone | null {
   const candidate = text(value) as TrackingMilestone;
   return candidate && Object.prototype.hasOwnProperty.call(trackingMilestoneLabels, candidate) ? candidate : null;
 }
-function eventId() { return `track-${Date.now()}-${crypto.randomUUID().slice(0, 10)}`; }
-function numericEventId() { return Date.now() * 1000 + Math.floor(Math.random() * 1000); }
 function validIso(value: string | null | undefined) { if (!value) return null; const time = Date.parse(value); return Number.isFinite(time) ? new Date(time).toISOString() : null; }
+function observationFingerprint(reference: string, event: Pick<TrackingEvent, "source" | "provider" | "provider_event_id" | "milestone" | "raw_status" | "event_time" | "location">) {
+  const identity = event.provider_event_id
+    ? [reference, event.source, event.provider ?? "", event.provider_event_id]
+    : [reference, event.source, event.provider ?? "", event.milestone, event.raw_status ?? "", event.event_time, event.location ?? ""];
+  return createHash("sha256").update(identity.join("\n")).digest("hex");
+}
+function legacyEventNumericId(fingerprint: string) { return Number.parseInt(fingerprint.slice(0, 12), 16); }
+function legacyEventDocId(fingerprint: string) { return `external-${fingerprint}`; }
+function trackingActivityDocId(fingerprint: string) { return `tracking-${fingerprint}`; }
+function promotionActivityDocId(fingerprint: string) { return `external-promotion-${fingerprint}`; }
+function derivedExceptionDocId(fingerprint: string, kind: ExternalDerivedExceptionPlan["kind"]) { return `tracking-${kind}-${fingerprint}`; }
+function derivedExceptionActivityDocId(fingerprint: string, kind: ExternalDerivedExceptionPlan["kind"]) { return `tracking-exception-${kind}-${fingerprint}`; }
+
+function derivedExceptionPlans(value: unknown): ExternalDerivedExceptionPlan[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const data = item as Record<string, unknown>;
+    const kind = text(data.kind) as ExternalDerivedExceptionPlan["kind"];
+    const category = text(data.category) as ExternalDerivedExceptionPlan["category"];
+    const severity = text(data.severity) as ExternalDerivedExceptionPlan["severity"];
+    if (!["delivery_refused", "carrier_exception", "eta_delay"].includes(kind)) return [];
+    if (!["delay", "delivery_refusal", "carrier"].includes(category)) return [];
+    if (!["medium", "high"].includes(severity)) return [];
+    return [{
+      kind,
+      triggerKey: text(data.triggerKey),
+      category,
+      severity,
+      title: text(data.title, "Tracking exception"),
+      detail: text(data.detail, "Carrier tracking requires KCPL review."),
+    }];
+  });
+}
 
 async function shipmentScope(reference: string, context?: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
@@ -64,7 +114,7 @@ async function shipmentScope(reference: string, context?: KcplStaffContext) {
   const branches = [...new Set([...(primary ? [primary] : []), ...handling])];
   if (!branches.length) return { kind: "invalid_branch" as const };
   if (context && !context.can_access_all_branches && !branches.some((branch) => staffCanAccessBranch(context, branch))) return { kind: "forbidden" as const };
-  return { kind: "ready" as const, id, ref, snapshot, data, primary: primary ?? branches[0], branches };
+  return { kind: "ready" as const, id, ref, snapshot, data, primary: primary ?? branches[0], branches } satisfies ReadyShipmentScope;
 }
 
 function trackingEventFromData(id: string, shipmentReference: string, data: Record<string, unknown>): TrackingEvent {
@@ -132,6 +182,11 @@ function visibilityFromData(id: string, data: Record<string, unknown>, customerN
     last_received_at: nullable(data.tracking_last_received_at),
     last_source: sourceValue(data.tracking_last_source),
     last_provider: nullable(data.tracking_last_provider),
+    observed_external_milestone: trackingMilestoneValue(data.external_observed_milestone),
+    observed_external_at: nullable(data.external_observed_at),
+    observed_external_provider: nullable(data.external_observed_provider),
+    external_reconciliation_status: nullable(data.external_reconciliation_status),
+    external_promotion_blocker: nullable(data.external_promotion_blocker),
     stale_after: nullable(data.tracking_stale_after),
     stale: isTrackingStale(lastEventAt, status, mode, nowIso),
     eta_delta_hours: etaDeltaHours(originalEta, eta),
@@ -157,15 +212,7 @@ export async function listTrackingVisibility(context: KcplStaffContext) {
     const quote = quotes.get(text(data.quote_reference)) ?? {};
     const customerId = nullable(data.customer_id);
     const customer = customerId ? customers.get(customerId) : undefined;
-    const row = visibilityFromData(
-      doc.id,
-      data,
-      customer ? text(customer.display_name, "Linked customer") : text(quote.company_name, text(quote.contact_name, "Customer")),
-      text(quote.origin, text(data.origin)),
-      text(quote.destination, text(data.destination)),
-      text(quote.mode, text(data.mode)),
-      nowIso,
-    );
+    const row = visibilityFromData(doc.id, data, customer ? text(customer.display_name, "Linked customer") : text(quote.company_name, text(quote.contact_name, "Customer")), text(quote.origin, text(data.origin)), text(quote.destination, text(data.destination)), text(quote.mode, text(data.mode)), nowIso);
     return row ? [row] : [];
   }).sort((a, b) => Number(b.stale) - Number(a.stale) || (b.eta_delta_hours ?? 0) - (a.eta_delta_hours ?? 0) || b.updated_at.localeCompare(a.updated_at));
   return { kind: "ready" as const, rows, summary: summarizeVisibility(rows, nowIso), generated_at: nowIso };
@@ -179,28 +226,26 @@ export async function getShipmentTrackingVisibility(reference: string, context: 
   return { kind: "ready" as const, events };
 }
 
-async function openAutoException(
-  scope: Extract<Awaited<ReturnType<typeof shipmentScope>>, { kind: "ready" }>,
-  triggerKey: string,
-  category: "delay" | "delivery_refusal" | "carrier",
-  severity: "medium" | "high",
-  title: string,
-  detail: string,
-  now: string,
-) {
-  const existing = await scope.ref.collection("exceptions").where("tracking_trigger_key", "==", triggerKey).limit(1).get();
-  if (!existing.empty) return false;
-  const exceptionRef = scope.ref.collection("exceptions").doc();
-  const activityRef = scope.ref.collection("job_activity").doc();
-  const slaHours = severity === "high" ? 6 : 24;
-  const data = {
-    category,
-    severity,
+function blockerQueries(scope: ReadyShipmentScope) {
+  const exceptions = scope.ref.collection("exceptions");
+  return [
+    exceptions.where("status", "==", "open").where("severity", "==", "high").limit(1),
+    exceptions.where("status", "==", "monitoring").where("severity", "==", "high").limit(1),
+    exceptions.where("status", "==", "open").where("severity", "==", "critical").limit(1),
+    exceptions.where("status", "==", "monitoring").where("severity", "==", "critical").limit(1),
+  ];
+}
+
+function derivedExceptionData(plan: ExternalDerivedExceptionPlan, branch: KcplBranch, now: string) {
+  const slaHours = plan.severity === "high" ? 6 : 24;
+  return {
+    category: plan.category,
+    severity: plan.severity,
     status: "open",
-    title,
-    detail,
-    operational_impact: detail,
-    branch: scope.primary,
+    title: plan.title,
+    detail: plan.detail,
+    operational_impact: plan.detail,
+    branch,
     assigned_to_name: null,
     assigned_to_email: null,
     sla_due_at: new Date(Date.parse(now) + slaHours * 3_600_000).toISOString(),
@@ -214,24 +259,127 @@ async function openAutoException(
     resolved_by_name: null,
     resolved_by_email: null,
     resolution: null,
-    tracking_trigger_key: triggerKey,
+    tracking_trigger_key: plan.triggerKey,
     source: "tracking_visibility",
   };
-  const batch = firebaseAdminDb().batch();
-  batch.set(exceptionRef, data);
-  batch.set(activityRef, {
-    type: "tracking_exception_opened",
-    title,
-    detail,
-    branch: scope.primary,
-    actor_name: "KCPL Visibility Engine",
-    actor_email: "tracking@kcpl.internal",
-    created_at: now,
-    exception_id: exceptionRef.id,
-    tracking_trigger_key: triggerKey,
+}
+
+async function repairDerivedExceptions(
+  transaction: FirebaseFirestore.Transaction,
+  scope: ReadyShipmentScope,
+  fingerprint: string,
+  branch: KcplBranch,
+  plans: ExternalDerivedExceptionPlan[],
+  receivedAt: string,
+) {
+  const refs = plans.map((plan) => scope.ref.collection("exceptions").doc(derivedExceptionDocId(fingerprint, plan.kind)));
+  const snapshots = await Promise.all(refs.map((ref) => transaction.get(ref)));
+  let repaired = 0;
+  for (let index = 0; index < plans.length; index += 1) {
+    const plan = plans[index];
+    const exceptionRef = refs[index];
+    if (!snapshots[index].exists) {
+      transaction.create(exceptionRef, derivedExceptionData(plan, branch, receivedAt));
+      repaired += 1;
+    }
+    transaction.set(scope.ref.collection("job_activity").doc(derivedExceptionActivityDocId(fingerprint, plan.kind)), {
+      type: "tracking_exception_opened",
+      title: plan.title,
+      detail: plan.detail,
+      branch,
+      actor_name: "KCPL Visibility Engine",
+      actor_email: "tracking@kcpl.internal",
+      created_at: receivedAt,
+      exception_id: exceptionRef.id,
+      tracking_trigger_key: plan.triggerKey,
+      idempotency_fingerprint: fingerprint,
+    }, { merge: true });
+  }
+  return repaired;
+}
+
+function writeObservationAncillaryEffects(
+  transaction: FirebaseFirestore.Transaction,
+  scope: ReadyShipmentScope,
+  fingerprint: string,
+  event: TrackingEvent,
+  branch: KcplBranch,
+  canonicalBefore: ShipmentStatus | null,
+  canonicalAfter: ShipmentStatus | null,
+  promotionDecision: string,
+  promotionReason: string,
+  historical: boolean,
+) {
+  const legacyId = legacyEventNumericId(fingerprint);
+  const legacyEvent: ShipmentEvent = {
+    id: legacyId,
+    shipment_reference: scope.id,
+    title: event.title,
+    location: event.location,
+    details: [event.details, event.provider ? `Source: ${event.provider}` : null, historical ? "Historical carrier event received after a newer observation" : null].filter(Boolean).join(" · ") || null,
+    event_time: event.event_time,
+    created_at: event.received_at,
+    author_name: event.actor_name || event.provider || "KCPL Visibility Engine",
+  };
+  transaction.set(scope.ref.collection("events").doc(legacyEventDocId(fingerprint)), legacyEvent, { merge: true });
+  transaction.set(scope.ref.collection("job_activity").doc(trackingActivityDocId(fingerprint)), {
+    type: historical ? "historical_tracking_event_received" : "tracking_event_received",
+    title: historical ? `Historical tracking event archived: ${event.title}` : event.title,
+    detail: [event.location, event.provider ? `${event.source}: ${event.provider}` : event.source, event.eta ? `ETA ${event.eta}` : null, canonicalBefore ? `Canonical: ${canonicalBefore}` : "Canonical: invalid", `Decision: ${promotionDecision} (${promotionReason})`].filter(Boolean).join(" · "),
+    branch,
+    actor_name: event.actor_name || event.provider || "KCPL Visibility Engine",
+    actor_email: event.actor_email,
+    created_at: event.received_at,
+    tracking_event_id: fingerprint,
+    idempotency_fingerprint: fingerprint,
+  }, { merge: true });
+  if (canonicalBefore && canonicalAfter && canonicalAfter !== canonicalBefore) {
+    transaction.set(scope.ref.collection("job_activity").doc(promotionActivityDocId(fingerprint)), {
+      type: "external_workflow_promotion",
+      title: `External observation promoted workflow to ${canonicalAfter.replaceAll("_", " ")}`,
+      detail: `${event.provider ?? event.source} observed ${event.milestone.replaceAll("_", " ")}. ${promotionReason}.`,
+      branch,
+      actor_name: "KCPL External Reconciliation",
+      actor_email: "external-reconciliation@kcpl.internal",
+      created_at: event.received_at,
+      tracking_event_id: fingerprint,
+      source: event.source,
+      provider: event.provider,
+      previous_canonical_status: canonicalBefore,
+      new_canonical_status: canonicalAfter,
+      observed_milestone: event.milestone,
+      promotion_decision: promotionDecision,
+      promotion_reason: promotionReason,
+      idempotency_fingerprint: fingerprint,
+    }, { merge: true });
+  }
+}
+
+async function openAutoException(scope: ReadyShipmentScope, triggerKey: string, category: "delay" | "delivery_refusal" | "carrier", severity: "medium" | "high", title: string, detail: string, now: string) {
+  const fingerprint = createHash("sha256").update(`${scope.id}\n${triggerKey}`).digest("hex");
+  const exceptionRef = scope.ref.collection("exceptions").doc(`tracking-health-${fingerprint}`);
+  const activityRef = scope.ref.collection("job_activity").doc(`tracking-health-${fingerprint}`);
+  return firebaseAdminDb().runTransaction(async (transaction) => {
+    const [deterministic, legacy] = await Promise.all([
+      transaction.get(exceptionRef),
+      transaction.get(scope.ref.collection("exceptions").where("tracking_trigger_key", "==", triggerKey).limit(1)),
+    ]);
+    if (deterministic.exists || !legacy.empty) return false;
+    const plan: ExternalDerivedExceptionPlan = { kind: "carrier_exception", triggerKey, category, severity, title, detail };
+    transaction.create(exceptionRef, derivedExceptionData(plan, scope.primary, now));
+    transaction.set(activityRef, {
+      type: "tracking_exception_opened",
+      title,
+      detail,
+      branch: scope.primary,
+      actor_name: "KCPL Visibility Engine",
+      actor_email: "tracking@kcpl.internal",
+      created_at: now,
+      exception_id: exceptionRef.id,
+      tracking_trigger_key: triggerKey,
+    });
+    return true;
   });
-  await batch.commit();
-  return true;
 }
 
 export async function recordTrackingEvent(reference: string, input: RecordTrackingInput, actor: Actor, context?: KcplStaffContext) {
@@ -244,17 +392,12 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
   const longitude = input.longitude === null || input.longitude === undefined ? null : Number(input.longitude);
   if (latitude !== null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) return { kind: "invalid_coordinates" as const };
   if (longitude !== null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180)) return { kind: "invalid_coordinates" as const };
-  const currentStatus = statusValue(scope.data.status);
+
   const rawStatus = input.rawStatus.trim();
   const milestone = normalizeTrackingMilestone(rawStatus, input.milestone);
-  const nextStatus = milestoneShipmentStatus(milestone, currentStatus);
   const receivedAt = new Date().toISOString();
-  const id = eventId();
-  const currentEta = nullable(scope.data.eta);
-  const originalEta = nullable(scope.data.tracking_original_eta) ?? currentEta ?? eta;
-  const mode = text(scope.data.mode);
-  const event: TrackingEvent = {
-    id,
+  const eventBase: TrackingEvent = {
+    id: "",
     shipment_reference: scope.id,
     milestone,
     title: input.title?.trim() || trackingMilestoneLabels[milestone],
@@ -273,64 +416,120 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
     actor_name: actor.name || null,
     actor_email: actor.email || null,
   };
-  if (event.provider_event_id) {
-    const duplicate = await scope.ref.collection("tracking_events").where("provider_event_id", "==", event.provider_event_id).limit(1).get();
-    if (!duplicate.empty) return { kind: "duplicate" as const, event: trackingEventFromData(duplicate.docs[0].id, scope.id, duplicate.docs[0].data() as Record<string, unknown>) };
-  }
+  const fingerprint = observationFingerprint(scope.id, eventBase);
+  const event: TrackingEvent = { ...eventBase, id: fingerprint };
+  const eventRef = scope.ref.collection("tracking_events").doc(fingerprint);
+  const db = firebaseAdminDb();
 
-  const legacyId = numericEventId();
-  const legacyEvent: ShipmentEvent = {
-    id: legacyId,
-    shipment_reference: scope.id,
-    title: event.title,
-    location: event.location,
-    details: [event.details, event.provider ? `Source: ${event.provider}` : null].filter(Boolean).join(" · ") || null,
-    event_time: event.event_time,
-    created_at: receivedAt,
-    author_name: actor.name || event.provider || "KCPL Visibility Engine",
-  };
-  const update: Record<string, unknown> = {
-    status: nextStatus,
-    tracking_original_eta: originalEta ?? null,
-    tracking_last_event_at: event.event_time,
-    tracking_last_received_at: receivedAt,
-    tracking_last_milestone: milestone,
-    tracking_last_source: event.source,
-    tracking_last_provider: event.provider,
-    tracking_stale_after: trackingStaleAfter(event.event_time, nextStatus, mode),
-    updated_at: receivedAt,
-  };
-  if (event.location) update.current_location = event.location;
-  if (eta) update.eta = eta;
+  const result = await db.runTransaction(async (transaction) => {
+    const shipmentSnapshot = await transaction.get(scope.ref);
+    if (!shipmentSnapshot.exists) return { kind: "missing" as const };
+    const shipment = shipmentSnapshot.data() as Record<string, unknown>;
+    const canonicalPrimary = branchValue(shipment.primary_branch);
+    const machine = externalObservationIsMachine(event.source);
+    if (machine && !canonicalPrimary) return { kind: "invalid_branch" as const };
+    const activityBranch = canonicalPrimary ?? scope.primary;
 
-  const batch = firebaseAdminDb().batch();
-  batch.set(scope.ref.collection("tracking_events").doc(id), event);
-  batch.set(scope.ref.collection("events").doc(String(legacyId)), legacyEvent);
-  batch.set(scope.ref.collection("job_activity").doc(), {
-    type: "tracking_event_received",
-    title: event.title,
-    detail: [event.location, event.provider ? `${event.source}: ${event.provider}` : event.source, eta ? `ETA ${eta}` : null].filter(Boolean).join(" · "),
-    branch: scope.primary,
-    actor_name: actor.name || event.provider || "KCPL Visibility Engine",
-    actor_email: actor.email || null,
-    created_at: receivedAt,
-    tracking_event_id: id,
+    const duplicateSnapshot = await transaction.get(eventRef);
+    if (duplicateSnapshot.exists) {
+      const stored = duplicateSnapshot.data() as Record<string, unknown>;
+      const storedEvent = trackingEventFromData(fingerprint, scope.id, stored);
+      const plans = derivedExceptionPlans(stored.derived_exceptions);
+      const repaired = await repairDerivedExceptions(transaction, scope, fingerprint, activityBranch, plans, text(stored.received_at, receivedAt));
+      const canonicalBefore = canonicalShipmentStatus(stored.canonical_status_before);
+      const canonicalAfter = canonicalShipmentStatus(stored.canonical_status_after);
+      const promotionDecision = text(stored.promotion_decision, "no_change");
+      const promotionReason = text(stored.promotion_reason, "duplicate_observation");
+      writeObservationAncillaryEffects(transaction, scope, fingerprint, storedEvent, activityBranch, canonicalBefore, canonicalAfter, promotionDecision, promotionReason, stored.historical_event === true);
+      return { kind: "duplicate" as const, data: stored, repaired };
+    }
+
+    const canonicalBefore = canonicalShipmentStatus(shipment.status);
+    const blockerSnapshots = canonicalBefore && machine
+      ? await Promise.all(blockerQueries(scope).map((query) => transaction.get(query)))
+      : [];
+    const hasBlockingException = blockerSnapshots.some((snapshot) => !snapshot.empty);
+    const currentLastAt = nullable(shipment.tracking_last_event_at);
+    const currentExternalAt = nullable(shipment.external_observed_at);
+    const late = externalObservationIsLate(currentLastAt, currentExternalAt, event.event_time);
+    const currentEta = nullable(shipment.eta);
+    const originalEta = nullable(shipment.tracking_original_eta) ?? currentEta ?? eta;
+    const mode = text(shipment.mode);
+    const promotion = evaluateExternalPromotion({
+      canonicalStatus: canonicalBefore,
+      observedMilestone: milestone,
+      source: event.source,
+      direction: nullable(shipment.direction),
+      customsClearanceStatus: nullable(shipment.customs_clearance_status),
+      podStatus: nullable(shipment.delivery_pod_status),
+      pickupStatus: nullable(shipment.pickup_status),
+      deliveryWorkflowComplete: text(shipment.delivery_last_attempt_status) === "delivered" && text(shipment.delivery_pod_status) === "verified",
+      hasBlockingException,
+      isLateObservation: late,
+    });
+    const canonicalAfter = canonicalBefore && promotion.decision === "promote" && promotion.targetStatus ? promotion.targetStatus : canonicalBefore;
+    const latestTracking = externalObservationIsNewer(currentLastAt, event.event_time);
+    const latestExternal = machine && externalObservationIsNewer(currentExternalAt, event.event_time);
+    const plans = deriveExternalObservationExceptions({
+      fingerprint,
+      milestone,
+      rawStatus: event.raw_status,
+      details: event.details,
+      previousEta: currentEta,
+      nextEta: eta,
+      isLateObservation: late,
+    });
+    await repairDerivedExceptions(transaction, scope, fingerprint, activityBranch, plans, receivedAt);
+
+    const storedEvent = {
+      ...event,
+      idempotency_fingerprint: fingerprint,
+      historical_event: late,
+      canonical_primary_branch: activityBranch,
+      promotion_decision: promotion.decision,
+      promotion_reason: promotion.reason,
+      canonical_status_before: canonicalBefore,
+      canonical_status_after: canonicalAfter,
+      eta_previous: currentEta,
+      derived_exceptions: plans,
+    };
+    transaction.create(eventRef, storedEvent);
+    writeObservationAncillaryEffects(transaction, scope, fingerprint, event, activityBranch, canonicalBefore, canonicalAfter, promotion.decision, promotion.reason, late);
+
+    const update: Record<string, unknown> = { updated_at: receivedAt };
+    if (canonicalBefore && canonicalAfter && canonicalAfter !== canonicalBefore) update.status = canonicalAfter;
+    if (latestTracking) {
+      Object.assign(update, {
+        tracking_last_event_at: event.event_time,
+        tracking_last_received_at: receivedAt,
+        tracking_last_milestone: milestone,
+        tracking_last_source: event.source,
+        tracking_last_provider: event.provider,
+      });
+      if (!nullable(shipment.tracking_original_eta) && originalEta) update.tracking_original_eta = originalEta;
+      if (canonicalAfter) update.tracking_stale_after = trackingStaleAfter(event.event_time, canonicalAfter, mode);
+      if (event.location) update.current_location = event.location;
+      if (eta) update.eta = eta;
+    }
+    if (latestExternal) {
+      Object.assign(update, {
+        external_observed_milestone: milestone,
+        external_observed_at: event.event_time,
+        external_observed_received_at: receivedAt,
+        external_observed_provider: event.provider,
+        external_observed_source: event.source,
+        external_observation_confidence: event.confidence,
+        external_reconciliation_status: promotion.decision,
+        external_promotion_blocker: promotion.decision === "blocked" ? promotion.reason : null,
+      });
+    }
+    transaction.update(scope.ref, update);
+    return { kind: "created" as const, canonicalAfter, promotion, historical: late, openedExceptions: plans.map((plan) => plan.title) };
   });
-  batch.update(scope.ref, update);
-  await batch.commit();
 
-  const openedExceptions: string[] = [];
-  if (milestone === "delivery_refused") {
-    if (await openAutoException(scope, `delivery-refused:${id}`, "delivery_refusal", "high", "Delivery refused by consignee", event.details || event.raw_status || "Carrier tracking reported a refused delivery.", receivedAt)) openedExceptions.push("Delivery refused by consignee");
-  }
-  if (milestone === "exception") {
-    if (await openAutoException(scope, `carrier-exception:${id}`, "carrier", "high", "Carrier tracking exception", event.details || event.raw_status || "Carrier tracking reported an operational exception.", receivedAt)) openedExceptions.push("Carrier tracking exception");
-  }
-  if (eta && shouldOpenEtaDelayException(currentEta, eta, 24)) {
-    const delay = etaDeltaHours(currentEta, eta) ?? 0;
-    if (await openAutoException(scope, `eta-delay:${id}`, "delay", "medium", `ETA slipped by ${Math.round(delay)} hours`, `Tracking moved ETA from ${currentEta} to ${eta}.`, receivedAt)) openedExceptions.push("ETA delay");
-  }
-  return { kind: "created" as const, event, status: nextStatus, opened_exceptions: openedExceptions };
+  if (result.kind === "duplicate") return { kind: "duplicate" as const, event: trackingEventFromData(fingerprint, scope.id, result.data), repaired_side_effects: result.repaired };
+  if (result.kind !== "created") return result;
+  return { kind: "created" as const, event, status: result.canonicalAfter, promotion: result.promotion, opened_exceptions: result.openedExceptions, historical: result.historical };
 }
 
 export async function runTrackingHealthSweep(context?: KcplStaffContext) {

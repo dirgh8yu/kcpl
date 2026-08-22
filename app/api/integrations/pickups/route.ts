@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../../../admin/crm/crm-data";
-import { pickupAppointmentStatuses, pickupChannels, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
+import { pickupAppointmentStatuses, pickupChannels, pickupTransitionAllowed, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
 import { recordTrackingEvent } from "../../../admin/visibility/tracking-visibility.server";
 import { pickupMachineAuthorized } from "../../../machine-auth-policy";
 
@@ -33,6 +33,60 @@ async function loadReferenceData(shipment: Record<string, unknown>) {
   };
 }
 
+async function recordPickupObservation(input: {
+  reference: string;
+  action: string;
+  channel: PickupChannel;
+  location: string;
+  eventTime: string;
+  provider: string;
+  providerEventId: string;
+  requestedStart: string | null;
+  requestedEnd: string | null;
+  reason: string;
+  appointmentId: string;
+}) {
+  const source = input.channel === "edi" ? "edi_214" : input.channel === "carrier_api" ? "carrier_api" : "webhook";
+  const common = {
+    source,
+    location: input.location,
+    eta: "",
+    eventTime: input.eventTime,
+    provider: input.provider,
+    providerEventId: input.providerEventId,
+  } as const;
+  if (input.action === "request" || input.action === "confirm") {
+    return recordTrackingEvent(input.reference, {
+      ...common,
+      rawStatus: "Pickup scheduled",
+      milestone: "pickup_scheduled",
+      details: `${input.action === "confirm" ? "Confirmed" : "Requested"} pickup window ${input.requestedStart} to ${input.requestedEnd}.`,
+    }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
+  }
+  if (input.action === "picked_up") {
+    return recordTrackingEvent(input.reference, {
+      ...common,
+      rawStatus: "Picked up",
+      milestone: "picked_up",
+      details: input.reason || `Pickup appointment ${input.appointmentId} completed.`,
+    }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
+  }
+  if (input.action === "missed") {
+    return recordTrackingEvent(input.reference, {
+      ...common,
+      rawStatus: "Pickup missed - carrier exception",
+      milestone: "exception",
+      details: input.reason,
+    }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
+  }
+  return recordTrackingEvent(input.reference, {
+    ...common,
+    rawStatus: input.action === "assign_driver" ? "Pickup driver assigned" : "Pickup cancelled by provider",
+    milestone: "unknown",
+    details: input.reason || `Provider reported pickup action ${input.action.replaceAll("_", " ")}.`,
+  }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
+}
+
 export async function POST(request: Request) {
   const auth = pickupIntegrationAuthorized(request);
   if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
@@ -54,19 +108,20 @@ export async function POST(request: Request) {
   const shipmentSnapshot = await shipmentRef.get();
   if (!shipmentSnapshot.exists) return json({ ok: false, error: "Shipment not found." }, 404);
   const shipment = shipmentSnapshot.data() as Record<string, unknown>;
-  // Provider metadata and handling-branch order are not authorization authority.
-  // Pickup mutation requires the shipment's canonical primary branch to be valid.
   const branch = branchValue(shipment.primary_branch);
   if (!branch) return json({ ok: false, error: "Shipment does not have a canonical KCPL primary branch." }, 409);
+
   const id = appointmentId(reference);
+  const eventKey = eventDocId(provider, providerEventId);
   const appointmentRef = db.collection("pickup_appointments").doc(id);
-  const integrationEventRef = appointmentRef.collection("provider_events").doc(eventDocId(provider, providerEventId));
-  const [appointmentSnapshot, duplicateSnapshot, source] = await Promise.all([appointmentRef.get(), integrationEventRef.get(), loadReferenceData(shipment)]);
-  if (duplicateSnapshot.exists) return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id });
+  const integrationEventRef = appointmentRef.collection("provider_events").doc(eventKey);
+  const [appointmentSnapshot, duplicateSnapshot, source] = await Promise.all([
+    appointmentRef.get(),
+    integrationEventRef.get(),
+    loadReferenceData(shipment),
+  ]);
   const appointment = appointmentSnapshot.exists ? appointmentSnapshot.data() as Record<string, unknown> : {};
   const currentStatus = appointmentStatus(appointment.status);
-  if (currentStatus === "picked_up" && action !== "picked_up") return json({ ok: false, error: "Pickup is already complete." }, 409);
-  if (currentStatus === "cancelled" && action !== "cancel") return json({ ok: false, error: "Pickup appointment is cancelled." }, 409);
 
   const now = new Date().toISOString();
   const requestedStart = validIso(body.windowStart ?? body.window_start);
@@ -80,7 +135,17 @@ export async function POST(request: Request) {
   const driverPhone = clean(body.driverPhone ?? body.driver_phone, 100);
   const vehicleReference = clean(body.vehicleReference ?? body.vehicle_reference, 180);
   const reason = clean(body.reason ?? body.details, 2000);
-  const eventTime = validIso(body.eventTime ?? body.event_time) ?? now;
+  const eventTime = validIso(duplicateSnapshot.exists ? duplicateSnapshot.get("event_time") : body.eventTime ?? body.event_time) ?? now;
+
+  const observationInput = { reference, action, channel, location, eventTime, provider, providerEventId, requestedStart, requestedEnd, reason, appointmentId: id };
+  if (duplicateSnapshot.exists) {
+    const storedAction = clean(duplicateSnapshot.get("action"), 40);
+    if (storedAction && storedAction !== action) return json({ ok: false, error: "providerEventId was already used for a different pickup action." }, 409);
+    const trackingResult = await recordPickupObservation(observationInput);
+    if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment no longer has a canonical KCPL primary branch." }, 409);
+    return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
+  }
+
   const base = {
     shipment_reference: reference,
     transport_order_id: nullable(shipment.transport_order_id),
@@ -132,37 +197,89 @@ export async function POST(request: Request) {
     Object.assign(update, { status: nextStatus, notes: reason || nullable(appointment.notes) });
   }
 
+  if (!pickupTransitionAllowed(currentStatus, nextStatus)) {
+    await recordPickupObservation(observationInput);
+    return json({ ok: false, error: `Provider observation cannot move pickup from ${currentStatus} to ${nextStatus}; KCPL reconciliation is required.`, reconciliationRequired: true, observationStored: true }, 409);
+  }
+
   const eventTitle = action === "request" ? "Pickup requested by provider" : action === "confirm" ? "Pickup appointment confirmed by provider" : action === "assign_driver" ? "Pickup driver assigned by provider" : action === "picked_up" ? "Cargo picked up" : action === "missed" ? "Pickup missed" : "Pickup cancelled by provider";
-  const batch = db.batch();
-  batch.set(appointmentRef, update, { merge: true });
-  batch.create(integrationEventRef, { provider, provider_event_id: providerEventId, action, received_at: now, event_time: eventTime, payload_reference: reference });
-  batch.create(appointmentRef.collection("events").doc(), { type: `provider_${action}`, title: eventTitle, detail: reason || providerReference || null, actor_name: provider, actor_email: "pickup-integration@kcpl.internal", created_at: now, provider_event_id: providerEventId });
-  batch.create(shipmentRef.collection("job_activity").doc(), { type: `pickup_provider_${action}`, title: eventTitle, detail: reason || providerReference || null, branch, actor_name: provider, actor_email: "pickup-integration@kcpl.internal", created_at: now, pickup_appointment_id: id, provider_event_id: providerEventId });
-  batch.update(shipmentRef, {
-    pickup_appointment_id: id,
-    pickup_status: nextStatus,
-    pickup_window_start: action === "request" || action === "confirm" ? requestedStart : validIso(appointment.confirmed_window_start) ?? validIso(appointment.requested_window_start),
-    pickup_window_end: action === "request" || action === "confirm" ? requestedEnd : validIso(appointment.confirmed_window_end) ?? validIso(appointment.requested_window_end),
-    pickup_driver_name: driverName || nullable(appointment.driver_name),
-    pickup_vehicle_reference: vehicleReference || nullable(appointment.vehicle_reference),
-    pickup_completed_at: action === "picked_up" ? eventTime : nullable(shipment.pickup_completed_at),
-    updated_at: now,
+  const domainResult = await db.runTransaction(async (transaction) => {
+    const [currentShipment, currentAppointment, existingEvent] = await Promise.all([
+      transaction.get(shipmentRef),
+      transaction.get(appointmentRef),
+      transaction.get(integrationEventRef),
+    ]);
+    if (!currentShipment.exists) return { kind: "missing" as const };
+    const transactionBranch = branchValue(currentShipment.get("primary_branch"));
+    if (!transactionBranch) return { kind: "invalid_branch" as const };
+    if (existingEvent.exists) return { kind: "duplicate" as const };
+
+    const transactionStatus = currentAppointment.exists ? appointmentStatus(currentAppointment.get("status")) : "unscheduled";
+    if (transactionStatus !== currentStatus || currentAppointment.exists !== appointmentSnapshot.exists) return { kind: "state_conflict" as const, status: transactionStatus };
+    if (!pickupTransitionAllowed(transactionStatus, nextStatus)) return { kind: "invalid_transition" as const, status: transactionStatus };
+
+    transaction.set(appointmentRef, { ...update, branch: transactionBranch }, { merge: true });
+    transaction.create(integrationEventRef, {
+      provider,
+      provider_event_id: providerEventId,
+      action,
+      received_at: now,
+      event_time: eventTime,
+      payload_reference: reference,
+      observed_status: nextStatus,
+      canonical_status_before: transactionStatus,
+      canonical_status_after: nextStatus,
+      reconciliation_decision: "promote",
+      reconciliation_reason: "pickup_transition_policy_satisfied",
+      idempotency_fingerprint: eventKey,
+    });
+    transaction.set(appointmentRef.collection("events").doc(`provider-${eventKey}`), {
+      type: `provider_${action}`,
+      title: eventTitle,
+      detail: reason || providerReference || null,
+      actor_name: provider,
+      actor_email: "pickup-integration@kcpl.internal",
+      created_at: now,
+      provider_event_id: providerEventId,
+      idempotency_fingerprint: eventKey,
+    });
+    transaction.set(shipmentRef.collection("job_activity").doc(`pickup-provider-${eventKey}`), {
+      type: `pickup_provider_${action}`,
+      title: eventTitle,
+      detail: reason || providerReference || null,
+      branch: transactionBranch,
+      actor_name: provider,
+      actor_email: "pickup-integration@kcpl.internal",
+      created_at: now,
+      pickup_appointment_id: id,
+      provider_event_id: providerEventId,
+      pickup_status_before: transactionStatus,
+      pickup_status_after: nextStatus,
+      idempotency_fingerprint: eventKey,
+    });
+    transaction.update(shipmentRef, {
+      pickup_appointment_id: id,
+      pickup_status: nextStatus,
+      pickup_window_start: action === "request" || action === "confirm" ? requestedStart : validIso(currentAppointment.get("confirmed_window_start")) ?? validIso(currentAppointment.get("requested_window_start")),
+      pickup_window_end: action === "request" || action === "confirm" ? requestedEnd : validIso(currentAppointment.get("confirmed_window_end")) ?? validIso(currentAppointment.get("requested_window_end")),
+      pickup_driver_name: driverName || nullable(currentAppointment.get("driver_name")),
+      pickup_vehicle_reference: vehicleReference || nullable(currentAppointment.get("vehicle_reference")),
+      pickup_completed_at: action === "picked_up" ? eventTime : nullable(currentShipment.get("pickup_completed_at")),
+      updated_at: now,
+    });
+    return { kind: "updated" as const };
   });
-  try { await batch.commit(); }
-  catch (error) {
-    const duplicate = await integrationEventRef.get();
-    if (duplicate.exists) return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id });
-    throw error;
+
+  if (domainResult.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (domainResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment does not have a canonical KCPL primary branch." }, 409);
+  if (domainResult.kind === "state_conflict" || domainResult.kind === "invalid_transition") {
+    await recordPickupObservation(observationInput);
+    return json({ ok: false, error: "Pickup workflow changed concurrently; provider observation was retained for reconciliation.", reconciliationRequired: true, observationStored: true }, 409);
   }
 
-  const trackingSource = channel === "edi" ? "edi_214" : channel === "carrier_api" ? "carrier_api" : "webhook";
-  if (action === "request" || action === "confirm") {
-    await recordTrackingEvent(reference, { source: trackingSource, rawStatus: "Pickup scheduled", milestone: "pickup_scheduled", location, eta: "", eventTime, provider, providerEventId, details: `${action === "confirm" ? "Confirmed" : "Requested"} pickup window ${requestedStart} to ${requestedEnd}.` }, { name: provider, email: "pickup-integration@kcpl.internal" });
-  } else if (action === "picked_up") {
-    await recordTrackingEvent(reference, { source: trackingSource, rawStatus: "Picked up", milestone: "picked_up", location, eta: "", eventTime, provider, providerEventId, details: reason || `Pickup appointment ${id} completed.` }, { name: provider, email: "pickup-integration@kcpl.internal" });
-  } else if (action === "missed") {
-    await recordTrackingEvent(reference, { source: trackingSource, rawStatus: "Pickup missed - carrier exception", milestone: "exception", location, eta: "", eventTime, provider, providerEventId, details: reason }, { name: provider, email: "pickup-integration@kcpl.internal" });
-  }
+  const trackingResult = await recordPickupObservation(observationInput);
+  if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment lost its canonical KCPL primary branch before observation reconciliation." }, 409);
 
-  return json({ ok: true, reference, pickupAppointmentId: id, status: nextStatus, providerEventId }, appointmentSnapshot.exists ? 200 : 201);
+  if (domainResult.kind === "duplicate") return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
+  return json({ ok: true, reference, pickupAppointmentId: id, status: nextStatus, providerEventId, trackingReconciled: true }, appointmentSnapshot.exists ? 200 : 201);
 }

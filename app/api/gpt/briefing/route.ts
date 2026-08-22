@@ -48,10 +48,18 @@ export async function GET(request: Request) {
 
       const eta = dateValue(data.eta);
       const overdueEta = Boolean(eta && eta.getTime() < now.getTime() && status !== "delivered");
-      if (status === "exception" || overdueEta) {
+      const reconciliationStatus = nullable(data.external_reconciliation_status);
+      const reconciliationBlocked = reconciliationStatus === "blocked";
+      if (status === "exception" || overdueEta || reconciliationBlocked) {
         attention.push({
           reference: doc.id,
           status,
+          canonicalWorkflowStatus: status,
+          observedExternalMilestone: nullable(data.external_observed_milestone),
+          observedExternalAt: nullable(data.external_observed_at),
+          observedExternalProvider: nullable(data.external_observed_provider),
+          externalReconciliationStatus: reconciliationStatus,
+          externalPromotionBlocker: nullable(data.external_promotion_blocker),
           priority: nullable(data.job_priority),
           currentLocation: nullable(data.current_location),
           eta: nullable(data.eta),
@@ -75,9 +83,11 @@ export async function GET(request: Request) {
       sampledShipmentCount: snapshot.size,
       activeShipmentCount: activeCount,
       statusCounts: counts,
+      canonicalStatusCounts: counts,
       activeShipmentsByPrimaryBranch: branchCounts,
       attentionCount: attention.length,
       attention: attention.slice(0, 30),
+      statusSemantics: "statusCounts and attention[].status are compatibility aliases for KCPL canonical workflow state. canonicalWorkflowStatus is KCPL workflow truth. observedExternalMilestone is provider-observed visibility evidence and may legitimately be ahead of canonical workflow state.",
       note: snapshot.size === 750 ? "Counts are based on the 750 most recently updated shipments." : null,
     });
   } catch (error) {
