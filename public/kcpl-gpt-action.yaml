@@ -97,10 +97,10 @@ paths:
       operationId: getKcplCarrierIntegrationBriefing
       summary: Get KCPL carrier integration health
       description: >-
-        Return configured carrier adapters, recent provider health, linked shipments,
-        carrier synchronization errors and unmatched ocean events. This action never exposes
-        provider API credentials, webhook secrets or authorization headers and cannot create
-        bookings, request pickups or mutate provider accounts.
+        Return carrier adapter status, recent provider health, linked shipments, synchronization
+        errors and unmatched ocean events. This read-only action never exposes API credentials,
+        webhook secrets or authorization headers and cannot create bookings, request pickups or
+        modify provider accounts.
       responses:
         "200":
           description: Current carrier integration briefing.
