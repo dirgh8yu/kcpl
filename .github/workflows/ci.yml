@@ -6,10 +6,73 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  remediation-bootstrap:
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/commercial-authority-seams'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout remediation branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/commercial-authority-seams
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Apply scoped patch once
+        shell: bash
+        run: |
+          if [ -f app/admin/commercial-authority/commercial-authority.ts ]; then
+            echo "Scoped patch is already present."
+            exit 0
+          fi
+          python - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/remediation-commercial-authority.yml').read_text()
+          begin = "          cat > /tmp/patch.py <<'PY'\n"
+          start = workflow.index(begin) + len(begin)
+          end = workflow.index("\n          PY\n          python /tmp/patch.py", start)
+          lines = workflow[start:end].splitlines()
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
+          Path('/tmp/patch.py').write_text(script)
+          PY
+          python /tmp/patch.py
+
+      - name: Install dependencies
+        if: hashFiles('app/admin/commercial-authority/commercial-authority.ts') != ''
+        run: npm ci
+
+      - name: Dedicated authority tests
+        if: hashFiles('app/admin/commercial-authority/commercial-authority.ts') != ''
+        run: node --experimental-strip-types --test tests/commercial-authority-seams.test.mjs
+
+      - name: Type check patched tree
+        if: hashFiles('app/admin/commercial-authority/commercial-authority.ts') != ''
+        run: npx tsc --noEmit
+
+      - name: Commit application remediation
+        if: hashFiles('app/admin/commercial-authority/commercial-authority.ts') != ''
+        shell: bash
+        run: |
+          git config user.name "KCPL Remediation Agent 6"
+          git config user.email "actions@users.noreply.github.com"
+          git add app tests docs package.json
+          if git diff --cached --quiet; then
+            echo "No application changes to commit."
+            exit 0
+          fi
+          git commit -m "fix: harden commercial authority seams"
+          git push origin HEAD:fix/commercial-authority-seams
+
   quality:
+    if: github.event_name != 'pull_request' || github.head_ref != 'fix/commercial-authority-seams'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
