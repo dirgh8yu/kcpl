@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Boxes, Building2, FileSearch, Handshake, PackageSearch, ReceiptText, Search, X } from "lucide-react";
+import { ArrowRight, Boxes, Building2, FileSearch, Handshake, PackageSearch, Plus, ReceiptText, Search, X } from "lucide-react";
 import type { WorkflowWorkspace } from "./workflow-navigation";
 import { workspaceSearchText } from "./workflow-navigation";
 
@@ -20,10 +20,11 @@ type PaletteEntry = {
   subtitle: string;
   meta: string | null;
   href: string;
-  kind: "workspace" | SearchResult["kind"];
+  kind: "workspace" | "action" | SearchResult["kind"];
 };
 
 function resultIcon(kind: PaletteEntry["kind"]) {
+  if (kind === "action") return <Plus size={14}/>;
   if (kind === "shipment" || kind === "order") return <Boxes size={14}/>;
   if (kind === "customer") return <Building2 size={14}/>;
   if (kind === "partner" || kind === "tender") return <Handshake size={14}/>;
@@ -34,6 +35,7 @@ function resultIcon(kind: PaletteEntry["kind"]) {
 
 function kindLabel(kind: PaletteEntry["kind"]) {
   if (kind === "workspace") return "Workspace";
+  if (kind === "action") return "Quick action";
   if (kind === "shipment") return "Job File";
   if (kind === "customer") return "Customer";
   if (kind === "quote") return "Enquiry";
@@ -86,12 +88,24 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
 
   const entries = useMemo<PaletteEntry[]>(() => {
     const needle = query.trim().toLowerCase();
+    const allowedIds = new Set(workspaces.map((workspace) => workspace.id));
+    const quickActions: PaletteEntry[] = [
+      { key: "action:new-enquiry", title: "New enquiry / quote", subtitle: "Start a customer freight request", meta: null, href: "/admin", kind: "action" },
+      { key: "action:new-customer", title: "New customer", subtitle: "Create a Customer 360 account", meta: null, href: "/admin/crm/new", kind: "action" },
+      ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
+      ...(allowedIds.has("rating") ? [{ key: "action:new-order", title: "New transport order", subtitle: "Open Orders & Rate Desk to create and rate cargo", meta: null, href: "/admin/rating", kind: "action" as const }] : []),
+      ...(allowedIds.has("consolidation") ? [{ key: "action:load-plan", title: "Plan consolidation", subtitle: "Build a master load from compatible orders", meta: null, href: "/admin/consolidation", kind: "action" as const }] : []),
+      ...(allowedIds.has("tenders") ? [{ key: "action:tender", title: "Tender / book carrier", subtitle: "Issue or manage a procurement tender", meta: null, href: "/admin/tenders", kind: "action" as const }] : []),
+      ...(allowedIds.has("delivery") ? [{ key: "action:delivery", title: "Work Delivery & POD", subtitle: "Open final-mile attempts and POD review", meta: null, href: "/admin/delivery", kind: "action" as const }] : []),
+      ...(allowedIds.has("payables") ? [{ key: "action:new-payable", title: "New supplier bill", subtitle: "Record a payable before Freight Audit", meta: null, href: "/admin/payables?create=1", kind: "action" as const }] : []),
+    ].filter((entry) => !needle || `${entry.title} ${entry.subtitle}`.toLowerCase().includes(needle));
+
     const workspaceEntries = workspaces
       .filter((workspace) => !needle || workspaceSearchText(workspace).includes(needle))
       .slice(0, needle ? 12 : 14)
       .map((workspace) => ({ key: `workspace:${workspace.id}`, title: workspace.label, subtitle: `${workspace.group} · ${workspace.hint}`, meta: null, href: workspace.href, kind: "workspace" as const }));
     const remoteEntries = remoteResults.map((result) => ({ key: `${result.kind}:${result.id}`, title: result.title, subtitle: result.subtitle, meta: result.meta, href: result.href, kind: result.kind }));
-    return [...workspaceEntries, ...remoteEntries].slice(0, 45);
+    return [...quickActions.slice(0, needle ? 6 : 4), ...workspaceEntries, ...remoteEntries].slice(0, 45);
   }, [query, remoteResults, workspaces]);
 
   useEffect(() => { setSelectedIndex(0); }, [query, remoteResults]);
