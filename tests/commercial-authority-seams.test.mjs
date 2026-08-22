@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -120,6 +121,121 @@ function legacyCommercialSnapshot() {
   delete snapshot.procurement.rate_card_destination;
   delete snapshot.pricing.pricing_policy_id;
   return snapshot;
+}
+
+// Independent copy of the pre-#131 kcpl-commercial-v1 canonicalization. This
+// deliberately preserves old JavaScript Number(null) semantics so the test
+// compares today's implementation with the historical algorithm, not a magic
+// hash calculated by a different runtime.
+function legacyText(value) { return typeof value === "string" ? value.trim() : ""; }
+function legacyId(value) { return legacyText(value).toUpperCase(); }
+function legacyCurrency(value) { return legacyId(value); }
+function legacyFinite(value) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+function legacyCurrencyDecimals(currency) { return legacyCurrency(currency) === "JPY" ? 0 : 2; }
+function legacyMoney(value, currency) {
+  const parsed = legacyFinite(value);
+  if (parsed === null) return null;
+  const factor = 10 ** legacyCurrencyDecimals(currency);
+  return Math.round((parsed + Number.EPSILON) * factor) / factor;
+}
+function legacyDecimalText(value, precision) {
+  const parsed = legacyFinite(value);
+  if (parsed === null) return null;
+  return parsed.toFixed(precision).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+}
+function legacyMoneyText(value, currency) {
+  const parsed = legacyMoney(value, currency);
+  return parsed === null ? null : parsed.toFixed(legacyCurrencyDecimals(currency));
+}
+function legacyNullableText(value) {
+  const output = legacyText(value);
+  return output || null;
+}
+function legacyCanonicalFx(fx) {
+  if (!fx) return null;
+  return [
+    legacyCurrency(fx.source_currency),
+    legacyCurrency(fx.target_currency),
+    legacyDecimalText(fx.rate, 12),
+    legacyText(fx.source).toLowerCase(),
+    legacyNullableText(fx.effective_date),
+    legacyNullableText(fx.published_on),
+    legacyNullableText(fx.modified_on),
+    legacyDecimalText(fx.source_npr_per_unit, 12),
+    legacyDecimalText(fx.target_npr_per_unit, 12),
+  ];
+}
+function legacyV1FingerprintPayload(snapshot) {
+  const procurementCurrency = legacyCurrency(snapshot.procurement.currency);
+  const sellCurrency = snapshot.pricing ? legacyCurrency(snapshot.pricing.sell_currency) : "";
+  return [
+    "kcpl-commercial-v1",
+    [
+      legacyId(snapshot.order_id),
+      legacyText(snapshot.branch),
+      snapshot.customer_id ? legacyId(snapshot.customer_id) : null,
+      legacyText(snapshot.mode).toLowerCase(),
+    ],
+    [
+      snapshot.procurement.rate_card_id ? legacyId(snapshot.procurement.rate_card_id) : null,
+      legacyNullableText(snapshot.procurement.rate_card_updated_at),
+      legacyNullableText(snapshot.procurement.rate_card_valid_from),
+      legacyNullableText(snapshot.procurement.rate_card_valid_until),
+      legacyId(snapshot.procurement.partner_id),
+      legacyText(snapshot.procurement.mode).toLowerCase(),
+      legacyNullableText(snapshot.procurement.service),
+      legacyNullableText(snapshot.procurement.equipment),
+      legacyNullableText(snapshot.procurement.rating_unit),
+      legacyDecimalText(snapshot.procurement.rating_quantity, 6),
+      legacyMoneyText(snapshot.procurement.base_rate, procurementCurrency),
+      legacyMoneyText(snapshot.procurement.base_charge, procurementCurrency),
+      legacyMoneyText(snapshot.procurement.minimum_charge, procurementCurrency),
+      snapshot.procurement.minimum_applied,
+      legacyDecimalText(snapshot.procurement.fuel_surcharge_percent, 6),
+      legacyMoneyText(snapshot.procurement.fuel_surcharge, procurementCurrency),
+      legacyMoneyText(snapshot.procurement.accessorials, procurementCurrency),
+      legacyMoneyText(snapshot.procurement.total, procurementCurrency),
+      procurementCurrency,
+    ],
+    snapshot.pricing ? [
+      legacyId(snapshot.pricing.customer_id),
+      snapshot.pricing.pricing_rule_id ? legacyId(snapshot.pricing.pricing_rule_id) : null,
+      legacyNullableText(snapshot.pricing.pricing_rule_scope),
+      legacyDecimalText(snapshot.pricing.markup_percent, 6),
+      legacyDecimalText(snapshot.pricing.target_margin_percent, 6),
+      legacyDecimalText(snapshot.pricing.minimum_margin_percent, 6),
+      legacyDecimalText(snapshot.pricing.approval_below_margin_percent, 6),
+      legacyMoneyText(snapshot.pricing.accessorial_cost, sellCurrency),
+      legacyDecimalText(snapshot.pricing.accessorial_markup_percent, 6),
+      legacyMoneyText(snapshot.pricing.fixed_markup, sellCurrency),
+      legacyMoneyText(snapshot.pricing.discount, sellCurrency),
+      legacyMoneyText(snapshot.pricing.converted_buy_cost, sellCurrency),
+      legacyMoneyText(snapshot.pricing.accessorial_sell, sellCurrency),
+      legacyMoneyText(snapshot.pricing.pre_discount_sell, sellCurrency),
+      legacyMoneyText(snapshot.pricing.sell_amount, sellCurrency),
+      sellCurrency,
+      legacyMoneyText(snapshot.pricing.gross_profit, sellCurrency),
+      legacyDecimalText(snapshot.pricing.gross_margin_percent, 6),
+      legacyDecimalText(snapshot.pricing.effective_markup_percent, 6),
+      legacyMoneyText(snapshot.pricing.minimum_sell_price, sellCurrency),
+      snapshot.pricing.approval_required,
+    ] : null,
+    legacyCanonicalFx(snapshot.fx),
+    snapshot.negotiation ? [
+      legacyMoneyText(snapshot.negotiation.offered_amount, snapshot.negotiation.offered_currency),
+      legacyCurrency(snapshot.negotiation.offered_currency),
+      legacyMoneyText(snapshot.negotiation.counter_amount, snapshot.negotiation.counter_currency ?? snapshot.negotiation.offered_currency),
+      snapshot.negotiation.counter_currency ? legacyCurrency(snapshot.negotiation.counter_currency) : null,
+      legacyMoneyText(snapshot.negotiation.final_amount, snapshot.negotiation.final_currency),
+      legacyCurrency(snapshot.negotiation.final_currency),
+    ] : null,
+  ];
+}
+function legacyV1Fingerprint(snapshot) {
+  return createHash("sha256").update(JSON.stringify(legacyV1FingerprintPayload(snapshot))).digest("hex");
 }
 
 function order(branch = "Kathmandu") {
@@ -348,9 +464,9 @@ test("61 #130 external workflow regression suites remain in full test command", 
 
 // Final #131 hardening guards
 test("62 counteroffer customer-authority reads complete before commercial writes", () => {
-  const prepareIndex = tenderServer.indexOf("await prepareCustomerSellAuthorityCarryForwardInTransaction");
-  const versionWriteIndex = tenderServer.indexOf("persistCommercialVersionInTransaction(transaction, nextVersion)");
-  const authorityWriteIndex = tenderServer.indexOf("persistPreparedCustomerSellAuthorityCarryForwardInTransaction(transaction, preparedCustomerAuthority)");
+  const prepareIndex = tenderServer.indexOf("const preparedCustomerAuthority = await prepareCustomerSellAuthorityCarryForwardInTransaction");
+  const versionWriteIndex = tenderServer.indexOf("persistCommercialVersionInTransaction(transaction, nextVersion)", prepareIndex);
+  const authorityWriteIndex = tenderServer.indexOf("persistPreparedCustomerSellAuthorityCarryForwardInTransaction", versionWriteIndex);
   assert.ok(prepareIndex >= 0);
   assert.ok(versionWriteIndex > prepareIndex);
   assert.ok(authorityWriteIndex > versionWriteIndex);
@@ -365,11 +481,13 @@ test("63 carry-forward preparation is read-only and persistence is write-only", 
   assert.match(persistBody, /transaction\.create\(prepared\.targetRef/);
   assert.doesNotMatch(persistBody, /transaction\.get\(/);
 });
-test("64 pre-131 commercial snapshot keeps its original v1 fingerprint", () => {
-  assert.equal(
-    commercialFingerprint(legacyCommercialSnapshot()),
-    "ce43c5b3713ff93807db7ac47d197f77893238c8f77a561dffcf42262d3a42ce",
-  );
+test("64 pre-131 commercial snapshot reproduces the legacy v1 fingerprint algorithm", () => {
+  const legacy = legacyCommercialSnapshot();
+  assert.equal("rate_card_branch" in legacy.procurement, false);
+  assert.equal("rate_card_origin" in legacy.procurement, false);
+  assert.equal("rate_card_destination" in legacy.procurement, false);
+  assert.equal("pricing_policy_id" in legacy.pricing, false);
+  assert.equal(commercialFingerprint(legacy), legacyV1Fingerprint(legacy));
 });
 test("65 pre-131 commercial snapshot remains integrity-valid", () => {
   assert.deepEqual(commercialSnapshotIntegrity(legacyCommercialSnapshot()), { ok: true, errors: [] });
