@@ -11,6 +11,7 @@ import {
   type PaperArchiveDashboard,
   type PaperArchiveRecord,
 } from "./archive-data";
+import { archiveLinkedRecordAllowed, archiveRelationshipScope } from "./archive-scope-policy";
 
 export const PAPER_ARCHIVE_MAX_FILE_BYTES = 20 * 1024 * 1024;
 
@@ -81,6 +82,7 @@ function recordFromSnapshot(id: string, data: FirebaseFirestore.DocumentData): P
     title: text(data.title) || id,
     category: archiveCategories.includes(data.category as ArchiveCategory) ? data.category as ArchiveCategory : "other",
     document_date: text(data.document_date) || null,
+    // Legacy presentation fallback only. Authorization and relationship checks never consume this parsed value.
     branch: kcplBranches.includes(data.branch as KcplBranch) ? data.branch as KcplBranch : "Kathmandu",
     physical_reference: text(data.physical_reference) || null,
     notes: text(data.notes) || null,
@@ -132,14 +134,19 @@ async function resolveEntity(entityTypeValue: ArchiveEntityType, rawReference: s
   if (!snapshot?.exists) throw new Error(`Linked ${entityTypeValue.replaceAll("_", " ")} record ${reference} was not found.`);
 
   const data = snapshot.data() ?? {};
-  const branchCompatible = entityTypeValue === "customer"
-    ? compatibleRecordBranches(archiveBranch, data.primary_branch)
-    : entityTypeValue === "shipment"
+  let branchCompatible: boolean | undefined;
+  if (archiveRelationshipScope(entityTypeValue) === "branch") {
+    branchCompatible = entityTypeValue === "customer"
       ? compatibleRecordBranches(archiveBranch, data.primary_branch)
-      : entityTypeValue === "partner"
-        ? partnerOwnerCompatibleWithBranch(data.owner_branch, archiveBranch)
-        : compatibleRecordBranches(archiveBranch, data.branch);
-  if (!branchCompatible) throw new Error(`Linked ${entityTypeValue.replaceAll("_", " ")} record ${snapshot.id} belongs to a different or invalid branch.`);
+      : entityTypeValue === "shipment"
+        ? compatibleRecordBranches(archiveBranch, data.primary_branch)
+        : entityTypeValue === "partner"
+          ? partnerOwnerCompatibleWithBranch(data.owner_branch, archiveBranch)
+          : compatibleRecordBranches(archiveBranch, data.branch);
+  }
+  if (!archiveLinkedRecordAllowed({ entityType: entityTypeValue, canonicalRecordExists: true, branchCompatible })) {
+    throw new Error(`Linked ${entityTypeValue.replaceAll("_", " ")} record ${snapshot.id} belongs to a different or invalid branch.`);
+  }
 
   const label = entityTypeValue === "customer" || entityTypeValue === "partner"
     ? text(data.display_name) || snapshot.id
