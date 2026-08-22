@@ -27,19 +27,20 @@ export async function queueTenderAsEdi204(tenderIdValue: string, actor: Actor, c
   if (!order.exists) return { kind: "missing_order" as const };
   if (!compatibleRecordBranches(tenderBranch, order.get("branch"))) return { kind: "branch_mismatch" as const };
   const partnerId = text(tender.get("partner_id")).toUpperCase();
-  const partner = partnerId ? await firebaseAdminDb().collection("partners").doc(partnerId).get() : null;
-  if (partner?.exists) {
-    const ownerBranch = partner.get("owner_branch");
-    if (strictBranchValue(ownerBranch) && !compatibleRecordBranches(tenderBranch, ownerBranch)) return { kind: "partner_branch_mismatch" as const };
-  }
+  if (!partnerId) return { kind: "missing_partner" as const };
+  const partner = await firebaseAdminDb().collection("partners").doc(partnerId).get();
+  if (!partner.exists) return { kind: "missing_partner" as const };
+  const ownerBranch = partner.get("owner_branch");
+  if (ownerBranch !== "Global" && !compatibleRecordBranches(tenderBranch, ownerBranch)) return { kind: "partner_branch_mismatch" as const };
+
   const result = await queueEdi204({
     branch: tenderBranch,
     tenderId,
     tenderReference: text(tender.get("tender_reference"), tenderId),
     orderReference: orderId,
     partnerId,
-    partnerName: text(tender.get("partner_name"), partnerId || "Trading partner"),
-    ediReceiverId: partner?.exists ? nullable(partner.get("edi_receiver_id")) ?? nullable(partner.get("scac")) : null,
+    partnerName: text(tender.get("partner_name"), partnerId),
+    ediReceiverId: nullable(partner.get("edi_receiver_id")) ?? nullable(partner.get("scac")),
     origin: text(tender.get("origin"), text(order.get("origin"))),
     destination: text(tender.get("destination"), text(order.get("destination"))),
     pickupDate: nullable(tender.get("pickup_date")) ?? nullable(order.get("pickup_date")),
