@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     if (result.kind === "unavailable") return json({ ok: false, error: "Consolidation storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "One or more orders are outside your branch or commercial access." }, 403);
     if (result.kind === "missing_order") return json({ ok: false, error: "One or more transport orders could not be found." }, 404);
-    if (result.kind === "membership_conflict" || result.kind === "state_conflict") return json({ ok: false, error: "One or more orders changed concurrently or already belong to another consolidation load." }, 409);
+    if (result.kind === "membership_conflict") return json({ ok: false, error: "One or more orders changed concurrently or already belong to another consolidation load." }, 409);
     if (result.kind === "incompatible") return json({ ok: false, error: result.compatibility.blockers.join(" "), compatibility: result.compatibility }, 409);
     if (result.kind !== "created") return json({ ok: false, error: "The consolidation load could not be created." }, 400);
     return json({ ok: true, load: result.load, compatibility: result.compatibility }, 201);
