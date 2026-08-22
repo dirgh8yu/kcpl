@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../../../admin/crm/crm-data";
-import { pickupChannels, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
+import { pickupAppointmentStatuses, pickupChannels, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
 import { recordTrackingEvent } from "../../../admin/visibility/tracking-visibility.server";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
@@ -11,6 +11,7 @@ function branchValue(value: unknown): KcplBranch | null { return kcplBranches.in
 function validIso(value: unknown) { const candidate = clean(value, 80); const parsed = Date.parse(candidate); return candidate && Number.isFinite(parsed) ? new Date(parsed).toISOString() : null; }
 function appointmentId(reference: string) { return `PU-${reference.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 180); }
 function eventDocId(provider: string, providerEventId: string) { return createHash("sha256").update(`${provider}\n${providerEventId}`).digest("hex"); }
+function appointmentStatus(value: unknown): PickupAppointmentStatus { const candidate = clean(value, 40) as PickupAppointmentStatus; return pickupAppointmentStatuses.includes(candidate) ? candidate : "unscheduled"; }
 
 function authorized(request: Request) {
   const expected = process.env.KCPL_AUTOMATION_SECRET?.trim() ?? "";
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   const [appointmentSnapshot, duplicateSnapshot, source] = await Promise.all([appointmentRef.get(), integrationEventRef.get(), loadReferenceData(shipment)]);
   if (duplicateSnapshot.exists) return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id });
   const appointment = appointmentSnapshot.exists ? appointmentSnapshot.data() as Record<string, unknown> : {};
-  const currentStatus = clean(appointment.status, 40) as PickupAppointmentStatus || "unscheduled";
+  const currentStatus = appointmentStatus(appointment.status);
   if (currentStatus === "picked_up" && action !== "picked_up") return json({ ok: false, error: "Pickup is already complete." }, 409);
   if (currentStatus === "cancelled" && action !== "cancel") return json({ ok: false, error: "Pickup appointment is cancelled." }, 409);
 
@@ -161,12 +162,13 @@ export async function POST(request: Request) {
     throw error;
   }
 
+  const trackingSource = channel === "edi" ? "edi_214" : channel === "carrier_api" ? "carrier_api" : "webhook";
   if (action === "request" || action === "confirm") {
-    await recordTrackingEvent(reference, { source: channel === "edi" ? "edi_214" : channel === "carrier_api" ? "carrier_api" : "webhook", rawStatus: "Pickup scheduled", milestone: "pickup_scheduled", location, eta: null, eventTime, provider, providerEventId, details: `${action === "confirm" ? "Confirmed" : "Requested"} pickup window ${requestedStart} to ${requestedEnd}.` }, { name: provider, email: "pickup-integration@kcpl.internal" });
+    await recordTrackingEvent(reference, { source: trackingSource, rawStatus: "Pickup scheduled", milestone: "pickup_scheduled", location, eta: "", eventTime, provider, providerEventId, details: `${action === "confirm" ? "Confirmed" : "Requested"} pickup window ${requestedStart} to ${requestedEnd}.` }, { name: provider, email: "pickup-integration@kcpl.internal" });
   } else if (action === "picked_up") {
-    await recordTrackingEvent(reference, { source: channel === "edi" ? "edi_214" : channel === "carrier_api" ? "carrier_api" : "webhook", rawStatus: "Picked up", milestone: "picked_up", location, eta: null, eventTime, provider, providerEventId, details: reason || `Pickup appointment ${id} completed.` }, { name: provider, email: "pickup-integration@kcpl.internal" });
+    await recordTrackingEvent(reference, { source: trackingSource, rawStatus: "Picked up", milestone: "picked_up", location, eta: "", eventTime, provider, providerEventId, details: reason || `Pickup appointment ${id} completed.` }, { name: provider, email: "pickup-integration@kcpl.internal" });
   } else if (action === "missed") {
-    await recordTrackingEvent(reference, { source: channel === "edi" ? "edi_214" : channel === "carrier_api" ? "carrier_api" : "webhook", rawStatus: "Pickup missed - carrier exception", milestone: "exception", location, eta: null, eventTime, provider, providerEventId, details: reason }, { name: provider, email: "pickup-integration@kcpl.internal" });
+    await recordTrackingEvent(reference, { source: trackingSource, rawStatus: "Pickup missed - carrier exception", milestone: "exception", location, eta: "", eventTime, provider, providerEventId, details: reason }, { name: provider, email: "pickup-integration@kcpl.internal" });
   }
 
   return json({ ok: true, reference, pickupAppointmentId: id, status: nextStatus, providerEventId }, appointmentSnapshot.exists ? 200 : 201);
