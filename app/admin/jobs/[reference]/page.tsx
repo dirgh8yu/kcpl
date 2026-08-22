@@ -60,6 +60,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
           <div className="min-w-0"><p className="ops-eyebrow">Shipment workflow</p><p className="mt-0.5 truncate text-[10px] font-semibold text-[#675f58]">{result.job.reference} · jump directly to the operational control you need</p></div>
           <div className="flex flex-wrap gap-2">
             <Link href={`/admin/pickups?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Pickup scheduling</Link>
+            <Link href={`/admin/freight-documents?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Freight documents</Link>
             <Link href={`/admin/visibility?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Live visibility</Link>
             <Link href={`/admin/delivery?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Delivery & POD</Link>
             <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="sm">Document Vault</Link>
