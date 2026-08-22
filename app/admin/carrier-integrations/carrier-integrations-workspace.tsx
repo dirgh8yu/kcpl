@@ -47,6 +47,14 @@ export function CarrierIntegrationsWorkspace({
     return rows.filter((row) => [row.reference, row.carrier, row.carrier_reference, row.booking_reference, row.mode, row.status, row.branch].filter(Boolean).join(" ").toLowerCase().includes(q));
   }, [query, rows]);
 
+  const stats: Array<{ label: string; value: number; Icon: typeof Cable }> = [
+    { label: "Configured", value: summary.configured, Icon: Cable },
+    { label: "Degraded", value: summary.degraded, Icon: Activity },
+    { label: "Linked shipments", value: summary.linked_shipments, Icon: Route },
+    { label: "DHL sync ready", value: summary.dhl_sync_ready, Icon: Truck },
+    { label: "Maersk linked", value: summary.maersk_linked, Icon: Ship },
+  ];
+
   async function refresh() {
     const response = await fetch("/api/admin/carrier-integrations", { cache: "no-store" });
     const data = await response.json() as { ok?: boolean; providers?: CarrierProviderDashboard[]; rows?: CarrierShipmentCandidate[]; summary?: typeof initialSummary; error?: string };
@@ -94,7 +102,7 @@ export function CarrierIntegrationsWorkspace({
     {error ? <div className="mt-4 rounded-[10px] border border-[#edc8c4] bg-[#fff4f2] px-3 py-2 text-[10px] text-[#a6534d]">{error}</div> : null}
 
     <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-      {[['Configured', summary.configured, Cable], ['Degraded', summary.degraded, Activity], ['Linked shipments', summary.linked_shipments, Route], ['DHL sync ready', summary.dhl_sync_ready, Truck], ['Maersk linked', summary.maersk_linked, Ship]].map(([label, value, Icon]) => <div key={String(label)} className="rounded-[13px] border border-[#e3ddd7] bg-white p-3.5"><div className="flex items-center gap-2 text-[#b45f4b]"><Icon size={13}/><span className="text-[9px] font-bold uppercase tracking-[.08em]">{String(label)}</span></div><p className="mt-2 text-[22px] font-[760] tracking-[-.04em] text-[#443d38]">{Number(value)}</p></div>)}
+      {stats.map(({ label, value, Icon }) => <div key={label} className="rounded-[13px] border border-[#e3ddd7] bg-white p-3.5"><div className="flex items-center gap-2 text-[#b45f4b]"><Icon size={13}/><span className="text-[9px] font-bold uppercase tracking-[.08em]">{label}</span></div><p className="mt-2 text-[22px] font-[760] tracking-[-.04em] text-[#443d38]">{value}</p></div>)}
     </div>
 
     <section className="mt-5 grid gap-3 lg:grid-cols-2">
