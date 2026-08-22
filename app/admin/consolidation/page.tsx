@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
+import { listCurrentConsolidationAllocationViews } from "./tms-consolidation-allocation.server";
+import { TmsConsolidationAllocationDesk } from "./tms-consolidation-allocation-desk";
 import { listConsolidationLoads } from "./tms-consolidation.server";
 import { OperationsShell } from "../operations-shell";
 import { listTmsOrders } from "../rating/tms-rating.server";
@@ -32,8 +34,18 @@ export default async function ConsolidationPage() {
 
   if (loads.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Load Planner unavailable" detail="KCPL consolidation or transport-order storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
 
+  let allocations: Awaited<ReturnType<typeof listCurrentConsolidationAllocationViews>>;
+  try { allocations = await listCurrentConsolidationAllocationViews(loads.loads.map((load) => load.id), staff); }
+  catch { allocations = new Map(); }
+
   return (
     <OperationsShell {...shellProps}>
+      <TmsConsolidationAllocationDesk
+        initialLoads={loads.loads}
+        initialAllocations={Object.fromEntries(allocations)}
+        canPrepare={staff.permissions.canEditCommercial}
+        canApprove={staff.permissions.role === "management"}
+      />
       <TmsConsolidationWorkspace initialLoads={loads.loads} initialOrders={orders.orders} canManage={staff.permissions.canEditCommercial}/>
     </OperationsShell>
   );

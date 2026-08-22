@@ -1,6 +1,6 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
-import { confirmConsolidatedLoadBookingWithLineage } from "../consolidation/tms-consolidation-lineage.server";
+import { confirmConsolidatedLoadBookingWithPreparedAllocation } from "../consolidation/tms-consolidation-allocation-booking.server";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { confirmTmsTenderBooking } from "./tms-tendering.server";
 
@@ -18,10 +18,9 @@ async function confirmStandardBooking(tenderId: string, input: BookingInput, act
 
 /**
  * Authoritative booking dispatcher used by the admin API.
- * Standard tenders retain PR #127's transaction. Consolidation masters use the
- * lineage-aware transaction so all house allocation versions lock atomically.
- * Successful results expose one canonical route-facing shipmentReference while
- * preserving booking-specific metadata for callers that need it.
+ * Standard tenders retain PR #127's transaction. Consolidation masters consume
+ * a separately prepared immutable allocation package so Management approves the
+ * exact house commercial versions that final booking later locks.
  */
 export async function confirmTmsTenderBookingWithCommercialLineage(
   tenderIdValue: string,
@@ -60,7 +59,7 @@ export async function confirmTmsTenderBookingWithCommercialLineage(
   }
   if (amount === null || amount < 0 || !currency) return { kind: "commercials_required" as const };
 
-  const result = await confirmConsolidatedLoadBookingWithLineage({
+  const result = await confirmConsolidatedLoadBookingWithPreparedAllocation({
     loadId,
     masterOrderId: orderId,
     tenderId,

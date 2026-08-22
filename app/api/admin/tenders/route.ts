@@ -127,6 +127,8 @@ export async function POST(request: Request) {
     if (result.kind === "unavailable") return json({ ok: false, error: "Booking storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This tender is outside your access." }, 403);
     if (result.kind === "missing" || result.kind === "missing_order" || result.kind === "missing_load") return json({ ok: false, error: "Tender, transport order or consolidation load not found." }, 404);
+    if (result.kind === "allocation_not_prepared") return json({ ok: false, error: "Prepare the released consolidation commercial allocation before booking.", code: "allocation_not_prepared" }, 409);
+    if (result.kind === "commercial_allocation_stale") return json({ ok: false, error: "The staged consolidation allocation no longer matches current released or tender authority. Re-prepare it before booking.", code: "commercial_allocation_stale" }, 409);
     const commercial = commercialConflict(result.kind);
     if (commercial) return commercial;
     if (result.kind === "stale_tender") return json({ ok: false, error: "This tender is stale and cannot be booked." }, 409);
