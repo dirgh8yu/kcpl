@@ -7,6 +7,7 @@ import {
   DEFAULT_FREIGHT_AUDIT_TOLERANCE_AMOUNT,
   DEFAULT_FREIGHT_AUDIT_TOLERANCE_PERCENT,
   calculateFreightVariance,
+  classifyFreightAuditSupplier,
   freightAuditPaymentAllowed,
   freightVarianceWithinTolerance,
   normalizeAuditReference,
@@ -35,7 +36,6 @@ function currencyValue(value: unknown): CrmCurrency { return crmCurrencies.inclu
 function nullableCurrency(value: unknown): CrmCurrency | null { return crmCurrencies.includes(value as CrmCurrency) ? value as CrmCurrency : null; }
 function branchValue(value: unknown): KcplBranch { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu"; }
 function id(prefix: string) { return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`; }
-function comparisonKey(value: unknown) { return text(value).trim().toLowerCase().replace(/\s+/g, " "); }
 
 function rateQuantity(order: Record<string, unknown>, unit: string) {
   if (unit === "per_kg") return Math.max(0, numberValue(order.weight_kg));
@@ -126,12 +126,14 @@ function recordFromSource(source: BillSource, existing?: Record<string, unknown>
   const shipmentReference = nullable(bill.shipment_reference);
   const supplierBillReference = nullable(bill.supplier_bill_reference);
   const tmsBooked = source.shipment?.exists ? isTmsShipment(shipment) : false;
-  const partnerIdentityAvailable = Boolean(bookedPartnerId || bookedPartnerName);
-  const providerMatches = bookedPartnerId && supplierId
-    ? bookedPartnerId === supplierId
-    : Boolean(bookedPartnerName && comparisonKey(bookedPartnerName) === comparisonKey(supplierName));
-  const carrierLikeCategory = billCategory === "freight" || billCategory === "transport";
-  const ancillarySupplierBill = Boolean(tmsBooked && partnerIdentityAvailable && !providerMatches && !carrierLikeCategory);
+  const supplierScope = classifyFreightAuditSupplier({
+    tmsBooked,
+    category: billCategory,
+    bookedPartnerId,
+    bookedPartnerName,
+    supplierId,
+    supplierName,
+  });
   const sameCurrency = Boolean(bookedCurrency && bookedCurrency === invoiceCurrency);
   const toleranceAmount = Math.max(0, nullableNumber(existing?.tolerance_amount) ?? DEFAULT_FREIGHT_AUDIT_TOLERANCE_AMOUNT);
   const tolerancePercent = Math.max(0, nullableNumber(existing?.tolerance_percent) ?? DEFAULT_FREIGHT_AUDIT_TOLERANCE_PERCENT);
@@ -142,13 +144,13 @@ function recordFromSource(source: BillSource, existing?: Record<string, unknown>
 
   if (!shipmentReference || !source.shipment?.exists || !tmsBooked) {
     if (shipmentReference && source.shipment?.exists && !tmsBooked) issues.push(issue("shipment_not_tms_booked", "warning", "Legacy / non-TMS shipment", "This shipment has no TMS procurement booking snapshot, so automated Match-Pay is not enforced."));
-  } else if (ancillarySupplierBill) {
+  } else if (supplierScope.ancillarySupplierBill) {
     issues.push(issue("ancillary_supplier_bill", "warning", "Ancillary supplier bill", `${supplierName} is not the booked freight provider and this ${billCategory.replaceAll("_", " ")} bill is outside the carrier-rate Match-Pay comparison.`));
     if (source.duplicateOf) issues.push(issue("duplicate_invoice", "blocking", "Possible duplicate supplier invoice", `The same supplier invoice reference is already used by ${source.duplicateOf}.`));
   } else {
     if (bookedCost === null || !bookedCurrency) issues.push(issue("missing_booking_cost", "blocking", "Booked procurement cost missing", "The TMS shipment does not contain a complete booked cost and currency snapshot."));
     if (!supplierBillReference) issues.push(issue("missing_supplier_reference", "blocking", "Supplier invoice reference missing", "Record the supplier invoice number before Match-Pay approval."));
-    if (partnerIdentityAvailable && !providerMatches) issues.push(issue("supplier_mismatch", "blocking", "Supplier does not match booking", `Booked partner ${bookedPartnerName ?? bookedPartnerId}; bill is linked to ${supplierName}.`));
+    if (supplierScope.partnerIdentityAvailable && !supplierScope.providerMatches) issues.push(issue("supplier_mismatch", "blocking", "Supplier does not match booking", `Booked partner ${bookedPartnerName ?? bookedPartnerId}; bill is linked to ${supplierName}.`));
     if (bookedCurrency && bookedCurrency !== invoiceCurrency) issues.push(issue("currency_mismatch", "blocking", "Invoice currency differs from booking", `Booked in ${bookedCurrency}; supplier invoice is ${invoiceCurrency}. No hidden FX conversion is applied.`));
     if (source.duplicateOf) issues.push(issue("duplicate_invoice", "blocking", "Possible duplicate supplier invoice", `The same supplier invoice reference is already used by ${source.duplicateOf}.`));
     if (bookedCost !== null && sameCurrency && !withinTolerance) issues.push(issue("amount_variance", "blocking", "Supplier amount exceeds match tolerance", `Booked ${bookedCurrency} ${bookedCost.toFixed(2)} versus invoice subtotal ${invoiceCurrency} ${invoiceSubtotal.toFixed(2)}. Variance ${variance.amount === null ? "n/a" : `${variance.amount >= 0 ? "+" : ""}${variance.amount.toFixed(2)}`} (${variance.percent === null ? "n/a" : `${variance.percent.toFixed(2)}%`}).`));
@@ -159,7 +161,7 @@ function recordFromSource(source: BillSource, existing?: Record<string, unknown>
   const previousStatus = text(existing?.status) as FreightAuditStatus;
   let status: FreightAuditStatus;
   if (!shipmentReference || !source.shipment?.exists || !tmsBooked) status = "not_applicable";
-  else if (ancillarySupplierBill && !issues.some((item) => item.severity === "blocking")) status = "not_applicable";
+  else if (supplierScope.ancillarySupplierBill && !issues.some((item) => item.severity === "blocking")) status = "not_applicable";
   else if (!issues.some((item) => item.severity === "blocking")) status = "matched";
   else status = "review_required";
   if (previousFingerprint === fingerprint && ["disputed", "approved_variance", "rejected"].includes(previousStatus)) status = previousStatus;
