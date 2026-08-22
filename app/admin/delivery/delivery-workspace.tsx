@@ -23,9 +23,9 @@ function stateBadge(row: DeliveryQueueRow) {
   return <OpsBadge tone="neutral">Ready for delivery</OpsBadge>;
 }
 
-export function DeliveryWorkspace({ initialRows, initialSummary }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary }) {
+export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "" }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string }) {
   const [focus, setFocus] = useState<Focus>("all");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const rows = useMemo(() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     return initialRows.filter((row) => {
