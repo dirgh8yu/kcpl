@@ -164,7 +164,7 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       if (members.length < 2 || members.length > MAX_LOAD_ORDERS) return { kind: "state_conflict" as const };
       const releasedSources = releasedCommercialSources(load);
       const releasedSourceMap = new Map(releasedSources.map((source) => [source.orderId, source]));
-      if (releasedSources.length !== members.length || releasedSourceMap.size !== members.length || members.some((member) => !releasedSourceMap.has(member.order_id))) return { kind: "commercial_review_required" as const };
+      if (!sameIdSet(releasedSources.map((source) => source.orderId), members.map((member) => member.order_id)) || releasedSourceMap.size !== members.length) return { kind: "commercial_review_required" as const };
       if (!masterOrder.exists || normalizeCommercialId(load.get("master_order_id")) !== masterOrder.id) return { kind: "invalid_master" as const };
       if (!tender.exists || normalizeCommercialId(tender.get("order_id")) !== masterOrder.id || branchValue(tender.get("branch")) !== branch) return { kind: "state_conflict" as const };
 
