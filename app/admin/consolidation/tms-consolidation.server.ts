@@ -9,6 +9,7 @@ import {
   assessLoadCompatibility,
   buildDefaultStops,
   capacityViolations,
+  consolidatedBookingRetryDecision,
   loadTotals,
   normalizeStopSequence,
   tmsLoadStatuses,
@@ -62,6 +63,13 @@ function masterOrderId(id: string) { return `ORD-${id}`.slice(0, 120); }
 function shipmentReference(prefix = "S") { return `KCPL-${prefix}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomBytes(6).toString("hex").toUpperCase()}`; }
 function bridgeQuoteReference(orderId: string) { return `TMSQ-${orderId.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 120); }
 function masterBridgeQuoteReference(id: string) { return `TMSQ-MASTER-${id.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 120); }
+function normalizedId(value: unknown) { return text(value).trim().toUpperCase(); }
+function sameIdSet(left: unknown, right: string[]) {
+  if (!Array.isArray(left)) return false;
+  const a = left.filter((value): value is string => typeof value === "string").map((value) => value.trim().toUpperCase()).sort();
+  const b = [...right].map((value) => value.trim().toUpperCase()).sort();
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
 
 function orderFromSnapshot(id: string, data: Record<string, unknown>): (TmsOrder & { consolidation_load_id?: string | null; is_consolidation_master?: boolean }) | null {
   const branch = branchValue(data.branch);
@@ -272,9 +280,7 @@ export async function createConsolidationLoad(input: LoadCreateInput, actor: Act
       const ready = records.filter((record): record is NonNullable<typeof record> => Boolean(record));
       const orders = ready.map((record) => record.order);
       if (!orders.length || orders.some((order) => !staffCanAccessBranch(staff, order.branch))) return { kind: "forbidden" as const };
-      if (ready.some((record) => nullable(record.data.consolidation_load_id) || record.data.procurement_locked_by_load === true || nullable(record.data.consolidation_master_order_id))) {
-        return { kind: "membership_conflict" as const };
-      }
+      if (ready.some((record) => nullable(record.data.consolidation_load_id) || record.data.procurement_locked_by_load === true || nullable(record.data.consolidation_master_order_id))) return { kind: "membership_conflict" as const };
       const compatibility = assessLoadCompatibility(orders, input.mode, capacity);
       if (!compatibility.ok) return { kind: "incompatible" as const, compatibility };
       const members = orders.map(memberFromOrder);
@@ -594,16 +600,83 @@ export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingI
       if (!record) return { kind: "missing_load" as const };
       if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
       if (!masterOrder.exists || record.load.master_order_id !== masterOrder.id) return { kind: "invalid_master" as const };
-      if (!tender.exists || text(tender.get("order_id")).trim().toUpperCase() !== masterOrder.id || branchValue(tender.get("branch")) !== record.load.branch) return { kind: "state_conflict" as const };
+      if (!tender.exists || normalizedId(tender.get("order_id")) !== masterOrder.id || branchValue(tender.get("branch")) !== record.load.branch) return { kind: "state_conflict" as const };
 
       if (record.load.status === "booked") {
         const masterShipmentReference = nullable(record.data.master_shipment_reference);
-        const houseShipmentReferences = record.load.members.map((member) => member.shipment_reference).filter((value): value is string => Boolean(value));
-        if (record.load.master_booking_reference !== bookingReference) return { kind: "booking_conflict" as const };
-        if (!masterShipmentReference || houseShipmentReferences.length !== record.load.members.length) return { kind: "state_conflict" as const };
-        if (text(tender.get("status")) !== "booked" || text(tender.get("booking_reference")) !== bookingReference || text(tender.get("shipment_reference")).trim().toUpperCase() !== masterShipmentReference.toUpperCase()) return { kind: "state_conflict" as const };
-        if (text(masterOrder.get("status")) !== "booked" || text(masterOrder.get("booking_reference")) !== bookingReference || text(masterOrder.get("shipment_reference")).trim().toUpperCase() !== masterShipmentReference.toUpperCase()) return { kind: "state_conflict" as const };
-        return { kind: "booked" as const, masterShipmentReference, shipmentReferences: houseShipmentReferences, idempotent: true };
+        const memberShipmentReferences = record.load.members.map((member) => member.shipment_reference);
+        const retryDecision = consolidatedBookingRetryDecision({
+          requestedBookingReference: bookingReference,
+          loadBookingReference: record.load.master_booking_reference,
+          masterShipmentReference,
+          memberShipmentReferences,
+          expectedMemberCount: record.load.members.length,
+          tenderStatus: text(tender.get("status")),
+          tenderBookingReference: text(tender.get("booking_reference")),
+          tenderShipmentReference: text(tender.get("shipment_reference")),
+          masterOrderStatus: text(masterOrder.get("status")),
+          masterOrderBookingReference: text(masterOrder.get("booking_reference")),
+          masterOrderShipmentReference: text(masterOrder.get("shipment_reference")),
+        });
+        if (retryDecision !== "idempotent") return { kind: retryDecision as "booking_conflict" | "state_conflict" };
+        const houseShipmentReferences = memberShipmentReferences.filter((value): value is string => Boolean(value));
+        const houseRecordsRaw = await transactionOrderRecords(transaction, record.load.members.map((member) => member.order_id));
+        if (houseRecordsRaw.some((item) => !item)) return { kind: "state_conflict" as const };
+        const houseRecords = houseRecordsRaw.filter((item): item is NonNullable<typeof item> => Boolean(item));
+        const masterShipmentRef = db.collection("shipments").doc(masterShipmentReference!);
+        const masterQuoteRef = db.collection("quotes").doc(masterBridgeQuoteReference(record.load.id));
+        const houseShipmentRefs = houseShipmentReferences.map((reference) => db.collection("shipments").doc(reference));
+        const houseQuoteRefs = houseRecords.map((item) => db.collection("quotes").doc(bridgeQuoteReference(item.order.id)));
+        const [masterShipment, masterQuote, ...childSnapshots] = await Promise.all([
+          transaction.get(masterShipmentRef),
+          transaction.get(masterQuoteRef),
+          ...houseShipmentRefs.map((ref) => transaction.get(ref)),
+          ...houseQuoteRefs.map((ref) => transaction.get(ref)),
+        ]);
+        const houseShipments = childSnapshots.slice(0, houseShipmentRefs.length);
+        const houseQuotes = childSnapshots.slice(houseShipmentRefs.length);
+        const memberIds = record.load.members.map((member) => member.order_id);
+        if (!masterShipment.exists
+          || normalizedId(masterShipment.get("transport_order_id")) !== masterOrder.id
+          || normalizedId(masterShipment.get("tender_id")) !== tender.id
+          || text(masterShipment.get("carrier_reference")) !== bookingReference
+          || normalizedId(masterShipment.get("consolidation_load_id")) !== record.load.id
+          || masterShipment.get("is_consolidation_master") !== true
+          || branchValue(masterShipment.get("primary_branch")) !== record.load.branch
+          || nullable(masterShipment.get("customer_id"))
+          || !sameIdSet(masterShipment.get("house_order_ids"), memberIds)) return { kind: "state_conflict" as const };
+        if (!masterQuote.exists
+          || normalizedId(masterQuote.get("consolidation_load_id")) !== record.load.id
+          || normalizedId(masterQuote.get("shipment_reference")) !== normalizedId(masterShipmentReference)) return { kind: "state_conflict" as const };
+        for (let index = 0; index < houseRecords.length; index += 1) {
+          const item = houseRecords[index];
+          const member = record.load.members.find((candidate) => candidate.order_id === item.order.id);
+          const shipment = houseShipments[index];
+          const quote = houseQuotes[index];
+          const reference = member?.shipment_reference ?? "";
+          const customerId = text(item.data.customer_id).trim().toUpperCase();
+          if (!member || !reference || item.order.status !== "booked"
+            || normalizedId(item.data.consolidation_load_id) !== record.load.id
+            || normalizedId(item.data.consolidation_master_order_id) !== masterOrder.id
+            || item.data.procurement_locked_by_load !== true
+            || text(item.data.booking_reference) !== bookingReference
+            || normalizedId(item.data.shipment_reference) !== normalizedId(reference)
+            || !customerId) return { kind: "state_conflict" as const };
+          if (!shipment?.exists
+            || normalizedId(shipment.get("transport_order_id")) !== item.order.id
+            || normalizedId(shipment.get("tender_id")) !== tender.id
+            || text(shipment.get("carrier_reference")) !== bookingReference
+            || normalizedId(shipment.get("consolidation_load_id")) !== record.load.id
+            || normalizedId(shipment.get("master_shipment_reference")) !== normalizedId(masterShipmentReference)
+            || text(shipment.get("master_booking_reference")) !== bookingReference
+            || normalizedId(shipment.get("customer_id")) !== customerId
+            || branchValue(shipment.get("primary_branch")) !== item.order.branch) return { kind: "state_conflict" as const };
+          if (!quote?.exists
+            || normalizedId(quote.get("transport_order_id")) !== item.order.id
+            || normalizedId(quote.get("consolidation_load_id")) !== record.load.id
+            || normalizedId(quote.get("shipment_reference")) !== normalizedId(reference)) return { kind: "state_conflict" as const };
+        }
+        return { kind: "booked" as const, masterShipmentReference: masterShipmentReference!, shipmentReferences: houseShipmentReferences, idempotent: true };
       }
       if (record.load.status !== "ready_for_procurement" && record.load.status !== "tendering") return { kind: "invalid_transition" as const };
       if (text(tender.get("updated_at")) !== input.expectedTenderUpdatedAt) return { kind: "state_conflict" as const };
@@ -621,13 +694,31 @@ export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingI
       if (houseRecordsRaw.some((item) => !item)) return { kind: "missing_order" as const };
       const houseRecords = houseRecordsRaw.filter((item): item is NonNullable<typeof item> => Boolean(item));
       if (houseRecords.some((item) => !item.order.customer_id)) return { kind: "customer_required" as const };
-      if (houseRecords.some((item) => nullable(item.data.consolidation_load_id) !== record.load.id || nullable(item.data.consolidation_master_order_id) !== masterOrder.id || item.data.procurement_locked_by_load !== true)) return { kind: "state_conflict" as const };
+      if (houseRecords.some((item) => normalizedId(item.data.consolidation_load_id) !== record.load.id || normalizedId(item.data.consolidation_master_order_id) !== masterOrder.id || item.data.procurement_locked_by_load !== true)) return { kind: "state_conflict" as const };
       if (houseRecords.some((item) => item.order.status === "booked" || nullable(item.data.shipment_reference))) return { kind: "state_conflict" as const };
 
       const customerIds = [...new Set(houseRecords.map((item) => item.order.customer_id!.trim().toUpperCase()))];
       const customerSnapshots = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
       if (customerSnapshots.some((snapshot) => !snapshot.exists || snapshot.get("archived") === true)) return { kind: "customer_missing" as const };
       const customerMap = new Map(customerSnapshots.map((snapshot) => [snapshot.id, snapshot]));
+      const masterQuoteReference = masterBridgeQuoteReference(record.load.id);
+      const masterQuoteRef = db.collection("quotes").doc(masterQuoteReference);
+      const houseQuoteRefs = new Map(houseRecords.map((item) => [item.order.id, db.collection("quotes").doc(bridgeQuoteReference(item.order.id))]));
+      const [masterQuote, ...houseQuotes] = await Promise.all([
+        transaction.get(masterQuoteRef),
+        ...houseRecords.map((item) => transaction.get(houseQuoteRefs.get(item.order.id)!)),
+      ]);
+      if (masterQuote.exists) {
+        const quoteLoad = normalizedId(masterQuote.get("consolidation_load_id"));
+        if ((quoteLoad && quoteLoad !== record.load.id) || nullable(masterQuote.get("shipment_reference"))) return { kind: "state_conflict" as const };
+      }
+      for (let index = 0; index < houseRecords.length; index += 1) {
+        const quote = houseQuotes[index];
+        if (!quote.exists) continue;
+        const quoteOrder = normalizedId(quote.get("transport_order_id"));
+        const quoteLoad = normalizedId(quote.get("consolidation_load_id"));
+        if ((quoteOrder && quoteOrder !== houseRecords[index].order.id) || (quoteLoad && quoteLoad !== record.load.id) || nullable(quote.get("shipment_reference"))) return { kind: "state_conflict" as const };
+      }
       const allocations = allocateProcurementCost(commercials.amount, record.load.members);
       if (allocations.length !== record.load.members.length) return { kind: "commercials_required" as const };
       const allocationMap = new Map(allocations.map((item) => [item.order_id, item.amount]));
@@ -639,8 +730,7 @@ export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingI
       const origin = sortedStops[0]?.location ?? record.load.members[0]?.origin ?? "";
       const destination = sortedStops.at(-1)?.location ?? record.load.members.at(-1)?.destination ?? "";
       const masterShipmentRef = db.collection("shipments").doc(masterShipmentReference);
-      const masterQuoteReference = masterBridgeQuoteReference(record.load.id);
-      transaction.set(db.collection("quotes").doc(masterQuoteReference), {
+      transaction.set(masterQuoteRef, {
         reference: masterQuoteReference,
         status: "won",
         migration_hidden: true,
@@ -714,7 +804,7 @@ export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingI
         const allocation = allocationMap.get(item.order.id) ?? 0;
         const reference = houseReferenceMap.get(item.order.id)!;
         const quoteReference = bridgeQuoteReference(item.order.id);
-        transaction.set(db.collection("quotes").doc(quoteReference), {
+        transaction.set(houseQuoteRefs.get(item.order.id)!, {
           reference: quoteReference,
           status: "won",
           migration_hidden: true,
