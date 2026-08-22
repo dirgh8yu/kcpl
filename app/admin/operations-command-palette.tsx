@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Boxes, Building2, FileSearch, Handshake, PackageSearch, Plus, ReceiptText, Search, X } from "lucide-react";
 import type { WorkflowWorkspace } from "./workflow-navigation";
 import { workspaceSearchText } from "./workflow-navigation";
@@ -46,6 +47,7 @@ function kindLabel(kind: PaletteEntry["kind"]) {
 }
 
 export function OperationsCommandPalette({ open, onClose, workspaces }: { open: boolean; onClose: () => void; workspaces: WorkflowWorkspace[] }) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [remoteResults, setRemoteResults] = useState<SearchResult[]>([]);
@@ -54,21 +56,19 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
 
   useEffect(() => {
     if (!open) return;
-    setQuery("");
-    setRemoteResults([]);
-    setSelectedIndex(0);
-    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    const frame = window.requestAnimationFrame(() => {
+      setQuery("");
+      setRemoteResults([]);
+      setSelectedIndex(0);
+      inputRef.current?.focus();
+    });
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const normalized = query.trim();
-    if (normalized.length < 2) {
-      setRemoteResults([]);
-      setBusy(false);
-      return;
-    }
+    if (normalized.length < 2) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setBusy(true);
@@ -104,15 +104,18 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
       .filter((workspace) => !needle || workspaceSearchText(workspace).includes(needle))
       .slice(0, needle ? 12 : 14)
       .map((workspace) => ({ key: `workspace:${workspace.id}`, title: workspace.label, subtitle: `${workspace.group} · ${workspace.hint}`, meta: null, href: workspace.href, kind: "workspace" as const }));
-    const remoteEntries = remoteResults.map((result) => ({ key: `${result.kind}:${result.id}`, title: result.title, subtitle: result.subtitle, meta: result.meta, href: result.href, kind: result.kind }));
+    const remoteEntries = needle.length >= 2 ? remoteResults.map((result) => ({ key: `${result.kind}:${result.id}`, title: result.title, subtitle: result.subtitle, meta: result.meta, href: result.href, kind: result.kind })) : [];
     return [...quickActions.slice(0, needle ? 6 : 4), ...workspaceEntries, ...remoteEntries].slice(0, 45);
   }, [query, remoteResults, workspaces]);
 
-  useEffect(() => { setSelectedIndex(0); }, [query, remoteResults]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setSelectedIndex(0));
+    return () => window.cancelAnimationFrame(frame);
+  }, [query, remoteResults]);
 
   function go(href: string) {
     onClose();
-    window.location.assign(href);
+    router.push(href);
   }
 
   if (!open) return null;
@@ -137,7 +140,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
             placeholder="Search KCPL, jobs, customers, orders, tenders, partners…"
             aria-label="Search KCPL"
           />
-          {busy ? <span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#a0877a]">Searching</span> : null}
+          {busy && query.trim().length >= 2 ? <span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#a0877a]">Searching</span> : null}
           <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-[8px] text-[#8d847d] hover:bg-[#f3efeb]" aria-label="Close command palette"><X size={15}/></button>
         </div>
 
