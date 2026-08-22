@@ -16,6 +16,8 @@ function currencyValue(value: unknown): CrmCurrency | null { return crmCurrencie
  * Authoritative booking dispatcher used by the admin API.
  * Standard tenders retain PR #127's transaction. Consolidation masters use the
  * lineage-aware transaction so all house allocation versions lock atomically.
+ * Successful results expose one canonical route-facing shipmentReference while
+ * preserving booking-specific metadata for callers that need it.
  */
 export async function confirmTmsTenderBookingWithCommercialLineage(
   tenderIdValue: string,
@@ -34,7 +36,10 @@ export async function confirmTmsTenderBookingWithCommercialLineage(
   if (!order.exists) return { kind: "missing_order" as const };
   const loadId = nullable(order.get("consolidation_load_id"));
   const isMaster = order.get("is_consolidation_master") === true;
-  if (!loadId || !isMaster) return confirmTmsTenderBooking(tenderId, input, actor, staff);
+  if (!loadId || !isMaster) {
+    const result = await confirmTmsTenderBooking(tenderId, input, actor, staff);
+    return result.kind === "booked" ? { ...result, bookingType: "standard" as const } : result;
+  }
 
   const status = text(tender.get("status"));
   let amount: number | null = null;
@@ -51,7 +56,7 @@ export async function confirmTmsTenderBookingWithCommercialLineage(
   }
   if (amount === null || amount < 0 || !currency) return { kind: "commercials_required" as const };
 
-  return confirmConsolidatedLoadBookingWithLineage({
+  const result = await confirmConsolidatedLoadBookingWithLineage({
     loadId,
     masterOrderId: orderId,
     tenderId,
@@ -65,4 +70,11 @@ export async function confirmTmsTenderBookingWithCommercialLineage(
     currency,
     expectedTenderUpdatedAt: text(tender.get("updated_at")),
   }, actor, staff);
+  if (result.kind !== "booked") return result;
+  return {
+    ...result,
+    shipmentReference: result.masterShipmentReference,
+    bookingType: "consolidated" as const,
+    consolidationLoadId: loadId,
+  };
 }
