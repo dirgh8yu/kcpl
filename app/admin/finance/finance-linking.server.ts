@@ -1,7 +1,9 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { addCrmContact, createCrmCustomer, findCrmDuplicates } from "../crm/crm-data.server";
-import { crmCurrencies, kcplBranches, type CrmCreateCustomerInput, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
+import { crmCurrencies, type CrmCreateCustomerInput, type CrmCurrency } from "../crm/crm-data";
 import { linkQuoteToCrmCustomer } from "../crm/crm-quote-links.server";
+import type { KcplStaffContext } from "../staff-directory.server";
+import { authorizeFinanceCustomerLink } from "./finance-authorization.server";
 import type { FinanceCustomerResolution, FinanceCustomerSuggestion } from "./finance-customer-resolution";
 
 type Actor = { name: string; email: string };
@@ -21,6 +23,11 @@ function suggestionsFromQuote(value: unknown): FinanceCustomerSuggestion[] {
   });
 }
 
+/**
+ * Read-only resolution. This helper deliberately performs no relationship write.
+ * Mutation callers must authorize the canonical shipment graph first and then
+ * use the transaction-backed CRM link helper with the staff context.
+ */
 export async function resolveInvoiceCustomerFromShipment(shipmentReference: string): Promise<FinanceCustomerResolution> {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
 
@@ -47,7 +54,6 @@ export async function resolveInvoiceCustomerFromShipment(shipmentReference: stri
       if (quoteCustomerId) {
         const customer = await db.collection("customers").doc(quoteCustomerId).get();
         if (customer.exists) {
-          await shipment.ref.set({ customer_id: quoteCustomerId, updated_at: new Date().toISOString() }, { merge: true });
           return { kind: "resolved", customerId: quoteCustomerId, customerName: text(customer.get("display_name")) || quoteCustomerId };
         }
       }
@@ -67,6 +73,7 @@ export async function confirmInvoiceCustomerForShipment(
   shipmentReference: string,
   customerId: string,
   actor: Actor,
+  context: KcplStaffContext,
 ) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
 
@@ -74,9 +81,11 @@ export async function confirmInvoiceCustomerForShipment(
   const targetCustomerId = customerId.trim().toUpperCase();
   if (!shipmentId || !targetCustomerId) return { kind: "invalid" as const };
 
+  const authorization = await authorizeFinanceCustomerLink(shipmentId, targetCustomerId, context);
+  if (authorization.kind !== "authorized") return authorization;
+
   const resolution = await resolveInvoiceCustomerFromShipment(shipmentId);
-  if (resolution.kind === "shipment_missing") return resolution;
-  if (resolution.kind === "unavailable") return resolution;
+  if (resolution.kind === "shipment_missing" || resolution.kind === "unavailable") return resolution;
   if (resolution.kind === "not_requested") return { kind: "invalid" as const };
   if (resolution.kind === "resolved") {
     return resolution.customerId === targetCustomerId
@@ -85,49 +94,45 @@ export async function confirmInvoiceCustomerForShipment(
   }
   if (!resolution.quoteReference) return { kind: "quote_missing" as const };
 
-  const result = await linkQuoteToCrmCustomer(targetCustomerId, resolution.quoteReference, actor);
+  const result = await linkQuoteToCrmCustomer(targetCustomerId, resolution.quoteReference, actor, context);
   if (result.kind === "missing_customer") return { kind: "missing_customer" as const };
   if (result.kind === "missing_quote") return { kind: "quote_missing" as const };
   if (result.kind === "unavailable") return { kind: "unavailable" as const };
-
-  const db = firebaseAdminDb();
-  await db.collection("shipments").doc(shipmentId).set({
-    customer_id: targetCustomerId,
-    updated_at: new Date().toISOString(),
-  }, { merge: true });
+  if (result.kind === "forbidden") return { kind: "relationship_mismatch" as const };
   return { kind: "linked" as const, customerId: targetCustomerId };
 }
 
 export async function createInvoiceCustomerFromShipmentQuote(
   shipmentReference: string,
   actor: Actor,
+  context: KcplStaffContext,
 ) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
 
   const shipmentId = shipmentReference.trim().toUpperCase();
   if (!shipmentId) return { kind: "invalid" as const };
 
+  const authorization = await authorizeFinanceCustomerLink(shipmentId, null, context);
+  if (authorization.kind !== "authorized") return authorization;
   const resolution = await resolveInvoiceCustomerFromShipment(shipmentId);
   if (resolution.kind === "shipment_missing" || resolution.kind === "unavailable") return resolution;
   if (resolution.kind === "not_requested") return { kind: "invalid" as const };
   if (resolution.kind === "resolved") return { kind: "linked" as const, customerId: resolution.customerId };
-  if (!resolution.quoteReference) return { kind: "quote_missing" as const };
+  if (!resolution.quoteReference || authorization.quoteReference !== resolution.quoteReference) {
+    return { kind: "quote_missing" as const };
+  }
 
   const db = firebaseAdminDb();
-  const [shipment, quote] = await Promise.all([
-    db.collection("shipments").doc(shipmentId).get(),
-    db.collection("quotes").doc(resolution.quoteReference).get(),
-  ]);
-  if (!shipment.exists) return { kind: "shipment_missing" as const };
+  const quote = await db.collection("quotes").doc(resolution.quoteReference).get();
   if (!quote.exists) return { kind: "quote_missing" as const };
+  const quoteShipment = text(quote.get("shipment_reference")).toUpperCase();
+  if (quoteShipment && quoteShipment !== authorization.shipmentId) return { kind: "relationship_mismatch" as const };
 
   const companyName = text(quote.get("company_name"));
   const contactName = text(quote.get("contact_name"));
   const email = text(quote.get("contact_email")).toLowerCase();
   const phone = text(quote.get("phone"));
   const displayName = companyName || contactName || `Customer for ${resolution.quoteReference}`;
-  const rawBranch = text(shipment.get("primary_branch"));
-  const primaryBranch: KcplBranch = kcplBranches.includes(rawBranch as KcplBranch) ? rawBranch as KcplBranch : "Kathmandu";
   const rawCurrency = text(quote.get("quote_currency")).toUpperCase();
   const preferredCurrency: CrmCurrency = crmCurrencies.includes(rawCurrency as CrmCurrency) ? rawCurrency as CrmCurrency : "NPR";
   const accountManagerUid = text(quote.get("assigned_to_uid"));
@@ -136,10 +141,15 @@ export async function createInvoiceCustomerFromShipmentQuote(
   const accountManagerPhone = text(quote.get("assigned_to_phone"));
 
   const duplicates = await findCrmDuplicates({ displayName, primaryEmail: email, primaryPhone: phone, taxId: "" });
-  if (duplicates.length) {
+  const sameBranchDuplicates: typeof duplicates = [];
+  for (const duplicate of duplicates) {
+    const customer = await db.collection("customers").doc(duplicate.id).get();
+    if (customer.exists && customer.get("primary_branch") === authorization.branch) sameBranchDuplicates.push(duplicate);
+  }
+  if (sameBranchDuplicates.length) {
     return {
       kind: "possible_duplicate" as const,
-      suggestions: duplicates.map((item) => ({ id: item.id, display_name: item.display_name, reason: item.reason })),
+      suggestions: sameBranchDuplicates.map((item) => ({ id: item.id, display_name: item.display_name, reason: item.reason })),
     };
   }
 
@@ -158,7 +168,7 @@ export async function createInvoiceCustomerFromShipmentQuote(
     industry: "",
     taxId: "",
     country: "Nepal",
-    primaryBranch,
+    primaryBranch: authorization.branch,
     accountManagerUid,
     accountManagerName,
     accountManagerEmail,
@@ -192,14 +202,10 @@ export async function createInvoiceCustomerFromShipmentQuote(
     }, actor);
   }
 
-  const linked = await linkQuoteToCrmCustomer(customerId, resolution.quoteReference, actor);
+  const linked = await linkQuoteToCrmCustomer(customerId, resolution.quoteReference, actor, context);
   if (linked.kind === "missing_quote") return { kind: "quote_missing" as const };
   if (linked.kind === "unavailable") return { kind: "unavailable" as const };
-
-  await db.collection("shipments").doc(shipmentId).set({
-    customer_id: customerId,
-    updated_at: new Date().toISOString(),
-  }, { merge: true });
+  if (linked.kind === "forbidden") return { kind: "relationship_mismatch" as const };
 
   return { kind: "created_and_linked" as const, customerId, customerName: displayName };
 }
