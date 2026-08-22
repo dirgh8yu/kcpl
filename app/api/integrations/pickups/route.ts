@@ -63,8 +63,10 @@ export async function POST(request: Request) {
   const shipmentSnapshot = await shipmentRef.get();
   if (!shipmentSnapshot.exists) return json({ ok: false, error: "Shipment not found." }, 404);
   const shipment = shipmentSnapshot.data() as Record<string, unknown>;
-  const branch = branchValue(shipment.primary_branch) ?? branchValue(Array.isArray(shipment.handling_branches) ? shipment.handling_branches[0] : null);
-  if (!branch) return json({ ok: false, error: "Shipment branch could not be resolved." }, 409);
+  // Provider metadata and handling-branch order are not authorization authority.
+  // Pickup mutation requires the shipment's canonical primary branch to be valid.
+  const branch = branchValue(shipment.primary_branch);
+  if (!branch) return json({ ok: false, error: "Shipment does not have a canonical KCPL primary branch." }, 409);
   const id = appointmentId(reference);
   const appointmentRef = db.collection("pickup_appointments").doc(id);
   const integrationEventRef = appointmentRef.collection("provider_events").doc(eventDocId(provider, providerEventId));
