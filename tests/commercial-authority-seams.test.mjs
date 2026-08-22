@@ -365,7 +365,22 @@ test("31 stale order quoted_reference cannot bypass exact acceptance", () => {
   assert.doesNotMatch(tenderServer, /const explicitQuoteReference = nullable\(orderData\.quoted_reference\)/);
   assert.match(tenderServer, /const explicitQuoteReference = customerAuthority\.quoteReference/);
 });
-test("32 manually supplied quote reference cannot authorize booking", () => assert.doesNotMatch(tenderServer, /booking.*quoteReference.*input/is));
+test("32 manually supplied quote reference cannot authorize booking", () => {
+  const bookingInputStart = tenderServer.indexOf("type TenderBookingInput");
+  const bookingInputEnd = tenderServer.indexOf("type Edi990TransitionInput", bookingInputStart);
+  const bookingInput = tenderServer.slice(bookingInputStart, bookingInputEnd);
+  assert.match(bookingInput, /bookingReference: string/);
+  assert.match(bookingInput, /pickupConfirmation\?: string/);
+  assert.doesNotMatch(bookingInput, /\b(?:quoteReference|customerQuoteReference|commercialVersionId|commercialFingerprint|sellAmount|sellCurrency)\b/);
+
+  const bookingStart = tenderServer.indexOf("async function createBookedShipment");
+  const bookingEnd = tenderServer.indexOf("export async function confirmTmsTenderBooking", bookingStart);
+  const bookingBody = tenderServer.slice(bookingStart, bookingEnd);
+  assert.doesNotMatch(bookingBody, /input\.(?:quoteReference|customerQuoteReference|commercialVersionId|commercialFingerprint|sellAmount|sellCurrency)\b/);
+  assert.match(bookingBody, /const customerAuthority = await assertCustomerSellAuthorityInTransaction\(transaction, version\)/);
+  assert.match(bookingBody, /const explicitQuoteReference = customerAuthority\.quoteReference/);
+  assert.match(bookingBody, /customer_quote_reference: explicitQuoteReference/);
+});
 test("33 internal quote bridge alone is not customer acceptance", () => {
   assert.match(tenderServer, /source: "tms_order_booking_bridge"/);
   assert.match(customerAuthority, /tms_sell_pricing_engine/);
