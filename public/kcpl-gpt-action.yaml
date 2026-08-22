@@ -1,10 +1,11 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.1.0
+  version: 1.2.0
   description: >-
     Read-only access to authorised Kapileshwor Cargo operational data. Use these
-    actions for current KCPL shipments, Job Files, customers, quotes, delivery/POD status and operations briefings.
+    actions for current KCPL shipments, Job Files, customers, quotes, delivery/POD status,
+    Freight Audit/Match-Pay controls and operations briefings.
 servers:
   - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
 security:
@@ -63,6 +64,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeliveryBriefingResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/gpt/freight-audit:
+    get:
+      operationId: getKcplFreightAuditBriefing
+      summary: Get KCPL Freight Audit and Match-Pay intelligence
+      description: >-
+        Return supplier invoice audit status, booked procurement comparisons, variances,
+        disputes and bills currently blocked from payment. This action is read-only and cannot
+        approve a variance, approve a supplier bill or record a payment.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: >-
+            Optional supplier, payable reference, supplier invoice reference, shipment reference,
+            branch or audit status to search.
+          schema:
+            type: string
+            maxLength: 180
+      responses:
+        "200":
+          description: Current Freight Audit and Match-Pay briefing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreightAuditBriefingResponse"
         "401":
           description: Invalid API key.
           content:
@@ -234,6 +266,52 @@ components:
             properties: {}
             additionalProperties: true
         privacy:
+          type: string
+      additionalProperties: true
+    FreightAuditBriefingResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+        query:
+          type: string
+        sampledPayableCount:
+          type: integer
+        supplierBillCount:
+          type: integer
+        summary:
+          type: object
+          properties:
+            matched:
+              type: integer
+            reviewRequired:
+              type: integer
+            disputed:
+              type: integer
+            approvedVariance:
+              type: integer
+            pendingOrStale:
+              type: integer
+            paymentBlocked:
+              type: integer
+          additionalProperties: false
+        attentionCount:
+          type: integer
+        attention:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        matches:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        safety:
           type: string
       additionalProperties: true
     SearchResponse:
