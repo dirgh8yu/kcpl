@@ -63,7 +63,6 @@ export async function POST(request: Request) {
     if (result.kind === "active_tender") return json({ ok: false, error: "This order already has an active tender. Resolve, cancel or expire it before re-tendering." }, 409);
     if (result.kind === "state_conflict") return json({ ok: false, error: "Tender state is ambiguous or changed concurrently. Refresh the order before retrying." }, 409);
     if (result.kind === "consolidated_order") return json({ ok: false, error: "This house order is locked to its consolidation load and cannot be tendered independently." }, 409);
-    if (result.kind === "rate_unavailable") return json({ ok: false, error: "The selected procurement rate is no longer available." }, 409);
     if (result.kind === "recipient_required") return json({ ok: false, error: "A valid recipient email is required for an email tender." }, 400);
     if (result.kind === "invalid_deadline") return json({ ok: false, error: "Tender response deadline must be in the future." }, 400);
     if (result.kind !== "created") return json({ ok: false, error: "The tender could not be created." }, 400);
@@ -137,7 +136,7 @@ export async function POST(request: Request) {
     if (result.kind === "customer_missing") return json({ ok: false, error: "The linked customer could not be found." }, 409);
     if (result.kind === "booking_reference_required") return json({ ok: false, error: "Carrier / partner booking reference is required." }, 400);
     if (result.kind !== "booked") return json({ ok: false, error: "The booking could not be confirmed." }, 400);
-    return json({ ok: true, shipmentReference: result.shipmentReference });
+    return json({ ok: true, shipmentReference: result.shipmentReference, bookingType: result.bookingType });
   }
   return json({ ok: false, error: "Unknown tender action." }, 400);
 }
