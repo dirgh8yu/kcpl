@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
+import { customerCommercialProfitabilitySummary } from "../commercial-lineage/commercial-profitability.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { type KcplStaffContext } from "../staff-directory.server";
 import {
@@ -195,9 +196,10 @@ export async function recomputeCustomerFinance(customerId: string) {
   const customer = await customerRef.get();
   if (!customer.exists) return;
   const currency = currencyValue(customer.get("preferred_currency"));
-  const [invoicesSnapshot, shipmentsSnapshot] = await Promise.all([
+  const [invoicesSnapshot, shipmentsSnapshot, commercialProfitability] = await Promise.all([
     db.collection("invoices").where("customer_id", "==", customerId).limit(2500).get(),
     db.collection("shipments").where("customer_id", "==", customerId).limit(1000).get(),
+    customerCommercialProfitabilitySummary(customerId, currency),
   ]);
 
   let revenue = 0;
@@ -226,6 +228,7 @@ export async function recomputeCustomerFinance(customerId: string) {
     profit_total: revenue - cost,
     outstanding_balance: outstanding,
     finance_currency: currency,
+    ...commercialProfitability,
     finance_updated_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });
