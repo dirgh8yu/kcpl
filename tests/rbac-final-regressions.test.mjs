@@ -11,7 +11,7 @@ import {
   canManagePaperArchive,
 } from "../app/admin/migration/archive/archive-scope-policy.ts";
 import { partnerOwnerCompatibleWithBranch } from "../app/admin/partners/partner-policy.ts";
-import { resolveShipmentBranchAccess } from "../app/admin/shipment-access.server.ts";
+import { resolveShipmentBranchAccess } from "../app/admin/shipment-access-policy.ts";
 import { resolveStaffAuthority } from "../app/admin/staff-authority-policy.ts";
 import { staffCapabilitiesForRole } from "../app/admin/staff-permissions.ts";
 import { resolveEdi990TenderTarget, validateEdi990CanonicalChain } from "../app/admin/edi/edi-match-policy.ts";
