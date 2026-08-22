@@ -51,8 +51,21 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
       userName={access.user.displayName}
       canManageStaff={staff.permissions.canManageStaff}
       canManageFinance={staff.permissions.canManageFinance}
+      canViewCommercial={staff.permissions.canViewCommercial}
+      canManageJobFile={staff.permissions.canManageJobFile}
       isManagement={staff.permissions.role === "management"}
     >
+      <div className="ops-content-wide pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[#e5ded8] bg-[#fffdfa] px-3 py-2.5 shadow-[0_4px_16px_rgba(54,43,34,.03)]">
+          <div className="min-w-0"><p className="ops-eyebrow">Shipment workflow</p><p className="mt-0.5 truncate text-[10px] font-semibold text-[#675f58]">{result.job.reference} · jump directly to the operational control you need</p></div>
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/admin/visibility?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Live visibility</Link>
+            <Link href={`/admin/delivery?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Delivery & POD</Link>
+            <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="sm">Document Vault</Link>
+            {staff.permissions.canManageFinance ? <Link href={`/admin/freight-audit?q=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Freight Audit</Link> : null}
+          </div>
+        </div>
+      </div>
       <WorkflowSpine initialWorkflow={workflow.readiness} initialJob={result.job} canOverride={staff.permissions.role === "management"}/>
       <SmartDocumentIntelligence initialWorkflow={workflow.readiness}/>
       {exceptionCases.kind === "ready" && exceptionBranches.length ? (
