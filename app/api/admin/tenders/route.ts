@@ -62,6 +62,8 @@ export async function POST(request: Request) {
     if (result.kind === "missing_order") return json({ ok: false, error: "Transport order not found." }, 404);
     if (result.kind === "rate_required") return json({ ok: false, error: "Select a valid Partner buy rate before tendering." }, 409);
     if (result.kind === "active_tender") return json({ ok: false, error: "This order already has an active tender. Resolve, cancel or expire it before re-tendering." }, 409);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "Tender state is ambiguous or changed concurrently. Refresh the order before retrying." }, 409);
+    if (result.kind === "consolidated_order") return json({ ok: false, error: "This house order is locked to its consolidation load and cannot be tendered independently." }, 409);
     if (result.kind === "rate_unavailable") return json({ ok: false, error: "The selected procurement rate is no longer available." }, 409);
     if (result.kind === "recipient_required") return json({ ok: false, error: "A valid recipient email is required for an email tender." }, 400);
     if (result.kind === "invalid_deadline") return json({ ok: false, error: "Tender response deadline must be in the future." }, 400);
@@ -101,6 +103,8 @@ export async function POST(request: Request) {
     if (result.kind === "missing" || result.kind === "missing_order") return json({ ok: false, error: "Tender or transport order not found." }, 404);
     if (result.kind === "expired") return json({ ok: false, error: "This tender has expired. Select a rate and re-tender the order." }, 409);
     if (result.kind === "invalid_counter") return json({ ok: false, error: "A counter-offer requires a valid amount and currency." }, 400);
+    if (result.kind === "stale_tender") return json({ ok: false, error: "This tender is stale and is no longer authoritative for the order." }, 409);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "Tender state changed concurrently. Refresh before recording a response." }, 409);
     if (result.kind === "invalid_transition") return json({ ok: false, error: "That tender response is not allowed from the current state." }, 409);
     if (result.kind !== "updated") return json({ ok: false, error: "The tender response could not be recorded." }, 400);
     return json({ ok: true, tender: result.tender });
@@ -111,6 +115,8 @@ export async function POST(request: Request) {
     if (result.kind === "unavailable") return json({ ok: false, error: "Tender storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This tender is outside your access." }, 403);
     if (result.kind === "missing" || result.kind === "missing_order") return json({ ok: false, error: "Tender or transport order not found." }, 404);
+    if (result.kind === "stale_tender") return json({ ok: false, error: "This tender is stale and can no longer mutate the order." }, 409);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "Tender state changed concurrently. Refresh before cancelling." }, 409);
     if (result.kind === "invalid_transition") return json({ ok: false, error: "This tender can no longer be cancelled." }, 409);
     return json({ ok: true });
   }
@@ -122,7 +128,11 @@ export async function POST(request: Request) {
     }, actor, access.staff);
     if (result.kind === "unavailable") return json({ ok: false, error: "Booking storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This tender is outside your access." }, 403);
-    if (result.kind === "missing" || result.kind === "missing_order") return json({ ok: false, error: "Tender or transport order not found." }, 404);
+    if (result.kind === "missing" || result.kind === "missing_order" || result.kind === "missing_load") return json({ ok: false, error: "Tender, transport order or consolidation load not found." }, 404);
+    if (result.kind === "stale_tender") return json({ ok: false, error: "This tender is stale and cannot be booked." }, 409);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "Booking state changed concurrently or is inconsistent. Refresh before retrying." }, 409);
+    if (result.kind === "booking_conflict") return json({ ok: false, error: "This tender is already booked with a different carrier / partner booking reference." }, 409);
+    if (result.kind === "consolidated_order" || result.kind === "invalid_master") return json({ ok: false, error: "This order must be booked through its authoritative consolidation movement." }, 409);
     if (result.kind === "invalid_transition") return json({ ok: false, error: "Only an accepted tender or recorded counter-offer can be booked." }, 409);
     if (result.kind === "commercials_required") return json({ ok: false, error: "Final tender commercials are incomplete." }, 409);
     if (result.kind === "customer_required") return json({ ok: false, error: "Link the transport order to a KCPL customer before confirming a booking." }, 409);

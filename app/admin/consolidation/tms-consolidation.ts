@@ -90,8 +90,70 @@ function key(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function normalizedId(value: string | null | undefined) {
+  return (value ?? "").trim().toUpperCase();
+}
+
 function positiveOrNull(value: number | null | undefined) {
   return value !== null && value !== undefined && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+export type ConsolidationMembershipDecision = "add" | "ready" | "locked" | "membership_conflict" | "state_conflict";
+
+export function consolidationMembershipDecision(input: {
+  loadStatus: TmsLoadStatus;
+  targetLoadId: string;
+  loadMemberIds: string[];
+  orderId: string;
+  orderLoadId?: string | null;
+  procurementLocked?: boolean;
+  consolidationMasterOrderId?: string | null;
+}): ConsolidationMembershipDecision {
+  if (input.loadStatus !== "draft") return "locked";
+  const target = normalizedId(input.targetLoadId);
+  const orderId = normalizedId(input.orderId);
+  const members = new Set(input.loadMemberIds.map(normalizedId).filter(Boolean));
+  const orderLoad = normalizedId(input.orderLoadId);
+  const loadHasOrder = members.has(orderId);
+  if (loadHasOrder) return orderLoad === target && !input.procurementLocked && !normalizedId(input.consolidationMasterOrderId) ? "ready" : "state_conflict";
+  if (orderLoad || input.procurementLocked || normalizedId(input.consolidationMasterOrderId)) return "membership_conflict";
+  return "add";
+}
+
+export function consolidationMembershipConsistent(loadId: string, memberIds: string[], orderMemberships: Array<{ orderId: string; loadId?: string | null }>) {
+  const target = normalizedId(loadId);
+  const members = [...new Set(memberIds.map(normalizedId).filter(Boolean))].sort();
+  const owned = orderMemberships
+    .filter((item) => normalizedId(item.loadId) === target)
+    .map((item) => normalizedId(item.orderId))
+    .filter(Boolean)
+    .sort();
+  return members.length === owned.length && members.every((id, index) => id === owned[index]);
+}
+
+export type ConsolidatedBookingRetryDecision = "idempotent" | "booking_conflict" | "state_conflict";
+
+export function consolidatedBookingRetryDecision(input: {
+  requestedBookingReference: string;
+  loadBookingReference?: string | null;
+  masterShipmentReference?: string | null;
+  memberShipmentReferences: Array<string | null | undefined>;
+  expectedMemberCount: number;
+  tenderStatus: string;
+  tenderBookingReference?: string | null;
+  tenderShipmentReference?: string | null;
+  masterOrderStatus: string;
+  masterOrderBookingReference?: string | null;
+  masterOrderShipmentReference?: string | null;
+}): ConsolidatedBookingRetryDecision {
+  const requested = input.requestedBookingReference.trim();
+  if (!requested || (input.loadBookingReference ?? "").trim() !== requested) return "booking_conflict";
+  const master = normalizedId(input.masterShipmentReference);
+  const houses = input.memberShipmentReferences.map(normalizedId).filter(Boolean);
+  if (!master || houses.length !== input.expectedMemberCount || new Set(houses).size !== houses.length) return "state_conflict";
+  if (input.tenderStatus !== "booked" || (input.tenderBookingReference ?? "").trim() !== requested || normalizedId(input.tenderShipmentReference) !== master) return "state_conflict";
+  if (input.masterOrderStatus !== "booked" || (input.masterOrderBookingReference ?? "").trim() !== requested || normalizedId(input.masterOrderShipmentReference) !== master) return "state_conflict";
+  return "idempotent";
 }
 
 export function orderEligibleForConsolidation(order: TmsOrder & { consolidation_load_id?: string | null; is_consolidation_master?: boolean }) {

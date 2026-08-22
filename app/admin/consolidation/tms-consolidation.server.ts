@@ -3,12 +3,13 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
-import { buildDocumentIntelligence, defaultCustomsSteps, defaultWorkflowTasks } from "../workflow-defaults";
+import { ensureBookingArtifacts, TMS_BOOKING_ARTIFACT_SEED_VERSION } from "../tenders/tms-booking-artifacts.server";
 import {
   allocateProcurementCost,
   assessLoadCompatibility,
   buildDefaultStops,
   capacityViolations,
+  consolidatedBookingRetryDecision,
   loadTotals,
   normalizeStopSequence,
   tmsLoadStatuses,
@@ -45,6 +46,7 @@ type ConsolidatedBookingInput = {
   pickupConfirmation?: string;
   amount: number;
   currency: CrmCurrency;
+  expectedTenderUpdatedAt: string;
 };
 
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
@@ -59,9 +61,15 @@ function loadId() { return `LOAD-${Date.now()}-${randomBytes(3).toString("hex").
 function loadReference() { return `KCPL-L-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomBytes(4).toString("hex").toUpperCase()}`; }
 function masterOrderId(id: string) { return `ORD-${id}`.slice(0, 120); }
 function shipmentReference(prefix = "S") { return `KCPL-${prefix}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomBytes(6).toString("hex").toUpperCase()}`; }
-function eventId(prefix = "evt") { return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`; }
 function bridgeQuoteReference(orderId: string) { return `TMSQ-${orderId.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 120); }
 function masterBridgeQuoteReference(id: string) { return `TMSQ-MASTER-${id.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 120); }
+function normalizedId(value: unknown) { return text(value).trim().toUpperCase(); }
+function sameIdSet(left: unknown, right: string[]) {
+  if (!Array.isArray(left)) return false;
+  const a = left.filter((value): value is string => typeof value === "string").map((value) => value.trim().toUpperCase()).sort();
+  const b = [...right].map((value) => value.trim().toUpperCase()).sort();
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
 
 function orderFromSnapshot(id: string, data: Record<string, unknown>): (TmsOrder & { consolidation_load_id?: string | null; is_consolidation_master?: boolean }) | null {
   const branch = branchValue(data.branch);
@@ -128,8 +136,6 @@ function memberFromData(value: unknown): TmsLoadMember | null {
   if (!value || typeof value !== "object") return null;
   const data = value as Record<string, unknown>;
   const mode = modeValue(data.mode);
-  const priorCurrency = currencyValue(data.prior_selected_currency);
-  const allocatedCurrency = currencyValue(data.allocated_currency);
   const orderIdValue = text(data.order_id).trim().toUpperCase();
   if (!orderIdValue || !mode) return null;
   return {
@@ -146,9 +152,9 @@ function memberFromData(value: unknown): TmsLoadMember | null {
     equipment: nullable(data.equipment),
     temperature_requirement: nullable(data.temperature_requirement),
     prior_selected_cost: nullableNum(data.prior_selected_cost),
-    prior_selected_currency: priorCurrency,
+    prior_selected_currency: currencyValue(data.prior_selected_currency),
     allocated_cost: nullableNum(data.allocated_cost),
-    allocated_currency: allocatedCurrency,
+    allocated_currency: currencyValue(data.allocated_currency),
     shipment_reference: nullable(data.shipment_reference),
   };
 }
@@ -205,31 +211,53 @@ function loadFromData(id: string, data: Record<string, unknown>): TmsConsolidati
   };
 }
 
-async function getOrder(id: string) {
-  const normalized = id.trim().toUpperCase();
-  const ref = firebaseAdminDb().collection("transport_orders").doc(normalized);
-  const snapshot = await ref.get();
-  if (!snapshot.exists) return null;
-  const order = orderFromSnapshot(snapshot.id, snapshot.data() as Record<string, unknown>);
-  return order ? { ref, snapshot, order, data: snapshot.data() as Record<string, unknown> } : null;
-}
-
-async function getLoad(id: string) {
-  const normalized = id.trim().toUpperCase();
-  const ref = firebaseAdminDb().collection("consolidation_loads").doc(normalized);
-  const snapshot = await ref.get();
-  if (!snapshot.exists) return null;
-  const load = loadFromData(snapshot.id, snapshot.data() as Record<string, unknown>);
-  return load ? { ref, snapshot, load, data: snapshot.data() as Record<string, unknown> } : null;
-}
-
-async function loadOrders(ids: string[]) {
-  const records = await Promise.all([...new Set(ids.map((id) => id.trim().toUpperCase()).filter(Boolean))].map(getOrder));
-  return records.filter((record): record is NonNullable<typeof record> => Boolean(record));
-}
-
 function loadCapacity(load: TmsConsolidationLoad): LoadCapacity {
   return { weight_kg: load.capacity_weight_kg, volume_cbm: load.capacity_volume_cbm, pieces: load.capacity_pieces, containers: load.capacity_containers };
+}
+
+function orderRecord(snapshot: FirebaseFirestore.DocumentSnapshot) {
+  if (!snapshot.exists) return null;
+  const data = snapshot.data() as Record<string, unknown>;
+  const order = orderFromSnapshot(snapshot.id, data);
+  return order ? { ref: snapshot.ref, snapshot, order, data } : null;
+}
+
+function loadRecord(snapshot: FirebaseFirestore.DocumentSnapshot) {
+  if (!snapshot.exists) return null;
+  const data = snapshot.data() as Record<string, unknown>;
+  const load = loadFromData(snapshot.id, data);
+  return load ? { ref: snapshot.ref, snapshot, load, data } : null;
+}
+
+async function transactionOrderRecords(transaction: FirebaseFirestore.Transaction, ids: string[]) {
+  const db = firebaseAdminDb();
+  const normalized = [...new Set(ids.map((id) => id.trim().toUpperCase()).filter(Boolean))];
+  const snapshots = await Promise.all(normalized.map((id) => transaction.get(db.collection("transport_orders").doc(id))));
+  return snapshots.map(orderRecord);
+}
+
+function membershipCompatibilityError(message: string) {
+  return { ok: false, blockers: [message], warnings: [] as string[] };
+}
+
+async function masterTenderIsAuthoritative(transaction: FirebaseFirestore.Transaction, masterOrder: FirebaseFirestore.DocumentSnapshot, tenderId: string, now: string) {
+  const query = firebaseAdminDb().collection("transport_tenders").where("order_id", "==", masterOrder.id);
+  const snapshot = await transaction.get(query);
+  const live = snapshot.docs.filter((doc) => {
+    const status = text(doc.get("status"));
+    if (!["sent", "accepted", "countered"].includes(status)) return false;
+    const due = text(doc.get("response_due_at"));
+    return !(status === "sent" && due && due <= now);
+  });
+  if (live.length !== 1 || live[0].id !== tenderId) return false;
+  const pointer = normalizedId(masterOrder.get("active_tender_id"));
+  if (!pointer || pointer === tenderId) return true;
+  const pointerDoc = snapshot.docs.find((doc) => doc.id === pointer);
+  if (!pointerDoc) return true;
+  const pointerStatus = text(pointerDoc.get("status"));
+  const pointerDue = text(pointerDoc.get("response_due_at"));
+  const pointerLive = ["sent", "accepted", "countered"].includes(pointerStatus) && !(pointerStatus === "sent" && pointerDue && pointerDue <= now);
+  return !pointerLive;
 }
 
 export async function listConsolidationLoads(staff: KcplStaffContext) {
@@ -243,333 +271,685 @@ export async function createConsolidationLoad(input: LoadCreateInput, actor: Act
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
   if (!tmsModes.includes(input.mode)) return { kind: "invalid" as const };
-  const records = await loadOrders(input.orderIds);
-  if (records.length !== new Set(input.orderIds.map((id) => id.trim().toUpperCase()).filter(Boolean)).size) return { kind: "missing_order" as const };
-  const orders = records.map((record) => record.order);
-  if (!orders.length || !staffCanAccessBranch(staff, orders[0].branch) || orders.some((order) => !staffCanAccessBranch(staff, order.branch))) return { kind: "forbidden" as const };
-  const capacity: LoadCapacity = {
-    weight_kg: input.capacityWeightKg ?? null,
-    volume_cbm: input.capacityVolumeCbm ?? null,
-    pieces: input.capacityPieces ?? null,
-    containers: input.capacityContainers ?? null,
-  };
-  const compatibility = assessLoadCompatibility(orders, input.mode, capacity);
-  if (!compatibility.ok) return { kind: "incompatible" as const, compatibility };
-
+  const normalizedIds = [...new Set(input.orderIds.map((id) => id.trim().toUpperCase()).filter(Boolean))];
+  if (!normalizedIds.length || normalizedIds.length !== input.orderIds.map((id) => id.trim().toUpperCase()).filter(Boolean).length) return { kind: "incompatible" as const, compatibility: membershipCompatibilityError("Each transport order may appear only once in a consolidation load.") };
+  const capacity: LoadCapacity = { weight_kg: input.capacityWeightKg ?? null, volume_cbm: input.capacityVolumeCbm ?? null, pieces: input.capacityPieces ?? null, containers: input.capacityContainers ?? null };
+  const db = firebaseAdminDb();
   const id = loadId();
   const reference = loadReference();
+  const ref = db.collection("consolidation_loads").doc(id);
   const now = new Date().toISOString();
-  const members = orders.map(memberFromOrder);
-  const stops = buildDefaultStops(orders);
-  const document = {
-    reference,
-    name: input.name.trim() || reference,
-    branch: orders[0].branch,
-    mode: input.mode,
-    status: "draft",
-    equipment: input.equipment?.trim() || orders.find((order) => order.equipment)?.equipment || null,
-    capacity_weight_kg: capacity.weight_kg,
-    capacity_volume_cbm: capacity.volume_cbm,
-    capacity_pieces: capacity.pieces,
-    capacity_containers: capacity.containers,
-    members,
-    stops,
-    master_order_id: null,
-    master_tender_id: null,
-    master_booking_reference: null,
-    procurement_partner_id: null,
-    procurement_partner_name: null,
-    procurement_cost: null,
-    procurement_currency: null,
-    created_at: now,
-    created_by_name: actor.name,
-    created_by_email: actor.email,
-    updated_at: now,
-  };
-  const ref = firebaseAdminDb().collection("consolidation_loads").doc(id);
-  const batch = firebaseAdminDb().batch();
-  batch.create(ref, document);
-  batch.create(ref.collection("events").doc(eventId()), { type: "load_created", title: `${reference} created`, detail: `${orders.length} orders · ${input.mode}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-  for (const record of records) {
-    batch.update(record.ref, { consolidation_load_id: id, consolidation_reference: reference, updated_at: now });
-    batch.create(record.ref.collection("events").doc(eventId()), { type: "added_to_consolidation", title: `Added to consolidation ${reference}`, detail: input.name.trim() || null, actor_name: actor.name, actor_email: actor.email, created_at: now });
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const records = await transactionOrderRecords(transaction, normalizedIds);
+      if (records.some((record) => !record)) return { kind: "missing_order" as const };
+      const ready = records.filter((record): record is NonNullable<typeof record> => Boolean(record));
+      const orders = ready.map((record) => record.order);
+      if (!orders.length || orders.some((order) => !staffCanAccessBranch(staff, order.branch))) return { kind: "forbidden" as const };
+      if (ready.some((record) => nullable(record.data.consolidation_load_id) || record.data.procurement_locked_by_load === true || nullable(record.data.consolidation_master_order_id))) return { kind: "membership_conflict" as const };
+      const compatibility = assessLoadCompatibility(orders, input.mode, capacity);
+      if (!compatibility.ok) return { kind: "incompatible" as const, compatibility };
+      const members = orders.map(memberFromOrder);
+      const stops = buildDefaultStops(orders);
+      const document = {
+        reference,
+        name: input.name.trim() || reference,
+        branch: orders[0].branch,
+        mode: input.mode,
+        status: "draft",
+        equipment: input.equipment?.trim() || orders.find((order) => order.equipment)?.equipment || null,
+        capacity_weight_kg: capacity.weight_kg,
+        capacity_volume_cbm: capacity.volume_cbm,
+        capacity_pieces: capacity.pieces,
+        capacity_containers: capacity.containers,
+        members,
+        stops,
+        master_order_id: null,
+        master_tender_id: null,
+        master_booking_reference: null,
+        master_shipment_reference: null,
+        procurement_partner_id: null,
+        procurement_partner_name: null,
+        procurement_cost: null,
+        procurement_currency: null,
+        created_at: now,
+        created_by_name: actor.name,
+        created_by_email: actor.email,
+        updated_at: now,
+      };
+      transaction.create(ref, document);
+      transaction.create(ref.collection("events").doc("load-created"), { type: "load_created", title: `${reference} created`, detail: `${orders.length} orders · ${input.mode}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      for (const record of ready) {
+        transaction.update(record.ref, { consolidation_load_id: id, consolidation_reference: reference, updated_at: now });
+        transaction.create(record.ref.collection("events").doc(`consolidation-${id}`), { type: "added_to_consolidation", title: `Added to consolidation ${reference}`, detail: input.name.trim() || null, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      }
+      return { kind: "created" as const, load: loadFromData(id, document)!, compatibility };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
   }
-  await batch.commit();
-  return { kind: "created" as const, load: loadFromData(id, document)!, compatibility };
 }
 
 export async function addOrderToConsolidationLoad(loadIdValue: string, orderIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(loadIdValue);
-  if (!record) return { kind: "missing" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.status !== "draft") return { kind: "locked" as const };
-  if (record.load.members.some((member) => member.order_id === orderIdValue.trim().toUpperCase())) return { kind: "ready" as const, load: record.load };
-  const order = await getOrder(orderIdValue);
-  if (!order) return { kind: "missing_order" as const };
-  if (!staffCanAccessBranch(staff, order.order.branch)) return { kind: "forbidden" as const };
-  const existing = await loadOrders(record.load.members.map((member) => member.order_id));
-  const orders = [...existing.map((item) => item.order), order.order];
-  const compatibility = assessLoadCompatibility(orders, record.load.mode, loadCapacity(record.load));
-  if (!compatibility.ok) return { kind: "incompatible" as const, compatibility };
-  const members = orders.map(memberFromOrder);
-  const stops = buildDefaultStops(orders);
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
+  const orderIdValueNormalized = orderIdValue.trim().toUpperCase();
+  const orderRef = db.collection("transport_orders").doc(orderIdValueNormalized);
   const now = new Date().toISOString();
-  const batch = firebaseAdminDb().batch();
-  batch.update(record.ref, { members, stops, updated_at: now });
-  batch.update(order.ref, { consolidation_load_id: record.load.id, consolidation_reference: record.load.reference, updated_at: now });
-  batch.create(record.ref.collection("events").doc(eventId()), { type: "order_added", title: `${order.order.id} added to load`, detail: "Stop sequence was regenerated; review route order before procurement.", actor_name: actor.name, actor_email: actor.email, created_at: now });
-  await batch.commit();
-  return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, members, stops, updated_at: now })!, compatibility };
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const loadSnapshot = await transaction.get(loadRef);
+      const record = loadRecord(loadSnapshot);
+      if (!record) return { kind: "missing" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (record.load.status !== "draft") return { kind: "locked" as const };
+      const memberIds = record.load.members.map((member) => member.order_id);
+      const snapshots = await Promise.all([
+        transaction.get(orderRef),
+        ...memberIds.filter((id) => id !== orderIdValueNormalized).map((id) => transaction.get(db.collection("transport_orders").doc(id))),
+      ]);
+      const order = orderRecord(snapshots[0]);
+      if (!order) return { kind: "missing_order" as const };
+      if (!staffCanAccessBranch(staff, order.order.branch)) return { kind: "forbidden" as const };
+      const alreadyMember = memberIds.includes(orderIdValueNormalized);
+      const currentMembership = nullable(order.data.consolidation_load_id);
+      if (alreadyMember) {
+        if (currentMembership !== record.load.id) return { kind: "state_conflict" as const };
+        return { kind: "ready" as const, load: record.load };
+      }
+      if (currentMembership || order.data.procurement_locked_by_load === true || nullable(order.data.consolidation_master_order_id)) return { kind: "membership_conflict" as const };
+      const existing = snapshots.slice(1).map(orderRecord);
+      if (existing.some((item) => !item)) return { kind: "state_conflict" as const };
+      const existingReady = existing.filter((item): item is NonNullable<typeof item> => Boolean(item));
+      if (existingReady.some((item) => nullable(item.data.consolidation_load_id) !== record.load.id)) return { kind: "state_conflict" as const };
+      const compatibilityOrders = [...existingReady.map((item) => ({ ...item.order, consolidation_load_id: null })), { ...order.order, consolidation_load_id: null }];
+      const compatibility = assessLoadCompatibility(compatibilityOrders, record.load.mode, loadCapacity(record.load));
+      if (!compatibility.ok) return { kind: "incompatible" as const, compatibility };
+      const members = [...existingReady.map((item) => memberFromOrder(item.order)), memberFromOrder(order.order)];
+      const stops = buildDefaultStops([...existingReady.map((item) => item.order), order.order]);
+      transaction.update(loadRef, { members, stops, updated_at: now });
+      transaction.update(orderRef, { consolidation_load_id: record.load.id, consolidation_reference: record.load.reference, updated_at: now });
+      transaction.create(loadRef.collection("events").doc(`order-added-${order.order.id}`), { type: "order_added", title: `${order.order.id} added to load`, detail: "Stop sequence was regenerated; review route order before procurement.", actor_name: actor.name, actor_email: actor.email, created_at: now });
+      return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, members, stops, updated_at: now })!, compatibility };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
+  }
 }
 
 export async function removeOrderFromConsolidationLoad(loadIdValue: string, orderIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(loadIdValue);
-  if (!record) return { kind: "missing" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.status !== "draft") return { kind: "locked" as const };
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const normalized = orderIdValue.trim().toUpperCase();
-  if (!record.load.members.some((member) => member.order_id === normalized)) return { kind: "missing_order" as const };
-  const remainingIds = record.load.members.map((member) => member.order_id).filter((id) => id !== normalized);
-  if (remainingIds.length < 2) return { kind: "minimum_members" as const };
-  const remaining = await loadOrders(remainingIds);
-  if (remaining.length !== remainingIds.length) return { kind: "missing_order" as const };
-  const members = remaining.map((item) => memberFromOrder(item.order));
-  const stops = buildDefaultStops(remaining.map((item) => item.order));
-  const order = await getOrder(normalized);
   const now = new Date().toISOString();
-  const batch = firebaseAdminDb().batch();
-  batch.update(record.ref, { members, stops, updated_at: now });
-  if (order) batch.update(order.ref, { consolidation_load_id: null, consolidation_reference: null, procurement_locked_by_load: false, updated_at: now });
-  batch.create(record.ref.collection("events").doc(eventId()), { type: "order_removed", title: `${normalized} removed from load`, detail: "Stop sequence was regenerated; review route order before procurement.", actor_name: actor.name, actor_email: actor.email, created_at: now });
-  await batch.commit();
-  return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, members, stops, updated_at: now })! };
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const record = loadRecord(await transaction.get(loadRef));
+      if (!record) return { kind: "missing" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (record.load.status !== "draft") return { kind: "locked" as const };
+      if (!record.load.members.some((member) => member.order_id === normalized)) return { kind: "missing_order" as const };
+      const remainingIds = record.load.members.map((member) => member.order_id).filter((id) => id !== normalized);
+      if (remainingIds.length < 2) return { kind: "minimum_members" as const };
+      const ids = [normalized, ...remainingIds];
+      const records = await transactionOrderRecords(transaction, ids);
+      if (records.some((item) => !item)) return { kind: "state_conflict" as const };
+      const ready = records.filter((item): item is NonNullable<typeof item> => Boolean(item));
+      if (ready.some((item) => nullable(item.data.consolidation_load_id) !== record.load.id)) return { kind: "state_conflict" as const };
+      const target = ready.find((item) => item.order.id === normalized)!;
+      const remaining = ready.filter((item) => item.order.id !== normalized);
+      const members = remaining.map((item) => memberFromOrder(item.order));
+      const stops = buildDefaultStops(remaining.map((item) => item.order));
+      transaction.update(loadRef, { members, stops, updated_at: now });
+      transaction.update(target.ref, { consolidation_load_id: null, consolidation_reference: null, procurement_locked_by_load: false, consolidation_master_order_id: null, updated_at: now });
+      transaction.create(loadRef.collection("events").doc(`order-removed-${normalized}`), { type: "order_removed", title: `${normalized} removed from load`, detail: "Stop sequence was regenerated; review route order before procurement.", actor_name: actor.name, actor_email: actor.email, created_at: now });
+      return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, members, stops, updated_at: now })! };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
+  }
 }
 
 export async function reorderConsolidationStops(loadIdValue: string, orderedStopIds: string[], actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(loadIdValue);
-  if (!record) return { kind: "missing" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.status !== "draft") return { kind: "locked" as const };
-  const stops = normalizeStopSequence(record.load.stops, orderedStopIds);
-  if (!stops) return { kind: "invalid_sequence" as const };
-  const precedence = validateStopPrecedence(stops);
-  if (precedence.length) return { kind: "precedence" as const, orderIds: precedence };
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const now = new Date().toISOString();
-  await record.ref.update({ stops, updated_at: now });
-  await record.ref.collection("events").doc(eventId()).create({ type: "stops_reordered", title: "Load stop sequence updated", detail: stops.map((stop) => `${stop.sequence}. ${stop.location}`).join(" · "), actor_name: actor.name, actor_email: actor.email, created_at: now });
-  return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, stops, updated_at: now })! };
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const record = loadRecord(await transaction.get(loadRef));
+      if (!record) return { kind: "missing" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (record.load.status !== "draft") return { kind: "locked" as const };
+      const stops = normalizeStopSequence(record.load.stops, orderedStopIds);
+      if (!stops) return { kind: "invalid_sequence" as const };
+      const precedence = validateStopPrecedence(stops);
+      if (precedence.length) return { kind: "precedence" as const, orderIds: precedence };
+      transaction.update(loadRef, { stops, updated_at: now });
+      transaction.set(loadRef.collection("events").doc("stops-reordered"), { type: "stops_reordered", title: "Load stop sequence updated", detail: stops.map((stop) => `${stop.sequence}. ${stop.location}`).join(" · "), actor_name: actor.name, actor_email: actor.email, created_at: now }, { merge: true });
+      return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, stops, updated_at: now })! };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
+  }
 }
 
 export async function updateConsolidationStop(loadIdValue: string, stopIdValue: string, values: { plannedAt?: string; instructions?: string }, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(loadIdValue);
-  if (!record) return { kind: "missing" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.status !== "draft") return { kind: "locked" as const };
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const stopId = stopIdValue.trim();
-  if (!record.load.stops.some((stop) => stop.id === stopId)) return { kind: "missing_stop" as const };
-  const plannedAtRaw = values.plannedAt?.trim() || "";
-  const plannedAt = plannedAtRaw && Number.isFinite(Date.parse(plannedAtRaw)) ? new Date(plannedAtRaw).toISOString() : null;
-  const stops = record.load.stops.map((stop) => stop.id === stopId ? { ...stop, planned_at: plannedAt, instructions: values.instructions?.trim() || null } : stop);
   const now = new Date().toISOString();
-  await record.ref.update({ stops, updated_at: now });
-  await record.ref.collection("events").doc(eventId()).create({ type: "stop_updated", title: `Stop updated: ${stops.find((stop) => stop.id === stopId)?.location ?? stopId}`, detail: values.instructions?.trim() || null, actor_name: actor.name, actor_email: actor.email, created_at: now });
-  return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, stops, updated_at: now })! };
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const record = loadRecord(await transaction.get(loadRef));
+      if (!record) return { kind: "missing" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (record.load.status !== "draft") return { kind: "locked" as const };
+      if (!record.load.stops.some((stop) => stop.id === stopId)) return { kind: "missing_stop" as const };
+      const plannedAtRaw = values.plannedAt?.trim() || "";
+      const plannedAt = plannedAtRaw && Number.isFinite(Date.parse(plannedAtRaw)) ? new Date(plannedAtRaw).toISOString() : null;
+      const stops = record.load.stops.map((stop) => stop.id === stopId ? { ...stop, planned_at: plannedAt, instructions: values.instructions?.trim() || null } : stop);
+      transaction.update(loadRef, { stops, updated_at: now });
+      transaction.set(loadRef.collection("events").doc(`stop-${stopId}`), { type: "stop_updated", title: `Stop updated: ${stops.find((stop) => stop.id === stopId)?.location ?? stopId}`, detail: values.instructions?.trim() || null, actor_name: actor.name, actor_email: actor.email, created_at: now }, { merge: true });
+      return { kind: "updated" as const, load: loadFromData(record.load.id, { ...record.data, stops, updated_at: now })! };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
+  }
 }
 
 export async function releaseConsolidationToProcurement(loadIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(loadIdValue);
-  if (!record) return { kind: "missing" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.status !== "draft") return record.load.master_order_id ? { kind: "ready" as const, masterOrderId: record.load.master_order_id } : { kind: "locked" as const };
-  if (record.load.members.length < 2) return { kind: "minimum_members" as const };
-  if (validateStopPrecedence(record.load.stops).length) return { kind: "precedence" as const };
-  const records = await loadOrders(record.load.members.map((member) => member.order_id));
-  if (records.length !== record.load.members.length) return { kind: "missing_order" as const };
-  if (records.some((item) => !item.order.customer_id)) return { kind: "customer_required" as const };
-  const totals = loadTotals(records.map((item) => item.order));
-  const capacityBlockers = capacityViolations(totals, loadCapacity(record.load));
-  if (capacityBlockers.length) return { kind: "capacity" as const, blockers: capacityBlockers };
-  const first = [...record.load.stops].sort((a, b) => a.sequence - b.sequence)[0];
-  const last = [...record.load.stops].sort((a, b) => b.sequence - a.sequence)[0];
-  if (!first || !last) return { kind: "invalid_sequence" as const };
-  const id = masterOrderId(record.load.id);
-  const orderRef = firebaseAdminDb().collection("transport_orders").doc(id);
-  const existing = await orderRef.get();
-  if (existing.exists) return { kind: "ready" as const, masterOrderId: id };
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const now = new Date().toISOString();
-  const pickupDates = records.map((item) => item.order.pickup_date).filter((value): value is string => Boolean(value)).sort();
-  const deliveryDates = records.map((item) => item.order.delivery_date).filter((value): value is string => Boolean(value)).sort();
-  const master = {
-    branch: record.load.branch,
-    customer_id: null,
-    customer_name: `Consolidation ${record.load.reference}`,
-    origin: first.location,
-    destination: last.location,
-    mode: record.load.mode,
-    pickup_date: pickupDates[0] ?? null,
-    delivery_date: deliveryDates.at(-1) ?? null,
-    weight_kg: totals.weight_kg,
-    volume_cbm: totals.volume_cbm,
-    pieces: totals.pieces,
-    container_count: totals.containers,
-    equipment: record.load.equipment,
-    temperature_requirement: records.map((item) => item.order.temperature_requirement).find(Boolean) ?? null,
-    carrier_requirement: `Consolidated load ${record.load.reference} · ${record.load.stops.length} stops`,
-    notes: `Master procurement order for ${record.load.reference}. Stops: ${record.load.stops.map((stop) => `${stop.sequence}:${stop.location}`).join(" | ")}`,
-    status: "draft",
-    selected_rate_card_id: null,
-    selected_partner_id: null,
-    selected_cost: null,
-    selected_currency: null,
-    consolidation_load_id: record.load.id,
-    consolidation_reference: record.load.reference,
-    is_consolidation_master: true,
-    created_at: now,
-    created_by_name: actor.name,
-    created_by_email: actor.email,
-    updated_at: now,
-  };
-  const batch = firebaseAdminDb().batch();
-  batch.create(orderRef, master);
-  batch.update(record.ref, { status: "ready_for_procurement", master_order_id: id, updated_at: now });
-  batch.create(record.ref.collection("events").doc(eventId()), { type: "released_to_procurement", title: `Master procurement order ${id} created`, detail: `${record.load.members.length} house orders · ${record.load.stops.length} stops`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-  for (const item of records) {
-    batch.update(item.ref, { procurement_locked_by_load: true, consolidation_master_order_id: id, updated_at: now });
-    batch.create(item.ref.collection("events").doc(eventId()), { type: "consolidation_procurement_locked", title: `Procurement moved to master load ${record.load.reference}`, detail: id, actor_name: actor.name, actor_email: actor.email, created_at: now });
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const record = loadRecord(await transaction.get(loadRef));
+      if (!record) return { kind: "missing" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (record.load.status !== "draft") return record.load.master_order_id ? { kind: "ready" as const, masterOrderId: record.load.master_order_id } : { kind: "locked" as const };
+      if (record.load.members.length < 2) return { kind: "minimum_members" as const };
+      if (validateStopPrecedence(record.load.stops).length) return { kind: "precedence" as const };
+      const records = await transactionOrderRecords(transaction, record.load.members.map((member) => member.order_id));
+      if (records.some((item) => !item)) return { kind: "missing_order" as const };
+      const ready = records.filter((item): item is NonNullable<typeof item> => Boolean(item));
+      if (ready.some((item) => !staffCanAccessBranch(staff, item.order.branch))) return { kind: "forbidden" as const };
+      if (ready.some((item) => nullable(item.data.consolidation_load_id) !== record.load.id || item.data.procurement_locked_by_load === true || nullable(item.data.consolidation_master_order_id))) return { kind: "state_conflict" as const };
+      if (ready.some((item) => !["draft", "rated", "selected"].includes(item.order.status))) return { kind: "state_conflict" as const };
+      if (ready.some((item) => !item.order.customer_id)) return { kind: "customer_required" as const };
+      const totals = loadTotals(ready.map((item) => item.order));
+      const blockers = capacityViolations(totals, loadCapacity(record.load));
+      if (blockers.length) return { kind: "capacity" as const, blockers };
+      const sortedStops = [...record.load.stops].sort((a, b) => a.sequence - b.sequence);
+      const first = sortedStops[0];
+      const last = sortedStops.at(-1);
+      if (!first || !last) return { kind: "invalid_sequence" as const };
+      const id = masterOrderId(record.load.id);
+      const masterRef = db.collection("transport_orders").doc(id);
+      const existingMaster = await transaction.get(masterRef);
+      if (existingMaster.exists) return { kind: "state_conflict" as const };
+      const pickupDates = ready.map((item) => item.order.pickup_date).filter((value): value is string => Boolean(value)).sort();
+      const deliveryDates = ready.map((item) => item.order.delivery_date).filter((value): value is string => Boolean(value)).sort();
+      const master = {
+        branch: record.load.branch,
+        customer_id: null,
+        customer_name: `Consolidation ${record.load.reference}`,
+        origin: first.location,
+        destination: last.location,
+        mode: record.load.mode,
+        pickup_date: pickupDates[0] ?? null,
+        delivery_date: deliveryDates.at(-1) ?? null,
+        weight_kg: totals.weight_kg,
+        volume_cbm: totals.volume_cbm,
+        pieces: totals.pieces,
+        container_count: totals.containers,
+        equipment: record.load.equipment,
+        temperature_requirement: ready.map((item) => item.order.temperature_requirement).find(Boolean) ?? null,
+        carrier_requirement: `Consolidated load ${record.load.reference} · ${record.load.stops.length} stops`,
+        notes: `Master procurement order for ${record.load.reference}. Stops: ${record.load.stops.map((stop) => `${stop.sequence}:${stop.location}`).join(" | ")}`,
+        status: "draft",
+        selected_rate_card_id: null,
+        selected_partner_id: null,
+        selected_cost: null,
+        selected_currency: null,
+        consolidation_load_id: record.load.id,
+        consolidation_reference: record.load.reference,
+        is_consolidation_master: true,
+        created_at: now,
+        created_by_name: actor.name,
+        created_by_email: actor.email,
+        updated_at: now,
+      };
+      transaction.create(masterRef, master);
+      transaction.update(loadRef, { status: "ready_for_procurement", master_order_id: id, updated_at: now });
+      transaction.create(loadRef.collection("events").doc(`released-${id}`), { type: "released_to_procurement", title: `Master procurement order ${id} created`, detail: `${record.load.members.length} house orders · ${record.load.stops.length} stops`, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      for (const item of ready) {
+        transaction.update(item.ref, { procurement_locked_by_load: true, consolidation_master_order_id: id, updated_at: now });
+        transaction.create(item.ref.collection("events").doc(`procurement-lock-${record.load.id}`), { type: "consolidation_procurement_locked", title: `Procurement moved to master load ${record.load.reference}`, detail: id, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      }
+      return { kind: "released" as const, masterOrderId: id };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
   }
-  await batch.commit();
-  return { kind: "released" as const, masterOrderId: id };
 }
 
 export async function cancelDraftConsolidationLoad(loadIdValue: string, note: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(loadIdValue);
-  if (!record) return { kind: "missing" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.status !== "draft") return { kind: "locked" as const };
-  const orders = await loadOrders(record.load.members.map((member) => member.order_id));
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const now = new Date().toISOString();
-  const batch = firebaseAdminDb().batch();
-  batch.update(record.ref, { status: "cancelled", updated_at: now });
-  batch.create(record.ref.collection("events").doc(eventId()), { type: "load_cancelled", title: "Consolidation load cancelled", detail: note.trim() || null, actor_name: actor.name, actor_email: actor.email, created_at: now });
-  for (const order of orders) batch.update(order.ref, { consolidation_load_id: null, consolidation_reference: null, procurement_locked_by_load: false, consolidation_master_order_id: null, updated_at: now });
-  await batch.commit();
-  return { kind: "cancelled" as const };
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const record = loadRecord(await transaction.get(loadRef));
+      if (!record) return { kind: "missing" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (record.load.status !== "draft") return { kind: "locked" as const };
+      const records = await transactionOrderRecords(transaction, record.load.members.map((member) => member.order_id));
+      if (records.some((item) => !item)) return { kind: "state_conflict" as const };
+      const ready = records.filter((item): item is NonNullable<typeof item> => Boolean(item));
+      if (ready.some((item) => nullable(item.data.consolidation_load_id) !== record.load.id)) return { kind: "state_conflict" as const };
+      transaction.update(loadRef, { status: "cancelled", updated_at: now });
+      transaction.create(loadRef.collection("events").doc("load-cancelled"), { type: "load_cancelled", title: "Consolidation load cancelled", detail: note.trim() || null, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      for (const order of ready) transaction.update(order.ref, { consolidation_load_id: null, consolidation_reference: null, procurement_locked_by_load: false, consolidation_master_order_id: null, updated_at: now });
+      return { kind: "cancelled" as const };
+    });
+  } catch {
+    return { kind: "unavailable" as const };
+  }
 }
 
-function seedShipmentWorkflow(batch: FirebaseFirestore.WriteBatch, shipmentRef: FirebaseFirestore.DocumentReference, values: { mode: TmsMode; branch: KcplBranch; origin: string; destination: string; actor: Actor; now: string }) {
-  const documentPlan = buildDocumentIntelligence({ mode: values.mode, origin: values.origin, destination: values.destination, primaryBranch: values.branch });
-  for (const task of defaultWorkflowTasks(values.mode, values.branch)) {
-    batch.create(shipmentRef.collection("job_tasks").doc(`task-${crypto.randomUUID()}`), { title: task.title, detail: task.detail, branch: task.branch, due_at: null, assigned_to_uid: null, assigned_to_name: null, assigned_to_email: null, assigned_to_phone: null, completed: false, completed_at: null, completed_by: null, created_at: values.now, created_by: values.actor.email || "workflow@kcpl.internal", workflow_seeded: true });
+function actualTenderCommercials(tender: FirebaseFirestore.DocumentSnapshot) {
+  const status = text(tender.get("status"));
+  if (status === "accepted") {
+    const amount = nullableNum(tender.get("offered_cost"));
+    const currency = currencyValue(tender.get("currency"));
+    return amount !== null && currency ? { amount, currency } : null;
   }
-  for (const step of defaultCustomsSteps(values.mode, values.branch)) {
-    batch.create(shipmentRef.collection("customs_steps").doc(`customs-${crypto.randomUUID()}`), { title: step.title, detail: step.detail, branch: step.branch, required: step.required, completed: false, completed_at: null, completed_by: null, created_at: values.now, created_by: values.actor.email || "workflow@kcpl.internal", workflow_seeded: true });
+  if (status === "countered") {
+    const amount = nullableNum(tender.get("counter_cost"));
+    const currency = currencyValue(tender.get("counter_currency"));
+    return amount !== null && currency ? { amount, currency } : null;
   }
-  for (const requirement of documentPlan.requirements) {
-    batch.set(shipmentRef.collection("document_requirements").doc(requirement.documentType), { document_type: requirement.documentType, required: requirement.required, reason: requirement.reason, source: requirement.source, advisory: requirement.advisory === true, created_at: values.now, updated_at: values.now });
-  }
+  return null;
 }
 
 export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
-  const record = await getLoad(input.loadId);
-  if (!record) return { kind: "missing_load" as const };
-  if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
-  if (record.load.master_order_id !== input.masterOrderId) return { kind: "invalid_master" as const };
-  if (record.load.status === "booked" && record.load.master_booking_reference === input.bookingReference) {
-    const existing = record.load.members.map((member) => member.shipment_reference).filter((value): value is string => Boolean(value));
-    return { kind: "booked" as const, masterShipmentReference: nullable(record.data.master_shipment_reference), shipmentReferences: existing };
-  }
-  if (record.load.status !== "ready_for_procurement" && record.load.status !== "tendering") return { kind: "invalid_transition" as const };
-  if (!input.bookingReference.trim()) return { kind: "booking_reference_required" as const };
+  const bookingReference = input.bookingReference.trim();
+  if (!bookingReference) return { kind: "booking_reference_required" as const };
   if (!Number.isFinite(input.amount) || input.amount < 0 || !crmCurrencies.includes(input.currency)) return { kind: "commercials_required" as const };
-
-  const orders = await loadOrders(record.load.members.map((member) => member.order_id));
-  if (orders.length !== record.load.members.length) return { kind: "missing_order" as const };
-  if (orders.some((item) => !item.order.customer_id)) return { kind: "customer_required" as const };
-  const customerIds = [...new Set(orders.map((item) => item.order.customer_id!.trim().toUpperCase()))];
-  const customerRecords = await Promise.all(customerIds.map(async (id) => {
-    const ref = firebaseAdminDb().collection("customers").doc(id);
-    const snapshot = await ref.get();
-    return { id, ref, snapshot };
-  }));
-  if (customerRecords.some((item) => !item.snapshot.exists || item.snapshot.get("archived") === true)) return { kind: "customer_missing" as const };
-  const customerMap = new Map(customerRecords.map((item) => [item.id, item]));
-  const allocations = allocateProcurementCost(input.amount, record.load.members);
-  if (allocations.length !== record.load.members.length) return { kind: "commercials_required" as const };
-  const allocationMap = new Map(allocations.map((item) => [item.order_id, item.amount]));
+  const db = firebaseAdminDb();
+  const loadRef = db.collection("consolidation_loads").doc(input.loadId.trim().toUpperCase());
+  const masterOrderRef = db.collection("transport_orders").doc(input.masterOrderId.trim().toUpperCase());
+  const tenderRef = db.collection("transport_tenders").doc(input.tenderId.trim().toUpperCase());
   const now = new Date().toISOString();
-  const masterShipmentReference = shipmentReference("M");
-  const masterShipmentRef = firebaseAdminDb().collection("shipments").doc(masterShipmentReference);
-  const masterQuoteReference = masterBridgeQuoteReference(record.load.id);
-  const masterQuoteRef = firebaseAdminDb().collection("quotes").doc(masterQuoteReference);
-  const masterOrderRef = firebaseAdminDb().collection("transport_orders").doc(input.masterOrderId);
-  const tenderRef = firebaseAdminDb().collection("transport_tenders").doc(input.tenderId);
-  const batch = firebaseAdminDb().batch();
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      const [loadSnapshot, masterOrder, tender] = await Promise.all([
+        transaction.get(loadRef),
+        transaction.get(masterOrderRef),
+        transaction.get(tenderRef),
+      ]);
+      const record = loadRecord(loadSnapshot);
+      if (!record) return { kind: "missing_load" as const };
+      if (!staffCanAccessBranch(staff, record.load.branch)) return { kind: "forbidden" as const };
+      if (!masterOrder.exists || record.load.master_order_id !== masterOrder.id) return { kind: "invalid_master" as const };
+      if (!tender.exists || normalizedId(tender.get("order_id")) !== masterOrder.id || branchValue(tender.get("branch")) !== record.load.branch) return { kind: "state_conflict" as const };
 
-  const firstStop = [...record.load.stops].sort((a, b) => a.sequence - b.sequence)[0];
-  const lastStop = [...record.load.stops].sort((a, b) => b.sequence - a.sequence)[0];
-  const origin = firstStop?.location ?? record.load.members[0]?.origin ?? "";
-  const destination = lastStop?.location ?? record.load.members.at(-1)?.destination ?? "";
-  batch.set(masterQuoteRef, { reference: masterQuoteReference, status: "won", migration_hidden: true, source: "tms_consolidation_master_bridge", consolidation_load_id: record.load.id, customer_id: null, company_name: `Consolidation ${record.load.reference}`, contact_name: "", contact_email: "", phone: "", origin, destination, mode: record.load.mode, cargo_type: "Consolidated freight", quote_currency: input.currency, quoted_amount: null, internal_cost: input.amount, shipment_reference: masterShipmentReference, created_at: now, updated_at: now }, { merge: true });
-  batch.create(masterShipmentRef, { reference: masterShipmentReference, quote_reference: masterQuoteReference, consolidation_load_id: record.load.id, transport_order_id: input.masterOrderId, tender_id: input.tenderId, tender_reference: input.tenderReference, customer_id: null, primary_branch: record.load.branch, handling_branches: [record.load.branch], origin, destination, mode: record.load.mode, is_consolidation_master: true, house_order_ids: record.load.members.map((member) => member.order_id), job_priority: "standard", job_assigned_to_uid: null, job_assigned_to_name: null, job_assigned_to_email: null, job_assigned_to_phone: null, internal_job_reference: record.load.reference, internal_job_notes: `${record.load.members.length} house orders · ${record.load.stops.length} planned stops`, workflow_version: 1, job_closed_at: null, status: "booking_confirmed", eta: null, current_location: origin, carrier: input.partnerName, carrier_reference: input.bookingReference.trim(), partner_id: input.partnerId, procurement_rate_card_id: input.rateCardId, procurement_cost: input.amount, procurement_currency: input.currency, customer_note: null, created_at: now, updated_at: now });
-  const masterEventId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-  batch.create(masterShipmentRef.collection("events").doc(String(masterEventId)), { id: masterEventId, shipment_reference: masterShipmentReference, title: "Consolidated booking confirmed", location: origin || null, details: `${record.load.reference} booked with ${input.partnerName}. Master reference: ${input.bookingReference.trim()}.`, event_time: now, created_at: now, author_name: actor.name });
-  batch.create(masterShipmentRef.collection("job_activity").doc(eventId("activity")), { type: "consolidation_master_booking", title: `Master load ${record.load.reference} booked`, detail: `${record.load.members.length} house orders · ${input.currency} ${input.amount.toFixed(2)} · ${input.bookingReference.trim()}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-  seedShipmentWorkflow(batch, masterShipmentRef, { mode: record.load.mode, branch: record.load.branch, origin, destination, actor, now });
+      if (record.load.status === "booked") {
+        const masterShipmentReference = nullable(record.data.master_shipment_reference);
+        const memberShipmentReferences = record.load.members.map((member) => member.shipment_reference);
+        const retryDecision = consolidatedBookingRetryDecision({
+          requestedBookingReference: bookingReference,
+          loadBookingReference: record.load.master_booking_reference,
+          masterShipmentReference,
+          memberShipmentReferences,
+          expectedMemberCount: record.load.members.length,
+          tenderStatus: text(tender.get("status")),
+          tenderBookingReference: text(tender.get("booking_reference")),
+          tenderShipmentReference: text(tender.get("shipment_reference")),
+          masterOrderStatus: text(masterOrder.get("status")),
+          masterOrderBookingReference: text(masterOrder.get("booking_reference")),
+          masterOrderShipmentReference: text(masterOrder.get("shipment_reference")),
+        });
+        if (retryDecision !== "idempotent") return { kind: retryDecision as "booking_conflict" | "state_conflict" };
+        const houseShipmentReferences = memberShipmentReferences.filter((value): value is string => Boolean(value));
+        const houseRecordsRaw = await transactionOrderRecords(transaction, record.load.members.map((member) => member.order_id));
+        if (houseRecordsRaw.some((item) => !item)) return { kind: "state_conflict" as const };
+        const houseRecords = houseRecordsRaw.filter((item): item is NonNullable<typeof item> => Boolean(item));
+        const masterShipmentRef = db.collection("shipments").doc(masterShipmentReference!);
+        const masterQuoteRef = db.collection("quotes").doc(masterBridgeQuoteReference(record.load.id));
+        const houseShipmentRefs = houseShipmentReferences.map((reference) => db.collection("shipments").doc(reference));
+        const houseQuoteRefs = houseRecords.map((item) => db.collection("quotes").doc(bridgeQuoteReference(item.order.id)));
+        const [masterShipment, masterQuote, ...childSnapshots] = await Promise.all([
+          transaction.get(masterShipmentRef),
+          transaction.get(masterQuoteRef),
+          ...houseShipmentRefs.map((ref) => transaction.get(ref)),
+          ...houseQuoteRefs.map((ref) => transaction.get(ref)),
+        ]);
+        const houseShipments = childSnapshots.slice(0, houseShipmentRefs.length);
+        const houseQuotes = childSnapshots.slice(houseShipmentRefs.length);
+        const memberIds = record.load.members.map((member) => member.order_id);
+        if (!masterShipment.exists
+          || normalizedId(masterShipment.get("transport_order_id")) !== masterOrder.id
+          || normalizedId(masterShipment.get("tender_id")) !== tender.id
+          || text(masterShipment.get("carrier_reference")) !== bookingReference
+          || normalizedId(masterShipment.get("consolidation_load_id")) !== record.load.id
+          || masterShipment.get("is_consolidation_master") !== true
+          || branchValue(masterShipment.get("primary_branch")) !== record.load.branch
+          || nullable(masterShipment.get("customer_id"))
+          || !sameIdSet(masterShipment.get("house_order_ids"), memberIds)) return { kind: "state_conflict" as const };
+        if (!masterQuote.exists
+          || normalizedId(masterQuote.get("consolidation_load_id")) !== record.load.id
+          || normalizedId(masterQuote.get("shipment_reference")) !== normalizedId(masterShipmentReference)) return { kind: "state_conflict" as const };
+        for (let index = 0; index < houseRecords.length; index += 1) {
+          const item = houseRecords[index];
+          const member = record.load.members.find((candidate) => candidate.order_id === item.order.id);
+          const shipment = houseShipments[index];
+          const quote = houseQuotes[index];
+          const reference = member?.shipment_reference ?? "";
+          const customerId = text(item.data.customer_id).trim().toUpperCase();
+          if (!member || !reference || item.order.status !== "booked"
+            || normalizedId(item.data.consolidation_load_id) !== record.load.id
+            || normalizedId(item.data.consolidation_master_order_id) !== masterOrder.id
+            || item.data.procurement_locked_by_load !== true
+            || text(item.data.booking_reference) !== bookingReference
+            || normalizedId(item.data.shipment_reference) !== normalizedId(reference)
+            || !customerId) return { kind: "state_conflict" as const };
+          if (!shipment?.exists
+            || normalizedId(shipment.get("transport_order_id")) !== item.order.id
+            || normalizedId(shipment.get("tender_id")) !== tender.id
+            || text(shipment.get("carrier_reference")) !== bookingReference
+            || normalizedId(shipment.get("consolidation_load_id")) !== record.load.id
+            || normalizedId(shipment.get("master_shipment_reference")) !== normalizedId(masterShipmentReference)
+            || text(shipment.get("master_booking_reference")) !== bookingReference
+            || normalizedId(shipment.get("customer_id")) !== customerId
+            || branchValue(shipment.get("primary_branch")) !== item.order.branch) return { kind: "state_conflict" as const };
+          if (!quote?.exists
+            || normalizedId(quote.get("transport_order_id")) !== item.order.id
+            || normalizedId(quote.get("consolidation_load_id")) !== record.load.id
+            || normalizedId(quote.get("shipment_reference")) !== normalizedId(reference)) return { kind: "state_conflict" as const };
+        }
+        return { kind: "booked" as const, masterShipmentReference: masterShipmentReference!, shipmentReferences: houseShipmentReferences, idempotent: true };
+      }
+      if (record.load.status !== "ready_for_procurement" && record.load.status !== "tendering") return { kind: "invalid_transition" as const };
+      if (text(tender.get("updated_at")) !== input.expectedTenderUpdatedAt) return { kind: "state_conflict" as const };
+      if (!await masterTenderIsAuthoritative(transaction, masterOrder, tender.id, now)) return { kind: "stale_tender" as const };
+      const commercials = actualTenderCommercials(tender);
+      if (!commercials) return { kind: "invalid_transition" as const };
+      if (commercials.amount !== input.amount || commercials.currency !== input.currency) return { kind: "state_conflict" as const };
+      const partnerId = text(tender.get("partner_id")).trim().toUpperCase();
+      const partnerName = text(tender.get("partner_name"), partnerId || "Partner");
+      const rateCardId = text(tender.get("rate_card_id"));
+      const tenderReference = text(tender.get("tender_reference"), tender.id);
+      if (!partnerId || !rateCardId) return { kind: "state_conflict" as const };
 
-  const houseShipmentReferences: string[] = [];
-  const updatedMembers: TmsLoadMember[] = [];
-  const customerShipmentIncrements = new Map<string, number>();
-  for (const item of orders) {
-    const order = item.order;
-    const customerId = order.customer_id!.trim().toUpperCase();
-    const customer = customerMap.get(customerId)!;
-    const allocation = allocationMap.get(order.id) ?? 0;
-    const reference = shipmentReference("S");
-    houseShipmentReferences.push(reference);
-    const shipmentRef = firebaseAdminDb().collection("shipments").doc(reference);
-    const quoteReference = bridgeQuoteReference(order.id);
-    const quoteRef = firebaseAdminDb().collection("quotes").doc(quoteReference);
-    batch.set(quoteRef, { reference: quoteReference, status: "won", migration_hidden: true, source: "tms_consolidation_house_bridge", transport_order_id: order.id, consolidation_load_id: record.load.id, customer_id: customerId, company_name: text(customer.snapshot.get("display_name"), customerId), contact_name: "", contact_email: text(customer.snapshot.get("primary_email")), phone: text(customer.snapshot.get("primary_phone")), origin: order.origin, destination: order.destination, mode: order.mode, cargo_type: "", quote_currency: text(customer.snapshot.get("preferred_currency"), "NPR"), quoted_amount: null, internal_cost: allocation, shipment_reference: reference, created_at: now, updated_at: now }, { merge: true });
-    batch.create(shipmentRef, { reference, quote_reference: quoteReference, transport_order_id: order.id, consolidation_load_id: record.load.id, master_shipment_reference: masterShipmentReference, master_booking_reference: input.bookingReference.trim(), tender_id: input.tenderId, tender_reference: input.tenderReference, customer_id: customerId, primary_branch: order.branch, handling_branches: [order.branch], origin: order.origin, destination: order.destination, mode: order.mode, job_priority: "standard", job_assigned_to_uid: null, job_assigned_to_name: null, job_assigned_to_email: null, job_assigned_to_phone: null, internal_job_reference: order.id, internal_job_notes: order.notes, workflow_version: 1, job_closed_at: null, status: "booking_confirmed", eta: null, current_location: order.origin, carrier: input.partnerName, carrier_reference: input.bookingReference.trim(), partner_id: input.partnerId, procurement_rate_card_id: input.rateCardId, procurement_cost: allocation, procurement_currency: input.currency, customer_note: null, created_at: now, updated_at: now });
-    const shipmentEventId = Date.now() * 1000 + Math.floor(Math.random() * 1000) + houseShipmentReferences.length;
-    batch.create(shipmentRef.collection("events").doc(String(shipmentEventId)), { id: shipmentEventId, shipment_reference: reference, title: "Booking confirmed under consolidated load", location: order.origin || null, details: `${record.load.reference} · master ${input.bookingReference.trim()} · allocated procurement ${input.currency} ${allocation.toFixed(2)}.`, event_time: now, created_at: now, author_name: actor.name });
-    batch.create(shipmentRef.collection("job_activity").doc(eventId("activity")), { type: "consolidation_house_booking", title: `House shipment booked under ${record.load.reference}`, detail: `Master shipment ${masterShipmentReference} · ${input.currency} ${allocation.toFixed(2)} allocated procurement`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-    seedShipmentWorkflow(batch, shipmentRef, { mode: order.mode, branch: order.branch, origin: order.origin, destination: order.destination, actor, now });
-    batch.update(item.ref, { status: "booked", active_tender_id: null, booking_reference: input.bookingReference.trim(), shipment_reference: reference, selected_cost: allocation, selected_currency: input.currency, consolidation_allocated_cost: allocation, consolidation_allocated_currency: input.currency, procurement_locked_by_load: true, updated_at: now });
-    batch.create(item.ref.collection("events").doc(eventId()), { type: "consolidated_booking_confirmed", title: `Booked under master load ${record.load.reference}`, detail: `${reference} · master ${masterShipmentReference} · ${input.currency} ${allocation.toFixed(2)}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-    batch.create(customer.ref.collection("activity").doc(eventId("activity")), { type: "shipment_created", title: `Consolidated shipment opened: ${reference}`, detail: `${order.origin} → ${order.destination} · master load ${record.load.reference}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-    customerShipmentIncrements.set(customerId, (customerShipmentIncrements.get(customerId) ?? 0) + 1);
-    const member = record.load.members.find((candidate) => candidate.order_id === order.id)!;
-    updatedMembers.push({ ...member, allocated_cost: allocation, allocated_currency: input.currency, shipment_reference: reference });
+      const houseRecordsRaw = await transactionOrderRecords(transaction, record.load.members.map((member) => member.order_id));
+      if (houseRecordsRaw.some((item) => !item)) return { kind: "missing_order" as const };
+      const houseRecords = houseRecordsRaw.filter((item): item is NonNullable<typeof item> => Boolean(item));
+      if (houseRecords.some((item) => !item.order.customer_id)) return { kind: "customer_required" as const };
+      if (houseRecords.some((item) => normalizedId(item.data.consolidation_load_id) !== record.load.id || normalizedId(item.data.consolidation_master_order_id) !== masterOrder.id || item.data.procurement_locked_by_load !== true)) return { kind: "state_conflict" as const };
+      if (houseRecords.some((item) => item.order.status === "booked" || nullable(item.data.shipment_reference))) return { kind: "state_conflict" as const };
+
+      const customerIds = [...new Set(houseRecords.map((item) => item.order.customer_id!.trim().toUpperCase()))];
+      const customerSnapshots = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
+      if (customerSnapshots.some((snapshot) => !snapshot.exists || snapshot.get("archived") === true)) return { kind: "customer_missing" as const };
+      const customerMap = new Map(customerSnapshots.map((snapshot) => [snapshot.id, snapshot]));
+      const masterQuoteReference = masterBridgeQuoteReference(record.load.id);
+      const masterQuoteRef = db.collection("quotes").doc(masterQuoteReference);
+      const houseQuoteRefs = new Map(houseRecords.map((item) => [item.order.id, db.collection("quotes").doc(bridgeQuoteReference(item.order.id))]));
+      const [masterQuote, ...houseQuotes] = await Promise.all([
+        transaction.get(masterQuoteRef),
+        ...houseRecords.map((item) => transaction.get(houseQuoteRefs.get(item.order.id)!)),
+      ]);
+      if (masterQuote.exists) {
+        const quoteLoad = normalizedId(masterQuote.get("consolidation_load_id"));
+        if ((quoteLoad && quoteLoad !== record.load.id) || nullable(masterQuote.get("shipment_reference"))) return { kind: "state_conflict" as const };
+      }
+      for (let index = 0; index < houseRecords.length; index += 1) {
+        const quote = houseQuotes[index];
+        if (!quote.exists) continue;
+        const quoteOrder = normalizedId(quote.get("transport_order_id"));
+        const quoteLoad = normalizedId(quote.get("consolidation_load_id"));
+        if ((quoteOrder && quoteOrder !== houseRecords[index].order.id) || (quoteLoad && quoteLoad !== record.load.id) || nullable(quote.get("shipment_reference"))) return { kind: "state_conflict" as const };
+      }
+      const allocations = allocateProcurementCost(commercials.amount, record.load.members);
+      if (allocations.length !== record.load.members.length) return { kind: "commercials_required" as const };
+      const allocationMap = new Map(allocations.map((item) => [item.order_id, item.amount]));
+
+      const masterShipmentReference = shipmentReference("M");
+      const houseReferenceMap = new Map(houseRecords.map((item) => [item.order.id, shipmentReference("S")]));
+      const operationId = `consolidation:${record.load.id}:tender:${tender.id}`;
+      const sortedStops = [...record.load.stops].sort((a, b) => a.sequence - b.sequence);
+      const origin = sortedStops[0]?.location ?? record.load.members[0]?.origin ?? "";
+      const destination = sortedStops.at(-1)?.location ?? record.load.members.at(-1)?.destination ?? "";
+      const masterShipmentRef = db.collection("shipments").doc(masterShipmentReference);
+      transaction.set(masterQuoteRef, {
+        reference: masterQuoteReference,
+        status: "won",
+        migration_hidden: true,
+        source: "tms_consolidation_master_bridge",
+        consolidation_load_id: record.load.id,
+        customer_id: null,
+        company_name: `Consolidation ${record.load.reference}`,
+        contact_name: "",
+        contact_email: "",
+        phone: "",
+        origin,
+        destination,
+        mode: record.load.mode,
+        cargo_type: "Consolidated freight",
+        quote_currency: commercials.currency,
+        quoted_amount: null,
+        internal_cost: commercials.amount,
+        shipment_reference: masterShipmentReference,
+        created_at: now,
+        updated_at: now,
+      }, { merge: true });
+      transaction.create(masterShipmentRef, {
+        reference: masterShipmentReference,
+        quote_reference: masterQuoteReference,
+        consolidation_load_id: record.load.id,
+        transport_order_id: masterOrder.id,
+        tender_id: tender.id,
+        tender_reference: tenderReference,
+        customer_id: null,
+        primary_branch: record.load.branch,
+        handling_branches: [record.load.branch],
+        origin,
+        destination,
+        mode: record.load.mode,
+        is_consolidation_master: true,
+        house_order_ids: record.load.members.map((member) => member.order_id),
+        job_priority: "standard",
+        job_assigned_to_uid: null,
+        job_assigned_to_name: null,
+        job_assigned_to_email: null,
+        job_assigned_to_phone: null,
+        internal_job_reference: record.load.reference,
+        internal_job_notes: `${record.load.members.length} house orders · ${record.load.stops.length} planned stops`,
+        workflow_version: 1,
+        job_closed_at: null,
+        status: "booking_confirmed",
+        eta: null,
+        current_location: origin,
+        carrier: partnerName,
+        carrier_reference: bookingReference,
+        partner_id: partnerId,
+        procurement_rate_card_id: rateCardId,
+        procurement_cost: commercials.amount,
+        procurement_currency: commercials.currency,
+        customer_note: null,
+        booking_operation_id: operationId,
+        booking_artifact_seed_version: TMS_BOOKING_ARTIFACT_SEED_VERSION,
+        booking_artifact_kind: "consolidation_master",
+        booking_artifacts_seeded_at: null,
+        booking_actor_name: actor.name,
+        booking_actor_email: actor.email,
+        created_at: now,
+        updated_at: now,
+      });
+
+      const updatedMembers: TmsLoadMember[] = [];
+      const customerIncrements = new Map<string, number>();
+      for (const item of houseRecords) {
+        const customerId = item.order.customer_id!.trim().toUpperCase();
+        const customer = customerMap.get(customerId)!;
+        const allocation = allocationMap.get(item.order.id) ?? 0;
+        const reference = houseReferenceMap.get(item.order.id)!;
+        const quoteReference = bridgeQuoteReference(item.order.id);
+        transaction.set(houseQuoteRefs.get(item.order.id)!, {
+          reference: quoteReference,
+          status: "won",
+          migration_hidden: true,
+          source: "tms_consolidation_house_bridge",
+          transport_order_id: item.order.id,
+          consolidation_load_id: record.load.id,
+          customer_id: customerId,
+          company_name: text(customer.get("display_name"), customerId),
+          contact_name: "",
+          contact_email: text(customer.get("primary_email")),
+          phone: text(customer.get("primary_phone")),
+          origin: item.order.origin,
+          destination: item.order.destination,
+          mode: item.order.mode,
+          cargo_type: "",
+          quote_currency: text(customer.get("preferred_currency"), "NPR"),
+          quoted_amount: null,
+          internal_cost: allocation,
+          shipment_reference: reference,
+          created_at: now,
+          updated_at: now,
+        }, { merge: true });
+        transaction.create(db.collection("shipments").doc(reference), {
+          reference,
+          quote_reference: quoteReference,
+          transport_order_id: item.order.id,
+          consolidation_load_id: record.load.id,
+          master_shipment_reference: masterShipmentReference,
+          master_booking_reference: bookingReference,
+          tender_id: tender.id,
+          tender_reference: tenderReference,
+          customer_id: customerId,
+          primary_branch: item.order.branch,
+          handling_branches: [item.order.branch],
+          origin: item.order.origin,
+          destination: item.order.destination,
+          mode: item.order.mode,
+          job_priority: "standard",
+          job_assigned_to_uid: null,
+          job_assigned_to_name: null,
+          job_assigned_to_email: null,
+          job_assigned_to_phone: null,
+          internal_job_reference: item.order.id,
+          internal_job_notes: item.order.notes,
+          workflow_version: 1,
+          job_closed_at: null,
+          status: "booking_confirmed",
+          eta: null,
+          current_location: item.order.origin,
+          carrier: partnerName,
+          carrier_reference: bookingReference,
+          partner_id: partnerId,
+          procurement_rate_card_id: rateCardId,
+          procurement_cost: allocation,
+          procurement_currency: commercials.currency,
+          customer_note: null,
+          booking_operation_id: operationId,
+          booking_artifact_seed_version: TMS_BOOKING_ARTIFACT_SEED_VERSION,
+          booking_artifact_kind: "consolidation_house",
+          booking_artifacts_seeded_at: null,
+          booking_actor_name: actor.name,
+          booking_actor_email: actor.email,
+          created_at: now,
+          updated_at: now,
+        });
+        transaction.update(item.ref, {
+          status: "booked",
+          active_tender_id: null,
+          booking_reference: bookingReference,
+          shipment_reference: reference,
+          selected_cost: allocation,
+          selected_currency: commercials.currency,
+          consolidation_allocated_cost: allocation,
+          consolidation_allocated_currency: commercials.currency,
+          procurement_locked_by_load: true,
+          booking_operation_id: operationId,
+          updated_at: now,
+        });
+        transaction.create(item.ref.collection("events").doc(`booking-${reference}`), { type: "consolidated_booking_confirmed", title: `Booked under master load ${record.load.reference}`, detail: `${reference} · master ${masterShipmentReference} · ${commercials.currency} ${allocation.toFixed(2)}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
+        customerIncrements.set(customerId, (customerIncrements.get(customerId) ?? 0) + 1);
+        const member = record.load.members.find((candidate) => candidate.order_id === item.order.id)!;
+        updatedMembers.push({ ...member, allocated_cost: allocation, allocated_currency: commercials.currency, shipment_reference: reference });
+      }
+
+      for (const [customerId, increment] of customerIncrements) {
+        const customer = customerMap.get(customerId)!;
+        const currentActive = Math.max(0, num(customer.get("active_shipment_count")));
+        const currentStatus = text(customer.get("account_status"));
+        transaction.update(customer.ref, { active_shipment_count: currentActive + increment, lead_stage: "won", ...(currentStatus === "prospect" || currentStatus === "dormant" ? { account_status: "active" } : {}), updated_at: now });
+      }
+
+      const houseShipmentReferences = houseRecords.map((item) => houseReferenceMap.get(item.order.id)!);
+      transaction.update(tenderRef, {
+        status: "booked",
+        final_cost: commercials.amount,
+        final_currency: commercials.currency,
+        booking_reference: bookingReference,
+        pickup_confirmation: input.pickupConfirmation?.trim() || null,
+        booked_at: now,
+        shipment_reference: masterShipmentReference,
+        consolidation_load_id: record.load.id,
+        shipment_references: houseShipmentReferences,
+        booking_operation_id: operationId,
+        updated_at: now,
+      });
+      transaction.update(masterOrderRef, {
+        status: "booked",
+        active_tender_id: null,
+        booked_tender_id: tender.id,
+        booking_reference: bookingReference,
+        shipment_reference: masterShipmentReference,
+        selected_cost: commercials.amount,
+        selected_currency: commercials.currency,
+        booking_operation_id: operationId,
+        updated_at: now,
+      });
+      transaction.create(masterOrderRef.collection("events").doc(`booking-${masterShipmentReference}`), { type: "consolidated_booking_confirmed", title: `Master consolidation booked: ${record.load.reference}`, detail: `${masterShipmentReference} · ${commercials.currency} ${commercials.amount.toFixed(2)} · ${bookingReference}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      transaction.update(loadRef, {
+        status: "booked",
+        members: updatedMembers,
+        master_tender_id: tender.id,
+        master_booking_reference: bookingReference,
+        master_shipment_reference: masterShipmentReference,
+        procurement_partner_id: partnerId,
+        procurement_partner_name: partnerName,
+        procurement_cost: commercials.amount,
+        procurement_currency: commercials.currency,
+        booking_operation_id: operationId,
+        updated_at: now,
+      });
+      transaction.create(loadRef.collection("events").doc(`booking-${masterShipmentReference}`), { type: "load_booked", title: `Consolidated load booked with ${partnerName}`, detail: `${masterShipmentReference} · ${houseShipmentReferences.length} house shipments · ${commercials.currency} ${commercials.amount.toFixed(2)}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
+      return { kind: "booked" as const, masterShipmentReference, shipmentReferences: houseShipmentReferences, idempotent: false };
+    });
+
+    if (result.kind === "booked") {
+      for (const reference of [result.masterShipmentReference, ...result.shipmentReferences]) await ensureBookingArtifacts(reference, actor);
+    }
+    return result;
+  } catch {
+    return { kind: "unavailable" as const };
   }
-
-  for (const [customerId, increment] of customerShipmentIncrements) {
-    const customer = customerMap.get(customerId)!;
-    const currentActive = Math.max(0, num(customer.snapshot.get("active_shipment_count")));
-    const currentStatus = text(customer.snapshot.get("account_status"));
-    batch.update(customer.ref, { active_shipment_count: currentActive + increment, lead_stage: "won", ...(currentStatus === "prospect" || currentStatus === "dormant" ? { account_status: "active" } : {}), updated_at: now });
-  }
-
-  batch.update(tenderRef, { status: "booked", final_cost: input.amount, final_currency: input.currency, booking_reference: input.bookingReference.trim(), pickup_confirmation: input.pickupConfirmation?.trim() || null, booked_at: now, shipment_reference: masterShipmentReference, consolidation_load_id: record.load.id, shipment_references: houseShipmentReferences, updated_at: now });
-  batch.update(masterOrderRef, { status: "booked", active_tender_id: null, booked_tender_id: input.tenderId, booking_reference: input.bookingReference.trim(), shipment_reference: masterShipmentReference, selected_cost: input.amount, selected_currency: input.currency, updated_at: now });
-  batch.create(masterOrderRef.collection("events").doc(eventId()), { type: "consolidated_booking_confirmed", title: `Master consolidation booked: ${record.load.reference}`, detail: `${masterShipmentReference} · ${input.currency} ${input.amount.toFixed(2)} · ${input.bookingReference.trim()}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-  batch.update(record.ref, { status: "booked", members: updatedMembers, master_tender_id: input.tenderId, master_booking_reference: input.bookingReference.trim(), master_shipment_reference: masterShipmentReference, procurement_partner_id: input.partnerId, procurement_partner_name: input.partnerName, procurement_cost: input.amount, procurement_currency: input.currency, updated_at: now });
-  batch.create(record.ref.collection("events").doc(eventId()), { type: "load_booked", title: `Consolidated load booked with ${input.partnerName}`, detail: `${masterShipmentReference} · ${houseShipmentReferences.length} house shipments · ${input.currency} ${input.amount.toFixed(2)}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
-
-  await batch.commit();
-  return { kind: "booked" as const, masterShipmentReference, shipmentReferences: houseShipmentReferences };
 }

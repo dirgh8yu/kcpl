@@ -1,14 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import {
+  MAX_LOAD_ORDERS,
   allocateProcurementCost,
   assessLoadCompatibility,
   buildDefaultStops,
   capacityViolations,
+  consolidatedBookingRetryDecision,
+  consolidationMembershipConsistent,
+  consolidationMembershipDecision,
   consolidationSavings,
   normalizeStopSequence,
   validateStopPrecedence,
 } from "../app/admin/consolidation/tms-consolidation.ts";
+
+const consolidationServer = readFileSync(new URL("../app/admin/consolidation/tms-consolidation.server.ts", import.meta.url), "utf8");
+const consolidationRoute = readFileSync(new URL("../app/api/admin/consolidation/route.ts", import.meta.url), "utf8");
+const ratingServer = readFileSync(new URL("../app/admin/rating/tms-rating.server.ts", import.meta.url), "utf8");
 
 function order(overrides = {}) {
   return {
@@ -74,10 +83,7 @@ test("compatible same-branch road orders can consolidate", () => {
 });
 
 test("branch and equipment conflicts block consolidation", () => {
-  const result = assessLoadCompatibility([
-    order(),
-    order({ id: "ORD-2", branch: "Birgunj", equipment: "40HC" }),
-  ], "road", { weight_kg: null, volume_cbm: null, pieces: null, containers: null });
+  const result = assessLoadCompatibility([order(), order({ id: "ORD-2", branch: "Birgunj", equipment: "40HC" })], "road", { weight_kg: null, volume_cbm: null, pieces: null, containers: null });
   assert.equal(result.ok, false);
   assert.ok(result.blockers.some((item) => item.includes("same KCPL branch")));
   assert.ok(result.blockers.some((item) => item.includes("equipment")));
@@ -92,6 +98,16 @@ test("single-mode loads reject mixed transport modes unless master is multimodal
 test("capacity limits fail closed", () => {
   const blockers = capacityViolations({ weight_kg: 2100, volume_cbm: 11, pieces: 41, containers: 3 }, { weight_kg: 2000, volume_cbm: 10, pieces: 40, containers: 2 });
   assert.equal(blockers.length, 4);
+});
+
+test("supported consolidation size is explicitly capped at twenty houses", () => {
+  assert.equal(MAX_LOAD_ORDERS, 20);
+  const twenty = Array.from({ length: 20 }, (_, index) => order({ id: `ORD-${index + 1}`, origin: `Origin ${index + 1}` }));
+  const twentyOne = [...twenty, order({ id: "ORD-21", origin: "Origin 21" })];
+  assert.equal(assessLoadCompatibility(twenty, "road", { weight_kg: null, volume_cbm: null, pieces: null, containers: null }).ok, true);
+  const over = assessLoadCompatibility(twentyOne, "road", { weight_kg: null, volume_cbm: null, pieces: null, containers: null });
+  assert.equal(over.ok, false);
+  assert.ok(over.blockers.some((item) => item.includes("at most 20")));
 });
 
 test("default stops group matching locations and keep pickups before deliveries", () => {
@@ -115,14 +131,8 @@ test("stop reordering rejects incomplete ids and detects delivery-before-pickup"
 });
 
 test("procurement allocation is proportional and exact to cents", () => {
-  const allocations = allocateProcurementCost(1000, [
-    member({ id: "ORD-1", weight_kg: 750 }),
-    member({ id: "ORD-2", weight_kg: 250 }),
-  ]);
-  assert.deepEqual(allocations, [
-    { order_id: "ORD-1", amount: 750 },
-    { order_id: "ORD-2", amount: 250 },
-  ]);
+  const allocations = allocateProcurementCost(1000, [member({ id: "ORD-1", weight_kg: 750 }), member({ id: "ORD-2", weight_kg: 250 })]);
+  assert.deepEqual(allocations, [{ order_id: "ORD-1", amount: 750 }, { order_id: "ORD-2", amount: 250 }]);
   assert.equal(allocations.reduce((sum, item) => sum + item.amount, 0), 1000);
 });
 
@@ -141,4 +151,82 @@ test("savings are only claimed when every prior cost is currency-comparable", ()
   assert.deepEqual(sameCurrency, { baseline: 1100, consolidated: 900, savings: 200 });
   const mixed = consolidationSavings({ members: [member({ id: "ORD-1", selected_currency: "NPR" }), member({ id: "ORD-2", selected_currency: "USD" })], procurement_cost: 900, procurement_currency: "NPR" });
   assert.equal(mixed, null);
+});
+
+test("one house can belong to only one active consolidation load", () => {
+  assert.equal(consolidationMembershipDecision({ loadStatus: "draft", targetLoadId: "LOAD-A", loadMemberIds: [], orderId: "ORD-1", orderLoadId: null }), "add");
+  assert.equal(consolidationMembershipDecision({ loadStatus: "draft", targetLoadId: "LOAD-B", loadMemberIds: [], orderId: "ORD-1", orderLoadId: "LOAD-A" }), "membership_conflict");
+});
+
+test("membership pointer and embedded load membership must agree", () => {
+  assert.equal(consolidationMembershipDecision({ loadStatus: "draft", targetLoadId: "LOAD-A", loadMemberIds: ["ORD-1"], orderId: "ORD-1", orderLoadId: "LOAD-A" }), "ready");
+  assert.equal(consolidationMembershipDecision({ loadStatus: "draft", targetLoadId: "LOAD-A", loadMemberIds: ["ORD-1"], orderId: "ORD-1", orderLoadId: "LOAD-B" }), "state_conflict");
+  assert.equal(consolidationMembershipConsistent("LOAD-A", ["ORD-1", "ORD-2"], [{ orderId: "ORD-1", loadId: "LOAD-A" }, { orderId: "ORD-2", loadId: "LOAD-A" }]), true);
+  assert.equal(consolidationMembershipConsistent("LOAD-A", ["ORD-1", "ORD-2"], [{ orderId: "ORD-1", loadId: "LOAD-A" }, { orderId: "ORD-2", loadId: "LOAD-B" }]), false);
+});
+
+test("remove then add to another load has one coherent ownership result", () => {
+  assert.equal(consolidationMembershipConsistent("LOAD-A", ["ORD-2"], [{ orderId: "ORD-1", loadId: null }, { orderId: "ORD-2", loadId: "LOAD-A" }]), true);
+  assert.equal(consolidationMembershipDecision({ loadStatus: "draft", targetLoadId: "LOAD-B", loadMemberIds: ["ORD-3"], orderId: "ORD-1", orderLoadId: null }), "add");
+});
+
+test("released loads cannot accept membership changes", () => {
+  assert.equal(consolidationMembershipDecision({ loadStatus: "ready_for_procurement", targetLoadId: "LOAD-A", loadMemberIds: ["ORD-1"], orderId: "ORD-2", orderLoadId: null }), "locked");
+  assert.equal(consolidationMembershipDecision({ loadStatus: "booked", targetLoadId: "LOAD-A", loadMemberIds: ["ORD-1"], orderId: "ORD-2", orderLoadId: null }), "locked");
+});
+
+test("consolidated booking retry accepts only the same complete canonical parent state", () => {
+  const base = {
+    requestedBookingReference: "ABC123",
+    loadBookingReference: "ABC123",
+    masterShipmentReference: "KCPL-M-1",
+    memberShipmentReferences: ["KCPL-S-1", "KCPL-S-2"],
+    expectedMemberCount: 2,
+    tenderStatus: "booked",
+    tenderBookingReference: "ABC123",
+    tenderShipmentReference: "KCPL-M-1",
+    masterOrderStatus: "booked",
+    masterOrderBookingReference: "ABC123",
+    masterOrderShipmentReference: "KCPL-M-1",
+  };
+  assert.equal(consolidatedBookingRetryDecision(base), "idempotent");
+  assert.equal(consolidatedBookingRetryDecision({ ...base, requestedBookingReference: "XYZ999" }), "booking_conflict");
+  assert.equal(consolidatedBookingRetryDecision({ ...base, memberShipmentReferences: ["KCPL-S-1"] }), "state_conflict");
+  assert.equal(consolidatedBookingRetryDecision({ ...base, memberShipmentReferences: ["KCPL-S-1", "KCPL-S-1"] }), "state_conflict");
+  assert.equal(consolidatedBookingRetryDecision({ ...base, tenderShipmentReference: "KCPL-M-X" }), "state_conflict");
+});
+
+test("consolidation membership, release and stop mutation share Firestore transaction locks", () => {
+  assert.match(consolidationServer, /createConsolidationLoad[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /addOrderToConsolidationLoad[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /removeOrderFromConsolidationLoad[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /reorderConsolidationStops[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /updateConsolidationStop[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /releaseConsolidationToProcurement[\s\S]*?runTransaction/);
+});
+
+test("double release uses deterministic master identity and one transaction", () => {
+  assert.match(consolidationServer, /masterOrderId\(record\.load\.id\)/);
+  assert.match(consolidationServer, /transaction\.create\(masterRef, master\)/);
+  assert.match(consolidationServer, /kind: "ready" as const, masterOrderId/);
+});
+
+test("consolidated booking is one atomic core transaction with one master and one house shipment per member", () => {
+  assert.match(consolidationServer, /confirmConsolidatedLoadBooking[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /transaction\.create\(masterShipmentRef/);
+  assert.match(consolidationServer, /transaction\.create\(db\.collection\("shipments"\)\.doc\(reference\)/);
+  assert.match(consolidationServer, /members: updatedMembers/);
+  assert.match(consolidationServer, /booking_operation_id/);
+});
+
+test("released house orders remain procurement-locked against independent rating", () => {
+  assert.match(consolidationServer, /procurement_locked_by_load: true/);
+  assert.match(ratingServer, /procurement_locked_by_load/);
+});
+
+test("consolidation API preserves commercial RBAC and same-origin checks", () => {
+  assert.match(consolidationRoute, /isTrustedSameOriginRequest/);
+  assert.match(consolidationRoute, /canViewCommercial/);
+  assert.match(consolidationServer, /permissions\.canEditCommercial/);
+  assert.match(consolidationServer, /staffCanAccessBranch/);
 });
