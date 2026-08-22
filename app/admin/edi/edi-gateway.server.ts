@@ -1,7 +1,8 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { respondToTmsTenderFromEdi990 } from "../tenders/tms-tendering.server";
 import { recordOrderedTrackingEvent } from "../visibility/tracking-ingest.server";
 import { build204, parse214, parse990, parseX12, type EdiTransactionSet, type EdiTransactionStatus } from "./edi-x12";
 
@@ -30,7 +31,6 @@ function nullable(value: unknown) { const output = text(value); return output ||
 function branchValue(value: unknown): KcplBranch | null { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null; }
 function hashPayload(raw: string) { return createHash("sha256").update(raw.replace(/\r\n/g, "\n").trim()).digest("hex"); }
 function transactionId(direction: string, set: string, fingerprint: string) { return `${direction}-${set}-${fingerprint.slice(0, 40)}`; }
-function eventId(prefix = "edi") { return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`; }
 
 function ledgerFromDoc(doc: FirestoreDoc): EdiLedgerRow | null {
   const direction = text(doc.get("direction"));
@@ -148,47 +148,29 @@ async function process990(raw: string, transactionRef: FirebaseFirestore.Documen
   const parsed = parse990(raw);
   if (!parsed.response) return { kind: "quarantined" as const, message: `EDI 990 response code ${parsed.responseCode || "missing"} is not supported.` };
   const tender = await findTenderFor990(parsed);
-  if (!tender) return { kind: "quarantined" as const, message: "EDI 990 could not be matched uniquely to an active tender." };
-  const status = text(tender.get("status"));
-  if (status !== "sent") return { kind: "quarantined" as const, message: `Matched tender is ${status || "unknown"}; only sent tenders accept EDI 990 responses.` };
+  if (!tender) return { kind: "quarantined" as const, message: "EDI 990 could not be matched uniquely to a tender." };
   const branch = branchValue(tender.get("branch"));
   const orderId = text(tender.get("order_id")).toUpperCase();
   if (!branch || !orderId) return { kind: "quarantined" as const, message: "Matched tender is missing branch or order linkage." };
-  const orderRef = firebaseAdminDb().collection("transport_orders").doc(orderId);
-  const order = await orderRef.get();
-  if (!order.exists) return { kind: "quarantined" as const, message: "Matched EDI 990 tender has no transport order." };
-  const now = new Date().toISOString();
-  const batch = firebaseAdminDb().batch();
-  batch.update(tender.ref, {
+  const transition = await respondToTmsTenderFromEdi990(tender.id, {
     status: parsed.response,
-    responded_at: now,
-    response_note: parsed.note || `EDI 990 ${parsed.responseCode || "response"} from ${partner}`,
-    edi_990_transaction_id: transactionRef.id,
-    edi_990_response_code: parsed.responseCode,
-    updated_at: now,
-  });
-  if (parsed.response === "rejected") batch.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
-  batch.create(orderRef.collection("events").doc(eventId()), {
-    type: `tender_${parsed.response}_edi_990`,
-    title: `${text(tender.get("partner_name"), partner)}: tender ${parsed.response} by EDI 990`,
-    detail: parsed.note || `Response code ${parsed.responseCode || "unknown"}`,
-    actor_name: actor.name,
-    actor_email: actor.email,
-    created_at: now,
-  });
-  batch.set(transactionRef, {
-    status: "processed",
-    branch,
+    note: parsed.note || `EDI 990 ${parsed.responseCode || "response"} from ${partner}`,
+    responseCode: parsed.responseCode,
+    transactionRef,
     partner,
-    reference: orderId,
-    order_reference: orderId,
-    tender_reference: text(tender.get("tender_reference")),
-    tender_id: tender.id,
-    message: `Tender ${parsed.response} by EDI 990.`,
-    processed_at: now,
-    updated_at: now,
-  }, { merge: true });
-  await batch.commit();
+    expectedUpdatedAt: text(tender.get("updated_at")) || null,
+  }, actor);
+  if (transition.kind === "unavailable") throw new Error("Tender transition storage is unavailable.");
+  if (transition.kind !== "updated") {
+    const reason = transition.kind === "stale_tender"
+      ? "EDI 990 matched a stale tender that is no longer authoritative for its order."
+      : transition.kind === "expired"
+        ? "EDI 990 arrived after the tender expired."
+        : transition.kind === "state_conflict"
+          ? "EDI 990 lost a concurrent tender-state race and was not applied."
+          : `EDI 990 could not apply to the tender from its current state (${transition.kind}).`;
+    return { kind: "quarantined" as const, message: reason };
+  }
   return { kind: "processed" as const, transactionSet: "990" as const, tenderId: tender.id, tenderReference: text(tender.get("tender_reference")), branch, response: parsed.response };
 }
 
