@@ -414,7 +414,8 @@ test("32 quote tender approval and booking graph fails closed on incompatible ve
   assert.match(pricingServer, /pricing_approval_version_id: version\.id/);
   assert.match(pricingServer, /commercial_version_id: version\.id/);
   assert.match(tenderServer, /orderPointer\.id !== version\.id/);
-  assert.match(tenderServer, /explicitQuote\.get\("commercial_version_id"\)/);
+  assert.match(tenderServer, /assertCustomerSellAuthorityInTransaction\(transaction, version\)/);
+  assert.match(tenderServer, /const explicitQuoteReference = customerAuthority\.quoteReference/);
   assert.match(tenderServer, /booked_commercial_version_id/);
 });
 
