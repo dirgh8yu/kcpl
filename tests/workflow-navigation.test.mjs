@@ -17,17 +17,18 @@ const full = {
 
 test("workflow navigation contains every current TMS handoff workspace", () => {
   const ids = new Set(workflowWorkspaces.map((workspace) => workspace.id));
-  for (const required of ["rating", "pricing", "consolidation", "tenders", "pickups", "freight-documents", "shipments", "visibility", "delivery", "freight-audit", "payables"]) {
+  for (const required of ["rating", "pricing", "consolidation", "tenders", "pickups", "freight-documents", "shipments", "visibility", "carrier-integrations", "delivery", "freight-audit", "payables"]) {
     assert.equal(ids.has(required), true, `${required} should be globally discoverable`);
   }
 });
 
-test("operations-only staff see execution tools but not commercial or finance workspaces", () => {
+test("operations-only staff see execution and carrier tools but not commercial or finance workspaces", () => {
   const visible = new Set(visibleWorkspaces({ canViewCommercial: false, canManageJobFile: true, canManageFinance: false, canManageStaff: false, isManagement: false }).map((workspace) => workspace.id));
   assert.equal(visible.has("shipments"), true);
   assert.equal(visible.has("pickups"), true);
   assert.equal(visible.has("freight-documents"), true);
   assert.equal(visible.has("visibility"), true);
+  assert.equal(visible.has("carrier-integrations"), true);
   assert.equal(visible.has("delivery"), true);
   assert.equal(visible.has("rating"), false);
   assert.equal(visible.has("pricing"), false);
@@ -47,6 +48,7 @@ test("active workspace picks the most specific nested route", () => {
   assert.equal(activeWorkspace("/admin/jobs/KCPL-S-20260822-X", full)?.id, "shipments");
   assert.equal(activeWorkspace("/admin/pickups", full)?.id, "pickups");
   assert.equal(activeWorkspace("/admin/freight-documents", full)?.id, "freight-documents");
+  assert.equal(activeWorkspace("/admin/carrier-integrations", full)?.id, "carrier-integrations");
   assert.equal(activeWorkspace("/admin/partners/reconciliation", full)?.id, "supplier-reconciliation");
   assert.equal(activeWorkspace("/admin/migration/archive", full)?.id, "paper-archive");
 });

@@ -48,6 +48,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "tenders", href: "/admin/tenders", label: "Tender & Booking", group: "Plan & Sell", hint: "Carrier tendering, counter-offers and booking", keywords: ["tender", "booking", "carrier", "counter offer"], permission: "commercial", prefixes: ["/admin/tenders"] },
 
   { id: "partners", href: "/admin/partners", label: "Partners & Vendors", group: "Network", hint: "Carriers, agents, vendors and global counterparts", keywords: ["partner", "vendor", "carrier", "agent", "counterpart"], permission: "all", prefixes: ["/admin/partners"] },
+  { id: "carrier-integrations", href: "/admin/carrier-integrations", label: "Carrier Integrations", group: "Network", hint: "Live carrier APIs, DCSA webhooks, provider health and shipment sync", keywords: ["carrier api", "integration", "maersk", "dhl", "dcsa", "webhook", "tracking sync", "schedule"], permission: "job_file", prefixes: ["/admin/carrier-integrations"] },
 
   { id: "receivables", href: "/admin/finance", label: "Receivables", group: "Finance", hint: "Customer invoices, aging and collections", keywords: ["receivable", "invoice", "customer billing", "collections"], permission: "finance", prefixes: ["/admin/finance"] },
   { id: "payables", href: "/admin/payables", label: "Payables", group: "Finance", hint: "Supplier bills and payment obligations", keywords: ["payable", "supplier bill", "ap", "payment"], permission: "finance", prefixes: ["/admin/payables"] },
