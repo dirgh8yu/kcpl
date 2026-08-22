@@ -1,31 +1,15 @@
-import { timingSafeEqual } from "node:crypto";
 import { evaluateAutomationRules } from "../../../admin/alerts/alert-engine.server";
 import { evaluateFreightAutomation } from "../../../admin/alerts/freight-automation.server";
 import { dispatchAllAssignmentEmails } from "../../../admin/notifications/assignment-email.server";
 import { dispatchPendingAlertEmails } from "../../../admin/notifications/notification-email.server";
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
+import { automationMachineAuthorized } from "../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
-function bearer(request: Request) {
-  const value = request.headers.get("authorization")?.trim() ?? "";
-  return value.startsWith("Bearer ") ? value.slice(7).trim() : "";
-}
-
-export function automationIntegrationAuthorized(request: Request) {
-  const configured = process.env.KCPL_AUTOMATION_SECRET?.trim() ?? "";
-  if (!configured) return { ok: false as const, status: 503, error: "Automation scheduler authentication is not configured." };
-  const supplied = bearer(request);
-  if (!supplied) return { ok: false as const, status: 401, error: "Automation authentication failed." };
-  const configuredBuffer = Buffer.from(configured);
-  const suppliedBuffer = Buffer.from(supplied);
-  if (configuredBuffer.length !== suppliedBuffer.length || !timingSafeEqual(configuredBuffer, suppliedBuffer)) {
-    return { ok: false as const, status: 401, error: "Automation authentication failed." };
-  }
-  return { ok: true as const };
-}
+export const automationIntegrationAuthorized = automationMachineAuthorized;
 
 export async function POST(request: Request) {
   const auth = automationIntegrationAuthorized(request);
