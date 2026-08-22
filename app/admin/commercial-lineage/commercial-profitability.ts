@@ -1,4 +1,4 @@
-import { commercialMoney, normalizeCommercialCurrency } from "./commercial-lineage";
+import { commercialMoney, normalizeCommercialCurrency } from "./commercial-lineage.ts";
 
 export type CommercialAmount = {
   amount: number | null;
