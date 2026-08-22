@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Activity, ArrowRight, Clock3, MapPin, RefreshCw, RadioTower, ShieldAlert, Truck } from "lucide-react";
+import { Activity, ArrowRight, Clock3, RefreshCw, RadioTower, ShieldAlert, Truck } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
 import { shipmentStatusLabels } from "../../shipment-types";
 import { trackingMilestoneLabels, trackingMilestones, type TrackingEvent, type TrackingMilestone, type VisibilityShipment, type VisibilitySummary } from "./tracking-visibility";
@@ -39,12 +39,12 @@ function statusTone(row: VisibilityShipment): "neutral" | "info" | "warning" | "
   return "info";
 }
 
-export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSweep }: { initialRows: VisibilityShipment[]; initialSummary: VisibilitySummary; canSweep: boolean }) {
+export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSweep, initialQuery = "" }: { initialRows: VisibilityShipment[]; initialSummary: VisibilitySummary; canSweep: boolean; initialQuery?: string }) {
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [focus, setFocus] = useState<"all" | "delayed" | "stale" | "customs" | "delivery">("all");
-  const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const [selectedReference, setSelectedReference] = useState<string | null>(initialQuery && initialRows.some((row) => row.reference === initialQuery) ? initialQuery : null);
   const [events, setEvents] = useState<TrackingEvent[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
@@ -132,7 +132,7 @@ export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSw
       eyebrow="Transportation management"
       title="Live shipment visibility"
       description="One normalized movement timeline across carrier APIs, webhooks, EDI 214, GPS feeds, overseas counterparts and KCPL manual updates. ETA slips, refusals and stale feeds become operational exceptions instead of disappearing into inboxes."
-      actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={12}/>Refresh</OpsButton>{canSweep ? <OpsButton size="sm" variant="primary" onClick={sweep} disabled={busy}><ShieldAlert size={12}/>Run health sweep</OpsButton> : null}<Link href="/admin/shipments" className="ops-button" data-size="sm" data-variant="secondary">Shipment register <ArrowRight size={11}/></Link></div>}
+      actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={12}/>Refresh</OpsButton>{canSweep ? <OpsButton size="sm" variant="primary" onClick={sweep} disabled={busy}><ShieldAlert size={12}/>Run health sweep</OpsButton> : null}<Link href="/admin/delivery" className="ops-button" data-size="sm" data-variant="secondary">Delivery & POD</Link><Link href="/admin/shipments" className="ops-button" data-size="sm" data-variant="secondary">Shipment register <ArrowRight size={11}/></Link></div>}
     />
 
     <OpsStatStrip>
@@ -140,7 +140,7 @@ export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSw
       <OpsStat label="ETA delayed" value={summary.delayed} tone={summary.delayed ? "warning" : "neutral"} icon={<Clock3 size={13}/>} active={focus === "delayed"} onClick={() => setFocus("delayed")}/>
       <OpsStat label="Stale feeds" value={summary.stale} tone={summary.stale ? "danger" : "neutral"} icon={<RadioTower size={13}/>} active={focus === "stale"} onClick={() => setFocus("stale")}/>
       <OpsStat label="Customs" value={summary.customs} tone={summary.customs ? "warning" : "neutral"} icon={<ShieldAlert size={13}/>} active={focus === "customs"} onClick={() => setFocus("customs")}/>
-      <OpsStat label="Out for delivery" value={summary.out_for_delivery} icon={<MapPin size={13}/>} active={focus === "delivery"} onClick={() => setFocus("delivery")}/>
+      <OpsStat label="Out for delivery" value={summary.out_for_delivery} icon={<Activity size={13}/>} active={focus === "delivery"} onClick={() => setFocus("delivery")}/>
       <OpsStat label="Delivered today" value={summary.delivered_today} tone="success" icon={<Activity size={13}/>}/>
     </OpsStatStrip>
 

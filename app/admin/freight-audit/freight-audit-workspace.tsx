@@ -19,10 +19,12 @@ function tone(status: FreightAuditStatus): "neutral" | "info" | "warning" | "suc
   return "neutral";
 }
 
-export function FreightAuditWorkspace({ initialRows, initialSummary, isManagement }: { initialRows: FreightAuditQueueRow[]; initialSummary: FreightAuditSummary; isManagement: boolean }) {
+export function FreightAuditWorkspace({ initialRows, initialSummary, isManagement, initialFocus = "" }: { initialRows: FreightAuditQueueRow[]; initialSummary: FreightAuditSummary; isManagement: boolean; initialFocus?: string }) {
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
-  const [selectedReference, setSelectedReference] = useState(initialRows.find((row) => row.status === "review_required" || row.status === "disputed")?.payable_reference ?? initialRows[0]?.payable_reference ?? "");
+  const focus = initialFocus.trim().toLowerCase();
+  const focusedRow = focus ? initialRows.find((row) => [row.payable_reference, row.shipment_reference, row.supplier_bill_reference, row.supplier_name].filter(Boolean).some((value) => String(value).toLowerCase().includes(focus))) : null;
+  const [selectedReference, setSelectedReference] = useState(focusedRow?.payable_reference ?? initialRows.find((row) => row.status === "review_required" || row.status === "disputed")?.payable_reference ?? initialRows[0]?.payable_reference ?? "");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
@@ -99,4 +101,4 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   </div>;
 }
 
-function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-[10px] border border-[#ebe4de] bg-white p-3"><div className="text-[9px] font-bold uppercase tracking-[.12em] text-[#968b82]">{label}</div><div className="mt-1 text-[12px] font-bold text-[#4a423c]">{value}</div></div>; }
+function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-[10px] border border-[#ebe4de] bg-white p-3"><div className="text-[9px] font-bold uppercase tracking-[.12em] text-[#968b82]">{label}</div><div className="mt-1 text-[12px] font-bold capitalize text-[#4a423c]">{value}</div></div>; }

@@ -8,6 +8,8 @@ import { OperationsShell } from "../operations-shell";
 import { loadCommandCentre } from "./command-centre.server";
 import { CommandCentreWorkspace } from "./command-centre-workspace";
 import { RoleHomeDefaults } from "./role-home-defaults";
+import { loadWorkflowOverview } from "./workflow-overview.server";
+import { WorkflowOverviewStrip } from "./workflow-overview";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -19,6 +21,8 @@ type StaffUser = { uid: string; displayName: string; email: string };
 type ShellState = {
   canManageStaff: boolean;
   canManageFinance: boolean;
+  canViewCommercial: boolean;
+  canManageJobFile: boolean;
   isManagement: boolean;
 };
 
@@ -27,6 +31,8 @@ function fallbackShellState(user: StaffUser): ShellState {
   return {
     canManageStaff: permissions.canManageStaff,
     canManageFinance: permissions.canManageFinance,
+    canViewCommercial: permissions.canViewCommercial,
+    canManageJobFile: permissions.canManageJobFile,
     isManagement: permissions.role === "management",
   };
 }
@@ -43,13 +49,13 @@ async function loadState(user: StaffUser) {
   const shell: ShellState = {
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
 
   if (!staff.permissions.canManageJobFile) return { kind: "restricted" as const, shell };
 
-  // Freight automation is useful background work, but it must never make the
-  // operator's Home screen unusable when an integration or datastore is down.
   try {
     await evaluateFreightAutomation();
   } catch (error) {
@@ -57,11 +63,15 @@ async function loadState(user: StaffUser) {
   }
 
   try {
-    const data = await loadCommandCentre(staff);
+    const [data, overview] = await Promise.all([
+      loadCommandCentre(staff),
+      loadWorkflowOverview(staff),
+    ]);
     if (!data) return { kind: "unavailable" as const, shell };
     return {
       kind: "ready" as const,
       data,
+      overview,
       role: staff.permissions.role,
       roleLabel: kcplStaffRoleLabels[staff.permissions.role],
       shell,
@@ -81,6 +91,8 @@ export default async function CommandCentrePage() {
     userName: access.user.displayName,
     canManageStaff: state.shell.canManageStaff,
     canManageFinance: state.shell.canManageFinance,
+    canViewCommercial: state.shell.canViewCommercial,
+    canManageJobFile: state.shell.canManageJobFile,
     isManagement: state.shell.isManagement,
   };
 
@@ -97,6 +109,7 @@ export default async function CommandCentrePage() {
   return (
     <OperationsShell {...shellProps}>
       <RoleHomeDefaults role={state.role}/>
+      <WorkflowOverviewStrip overview={state.overview}/>
       <CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel}/>
     </OperationsShell>
   );

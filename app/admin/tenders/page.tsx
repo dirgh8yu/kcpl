@@ -11,7 +11,7 @@ import { TmsTenderWorkspace } from "./tms-tender-workspace";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tender Desk | KCPL Operations", robots: { index: false, follow: false } };
 
-export default async function TenderDeskPage() {
+export default async function TenderDeskPage({ searchParams }: { searchParams: Promise<{ tender?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Tender Desk is available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
@@ -20,6 +20,8 @@ export default async function TenderDeskPage() {
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
     isManagement: staff.permissions.role === "management",
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Tendering contains supplier commercial pricing and procurement decisions." embedded/></OperationsShell>;
 
@@ -40,11 +42,17 @@ export default async function TenderDeskPage() {
 
   if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Tender Desk unavailable" detail="KCPL order, tender or customer storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
 
+  const { tender } = await searchParams;
+  const requestedTender = tender?.trim().toUpperCase() ?? "";
+  const targetTender = requestedTender ? tenders.tenders.find((item) => item.id === requestedTender || item.tender_reference === requestedTender) : undefined;
+  const orderedTenders = targetTender ? [targetTender, ...tenders.tenders.filter((item) => item.id !== targetTender.id)] : tenders.tenders;
+  const orderedOrders = targetTender ? [...orders.orders].sort((a, b) => Number(b.id === targetTender.order_id) - Number(a.id === targetTender.order_id)) : orders.orders;
+
   return (
     <OperationsShell {...shellProps}>
       <TmsTenderWorkspace
-        initialOrders={orders.orders}
-        initialTenders={tenders.tenders}
+        initialOrders={orderedOrders}
+        initialTenders={orderedTenders}
         customers={customers.map((customer) => ({ id: customer.id, name: customer.display_name, branch: customer.primary_branch }))}
         canManage={staff.permissions.canEditCommercial}
       />
