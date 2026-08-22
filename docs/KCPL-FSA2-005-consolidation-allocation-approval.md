@@ -105,12 +105,13 @@ Before any write, consolidated booking rereads:
 - all house orders
 - current allocation package and fingerprint
 - exact source and derived commercial versions
+- exact approval authority for every frozen source version that requires approval
 - exact approvals for every derived version that requires one
 - exact customer sell authority for each derived house version
 - customer records
 - master/house bridge quote collision state
 
-It validates current released/tender/source authority against the package. Any mismatch returns `commercial_allocation_stale`; absence returns `allocation_not_prepared`; missing exact approval returns `approval_required`.
+It validates current released/tender/source authority against the package. Any mismatch returns `commercial_allocation_stale`; absence returns `allocation_not_prepared`; missing exact derived approval returns `approval_required`. If a previously required source-version approval can no longer be proven, the package is stale and cannot book.
 
 Only after those reads complete does it create the master/house shipment graph and promote each house order to its already-persisted derived commercial version. The package is marked booked in the same transaction.
 
@@ -123,11 +124,12 @@ The current package becomes unusable when an economically material authority no 
 - released manifest identity or release lock changes
 - house order/customer/branch/source pointer changes
 - source version/fingerprint changes
+- source approval authority disappears or conflicts
 - master commercial version/fingerprint changes
 - authoritative tender, tender timestamp, partner, rate card, amount or currency changes
 - allocation physical inputs change
 - persisted derived version/fingerprint/source lineage differs
-- exact approval is absent or does not match the staged derived version
+- exact derived approval is absent or does not match the staged derived version
 - exact customer sell authority is absent/conflicting
 
 Preparation of changed authority creates a new deterministic package and marks the prior current package stale. No commercial version, approval, or customer acceptance history is deleted.
@@ -185,7 +187,7 @@ For 20 houses, worst-case writes preserve the existing #127/#129 booking graph:
 
 **Maximum: 108 writes.**
 
-Conservative authority reads are roughly 147 documents plus the live master-tender query before the write phase. The 108-write maximum remains well below Firestore's 500-write batch/transaction operation ceiling; the staged split also keeps request size and transaction complexity materially below a combined prepare+book design.
+Conservative authority reads are roughly 167 documents plus the live master-tender query before the write phase. The extra worst-case 20 reads are the frozen source-version approval revalidation, ensuring an approval that disappears or conflicts after preparation cannot be bypassed. The 108-write maximum remains well below Firestore's 500-write batch/transaction operation ceiling; the staged split also keeps request size and transaction complexity materially below a combined prepare+book design.
 
 ## Existing stuck loads: read-only detection and recovery
 
