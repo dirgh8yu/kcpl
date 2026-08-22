@@ -55,6 +55,12 @@ export type FreightAuditRecord = {
   booked_partner_name: string | null;
   booked_currency: CrmCurrency | null;
   booked_cost: number | null;
+  expected_linehaul: number | null;
+  expected_fuel_surcharge: number | null;
+  expected_accessorials: number | null;
+  expected_rate_unit: string | null;
+  expected_quantity: number | null;
+  minimum_applied: boolean | null;
   variance_amount: number | null;
   variance_percent: number | null;
   tolerance_amount: number;
