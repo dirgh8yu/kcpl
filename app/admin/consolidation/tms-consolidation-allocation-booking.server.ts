@@ -256,6 +256,7 @@ export async function confirmConsolidatedLoadBookingWithPreparedAllocation(input
       const customerAuthorities = prepared.customerAuthorities;
       const allocationMap = prepared.allocations;
       if (sourceVersions.length !== houseOrders.length || bookedHouseVersions.length !== houseOrders.length || customerAuthorities.length !== houseOrders.length) return { kind: "commercial_allocation_stale" as const };
+      if (houseOrders.some((order) => allocationMap.get(order.id) === undefined)) return { kind: "commercial_allocation_stale" as const };
 
       const customerIds = [...new Set(houseOrders.map((order) => normalizeCommercialId(order.get("customer_id"))))];
       const customers = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
@@ -320,8 +321,7 @@ export async function confirmConsolidatedLoadBookingWithPreparedAllocation(input
         const customerAuthority = customerAuthorities[index];
         const customerId = normalizeCommercialId(order.get("customer_id"));
         const customer = customerMap.get(customerId)!;
-        const allocation = allocationMap.get(order.id);
-        if (allocation === undefined) return { kind: "commercial_allocation_stale" as const };
+        const allocation = allocationMap.get(order.id)!;
         const reference = houseReferenceMap.get(order.id)!;
         const quoteRef = houseQuoteRefs.get(order.id)!;
         transaction.set(quoteRef, {
