@@ -66,6 +66,15 @@ test("generation validation requires parties and cargo description", () => {
   assert.equal(issues.some((issue) => issue.includes("Cargo")), true);
 });
 
+test("unsupported scripts are rejected instead of silently damaged in generated PDFs", () => {
+  const issues = validateFreightDocumentInput({ ...input, shipper: "निर्यातकर्ता प्रा. लि." }, source);
+  assert.equal(issues.some((issue) => issue.includes("cannot reproduce safely")), true);
+});
+
+test("decomposable Latin accents remain accepted by the PDF policy", () => {
+  assert.deepEqual(validateFreightDocumentInput({ ...input, notifyParty: "Café Logistics" }, source), []);
+});
+
 test("generated references are deterministic by shipment and kind", () => {
   assert.equal(generatedReference("house_bill_of_lading", source.reference), generatedReference("house_bill_of_lading", source.reference));
   assert.match(generatedReference("house_bill_of_lading", source.reference), /^KCPL-HBL-/);
