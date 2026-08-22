@@ -10,7 +10,6 @@ import {
 import {
   assertBookableCommercialVersionInTransaction,
   commercialEventPayload,
-  commercialVersionDocument,
   commercialVersionFromDocument,
   createCommercialApprovalInTransaction,
   loadCommercialApprovalInTransaction,
@@ -840,7 +839,6 @@ export async function loadPreparedConsolidationAllocationForBookingInTransaction
   | { kind: "ready"; prepared: PreparedAllocationForBooking }
   | { kind: "allocation_not_prepared" | "commercial_allocation_stale" | "approval_required" | "customer_acceptance_required" | "customer_quote_stale" | "commercial_review_required" }
 > {
-  const db = firebaseAdminDb();
   const packageIdValue = normalizeCommercialId(input.load.get("current_allocation_package_id"));
   const packageFingerprintValue = text(input.load.get("current_allocation_package_fingerprint"));
   if (!packageIdValue || !packageFingerprintValue) return { kind: "allocation_not_prepared" };
