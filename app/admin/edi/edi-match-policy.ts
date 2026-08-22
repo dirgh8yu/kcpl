@@ -1,4 +1,4 @@
-import { compatibleRecordBranches, strictBranchValue, type AccessBranch } from "../branch-access-policy";
+import { compatibleRecordBranches, strictBranchValue, type AccessBranch } from "../branch-access-policy.ts";
 
 export type Edi990TenderCandidate = {
   id: string;
