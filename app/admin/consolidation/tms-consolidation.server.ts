@@ -241,8 +241,6 @@ function membershipCompatibilityError(message: string) {
 }
 
 async function masterTenderIsAuthoritative(transaction: FirebaseFirestore.Transaction, masterOrder: FirebaseFirestore.DocumentSnapshot, tenderId: string, now: string) {
-  const pointer = text(masterOrder.get("active_tender_id")).trim().toUpperCase();
-  if (pointer) return pointer === tenderId;
   const query = firebaseAdminDb().collection("transport_tenders").where("order_id", "==", masterOrder.id);
   const snapshot = await transaction.get(query);
   const live = snapshot.docs.filter((doc) => {
@@ -251,7 +249,15 @@ async function masterTenderIsAuthoritative(transaction: FirebaseFirestore.Transa
     const due = text(doc.get("response_due_at"));
     return !(status === "sent" && due && due <= now);
   });
-  return live.length === 1 && live[0].id === tenderId;
+  if (live.length !== 1 || live[0].id !== tenderId) return false;
+  const pointer = normalizedId(masterOrder.get("active_tender_id"));
+  if (!pointer || pointer === tenderId) return true;
+  const pointerDoc = snapshot.docs.find((doc) => doc.id === pointer);
+  if (!pointerDoc) return true;
+  const pointerStatus = text(pointerDoc.get("status"));
+  const pointerDue = text(pointerDoc.get("response_due_at"));
+  const pointerLive = ["sent", "accepted", "countered"].includes(pointerStatus) && !(pointerStatus === "sent" && pointerDue && pointerDue <= now);
+  return !pointerLive;
 }
 
 export async function listConsolidationLoads(staff: KcplStaffContext) {
