@@ -104,6 +104,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       notes: clean(body.notes, 3000),
     }, actor, auth.staff);
     if (result.kind !== "updated") return errorFor(result.kind);
+    if (!("attempt" in result)) return json({ ok: false, error: "Delivery attempt state could not be refreshed after the transaction committed." }, 500);
     return json({ ok: true, attempt: result.attempt, attemptStatus: result.attempt.status, ...completionPayload(result.completion) });
   }
 
