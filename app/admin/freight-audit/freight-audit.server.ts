@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { canAccessBranchValue } from "../branch-access-policy";
+import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { KcplStaffContext } from "../staff-directory.server";
 import {
@@ -34,7 +34,10 @@ function numberValue(value: unknown) { const parsed = typeof value === "number" 
 function nullableNumber(value: unknown) { if (value === null || value === undefined || value === "") return null; const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 function currencyValue(value: unknown): CrmCurrency { return crmCurrencies.includes(value as CrmCurrency) ? value as CrmCurrency : "NPR"; }
 function nullableCurrency(value: unknown): CrmCurrency | null { return crmCurrencies.includes(value as CrmCurrency) ? value as CrmCurrency : null; }
-function branchValue(value: unknown): KcplBranch { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu"; }
+function branchValue(value: unknown): KcplBranch {
+  if (!kcplBranches.includes(value as KcplBranch)) throw new Error("Freight Audit requires a canonical KCPL branch");
+  return value as KcplBranch;
+}
 function id(prefix: string) { return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`; }
 
 function rateQuantity(order: Record<string, unknown>, unit: string) {
@@ -262,7 +265,14 @@ export async function getFreightAudit(reference: string, context: KcplStaffConte
   if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
   const source = await sourceForPayable(reference);
   if (!source) return { kind: "missing" as const };
-  if (!canAccessBranchValue(context, source.data.branch)) return { kind: "forbidden" as const };
+  const branch = strictBranchValue(source.data.branch);
+  if (!branch || !canAccessBranchValue(context, branch)) return { kind: "forbidden" as const };
+  if (source.shipment?.exists && !compatibleRecordBranches(branch, source.shipment.get("primary_branch"))) {
+    return { kind: "relationship_mismatch" as const };
+  }
+  if (source.order?.exists && !compatibleRecordBranches(branch, source.order.get("branch"))) {
+    return { kind: "relationship_mismatch" as const };
+  }
   const stored = await firebaseAdminDb().collection("freight_audits").doc(source.reference).get();
   const record = recordFromSource(source, stored.exists ? stored.data() as Record<string, unknown> : null);
   if (refresh) await persistAudit(record);
