@@ -121,6 +121,11 @@ export function primaryCarriageDocumentKind(mode: string): GeneratedFreightDocum
   return null;
 }
 
+function pdfLatinRepresentable(value: string) {
+  const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  return !/[^\x09\x0A\x0D\x20-\x7E]/.test(normalized);
+}
+
 export function validateFreightDocumentInput(input: FreightDocumentInput, source: FreightDocumentSource) {
   const issues: string[] = [];
   if (!generatedFreightDocumentKinds.includes(input.kind)) issues.push("Choose a supported freight document type.");
@@ -129,6 +134,15 @@ export function validateFreightDocumentInput(input: FreightDocumentInput, source
   if (input.consignee.trim().length < 2) issues.push("Consignee details are required.");
   if (input.cargoDescription.trim().length < 2) issues.push("Cargo description is required.");
   if (!source.origin.trim() || !source.destination.trim()) issues.push("Origin and destination are required before document generation.");
+
+  const renderFields: Array<[string, string]> = [
+    ["Shipper", input.shipper], ["Consignee", input.consignee], ["Notify party", input.notifyParty],
+    ["Cargo description", input.cargoDescription], ["Marks and numbers", input.marksAndNumbers], ["Package type", input.packageType],
+    ["Freight terms", input.freightTerms], ["Place of receipt", input.placeOfReceipt || source.origin], ["Place of delivery", input.placeOfDelivery || source.destination],
+    ["Master reference", input.masterReference], ["House reference", input.houseReference], ["Incoterm", input.incoterm], ["Special instructions", input.specialInstructions],
+  ];
+  const unsupported = renderFields.filter(([, value]) => value.trim() && !pdfLatinRepresentable(value)).map(([label]) => label);
+  if (unsupported.length) issues.push(`${unsupported.join(", ")} contain script characters the current controlled PDF renderer cannot reproduce safely. Use a Latin-script/transliterated value for this revision rather than generating corrupted freight paperwork.`);
   return issues;
 }
 
