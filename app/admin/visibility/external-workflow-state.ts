@@ -1,4 +1,4 @@
-import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
+import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types.ts";
 import type { PickupAppointmentStatus } from "../pickups/pickup-appointments";
 import type { TrackingMilestone, TrackingSource } from "./tracking-visibility";
 
