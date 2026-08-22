@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { crmCurrencies, type CrmCurrency } from "../../../admin/crm/crm-data";
+import { queueTenderAsEdi204 } from "../../../admin/edi/edi-tender.server";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { sendTmsTenderEmail } from "../../../admin/tenders/tms-tender-email.server";
 import { reconcileExpiredTmsTenders } from "../../../admin/tenders/tms-tender-expiry.server";
@@ -73,6 +74,13 @@ export async function POST(request: Request) {
       if (delivery.kind === "failed") return json({ ok: false, tender: result.tender, error: `Tender record created, but email delivery failed: ${delivery.error}` }, 502);
       return json({ ok: true, tender: result.tender, emailSent: true, messageId: delivery.messageId }, 201);
     }
+
+    if (channel === "edi_204") {
+      const queued = await queueTenderAsEdi204(result.tender.id, actor);
+      if (queued.kind === "queued" || queued.kind === "duplicate") return json({ ok: true, tender: result.tender, emailSent: false, ediQueued: true, ediTransactionId: queued.transactionId }, 201);
+      return json({ ok: false, tender: result.tender, emailSent: false, ediQueued: false, error: "Tender record created, but its EDI 204 load tender could not be queued. Open EDI Gateway to review the handoff." }, 503);
+    }
+
     return json({ ok: true, tender: result.tender, emailSent: false }, 201);
   }
 

@@ -49,6 +49,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
 
   { id: "partners", href: "/admin/partners", label: "Partners & Vendors", group: "Network", hint: "Carriers, agents, vendors and global counterparts", keywords: ["partner", "vendor", "carrier", "agent", "counterpart"], permission: "all", prefixes: ["/admin/partners"] },
   { id: "carrier-integrations", href: "/admin/carrier-integrations", label: "Carrier Integrations", group: "Network", hint: "Live carrier APIs, DCSA webhooks, provider health and shipment sync", keywords: ["carrier api", "integration", "maersk", "dhl", "dcsa", "webhook", "tracking sync", "schedule"], permission: "job_file", prefixes: ["/admin/carrier-integrations"] },
+  { id: "edi", href: "/admin/edi", label: "EDI Gateway", group: "Network", hint: "X12 204 tenders, 990 carrier responses, 214 tracking and transaction quarantine", keywords: ["edi", "x12", "204", "990", "214", "load tender", "carrier response", "van", "transaction"], permission: "job_file", prefixes: ["/admin/edi"] },
 
   { id: "receivables", href: "/admin/finance", label: "Receivables", group: "Finance", hint: "Customer invoices, aging and collections", keywords: ["receivable", "invoice", "customer billing", "collections"], permission: "finance", prefixes: ["/admin/finance"] },
   { id: "payables", href: "/admin/payables", label: "Payables", group: "Finance", hint: "Supplier bills and payment obligations", keywords: ["payable", "supplier bill", "ap", "payment"], permission: "finance", prefixes: ["/admin/payables"] },

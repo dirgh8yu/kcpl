@@ -1,7 +1,7 @@
 import type { CrmCurrency } from "../crm/crm-data";
 import type { TmsMode } from "../rating/tms-rating";
 
-export const tmsTenderChannels = ["manual", "email"] as const;
+export const tmsTenderChannels = ["manual", "email", "edi_204"] as const;
 export type TmsTenderChannel = (typeof tmsTenderChannels)[number];
 
 export const tmsTenderStatuses = [
