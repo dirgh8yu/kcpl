@@ -22,6 +22,8 @@ type BillSource = {
   reference: string;
   data: Record<string, unknown>;
   shipment: FirebaseFirestore.DocumentSnapshot | null;
+  order: FirebaseFirestore.DocumentSnapshot | null;
+  rateCard: FirebaseFirestore.DocumentSnapshot | null;
   duplicateOf: string | null;
 };
 
@@ -34,8 +36,44 @@ function nullableCurrency(value: unknown): CrmCurrency | null { return crmCurren
 function branchValue(value: unknown): KcplBranch { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu"; }
 function id(prefix: string) { return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`; }
 
+function rateQuantity(order: Record<string, unknown>, unit: string) {
+  if (unit === "per_kg") return Math.max(0, numberValue(order.weight_kg));
+  if (unit === "per_cbm") return Math.max(0, numberValue(order.volume_cbm));
+  if (unit === "per_tonne") return Math.max(0, numberValue(order.weight_kg)) / 1000;
+  if (unit === "per_container") return Math.max(0, numberValue(order.container_count));
+  if (unit === "per_piece") return Math.max(0, numberValue(order.pieces));
+  return 1;
+}
+
+function bookingBaseline(source: BillSource, bookedCost: number | null, bookedCurrency: CrmCurrency | null) {
+  if (!source.order?.exists || !source.rateCard?.exists || bookedCost === null || !bookedCurrency) return null;
+  const order = source.order.data() as Record<string, unknown>;
+  const card = source.rateCard.data() as Record<string, unknown>;
+  const cardCurrency = nullableCurrency(card.currency);
+  if (!cardCurrency || cardCurrency !== bookedCurrency) return null;
+  const unit = text(card.unit, "flat");
+  const quantity = rateQuantity(order, unit);
+  const rawLinehaul = Math.max(0, numberValue(card.rate)) * quantity;
+  const minimum = Math.max(0, nullableNumber(card.minimum_charge) ?? 0);
+  const linehaul = Math.max(rawLinehaul, minimum);
+  const fuel = linehaul * Math.max(0, numberValue(card.fuel_surcharge_percent)) / 100;
+  const accessorials = Math.max(0, numberValue(card.accessorial_flat));
+  const total = Math.round((linehaul + fuel + accessorials) * 100) / 100;
+  if (Math.abs(total - bookedCost) > 0.01) return null;
+  return {
+    linehaul: Math.round(linehaul * 100) / 100,
+    fuel: Math.round(fuel * 100) / 100,
+    accessorials: Math.round(accessorials * 100) / 100,
+    unit,
+    quantity: Math.round(quantity * 1000) / 1000,
+    minimumApplied: linehaul > rawLinehaul + 0.00001,
+  };
+}
+
 function auditFingerprint(source: BillSource) {
   const shipment = source.shipment?.exists ? source.shipment.data() as Record<string, unknown> : {};
+  const order = source.order?.exists ? source.order.data() as Record<string, unknown> : {};
+  const rateCard = source.rateCard?.exists ? source.rateCard.data() as Record<string, unknown> : {};
   const payload = {
     payable: source.reference,
     supplier: nullable(source.data.supplier_id),
@@ -50,6 +88,9 @@ function auditFingerprint(source: BillSource) {
     bookedCost: nullableNumber(shipment.procurement_cost),
     transportOrder: nullable(shipment.transport_order_id),
     tender: nullable(shipment.tender_id),
+    rateCard: nullable(shipment.procurement_rate_card_id),
+    orderQuantities: [order.weight_kg, order.volume_cbm, order.pieces, order.container_count],
+    rateEconomics: [rateCard.currency, rateCard.rate, rateCard.unit, rateCard.minimum_charge, rateCard.fuel_surcharge_percent, rateCard.accessorial_flat],
     duplicateOf: source.duplicateOf,
   };
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
@@ -84,15 +125,14 @@ function recordFromSource(source: BillSource, existing?: Record<string, unknown>
   const tolerancePercent = Math.max(0, nullableNumber(existing?.tolerance_percent) ?? DEFAULT_FREIGHT_AUDIT_TOLERANCE_PERCENT);
   const variance = calculateFreightVariance(bookedCost, invoiceSubtotal, sameCurrency);
   const withinTolerance = freightVarianceWithinTolerance({ bookedCost, invoiceSubtotal, sameCurrency, toleranceAmount, tolerancePercent });
+  const baseline = bookingBaseline(source, bookedCost, bookedCurrency);
   const issues: FreightAuditIssue[] = [];
 
   if (!shipmentReference || !source.shipment?.exists || !tmsBooked) {
-    if (shipmentReference && source.shipment?.exists && !tmsBooked) {
-      issues.push(issue("shipment_not_tms_booked", "warning", "Legacy / non-TMS shipment", "This shipment has no TMS procurement booking snapshot, so automated match-pay is not enforced."));
-    }
+    if (shipmentReference && source.shipment?.exists && !tmsBooked) issues.push(issue("shipment_not_tms_booked", "warning", "Legacy / non-TMS shipment", "This shipment has no TMS procurement booking snapshot, so automated Match-Pay is not enforced."));
   } else {
     if (bookedCost === null || !bookedCurrency) issues.push(issue("missing_booking_cost", "blocking", "Booked procurement cost missing", "The TMS shipment does not contain a complete booked cost and currency snapshot."));
-    if (!supplierBillReference) issues.push(issue("missing_supplier_reference", "blocking", "Supplier invoice reference missing", "Record the supplier invoice number before match-pay approval."));
+    if (!supplierBillReference) issues.push(issue("missing_supplier_reference", "blocking", "Supplier invoice reference missing", "Record the supplier invoice number before Match-Pay approval."));
     if (bookedPartnerId && supplierId && bookedPartnerId !== supplierId) issues.push(issue("supplier_mismatch", "blocking", "Supplier does not match booking", `Booked partner ${bookedPartnerName ?? bookedPartnerId}; bill is linked to ${text(bill.supplier_name, supplierId)}.`));
     if (bookedCurrency && bookedCurrency !== invoiceCurrency) issues.push(issue("currency_mismatch", "blocking", "Invoice currency differs from booking", `Booked in ${bookedCurrency}; supplier invoice is ${invoiceCurrency}. No hidden FX conversion is applied.`));
     if (source.duplicateOf) issues.push(issue("duplicate_invoice", "blocking", "Possible duplicate supplier invoice", `The same supplier invoice reference is already used by ${source.duplicateOf}.`));
@@ -106,10 +146,7 @@ function recordFromSource(source: BillSource, existing?: Record<string, unknown>
   if (!shipmentReference || !source.shipment?.exists || !tmsBooked) status = "not_applicable";
   else if (!issues.some((item) => item.severity === "blocking")) status = "matched";
   else status = "review_required";
-
-  if (previousFingerprint === fingerprint) {
-    if (["disputed", "approved_variance", "rejected"].includes(previousStatus)) status = previousStatus;
-  }
+  if (previousFingerprint === fingerprint && ["disputed", "approved_variance", "rejected"].includes(previousStatus)) status = previousStatus;
 
   const now = new Date().toISOString();
   return {
@@ -128,6 +165,12 @@ function recordFromSource(source: BillSource, existing?: Record<string, unknown>
     booked_partner_name: bookedPartnerName,
     booked_currency: bookedCurrency,
     booked_cost: bookedCost,
+    expected_linehaul: baseline?.linehaul ?? null,
+    expected_fuel_surcharge: baseline?.fuel ?? null,
+    expected_accessorials: baseline?.accessorials ?? null,
+    expected_rate_unit: baseline?.unit ?? null,
+    expected_quantity: baseline?.quantity ?? null,
+    minimum_applied: baseline?.minimumApplied ?? null,
     variance_amount: variance.amount,
     variance_percent: variance.percent,
     tolerance_amount: toleranceAmount,
@@ -164,22 +207,29 @@ async function duplicateForBill(reference: string, data: Record<string, unknown>
 
 async function sourceForPayable(reference: string) {
   const normalized = reference.trim().toUpperCase();
-  const bill = await firebaseAdminDb().collection("payables").doc(normalized).get();
+  const db = firebaseAdminDb();
+  const bill = await db.collection("payables").doc(normalized).get();
   if (!bill.exists) return null;
   const data = bill.data() as Record<string, unknown>;
   const shipmentReference = nullable(data.shipment_reference)?.toUpperCase() ?? null;
   const [shipment, duplicateOf] = await Promise.all([
-    shipmentReference ? firebaseAdminDb().collection("shipments").doc(shipmentReference).get() : Promise.resolve(null),
+    shipmentReference ? db.collection("shipments").doc(shipmentReference).get() : Promise.resolve(null),
     duplicateForBill(normalized, data),
   ]);
-  return { reference: normalized, data, shipment, duplicateOf } satisfies BillSource;
+  const shipmentData = shipment?.exists ? shipment.data() as Record<string, unknown> : {};
+  const orderId = nullable(shipmentData.transport_order_id);
+  const rateCardId = nullable(shipmentData.procurement_rate_card_id);
+  const [order, rateCard] = await Promise.all([
+    orderId ? db.collection("transport_orders").doc(orderId).get() : Promise.resolve(null),
+    rateCardId ? db.collection("partner_rate_cards").doc(rateCardId).get() : Promise.resolve(null),
+  ]);
+  return { reference: normalized, data, shipment, order, rateCard, duplicateOf } satisfies BillSource;
 }
 
 async function persistAudit(record: FreightAuditRecord & { fingerprint: string }, actor?: Actor) {
   const { fingerprint, ...publicRecord } = record;
-  const ref = firebaseAdminDb().collection("freight_audits").doc(record.payable_reference);
   const now = new Date().toISOString();
-  await ref.set({
+  await firebaseAdminDb().collection("freight_audits").doc(record.payable_reference).set({
     ...publicRecord,
     commercial_fingerprint: fingerprint,
     audited_at: publicRecord.audited_at ?? (actor ? now : null),
@@ -187,7 +237,6 @@ async function persistAudit(record: FreightAuditRecord & { fingerprint: string }
     audited_by_email: publicRecord.audited_by_email ?? actor?.email ?? null,
     updated_at: now,
   }, { merge: true });
-  return ref;
 }
 
 export async function getFreightAudit(reference: string, context: KcplStaffContext, refresh = true) {
@@ -199,8 +248,8 @@ export async function getFreightAudit(reference: string, context: KcplStaffConte
   const stored = await firebaseAdminDb().collection("freight_audits").doc(source.reference).get();
   const record = recordFromSource(source, stored.exists ? stored.data() as Record<string, unknown> : null);
   if (refresh) await persistAudit(record);
-  const { fingerprint: _fingerprint, ...audit } = record;
-  void _fingerprint;
+  const { fingerprint, ...audit } = record;
+  void fingerprint;
   return { kind: "ready" as const, audit };
 }
 
@@ -216,16 +265,13 @@ export async function reviewFreightAudit(reference: string, action: "recheck" | 
   const result = await getFreightAudit(reference, context, true);
   if (result.kind !== "ready") return result;
   if (action === "recheck") return result;
-  if (action === "approve_variance" || action === "reject") {
-    if (context.permissions.role !== "management") return { kind: "management_required" as const };
-  }
+  if ((action === "approve_variance" || action === "reject") && context.permissions.role !== "management") return { kind: "management_required" as const };
   if ((action === "dispute" || action === "approve_variance" || action === "reject") && note.trim().length < 8) return { kind: "note_required" as const };
   if (result.audit.status === "not_applicable" || result.audit.status === "matched") return { kind: "invalid_status" as const };
 
   const now = new Date().toISOString();
   const nextStatus: FreightAuditStatus = action === "dispute" ? "disputed" : action === "approve_variance" ? "approved_variance" : "rejected";
-  const ref = firebaseAdminDb().collection("freight_audits").doc(result.audit.payable_reference);
-  await ref.set({
+  await firebaseAdminDb().collection("freight_audits").doc(result.audit.payable_reference).set({
     status: nextStatus,
     dispute_note: action === "dispute" ? note.trim() : result.audit.dispute_note,
     resolution_note: action === "approve_variance" || action === "reject" ? note.trim() : result.audit.resolution_note,
@@ -233,7 +279,6 @@ export async function reviewFreightAudit(reference: string, action: "recheck" | 
     updated_at: now,
   }, { merge: true });
 
-  const shipmentReference = result.audit.shipment_reference;
   const activity = {
     type: "freight_audit",
     title: action === "dispute" ? "Supplier invoice disputed" : action === "approve_variance" ? "Freight audit variance approved" : "Supplier invoice rejected",
@@ -242,16 +287,15 @@ export async function reviewFreightAudit(reference: string, action: "recheck" | 
     actor_email: actor.email,
     created_at: now,
   };
-  if (shipmentReference) await firebaseAdminDb().collection("shipments").doc(shipmentReference).collection("job_activity").doc(id("audit")).set(activity).catch(() => undefined);
+  if (result.audit.shipment_reference) await firebaseAdminDb().collection("shipments").doc(result.audit.shipment_reference).collection("job_activity").doc(id("audit")).set(activity).catch(() => undefined);
   if (result.audit.supplier_id) await firebaseAdminDb().collection("partners").doc(result.audit.supplier_id).collection("activity").doc(id("audit")).set(activity).catch(() => undefined);
-
   return { kind: "updated" as const, status: nextStatus };
 }
 
 export async function listFreightAuditQueue(context: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
-  const snapshot = await firebaseAdminDb().collection("payables").orderBy("updated_at", "desc").limit(1000).get();
+  const snapshot = await firebaseAdminDb().collection("payables").orderBy("updated_at", "desc").limit(250).get();
   const rows: FreightAuditQueueRow[] = [];
   for (const doc of snapshot.docs) {
     if (!canAccessBranchValue(context, doc.get("branch"))) continue;
