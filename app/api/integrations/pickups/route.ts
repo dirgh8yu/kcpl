@@ -13,8 +13,8 @@ function appointmentId(reference: string) { return `PU-${reference.replace(/[^A-
 function eventDocId(provider: string, providerEventId: string) { return createHash("sha256").update(`${provider}\n${providerEventId}`).digest("hex"); }
 function appointmentStatus(value: unknown): PickupAppointmentStatus { const candidate = clean(value, 40) as PickupAppointmentStatus; return pickupAppointmentStatuses.includes(candidate) ? candidate : "unscheduled"; }
 
-function authorized(request: Request) {
-  const expected = process.env.KCPL_AUTOMATION_SECRET?.trim() ?? "";
+export function pickupIntegrationAuthorized(request: Request) {
+  const expected = process.env.KCPL_PICKUP_INTEGRATION_SECRET?.trim() ?? "";
   if (!expected) return { ok: false as const, status: 503, error: "Pickup integration is not configured." };
   const header = request.headers.get("authorization") ?? "";
   const supplied = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -43,7 +43,7 @@ async function loadReferenceData(shipment: Record<string, unknown>) {
 }
 
 export async function POST(request: Request) {
-  const auth = authorized(request);
+  const auth = pickupIntegrationAuthorized(request);
   if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
   if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Firebase pickup storage is unavailable." }, 503);
   let body: Record<string, unknown>;
