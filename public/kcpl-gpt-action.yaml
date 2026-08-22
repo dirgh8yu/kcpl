@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.0.1
+  version: 1.1.0
   description: >-
     Read-only access to authorised Kapileshwor Cargo operational data. Use these
-    actions for current KCPL shipments, Job Files, customers, quotes and operations briefings.
+    actions for current KCPL shipments, Job Files, customers, quotes, delivery/POD status and operations briefings.
 servers:
   - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
 security:
@@ -42,6 +42,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BriefingResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/gpt/delivery:
+    get:
+      operationId: getKcplDeliveryBriefing
+      summary: Get the KCPL delivery and POD briefing
+      description: >-
+        Return final-mile workload, failed/refused attempts, delivered shipments waiting for POD,
+        verified POD totals and a prioritised delivery attention list. Binary POD files, Firebase
+        Storage paths and signed URLs are intentionally excluded.
+      responses:
+        "200":
+          description: Current delivery and POD briefing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryBriefingResponse"
         "401":
           description: Invalid API key.
           content:
@@ -105,8 +126,8 @@ paths:
       summary: Get a KCPL Job File
       description: >-
         Retrieve a shipment Job File with route, customer, tasks, customs controls,
-        document requirements, document verification state, events and activity.
-        Use this after identifying a shipment reference.
+        document requirements, document verification state, delivery/POD metadata,
+        events and activity. Use this after identifying a shipment reference.
       parameters:
         - name: reference
           in: path
@@ -179,6 +200,42 @@ components:
         note:
           type: string
       additionalProperties: true
+    DeliveryBriefingResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+        sampledShipmentCount:
+          type: integer
+        deliveryShipmentCount:
+          type: integer
+        summary:
+          type: object
+          properties:
+            ready:
+              type: integer
+            out_for_delivery:
+              type: integer
+            failed_or_refused:
+              type: integer
+            delivered_pod_pending:
+              type: integer
+            pod_verified:
+              type: integer
+          additionalProperties: false
+        attentionCount:
+          type: integer
+        attention:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        privacy:
+          type: string
+      additionalProperties: true
     SearchResponse:
       type: object
       properties:
@@ -217,6 +274,10 @@ components:
           properties: {}
           additionalProperties: true
         readiness:
+          type: object
+          properties: {}
+          additionalProperties: true
+        delivery:
           type: object
           properties: {}
           additionalProperties: true

@@ -65,7 +65,7 @@ export async function GET(request: Request, context: { params: Promise<{ referen
     const quoteReference = text(shipment.quote_reference);
     const customerId = text(shipment.customer_id);
 
-    const [quoteSnapshot, customerSnapshot, tasksRaw, customsRaw, requirementsRaw, documentsRaw, eventsRaw, activityRaw] = await Promise.all([
+    const [quoteSnapshot, customerSnapshot, tasksRaw, customsRaw, requirementsRaw, documentsRaw, eventsRaw, activityRaw, deliveryAttemptsRaw, podEvidenceRaw] = await Promise.all([
       quoteReference ? db.collection("quotes").doc(quoteReference).get() : Promise.resolve(null),
       customerId ? db.collection("customers").doc(customerId).get() : Promise.resolve(null),
       subcollection(reference, "job_tasks"),
@@ -74,6 +74,8 @@ export async function GET(request: Request, context: { params: Promise<{ referen
       subcollection(reference, "documents"),
       subcollection(reference, "events", 100),
       subcollection(reference, "job_activity", 100),
+      subcollection(reference, "delivery_attempts", 100),
+      subcollection(reference, "pod_evidence", 250),
     ]);
 
     const quote = quoteSnapshot?.exists ? quoteSnapshot.data() as Record<string, unknown> : null;
@@ -161,6 +163,43 @@ export async function GET(request: Request, context: { params: Promise<{ referen
       createdAt: nullable(item.created_at),
     }));
 
+    const deliveryAttempts = deliveryAttemptsRaw
+      .sort((a, b) => (numberOrNull(b.attempt_number) ?? 0) - (numberOrNull(a.attempt_number) ?? 0))
+      .map((attempt) => ({
+        id: text(attempt.id),
+        attemptNumber: numberOrNull(attempt.attempt_number),
+        status: nullable(attempt.status),
+        scheduledFor: nullable(attempt.scheduled_for),
+        eventTime: nullable(attempt.event_time),
+        location: nullable(attempt.location),
+        recipientName: nullable(attempt.recipient_name),
+        recipientPhone: nullable(attempt.recipient_phone),
+        recipientRelation: nullable(attempt.recipient_relation),
+        driverName: nullable(attempt.driver_name),
+        vehicleReference: nullable(attempt.vehicle_reference),
+        failureReason: nullable(attempt.failure_reason),
+        notes: nullable(attempt.notes),
+        updatedAt: nullable(attempt.updated_at),
+      }));
+
+    const podEvidence = sortNewest(podEvidenceRaw, "uploaded_at").map((item) => ({
+      id: text(item.id),
+      attemptId: nullable(item.attempt_id),
+      kind: nullable(item.kind),
+      filename: nullable(item.filename),
+      contentType: nullable(item.content_type),
+      sizeBytes: numberOrNull(item.size_bytes),
+      sha256: nullable(item.sha256),
+      reviewStatus: text(item.review_status, "received"),
+      customerSafe: bool(item.customer_safe),
+      capturedAt: nullable(item.captured_at),
+      uploadedAt: nullable(item.uploaded_at),
+      uploadedBy: nullable(item.uploaded_by_name),
+      reviewedAt: nullable(item.reviewed_at),
+      reviewedBy: nullable(item.reviewed_by_name),
+      reviewNote: nullable(item.review_note),
+    }));
+
     const openTasks = tasks.filter((task) => !task.completed);
     const incompleteRequiredCustomsSteps = customsSteps.filter((step) => step.required && !step.completed);
 
@@ -217,6 +256,24 @@ export async function GET(request: Request, context: { params: Promise<{ referen
         requiredDocumentCount: requiredTypes.length,
         missingOrUnverifiedDocumentTypes,
         documentsReady: missingOrUnverifiedDocumentTypes.length === 0,
+        deliveryPodStatus: text(shipment.delivery_pod_status, "not_received"),
+        deliveryPodEvidenceCount: numberOrNull(shipment.delivery_pod_evidence_count) ?? podEvidence.length,
+        deliveryPodVerifiedAt: nullable(shipment.delivery_pod_verified_at),
+      },
+      delivery: {
+        state: nullable(shipment.delivery_state),
+        attemptCount: numberOrNull(shipment.delivery_attempt_count) ?? deliveryAttempts.length,
+        lastAttemptStatus: nullable(shipment.delivery_last_attempt_status),
+        lastAttemptAt: nullable(shipment.delivery_last_attempt_at),
+        nextDeliveryAt: nullable(shipment.delivery_next_at),
+        recipientName: nullable(shipment.delivery_recipient_name),
+        podStatus: text(shipment.delivery_pod_status, "not_received"),
+        podDocumentId: nullable(shipment.delivery_pod_document_id),
+        podVerifiedAt: nullable(shipment.delivery_pod_verified_at),
+        podVerifiedBy: nullable(shipment.delivery_pod_verified_by_name),
+        attempts: deliveryAttempts,
+        evidence: podEvidence,
+        privacy: "Firebase Storage paths and signed evidence URLs are intentionally excluded from Custom GPT responses.",
       },
       tasks,
       customsSteps,
