@@ -7,8 +7,8 @@ function json(body: unknown, status = 200) { return Response.json(body, { status
 function clean(value: unknown, max = 4000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function optionalNumber(value: unknown) { if (value === null || value === undefined || value === "") return null; const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 
-function authorized(request: Request) {
-  const expected = process.env.KCPL_AUTOMATION_SECRET?.trim() ?? "";
+export function trackingIntegrationAuthorized(request: Request) {
+  const expected = process.env.KCPL_TRACKING_INGEST_SECRET?.trim() ?? "";
   if (!expected) return { ok: false as const, status: 503, error: "Tracking ingestion is not configured." };
   const header = request.headers.get("authorization") ?? "";
   const supplied = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -20,7 +20,7 @@ function authorized(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = authorized(request);
+  const auth = trackingIntegrationAuthorized(request);
   if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; } catch { return json({ ok: false, error: "The tracking payload could not be read." }, 400); }
@@ -53,6 +53,7 @@ export async function POST(request: Request) {
   }, { name: provider, email: "tracking@kcpl.internal" });
   if (result.kind === "unavailable") return json({ ok: false, error: "Tracking storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (result.kind === "invalid_branch") return json({ ok: false, error: "Shipment has no authoritative KCPL branch and cannot be mutated." }, 409);
   if (result.kind === "invalid_coordinates") return json({ ok: false, error: "Tracking coordinates are invalid." }, 400);
   if (result.kind === "invalid_source") return json({ ok: false, error: "Tracking source is invalid." }, 400);
   if (result.kind === "duplicate") return json({ ok: true, duplicate: true, event: "event" in result ? result.event : undefined });
