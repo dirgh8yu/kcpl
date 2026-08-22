@@ -19,14 +19,17 @@ export default async function DeliveryPage() {
     isManagement: staff.permissions.role === "management",
   };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Delivery access restricted" detail="Digital Job File access is required for Delivery & POD Control."/></OperationsShell>;
+
+  let workspace: Awaited<ReturnType<typeof listDeliveryWorkspace>>;
   try {
-    const workspace = await listDeliveryWorkspace(staff);
-    if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Delivery backend unavailable" detail="Firebase delivery data is not available for this deployment."/></OperationsShell>;
-    return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary}/></OperationsShell>;
+    workspace = await listDeliveryWorkspace(staff);
   } catch (error) {
     console.error("Failed to load KCPL Delivery & POD Control", error);
     return <OperationsShell {...shellProps}><Gate embedded title="Delivery Control could not be loaded" detail="KCPL operational data is temporarily unavailable. No delivery records have been changed."/></OperationsShell>;
   }
+
+  if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Delivery backend unavailable" detail="Firebase delivery data is not available for this deployment."/></OperationsShell>;
+  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
