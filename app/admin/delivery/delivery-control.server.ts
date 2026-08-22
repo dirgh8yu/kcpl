@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminBucket, firebaseAdminDb, firebaseRuntimeConfigured, firebaseStorageBucketName } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { reconcileCanonicalDelivery } from "./canonical-delivery-authority.server";
 import {
   deliveryAttemptStatuses,
   deliveryAttemptTransitionAllowed,
@@ -156,6 +157,12 @@ export async function getDeliveryControl(reference: string, context: KcplStaffCo
     pod_document_id: nullable(scope.data.delivery_pod_document_id),
     pod_verified_at: nullable(scope.data.delivery_pod_verified_at),
     pod_verified_by: nullable(scope.data.delivery_pod_verified_by_name),
+    external_observed_milestone: nullable(scope.data.external_observed_milestone),
+    external_observed_at: nullable(scope.data.external_observed_at),
+    external_observed_provider: nullable(scope.data.external_observed_provider),
+    delivery_completion_id: nullable(scope.data.delivery_completion_id),
+    delivery_completed_at: nullable(scope.data.delivery_completed_at),
+    delivery_completion_source: nullable(scope.data.delivery_completion_source),
   };
 }
 
@@ -253,6 +260,7 @@ export async function createDeliveryAttempt(reference: string, input: CreateAtte
     transaction.create(attemptRef, data);
     transaction.update(scope.ref, {
       delivery_attempt_count: attemptNumber,
+      delivery_last_attempt_id: attemptRef.id,
       delivery_last_attempt_status: "scheduled",
       delivery_last_attempt_at: now,
       delivery_next_at: scheduledFor,
@@ -284,28 +292,32 @@ export async function adoptTrackedDelivery(reference: string, actor: Actor, cont
   const result = await db.runTransaction(async (transaction) => {
     const [shipmentSnapshot, attemptSnapshot] = await Promise.all([transaction.get(scope.ref), transaction.get(attemptRef)]);
     if (!shipmentSnapshot.exists) return { kind: "missing" as const };
-    if (attemptSnapshot.exists) return { kind: "ready" as const, data: attemptSnapshot.data() as Record<string, unknown> };
     const shipment = shipmentSnapshot.data() as Record<string, unknown>;
-    if (text(shipment.status) !== "delivered") return { kind: "not_delivered" as const };
+    if (attemptSnapshot.exists) return { kind: "ready" as const, data: attemptSnapshot.data() as Record<string, unknown> };
+    if (text(shipment.status) === "delivered") return { kind: "already_delivered" as const };
+    if (text(shipment.external_observed_milestone) !== "delivered") return { kind: "tracking_delivery_required" as const };
+    const observedAt = validIso(nullable(shipment.external_observed_at));
+    if (!observedAt) return { kind: "tracking_delivery_required" as const };
+    const provider = nullable(shipment.external_observed_provider);
+    const source = nullable(shipment.external_observed_source);
     const attemptNumber = Math.max(0, numberOrNull(shipment.delivery_attempt_count) ?? 0) + 1;
-    const eventTime = validIso(nullable(shipment.tracking_last_event_at)) ?? validIso(nullable(shipment.updated_at)) ?? now;
     const podStatus = text(shipment.delivery_pod_status, "not_received");
     const data = {
       attempt_number: attemptNumber,
       status: "delivered" as const,
       scheduled_for: null,
-      event_time: eventTime,
+      event_time: observedAt,
       location: nullable(shipment.current_location),
       latitude: null,
       longitude: null,
-      recipient_name: nullable(shipment.delivery_recipient_name),
+      recipient_name: null,
       recipient_phone: null,
       recipient_relation: null,
       driver_name: null,
       driver_phone: null,
       vehicle_reference: nullable(shipment.carrier_reference),
       failure_reason: null,
-      notes: "Delivery record adopted from the normalized carrier/counterpart tracking milestone. POD evidence remains subject to KCPL verification.",
+      notes: "Physical delivery evidence adopted from an authoritative external Delivered observation. Recipient details are intentionally not fabricated. POD remains subject to KCPL verification.",
       created_at: now,
       created_by_name: actor.name || null,
       created_by_email: actor.email || null,
@@ -313,31 +325,39 @@ export async function adoptTrackedDelivery(reference: string, actor: Actor, cont
       updated_by_name: actor.name || null,
       updated_by_email: actor.email || null,
       adopted_from_tracking: true,
+      adopted_external_provider: provider,
+      adopted_external_source: source,
+      adopted_external_observed_at: observedAt,
     };
     transaction.create(attemptRef, data);
     transaction.update(scope.ref, {
       delivery_attempt_count: attemptNumber,
+      delivery_last_attempt_id: attemptRef.id,
       delivery_last_attempt_status: "delivered",
-      delivery_last_attempt_at: eventTime,
+      delivery_last_attempt_at: observedAt,
       delivery_next_at: null,
       delivery_state: podStatus === "verified" ? "pod_verified" : "delivered_pod_pending",
       delivery_pod_status: podStatus === "verified" || podStatus === "received" || podStatus === "rejected" ? podStatus : "not_received",
       updated_at: now,
     });
-    transaction.set(scope.ref.collection("job_activity").doc(), {
+    transaction.set(scope.ref.collection("job_activity").doc(`delivery-tracking-adopted-${attemptRef.id}`), {
       type: "delivery_tracking_adopted",
-      title: "Carrier delivery milestone adopted into Delivery Control",
-      detail: "The existing Delivered tracking milestone was linked to the POD workflow without creating a duplicate shipment movement event.",
+      title: "External Delivered observation adopted into Delivery Control",
+      detail: `${provider ?? source ?? "External provider"} reported Delivered at ${observedAt}. Recipient details were not inferred.`,
       branch: scope.primary,
       actor_name: actor.name,
       actor_email: actor.email,
       created_at: now,
       delivery_attempt_id: attemptRef.id,
+      external_observed_provider: provider,
+      external_observed_source: source,
+      external_observed_at: observedAt,
     });
     return { kind: "created" as const, data };
   });
-  if (result.kind === "ready" || result.kind === "created") return { kind: result.kind, attempt: attemptFromData(attemptRef.id, scope.reference, result.data) } as const;
-  return result;
+  if (result.kind !== "ready" && result.kind !== "created") return result;
+  const completion = await reconcileCanonicalDelivery(scope.reference, { source: "manual_delivery", actor, context });
+  return { kind: result.kind, attempt: attemptFromData(attemptRef.id, scope.reference, result.data), completion } as const;
 }
 
 function milestoneForDelivery(status: DeliveryAttemptStatus) {
@@ -348,7 +368,6 @@ function milestoneForDelivery(status: DeliveryAttemptStatus) {
 }
 
 function shipmentStatusForDelivery(status: DeliveryAttemptStatus, current: string) {
-  if (status === "delivered") return "delivered";
   if (status === "refused" || status === "failed") return "exception";
   if (status === "out_for_delivery") return "out_for_delivery";
   return current || "out_for_delivery";
@@ -368,19 +387,20 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
   const now = new Date().toISOString();
   const result = await db.runTransaction(async (transaction) => {
     const [shipmentSnapshot, attemptSnapshot] = await Promise.all([transaction.get(scope.ref), transaction.get(attemptRef)]);
+    if (!shipmentSnapshot.exists) return { kind: "missing" as const };
     if (!attemptSnapshot.exists) return { kind: "missing_attempt" as const };
-    const attempt = attemptFromData(attemptSnapshot.id, scope.reference, attemptSnapshot.data() as Record<string, unknown>);
-    if (!deliveryAttemptTransitionAllowed(attempt.status, input.status)) return { kind: "invalid_transition" as const };
     const shipment = shipmentSnapshot.data() as Record<string, unknown>;
+    const attempt = attemptFromData(attemptSnapshot.id, scope.reference, attemptSnapshot.data() as Record<string, unknown>);
     const currentShipmentStatus = text(shipment.status, "out_for_delivery");
-    if (currentShipmentStatus === "delivered" && input.status !== "delivered") return { kind: "already_delivered" as const };
+    if (currentShipmentStatus === "delivered") {
+      if (attempt.status === "delivered" && input.status === "delivered") return { kind: "idempotent" as const };
+      return { kind: "already_delivered" as const };
+    }
+    if (attempt.status === input.status) return { kind: "idempotent" as const };
+    if (!deliveryAttemptTransitionAllowed(attempt.status, input.status)) return { kind: "invalid_transition" as const };
 
-    const customerId = nullable(shipment.customer_id);
-    const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
-    const customerSnapshot = customerRef && input.status === "delivered" && currentShipmentStatus !== "delivered" ? await transaction.get(customerRef) : null;
     const trackingId = id("delivery-track");
     const legacyId = numericId();
-    const nextShipmentStatus = shipmentStatusForDelivery(input.status, currentShipmentStatus);
     const milestone = milestoneForDelivery(input.status);
     const location = input.location.trim() || attempt.location || nullable(shipment.current_location);
     const detail = input.status === "delivered"
@@ -408,7 +428,7 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
     transaction.set(scope.ref.collection("tracking_events").doc(trackingId), {
       shipment_reference: scope.reference,
       milestone,
-      title: input.status === "failed" ? "Delivery attempt failed" : input.status === "refused" ? "Delivery refused" : input.status === "delivered" ? "Delivered" : "Out for delivery",
+      title: input.status === "failed" ? "Delivery attempt failed" : input.status === "refused" ? "Delivery refused" : input.status === "delivered" ? "Physical delivery recorded" : "Out for delivery",
       raw_status: input.status.replaceAll("_", " "),
       location,
       latitude: input.latitude,
@@ -427,7 +447,7 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
     transaction.set(scope.ref.collection("events").doc(String(legacyId)), {
       id: legacyId,
       shipment_reference: scope.reference,
-      title: input.status === "failed" ? "Delivery attempt failed" : input.status === "refused" ? "Delivery refused" : input.status === "delivered" ? "Delivered" : "Out for delivery",
+      title: input.status === "failed" ? "Delivery attempt failed" : input.status === "refused" ? "Delivery refused" : input.status === "delivered" ? "Physical delivery recorded" : "Out for delivery",
       location,
       details: detail,
       event_time: eventTime,
@@ -435,20 +455,21 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
       author_name: actor.name || "KCPL Delivery Control",
     });
     transaction.set(scope.ref.collection("job_activity").doc(), {
-      type: `delivery_${input.status}`,
-      title: input.status === "delivered" ? `Delivery attempt ${attempt.attempt_number} completed` : input.status === "refused" ? `Delivery attempt ${attempt.attempt_number} refused` : input.status === "failed" ? `Delivery attempt ${attempt.attempt_number} failed` : `Delivery attempt ${attempt.attempt_number} dispatched`,
+      type: input.status === "delivered" ? "physical_delivery_recorded" : `delivery_${input.status}`,
+      title: input.status === "delivered" ? `Physical delivery recorded for attempt ${attempt.attempt_number}` : input.status === "refused" ? `Delivery attempt ${attempt.attempt_number} refused` : input.status === "failed" ? `Delivery attempt ${attempt.attempt_number} failed` : `Delivery attempt ${attempt.attempt_number} dispatched`,
       detail,
       branch: scope.primary,
       actor_name: actor.name,
       actor_email: actor.email,
       created_at: now,
       delivery_attempt_id: attemptRef.id,
+      canonical_status_unchanged: input.status === "delivered",
     });
 
     const podStatus = text(shipment.delivery_pod_status, "not_received");
-    transaction.update(scope.ref, {
-      status: nextShipmentStatus,
+    const shipmentUpdate: Record<string, unknown> = {
       current_location: location,
+      delivery_last_attempt_id: attemptRef.id,
       delivery_last_attempt_status: input.status,
       delivery_last_attempt_at: eventTime,
       delivery_next_at: null,
@@ -461,25 +482,9 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
       tracking_last_source: "manual",
       tracking_last_provider: "KCPL Delivery Control",
       updated_at: now,
-    });
-
-    if (customerRef && customerSnapshot?.exists) {
-      const active = Number(customerSnapshot.get("active_shipment_count") ?? 0);
-      const completed = Number(customerSnapshot.get("completed_shipment_count") ?? 0);
-      transaction.update(customerRef, {
-        active_shipment_count: Math.max(0, active - 1),
-        completed_shipment_count: completed + 1,
-        updated_at: now,
-      });
-      transaction.create(customerRef.collection("activity").doc(id("delivery")), {
-        type: "shipment_delivered",
-        title: `${scope.reference}: Delivered`,
-        detail,
-        actor_name: actor.name || "KCPL Delivery Control",
-        actor_email: actor.email || null,
-        created_at: now,
-      });
-    }
+    };
+    if (input.status !== "delivered") shipmentUpdate.status = shipmentStatusForDelivery(input.status, currentShipmentStatus);
+    transaction.update(scope.ref, shipmentUpdate);
 
     if (input.status === "failed" || input.status === "refused") {
       const exceptionRef = scope.ref.collection("exceptions").doc(`delivery-${attemptRef.id}`);
@@ -512,9 +517,18 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
     }
     return { kind: "updated" as const };
   });
-  if (result.kind !== "updated") return result;
+  if (!["updated", "idempotent"].includes(result.kind)) return result;
+  const completion = input.status === "delivered"
+    ? await reconcileCanonicalDelivery(scope.reference, { source: "manual_delivery", actor, context })
+    : null;
   const refreshed = await attemptRef.get();
-  return { kind: "updated" as const, attempt: attemptFromData(refreshed.id, scope.reference, refreshed.data() as Record<string, unknown>) };
+  if (!refreshed.exists) return { kind: "missing_attempt" as const };
+  return {
+    kind: "updated" as const,
+    attempt: attemptFromData(refreshed.id, scope.reference, refreshed.data() as Record<string, unknown>),
+    idempotent: result.kind === "idempotent",
+    completion,
+  };
 }
 
 export async function uploadPodEvidence(
@@ -609,7 +623,10 @@ export async function reviewPod(
 ) {
   const scope = await shipmentScope(reference, context);
   if (scope.kind !== "ready") return scope;
-  if (text(scope.data.delivery_pod_status) === "verified") return { kind: "already_verified" as const };
+  if (text(scope.data.delivery_pod_status) === "verified") {
+    const completion = await reconcileCanonicalDelivery(scope.reference, { source: "pod_verification", actor, context });
+    return { kind: "already_verified" as const, completion };
+  }
   const attemptRef = scope.ref.collection("delivery_attempts").doc(attemptId.trim());
   const [attemptSnapshot, evidenceSnapshot] = await Promise.all([
     attemptRef.get(),
@@ -730,7 +747,8 @@ export async function reviewPod(
     await manifestFile.delete({ ignoreNotFound: true }).catch(() => undefined);
     throw error;
   }
-  return { kind: "verified" as const, document_id: String(documentId), sha256: manifestHash };
+  const completion = await reconcileCanonicalDelivery(scope.reference, { source: "pod_verification", actor, context });
+  return { kind: "verified" as const, document_id: String(documentId), sha256: manifestHash, completion };
 }
 
 export async function podEvidenceDownload(reference: string, evidenceId: string, context: KcplStaffContext) {
