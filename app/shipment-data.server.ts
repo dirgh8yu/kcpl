@@ -1,4 +1,5 @@
 import { firebaseAdminDb } from "./firebase-admin.server";
+import { quoteHasTmsAuthorityMarkers } from "./admin/commercial-authority/commercial-authority";
 import { kcplBranches, type KcplBranch } from "./admin/crm/crm-data";
 import { defaultCustomsSteps, defaultDocumentRequirements, defaultWorkflowTasks } from "./admin/workflow-defaults";
 import {
@@ -108,6 +109,7 @@ export async function getShipmentForQuote(quoteReference: string): Promise<Shipm
   return loadShipment(legacy.docs[0].id);
 }
 
+/** Explicit legacy/general quote mutation only. TMS/versioned quotes must use Tender -> Booking. */
 export async function ensureShipmentForWonQuote(quoteReference: string, authorName = "KCPL Operations", authorEmail = "") {
   if (!configured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
@@ -118,6 +120,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     const quote = await transaction.get(quoteRef);
     if (!quote.exists) return { kind: "missing" as const };
     const data = quote.data() as Record<string, unknown>;
+    if (quoteHasTmsAuthorityMarkers(data)) return { kind: "tms-authority-required" as const };
     if (data.status !== "won") return { kind: "not-won" as const };
 
     const existingReference = nullableString(data.shipment_reference);
@@ -261,6 +264,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
   if (
     result.kind === "missing" ||
     result.kind === "not-won" ||
+    result.kind === "tms-authority-required" ||
     result.kind === "customer-required" ||
     result.kind === "customer-missing"
   ) return result;
