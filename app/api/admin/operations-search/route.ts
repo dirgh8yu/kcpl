@@ -2,7 +2,7 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-ad
 import { canAccessBranchSet, canAccessBranchValue, canAccessQuoteLinkedRecords } from "../../../admin/branch-access-policy";
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { canAccessPartnerOwner } from "../../../admin/partners/partner-policy";
-import { getStaffContext, staffCanAccessBranch } from "../../../admin/staff-directory.server";
+import { getStaffContext } from "../../../admin/staff-directory.server";
 
 type IndexedDoc = { id: string; data: Record<string, unknown> };
 type SearchResult = {
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
 
     for (const doc of orders) {
       const data = doc.data;
-      if (!staffCanAccessBranch(staff, data.branch)) continue;
+      if (!canAccessBranchValue(staff, data.branch)) continue;
       const searchText = [doc.id, text(data.customer_name), text(data.customer_id), text(data.origin), text(data.destination), text(data.mode), text(data.status), text(data.booking_reference), text(data.shipment_reference), text(data.consolidation_reference)].join(" ");
       if (!matches(searchText, query)) continue;
       results.push({ kind: "order", id: doc.id, title: doc.id, subtitle: `${text(data.customer_name, "Transport order")} · ${text(data.origin, "Origin")} → ${text(data.destination, "Destination")}`, meta: text(data.status) || null, href: `/admin/rating?order=${encodeURIComponent(doc.id)}` });
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
 
     for (const doc of tenders) {
       const data = doc.data;
-      if (!staffCanAccessBranch(staff, data.branch)) continue;
+      if (!canAccessBranchValue(staff, data.branch)) continue;
       const searchText = [doc.id, text(data.tender_reference), text(data.order_id), text(data.partner_name), text(data.partner_id), text(data.origin), text(data.destination), text(data.status), text(data.booking_reference), text(data.shipment_reference)].join(" ");
       if (!matches(searchText, query)) continue;
       results.push({ kind: "tender", id: doc.id, title: text(data.tender_reference, doc.id), subtitle: `${text(data.partner_name, "Partner")} · ${text(data.origin, "Origin")} → ${text(data.destination, "Destination")}`, meta: text(data.status) || null, href: `/admin/tenders?tender=${encodeURIComponent(doc.id)}` });
