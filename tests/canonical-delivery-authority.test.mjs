@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import {
-  canonicalDeliveryStatus,
-  evaluateCanonicalDeliveryCompletion,
-} from "../app/admin/delivery/canonical-delivery-policy.ts";
+import { evaluateCanonicalDeliveryCompletion } from "../app/admin/delivery/canonical-delivery-policy.ts";
 import { deliveryAttemptTransitionAllowed } from "../app/admin/delivery/delivery-control.ts";
 import { evaluateExternalPromotion } from "../app/admin/visibility/external-workflow-state.ts";
 import { shipmentDocumentCountsAsReady } from "../app/shipment-document-policy.ts";
@@ -17,7 +14,6 @@ const authorityServer = source("app/admin/delivery/canonical-delivery-authority.
 const policySource = source("app/admin/delivery/canonical-delivery-policy.ts");
 const directRoute = source("app/api/admin/shipments/[reference]/route.ts");
 const deliveryRoute = source("app/api/admin/jobs/[reference]/delivery/route.ts");
-const externalState = source("app/admin/visibility/external-workflow-state.ts");
 const trackingServer = source("app/admin/visibility/tracking-visibility.server.ts");
 const shipmentData = source("app/shipment-data.server.ts");
 const packageJson = JSON.parse(source("package.json"));
