@@ -39,6 +39,8 @@ export type TmsLoadMember = {
   shipment_reference: string | null;
 };
 
+type AllocationMember = Pick<TmsLoadMember, "order_id" | "weight_kg" | "volume_cbm" | "pieces">;
+
 export type TmsConsolidationLoad = {
   id: string;
   reference: string;
@@ -263,7 +265,7 @@ export function validateStopPrecedence(stops: TmsLoadStop[]) {
   return invalid;
 }
 
-export function allocationBasis(orders: TmsLoadMember[]) {
+export function allocationBasis(orders: AllocationMember[]) {
   const weight = orders.reduce((sum, order) => sum + Math.max(0, order.weight_kg), 0);
   if (weight > 0) return { field: "weight_kg" as const, total: weight };
   const volume = orders.reduce((sum, order) => sum + Math.max(0, order.volume_cbm), 0);
@@ -273,7 +275,7 @@ export function allocationBasis(orders: TmsLoadMember[]) {
   return { field: "equal" as const, total: orders.length };
 }
 
-export function allocateProcurementCost(totalCost: number, orders: TmsLoadMember[]) {
+export function allocateProcurementCost(totalCost: number, orders: AllocationMember[]) {
   if (!Number.isFinite(totalCost) || totalCost < 0 || !orders.length) return [] as Array<{ order_id: string; amount: number }>;
   const basis = allocationBasis(orders);
   let allocatedCents = 0;
