@@ -1,0 +1,889 @@
+name: Apply commercial authority remediation
+
+on:
+  push:
+    branches: [fix/commercial-authority-seams]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/commercial-authority-seams
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Apply scoped remediation
+        shell: bash
+        run: |
+          cat > /tmp/patch.py <<'PY'
+          from pathlib import Path
+          import json, re
+
+          root = Path('.')
+
+          def read(path):
+              return (root / path).read_text()
+
+          def write(path, content):
+              p = root / path
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(content)
+
+          def replace_once(path, old, new):
+              text = read(path)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}: {old[:100]!r}')
+              write(path, text.replace(old, new, 1))
+
+          # Pure commercial authority policy and predicates.
+          write('app/admin/commercial-authority/commercial-authority.ts', '''import {
+            normalizeCommercialCurrency,
+            normalizeCommercialId,
+            sameCommercialMoney,
+            type CommercialSnapshot,
+          } from "../commercial-lineage/commercial-lineage";
+
+          export const COMMERCIAL_POLICY_ID = "kcpl-server-commercial-policy-v1";
+          export const COMMERCIAL_MINIMUM_MARGIN_PERCENT = 10;
+          export const COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT = 12;
+
+          function text(value: unknown) {
+            return typeof value === "string" ? value.trim() : "";
+          }
+
+          export function tmsCustomerQuoteReference(orderId: string, versionId: string) {
+            return `TMSSELL-${normalizeCommercialId(orderId)}-${normalizeCommercialId(versionId)}`
+              .replace(/[^A-Z0-9-]/gi, "")
+              .toUpperCase()
+              .slice(0, 120);
+          }
+
+          export function quoteHasTmsAuthorityMarkers(data: Record<string, unknown>) {
+            const source = text(data.source).toLowerCase();
+            return Boolean(
+              normalizeCommercialId(data.transport_order_id)
+              || normalizeCommercialId(data.commercial_version_id)
+              || text(data.commercial_fingerprint)
+              || data.commercial_locked === true
+              || source.startsWith("tms_"),
+            );
+          }
+
+          export function customerSellEconomicsMatch(left: CommercialSnapshot, right: CommercialSnapshot) {
+            const leftPricing = left.pricing;
+            const rightPricing = right.pricing;
+            if (!leftPricing || !rightPricing) return false;
+            const currency = normalizeCommercialCurrency(leftPricing.sell_currency);
+            return Boolean(
+              normalizeCommercialId(left.order_id) === normalizeCommercialId(right.order_id)
+              && left.branch === right.branch
+              && normalizeCommercialId(left.customer_id) === normalizeCommercialId(right.customer_id)
+              && normalizeCommercialId(leftPricing.customer_id) === normalizeCommercialId(rightPricing.customer_id)
+              && currency
+              && currency === normalizeCommercialCurrency(rightPricing.sell_currency)
+              && sameCommercialMoney(leftPricing.sell_amount, rightPricing.sell_amount, currency),
+            );
+          }
+          ''')
+
+          # Transactional customer quote and acceptance authority.
+          write('app/admin/commercial-authority/customer-sell-authority.server.ts', '''import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+          import {
+            loadCommercialVersionInTransaction,
+          } from "../commercial-lineage/commercial-lineage.server";
+          import {
+            normalizeCommercialCurrency,
+            normalizeCommercialId,
+            sameCommercialMoney,
+            type CommercialVersion,
+          } from "../commercial-lineage/commercial-lineage";
+          import { kcplBranches, type KcplBranch } from "../crm/crm-data";
+          import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+          import {
+            customerSellEconomicsMatch,
+            quoteHasTmsAuthorityMarkers,
+            tmsCustomerQuoteReference,
+          } from "./commercial-authority";
+
+          type Actor = { name: string; email: string };
+
+          export type CustomerSellAuthorityFailure =
+            | "customer_quote_required"
+            | "customer_quote_stale"
+            | "customer_acceptance_required";
+
+          type CustomerAcceptanceRecord = {
+            commercial_version_id: string;
+            commercial_fingerprint: string;
+            order_id: string;
+            customer_id: string;
+            quote_reference: string;
+            sell_amount: number;
+            sell_currency: string;
+            accepted_at: string;
+            accepted_by_name: string;
+            accepted_by_email: string;
+            acceptance_source: string;
+          };
+
+          function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
+          function branchValue(value: unknown): KcplBranch | null { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null; }
+          function acceptanceRef(versionId: string) { return firebaseAdminDb().collection("commercial_customer_acceptances").doc(normalizeCommercialId(versionId)); }
+
+          function acceptanceFromData(data: Record<string, unknown>): CustomerAcceptanceRecord | null {
+            const sellAmount = Number(data.sell_amount);
+            const sellCurrency = normalizeCommercialCurrency(data.sell_currency);
+            const record: CustomerAcceptanceRecord = {
+              commercial_version_id: normalizeCommercialId(data.commercial_version_id),
+              commercial_fingerprint: text(data.commercial_fingerprint),
+              order_id: normalizeCommercialId(data.order_id),
+              customer_id: normalizeCommercialId(data.customer_id),
+              quote_reference: normalizeCommercialId(data.quote_reference),
+              sell_amount: sellAmount,
+              sell_currency: sellCurrency,
+              accepted_at: text(data.accepted_at),
+              accepted_by_name: text(data.accepted_by_name),
+              accepted_by_email: text(data.accepted_by_email).toLowerCase(),
+              acceptance_source: text(data.acceptance_source),
+            };
+            return data.status === "accepted"
+              && record.commercial_version_id
+              && record.commercial_fingerprint
+              && record.order_id
+              && record.customer_id
+              && record.quote_reference
+              && Number.isFinite(record.sell_amount)
+              && record.sell_amount >= 0
+              && record.sell_currency
+              && record.accepted_at
+              && record.accepted_by_email
+              && record.acceptance_source
+              ? record
+              : null;
+          }
+
+          function acceptanceMatchesVersion(record: CustomerAcceptanceRecord, version: CommercialVersion) {
+            const pricing = version.snapshot.pricing;
+            const customerId = normalizeCommercialId(version.snapshot.customer_id);
+            if (!pricing || !customerId) return false;
+            const sellCurrency = normalizeCommercialCurrency(pricing.sell_currency);
+            return Boolean(
+              record.commercial_version_id === version.id
+              && record.commercial_fingerprint === version.fingerprint
+              && record.order_id === normalizeCommercialId(version.snapshot.order_id)
+              && record.customer_id === customerId
+              && record.sell_currency === sellCurrency
+              && sameCommercialMoney(record.sell_amount, pricing.sell_amount, sellCurrency),
+            );
+          }
+
+          export async function assertCustomerQuoteIssuedInTransaction(
+            transaction: FirebaseFirestore.Transaction,
+            version: CommercialVersion,
+          ): Promise<{ ok: true; quoteReference: string } | { ok: false; reason: CustomerSellAuthorityFailure }> {
+            const customerId = normalizeCommercialId(version.snapshot.customer_id);
+            const pricing = version.snapshot.pricing;
+            if (!customerId || !pricing) return { ok: false, reason: "customer_quote_required" };
+            const reference = tmsCustomerQuoteReference(version.snapshot.order_id, version.id);
+            const quote = await transaction.get(firebaseAdminDb().collection("quotes").doc(reference));
+            if (!quote.exists) return { ok: false, reason: "customer_quote_required" };
+            const quoteBranch = text(quote.get("branch"));
+            const sellCurrency = normalizeCommercialCurrency(pricing.sell_currency);
+            if (
+              text(quote.get("source")) !== "tms_sell_pricing_engine"
+              || quote.get("commercial_locked") !== true
+              || normalizeCommercialId(quote.get("transport_order_id")) !== normalizeCommercialId(version.snapshot.order_id)
+              || normalizeCommercialId(quote.get("customer_id")) !== customerId
+              || normalizeCommercialId(quote.get("commercial_version_id")) !== version.id
+              || text(quote.get("commercial_fingerprint")) !== version.fingerprint
+              || (quoteBranch && quoteBranch !== version.snapshot.branch)
+              || normalizeCommercialCurrency(quote.get("quote_currency")) !== sellCurrency
+              || !sameCommercialMoney(quote.get("quoted_amount"), pricing.sell_amount, sellCurrency)
+            ) return { ok: false, reason: "customer_quote_stale" };
+            return { ok: true, quoteReference: reference };
+          }
+
+          export async function assertCustomerSellAuthorityInTransaction(
+            transaction: FirebaseFirestore.Transaction,
+            version: CommercialVersion,
+          ): Promise<{ ok: true; quoteReference: string; acceptance: CustomerAcceptanceRecord } | { ok: false; reason: CustomerSellAuthorityFailure }> {
+            const customerId = normalizeCommercialId(version.snapshot.customer_id);
+            const pricing = version.snapshot.pricing;
+            if (!customerId || !pricing) return { ok: false, reason: "customer_quote_required" };
+            const snapshot = await transaction.get(acceptanceRef(version.id));
+            if (!snapshot.exists) return { ok: false, reason: "customer_acceptance_required" };
+            const record = acceptanceFromData(snapshot.data() as Record<string, unknown>);
+            if (!record || !acceptanceMatchesVersion(record, version)) return { ok: false, reason: "customer_quote_stale" };
+            return { ok: true, quoteReference: record.quote_reference, acceptance: record };
+          }
+
+          export async function carryForwardCustomerSellAuthorityInTransaction(
+            transaction: FirebaseFirestore.Transaction,
+            sourceVersion: CommercialVersion,
+            derivedVersion: CommercialVersion,
+            actor: Actor,
+          ) {
+            if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" as const };
+            const source = await assertCustomerSellAuthorityInTransaction(transaction, sourceVersion);
+            if (!source.ok) return { kind: "not_carried" as const };
+            const ref = acceptanceRef(derivedVersion.id);
+            const existing = await transaction.get(ref);
+            if (existing.exists) {
+              const record = acceptanceFromData(existing.data() as Record<string, unknown>);
+              return record && acceptanceMatchesVersion(record, derivedVersion)
+                ? { kind: "carried" as const, quoteReference: record.quote_reference, idempotent: true }
+                : { kind: "conflict" as const };
+            }
+            const pricing = derivedVersion.snapshot.pricing!;
+            const now = new Date().toISOString();
+            transaction.create(ref, {
+              status: "accepted",
+              commercial_version_id: derivedVersion.id,
+              commercial_fingerprint: derivedVersion.fingerprint,
+              order_id: normalizeCommercialId(derivedVersion.snapshot.order_id),
+              customer_id: normalizeCommercialId(derivedVersion.snapshot.customer_id),
+              quote_reference: source.quoteReference,
+              sell_amount: pricing.sell_amount,
+              sell_currency: normalizeCommercialCurrency(pricing.sell_currency),
+              accepted_at: source.acceptance.accepted_at,
+              accepted_by_name: source.acceptance.accepted_by_name,
+              accepted_by_email: source.acceptance.accepted_by_email,
+              acceptance_source: source.acceptance.acceptance_source,
+              authority_derivation: "buy_side_only_carry_forward",
+              source_commercial_version_id: sourceVersion.id,
+              source_commercial_fingerprint: sourceVersion.fingerprint,
+              carried_forward_at: now,
+              carried_forward_by_name: actor.name,
+              carried_forward_by_email: actor.email,
+              immutable: true,
+              created_at: now,
+            });
+            return { kind: "carried" as const, quoteReference: source.quoteReference, idempotent: false };
+          }
+
+          export async function acceptCurrentTmsCustomerQuote(
+            quoteReference: string,
+            actor: Actor,
+            staff: KcplStaffContext,
+          ) {
+            if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+            if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+            const db = firebaseAdminDb();
+            const reference = normalizeCommercialId(quoteReference);
+            const quoteRef = db.collection("quotes").doc(reference);
+            try {
+              return await db.runTransaction(async (transaction) => {
+                const quote = await transaction.get(quoteRef);
+                if (!quote.exists) return { kind: "missing" as const };
+                const quoteData = quote.data() as Record<string, unknown>;
+                if (!quoteHasTmsAuthorityMarkers(quoteData)) return { kind: "not_tms" as const };
+                if (text(quote.get("source")) !== "tms_sell_pricing_engine" || quote.get("commercial_locked") !== true) return { kind: "invalid_tms_quote" as const };
+                const orderId = normalizeCommercialId(quote.get("transport_order_id"));
+                const versionId = normalizeCommercialId(quote.get("commercial_version_id"));
+                const fingerprint = text(quote.get("commercial_fingerprint"));
+                if (!orderId || !versionId || !fingerprint || reference !== tmsCustomerQuoteReference(orderId, versionId)) return { kind: "invalid_tms_quote" as const };
+                const orderRef = db.collection("transport_orders").doc(orderId);
+                const order = await transaction.get(orderRef);
+                if (!order.exists) return { kind: "missing_order" as const };
+                const branch = branchValue(order.get("branch"));
+                if (!branch || !staffCanAccessBranch(staff, branch)) return { kind: "forbidden" as const };
+                if (normalizeCommercialId(order.get("commercial_version_id")) !== versionId || text(order.get("commercial_fingerprint")) !== fingerprint) return { kind: "stale_commercial_quote" as const };
+                const resolved = await loadCommercialVersionInTransaction(transaction, versionId, fingerprint, orderId);
+                if (resolved.kind !== "ready") return { kind: "stale_commercial_quote" as const };
+                const version = resolved.version;
+                const pricing = version.snapshot.pricing;
+                const customerId = normalizeCommercialId(version.snapshot.customer_id);
+                if (!pricing || !customerId || version.snapshot.branch !== branch) return { kind: "invalid_tms_quote" as const };
+                const customer = await transaction.get(db.collection("customers").doc(customerId));
+                if (!customer.exists || customer.get("archived") === true || branchValue(customer.get("primary_branch")) !== branch) return { kind: "customer_missing" as const };
+                const issued = await assertCustomerQuoteIssuedInTransaction(transaction, version);
+                if (!issued.ok) return { kind: "stale_commercial_quote" as const };
+                const status = text(quote.get("status"));
+                if (status !== "quoted" && status !== "won") return { kind: "invalid_transition" as const };
+                const acceptanceDoc = await transaction.get(acceptanceRef(version.id));
+                if (acceptanceDoc.exists) {
+                  const existing = acceptanceFromData(acceptanceDoc.data() as Record<string, unknown>);
+                  if (!existing || !acceptanceMatchesVersion(existing, version) || existing.quote_reference !== reference) return { kind: "stale_commercial_quote" as const };
+                  if (status !== "won" || text(quote.get("customer_acceptance_status")) !== "accepted") {
+                    transaction.update(quoteRef, { status: "won", customer_acceptance_status: "accepted", updated_at: new Date().toISOString() });
+                  }
+                  return { kind: "accepted" as const, quoteReference: reference, commercialVersionId: version.id, idempotent: true };
+                }
+                const now = new Date().toISOString();
+                const sellCurrency = normalizeCommercialCurrency(pricing.sell_currency);
+                const acceptance = {
+                  status: "accepted",
+                  commercial_version_id: version.id,
+                  commercial_fingerprint: version.fingerprint,
+                  order_id: orderId,
+                  customer_id: customerId,
+                  quote_reference: reference,
+                  sell_amount: pricing.sell_amount,
+                  sell_currency: sellCurrency,
+                  accepted_at: now,
+                  accepted_by_name: actor.name,
+                  accepted_by_email: actor.email.toLowerCase(),
+                  acceptance_source: "kcpl_staff_recorded_customer_acceptance",
+                  authority_derivation: "exact_customer_quote",
+                  source_commercial_version_id: version.id,
+                  source_commercial_fingerprint: version.fingerprint,
+                  immutable: true,
+                  created_at: now,
+                };
+                transaction.create(acceptanceRef(version.id), acceptance);
+                transaction.update(quoteRef, {
+                  status: "won",
+                  customer_acceptance_status: "accepted",
+                  accepted_at: now,
+                  accepted_by_name: actor.name,
+                  accepted_by_email: actor.email.toLowerCase(),
+                  accepted_by_source: "kcpl_staff_recorded_customer_acceptance",
+                  accepted_order_id: orderId,
+                  accepted_customer_id: customerId,
+                  accepted_commercial_version_id: version.id,
+                  accepted_commercial_fingerprint: version.fingerprint,
+                  accepted_sell_amount: pricing.sell_amount,
+                  accepted_sell_currency: sellCurrency,
+                  updated_at: now,
+                });
+                return { kind: "accepted" as const, quoteReference: reference, commercialVersionId: version.id, idempotent: false };
+              });
+            } catch {
+              return { kind: "unavailable" as const };
+            }
+          }
+          ''')
+
+          # Staff capabilities: preserve commercial/finance roles but make overrides Management-only.
+          replace_once('app/admin/staff-permissions.ts',
+            '  canEditCommercial: boolean;\n  canManageRateCards: boolean;',
+            '  canEditCommercial: boolean;\n  canOverrideCommercialPolicy: boolean;\n  canOverrideFx: boolean;\n  canManageRateCards: boolean;')
+          replace_once('app/admin/staff-permissions.ts',
+            '    canEditCommercial: management || accounts || commercial,\n    canManageRateCards: management || commercial,',
+            '    canEditCommercial: management || accounts || commercial,\n    canOverrideCommercialPolicy: management,\n    canOverrideFx: management,\n    canManageRateCards: management || commercial,')
+
+          # Commercial snapshot provenance additions, backward compatible with existing v1 fingerprints.
+          replace_once('app/admin/commercial-lineage/commercial-lineage.ts',
+            '  source_npr_per_unit: number | null;\n  target_npr_per_unit: number | null;\n};',
+            '  source_npr_per_unit: number | null;\n  target_npr_per_unit: number | null;\n  override_actor_name?: string | null;\n  override_actor_email?: string | null;\n  override_reason?: string | null;\n  override_at?: string | null;\n};')
+          replace_once('app/admin/commercial-lineage/commercial-lineage.ts',
+            '  rate_card_id: string | null;\n  rate_card_updated_at: string | null;',
+            '  rate_card_id: string | null;\n  rate_card_branch?: string | null;\n  rate_card_origin?: string | null;\n  rate_card_destination?: string | null;\n  rate_card_updated_at: string | null;')
+          replace_once('app/admin/commercial-lineage/commercial-lineage.ts',
+            '  pricing_rule_id: string | null;\n  pricing_rule_scope: string | null;',
+            '  pricing_rule_id: string | null;\n  pricing_rule_scope: string | null;\n  pricing_policy_id?: string | null;')
+
+          path = 'app/admin/commercial-lineage/commercial-lineage.ts'
+          text0 = read(path)
+          marker = 'export function commercialFingerprintPayload(snapshot: CommercialSnapshot) {'
+          start = text0.index(marker)
+          end = text0.index('\n}\n\nexport function commercialFingerprint(', start) + 2
+          block = text0[start:end]
+          block = block.replace(
+            '  const sellCurrency = snapshot.pricing ? normalizeCommercialCurrency(snapshot.pricing.sell_currency) : "";\n  return [',
+            '''  const sellCurrency = snapshot.pricing ? normalizeCommercialCurrency(snapshot.pricing.sell_currency) : "";
+  const rateApplicability = ("rate_card_branch" in snapshot.procurement || "rate_card_origin" in snapshot.procurement || "rate_card_destination" in snapshot.procurement)
+    ? [nullableText(snapshot.procurement.rate_card_branch), nullableText(snapshot.procurement.rate_card_origin), nullableText(snapshot.procurement.rate_card_destination)]
+    : null;
+  const pricingPolicy = snapshot.pricing && "pricing_policy_id" in snapshot.pricing ? nullableText(snapshot.pricing.pricing_policy_id) : null;
+  const manualFxProvenance = snapshot.fx && snapshot.fx.source === "manual_override" && ("override_reason" in snapshot.fx || "override_actor_email" in snapshot.fx || "override_at" in snapshot.fx)
+    ? [nullableText(snapshot.fx.override_actor_name), nullableText(snapshot.fx.override_actor_email), nullableText(snapshot.fx.override_reason), nullableText(snapshot.fx.override_at)]
+    : null;
+  const payload = [''', 1)
+          if block.count('  ];\n}') != 1:
+              raise SystemExit('fingerprint payload tail match failed')
+          block = block.replace('  ];\n}', '''  ];
+  const provenance: unknown[] = [];
+  if (rateApplicability) provenance.push(["rate_applicability", ...rateApplicability]);
+  if (pricingPolicy) provenance.push(["pricing_policy", pricingPolicy]);
+  if (manualFxProvenance) provenance.push(["manual_fx", ...manualFxProvenance]);
+  return provenance.length ? [...payload, ...provenance] : payload;
+}''', 1)
+          write(path, text0[:start] + block + text0[end:])
+          replace_once(path,
+            '  const procurementTotal = commercialMoney(snapshot.procurement.total, procurementCurrency);\n  if (procurementTotal === null || procurementTotal < 0) errors.push("invalid_procurement_total");',
+            '''  const procurementTotal = commercialMoney(snapshot.procurement.total, procurementCurrency);
+  if (procurementTotal === null || procurementTotal < 0) errors.push("invalid_procurement_total");
+  if ("rate_card_branch" in snapshot.procurement) {
+    const rateBranch = text(snapshot.procurement.rate_card_branch);
+    if (!rateBranch) errors.push("missing_rate_card_branch");
+    else if (rateBranch !== "Global" && rateBranch !== text(snapshot.branch)) errors.push("rate_card_branch_mismatch");
+  }''')
+          replace_once(path,
+            '    if (snapshot.fx) {\n      if (normalizeCommercialCurrency(snapshot.fx.source_currency) !== procurementCurrency) errors.push("fx_source_mismatch");',
+            '''    if (snapshot.fx) {
+      if (normalizeCommercialCurrency(snapshot.fx.source_currency) !== procurementCurrency) errors.push("fx_source_mismatch");
+      if (snapshot.fx.source === "manual_override" && ("override_reason" in snapshot.fx || "override_actor_email" in snapshot.fx || "override_at" in snapshot.fx)) {
+        if (!text(snapshot.fx.override_actor_email) || !text(snapshot.fx.override_reason) || !text(snapshot.fx.override_at)) errors.push("manual_fx_provenance_missing");
+      }''')
+
+          # Rating applicability is commercial validity, not staff visibility.
+          replace_once('app/admin/rating/tms-rating.ts',
+            'import type { CrmCurrency, KcplBranch } from "../crm/crm-data";',
+            'import { kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";')
+          replace_once('app/admin/rating/tms-rating.ts',
+            'export function calculateRating(order: TmsOrder, card: PartnerBuyRateCard): RatingResult | null {\n  if (order.mode !== card.mode && card.mode !== "multimodal") return null;\n  if (!rateLocationMatches(card.origin, order.origin) || !rateLocationMatches(card.destination, order.destination)) return null;\n  if (order.equipment && card.equipment && key(order.equipment) !== key(card.equipment)) return null;\n  if (!rateCardIsValidOn(card, order.pickup_date || new Date().toISOString())) return null;\n\n  const quantity = ratingQuantity(order, card.unit);\n  if (quantity <= 0 && !["flat", "per_shipment"].includes(card.unit)) return null;',
+            '''export function rateCardAppliesToOrder(order: TmsOrder, card: PartnerBuyRateCard, dateIso = order.pickup_date || new Date().toISOString()) {
+  if (!kcplBranches.includes(order.branch)) return false;
+  if (card.branch !== "Global" && (!kcplBranches.includes(card.branch) || card.branch !== order.branch)) return false;
+  if (order.mode !== card.mode && card.mode !== "multimodal") return false;
+  if (!rateLocationMatches(card.origin, order.origin) || !rateLocationMatches(card.destination, order.destination)) return false;
+  if (order.equipment && card.equipment && key(order.equipment) !== key(card.equipment)) return false;
+  if (!rateCardIsValidOn(card, dateIso)) return false;
+  const quantity = ratingQuantity(order, card.unit);
+  if (quantity <= 0 && !["flat", "per_shipment"].includes(card.unit)) return false;
+  return true;
+}
+
+export function calculateRating(order: TmsOrder, card: PartnerBuyRateCard): RatingResult | null {
+  if (!rateCardAppliesToOrder(order, card)) return null;
+  const quantity = ratingQuantity(order, card.unit);''')
+
+          replace_once('app/admin/rating/tms-rating.server.ts',
+            '      rate_card_id: card.id,\n      rate_card_updated_at: card.updated_at || null,',
+            '      rate_card_id: card.id,\n      rate_card_branch: card.branch,\n      rate_card_origin: card.origin,\n      rate_card_destination: card.destination,\n      rate_card_updated_at: card.updated_at || null,')
+
+          # Legacy reconstruction must not use a current wrong-branch card as historical proof.
+          path = 'app/admin/commercial-lineage/commercial-lineage.server.ts'
+          replace_once(path,
+            '  const card = rateCard.data() as Record<string, unknown>;\n  const cardPartner = normalizeCommercialId(card.partner_id);',
+            '''  const card = rateCard.data() as Record<string, unknown>;
+  const branch = text(data.branch);
+  const mode = text(data.mode);
+  if (!branch || !mode) return { kind: "commercial_review_required", reason: "legacy_order_identity_missing" };
+  const cardBranch = text(card.branch);
+  if (!cardBranch || (cardBranch !== "Global" && cardBranch !== branch)) return { kind: "commercial_review_required", reason: "legacy_rate_card_branch_mismatch" };
+  const cardPartner = normalizeCommercialId(card.partner_id);''')
+          replace_once(path,
+            '  const branch = text(data.branch);\n  const mode = text(data.mode);\n  if (!branch || !mode) return { kind: "commercial_review_required", reason: "legacy_order_identity_missing" };\n  const snapshot: CommercialSnapshot = {',
+            '  const snapshot: CommercialSnapshot = {')
+          replace_once(path,
+            '      rate_card_id: rateCardId,\n      rate_card_updated_at: nullable(card.updated_at),',
+            '      rate_card_id: rateCardId,\n      rate_card_branch: cardBranch,\n      rate_card_origin: nullable(card.origin),\n      rate_card_destination: nullable(card.destination),\n      rate_card_updated_at: nullable(card.updated_at),')
+
+          # Pricing: server-owned approval policy and Management-only manual FX with immutable provenance.
+          path = 'app/admin/pricing/tms-pricing.server.ts'
+          replace_once(path,
+            'import { randomBytes } from "node:crypto";\nimport { FieldValue } from "firebase-admin/firestore";',
+            '''import { randomBytes } from "node:crypto";
+import { FieldValue } from "firebase-admin/firestore";
+import {
+  COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
+  COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+  COMMERCIAL_POLICY_ID,
+} from "../commercial-authority/commercial-authority";''')
+          replace_once(path,
+            '  fxRate?: number | null;\n  markupPercent?: number | null;\n  targetMarginPercent?: number | null;\n  minimumMarginPercent?: number | null;\n  approvalBelowMarginPercent?: number | null;',
+            '  fxRate?: number | null;\n  fxOverrideReason?: string | null;\n  markupPercent?: number | null;\n  targetMarginPercent?: number | null;')
+          replace_once(path,
+            'function manualFx(sourceCurrency: CrmCurrency, targetCurrency: CrmCurrency, rate: number): CommercialFxSnapshot {\n  return {\n    source_currency: sourceCurrency, target_currency: targetCurrency, rate, source: "manual_override",\n    effective_date: null, published_on: null, modified_on: null, source_npr_per_unit: null, target_npr_per_unit: null,\n  };\n}',
+            '''function manualFx(sourceCurrency: CrmCurrency, targetCurrency: CrmCurrency, rate: number, actor: Actor, reason: string, now: string): CommercialFxSnapshot {
+  return {
+    source_currency: sourceCurrency, target_currency: targetCurrency, rate, source: "manual_override",
+    effective_date: now.slice(0, 10), published_on: null, modified_on: null, source_npr_per_unit: null, target_npr_per_unit: null,
+    override_actor_name: actor.name, override_actor_email: actor.email.toLowerCase(), override_reason: reason.trim(), override_at: now,
+  };
+}''')
+          replace_once(path,
+            '  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };\n  let nrbSnapshot: NrbForexSnapshot | null = null;',
+            '''  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (overrides.fxMode === "manual" && !staff.permissions.canOverrideFx) return { kind: "manual_fx_forbidden" as const };
+  if (overrides.fxMode === "manual" && !overrides.fxOverrideReason?.trim()) return { kind: "manual_fx_reason_required" as const };
+  let nrbSnapshot: NrbForexSnapshot | null = null;''')
+          replace_once(path,
+            '      } else {\n        const rate = overrides.fxRate ?? 0;\n        if (!Number.isFinite(rate) || rate <= 0) return { kind: "fx_required" as const, buyCurrency, sellCurrency };\n        fx = manualFx(buyCurrency, sellCurrency, rate);\n      }',
+            '''      } else if (overrides.fxMode === "manual") {
+        const rate = overrides.fxRate ?? 0;
+        if (!Number.isFinite(rate) || rate <= 0) return { kind: "fx_required" as const, buyCurrency, sellCurrency };
+        fx = manualFx(buyCurrency, sellCurrency, rate, actor, overrides.fxOverrideReason ?? "", new Date().toISOString());
+      } else {
+        return { kind: "fx_required" as const, buyCurrency, sellCurrency };
+      }''')
+          replace_once(path,
+            '        minimum_margin_percent: overrides.minimumMarginPercent ?? defaults.minimum_margin_percent,\n        approval_below_margin_percent: overrides.approvalBelowMarginPercent ?? defaults.approval_below_margin_percent,',
+            '        minimum_margin_percent: COMMERCIAL_MINIMUM_MARGIN_PERCENT,\n        approval_below_margin_percent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,')
+          replace_once(path,
+            '        pricing_rule_scope: rule?.scope ?? null,\n        markup_percent: pricingInput.markup_percent,',
+            '        pricing_rule_scope: rule?.scope ?? null,\n        pricing_policy_id: COMMERCIAL_POLICY_ID,\n        markup_percent: pricingInput.markup_percent,')
+          replace_once(path,
+            '          pricing_rule_id: rule?.id ?? null,\n          customer_id: customer.id,',
+            '          pricing_rule_id: rule?.id ?? null,\n          pricing_policy_id: COMMERCIAL_POLICY_ID,\n          customer_id: customer.id,')
+          replace_once(path,
+            '        source: "tms_sell_pricing_engine",\n        migration_hidden: false,',
+            '        source: "tms_sell_pricing_engine",\n        migration_hidden: false,\n        branch,')
+
+          # Pricing API rejects caller-owned policy and gates manual FX explicitly.
+          path = 'app/api/admin/pricing/route.ts'
+          replace_once(path,
+            'import { deriveNrbMidpointFxRate, pricingRuleScopes, type PricingRuleScope } from "../../../admin/pricing/tms-pricing";',
+            'import { pricingRuleScopes, type PricingRuleScope } from "../../../admin/pricing/tms-pricing";')
+          replace_once(path,
+            'import { firebaseAdminDb } from "../../../firebase-admin.server";\nimport { getNrbForexSnapshot } from "../../../integrations/nrb-forex.server";',
+            '''import { firebaseAdminDb } from "../../../firebase-admin.server";
+import {
+  COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
+  COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+} from "../../../admin/commercial-authority/commercial-authority";''')
+          text0 = read(path)
+          a = text0.index('async function inferFxMode(')
+          b = text0.index('\nfunction lockedCommercialMutationResponse()', a)
+          write(path, text0[:a] + text0[b+1:])
+          replace_once(path,
+            '      minimumMarginPercent: optionalNumber(body.minimumMarginPercent) ?? 10, accessorialMarkupPercent: optionalNumber(body.accessorialMarkupPercent) ?? 15,\n      fixedMarkup: optionalNumber(body.fixedMarkup) ?? 0, approvalBelowMarginPercent: optionalNumber(body.approvalBelowMarginPercent) ?? 12,',
+            '      minimumMarginPercent: COMMERCIAL_MINIMUM_MARGIN_PERCENT, accessorialMarkupPercent: optionalNumber(body.accessorialMarkupPercent) ?? 15,\n      fixedMarkup: optionalNumber(body.fixedMarkup) ?? 0, approvalBelowMarginPercent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,')
+          replace_once(path,
+            '    const sellCurrencyRaw = clean(body.sellCurrency, 10);',
+            '''    if (body.minimumMarginPercent !== undefined || body.approvalBelowMarginPercent !== undefined) {
+      return json({ ok: false, error: "Approval thresholds are server-owned policy and cannot be supplied by a pricing request.", code: "COMMERCIAL_POLICY_SERVER_OWNED" }, 400);
+    }
+    const sellCurrencyRaw = clean(body.sellCurrency, 10);''')
+          replace_once(path,
+            '''    const suppliedRate = optionalNumber(body.fxRate);
+    const explicitFxMode = clean(body.fxMode, 20);
+    const fxMode: PricingFxMode | null = explicitFxMode === "nrb" || explicitFxMode === "manual"
+      ? explicitFxMode
+      : await inferFxMode(orderId, sellCurrency, suppliedRate);
+    const result = await calculateOrderPricing(orderId, {
+      sellCurrency, fxMode, fxRate: suppliedRate,
+      markupPercent: optionalNumber(body.markupPercent), targetMarginPercent: optionalNumber(body.targetMarginPercent),
+      minimumMarginPercent: optionalNumber(body.minimumMarginPercent), approvalBelowMarginPercent: optionalNumber(body.approvalBelowMarginPercent),''',
+            '''    const suppliedRate = optionalNumber(body.fxRate);
+    const explicitFxMode = clean(body.fxMode, 20);
+    if (explicitFxMode && explicitFxMode !== "nrb" && explicitFxMode !== "manual") return json({ ok: false, error: "Choose automatic NRB FX or an authorized manual override." }, 400);
+    if (suppliedRate !== null && explicitFxMode !== "manual") return json({ ok: false, error: "A caller-supplied FX rate requires explicit manual override mode.", code: "MANUAL_FX_MODE_REQUIRED" }, 400);
+    const manualFx = explicitFxMode === "manual";
+    if (manualFx && !access.staff.permissions.canOverrideFx) return json({ ok: false, error: "Only Management can apply a manual FX override.", code: "MANUAL_FX_FORBIDDEN" }, 403);
+    const fxReason = clean(body.fxReason, 1000);
+    if (manualFx && !fxReason) return json({ ok: false, error: "Management manual FX overrides require a reason.", code: "MANUAL_FX_REASON_REQUIRED" }, 400);
+    const fxMode: PricingFxMode = manualFx ? "manual" : "nrb";
+    const result = await calculateOrderPricing(orderId, {
+      sellCurrency, fxMode, fxRate: manualFx ? suppliedRate : null, fxOverrideReason: manualFx ? fxReason : null,
+      markupPercent: optionalNumber(body.markupPercent), targetMarginPercent: optionalNumber(body.targetMarginPercent),''')
+          replace_once(path,
+            '    if (result.kind === "fx_unavailable") return json({ ok: false, error: "NRB FX reference is temporarily unavailable. Enter an explicit manual FX rate if commercial policy permits it." }, 502);',
+            '    if (result.kind === "fx_unavailable") return json({ ok: false, error: "NRB FX reference is temporarily unavailable. Management may use an explicit audited manual override when necessary." }, 502);\n    if (result.kind === "manual_fx_forbidden") return json({ ok: false, error: "Only Management can apply a manual FX override.", code: "MANUAL_FX_FORBIDDEN" }, 403);\n    if (result.kind === "manual_fx_reason_required") return json({ ok: false, error: "Management manual FX overrides require a reason.", code: "MANUAL_FX_REASON_REQUIRED" }, 400);')
+
+          # Quote reads are pure. TMS Won records exact customer acceptance and never calls generic shipment creation.
+          replace_once('app/admin/admin-data.server.ts',
+            'import { ensureShipmentForWonQuote, getShipmentForQuote } from "../shipment-data.server";',
+            'import { getShipmentForQuote } from "../shipment-data.server";')
+          replace_once('app/admin/admin-data.server.ts',
+            '''    shipment = (await getShipmentForQuote(normalized)) ?? null;
+    if (!shipment && quote.status === "won" && quote.customer_id) {
+      const created = await ensureShipmentForWonQuote(normalized);
+      if (created.kind === "created" || created.kind === "ready") shipment = created.shipment ?? null;
+    }''',
+            '    shipment = (await getShipmentForQuote(normalized)) ?? null;')
+
+          path = 'app/api/admin/quotes/[reference]/route.ts'
+          replace_once(path,
+            'import { ensureShipmentForWonQuote } from "../../../../shipment-data.server";',
+            'import { ensureShipmentForWonQuote } from "../../../../shipment-data.server";\nimport { acceptCurrentTmsCustomerQuote } from "../../../../admin/commercial-authority/customer-sell-authority.server";')
+          replace_once(path,
+            '  const result = await updateQuoteAdmin(reference, status as QuoteStatus, {',
+            '''  let acceptedTmsQuote: { quoteReference: string; commercialVersionId: string; idempotent: boolean } | null = null;
+  if (status === "won") {
+    const acceptance = await acceptCurrentTmsCustomerQuote(reference, { name: auth.user.displayName, email: auth.user.email }, auth.staff);
+    if (acceptance.kind === "unavailable") return json({ ok: false, error: "Customer acceptance storage is unavailable." }, 503);
+    if (acceptance.kind === "forbidden") return json({ ok: false, error: "Commercial access is required to record customer acceptance." }, 403);
+    if (acceptance.kind === "missing" || acceptance.kind === "missing_order") return json({ ok: false, error: "Quote or transport order not found." }, 404);
+    if (acceptance.kind === "customer_missing") return json({ ok: false, error: "The quote customer is missing or belongs to a different branch.", code: "CUSTOMER_AUTHORITY_MISMATCH" }, 409);
+    if (acceptance.kind === "stale_commercial_quote") return json({ ok: false, error: "This customer quote is for an older commercial version. Issue and accept the current quote instead.", code: "stale_commercial_quote" }, 409);
+    if (acceptance.kind === "invalid_tms_quote" || acceptance.kind === "invalid_transition") return json({ ok: false, error: "This TMS quote cannot become customer authority from its current state.", code: "TMS_QUOTE_AUTHORITY_INVALID" }, 409);
+    if (acceptance.kind === "accepted") acceptedTmsQuote = acceptance;
+  }
+
+  const result = await updateQuoteAdmin(reference, status as QuoteStatus, {''')
+          replace_once(path,
+            '  if (status === "won") {\n    try {\n      const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName, auth.user.email);',
+            '  if (status === "won" && !acceptedTmsQuote) {\n    try {\n      const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName, auth.user.email);')
+          replace_once(path,
+            '    shipmentWarning,\n  });',
+            '    shipmentWarning,\n    customerAcceptance: acceptedTmsQuote ? { status: "accepted", quoteReference: acceptedTmsQuote.quoteReference, commercialVersionId: acceptedTmsQuote.commercialVersionId, idempotent: acceptedTmsQuote.idempotent } : null,\n  });')
+
+          # Tender/booking consume exact quote and customer acceptance authority.
+          path = 'app/admin/tenders/tms-tendering.server.ts'
+          replace_once(path,
+            'import { confirmConsolidatedLoadBooking } from "../consolidation/tms-consolidation.server";',
+            '''import { confirmConsolidatedLoadBooking } from "../consolidation/tms-consolidation.server";
+import {
+  assertCustomerQuoteIssuedInTransaction,
+  assertCustomerSellAuthorityInTransaction,
+  carryForwardCustomerSellAuthorityInTransaction,
+} from "../commercial-authority/customer-sell-authority.server";''')
+          replace_once(path,
+            '''      if (!isMaster) {
+        const bookable = await assertBookableCommercialVersionInTransaction(transaction, version);
+        if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+      }''',
+            '''      if (!isMaster) {
+        const bookable = await assertBookableCommercialVersionInTransaction(transaction, version);
+        if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+        const customerQuote = await assertCustomerQuoteIssuedInTransaction(transaction, version);
+        if (!customerQuote.ok) return { kind: customerQuote.reason };
+      }''')
+          replace_once(path,
+            '      persistCommercialVersionInTransaction(transaction, nextVersion);\n      const pricing = nextVersion.snapshot.pricing;',
+            '''      persistCommercialVersionInTransaction(transaction, nextVersion);
+      const carriedAuthority = await carryForwardCustomerSellAuthorityInTransaction(transaction, baseVersion, nextVersion, actor);
+      if (carriedAuthority.kind === "conflict") return { kind: "stale_commercial_state" as const };
+      const pricing = nextVersion.snapshot.pricing;''')
+          replace_once(path,
+            '''      const explicitQuoteReference = nullable(orderData.quoted_reference);
+      if (explicitQuoteReference) {
+        const explicitQuote = await transaction.get(db.collection("quotes").doc(explicitQuoteReference));
+        if (!explicitQuote.exists || normalizeCommercialId(explicitQuote.get("commercial_version_id")) !== version.id || text(explicitQuote.get("commercial_fingerprint")) !== version.fingerprint) return { kind: "stale_commercial_state" as const };
+      }
+
+      const quoteReference = bridgeQuoteReference(tender.order_id);''',
+            '''      const customerAuthority = await assertCustomerSellAuthorityInTransaction(transaction, version);
+      if (!customerAuthority.ok) return { kind: customerAuthority.reason };
+      const explicitQuoteReference = customerAuthority.quoteReference;
+
+      const quoteReference = bridgeQuoteReference(tender.order_id);''')
+
+          # Consolidation: require source customer authority and explicitly carry it to buy-only derived versions.
+          path = 'app/admin/consolidation/tms-consolidation-lineage.server.ts'
+          replace_once(path,
+            'import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";',
+            '''import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import {
+  assertCustomerSellAuthorityInTransaction,
+  carryForwardCustomerSellAuthorityInTransaction,
+} from "../commercial-authority/customer-sell-authority.server";
+import { customerSellEconomicsMatch } from "../commercial-authority/commercial-authority";''')
+          replace_once(path,
+            '      const sourceVersions: CommercialVersion[] = [];\n      for (const order of houseOrders) {',
+            '      const sourceVersions: CommercialVersion[] = [];\n      const sourceCustomerQuotes: string[] = [];\n      for (const order of houseOrders) {')
+          replace_once(path,
+            '''        const bookable = await assertBookableCommercialVersionInTransaction(transaction, source.version);
+        if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+        sourceVersions.push(source.version);''',
+            '''        const bookable = await assertBookableCommercialVersionInTransaction(transaction, source.version);
+        if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+        const customerAuthority = await assertCustomerSellAuthorityInTransaction(transaction, source.version);
+        if (!customerAuthority.ok) return { kind: customerAuthority.reason };
+        sourceVersions.push(source.version);
+        sourceCustomerQuotes.push(customerAuthority.quoteReference);''')
+          replace_once(path,
+            '''        if (integrity.approval_required) return { kind: "approval_required" as const };
+        bookedHouseVersions.push(derived);''',
+            '''        if (integrity.approval_required) return { kind: "approval_required" as const };
+        if (!customerSellEconomicsMatch(source.snapshot, derived.snapshot)) return { kind: "customer_quote_stale" as const };
+        const carried = await carryForwardCustomerSellAuthorityInTransaction(transaction, source, derived, actor);
+        if (carried.kind !== "carried") return { kind: "customer_acceptance_required" as const };
+        bookedHouseVersions.push(derived);''')
+          replace_once(path,
+            '          reference, quote_reference: bridgeQuoteReference(order.id), transport_order_id: order.id, consolidation_load_id: load.id,',
+            '          reference, quote_reference: bridgeQuoteReference(order.id), customer_quote_reference: sourceCustomerQuotes[index], transport_order_id: order.id, consolidation_load_id: load.id,')
+
+          # API exposes explicit quote/acceptance conflicts.
+          path = 'app/api/admin/tenders/route.ts'
+          replace_once(path,
+            '  if (kind === "stale_commercial_state") return json({ ok: false, error: "Commercial economics changed concurrently. Refresh and use the authoritative version before continuing." }, 409);',
+            '''  if (kind === "stale_commercial_state") return json({ ok: false, error: "Commercial economics changed concurrently. Refresh and use the authoritative version before continuing." }, 409);
+  if (kind === "customer_quote_required") return json({ ok: false, error: "Issue the exact current customer quote before tendering or booking.", code: "customer_quote_required" }, 409);
+  if (kind === "customer_quote_stale") return json({ ok: false, error: "The customer quote/authority does not match the exact current commercial version.", code: "customer_quote_stale" }, 409);
+  if (kind === "customer_acceptance_required") return json({ ok: false, error: "Record customer acceptance for the exact current sell authority before booking.", code: "customer_acceptance_required" }, 409);''')
+
+          # Detection plan only. No repair and no production mutations.
+          write('docs/commercial-authority-existing-graph-detection.md', '''# Commercial Authority Existing-Graph Detection
+
+          This is a read-only review plan for records created before the commercial-authority seam remediation. It does not authorize automated repair or production Firestore mutation.
+
+          ## Review classes
+
+          **BLOCK / financial-lineage review**
+
+          - A quote with TMS markers (`transport_order_id`, `commercial_version_id`, `commercial_fingerprint`, `commercial_locked`, or a `tms_*` source) is `won` and points at a shipment that lacks `transport_order_id`, `tender_id`, `booked_commercial_version_id`, `booked_commercial_fingerprint`, or `booked_commercial_snapshot`.
+          - A booked customer-bearing order has no `commercial_customer_acceptances/{booked_commercial_version_id}` attestation matching order, customer, fingerprint, sell amount, and sell currency.
+          - A shipment linked to a versioned TMS quote lacks booked lineage fields.
+
+          **REVIEW / stale commercial authority**
+
+          - A TMS sell quote's `commercial_version_id` or `commercial_fingerprint` differs from its Transport Order's current pointer.
+          - A `won` TMS sell quote has no exact acceptance attestation for its own version.
+          - A customer acceptance attestation has mismatched order, customer, fingerprint, sell amount, or sell currency.
+
+          **REVIEW / rate applicability**
+
+          - A Transport Order's selected/current commercial procurement names a branch-specific rate card whose stored `rate_card_branch` differs from the order branch.
+          - A legacy selected order whose current rate card branch is neither `Global` nor the order branch cannot be automatically reconstructed and must remain review-required.
+          - For old commercial versions that predate `rate_card_branch` provenance, do not infer historical legality from today's mutable rate card. Classify them as legacy provenance review where branch legality matters.
+
+          ## Query strategy
+
+          Export or read through an authorized server-side/admin review tool, then join by stable IDs rather than display names: quotes to `transport_orders`, quotes to shipments, booked orders/shipments to `commercial_versions`, and exact version IDs to `commercial_customer_acceptances`. Flag records using the classes above. Review flagged records manually before any later migration ticket decides whether evidence supports a repair.
+
+          No automatic rewrite, deletion, quote reissue, acceptance fabrication, shipment creation, or commercial-version mutation is part of this remediation.
+          ''')
+
+          # Dedicated regression suite.
+          write('tests/commercial-authority-seams.test.mjs', '''import test from "node:test";
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          import { join } from "node:path";
+          import { fileURLToPath } from "node:url";
+          import {
+            COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
+            COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+            COMMERCIAL_POLICY_ID,
+            customerSellEconomicsMatch,
+            quoteHasTmsAuthorityMarkers,
+          } from "../app/admin/commercial-authority/commercial-authority.ts";
+          import {
+            COMMERCIAL_VERSION_SCHEMA,
+            commercialFingerprint,
+          } from "../app/admin/commercial-lineage/commercial-lineage.ts";
+          import { rateCardAppliesToOrder } from "../app/admin/rating/tms-rating.ts";
+          import { staffCapabilitiesForRole } from "../app/admin/staff-permissions.ts";
+
+          const root = fileURLToPath(new URL("..", import.meta.url));
+          const source = (path) => readFileSync(join(root, path), "utf8");
+          const quoteRoute = source("app/api/admin/quotes/[reference]/route.ts");
+          const adminData = source("app/admin/admin-data.server.ts");
+          const shipmentServer = source("app/shipment-data.server.ts");
+          const customerAuthority = source("app/admin/commercial-authority/customer-sell-authority.server.ts");
+          const pricingRoute = source("app/api/admin/pricing/route.ts");
+          const pricingServer = source("app/admin/pricing/tms-pricing.server.ts");
+          const tenderServer = source("app/admin/tenders/tms-tendering.server.ts");
+          const consolidation = source("app/admin/consolidation/tms-consolidation-lineage.server.ts");
+          const lineageServer = source("app/admin/commercial-lineage/commercial-lineage.server.ts");
+          const ratingServer = source("app/admin/rating/tms-rating.server.ts");
+          const tenderRoute = source("app/api/admin/tenders/route.ts");
+          const financeSettlement = source("app/admin/financial-settlement/payables-settlement.server.ts");
+          const externalWorkflow = source("app/admin/visibility/external-workflow-state.ts");
+
+          function commercialSnapshot(overrides = {}) {
+            const base = {
+              schema_version: COMMERCIAL_VERSION_SCHEMA,
+              order_id: "ORD-1", branch: "Kathmandu", customer_id: "CUST-1", mode: "road",
+              procurement: {
+                rate_card_id: "RATE-1", rate_card_branch: "Kathmandu", rate_card_origin: "Kathmandu", rate_card_destination: "Birgunj",
+                rate_card_updated_at: "2026-08-23T00:00:00.000Z", rate_card_valid_from: null, rate_card_valid_until: null,
+                partner_id: "PARTNER-1", partner_name: "Partner", mode: "road", service: null, equipment: null, rating_unit: "flat",
+                rating_quantity: 1, base_rate: 100, base_charge: 100, minimum_charge: null, minimum_applied: false,
+                fuel_surcharge_percent: 0, fuel_surcharge: 0, accessorials: 0, total: 100, currency: "NPR",
+              },
+              pricing: {
+                customer_id: "CUST-1", pricing_rule_id: null, pricing_rule_scope: null, pricing_policy_id: COMMERCIAL_POLICY_ID,
+                markup_percent: 20, target_margin_percent: null, minimum_margin_percent: COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+                approval_below_margin_percent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT, accessorial_cost: 0, accessorial_markup_percent: 15,
+                fixed_markup: 0, discount: 0, converted_buy_cost: 100, accessorial_sell: 0, pre_discount_sell: 120,
+                sell_amount: 120, sell_currency: "NPR", gross_profit: 20, gross_margin_percent: 16.666667,
+                effective_markup_percent: 20, minimum_sell_price: 111.11, approval_required: false, approval_reasons: [],
+              },
+              fx: { source_currency: "NPR", target_currency: "NPR", rate: 1, source: "same_currency", effective_date: null, published_on: null, modified_on: null, source_npr_per_unit: null, target_npr_per_unit: null },
+              negotiation: null,
+            };
+            return {
+              ...base, ...overrides,
+              procurement: { ...base.procurement, ...(overrides.procurement ?? {}) },
+              pricing: overrides.pricing === null ? null : { ...base.pricing, ...(overrides.pricing ?? {}) },
+              fx: overrides.fx === null ? null : { ...base.fx, ...(overrides.fx ?? {}) },
+            };
+          }
+
+          function order(branch = "Kathmandu") {
+            return { id: "ORD-1", branch, customer_id: "CUST-1", customer_name: "Customer", origin: "Kathmandu", destination: "Birgunj", mode: "road", pickup_date: "2026-08-23", delivery_date: null, weight_kg: 100, volume_cbm: 1, pieces: 1, container_count: 0, equipment: null, temperature_requirement: null, carrier_requirement: null, notes: null, status: "selected", selected_rate_card_id: null, selected_partner_id: null, selected_cost: null, selected_currency: null, created_at: "", created_by_name: "", created_by_email: "", updated_at: "" };
+          }
+          function card(branch = "Kathmandu") {
+            return { id: "RATE-1", partner_id: "P-1", partner_name: "Partner", branch, origin: "Kathmandu", destination: "Birgunj", mode: "road", service: null, equipment: null, currency: "NPR", rate: 100, unit: "flat", minimum_charge: null, fuel_surcharge_percent: 0, accessorial_flat: 0, transit_days_min: null, transit_days_max: null, valid_from: null, valid_until: null, active: true, notes: null, created_at: "", updated_at: "" };
+          }
+
+          test("1 stale V1 TMS quote acceptance re-reads current order version", () => { assert.match(customerAuthority, /commercial_version_id.*versionId[\\s\\S]*commercial_fingerprint.*fingerprint/); assert.match(customerAuthority, /stale_commercial_quote/); });
+          test("2 TMS quote Won never creates a generic shipment", () => { assert.match(quoteRoute, /if \(status === "won" && !acceptedTmsQuote\)/); assert.match(quoteRoute, /acceptCurrentTmsCustomerQuote/); });
+          test("3 GET quote is read-only with respect to shipment creation", () => { assert.doesNotMatch(adminData, /ensureShipmentForWonQuote/); assert.match(adminData, /getShipmentForQuote/); });
+          test("4 direct quote API classifies TMS by durable server facts", () => { assert.equal(quoteHasTmsAuthorityMarkers({ transport_order_id: "ORD-1", commercial_version_id: "CV-1" }), true); assert.equal(quoteHasTmsAuthorityMarkers({ source: "legacy_web_quote" }), false); });
+          test("5 non-TMS quote keeps explicit mutation shipment path", () => { assert.match(quoteRoute, /ensureShipmentForWonQuote\(reference/); assert.match(shipmentServer, /export async function ensureShipmentForWonQuote/); });
+          test("6 current TMS customer acceptance is deterministic and idempotent", () => { assert.match(customerAuthority, /commercial_customer_acceptances/); assert.match(customerAuthority, /idempotent: true/); });
+
+          test("7 request approval threshold cannot redefine policy", () => { assert.match(pricingRoute, /COMMERCIAL_POLICY_SERVER_OWNED/); });
+          test("8 Accounts cannot override commercial policy", () => { assert.equal(staffCapabilitiesForRole("accounts").canOverrideCommercialPolicy, false); });
+          test("9 Commercial cannot override commercial policy", () => { assert.equal(staffCapabilitiesForRole("commercial").canOverrideCommercialPolicy, false); });
+          test("10 server policy is authoritative", () => { assert.match(pricingServer, /minimum_margin_percent: COMMERCIAL_MINIMUM_MARGIN_PERCENT/); assert.match(pricingServer, /approval_below_margin_percent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT/); });
+          test("11 Accounts arbitrary manual FX is blocked", () => { assert.equal(staffCapabilitiesForRole("accounts").canOverrideFx, false); });
+          test("12 Commercial arbitrary manual FX is blocked", () => { assert.equal(staffCapabilitiesForRole("commercial").canOverrideFx, false); });
+          test("13 Management manual FX override is explicit and audited", () => { assert.equal(staffCapabilitiesForRole("management").canOverrideFx, true); assert.match(pricingServer, /override_actor_email/); assert.match(pricingServer, /override_reason/); assert.match(pricingServer, /override_at/); });
+          test("14 auto FX is server-derived NRB", () => { assert.match(pricingRoute, /manualFx \? "manual" : "nrb"/); assert.match(pricingServer, /getNrbForexSnapshot/); });
+          test("15 policy or FX provenance changes fingerprint", () => { const a = commercialSnapshot(); const b = commercialSnapshot({ pricing: { pricing_policy_id: "policy-v2" } }); assert.notEqual(commercialFingerprint(a), commercialFingerprint(b)); const c = commercialSnapshot({ fx: { source: "manual_override", override_actor_name: "Manager", override_actor_email: "m@kcpl.test", override_reason: "contract", override_at: "2026-08-23T00:00:00.000Z" } }); assert.notEqual(commercialFingerprint(a), commercialFingerprint(c)); });
+          test("16 old approval remains exact-version only", () => { assert.match(tenderServer, /assertBookableCommercialVersionInTransaction/); assert.match(pricingServer, /stale_commercial_state/); });
+
+          test("17 exact V1 customer authority permits V1 booking path", () => { assert.match(tenderServer, /assertCustomerSellAuthorityInTransaction\(transaction, version\)/); });
+          test("18 V1 authority cannot permit V2 booking", () => { assert.match(customerAuthority, /record\.commercial_version_id === version\.id/); assert.match(customerAuthority, /record\.commercial_fingerprint === version\.fingerprint/); });
+          test("19 V2 authority permits V2 after exact acceptance", () => { assert.match(customerAuthority, /transaction\.create\(acceptanceRef\(version\.id\)/); });
+          test("20 booking without customer authority is blocked", () => { assert.match(tenderRoute, /customer_acceptance_required/); });
+          test("21 wrong customer authority is blocked", () => { assert.match(customerAuthority, /record\.customer_id === customerId/); });
+          test("22 wrong order authority is blocked", () => { assert.match(customerAuthority, /record\.order_id === normalizeCommercialId\(version\.snapshot\.order_id\)/); });
+          test("23 wrong fingerprint authority is blocked", () => { assert.match(customerAuthority, /record\.commercial_fingerprint === version\.fingerprint/); });
+          test("24 wrong sell amount or currency is blocked", () => { assert.match(customerAuthority, /sameCommercialMoney\(record\.sell_amount, pricing\.sell_amount/); assert.match(customerAuthority, /record\.sell_currency === sellCurrency/); });
+          test("25 booking and authority race shares one Firestore transaction read set", () => { assert.match(tenderServer, /db\.runTransaction/); assert.match(customerAuthority, /transaction\.get\(acceptanceRef\(version\.id\)\)/); });
+          test("26 consolidation stale house authority fails atomically", () => { assert.match(consolidation, /assertCustomerSellAuthorityInTransaction\(transaction, source\.version\)/); assert.match(consolidation, /db\.runTransaction/); });
+          test("27 internal booking bridge alone is not customer acceptance", () => { assert.match(customerAuthority, /source.*tms_sell_pricing_engine/); assert.match(tenderServer, /source: "tms_order_booking_bridge"/); });
+
+          test("28 same-branch rate card is applicable", () => { assert.equal(rateCardAppliesToOrder(order("Kathmandu"), card("Kathmandu")), true); });
+          test("29 Global rate card is applicable", () => { assert.equal(rateCardAppliesToOrder(order("Kathmandu"), card("Global")), true); });
+          test("30 wrong-branch rate card is blocked", () => { assert.equal(rateCardAppliesToOrder(order("Kathmandu"), card("Birgunj")), false); });
+          test("31 Management all-branch access cannot change rate applicability", () => { assert.equal(staffCapabilitiesForRole("management").canManageRateCards, true); assert.equal(rateCardAppliesToOrder(order("Kathmandu"), card("Birgunj")), false); });
+          test("32 Commercial multi-branch visibility cannot change rate applicability", () => { assert.equal(staffCapabilitiesForRole("commercial").canManageRateCards, true); assert.equal(rateCardAppliesToOrder(order("Kathmandu"), card("Birgunj")), false); });
+          test("33 malformed card or order branch fails closed", () => { assert.equal(rateCardAppliesToOrder(order("Unknown"), card("Kathmandu")), false); assert.equal(rateCardAppliesToOrder(order("Kathmandu"), card("Unknown")), false); });
+          test("34 rate-card branch provenance is fingerprinted", () => { const a = commercialSnapshot(); const b = commercialSnapshot({ procurement: { rate_card_branch: "Global" } }); assert.notEqual(commercialFingerprint(a), commercialFingerprint(b)); });
+          test("35 historical commercial version stores rate-card scope", () => { assert.match(ratingServer, /rate_card_branch: card\.branch/); assert.match(ratingServer, /rate_card_origin: card\.origin/); assert.match(ratingServer, /rate_card_destination: card\.destination/); });
+          test("36 later rate-card branch edit cannot rewrite historical scope", () => { assert.match(ratingServer, /selectedRateSnapshot\(order, card, result\)/); assert.match(ratingServer, /persistCommercialVersionInTransaction/); });
+          test("37 legacy reconstruction rejects current wrong-branch card", () => { assert.match(lineageServer, /legacy_rate_card_branch_mismatch/); });
+
+          test("38 V1 acceptance versus V2 repricing is serialized by current order read", () => { assert.match(customerAuthority, /const order = await transaction\.get\(orderRef\)/); assert.match(pricingServer, /const orderSnapshot = await transaction\.get\(orderRef\)/); });
+          test("39 buy-only counteroffer can explicitly carry exact customer sell authority", () => { assert.equal(customerSellEconomicsMatch(commercialSnapshot(), commercialSnapshot({ procurement: { total: 110 } })), true); assert.match(tenderServer, /carryForwardCustomerSellAuthorityInTransaction/); });
+          test("40 sell change cannot carry customer authority", () => { assert.equal(customerSellEconomicsMatch(commercialSnapshot(), commercialSnapshot({ pricing: { sell_amount: 121 } })), false); });
+          test("41 rate-card edit versus selection uses current card in transaction", () => { assert.match(ratingServer, /transaction\.get\(db\.collection\("partner_rate_cards"\)\.doc\(rateCardId\)\)/); });
+          test("42 approval versus repricing remains exact-version CAS", () => { assert.match(pricingServer, /commercial_version_id.*expectedId/); assert.match(pricingServer, /commercial_fingerprint.*expectedFp/); });
+          test("43 manual FX versus booking consumes exact persisted version", () => { assert.match(tenderServer, /tenderCommercialVersionInTransaction/); assert.match(tenderServer, /orderPointer\.id !== version\.id/); });
+          test("44 generic Won versus TMS booking cannot produce two TMS shipment authorities", () => { assert.match(quoteRoute, /!acceptedTmsQuote/); assert.match(tenderServer, /commercialBookedSnapshotFields\(version\)/); });
+
+          test("45 #126 settlement lineage remains present", () => { assert.match(financeSettlement, /resolveBookedCommercialLineage/); });
+          test("46 #127 booking retry authority remains present", () => { assert.match(tenderServer, /bookingRetryDecision/); });
+          test("47 #128 RBAC remains server-enforced", () => { assert.match(quoteRoute, /getStaffContext/); assert.match(pricingRoute, /getStaffContext/); });
+          test("48 #129 immutable commercial lineage remains present", () => { assert.match(pricingServer, /persistCommercialVersionInTransaction/); assert.match(ratingServer, /persistCommercialVersionInTransaction/); });
+          test("49 #130 external workflow authority remains present", () => { assert.match(externalWorkflow, /Delivered|delivered/); });
+          test("50 Accounts finance permission remains functional without override authority", () => { const accounts = staffCapabilitiesForRole("accounts"); assert.equal(accounts.canManageFinance, true); assert.equal(accounts.canEditCommercial, true); assert.equal(accounts.canOverrideFx, false); });
+          ''')
+
+          pkg_path = root / 'package.json'
+          pkg = json.loads(pkg_path.read_text())
+          suite = 'tests/commercial-authority-seams.test.mjs'
+          if suite not in pkg['scripts']['test']:
+              pkg['scripts']['test'] += ' ' + suite
+          pkg_path.write_text(json.dumps(pkg, indent=2) + '\n')
+          PY
+          python /tmp/patch.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Dedicated authority tests
+        run: node --experimental-strip-types --test tests/commercial-authority-seams.test.mjs
+
+      - name: Type check patched tree
+        run: npx tsc --noEmit
+
+      - name: Commit remediation
+        shell: bash
+        run: |
+          rm .github/workflows/remediation-commercial-authority.yml
+          git config user.name "KCPL Remediation Agent 6"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: harden commercial authority seams"
+          git push origin HEAD:fix/commercial-authority-seams
