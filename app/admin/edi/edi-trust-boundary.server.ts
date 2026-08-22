@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { compatibleRecordBranches, strictBranchValue, type AccessBranch } from "../branch-access-policy";
+import { resolveCanonicalRecordCandidates } from "../canonical-record-match";
 import { ingestEdiPayload } from "./edi-gateway.server";
 import { parse214, parse990, parseX12 } from "./edi-x12";
 
@@ -83,37 +84,74 @@ async function preflight214(raw: string) {
     const shipment = await db.collection("shipments").doc(direct).get();
     if (shipment.exists) candidates.set(shipment.id, shipment);
   }
-  for (const reference of [parsed.carrierReference, parsed.bookingReference].filter((value): value is string => Boolean(value))) {
-    const matches = await db.collection("shipments").where("carrier_reference", "==", reference).limit(3).get();
+
+  const referenceChecks: Array<[string, string | null]> = [
+    ["carrier_reference", parsed.carrierReference],
+    ["booking_reference", parsed.bookingReference],
+  ];
+  for (const [field, reference] of referenceChecks) {
+    if (!reference) continue;
+    const matches = await db.collection("shipments").where(field, "==", reference).limit(3).get();
     for (const shipment of matches.docs) candidates.set(shipment.id, shipment);
   }
+
+  let suppliedTender: FirebaseFirestore.QueryDocumentSnapshot | null = null;
   if (parsed.tenderReference) {
     const tenders = await db.collection("transport_tenders").where("tender_reference", "==", parsed.tenderReference).limit(3).get();
     if (tenders.size !== 1) return { kind: "reject" as const, message: "EDI 214 tender reference is not unique.", branch: null };
-    const tender = tenders.docs[0];
-    const shipmentReference = text(tender.get("shipment_reference")).toUpperCase();
+    suppliedTender = tenders.docs[0];
+    const shipmentReference = text(suppliedTender.get("shipment_reference")).toUpperCase();
     if (shipmentReference) {
       const shipment = await db.collection("shipments").doc(shipmentReference).get();
       if (shipment.exists) candidates.set(shipment.id, shipment);
     }
   }
-  const matches = [...candidates.values()];
-  if (matches.length !== 1) {
-    return { kind: "reject" as const, message: matches.length ? "EDI 214 identifiers resolve to multiple shipments." : "EDI 214 could not be matched to a KCPL shipment.", branch: null };
-  }
-  const shipment = matches[0];
-  const branch = strictBranchValue(shipment.get("primary_branch"));
-  if (!branch) return { kind: "reject" as const, message: "EDI 214 target shipment has no authoritative primary branch.", branch: null };
 
-  if (parsed.tenderReference) {
-    const tenderId = text(shipment.get("tender_id")).toUpperCase();
-    if (tenderId) {
-      const tender = await db.collection("transport_tenders").doc(tenderId).get();
-      if (!tender.exists || !compatibleRecordBranches(branch, tender.get("branch"))) {
-        return { kind: "reject" as const, message: "EDI 214 shipment and tender have incompatible KCPL branch scope.", branch };
-      }
+  const resolution = resolveCanonicalRecordCandidates(
+    [...candidates.values()].map((shipment) => ({ id: shipment.id, branch: shipment.get("primary_branch") })),
+  );
+  if (resolution.kind === "missing") return { kind: "reject" as const, message: "EDI 214 could not be matched to a KCPL shipment.", branch: null };
+  if (resolution.kind === "ambiguous") return { kind: "reject" as const, message: "EDI 214 identifiers resolve to multiple shipments.", branch: null };
+  if (resolution.kind === "invalid_branch") return { kind: "reject" as const, message: "EDI 214 target shipment has no authoritative primary branch.", branch: null };
+
+  const shipment = candidates.get(resolution.id);
+  if (!shipment) return { kind: "reject" as const, message: "EDI 214 canonical shipment could not be reloaded.", branch: null };
+  const branch = resolution.branch;
+  const shipmentTenderId = text(shipment.get("tender_id")).toUpperCase();
+  const shipmentOrderId = text(shipment.get("transport_order_id")).toUpperCase();
+
+  let canonicalTender: FirebaseFirestore.DocumentSnapshot | FirebaseFirestore.QueryDocumentSnapshot | null = suppliedTender;
+  if (shipmentTenderId) {
+    const tender = await db.collection("transport_tenders").doc(shipmentTenderId).get();
+    if (!tender.exists) return { kind: "reject" as const, message: "EDI 214 shipment references a missing tender.", branch };
+    if (suppliedTender && suppliedTender.id !== tender.id) {
+      return { kind: "reject" as const, message: "EDI 214 supplied tender conflicts with the shipment's canonical tender.", branch };
+    }
+    canonicalTender = tender;
+  }
+
+  if (canonicalTender) {
+    if (!compatibleRecordBranches(branch, canonicalTender.get("branch"))) {
+      return { kind: "reject" as const, message: "EDI 214 shipment and tender have incompatible KCPL branch scope.", branch };
+    }
+    const tenderShipmentId = text(canonicalTender.get("shipment_reference")).toUpperCase();
+    if (tenderShipmentId && tenderShipmentId !== shipment.id) {
+      return { kind: "reject" as const, message: "EDI 214 tender points to a different shipment.", branch };
+    }
+    const tenderOrderId = text(canonicalTender.get("order_id")).toUpperCase();
+    if (tenderOrderId && shipmentOrderId && tenderOrderId !== shipmentOrderId) {
+      return { kind: "reject" as const, message: "EDI 214 tender and shipment point to different orders.", branch };
     }
   }
+
+  const orderId = shipmentOrderId || (canonicalTender ? text(canonicalTender.get("order_id")).toUpperCase() : "");
+  if (orderId) {
+    const order = await db.collection("transport_orders").doc(orderId).get();
+    if (!order.exists || !compatibleRecordBranches(branch, order.get("branch"))) {
+      return { kind: "reject" as const, message: "EDI 214 shipment and order have incompatible KCPL branch scope.", branch };
+    }
+  }
+
   return { kind: "ready" as const, branch };
 }
 
