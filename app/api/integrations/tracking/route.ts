@@ -43,10 +43,19 @@ export async function POST(request: Request) {
   }, { name: provider, email: "tracking@kcpl.internal" });
   if (result.kind === "unavailable") return json({ ok: false, error: "Tracking storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
-  if (result.kind === "invalid_branch") return json({ ok: false, error: "Shipment has no authoritative KCPL branch and cannot be mutated." }, 409);
+  if (result.kind === "invalid_branch") return json({ ok: false, error: "Shipment has no authoritative KCPL primary branch and cannot be mutated." }, 409);
   if (result.kind === "invalid_coordinates") return json({ ok: false, error: "Tracking coordinates are invalid." }, 400);
   if (result.kind === "invalid_source") return json({ ok: false, error: "Tracking source is invalid." }, 400);
-  if (result.kind === "duplicate") return json({ ok: true, duplicate: true, event: "event" in result ? result.event : undefined });
+  if (result.kind === "duplicate") return json({ ok: true, duplicate: true, event: result.event, repairedSideEffects: result.repaired_side_effects ?? 0 });
   if (result.kind !== "created") return json({ ok: false, error: "Tracking event could not be recorded." }, 409);
-  return json({ ok: true, event: result.event, status: result.status, historical: "historical" in result ? result.historical : false, openedExceptions: result.opened_exceptions }, 201);
+  return json({
+    ok: true,
+    event: result.event,
+    canonicalStatus: result.status,
+    promotionDecision: result.promotion.decision,
+    promotionReason: result.promotion.reason,
+    promotionBlocked: result.promotion.decision === "blocked",
+    historical: result.historical,
+    openedExceptions: result.opened_exceptions,
+  }, 201);
 }
