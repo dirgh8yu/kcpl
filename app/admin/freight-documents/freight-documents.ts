@@ -123,7 +123,10 @@ export function primaryCarriageDocumentKind(mode: string): GeneratedFreightDocum
 
 function pdfLatinRepresentable(value: string) {
   const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
-  return !/[^\x09\x0A\x0D\x20-\x7E]/.test(normalized);
+  return [...normalized].every((character) => {
+    const code = character.charCodeAt(0);
+    return code === 9 || code === 10 || code === 13 || (code >= 32 && code <= 126);
+  });
 }
 
 export function validateFreightDocumentInput(input: FreightDocumentInput, source: FreightDocumentSource) {
