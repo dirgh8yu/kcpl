@@ -108,9 +108,14 @@ export function parseX12(raw: string): X12Envelope {
 
 function referenceFromSegments(segments: X12Segment[], qualifiers: string[]) {
   for (const segment of segments) {
-    if (segment.tag !== "N9" && segment.tag !== "L11") continue;
-    const qualifier = clean(segment.elements[0], 20).toUpperCase();
-    if (qualifiers.includes(qualifier)) return nullable(segment.elements[1]);
+    if (segment.tag === "N9") {
+      const qualifier = clean(segment.elements[0], 20).toUpperCase();
+      if (qualifiers.includes(qualifier)) return nullable(segment.elements[1]);
+    }
+    if (segment.tag === "L11") {
+      const qualifier = clean(segment.elements[1], 20).toUpperCase();
+      if (qualifiers.includes(qualifier)) return nullable(segment.elements[0]);
+    }
   }
   return null;
 }
@@ -238,8 +243,8 @@ export function build204(input: Build204Input) {
     `ST*204*${stControl}`,
     `B2**KCPL**${clean(input.tenderReference, 30)}**CC`,
     "B2A*00",
-    `L11*CN*${clean(input.orderReference, 80)}`,
-    `L11*TN*${clean(input.tenderReference, 80)}`,
+    `L11*${clean(input.orderReference, 80)}*CN`,
+    `L11*${clean(input.tenderReference, 80)}*TN`,
     "N1*SH*Kapileshwor Cargo Pvt Ltd",
     "S5*1*LD",
     `N1*SF*${clean(input.origin, 60)}`,
