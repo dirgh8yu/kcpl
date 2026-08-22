@@ -281,8 +281,13 @@ test("16 currency-changing counteroffer without historical matching FX fails int
 });
 
 test("17 acceptance at the offered economics is wired to retain the existing version", () => {
-  assert.match(tenderServer, /input\.status === "accepted"[\s\S]{0,1800}final_commercial_version_id: baseVersion\.id/);
-  assert.match(tenderServer, /tender_accepted_same_commercial_version/);
+  const acceptedStart = tenderServer.indexOf('if (input.status === "accepted")');
+  const counterStart = tenderServer.indexOf("const counterCost =", acceptedStart);
+  assert.ok(acceptedStart >= 0 && counterStart > acceptedStart);
+  const acceptedBranch = tenderServer.slice(acceptedStart, counterStart);
+  assert.match(acceptedBranch, /final_commercial_version_id: baseVersion\.id/);
+  assert.match(acceptedBranch, /final_commercial_fingerprint: baseVersion\.fingerprint/);
+  assert.doesNotMatch(acceptedBranch, /newCommercialVersion/);
 });
 
 test("18 no-economic-change counteroffer also avoids meaningless commercial version churn", () => {
@@ -483,7 +488,9 @@ test("41 tender versus repricing and booking versus repricing races share the or
 
 test("42 counteroffer versus V1 approval cannot transfer approval to derived V2", () => {
   assert.match(tenderServer, /commercialOrderPointer\(nextVersion/);
-  assert.match(tenderServer, /pricing_approval_status/);
+  assert.match(lineageServer, /pricing_approval_status: approvalStatus/);
+  assert.match(lineageServer, /pricing_approval_version_id: null/);
+  assert.match(lineageServer, /pricing_approval_fingerprint: null/);
   assert.match(tenderServer, /counteroffer_commercial_version_created/);
   assert.match(pricingServer, /projection\.commercial_version_id !== version\.id/);
 });
