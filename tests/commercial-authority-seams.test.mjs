@@ -11,7 +11,11 @@ import {
   quoteHasTmsAuthorityMarkers,
   tmsCustomerQuoteReference,
 } from "../app/admin/commercial-authority/commercial-authority.ts";
-import { COMMERCIAL_VERSION_SCHEMA, commercialFingerprint } from "../app/admin/commercial-lineage/commercial-lineage.ts";
+import {
+  COMMERCIAL_VERSION_SCHEMA,
+  commercialFingerprint,
+  commercialSnapshotIntegrity,
+} from "../app/admin/commercial-lineage/commercial-lineage.ts";
 import { rateCardAppliesToOrder } from "../app/admin/rating/tms-rating.ts";
 import { staffCapabilitiesForRole } from "../app/admin/staff-permissions.ts";
 
@@ -109,6 +113,15 @@ function commercialSnapshot(overrides = {}) {
   };
 }
 
+function legacyCommercialSnapshot() {
+  const snapshot = commercialSnapshot();
+  delete snapshot.procurement.rate_card_branch;
+  delete snapshot.procurement.rate_card_origin;
+  delete snapshot.procurement.rate_card_destination;
+  delete snapshot.pricing.pricing_policy_id;
+  return snapshot;
+}
+
 function order(branch = "Kathmandu") {
   return {
     id: "ORD-1", branch, customer_id: "CUST-1", customer_name: "Customer", origin: "Kathmandu", destination: "Birgunj", mode: "road",
@@ -157,7 +170,7 @@ test("7 durable facts classify TMS quotes without caller isTms flag", () => {
   assert.equal(quoteHasTmsAuthorityMarkers({ source: "legacy_web_quote" }), false);
 });
 test("8 TMS quote economics cannot be rewritten through generic quote API", () => {
-  assert.match(adminData, /quoteHasTmsAuthorityMarkers[\s\S]*return \{ kind: "locked"/);
+  assert.match(quoteRoute, /assertQuoteEconomicEditAllowed\(reference\)/);
   assert.match(quoteRoute, /VERSIONED_QUOTE_COMMERCIAL_LOCK/);
 });
 
@@ -204,7 +217,8 @@ test("20 real manual FX provenance change changes fingerprint", () => {
   assert.notEqual(commercialFingerprint(a), commercialFingerprint(b));
 });
 test("21 old approval is not transferred across repricing", () => {
-  assert.match(pricingServer, /commercial_approvals/);
+  assert.match(pricingServer, /loadCommercialApprovalInTransaction/);
+  assert.match(pricingServer, /createCommercialApprovalInTransaction/);
   assert.match(pricingServer, /expectedId/);
   assert.match(pricingServer, /expectedFp/);
   assert.match(pricingServer, /stale_commercial_state/);
@@ -330,4 +344,53 @@ test("60 #129 commercial lineage regression suites remain in full test command",
 test("61 #130 external workflow regression suites remain in full test command", () => {
   assert.match(packageJson.scripts.test, /external-workflow-state\.test\.mjs/);
   assert.match(packageJson.scripts.test, /external-workflow-ingestion-hardening\.test\.mjs/);
+});
+
+// Final #131 hardening guards
+test("62 counteroffer customer-authority reads complete before commercial writes", () => {
+  const prepareIndex = tenderServer.indexOf("await prepareCustomerSellAuthorityCarryForwardInTransaction");
+  const versionWriteIndex = tenderServer.indexOf("persistCommercialVersionInTransaction(transaction, nextVersion)");
+  const authorityWriteIndex = tenderServer.indexOf("persistPreparedCustomerSellAuthorityCarryForwardInTransaction(transaction, preparedCustomerAuthority)");
+  assert.ok(prepareIndex >= 0);
+  assert.ok(versionWriteIndex > prepareIndex);
+  assert.ok(authorityWriteIndex > versionWriteIndex);
+});
+test("63 carry-forward preparation is read-only and persistence is write-only", () => {
+  const prepareStart = customerAuthority.indexOf("export async function prepareCustomerSellAuthorityCarryForwardInTransaction");
+  const persistStart = customerAuthority.indexOf("export function persistPreparedCustomerSellAuthorityCarryForwardInTransaction");
+  const prepareBody = customerAuthority.slice(prepareStart, persistStart);
+  assert.match(prepareBody, /transaction\.get\(targetRef\)/);
+  assert.doesNotMatch(prepareBody, /transaction\.(?:create|set|update|delete)\(/);
+  const persistBody = customerAuthority.slice(persistStart, customerAuthority.indexOf("export function createCarriedCustomerSellAuthorityInTransaction", persistStart));
+  assert.match(persistBody, /transaction\.create\(prepared\.targetRef/);
+  assert.doesNotMatch(persistBody, /transaction\.get\(/);
+});
+test("64 pre-131 commercial snapshot keeps its original v1 fingerprint", () => {
+  assert.equal(
+    commercialFingerprint(legacyCommercialSnapshot()),
+    "ce43c5b3713ff93807db7ac47d197f77893238c8f77a561dffcf42262d3a42ce",
+  );
+});
+test("65 pre-131 commercial snapshot remains integrity-valid", () => {
+  assert.deepEqual(commercialSnapshotIntegrity(legacyCommercialSnapshot()), { ok: true, errors: [] });
+});
+test("66 customer acceptance ledger has no update or delete path", () => {
+  assert.match(customerAuthority, /transaction\.create\(acceptanceRef\(version\.id\)/);
+  assert.doesNotMatch(customerAuthority, /transaction\.(?:update|set|delete)\(acceptanceRef\(/);
+});
+test("67 recorded acceptance audit identity does not impersonate the customer", () => {
+  assert.match(customerAuthority, /acceptance_source: "kcpl_staff_recorded_customer_acceptance"/);
+  assert.match(customerAuthority, /accepted_by_name: actor\.name/);
+  assert.match(customerAuthority, /accepted_by_email: actor\.email\.toLowerCase\(\)/);
+});
+test("68 tender issuance and booking acceptance are distinct gates", () => {
+  assert.match(tenderServer, /assertCustomerQuoteIssuedInTransaction\(transaction, version\)/);
+  assert.match(tenderServer, /assertCustomerSellAuthorityInTransaction\(transaction, version\)/);
+  assert.notEqual(
+    tenderServer.indexOf("assertCustomerQuoteIssuedInTransaction(transaction, version)"),
+    tenderServer.indexOf("assertCustomerSellAuthorityInTransaction(transaction, version)"),
+  );
+});
+test("69 dedicated commercial-authority suite is part of npm test", () => {
+  assert.match(packageJson.scripts.test, /commercial-authority-seams\.test\.mjs/);
 });
