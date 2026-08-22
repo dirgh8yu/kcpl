@@ -1,8 +1,9 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../../../admin/crm/crm-data";
 import { pickupAppointmentStatuses, pickupChannels, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
 import { recordTrackingEvent } from "../../../admin/visibility/tracking-visibility.server";
+import { pickupMachineAuthorized } from "../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
 function clean(value: unknown, max = 4000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
@@ -13,17 +14,7 @@ function appointmentId(reference: string) { return `PU-${reference.replace(/[^A-
 function eventDocId(provider: string, providerEventId: string) { return createHash("sha256").update(`${provider}\n${providerEventId}`).digest("hex"); }
 function appointmentStatus(value: unknown): PickupAppointmentStatus { const candidate = clean(value, 40) as PickupAppointmentStatus; return pickupAppointmentStatuses.includes(candidate) ? candidate : "unscheduled"; }
 
-export function pickupIntegrationAuthorized(request: Request) {
-  const expected = process.env.KCPL_PICKUP_INTEGRATION_SECRET?.trim() ?? "";
-  if (!expected) return { ok: false as const, status: 503, error: "Pickup integration is not configured." };
-  const header = request.headers.get("authorization") ?? "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!supplied) return { ok: false as const, status: 401, error: "Bearer authentication is required." };
-  const expectedBuffer = Buffer.from(expected);
-  const suppliedBuffer = Buffer.from(supplied);
-  if (expectedBuffer.length !== suppliedBuffer.length || !timingSafeEqual(expectedBuffer, suppliedBuffer)) return { ok: false as const, status: 401, error: "Pickup integration authentication failed." };
-  return { ok: true as const };
-}
+export const pickupIntegrationAuthorized = pickupMachineAuthorized;
 
 async function loadReferenceData(shipment: Record<string, unknown>) {
   const db = firebaseAdminDb();
