@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     if (result.kind === "ready") return json({ ok: true, audit: result.audit });
     if (result.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
     if (result.kind === "forbidden") return json({ ok: false, error: "This supplier bill is outside your finance or branch access." }, 403);
+    if (result.kind === "relationship_mismatch") return json({ ok: false, error: "This supplier bill has an incompatible shipment or order branch relationship." }, 409);
     return json({ ok: false, error: "Freight Audit storage is unavailable." }, 503);
   }
   const result = await listFreightAuditQueue(auth.staff);
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
   if (result.kind === "updated") return json({ ok: true, status: result.status });
   if (result.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
   if (result.kind === "forbidden" || result.kind === "management_required") return json({ ok: false, error: result.kind === "management_required" ? "Management approval is required for this variance decision." : "This supplier bill is outside your access." }, 403);
+  if (result.kind === "relationship_mismatch") return json({ ok: false, error: "This supplier bill has an incompatible shipment or order branch relationship." }, 409);
   if (result.kind === "note_required") return json({ ok: false, error: "Record a reason of at least 8 characters." }, 400);
   if (result.kind === "invalid_status") return json({ ok: false, error: "That action is not available for this audit state." }, 409);
   return json({ ok: false, error: "Freight Audit storage is unavailable." }, 503);
