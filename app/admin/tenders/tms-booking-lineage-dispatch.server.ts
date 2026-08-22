@@ -12,6 +12,10 @@ function nullable(value: unknown) { const output = text(value); return output ||
 function numberValue(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 function currencyValue(value: unknown): CrmCurrency | null { return crmCurrencies.includes(value as CrmCurrency) ? value as CrmCurrency : null; }
 
+async function confirmStandardBooking(tenderId: string, input: BookingInput, actor: Actor, staff: KcplStaffContext) {
+  return confirmTmsTenderBooking(tenderId, input, actor, staff);
+}
+
 /**
  * Authoritative booking dispatcher used by the admin API.
  * Standard tenders retain PR #127's transaction. Consolidation masters use the
@@ -37,7 +41,7 @@ export async function confirmTmsTenderBookingWithCommercialLineage(
   const loadId = nullable(order.get("consolidation_load_id"));
   const isMaster = order.get("is_consolidation_master") === true;
   if (!loadId || !isMaster) {
-    const result = await confirmTmsTenderBooking(tenderId, input, actor, staff);
+    const result = await confirmStandardBooking(tenderId, input, actor, staff);
     return result.kind === "booked" ? { ...result, bookingType: "standard" as const } : result;
   }
 
