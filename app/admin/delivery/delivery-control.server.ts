@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminBucket, firebaseAdminDb, firebaseRuntimeConfigured, firebaseStorageBucketName } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
@@ -399,7 +400,7 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
       transaction.create(customerRef.collection("activity").doc(id("delivery")), {
         type: "shipment_delivered",
         title: `${scope.reference}: Delivered`,
-        detail: detail,
+        detail,
         actor_name: actor.name || "KCPL Delivery Control",
         actor_email: actor.email || null,
         created_at: now,
@@ -408,35 +409,32 @@ export async function updateDeliveryAttempt(reference: string, attemptId: string
 
     if (input.status === "failed" || input.status === "refused") {
       const exceptionRef = scope.ref.collection("exceptions").doc(`delivery-${attemptRef.id}`);
-      const existingException = await transaction.get(exceptionRef);
-      if (!existingException.exists) {
-        const severity = input.status === "refused" ? "high" : "medium";
-        const slaHours = severity === "high" ? 6 : 24;
-        transaction.set(exceptionRef, {
-          category: input.status === "refused" ? "delivery_refusal" : "delay",
-          severity,
-          status: "open",
-          title: input.status === "refused" ? "Consignee refused delivery" : "Delivery attempt failed",
-          detail,
-          operational_impact: detail,
-          branch: scope.primary,
-          assigned_to_name: null,
-          assigned_to_email: null,
-          sla_due_at: new Date(Date.parse(now) + slaHours * 3_600_000).toISOString(),
-          opened_at: now,
-          opened_by_name: "KCPL Delivery Control",
-          opened_by_email: "delivery@kcpl.internal",
-          updated_at: now,
-          updated_by_name: actor.name || "KCPL Delivery Control",
-          updated_by_email: actor.email || "delivery@kcpl.internal",
-          resolved_at: null,
-          resolved_by_name: null,
-          resolved_by_email: null,
-          resolution: null,
-          delivery_attempt_id: attemptRef.id,
-          source: "delivery_control",
-        });
-      }
+      const severity = input.status === "refused" ? "high" : "medium";
+      const slaHours = severity === "high" ? 6 : 24;
+      transaction.set(exceptionRef, {
+        category: input.status === "refused" ? "delivery_refusal" : "delay",
+        severity,
+        status: "open",
+        title: input.status === "refused" ? "Consignee refused delivery" : "Delivery attempt failed",
+        detail,
+        operational_impact: detail,
+        branch: scope.primary,
+        assigned_to_name: null,
+        assigned_to_email: null,
+        sla_due_at: new Date(Date.parse(now) + slaHours * 3_600_000).toISOString(),
+        opened_at: now,
+        opened_by_name: "KCPL Delivery Control",
+        opened_by_email: "delivery@kcpl.internal",
+        updated_at: now,
+        updated_by_name: actor.name || "KCPL Delivery Control",
+        updated_by_email: actor.email || "delivery@kcpl.internal",
+        resolved_at: null,
+        resolved_by_name: null,
+        resolved_by_email: null,
+        resolution: null,
+        delivery_attempt_id: attemptRef.id,
+        source: "delivery_control",
+      });
     }
     return { kind: "updated" as const };
   });
@@ -503,7 +501,7 @@ export async function uploadPodEvidence(
     batch.set(scope.ref.collection("pod_evidence").doc(evidenceId), data);
     batch.update(scope.ref, {
       delivery_pod_status: "received",
-      delivery_pod_evidence_count: (numberOrNull(scope.data.delivery_pod_evidence_count) ?? 0) + 1,
+      delivery_pod_evidence_count: FieldValue.increment(1),
       delivery_state: "delivered_pod_pending",
       updated_at: now,
     });
