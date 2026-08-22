@@ -158,18 +158,22 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
   const tenderIds = accessible.map((doc) => nullable(doc.get("tender_id"))).filter((value): value is string => Boolean(value));
   const [customers, quotes, tenders] = await Promise.all([loadMap("customers", customerIds), loadMap("quotes", quoteIds), loadMap("transport_tenders", tenderIds)]);
   const now = new Date().toISOString();
-  const rows: PickupQueueRow[] = accessible.flatMap((doc) => {
+  const rows: PickupQueueRow[] = [];
+  for (const doc of accessible) {
     const data = doc.data() as Record<string, unknown>;
     const branch = branchValue(data.primary_branch) ?? branchValue(Array.isArray(data.handling_branches) ? data.handling_branches[0] : null);
-    if (!branch) return [];
+    if (!branch) continue;
     const existing = appointments.get(doc.id);
-    if (existing) return [{ ...existing, shipment_status: text(data.status, "booking_confirmed"), current_location: nullable(data.current_location) }];
+    if (existing) {
+      rows.push({ ...existing, shipment_status: text(data.status, "booking_confirmed"), current_location: nullable(data.current_location) });
+      continue;
+    }
     const customerId = nullable(data.customer_id);
     const quote = quotes.get(text(data.quote_reference)) ?? {};
     const customer = customerId ? customers.get(customerId) ?? {} : {};
     const tenderId = nullable(data.tender_id);
     const tender = tenderId ? tenders.get(tenderId) ?? {} : {};
-    return [{
+    rows.push({
       id: appointmentId(doc.id),
       shipment_reference: doc.id,
       transport_order_id: nullable(data.transport_order_id),
@@ -204,8 +208,9 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
       updated_at: text(data.updated_at, now),
       shipment_status: text(data.status, "booking_confirmed"),
       current_location: nullable(data.current_location),
-    }];
-  }).sort((a, b) => {
+    });
+  }
+  rows.sort((a, b) => {
     const rank = (row: PickupQueueRow) => row.status === "missed" ? 100 : row.status === "unscheduled" ? 80 : row.status === "requested" ? 60 : row.status === "confirmed" || row.status === "driver_assigned" ? 40 : 0;
     return rank(b) - rank(a) || b.updated_at.localeCompare(a.updated_at);
   });
@@ -284,7 +289,8 @@ export async function schedulePickup(reference: string, input: ScheduleInput, ac
   batch.update(scope.ref, { pickup_appointment_id: id, pickup_status: status, pickup_window_start: start, pickup_window_end: end, updated_at: now });
   await batch.commit();
   await writeAppointmentEvent(scope.id, id, "pickup_scheduled", input.confirmed ? "Pickup appointment confirmed" : "Pickup requested", `${start} → ${end}${input.pickupLocation ? ` · ${input.pickupLocation}` : ""}`, actor, scope.branch);
-  await recordTrackingEvent(scope.id, { source: "manual", rawStatus: "Pickup scheduled", milestone: "pickup_scheduled", location: input.pickupLocation, eta: null, eventTime: now, provider: input.providerReference || source.tender.partner_name ? text(source.tender.partner_name) : "KCPL Pickup Desk", details: `${input.confirmed ? "Confirmed" : "Requested"} pickup window ${start} to ${end}.` }, actor, staff);
+  const provider = nullable(source.tender.partner_name) ?? input.providerReference?.trim() ?? "KCPL Pickup Desk";
+  await recordTrackingEvent(scope.id, { source: "manual", rawStatus: "Pickup scheduled", milestone: "pickup_scheduled", location: input.pickupLocation, eta: "", eventTime: now, provider, details: `${input.confirmed ? "Confirmed" : "Requested"} pickup window ${start} to ${end}.` }, actor, staff);
   return { kind: "updated" as const, appointment: appointmentFromData(id, clean)! };
 }
 
@@ -347,7 +353,7 @@ export async function completePickup(reference: string, eventTime: string | null
     scope.ref.update({ pickup_status: "picked_up", pickup_completed_at: when, pickup_location: location.trim() || current.pickup_location, updated_at: now }),
   ]);
   await writeAppointmentEvent(scope.id, id, "pickup_completed", "Cargo picked up", `${when}${location ? ` · ${location}` : ""}`, actor, scope.branch);
-  await recordTrackingEvent(scope.id, { source: "manual", rawStatus: "Picked up", milestone: "picked_up", location: location || current.pickup_location || "", eta: null, eventTime: when, provider: current.partner_name || "KCPL Pickup Desk", details: `Pickup appointment ${id} completed.` }, actor, staff);
+  await recordTrackingEvent(scope.id, { source: "manual", rawStatus: "Picked up", milestone: "picked_up", location: location || current.pickup_location || "", eta: "", eventTime: when, provider: current.partner_name || "KCPL Pickup Desk", details: `Pickup appointment ${id} completed.` }, actor, staff);
   return { kind: "updated" as const };
 }
 
@@ -368,7 +374,7 @@ export async function missPickup(reference: string, reason: string, actor: Actor
     scope.ref.update({ pickup_status: "missed", updated_at: now }),
   ]);
   await writeAppointmentEvent(scope.id, id, "pickup_missed", "Pickup appointment missed", reason.trim(), actor, scope.branch);
-  await recordTrackingEvent(scope.id, { source: "manual", rawStatus: "Pickup missed - carrier exception", milestone: "exception", location: current.pickup_location || "", eta: null, eventTime: now, provider: current.partner_name || "KCPL Pickup Desk", details: reason.trim() }, actor, staff);
+  await recordTrackingEvent(scope.id, { source: "manual", rawStatus: "Pickup missed - carrier exception", milestone: "exception", location: current.pickup_location || "", eta: "", eventTime: now, provider: current.partner_name || "KCPL Pickup Desk", details: reason.trim() }, actor, staff);
   return { kind: "updated" as const };
 }
 
