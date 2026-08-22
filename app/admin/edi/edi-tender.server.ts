@@ -1,5 +1,6 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canMutateBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
+import { partnerOwnerCompatibleWithBranch } from "../partners/partner-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { queueEdi204 } from "./edi-gateway.server";
 
@@ -30,8 +31,7 @@ export async function queueTenderAsEdi204(tenderIdValue: string, actor: Actor, c
   if (!partnerId) return { kind: "missing_partner" as const };
   const partner = await firebaseAdminDb().collection("partners").doc(partnerId).get();
   if (!partner.exists) return { kind: "missing_partner" as const };
-  const ownerBranch = partner.get("owner_branch");
-  if (ownerBranch !== "Global" && !compatibleRecordBranches(tenderBranch, ownerBranch)) return { kind: "partner_branch_mismatch" as const };
+  if (!partnerOwnerCompatibleWithBranch(partner.get("owner_branch"), tenderBranch)) return { kind: "partner_branch_mismatch" as const };
 
   const result = await queueEdi204({
     branch: tenderBranch,
