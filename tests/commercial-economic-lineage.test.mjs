@@ -512,8 +512,9 @@ test("44 released-house repricing and consolidation booking contend on the locke
 test("45 booking dispatcher leaves no supported admin route on the old non-lineage consolidated booking path", () => {
   assert.match(tenderRoute, /confirmTmsTenderBookingWithCommercialLineage/);
   assert.doesNotMatch(tenderRoute, /confirmConsolidatedLoadBooking\(/);
-  assert.match(bookingDispatcher, /confirmConsolidatedLoadBookingWithLineage/);
+  assert.match(bookingDispatcher, /confirmConsolidatedLoadBookingWithPreparedAllocation/);
   assert.match(bookingDispatcher, /return confirmTmsTenderBooking\(tenderId, input, actor, staff\)/);
+  assert.doesNotMatch(bookingDispatcher, /confirmConsolidatedLoadBookingWithLineage|confirmConsolidatedLoadBooking\(/);
 });
 
 test("46 expected profitability integration verifies booked snapshot and matching validated Freight Audit rather than current rate pricing or FX", () => {
