@@ -83,6 +83,11 @@ export type VisibilityShipment = {
   last_received_at: string | null;
   last_source: TrackingSource | null;
   last_provider: string | null;
+  observed_external_milestone: TrackingMilestone | null;
+  observed_external_at: string | null;
+  observed_external_provider: string | null;
+  external_reconciliation_status: string | null;
+  external_promotion_blocker: string | null;
   stale_after: string | null;
   stale: boolean;
   eta_delta_hours: number | null;
@@ -123,9 +128,7 @@ export function normalizeTrackingMilestone(rawStatus: string, explicit?: string 
   if (explicit && trackingMilestones.includes(explicit as TrackingMilestone)) return explicit as TrackingMilestone;
   const value = normalized(rawStatus);
   if (!value) return "unknown";
-  for (const candidate of milestonePatterns) {
-    if (candidate.patterns.some((pattern) => pattern.test(value))) return candidate.milestone;
-  }
+  for (const candidate of milestonePatterns) if (candidate.patterns.some((pattern) => pattern.test(value))) return candidate.milestone;
   return "unknown";
 }
 
