@@ -8,7 +8,7 @@ import { DeliveryWorkspace } from "./delivery-workspace";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Delivery & POD | KCPL Operations", robots: { index: false, follow: false } };
 
-export default async function DeliveryPage() {
+export default async function DeliveryPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Delivery & POD Control is available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
@@ -16,6 +16,8 @@ export default async function DeliveryPage() {
     userName: access.user.displayName,
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Delivery access restricted" detail="Digital Job File access is required for Delivery & POD Control."/></OperationsShell>;
@@ -29,7 +31,9 @@ export default async function DeliveryPage() {
   }
 
   if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Delivery backend unavailable" detail="Firebase delivery data is not available for this deployment."/></OperationsShell>;
-  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary}/></OperationsShell>;
+  const { shipment } = await searchParams;
+  const initialQuery = shipment?.trim().toUpperCase() ?? "";
+  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary} initialQuery={initialQuery}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
