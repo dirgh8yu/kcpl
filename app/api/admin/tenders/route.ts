@@ -78,8 +78,11 @@ export async function POST(request: Request) {
     }
 
     if (channel === "edi_204") {
-      const queued = await queueTenderAsEdi204(result.tender.id, actor);
+      const queued = await queueTenderAsEdi204(result.tender.id, actor, access.staff);
       if (queued.kind === "queued" || queued.kind === "duplicate") return json({ ok: true, tender: result.tender, emailSent: false, ediQueued: true, ediTransactionId: queued.transactionId }, 201);
+      if (queued.kind === "forbidden") return json({ ok: false, tender: result.tender, emailSent: false, ediQueued: false, error: "Tender EDI dispatch is outside your branch access." }, 403);
+      if (["invalid_branch", "branch_mismatch", "partner_branch_mismatch"].includes(queued.kind)) return json({ ok: false, tender: result.tender, emailSent: false, ediQueued: false, error: "Tender, order and partner branch scope is inconsistent and cannot be dispatched." }, 409);
+      if (queued.kind === "missing_partner") return json({ ok: false, tender: result.tender, emailSent: false, ediQueued: false, error: "The tender partner could not be resolved for EDI dispatch." }, 409);
       return json({ ok: false, tender: result.tender, emailSent: false, ediQueued: false, error: "Tender record created, but its EDI 204 load tender could not be queued. Open EDI Gateway to review the handoff." }, 503);
     }
 
