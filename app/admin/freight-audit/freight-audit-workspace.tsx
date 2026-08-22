@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AlertTriangle, BadgeCheck, CircleDollarSign, RefreshCw, ShieldAlert } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
 import { freightAuditStatusLabels, type FreightAuditQueueRow, type FreightAuditStatus, type FreightAuditSummary } from "./freight-audit";
@@ -26,7 +26,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
-  const selected = useMemo(() => rows.find((row) => row.payable_reference === selectedReference) ?? null, [rows, selectedReference]);
+  const selected = rows.find((row) => row.payable_reference === selectedReference) ?? null;
 
   async function refresh() {
     const response = await fetch("/api/admin/freight-audit", { cache: "no-store" });
@@ -51,7 +51,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   }
 
   return <div className="ops-content ops-stack">
-    <OpsSurface eyebrow="Finance control" title="Freight Audit & Match-Pay" description="Compare supplier invoices against the immutable TMS procurement booking before Accounts releases payment. No hidden FX conversion is used." action={<OpsButton variant="secondary" size="sm" onClick={() => { setBusy(true); refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false)); }} disabled={busy}><RefreshCw size={12}/>Refresh</OpsButton>}>
+    <OpsSurface eyebrow="Finance control" title="Freight Audit & Match-Pay" description="Compare supplier invoices against the locked TMS procurement booking before Accounts releases payment. Taxes remain visible but are excluded from the freight-rate comparison, and currencies are never silently converted." action={<OpsButton variant="secondary" size="sm" onClick={() => { setBusy(true); refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false)); }} disabled={busy}><RefreshCw size={12}/>Refresh</OpsButton>}>
       <OpsStatStrip>
         <OpsStat label="Bills audited" value={String(summary.total)} detail="Current payable queue"/>
         <OpsStat label="Matched" value={String(summary.matched)} detail="Within tolerance"/>
@@ -81,9 +81,11 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
             <Metric label="Tolerance" value={`${selected.tolerance_percent.toFixed(2)}% or ${selected.invoice_currency} ${selected.tolerance_amount.toFixed(2)}`}/>
           </div>
 
+          {selected.expected_linehaul !== null ? <div className="rounded-[11px] border border-[#e4ddd6] bg-[#fcfaf8] p-4"><div className="mb-3"><div className="text-[11px] font-bold text-[#4d453f]">Booked rate-card baseline</div><div className="mt-1 text-[10px] leading-5 text-[#857b73]">Reconstructed from the selected Partner rate card and the booked order quantity. This breakdown is hidden when a negotiated counter-offer replaced the original rate-card economics.</div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Metric label="Linehaul" value={money(selected.booked_currency, selected.expected_linehaul)}/><Metric label="Fuel surcharge" value={money(selected.booked_currency, selected.expected_fuel_surcharge)}/><Metric label="Accessorials" value={money(selected.booked_currency, selected.expected_accessorials)}/><Metric label="Rating unit" value={selected.expected_rate_unit?.replaceAll("_", " ") ?? "Not available"}/><Metric label="Booked quantity" value={selected.expected_quantity === null ? "Not available" : selected.expected_quantity.toLocaleString("en-AU")}/><Metric label="Minimum charge" value={selected.minimum_applied === null ? "Not available" : selected.minimum_applied ? "Applied" : "Not applied"}/></div></div> : null}
+
           <div className="rounded-[11px] border border-[#e8e0d9] bg-[#fcfaf8] p-4"><div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-bold text-[#4d453f]">Match-Pay status</div><div className="mt-1 text-[10px] text-[#857b73]">{selected.booked_partner_name ?? "No TMS carrier snapshot"}{selected.carrier_reference ? ` · Booking ${selected.carrier_reference}` : ""}</div></div><OpsBadge tone={tone(selected.status)}>{freightAuditStatusLabels[selected.status]}</OpsBadge></div></div>
 
-          <div><div className="mb-2 text-[11px] font-bold text-[#4d453f]">Audit findings</div>{selected.issues.length ? <div className="space-y-2">{selected.issues.map((item) => <div key={item.code} className={`rounded-[10px] border p-3 ${item.severity === "blocking" ? "border-[#e8c8bf] bg-[#fff7f4]" : "border-[#eadfca] bg-[#fffaf0]"}`}><div className="flex gap-2"><AlertTriangle size={13} className="mt-0.5 shrink-0"/><div><div className="text-[11px] font-bold text-[#4e4640]">{item.title}</div><div className="mt-1 text-[10px] leading-5 text-[#796f68]">{item.detail}</div></div></div></div>)}</div> : <OpsNotice tone="success">Booked partner, currency and freight subtotal are within the configured match tolerance.</OpsNotice>}</div>
+          <div><div className="mb-2 text-[11px] font-bold text-[#4d453f]">Audit findings</div>{selected.issues.length ? <div className="space-y-2">{selected.issues.map((item) => <div key={item.code} className={`rounded-[10px] border p-3 ${item.severity === "blocking" ? "border-[#e8c8bf] bg-[#fff7f4]" : "border-[#eadfca] bg-[#fffaf0]"}`}><div className="flex gap-2"><AlertTriangle size={13} className="mt-0.5 shrink-0"/><div><div className="text-[11px] font-bold text-[#4e4640]">{item.title}</div><div className="mt-1 text-[10px] leading-5 text-[#796f68]">{item.detail}</div></div></div></div>)}</div> : <OpsNotice tone="success">Booked provider, currency and freight subtotal are within the configured match tolerance.</OpsNotice>}</div>
 
           {selected.dispute_note ? <OpsNotice tone="warning"><strong>Dispute:</strong> {selected.dispute_note}</OpsNotice> : null}
           {selected.resolution_note ? <OpsNotice tone="info"><strong>Resolution:</strong> {selected.resolution_note}</OpsNotice> : null}
