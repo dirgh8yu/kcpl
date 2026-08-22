@@ -1,21 +1,11 @@
-import { timingSafeEqual } from "node:crypto";
 import { acknowledgeOutboundEdi, listOutboundEdiQueue } from "../../../admin/edi/edi-gateway.server";
 import { ingestEdiPayloadWithTrustBoundary } from "../../../admin/edi/edi-trust-boundary.server";
+import { ediMachineAuthorized } from "../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
 function clean(value: unknown, max = 4000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 
-export function ediIntegrationAuthorized(request: Request) {
-  const expected = process.env.KCPL_EDI_SECRET?.trim() ?? "";
-  if (!expected) return { ok: false as const, status: 503, error: "KCPL EDI transport is not configured." };
-  const header = request.headers.get("authorization") ?? "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7).trim() : request.headers.get("x-edi-key")?.trim() ?? "";
-  if (!supplied) return { ok: false as const, status: 401, error: "EDI authentication is required." };
-  const expectedBuffer = Buffer.from(expected);
-  const suppliedBuffer = Buffer.from(supplied);
-  if (expectedBuffer.length !== suppliedBuffer.length || !timingSafeEqual(expectedBuffer, suppliedBuffer)) return { ok: false as const, status: 401, error: "EDI authentication failed." };
-  return { ok: true as const };
-}
+export const ediIntegrationAuthorized = ediMachineAuthorized;
 
 export async function GET(request: Request) {
   const auth = ediIntegrationAuthorized(request);
