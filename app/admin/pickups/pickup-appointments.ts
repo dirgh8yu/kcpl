@@ -100,6 +100,15 @@ export function pickupNeedsAttention(row: PickupQueueRow, nowIso: string) {
   return Number.isFinite(due) && Number.isFinite(now) && due < now;
 }
 
+export function pickupWindowOverdue(row: PickupQueueRow, nowIso: string) {
+  if (!["requested", "confirmed", "driver_assigned"].includes(row.status)) return false;
+  const appointment = row.confirmed_window_end ?? row.requested_window_end;
+  if (!appointment) return false;
+  const due = Date.parse(appointment);
+  const now = Date.parse(nowIso);
+  return Number.isFinite(due) && Number.isFinite(now) && due < now;
+}
+
 export function summarizePickups(rows: PickupQueueRow[], nowIso: string): PickupSummary {
   const today = nowIso.slice(0, 10);
   return {
@@ -107,7 +116,7 @@ export function summarizePickups(rows: PickupQueueRow[], nowIso: string): Pickup
     requested: rows.filter((row) => row.status === "requested").length,
     confirmed: rows.filter((row) => row.status === "confirmed").length,
     driver_assigned: rows.filter((row) => row.status === "driver_assigned").length,
-    missed: rows.filter((row) => row.status === "missed" || pickupNeedsAttention(row, nowIso)).length,
+    missed: rows.filter((row) => row.status === "missed" || pickupWindowOverdue(row, nowIso)).length,
     picked_up_today: rows.filter((row) => row.status === "picked_up" && row.picked_up_at?.slice(0, 10) === today).length,
   };
 }
