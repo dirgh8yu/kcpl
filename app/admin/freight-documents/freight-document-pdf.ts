@@ -3,7 +3,7 @@ import {
   generatedFreightDocumentLabels,
   type FreightDocumentInput,
   type FreightDocumentSource,
-} from "./freight-documents";
+} from "./freight-documents.ts";
 
 type Line = { text: string; bold?: boolean; size?: number; gapBefore?: number };
 
