@@ -21,14 +21,17 @@ export default async function CarrierIntegrationsPage() {
     isManagement: staff.permissions.role === "management",
   };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shell}><Gate title="Carrier integration access restricted" detail="Your role does not include shipment execution access." embedded/></OperationsShell>;
+
+  let result: Awaited<ReturnType<typeof listCarrierIntegrationDashboard>> | null = null;
   try {
-    const result = await listCarrierIntegrationDashboard(staff);
-    if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Carrier integrations unavailable" detail="Firebase carrier integration storage is not available for this deployment." embedded/></OperationsShell>;
-    return <OperationsShell {...shell}><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} initialSummary={result.summary} canViewCommercial={staff.permissions.canViewCommercial}/></OperationsShell>;
+    result = await listCarrierIntegrationDashboard(staff);
   } catch (error) {
     console.error("Failed to load carrier integration workspace", error);
-    return <OperationsShell {...shell}><Gate title="Carrier integrations temporarily unavailable" detail="Provider status could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
   }
+
+  if (!result) return <OperationsShell {...shell}><Gate title="Carrier integrations temporarily unavailable" detail="Provider status could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Carrier integrations unavailable" detail="Firebase carrier integration storage is not available for this deployment." embedded/></OperationsShell>;
+  return <OperationsShell {...shell}><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} initialSummary={result.summary} canViewCommercial={staff.permissions.canViewCommercial}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
