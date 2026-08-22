@@ -47,46 +47,44 @@ async function recordPickupObservation(input: {
   appointmentId: string;
 }) {
   const source = input.channel === "edi" ? "edi_214" : input.channel === "carrier_api" ? "carrier_api" : "webhook";
+  const common = {
+    source,
+    location: input.location,
+    eta: "",
+    eventTime: input.eventTime,
+    provider: input.provider,
+    providerEventId: input.providerEventId,
+  } as const;
   if (input.action === "request" || input.action === "confirm") {
     return recordTrackingEvent(input.reference, {
-      source,
+      ...common,
       rawStatus: "Pickup scheduled",
       milestone: "pickup_scheduled",
-      location: input.location,
-      eta: "",
-      eventTime: input.eventTime,
-      provider: input.provider,
-      providerEventId: input.providerEventId,
       details: `${input.action === "confirm" ? "Confirmed" : "Requested"} pickup window ${input.requestedStart} to ${input.requestedEnd}.`,
     }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
   }
   if (input.action === "picked_up") {
     return recordTrackingEvent(input.reference, {
-      source,
+      ...common,
       rawStatus: "Picked up",
       milestone: "picked_up",
-      location: input.location,
-      eta: "",
-      eventTime: input.eventTime,
-      provider: input.provider,
-      providerEventId: input.providerEventId,
       details: input.reason || `Pickup appointment ${input.appointmentId} completed.`,
     }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
   }
   if (input.action === "missed") {
     return recordTrackingEvent(input.reference, {
-      source,
+      ...common,
       rawStatus: "Pickup missed - carrier exception",
       milestone: "exception",
-      location: input.location,
-      eta: "",
-      eventTime: input.eventTime,
-      provider: input.provider,
-      providerEventId: input.providerEventId,
       details: input.reason,
     }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
   }
-  return null;
+  return recordTrackingEvent(input.reference, {
+    ...common,
+    rawStatus: input.action === "assign_driver" ? "Pickup driver assigned" : "Pickup cancelled by provider",
+    milestone: "unknown",
+    details: input.reason || `Provider reported pickup action ${input.action.replaceAll("_", " ")}.`,
+  }, { name: input.provider, email: "pickup-integration@kcpl.internal" });
 }
 
 export async function POST(request: Request) {
@@ -117,7 +115,11 @@ export async function POST(request: Request) {
   const eventKey = eventDocId(provider, providerEventId);
   const appointmentRef = db.collection("pickup_appointments").doc(id);
   const integrationEventRef = appointmentRef.collection("provider_events").doc(eventKey);
-  const [appointmentSnapshot, source] = await Promise.all([appointmentRef.get(), loadReferenceData(shipment)]);
+  const [appointmentSnapshot, duplicateSnapshot, source] = await Promise.all([
+    appointmentRef.get(),
+    integrationEventRef.get(),
+    loadReferenceData(shipment),
+  ]);
   const appointment = appointmentSnapshot.exists ? appointmentSnapshot.data() as Record<string, unknown> : {};
   const currentStatus = appointmentStatus(appointment.status);
 
@@ -133,7 +135,16 @@ export async function POST(request: Request) {
   const driverPhone = clean(body.driverPhone ?? body.driver_phone, 100);
   const vehicleReference = clean(body.vehicleReference ?? body.vehicle_reference, 180);
   const reason = clean(body.reason ?? body.details, 2000);
-  const eventTime = validIso(body.eventTime ?? body.event_time) ?? now;
+  const eventTime = validIso(duplicateSnapshot.exists ? duplicateSnapshot.get("event_time") : body.eventTime ?? body.event_time) ?? now;
+
+  const observationInput = { reference, action, channel, location, eventTime, provider, providerEventId, requestedStart, requestedEnd, reason, appointmentId: id };
+  if (duplicateSnapshot.exists) {
+    const storedAction = clean(duplicateSnapshot.get("action"), 40);
+    if (storedAction && storedAction !== action) return json({ ok: false, error: "providerEventId was already used for a different pickup action." }, 409);
+    const trackingResult = await recordPickupObservation(observationInput);
+    if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment no longer has a canonical KCPL primary branch." }, 409);
+    return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
+  }
 
   const base = {
     shipment_reference: reference,
@@ -186,7 +197,6 @@ export async function POST(request: Request) {
     Object.assign(update, { status: nextStatus, notes: reason || nullable(appointment.notes) });
   }
 
-  const observationInput = { reference, action, channel, location, eventTime, provider, providerEventId, requestedStart, requestedEnd, reason, appointmentId: id };
   if (!pickupTransitionAllowed(currentStatus, nextStatus)) {
     await recordPickupObservation(observationInput);
     return json({ ok: false, error: `Provider observation cannot move pickup from ${currentStatus} to ${nextStatus}; KCPL reconciliation is required.`, reconciliationRequired: true, observationStored: true }, 409);
@@ -268,10 +278,8 @@ export async function POST(request: Request) {
   }
 
   const trackingResult = await recordPickupObservation(observationInput);
-  if (trackingResult && trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment lost its canonical KCPL primary branch before observation reconciliation." }, 409);
+  if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment lost its canonical KCPL primary branch before observation reconciliation." }, 409);
 
-  if (domainResult.kind === "duplicate") {
-    return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
-  }
+  if (domainResult.kind === "duplicate") return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
   return json({ ok: true, reference, pickupAppointmentId: id, status: nextStatus, providerEventId, trackingReconciled: true }, appointmentSnapshot.exists ? 200 : 201);
 }
