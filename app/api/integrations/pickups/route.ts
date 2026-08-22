@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../../../admin/crm/crm-data";
-import { pickupAppointmentStatuses, pickupChannels, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
+import { pickupAppointmentStatuses, pickupChannels, pickupTransitionAllowed, validAppointmentWindow, type PickupChannel, type PickupAppointmentStatus } from "../../../admin/pickups/pickup-appointments";
 import { recordTrackingEvent } from "../../../admin/visibility/tracking-visibility.server";
 import { pickupMachineAuthorized } from "../../../machine-auth-policy";
 
@@ -54,8 +54,6 @@ export async function POST(request: Request) {
   const shipmentSnapshot = await shipmentRef.get();
   if (!shipmentSnapshot.exists) return json({ ok: false, error: "Shipment not found." }, 404);
   const shipment = shipmentSnapshot.data() as Record<string, unknown>;
-  // Provider metadata and handling-branch order are not authorization authority.
-  // Pickup mutation requires the shipment's canonical primary branch to be valid.
   const branch = branchValue(shipment.primary_branch);
   if (!branch) return json({ ok: false, error: "Shipment does not have a canonical KCPL primary branch." }, 409);
   const id = appointmentId(reference);
@@ -132,12 +130,16 @@ export async function POST(request: Request) {
     Object.assign(update, { status: nextStatus, notes: reason || nullable(appointment.notes) });
   }
 
+  if (!pickupTransitionAllowed(currentStatus, nextStatus)) {
+    return json({ ok: false, error: `Provider observation cannot move pickup from ${currentStatus} to ${nextStatus}; KCPL reconciliation is required.`, reconciliationRequired: true }, 409);
+  }
+
   const eventTitle = action === "request" ? "Pickup requested by provider" : action === "confirm" ? "Pickup appointment confirmed by provider" : action === "assign_driver" ? "Pickup driver assigned by provider" : action === "picked_up" ? "Cargo picked up" : action === "missed" ? "Pickup missed" : "Pickup cancelled by provider";
   const batch = db.batch();
   batch.set(appointmentRef, update, { merge: true });
-  batch.create(integrationEventRef, { provider, provider_event_id: providerEventId, action, received_at: now, event_time: eventTime, payload_reference: reference });
+  batch.create(integrationEventRef, { provider, provider_event_id: providerEventId, action, received_at: now, event_time: eventTime, payload_reference: reference, observed_status: nextStatus, canonical_status_before: currentStatus, canonical_status_after: nextStatus, reconciliation_decision: "promote", reconciliation_reason: "pickup_transition_policy_satisfied" });
   batch.create(appointmentRef.collection("events").doc(), { type: `provider_${action}`, title: eventTitle, detail: reason || providerReference || null, actor_name: provider, actor_email: "pickup-integration@kcpl.internal", created_at: now, provider_event_id: providerEventId });
-  batch.create(shipmentRef.collection("job_activity").doc(), { type: `pickup_provider_${action}`, title: eventTitle, detail: reason || providerReference || null, branch, actor_name: provider, actor_email: "pickup-integration@kcpl.internal", created_at: now, pickup_appointment_id: id, provider_event_id: providerEventId });
+  batch.create(shipmentRef.collection("job_activity").doc(), { type: `pickup_provider_${action}`, title: eventTitle, detail: reason || providerReference || null, branch, actor_name: provider, actor_email: "pickup-integration@kcpl.internal", created_at: now, pickup_appointment_id: id, provider_event_id: providerEventId, pickup_status_before: currentStatus, pickup_status_after: nextStatus });
   batch.update(shipmentRef, {
     pickup_appointment_id: id,
     pickup_status: nextStatus,
