@@ -19,11 +19,13 @@ import {
   gptTrustPolicy,
   sanitizeGptResponse,
 } from "../app/gpt-action-auth.server.ts";
-import { ediIntegrationAuthorized } from "../app/api/integrations/edi/route.ts";
-import { trackingIntegrationAuthorized } from "../app/api/integrations/tracking/route.ts";
-import { pickupIntegrationAuthorized } from "../app/api/integrations/pickups/route.ts";
-import { maerskWebhookAuthorized } from "../app/api/integrations/carriers/maersk/route.ts";
-import { automationIntegrationAuthorized } from "../app/api/internal/automation/route.ts";
+import {
+  automationMachineAuthorized as automationIntegrationAuthorized,
+  ediMachineAuthorized as ediIntegrationAuthorized,
+  maerskMachineAuthorized as maerskWebhookAuthorized,
+  pickupMachineAuthorized as pickupIntegrationAuthorized,
+  trackingMachineAuthorized as trackingIntegrationAuthorized,
+} from "../app/machine-auth-policy.ts";
 
 const management = {
   can_access_all_branches: true,
@@ -117,7 +119,7 @@ test("bootstrap requires absent profile allowlist and positively confirmed empty
   assert.equal(allowed.branchScope, "all");
   assert.deepEqual(resolveStaffAuthority({ profile: { exists: false }, configuredBootstrap: true, directoryState: "nonempty" }), { kind: "denied", reason: "directory_not_empty" });
   assert.deepEqual(resolveStaffAuthority({ profile: { exists: false }, configuredBootstrap: true, directoryState: "unavailable" }), { kind: "denied", reason: "directory_unavailable" });
-  assert.deepEqual(resolveStaffAuthority({ profile: { exists: false }, configuredBootstrap: false, directoryState: "empty" }), { kind: "denied", reason: "not_configured" });
+  assert.deepEqual(resolveStaffAuthority({ profile: { exists: false }, configuredBootstrap: false, directoryState: "empty" }), { kind: "denied", reason: "not_bootstrap" });
 });
 
 test("Management is organization-wide only for valid canonical branches", () => {
@@ -223,6 +225,28 @@ test("tracking and pickup fail safely when dedicated secrets are absent", () => 
     assert.equal(result.ok, false);
     assert.equal(result.status, 503);
   });
+});
+
+test("live machine routes delegate to the dedicated central auth policy", () => {
+  const routes = [
+    ["app/api/integrations/tracking/route.ts", "trackingMachineAuthorized"],
+    ["app/api/integrations/pickups/route.ts", "pickupMachineAuthorized"],
+    ["app/api/integrations/edi/route.ts", "ediMachineAuthorized"],
+    ["app/api/integrations/carriers/maersk/route.ts", "maerskMachineAuthorized"],
+    ["app/api/internal/automation/route.ts", "automationMachineAuthorized"],
+  ];
+  for (const [file, policy] of routes) {
+    const source = readFileSync(resolve(file), "utf8");
+    assert.match(source, new RegExp(`\\b${policy}\\b`), `${file} must use ${policy}`);
+    assert.doesNotMatch(source, /timingSafeEqual/, `${file} must not maintain a parallel secret comparator`);
+  }
+  const policy = readFileSync(resolve("app/machine-auth-policy.ts"), "utf8");
+  assert.match(policy, /timingSafeEqual/);
+  assert.match(policy, /KCPL_TRACKING_INGEST_SECRET/);
+  assert.match(policy, /KCPL_PICKUP_INTEGRATION_SECRET/);
+  assert.match(policy, /KCPL_EDI_SECRET/);
+  assert.match(policy, /KCPL_AUTOMATION_SECRET/);
+  assert.match(policy, /MAERSK_WEBHOOK_SECRET/);
 });
 
 test("GPT principal is organization-wide Management-level read-only", () => {
