@@ -50,6 +50,7 @@ export default async function TenderDeskPage({ searchParams }: { searchParams: P
 
   return (
     <OperationsShell {...shellProps}>
+      <div className="px-4 pt-4 lg:px-5"><div className="flex justify-end"><Link href="/admin/pickups" className="ops-button" data-variant="primary" data-size="sm">Booked? Schedule pickup →</Link></div></div>
       <TmsTenderWorkspace
         initialOrders={orderedOrders}
         initialTenders={orderedTenders}

@@ -17,14 +17,15 @@ const full = {
 
 test("workflow navigation contains every current TMS handoff workspace", () => {
   const ids = new Set(workflowWorkspaces.map((workspace) => workspace.id));
-  for (const required of ["rating", "pricing", "consolidation", "tenders", "shipments", "visibility", "delivery", "freight-audit", "payables"]) {
+  for (const required of ["rating", "pricing", "consolidation", "tenders", "pickups", "shipments", "visibility", "delivery", "freight-audit", "payables"]) {
     assert.equal(ids.has(required), true, `${required} should be globally discoverable`);
   }
 });
 
-test("operations-only staff do not see commercial or finance workspaces", () => {
+test("operations-only staff see execution tools but not commercial or finance workspaces", () => {
   const visible = new Set(visibleWorkspaces({ canViewCommercial: false, canManageJobFile: true, canManageFinance: false, canManageStaff: false, isManagement: false }).map((workspace) => workspace.id));
   assert.equal(visible.has("shipments"), true);
+  assert.equal(visible.has("pickups"), true);
   assert.equal(visible.has("visibility"), true);
   assert.equal(visible.has("delivery"), true);
   assert.equal(visible.has("rating"), false);
@@ -43,6 +44,7 @@ test("finance workspaces require finance capability", () => {
 
 test("active workspace picks the most specific nested route", () => {
   assert.equal(activeWorkspace("/admin/jobs/KCPL-S-20260822-X", full)?.id, "shipments");
+  assert.equal(activeWorkspace("/admin/pickups", full)?.id, "pickups");
   assert.equal(activeWorkspace("/admin/partners/reconciliation", full)?.id, "supplier-reconciliation");
   assert.equal(activeWorkspace("/admin/migration/archive", full)?.id, "paper-archive");
 });
