@@ -1,11 +1,12 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.4.0
+  version: 1.5.0
   description: >-
     Read-only access to authorised Kapileshwor Cargo operational data. Use these
     actions for current KCPL shipments, Job Files, customers, quotes, pickup/appointment status,
-    freight-document controls, delivery/POD status, Freight Audit/Match-Pay controls and operations briefings.
+    freight-document controls, carrier integration health, delivery/POD status,
+    Freight Audit/Match-Pay controls and operations briefings.
 servers:
   - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
 security:
@@ -85,6 +86,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FreightDocumentBriefingResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/gpt/carrier-integrations:
+    get:
+      operationId: getKcplCarrierIntegrationBriefing
+      summary: Get KCPL carrier integration health
+      description: >-
+        Return configured carrier adapters, recent provider health, linked shipments,
+        carrier synchronization errors and unmatched ocean events. This action never exposes
+        provider API credentials, webhook secrets or authorization headers and cannot create
+        bookings, request pickups or mutate provider accounts.
+      responses:
+        "200":
+          description: Current carrier integration briefing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarrierIntegrationBriefingResponse"
         "401":
           description: Invalid API key.
           content:
@@ -336,6 +359,40 @@ components:
               type: integer
           additionalProperties: false
         attention:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        safety:
+          type: string
+      additionalProperties: true
+    CarrierIntegrationBriefingResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+        providers:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        summary:
+          type: object
+          properties:
+            configuredProviders:
+              type: integer
+            linkedShipments:
+              type: integer
+            shipmentsWithCarrierErrors:
+              type: integer
+            unmatchedOceanEvents:
+              type: integer
+          additionalProperties: false
+        linkedShipments:
           type: array
           items:
             type: object
