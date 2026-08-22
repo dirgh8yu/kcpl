@@ -1,10 +1,10 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
+import { releaseConsolidationToProcurementWithLineage } from "../../../admin/consolidation/tms-consolidation-release-lineage.server";
 import {
   addOrderToConsolidationLoad,
   cancelDraftConsolidationLoad,
   createConsolidationLoad,
   listConsolidationLoads,
-  releaseConsolidationToProcurement,
   removeOrderFromConsolidationLoad,
   reorderConsolidationStops,
   updateConsolidationStop,
@@ -54,14 +54,9 @@ export async function POST(request: Request) {
     const mode = clean(body.mode, 30) as TmsMode;
     if (!tmsModes.includes(mode)) return json({ ok: false, error: "Choose a valid load mode." }, 400);
     const result = await createConsolidationLoad({
-      name: clean(body.name, 180),
-      mode,
-      orderIds: stringList(body.orderIds),
-      equipment: clean(body.equipment, 160),
-      capacityWeightKg: optionalNumber(body.capacityWeightKg),
-      capacityVolumeCbm: optionalNumber(body.capacityVolumeCbm),
-      capacityPieces: optionalNumber(body.capacityPieces),
-      capacityContainers: optionalNumber(body.capacityContainers),
+      name: clean(body.name, 180), mode, orderIds: stringList(body.orderIds), equipment: clean(body.equipment, 160),
+      capacityWeightKg: optionalNumber(body.capacityWeightKg), capacityVolumeCbm: optionalNumber(body.capacityVolumeCbm),
+      capacityPieces: optionalNumber(body.capacityPieces), capacityContainers: optionalNumber(body.capacityContainers),
     }, actor, access.staff);
     if (result.kind === "unavailable") return json({ ok: false, error: "Consolidation storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "One or more orders are outside your branch or commercial access." }, 403);
@@ -117,18 +112,22 @@ export async function POST(request: Request) {
   }
 
   if (action === "release") {
-    const result = await releaseConsolidationToProcurement(clean(body.loadId, 120), actor, access.staff);
+    const result = await releaseConsolidationToProcurementWithLineage(clean(body.loadId, 120), actor, access.staff);
     if (result.kind === "unavailable") return json({ ok: false, error: "Consolidation storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This load is outside your access." }, 403);
     if (result.kind === "missing") return json({ ok: false, error: "Consolidation load not found." }, 404);
+    if (result.kind === "missing_order") return json({ ok: false, error: "One or more house orders could not be found." }, 404);
     if (result.kind === "minimum_members") return json({ ok: false, error: "At least two orders are required." }, 409);
     if (result.kind === "customer_required") return json({ ok: false, error: "Link every member order to a KCPL customer before releasing the load." }, 409);
+    if (result.kind === "pricing_required") return json({ ok: false, error: "Every house must have a priced immutable commercial version before release to procurement." }, 409);
+    if (result.kind === "approval_required") return json({ ok: false, error: "A house commercial version still requires Management approval before consolidation release." }, 409);
+    if (result.kind === "commercial_review_required") return json({ ok: false, error: "One or more house commercial versions cannot be proven safely. Commercial review is required before release." }, 409);
     if (result.kind === "precedence" || result.kind === "invalid_sequence") return json({ ok: false, error: "Review the stop sequence. Every pickup must occur before its delivery." }, 409);
     if (result.kind === "capacity") return json({ ok: false, error: result.blockers.join(" ") }, 409);
     if (result.kind === "state_conflict") return json({ ok: false, error: "The consolidation changed concurrently or has inconsistent membership. Refresh before release." }, 409);
     if (result.kind === "locked") return json({ ok: false, error: "This load is already locked for procurement." }, 409);
     if (result.kind === "ready") return json({ ok: true, masterOrderId: result.masterOrderId });
-    return json({ ok: true, masterOrderId: result.masterOrderId }, 201);
+    return json({ ok: true, masterOrderId: result.masterOrderId, releasedCommercialSources: result.releasedCommercialSources }, 201);
   }
 
   if (action === "cancel") {
