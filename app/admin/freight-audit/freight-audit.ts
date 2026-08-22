@@ -29,6 +29,7 @@ export const freightAuditIssueCodes = [
   "missing_booking_cost",
   "missing_supplier_reference",
   "shipment_not_tms_booked",
+  "ancillary_supplier_bill",
 ] as const;
 export type FreightAuditIssueCode = (typeof freightAuditIssueCodes)[number];
 
