@@ -1,5 +1,6 @@
 import { getAdminAccess } from "../../../../../../admin/admin-auth";
 import { financePaymentMethods, type FinancePaymentMethod } from "../../../../../../admin/finance/finance-data";
+import { ensureFreightAuditForPayment } from "../../../../../../admin/freight-audit/freight-audit.server";
 import { recordPayablePayment } from "../../../../../../admin/payables/payables.server";
 import { getStaffContext } from "../../../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../../../request-security";
@@ -21,6 +22,12 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   catch { return json({ ok: false, error: "The supplier payment request could not be read." }, 400); }
   const method = typeof body.method === "string" ? body.method : "other";
   if (!financePaymentMethods.includes(method as FinancePaymentMethod)) return json({ ok: false, error: "Choose a valid payment method." }, 400);
+
+  const gate = await ensureFreightAuditForPayment(reference, staff);
+  if (gate.kind === "blocked") return json({ ok: false, error: "Match-Pay is blocking payment. Resolve the freight audit discrepancy or obtain Management variance approval first.", code: "FREIGHT_AUDIT_BLOCKED", audit: gate.audit }, 409);
+  if (gate.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
+  if (gate.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
+  if (gate.kind === "unavailable") return json({ ok: false, error: "Freight Audit storage is unavailable." }, 503);
 
   const result = await recordPayablePayment(reference, {
     amount: Number(body.amount),
