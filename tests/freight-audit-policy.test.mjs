@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   calculateFreightVariance,
+  classifyFreightAuditSupplier,
   freightAuditPaymentAllowed,
   freightVarianceWithinTolerance,
   normalizeAuditReference,
@@ -34,6 +35,38 @@ test("supplier invoice references normalize for duplicate matching", () => {
   assert.equal(normalizeAuditReference(" inv-2026 / 0042 "), "INV20260042");
 });
 
+test("ancillary vendors are outside carrier Match-Pay but freight supplier mismatches are not", () => {
+  assert.deepEqual(classifyFreightAuditSupplier({
+    tmsBooked: true,
+    category: "customs",
+    bookedPartnerId: "PRT-CARRIER",
+    bookedPartnerName: "Booked Carrier",
+    supplierId: "PRT-BROKER",
+    supplierName: "Border Broker",
+  }), {
+    partnerIdentityAvailable: true,
+    providerMatches: false,
+    carrierLikeCategory: false,
+    ancillarySupplierBill: true,
+  });
+  const freightMismatch = classifyFreightAuditSupplier({
+    tmsBooked: true,
+    category: "freight",
+    bookedPartnerId: "PRT-CARRIER",
+    supplierId: "PRT-OTHER",
+    supplierName: "Other Carrier",
+  });
+  assert.equal(freightMismatch.ancillarySupplierBill, false);
+  assert.equal(freightMismatch.carrierLikeCategory, true);
+  assert.equal(freightMismatch.providerMatches, false);
+  assert.equal(classifyFreightAuditSupplier({
+    tmsBooked: true,
+    category: "freight",
+    bookedPartnerName: "ABC Logistics",
+    supplierName: "  abc   logistics ",
+  }).providerMatches, true);
+});
+
 test("Freight Audit summary counts payment blocks", () => {
   const base = {
     payable_reference: "B",
@@ -50,6 +83,12 @@ test("Freight Audit summary counts payment blocks", () => {
     booked_partner_name: null,
     booked_currency: null,
     booked_cost: null,
+    expected_linehaul: null,
+    expected_fuel_surcharge: null,
+    expected_accessorials: null,
+    expected_rate_unit: null,
+    expected_quantity: null,
+    minimum_applied: null,
     variance_amount: null,
     variance_percent: null,
     tolerance_amount: 1,
