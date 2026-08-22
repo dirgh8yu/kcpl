@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-strip-types --test tests/rbac-security.test.mjs tests/customs-policy.test.mjs tests/document-policy.test.mjs tests/migration-recovery-policy.test.mjs tests/production-readiness.test.mjs tests/shipment-exception-policy.test.mjs tests/tms-rating.test.mjs tests/tms-tender-policy.test.mjs tests/tms-consolidation.test.mjs tests/tms-pricing.test.mjs tests/tracking-visibility.test.mjs tests/delivery-pod-policy.test.mjs tests/freight-audit-policy.test.mjs tests/workflow-navigation.test.mjs tests/pickup-appointments.test.mjs tests/freight-documents.test.mjs tests/carrier-integrations.test.mjs tests/edi-x12.test.mjs",
+    "test": "node --experimental-strip-types --test tests/rbac-security.test.mjs tests/customs-policy.test.mjs tests/document-policy.test.mjs tests/migration-recovery-policy.test.mjs tests/production-readiness.test.mjs tests/shipment-exception-policy.test.mjs tests/tms-rating.test.mjs tests/tms-tender-policy.test.mjs tests/tms-consolidation.test.mjs tests/tms-pricing.test.mjs tests/tracking-visibility.test.mjs tests/delivery-pod-policy.test.mjs tests/freight-audit-policy.test.mjs tests/financial-settlement-integrity.test.mjs tests/workflow-navigation.test.mjs tests/pickup-appointments.test.mjs tests/freight-documents.test.mjs tests/carrier-integrations.test.mjs tests/edi-x12.test.mjs",
     "lint": "eslint . --ignore-pattern .next"
   },
   "dependencies": {

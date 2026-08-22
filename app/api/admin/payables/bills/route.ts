@@ -1,7 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../../../../admin/crm/crm-data";
+import { createPayableWithSettlementIntegrity } from "../../../../admin/financial-settlement/payables-settlement.server";
 import { jobCostCategories, type JobCostCategory } from "../../../../admin/job-file";
-import { createPayable } from "../../../../admin/payables/payables.server";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     ? requestedBranch as KcplBranch
     : staff.branches[0] ?? "Kathmandu";
 
-  const result = await createPayable({
+  const result = await createPayableWithSettlementIntegrity({
     supplierId: typeof body.supplierId === "string" ? body.supplierId : "",
     supplierName: typeof body.supplierName === "string" ? body.supplierName : "",
     supplierBillReference: typeof body.supplierBillReference === "string" ? body.supplierBillReference : "",
@@ -52,6 +52,7 @@ export async function POST(request: Request) {
   if (result.kind === "supplier_missing") return json({ ok: false, error: "Partner reference was not found. Choose an active Partner record or leave it blank for an unregistered supplier." }, 404);
   if (result.kind === "supplier_forbidden") return json({ ok: false, error: "This partner is outside your KCPL branch access." }, 403);
   if (result.kind === "supplier_required") return json({ ok: false, error: "Choose a partner or enter an unregistered supplier/carrier name." }, 400);
+  if (result.kind === "supplier_bill_reference_required") return json({ ok: false, error: "A supplier invoice reference is required so duplicate settlement can be prevented safely." }, 400);
   if (result.kind === "duplicate_bill") return json({ ok: false, code: "duplicate_supplier_bill", error: `This supplier bill reference already exists as ${result.reference}.`, existingReference: result.reference }, 409);
   if (result.kind === "invalid_branch") return json({ ok: false, error: "Choose a valid KCPL branch for this payable." }, 400);
   if (result.kind === "invalid_bill_date") return json({ ok: false, error: "Choose a real supplier bill date." }, 400);
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
   if (result.kind === "due_before_bill_date") return json({ ok: false, error: "Supplier bill due date cannot be before the bill date." }, 400);
   if (result.kind === "invalid_amount") return json({ ok: false, error: "Enter a bill amount greater than zero." }, 400);
   if (result.kind === "invalid_tax") return json({ ok: false, error: "Tax rate must be between 0 and 100%." }, 400);
+  if (result.kind === "invalid_currency") return json({ ok: false, error: "Choose a supported bill currency." }, 400);
+  if (result.kind === "invalid_category") return json({ ok: false, error: "Choose a valid job cost category." }, 400);
   if (result.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
   return json({ ok: false, error: "Accounts Payable storage is unavailable." }, 503);
 }
