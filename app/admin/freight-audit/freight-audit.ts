@@ -102,6 +102,31 @@ export function normalizeAuditReference(value: string | null | undefined) {
   return (value ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
+function identityKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function classifyFreightAuditSupplier(input: {
+  tmsBooked: boolean;
+  category: string;
+  bookedPartnerId?: string | null;
+  bookedPartnerName?: string | null;
+  supplierId?: string | null;
+  supplierName?: string | null;
+}) {
+  const partnerIdentityAvailable = Boolean(input.bookedPartnerId || input.bookedPartnerName);
+  const providerMatches = input.bookedPartnerId && input.supplierId
+    ? input.bookedPartnerId.trim().toUpperCase() === input.supplierId.trim().toUpperCase()
+    : Boolean(input.bookedPartnerName && identityKey(input.bookedPartnerName) === identityKey(input.supplierName));
+  const carrierLikeCategory = ["freight", "transport"].includes(input.category.trim().toLowerCase());
+  return {
+    partnerIdentityAvailable,
+    providerMatches,
+    carrierLikeCategory,
+    ancillarySupplierBill: Boolean(input.tmsBooked && partnerIdentityAvailable && !providerMatches && !carrierLikeCategory),
+  };
+}
+
 export function calculateFreightVariance(bookedCost: number | null, invoiceSubtotal: number, sameCurrency: boolean) {
   if (bookedCost === null || !Number.isFinite(bookedCost) || bookedCost < 0 || !sameCurrency) {
     return { amount: null, percent: null };
