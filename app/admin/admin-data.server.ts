@@ -13,7 +13,8 @@ import {
   type QuoteSummary,
 } from "./admin-data";
 import { canAccessQuoteLinkedRecords, strictBranchValue } from "./branch-access-policy";
-import { ensureShipmentForWonQuote, getShipmentForQuote } from "../shipment-data.server";
+import { getShipmentForQuote } from "../shipment-data.server";
+import { quoteHasTmsAuthorityMarkers } from "./commercial-authority/commercial-authority";
 import { listStaffProfiles, resolveStaffIdentity, resolveStaffIdentityFromProfiles, type KcplStaffContext } from "./staff-directory.server";
 import type { KcplStaffProfile } from "./staff-directory";
 
@@ -211,12 +212,8 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   let shipment: QuoteDetail["shipment"] = null;
   try {
     shipment = (await getShipmentForQuote(normalized)) ?? null;
-    if (!shipment && quote.status === "won" && quote.customer_id) {
-      const created = await ensureShipmentForWonQuote(normalized);
-      if (created.kind === "created" || created.kind === "ready") shipment = created.shipment ?? null;
-    }
   } catch (error) {
-    console.error("Failed to load or initialize Firebase shipment for quote", normalized, error);
+    console.error("Failed to load Firebase shipment for quote", normalized, error);
   }
 
   return { ...quote, shipment, notes, communications };
@@ -270,6 +267,7 @@ export async function updateQuoteCommercial(reference: string, values: QuoteComm
   const ref = firebaseAdminDb().collection("quotes").doc(reference.trim().toUpperCase());
   const snapshot = await ref.get();
   if (!snapshot.exists) return { kind: "missing" as const };
+  if (quoteHasTmsAuthorityMarkers(snapshot.data() as Record<string, unknown>)) return { kind: "locked" as const };
 
   await ref.update({
     quote_currency: values.currency,
