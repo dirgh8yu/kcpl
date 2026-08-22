@@ -1,23 +1,13 @@
-import { timingSafeEqual } from "node:crypto";
 import { runTrackingHealthSweep } from "../../../admin/visibility/tracking-visibility.server";
 import { recordOrderedTrackingEvent } from "../../../admin/visibility/tracking-ingest.server";
 import { trackingSources, type TrackingSource } from "../../../admin/visibility/tracking-visibility";
+import { trackingMachineAuthorized } from "../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
 function clean(value: unknown, max = 4000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function optionalNumber(value: unknown) { if (value === null || value === undefined || value === "") return null; const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 
-export function trackingIntegrationAuthorized(request: Request) {
-  const expected = process.env.KCPL_TRACKING_INGEST_SECRET?.trim() ?? "";
-  if (!expected) return { ok: false as const, status: 503, error: "Tracking ingestion is not configured." };
-  const header = request.headers.get("authorization") ?? "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!supplied) return { ok: false as const, status: 401, error: "Bearer authentication is required." };
-  const expectedBuffer = Buffer.from(expected);
-  const suppliedBuffer = Buffer.from(supplied);
-  if (expectedBuffer.length !== suppliedBuffer.length || !timingSafeEqual(expectedBuffer, suppliedBuffer)) return { ok: false as const, status: 401, error: "Tracking authentication failed." };
-  return { ok: true as const };
-}
+export const trackingIntegrationAuthorized = trackingMachineAuthorized;
 
 export async function POST(request: Request) {
   const auth = trackingIntegrationAuthorized(request);
