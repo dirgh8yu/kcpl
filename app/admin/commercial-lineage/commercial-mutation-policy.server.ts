@@ -1,17 +1,10 @@
 import { firebaseAdminDb } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
-
-export type CommercialMutationLockDecision = "allowed" | "released_consolidation_locked";
+import { commercialMutationLockDecision } from "./commercial-mutation-policy";
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
-}
-
-export function commercialMutationLockDecision(data: Record<string, unknown>): CommercialMutationLockDecision {
-  if (data.is_consolidation_master === true) return "allowed";
-  if (data.procurement_locked_by_load === true) return "released_consolidation_locked";
-  return "allowed";
 }
 
 export async function assertOrderCommercialMutationAllowed(orderId: string, staff: KcplStaffContext) {
