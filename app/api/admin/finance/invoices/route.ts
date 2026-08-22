@@ -60,6 +60,7 @@ export async function POST(request: Request) {
   if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment reference was not found." }, 404);
   if (result.kind === "customer_missing") return json({ ok: false, error: "Customer record was not found. CRM customer references start with KCPL-C-." }, 404);
   if (result.kind === "customer_required") return json({ ok: false, error: "Link a shipment to CRM or enter a KCPL-C customer reference." }, 400);
+  if (result.kind === "relationship_mismatch") return json({ ok: false, error: "Shipment, quote and customer relationships must share one canonical KCPL branch." }, 409);
   if (result.kind === "invalid_amount") return json({ ok: false, error: "Enter an invoice amount greater than zero." }, 400);
   if (result.kind === "invalid_tax") return json({ ok: false, error: "Tax rate must be between 0 and 100%." }, 400);
   if (result.kind === "forbidden") return json({ ok: false, error: "This record is outside your finance or branch access." }, 403);
