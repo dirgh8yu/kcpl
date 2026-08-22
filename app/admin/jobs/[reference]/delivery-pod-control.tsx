@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Camera, CheckCircle2, FileCheck2, PackageCheck, RefreshCw, ShieldCheck, Truck } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsSurface } from "../../operations-ui";
 import { deliveryAttemptStatusLabels, podEvidenceKinds, type DeliveryAttempt, type DeliveryAttemptStatus, type PodEvidence, type PodEvidenceKind } from "../../delivery/delivery-control";
