@@ -29,6 +29,10 @@ async function auth() {
   return { user: access.user, staff };
 }
 
+function concurrencyConflict(kind: string) {
+  return kind === "membership_conflict" || kind === "state_conflict";
+}
+
 export async function GET() {
   const access = await auth();
   if ("response" in access) return access.response;
@@ -62,6 +66,7 @@ export async function POST(request: Request) {
     if (result.kind === "unavailable") return json({ ok: false, error: "Consolidation storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "One or more orders are outside your branch or commercial access." }, 403);
     if (result.kind === "missing_order") return json({ ok: false, error: "One or more transport orders could not be found." }, 404);
+    if (result.kind === "membership_conflict" || result.kind === "state_conflict") return json({ ok: false, error: "One or more orders changed concurrently or already belong to another consolidation load." }, 409);
     if (result.kind === "incompatible") return json({ ok: false, error: result.compatibility.blockers.join(" "), compatibility: result.compatibility }, 409);
     if (result.kind !== "created") return json({ ok: false, error: "The consolidation load could not be created." }, 400);
     return json({ ok: true, load: result.load, compatibility: result.compatibility }, 201);
@@ -74,6 +79,7 @@ export async function POST(request: Request) {
     if (result.kind === "missing") return json({ ok: false, error: "Consolidation load not found." }, 404);
     if (result.kind === "missing_order") return json({ ok: false, error: "Transport order not found." }, 404);
     if (result.kind === "locked") return json({ ok: false, error: "Load membership is locked after release to procurement." }, 409);
+    if (concurrencyConflict(result.kind)) return json({ ok: false, error: "The order changed concurrently or already belongs to another consolidation load." }, 409);
     if (result.kind === "incompatible") return json({ ok: false, error: result.compatibility.blockers.join(" "), compatibility: result.compatibility }, 409);
     return json({ ok: true, load: result.load, compatibility: "compatibility" in result ? result.compatibility : undefined });
   }
@@ -86,6 +92,7 @@ export async function POST(request: Request) {
     if (result.kind === "missing_order") return json({ ok: false, error: "Transport order is not part of this load." }, 404);
     if (result.kind === "minimum_members") return json({ ok: false, error: "A consolidation load must retain at least two orders. Cancel the load instead." }, 409);
     if (result.kind === "locked") return json({ ok: false, error: "Load membership is locked after release to procurement." }, 409);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "Load membership changed concurrently. Refresh before retrying." }, 409);
     return json({ ok: true, load: result.load });
   }
 
@@ -118,6 +125,7 @@ export async function POST(request: Request) {
     if (result.kind === "customer_required") return json({ ok: false, error: "Link every member order to a KCPL customer before releasing the load." }, 409);
     if (result.kind === "precedence" || result.kind === "invalid_sequence") return json({ ok: false, error: "Review the stop sequence. Every pickup must occur before its delivery." }, 409);
     if (result.kind === "capacity") return json({ ok: false, error: result.blockers.join(" ") }, 409);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "The consolidation changed concurrently or has inconsistent membership. Refresh before release." }, 409);
     if (result.kind === "locked") return json({ ok: false, error: "This load is already locked for procurement." }, 409);
     if (result.kind === "ready") return json({ ok: true, masterOrderId: result.masterOrderId });
     return json({ ok: true, masterOrderId: result.masterOrderId }, 201);
@@ -128,6 +136,7 @@ export async function POST(request: Request) {
     if (result.kind === "unavailable") return json({ ok: false, error: "Consolidation storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This load is outside your access." }, 403);
     if (result.kind === "missing") return json({ ok: false, error: "Consolidation load not found." }, 404);
+    if (result.kind === "state_conflict") return json({ ok: false, error: "Load membership changed concurrently. Refresh before cancelling." }, 409);
     if (result.kind === "locked") return json({ ok: false, error: "A load cannot be cancelled here after release to procurement." }, 409);
     return json({ ok: true });
   }
