@@ -340,12 +340,54 @@ test("pickup provider branch is canonical primary branch only", () => {
 });
 
 test("finance payment writes are downstream of canonical authorization", () => {
+  assert.equal(strictBranchValue("Kathmandu"), "Kathmandu");
+  for (const malformed of [undefined, null, "", "Unknown", "Kathmandu "]) {
+    assert.equal(strictBranchValue(malformed), null, `malformed AP branch ${String(malformed)} must fail canonicalization`);
+    assert.equal(canAccessBranchValue(management, malformed), false, "Management cannot authorize a malformed canonical bill branch");
+  }
+  assert.equal(canAccessBranchValue(accountsKathmandu, "Kathmandu"), true, "Kathmandu Accounts can access a canonical Kathmandu bill");
+  assert.equal(canAccessBranchValue(accountsKathmandu, "Kolkata"), false, "Kathmandu Accounts cannot settle Kolkata AP");
+  assert.equal(compatibleRecordBranches("Kathmandu", "Kolkata"), false, "cross-branch bill/shipment/order relationships remain invalid");
+  assert.equal(compatibleRecordBranches("Kathmandu", undefined), false, "missing linked-record branch cannot authorize");
+
   const ap = readFileSync(resolve("app/admin/financial-settlement/payables-settlement.server.ts"), "utf8");
   const ar = readFileSync(resolve("app/admin/financial-settlement/receivables-settlement.server.ts"), "utf8");
   const linking = readFileSync(resolve("app/admin/finance/finance-linking.server.ts"), "utf8");
-  assert.ok(ap.indexOf("if (!canAccess(context, bill.branch))") >= 0);
-  assert.ok(ap.indexOf("if (!canAccess(context, bill.branch))") < ap.indexOf("transaction.create(paymentRef"));
-  assert.ok(ar.indexOf("canAccessBranchValue(context, invoice.branch)") >= 0);
-  assert.ok(ar.indexOf("canAccessBranchValue(context, invoice.branch)") < ar.indexOf("transaction.create(paymentRef"));
+
+  const apCanonical = ap.indexOf("strictBranchValue(bill.branch)");
+  const apAccess = ap.indexOf("canAccess(context, billBranch)");
+  const apSupplier = ap.indexOf("partnerOwnerCompatibleWithBranch(supplier.get(\"owner_branch\"), billBranch)");
+  const apShipment = ap.indexOf("compatibleRecordBranches(billBranch, shipment.get(\"primary_branch\"))");
+  const apOrder = ap.indexOf("compatibleRecordBranches(billBranch, order.get(\"branch\"))");
+  const apPayment = ap.indexOf("transaction.create(paymentRef");
+  for (const [label, index] of [
+    ["AP canonical branch", apCanonical],
+    ["AP staff branch authorization", apAccess],
+    ["AP supplier compatibility", apSupplier],
+    ["AP shipment compatibility", apShipment],
+    ["AP order compatibility", apOrder],
+    ["AP payment write", apPayment],
+  ]) assert.ok(index >= 0, `${label} wiring anchor must exist`);
+  assert.ok(apCanonical < apAccess, "AP canonical branch resolution must precede staff branch authorization");
+  assert.ok(apAccess < apSupplier, "AP staff branch authorization must precede supplier relationship validation");
+  assert.ok(apSupplier < apShipment && apShipment < apOrder, "AP supplier/shipment/order compatibility must be validated before payment");
+  assert.ok(apOrder < apPayment, "AP payment write must be downstream of all canonical authorization checks");
+
+  const arCanonical = ar.indexOf("strictBranchValue(invoice.branch)");
+  const arAccess = ar.indexOf("canAccessBranchValue(context, branch)");
+  const arCustomer = ar.indexOf("compatibleRecordBranches(branch, customer.get(\"primary_branch\"))");
+  const arShipment = ar.indexOf("compatibleRecordBranches(branch, shipment.get(\"primary_branch\"))");
+  const arPayment = ar.indexOf("transaction.create(paymentRef");
+  for (const [label, index] of [
+    ["AR canonical branch", arCanonical],
+    ["AR staff branch authorization", arAccess],
+    ["AR customer compatibility", arCustomer],
+    ["AR shipment compatibility", arShipment],
+    ["AR payment write", arPayment],
+  ]) assert.ok(index >= 0, `${label} wiring anchor must exist`);
+  assert.ok(arCanonical < arAccess, "AR canonical branch resolution must precede staff branch authorization");
+  assert.ok(arAccess < arCustomer && arCustomer < arShipment, "AR customer/shipment compatibility must be validated after branch authorization");
+  assert.ok(arShipment < arPayment, "AR payment write must be downstream of canonical relationship validation");
+
   assert.doesNotMatch(linking, /:\s*"Kathmandu"/);
 });
