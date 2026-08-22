@@ -89,7 +89,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
   const entries = useMemo<PaletteEntry[]>(() => {
     const needle = query.trim().toLowerCase();
     const allowedIds = new Set(workspaces.map((workspace) => workspace.id));
-    const quickActions: PaletteEntry[] = [
+    const quickActionCandidates: PaletteEntry[] = [
       { key: "action:new-enquiry", title: "New enquiry / quote", subtitle: "Start a customer freight request", meta: null, href: "/admin", kind: "action" },
       { key: "action:new-customer", title: "New customer", subtitle: "Create a Customer 360 account", meta: null, href: "/admin/crm/new", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
@@ -98,7 +98,8 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
       ...(allowedIds.has("tenders") ? [{ key: "action:tender", title: "Tender / book carrier", subtitle: "Issue or manage a procurement tender", meta: null, href: "/admin/tenders", kind: "action" as const }] : []),
       ...(allowedIds.has("delivery") ? [{ key: "action:delivery", title: "Work Delivery & POD", subtitle: "Open final-mile attempts and POD review", meta: null, href: "/admin/delivery", kind: "action" as const }] : []),
       ...(allowedIds.has("payables") ? [{ key: "action:new-payable", title: "New supplier bill", subtitle: "Record a payable before Freight Audit", meta: null, href: "/admin/payables?create=1", kind: "action" as const }] : []),
-    ].filter((entry) => !needle || `${entry.title} ${entry.subtitle}`.toLowerCase().includes(needle));
+    ];
+    const quickActions = quickActionCandidates.filter((entry) => !needle || `${entry.title} ${entry.subtitle}`.toLowerCase().includes(needle));
 
     const workspaceEntries = workspaces
       .filter((workspace) => !needle || workspaceSearchText(workspace).includes(needle))
