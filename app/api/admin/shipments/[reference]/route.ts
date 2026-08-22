@@ -31,13 +31,6 @@ async function branchGuard(reference: string, staff: Awaited<ReturnType<typeof g
   return null;
 }
 
-function guardedWorkflowContext(staff: Awaited<ReturnType<typeof getStaffContext>>) {
-  // checkShipmentBranchAccess already validated primary + handling branches.
-  // The workflow guard still contains an older primary-only branch check, so
-  // widen branch scope only for this already-authorised shipment operation.
-  return { ...staff, can_access_all_branches: true };
-}
-
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -76,7 +69,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const { reference } = await context.params;
   const branchError = await branchGuard(reference, auth.staff);
   if (branchError) return branchError;
-  const workflowStaff = guardedWorkflowContext(auth.staff);
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;
@@ -99,7 +91,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (carrierReference.length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
   if (customerNote.length > 2000) return json({ ok: false, error: "Customer update must be 2000 characters or fewer." }, 400);
 
-  const transition = await validateShipmentTransition(reference, status as ShipmentStatus, workflowStaff, overrideReason);
+  const transition = await validateShipmentTransition(reference, status as ShipmentStatus, auth.staff, overrideReason);
   if (transition.kind === "unavailable") return json({ ok: false, error: "Workflow controls are unavailable." }, 503);
   if (transition.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (transition.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
@@ -129,7 +121,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (transition.overrideUsed) {
     await recordWorkflowOverride(reference, fromStatus, status as ShipmentStatus, transition.overrideReason, { name: auth.user.displayName, email: auth.user.email });
   }
-  const workflow = await getShipmentWorkflowReadiness(reference, workflowStaff);
+  const workflow = await getShipmentWorkflowReadiness(reference, auth.staff);
   return json({ ok: true, shipment: result.shipment, workflow: workflow.kind === "ready" ? workflow.readiness : null, overrideUsed: transition.overrideUsed });
 }
 
