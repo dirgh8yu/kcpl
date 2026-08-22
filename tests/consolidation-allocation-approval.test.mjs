@@ -180,14 +180,18 @@ test("75 package approval state is never blindly trusted by booking", () => {
 });
 test("76 preparation write phase occurs after customer authority, package, derived and approval reads", () => {
   const writeMarker = preparation.indexOf("// WRITE PHASE: every transaction.get/query/authority read has completed above.");
+  const prepareEnd = preparation.indexOf("export async function approveConsolidationCommercialAllocationVersion");
   assert.ok(writeMarker > preparation.indexOf("prepareCustomerSellAuthorityCarryForwardInTransaction"));
   assert.ok(writeMarker > preparation.indexOf("loadCommercialApprovalInTransaction"));
-  assert.equal(preparation.slice(writeMarker).includes("transaction.get("), false);
+  assert.ok(prepareEnd > writeMarker);
+  assert.equal(preparation.slice(writeMarker, prepareEnd).includes("transaction.get("), false);
 });
-test("77 booking write phase has no Firestore reads after it begins", () => {
+test("77 booking write phase has no Firestore reads or stale-return exits after it begins", () => {
   const writeMarker = booking.indexOf("// WRITE PHASE begins. No transaction.get/query call appears below this point.");
   assert.ok(writeMarker > booking.indexOf("loadPreparedConsolidationAllocationForBookingInTransaction"));
-  assert.equal(booking.slice(writeMarker).includes("transaction.get("), false);
+  const writePhase = booking.slice(writeMarker);
+  assert.equal(writePhase.includes("transaction.get("), false);
+  assert.equal(writePhase.includes('return { kind: "commercial_allocation_stale"'), false);
 });
 test("78 preparation creates no shipment or booking graph artifacts", () => {
   assert.doesNotMatch(preparation, /collection\("shipments"\)/);
