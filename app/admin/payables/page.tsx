@@ -79,6 +79,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
         branchOptions={branchOptions}
         defaultBranch={defaultBranch}
       />
+      <div className="fixed bottom-5 right-5 z-40"><Link href="/admin/freight-audit" className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Freight Audit & Match-Pay</Link></div>
     </OperationsShell>
   );
 }
