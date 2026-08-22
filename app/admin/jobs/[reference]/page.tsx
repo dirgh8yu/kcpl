@@ -6,7 +6,9 @@ import { getDigitalJobFile } from "../../job-file.server";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { getShipmentActivityTimeline } from "../../shipment-activity.server";
 import { getShipmentExceptions } from "../../shipment-exceptions.server";
+import { getDeliveryControl } from "../../delivery/delivery-control.server";
 import { OperationsShell } from "../../operations-shell";
+import { DeliveryPodControl } from "./delivery-pod-control";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
 import { ShipmentExceptionControl } from "./shipment-exception-control";
@@ -33,10 +35,11 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is outside the branches assigned to your KCPL staff profile."/>;
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const [workflow, activity, exceptionCases] = await Promise.all([
+  const [workflow, activity, exceptionCases, delivery] = await Promise.all([
     getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
     getShipmentActivityTimeline(result.job.reference, staff),
     getShipmentExceptions(result.job.reference, staff),
+    getDeliveryControl(result.job.reference, staff),
   ]);
   if (workflow.kind !== "ready") return <Gate title="Workflow unavailable" detail="The controlled workflow state could not be loaded for this shipment."/>;
 
@@ -60,6 +63,15 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
           initialSummary={exceptionCases.summary}
           currentUserName={access.user.displayName}
           currentUserEmail={access.user.email}
+        />
+      ) : null}
+      {delivery.kind === "ready" ? (
+        <DeliveryPodControl
+          reference={result.job.reference}
+          initialAttempts={delivery.attempts}
+          initialEvidence={delivery.evidence}
+          initialPodStatus={delivery.pod_status}
+          canReview={staff.permissions.canManageCustomerDocuments}
         />
       ) : null}
       <JobFileWorkspace
