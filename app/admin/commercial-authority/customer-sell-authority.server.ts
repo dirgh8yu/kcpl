@@ -88,6 +88,19 @@ function acceptanceMatchesVersion(record: CustomerAcceptanceRecord, version: Com
   );
 }
 
+function sourceAuthorityMatches(source: CustomerSellAuthority, version: CommercialVersion) {
+  return acceptanceMatchesVersion(source.acceptance, version)
+    && source.quoteReference === source.acceptance.quote_reference;
+}
+
+function carriedRecordMatchesSource(record: CustomerAcceptanceRecord, source: CustomerSellAuthority) {
+  return record.quote_reference === source.quoteReference
+    && record.accepted_at === source.acceptance.accepted_at
+    && record.accepted_by_name === source.acceptance.accepted_by_name
+    && record.accepted_by_email === source.acceptance.accepted_by_email
+    && record.acceptance_source === source.acceptance.acceptance_source;
+}
+
 export async function assertCustomerQuoteIssuedInTransaction(
   transaction: FirebaseFirestore.Transaction,
   version: CommercialVersion,
@@ -154,7 +167,63 @@ function carriedAcceptanceDocument(sourceVersion: CommercialVersion, derivedVers
   };
 }
 
-/** Write-only helper for callers that already completed every transaction read. */
+export type PreparedCustomerSellAuthorityCarryForward =
+  | { kind: "not_carried" }
+  | { kind: "conflict" }
+  | { kind: "carried"; quoteReference: string; idempotent: true }
+  | {
+      kind: "carry";
+      quoteReference: string;
+      targetRef: FirebaseFirestore.DocumentReference;
+      targetRecord: ReturnType<typeof carriedAcceptanceDocument>;
+    };
+
+/** Read-only phase. Call this before staging any transaction write. */
+export async function prepareCustomerSellAuthorityCarryForwardInTransaction(
+  transaction: FirebaseFirestore.Transaction,
+  sourceVersion: CommercialVersion,
+  derivedVersion: CommercialVersion,
+  actor: Actor,
+  now = new Date().toISOString(),
+): Promise<PreparedCustomerSellAuthorityCarryForward> {
+  if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" };
+  const sourceResult = await assertCustomerSellAuthorityInTransaction(transaction, sourceVersion);
+  if (!sourceResult.ok) return { kind: "not_carried" };
+  const source: CustomerSellAuthority = { quoteReference: sourceResult.quoteReference, acceptance: sourceResult.acceptance };
+  if (!sourceAuthorityMatches(source, sourceVersion)) return { kind: "conflict" };
+
+  const targetRef = acceptanceRef(derivedVersion.id);
+  const existing = await transaction.get(targetRef);
+  if (existing.exists) {
+    const record = acceptanceFromData(existing.data() as Record<string, unknown>);
+    return record
+      && acceptanceMatchesVersion(record, derivedVersion)
+      && carriedRecordMatchesSource(record, source)
+      ? { kind: "carried", quoteReference: record.quote_reference, idempotent: true }
+      : { kind: "conflict" };
+  }
+
+  return {
+    kind: "carry",
+    quoteReference: source.quoteReference,
+    targetRef,
+    targetRecord: carriedAcceptanceDocument(sourceVersion, derivedVersion, source, actor, now),
+  };
+}
+
+/** Write-only phase for a preparation whose reads have already completed. */
+export function persistPreparedCustomerSellAuthorityCarryForwardInTransaction(
+  transaction: FirebaseFirestore.Transaction,
+  prepared: PreparedCustomerSellAuthorityCarryForward,
+) {
+  if (prepared.kind === "carry") {
+    transaction.create(prepared.targetRef, prepared.targetRecord);
+    return { kind: "carried" as const, quoteReference: prepared.quoteReference, idempotent: false };
+  }
+  return prepared;
+}
+
+/** Write-only helper for callers that already completed every source-authority read and use a fresh derived version id. */
 export function createCarriedCustomerSellAuthorityInTransaction(
   transaction: FirebaseFirestore.Transaction,
   sourceVersion: CommercialVersion,
@@ -164,29 +233,8 @@ export function createCarriedCustomerSellAuthorityInTransaction(
   now = new Date().toISOString(),
 ) {
   if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" as const };
-  if (!acceptanceMatchesVersion(source.acceptance, sourceVersion) || source.quoteReference !== source.acceptance.quote_reference) return { kind: "conflict" as const };
+  if (!sourceAuthorityMatches(source, sourceVersion)) return { kind: "conflict" as const };
   transaction.create(acceptanceRef(derivedVersion.id), carriedAcceptanceDocument(sourceVersion, derivedVersion, source, actor, now));
-  return { kind: "carried" as const, quoteReference: source.quoteReference, idempotent: false };
-}
-
-export async function carryForwardCustomerSellAuthorityInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  sourceVersion: CommercialVersion,
-  derivedVersion: CommercialVersion,
-  actor: Actor,
-) {
-  if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" as const };
-  const source = await assertCustomerSellAuthorityInTransaction(transaction, sourceVersion);
-  if (!source.ok) return { kind: "not_carried" as const };
-  const ref = acceptanceRef(derivedVersion.id);
-  const existing = await transaction.get(ref);
-  if (existing.exists) {
-    const record = acceptanceFromData(existing.data() as Record<string, unknown>);
-    return record && acceptanceMatchesVersion(record, derivedVersion)
-      ? { kind: "carried" as const, quoteReference: record.quote_reference, idempotent: true }
-      : { kind: "conflict" as const };
-  }
-  transaction.create(ref, carriedAcceptanceDocument(sourceVersion, derivedVersion, source, actor, new Date().toISOString()));
   return { kind: "carried" as const, quoteReference: source.quoteReference, idempotent: false };
 }
 
