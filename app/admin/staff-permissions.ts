@@ -7,6 +7,8 @@ export type StaffCapabilities = {
   role: KcplStaffRole;
   canViewCommercial: boolean;
   canEditCommercial: boolean;
+  canOverrideCommercialPolicy: boolean;
+  canOverrideFx: boolean;
   canManageRateCards: boolean;
   canManageCredit: boolean;
   canManageCustomerDocuments: boolean;
@@ -64,6 +66,8 @@ export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities
     role,
     canViewCommercial: management || accounts || commercial,
     canEditCommercial: management || accounts || commercial,
+    canOverrideCommercialPolicy: management,
+    canOverrideFx: management,
     canManageRateCards: management || commercial,
     canManageCredit: management || accounts,
     canManageCustomerDocuments: management || accounts || operations,
