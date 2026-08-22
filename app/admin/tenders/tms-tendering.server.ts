@@ -3,7 +3,8 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin
 import {
   assertCustomerQuoteIssuedInTransaction,
   assertCustomerSellAuthorityInTransaction,
-  carryForwardCustomerSellAuthorityInTransaction,
+  persistPreparedCustomerSellAuthorityCarryForwardInTransaction,
+  prepareCustomerSellAuthorityCarryForwardInTransaction,
 } from "../commercial-authority/customer-sell-authority.server";
 import {
   assertBookableCommercialVersionInTransaction,
@@ -447,9 +448,11 @@ async function applyTenderResponse(
         snapshot: nextSnapshot, previousVersionId: baseVersion.id, reason: "counteroffer", actor,
         sourceReferences: { tender_id: tender.id, offered_commercial_version_id: baseVersion.id, rate_card_id: baseVersion.snapshot.procurement.rate_card_id },
       });
+      const preparedCustomerAuthority = await prepareCustomerSellAuthorityCarryForwardInTransaction(transaction, baseVersion, nextVersion, actor, now);
+      if (preparedCustomerAuthority.kind === "conflict") return { kind: "stale_commercial_state" as const };
+
       persistCommercialVersionInTransaction(transaction, nextVersion);
-      const carriedAuthority = await carryForwardCustomerSellAuthorityInTransaction(transaction, baseVersion, nextVersion, actor);
-      if (carriedAuthority.kind === "conflict") return { kind: "stale_commercial_state" as const };
+      persistPreparedCustomerSellAuthorityCarryForwardInTransaction(transaction, preparedCustomerAuthority);
       const pricing = nextVersion.snapshot.pricing;
       const needsFxReview = Boolean(pricing && pricing.converted_buy_cost === null);
       const projection = counterPricingProjection(order.get("pricing_snapshot"), nextVersion);
