@@ -5,15 +5,14 @@ import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.
 import { recordOrderedTrackingEvent } from "../visibility/tracking-ingest.server";
 import {
   carrierIntegrationDefinitions,
-  dcsaPayloadEvents,
   inferCarrierIntegrationProvider,
   normalizeDhlTrackingPayload,
   providerConfigState,
   safeCarrierErrorMessage,
   type CarrierIntegrationProvider,
   type CarrierIntegrationState,
-  type DcsaTrackingEvent,
 } from "./carrier-integrations";
+import { ingestMaerskDcsaPayloadSafely } from "./maersk-webhook.server";
 
 type Actor = { name: string; email: string };
 
@@ -251,6 +250,8 @@ export async function syncDhlTracking(reference: string, actor: Actor, staff: Kc
   if (configuration.present < configuration.required) return { kind: "not_configured" as const };
   const scope = await shipmentScope(reference, staff);
   if (scope.kind !== "ready") return scope;
+  const canonicalBranch = branchValue(scope.data.primary_branch);
+  if (!canonicalBranch) return { kind: "invalid_branch" as const };
   const trackingNumber = nullable(scope.data.carrier_reference) ?? nullable(scope.data.tracking_number) ?? nullable(scope.data.booking_reference);
   if (!trackingNumber) return { kind: "tracking_reference_required" as const };
   const username = env("DHL_EXPRESS_API_USER");
@@ -295,7 +296,12 @@ export async function syncDhlTracking(reference: string, actor: Actor, staff: Kc
     if (saved.kind === "created") {
       created += 1;
       if ("historical" in saved && saved.historical) historical += 1;
-    } else if (saved.kind === "duplicate") duplicates += 1;
+    } else if (saved.kind === "duplicate") {
+      duplicates += 1;
+    } else if (saved.kind === "invalid_branch" || saved.kind === "missing" || saved.kind === "unavailable") {
+      await recordHealth("dhl_express", "tracking_sync", false, 409, `DHL checkpoint ingestion stopped: ${saved.kind}.`, result.latencyMs);
+      return saved;
+    }
   }
   const now = new Date().toISOString();
   await scope.ref.update({
@@ -309,7 +315,7 @@ export async function syncDhlTracking(reference: string, actor: Actor, staff: Kc
     type: "carrier_tracking_sync",
     title: "DHL Express tracking synchronized",
     detail: `${events.length} checkpoint${events.length === 1 ? "" : "s"} received · ${created} new · ${duplicates} duplicate`,
-    branch: scope.branch,
+    branch: canonicalBranch,
     actor_name: actor.name,
     actor_email: actor.email,
     created_at: now,
@@ -373,87 +379,11 @@ export async function searchMaerskOceanSchedules(origin: string, destination: st
   return { kind: "ready" as const, origin: from, destination: to, rows, raw_result_count: rows.length };
 }
 
-async function findShipmentForDcsaEvent(event: DcsaTrackingEvent) {
-  const db = firebaseAdminDb();
-  const checks: Array<[string, string | null]> = [
-    ["booking_reference", event.carrierBookingReference],
-    ["carrier_reference", event.transportDocumentReference],
-    ["transport_document_reference", event.transportDocumentReference],
-    ["carrier_reference", event.equipmentReference],
-    ["tracking_number", event.equipmentReference],
-  ];
-  const matches = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
-  for (const [field, value] of checks) {
-    if (!value) continue;
-    const snapshot = await db.collection("shipments").where(field, "==", value).limit(3).get();
-    for (const doc of snapshot.docs) matches.set(doc.id, doc);
-    if (matches.size === 1) break;
-    if (matches.size > 1) return { kind: "ambiguous" as const, references: [...matches.keys()] };
-  }
-  const docs = [...matches.values()];
-  if (!docs.length) return { kind: "missing" as const };
-  return { kind: "ready" as const, shipment: docs[0] };
-}
-
+/**
+ * Compatibility export for any internal callers. It deliberately delegates to
+ * the same #128-safe set-based resolver used by the production webhook route;
+ * there is no alternate first-match ingestion authority.
+ */
 export async function ingestMaerskDcsaPayload(payload: unknown) {
-  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  const events = dcsaPayloadEvents(payload);
-  if (!events.length) return { kind: "invalid" as const };
-  const db = firebaseAdminDb();
-  let created = 0;
-  let duplicates = 0;
-  let historical = 0;
-  let unmatched = 0;
-  let ambiguous = 0;
-  for (const event of events) {
-    const match = await findShipmentForDcsaEvent(event);
-    if (match.kind === "missing" || match.kind === "ambiguous") {
-      const id = eventHash(`maersk|${event.providerEventId}`);
-      await db.collection("carrier_integration_unmatched_events").doc(id).set({
-        provider: "maersk_ocean",
-        provider_event_id: event.providerEventId,
-        event_time: event.eventTime,
-        raw_status: event.rawStatus,
-        milestone: event.milestone,
-        location: event.location || null,
-        carrier_booking_reference: event.carrierBookingReference,
-        transport_document_reference: event.transportDocumentReference,
-        equipment_reference: event.equipmentReference,
-        resolution_state: match.kind,
-        candidate_shipments: match.kind === "ambiguous" ? match.references : [],
-        received_at: new Date().toISOString(),
-      }, { merge: true });
-      if (match.kind === "ambiguous") ambiguous += 1;
-      else unmatched += 1;
-      continue;
-    }
-    const saved = await recordOrderedTrackingEvent(match.shipment.id, {
-      rawStatus: event.rawStatus,
-      milestone: event.milestone,
-      title: event.title,
-      location: event.location,
-      latitude: null,
-      longitude: null,
-      eventTime: event.eventTime,
-      source: "webhook",
-      provider: "Maersk Ocean DCSA Track & Trace",
-      providerEventId: eventHash(event.providerEventId),
-      details: event.details,
-      eta: "",
-      confidence: 1,
-    }, { name: "Maersk Ocean DCSA", email: "maersk-tracking@kcpl.internal" });
-    if (saved.kind === "created") {
-      created += 1;
-      if ("historical" in saved && saved.historical) historical += 1;
-    } else if (saved.kind === "duplicate") duplicates += 1;
-    await match.shipment.ref.update({
-      carrier_integration_provider: "maersk_ocean",
-      carrier_integration_last_sync_at: new Date().toISOString(),
-      carrier_integration_last_error: null,
-      ...(event.transportDocumentReference ? { transport_document_reference: event.transportDocumentReference } : {}),
-      updated_at: new Date().toISOString(),
-    });
-  }
-  await recordHealth("maersk_ocean", "dcsa_webhook", true, 200, `${events.length} DCSA event${events.length === 1 ? "" : "s"} received · ${created} new · ${unmatched} unmatched · ${ambiguous} ambiguous.`, null);
-  return { kind: "ready" as const, received: events.length, created, duplicates, historical, unmatched, ambiguous };
+  return ingestMaerskDcsaPayloadSafely(payload);
 }
