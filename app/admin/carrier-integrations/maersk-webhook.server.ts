@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { strictBranchValue } from "../branch-access-policy";
+import { resolveCanonicalRecordCandidates } from "../canonical-record-match";
 import { recordOrderedTrackingEvent } from "../visibility/tracking-ingest.server";
 import { dcsaPayloadEvents, type DcsaTrackingEvent } from "./carrier-integrations";
 
@@ -42,13 +42,15 @@ export async function matchMaerskShipmentForEvent(event: DcsaTrackingEvent) {
     const snapshot = await db.collection("shipments").where(field, "==", value).limit(3).get();
     for (const doc of snapshot.docs) matches.set(doc.id, doc);
   }
-  const docs = [...matches.values()];
-  if (!docs.length) return { kind: "missing" as const };
-  if (docs.length !== 1) return { kind: "ambiguous" as const, references: docs.map((doc) => doc.id) };
-  const shipment = docs[0];
-  const branch = strictBranchValue(shipment.get("primary_branch"));
-  if (!branch) return { kind: "invalid_branch" as const, references: [shipment.id] };
-  return { kind: "ready" as const, shipment, branch };
+  const resolution = resolveCanonicalRecordCandidates(
+    [...matches.values()].map((doc) => ({ id: doc.id, branch: doc.get("primary_branch") })),
+  );
+  if (resolution.kind === "missing") return { kind: "missing" as const };
+  if (resolution.kind === "ambiguous") return { kind: "ambiguous" as const, references: resolution.ids };
+  if (resolution.kind === "invalid_branch") return { kind: "invalid_branch" as const, references: [resolution.id] };
+  const shipment = matches.get(resolution.id);
+  if (!shipment) return { kind: "missing" as const };
+  return { kind: "ready" as const, shipment, branch: resolution.branch };
 }
 
 export async function ingestMaerskDcsaPayloadSafely(payload: unknown) {
