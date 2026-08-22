@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { quoteCurrencies, type QuoteCurrency, quoteStatuses, type QuoteStatus } from "../../../../admin/admin-data";
 import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
+import { assertQuoteEconomicEditAllowed } from "../../../../admin/commercial-lineage/quote-commercial-policy.server";
 import { createCrmCustomerFromQuote } from "../../../../admin/crm/crm-quote-links.server";
 import { checkQuoteBranchAccess } from "../../../../admin/quote-access.server";
 import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
@@ -90,6 +91,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (body.action === "commercial") {
     if (!auth.staff.permissions.canEditCommercial) {
       return json({ ok: false, error: "Your KCPL staff role does not allow commercial pricing changes." }, 403);
+    }
+
+    const editPolicy = await assertQuoteEconomicEditAllowed(reference);
+    if (editPolicy.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
+    if (editPolicy.kind === "locked") {
+      return json({
+        ok: false,
+        error: "This TMS quote is bound to an immutable commercial version and cannot be economically rewritten in place. Reprice the order to create a new commercial version and quote revision.",
+        code: "VERSIONED_QUOTE_COMMERCIAL_LOCK",
+        commercialVersionId: editPolicy.commercialVersionId,
+      }, 409);
     }
 
     const currency = clean(body.currency).toUpperCase();

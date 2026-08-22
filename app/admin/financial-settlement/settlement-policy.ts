@@ -1,4 +1,12 @@
 import { createHash } from "node:crypto";
+import {
+  commercialFingerprint,
+  commercialSnapshotIntegrity,
+  normalizeCommercialCurrency,
+  normalizeCommercialId,
+  sameCommercialMoney,
+  type CommercialSnapshot,
+} from "../commercial-lineage/commercial-lineage.ts";
 
 export type SettlementBasis = {
   invoiceSubtotal: number;
@@ -14,41 +22,15 @@ export type SettlementBasisResult =
   | { ok: true; basis: SettlementBasis }
   | { ok: false; reason: "invalid_amount" | "inconsistent_total" | "inconsistent_balance" };
 
-function finite(value: unknown) {
-  const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
+function finite(value: unknown) { const parsed = typeof value === "number" ? value : Number(value); return Number.isFinite(parsed) ? parsed : Number.NaN; }
+export function money(value: number) { return Math.round((value + Number.EPSILON) * 100) / 100; }
+export function sameMoney(left: number, right: number) { return Math.abs(money(left) - money(right)) < 0.005; }
+export function normalizeSettlementCurrency(value: unknown) { return typeof value === "string" ? value.trim().toUpperCase() : ""; }
+export function settlementCurrenciesMatch(left: unknown, right: unknown) { const a = normalizeSettlementCurrency(left); const b = normalizeSettlementCurrency(right); return Boolean(a && b && a === b); }
 
-export function money(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-export function sameMoney(left: number, right: number) {
-  return Math.abs(money(left) - money(right)) < 0.005;
-}
-
-export function normalizeSettlementCurrency(value: unknown) {
-  return typeof value === "string" ? value.trim().toUpperCase() : "";
-}
-
-export function settlementCurrenciesMatch(left: unknown, right: unknown) {
-  const a = normalizeSettlementCurrency(left);
-  const b = normalizeSettlementCurrency(right);
-  return Boolean(a && b && a === b);
-}
-
-/**
- * Authoritative supplier settlement basis.
- * Freight comparison may use the untaxed subtotal; settlement never does.
- */
+/** Authoritative supplier settlement basis. Freight comparison may use the untaxed subtotal; settlement never does. */
 export function resolveSettlementBasis(input: {
-  subtotal: unknown;
-  taxes: unknown;
-  adjustments?: unknown;
-  credits?: unknown;
-  storedTotal: unknown;
-  amountAlreadyPaid: unknown;
-  storedOutstanding: unknown;
+  subtotal: unknown; taxes: unknown; adjustments?: unknown; credits?: unknown; storedTotal: unknown; amountAlreadyPaid: unknown; storedOutstanding: unknown;
 }): SettlementBasisResult {
   const invoiceSubtotal = finite(input.subtotal);
   const taxes = finite(input.taxes);
@@ -102,21 +84,63 @@ function numberOrNull(value: unknown) { if (value === null || value === undefine
 function numberOrZero(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function normalizedAuditReference(value: unknown) { return (typeof value === "string" ? value : "").trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 
-/** Reproduces the current Freight Audit commercial fingerprint exactly. */
-export function freightAuditEconomicFingerprint(input: { payableReference: string; bill: Record<string, unknown>; shipment?: Record<string, unknown> | null; order?: Record<string, unknown> | null; rateCard?: Record<string, unknown> | null; duplicateOf?: string | null }) {
+export type BookedCommercialLineage =
+  | { ok: true; versionId: string; fingerprint: string; snapshot: CommercialSnapshot }
+  | { ok: false; reason: "legacy_unversioned" | "commercial_review_required" };
+
+/**
+ * Booked history is authoritative only when the shipment embeds the exact
+ * immutable snapshot and its ID/fingerprint agree with the stored procurement
+ * projection. No current rate card, pricing rule or FX table is consulted.
+ */
+export function resolveBookedCommercialLineage(shipment: Record<string, unknown> | null | undefined): BookedCommercialLineage {
+  if (!shipment) return { ok: false, reason: "legacy_unversioned" };
+  const versionId = normalizeCommercialId(shipment.booked_commercial_version_id);
+  const fingerprint = typeof shipment.booked_commercial_fingerprint === "string" ? shipment.booked_commercial_fingerprint.trim() : "";
+  const embedded = shipment.booked_commercial_snapshot;
+  if (!versionId || !fingerprint || !embedded || typeof embedded !== "object") return { ok: false, reason: "legacy_unversioned" };
+  const snapshot = embedded as CommercialSnapshot;
+  if (!commercialSnapshotIntegrity(snapshot).ok || commercialFingerprint(snapshot) !== fingerprint) return { ok: false, reason: "commercial_review_required" };
+  const procurement = snapshot.procurement;
+  if (normalizeCommercialId(shipment.transport_order_id) !== normalizeCommercialId(snapshot.order_id)
+    || normalizeCommercialId(shipment.partner_id) !== normalizeCommercialId(procurement.partner_id)
+    || normalizeCommercialCurrency(shipment.procurement_currency) !== normalizeCommercialCurrency(procurement.currency)
+    || !sameCommercialMoney(shipment.procurement_cost, procurement.total, procurement.currency)) return { ok: false, reason: "commercial_review_required" };
+  return { ok: true, versionId, fingerprint, snapshot };
+}
+
+/**
+ * Freight Audit economic identity after commercial-lineage remediation.
+ * Mutable live order quantities/rate cards are intentionally ignored.
+ */
+export function freightAuditEconomicFingerprint(input: {
+  payableReference: string;
+  bill: Record<string, unknown>;
+  shipment?: Record<string, unknown> | null;
+  order?: Record<string, unknown> | null;
+  rateCard?: Record<string, unknown> | null;
+  duplicateOf?: string | null;
+}) {
   const bill = input.bill;
   const shipment = input.shipment ?? {};
-  const order = input.order ?? {};
-  const rateCard = input.rateCard ?? {};
-  const payload = {
-    payable: input.payableReference.trim().toUpperCase(),
-    supplier: nullableText(bill.supplier_id), supplierName: nullableText(bill.supplier_name), category: nullableText(bill.category),
-    supplierBill: normalizedAuditReference(bill.supplier_bill_reference), shipment: nullableText(bill.shipment_reference),
-    currency: normalizeSettlementCurrency(bill.currency) || "NPR", subtotal: numberOrZero(bill.subtotal), total: numberOrZero(bill.total), tax: numberOrZero(bill.tax_total),
-    bookedPartner: nullableText(shipment.partner_id), bookedPartnerName: nullableText(shipment.carrier), bookedCurrency: normalizeSettlementCurrency(shipment.procurement_currency) || null,
-    bookedCost: numberOrNull(shipment.procurement_cost), transportOrder: nullableText(shipment.transport_order_id), tender: nullableText(shipment.tender_id), rateCard: nullableText(shipment.procurement_rate_card_id),
-    orderQuantities: [order.weight_kg, order.volume_cbm, order.pieces, order.container_count],
-    rateEconomics: [rateCard.currency, rateCard.rate, rateCard.unit, rateCard.minimum_charge, rateCard.fuel_surcharge_percent, rateCard.accessorial_flat], duplicateOf: input.duplicateOf ?? null,
-  };
+  const lineage = resolveBookedCommercialLineage(shipment);
+  const procurement = lineage.ok ? lineage.snapshot.procurement : null;
+  const payload = [
+    "kcpl-freight-audit-v3",
+    input.payableReference.trim().toUpperCase(),
+    [
+      nullableText(bill.supplier_id), nullableText(bill.supplier_name), nullableText(bill.category), normalizedAuditReference(bill.supplier_bill_reference),
+      nullableText(bill.shipment_reference), normalizeSettlementCurrency(bill.currency) || "NPR",
+      numberOrZero(bill.subtotal), numberOrZero(bill.total), numberOrZero(bill.tax_total),
+    ],
+    lineage.ok ? [
+      lineage.versionId, lineage.fingerprint,
+      normalizeCommercialId(lineage.snapshot.order_id), normalizeCommercialId(procurement!.partner_id), normalizeCommercialCurrency(procurement!.currency),
+      numberOrNull(procurement!.total), normalizeCommercialId(procurement!.rate_card_id),
+      numberOrNull(procurement!.base_charge), numberOrNull(procurement!.fuel_surcharge), numberOrNull(procurement!.accessorials),
+      normalizeCommercialId(shipment.tender_id),
+    ] : ["commercial_review_required", normalizeCommercialId(shipment.booked_commercial_version_id), nullableText(shipment.booked_commercial_fingerprint)],
+    input.duplicateOf ?? null,
+  ];
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
