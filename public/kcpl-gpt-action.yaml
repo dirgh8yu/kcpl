@@ -1,12 +1,11 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.5.0
+  version: 1.6.0
   description: >-
-    Read-only access to authorised Kapileshwor Cargo operational data. Use these
-    actions for current KCPL shipments, Job Files, customers, quotes, pickup/appointment status,
-    freight-document controls, carrier integration health, delivery/POD status,
-    Freight Audit/Match-Pay controls and operations briefings.
+    Read-only access to authorised Kapileshwor Cargo operational data for shipments,
+    Job Files, pickups, freight documents, carrier integrations, EDI, delivery/POD,
+    Freight Audit, customers, quotes and operations briefings.
 servers:
   - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
 security:
@@ -23,7 +22,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -34,16 +33,14 @@ paths:
     get:
       operationId: getKcplOperationsBriefing
       summary: Get the KCPL operations briefing
-      description: >-
-        Return shipment status totals, branch workload and shipments requiring
-        attention. Use this for morning briefings, operational overviews and exception checks.
+      description: Return shipment totals, branch workload and shipments requiring attention for current operations briefings.
       responses:
         "200":
           description: Current KCPL operations briefing.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BriefingResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -53,18 +50,15 @@ paths:
   /api/gpt/pickups:
     get:
       operationId: getKcplPickupBriefing
-      summary: Get the KCPL pickup and appointment briefing
-      description: >-
-        Return booked shipments awaiting pickup scheduling, requested and confirmed appointment
-        windows, driver/vehicle assignment, missed pickups and pickups completed today. This action
-        is read-only and cannot schedule, confirm, assign, complete or cancel a pickup.
+      summary: Get the KCPL pickup briefing
+      description: Return unscheduled, requested, confirmed, assigned, missed and completed pickup activity. This action is read-only.
       responses:
         "200":
           description: Current pickup and appointment briefing.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PickupBriefingResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -75,17 +69,14 @@ paths:
     get:
       operationId: getKcplFreightDocumentBriefing
       summary: Get the KCPL freight-document briefing
-      description: >-
-        Return generated carriage/execution document status, shipments missing a primary generated
-        carriage document and generated documents awaiting review. This action exposes metadata and
-        hashes only and cannot generate, download, verify or supersede documents.
+      description: Return generated freight-document status, missing primary carriage documents and documents awaiting review. No private file URLs are exposed.
       responses:
         "200":
-          description: Current freight-document control briefing.
+          description: Current freight-document briefing.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FreightDocumentBriefingResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -96,18 +87,32 @@ paths:
     get:
       operationId: getKcplCarrierIntegrationBriefing
       summary: Get KCPL carrier integration health
-      description: >-
-        Return carrier adapter status, recent provider health, linked shipments, synchronization
-        errors and unmatched ocean events. This read-only action never exposes API credentials,
-        webhook secrets or authorization headers and cannot create bookings, request pickups or
-        modify provider accounts.
+      description: Return carrier adapter status, provider health, linked shipments, synchronization errors and unmatched ocean events without exposing credentials or secrets.
       responses:
         "200":
           description: Current carrier integration briefing.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CarrierIntegrationBriefingResponse"
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/gpt/edi:
+    get:
+      operationId: getKcplEdiBriefing
+      summary: Get KCPL EDI 204 990 214 health
+      description: Return EDI transport status, queued or dispatched 204 tenders, processed 990 responses, processed 214 tracking and quarantined transactions. Raw X12 and secrets are excluded.
+      responses:
+        "200":
+          description: Current KCPL EDI briefing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -118,17 +123,14 @@ paths:
     get:
       operationId: getKcplDeliveryBriefing
       summary: Get the KCPL delivery and POD briefing
-      description: >-
-        Return final-mile workload, failed/refused attempts, delivered shipments waiting for POD,
-        verified POD totals and a prioritised delivery attention list. Binary POD files, Firebase
-        Storage paths and signed URLs are intentionally excluded.
+      description: Return delivery workload, failed or refused attempts, delivered shipments waiting for POD and verified POD totals without binary files or signed URLs.
       responses:
         "200":
           description: Current delivery and POD briefing.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeliveryBriefingResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -138,28 +140,23 @@ paths:
   /api/gpt/freight-audit:
     get:
       operationId: getKcplFreightAuditBriefing
-      summary: Get KCPL Freight Audit and Match-Pay intelligence
-      description: >-
-        Return supplier invoice audit status, booked procurement comparisons, variances,
-        disputes and bills currently blocked from payment. This action is read-only and cannot
-        approve a variance, approve a supplier bill or record a payment.
+      summary: Get KCPL Freight Audit intelligence
+      description: Return supplier invoice audit status, procurement comparisons, variances, disputes and bills blocked from payment. This action cannot approve or pay bills.
       parameters:
         - name: q
           in: query
           required: false
-          description: >-
-            Optional supplier, payable reference, supplier invoice reference, shipment reference,
-            branch or audit status to search.
+          description: Optional supplier, payable, invoice, shipment, branch or audit status search.
           schema:
             type: string
             maxLength: 180
       responses:
         "200":
-          description: Current Freight Audit and Match-Pay briefing.
+          description: Current Freight Audit briefing.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FreightAuditBriefingResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -170,9 +167,7 @@ paths:
     get:
       operationId: searchKcplOperations
       summary: Search KCPL operations
-      description: >-
-        Search recent shipments, customers and quotes. Use a shipment reference,
-        customer name, route, carrier, branch, status, contact detail or other identifying text.
+      description: Search recent KCPL shipments, customers and quotes by reference, customer, route, carrier, branch, status or contact details.
       parameters:
         - name: q
           in: query
@@ -192,13 +187,13 @@ paths:
         - name: status
           in: query
           required: false
-          description: Exact internal shipment or quote status when the user asks for one status.
+          description: Exact internal shipment or quote status when requested.
           schema:
             type: string
         - name: limit
           in: query
           required: false
-          description: Maximum number of results to return.
+          description: Maximum number of results.
           schema:
             type: integer
             minimum: 1
@@ -210,7 +205,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SearchResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -221,10 +216,7 @@ paths:
     get:
       operationId: getKcplJobFile
       summary: Get a KCPL Job File
-      description: >-
-        Retrieve a shipment Job File with route, customer, tasks, customs controls,
-        document requirements, document verification state, delivery/POD metadata,
-        events and activity. Use this after identifying a shipment reference.
+      description: Retrieve a shipment Job File with route, customer, workflow readiness, delivery/POD, tasks, customs, document controls, events and activity.
       parameters:
         - name: reference
           in: path
@@ -238,7 +230,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JobFileResponse"
+                $ref: "#/components/schemas/GenericResponse"
         "401":
           description: Invalid API key.
           content:
@@ -253,317 +245,11 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
-    HealthResponse:
+    GenericResponse:
       type: object
       properties:
         ok:
           type: boolean
-        service:
-          type: string
-        firebaseConfigured:
-          type: boolean
-        mode:
-          type: string
-      additionalProperties: true
-    BriefingResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        generatedAt:
-          type: string
-        sampledShipmentCount:
-          type: integer
-        activeShipmentCount:
-          type: integer
-        statusCounts:
-          type: object
-          properties: {}
-          additionalProperties:
-            type: integer
-        activeShipmentsByPrimaryBranch:
-          type: object
-          properties: {}
-          additionalProperties:
-            type: integer
-        attentionCount:
-          type: integer
-        attention:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        note:
-          type: string
-      additionalProperties: true
-    PickupBriefingResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        generatedAt:
-          type: string
-        sampledShipmentCount:
-          type: integer
-        pickupShipmentCount:
-          type: integer
-        summary:
-          type: object
-          properties:
-            unscheduled:
-              type: integer
-            requested:
-              type: integer
-            confirmed:
-              type: integer
-            driver_assigned:
-              type: integer
-            missed:
-              type: integer
-            picked_up_today:
-              type: integer
-          additionalProperties: false
-        attentionCount:
-          type: integer
-        attention:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        safety:
-          type: string
-      additionalProperties: true
-    FreightDocumentBriefingResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        generatedAt:
-          type: string
-        sampledShipmentCount:
-          type: integer
-        generatedDocumentCount:
-          type: integer
-        summary:
-          type: object
-          properties:
-            currentGenerated:
-              type: integer
-            awaitingReview:
-              type: integer
-            verified:
-              type: integer
-            shipmentAttentionCount:
-              type: integer
-          additionalProperties: false
-        attention:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        safety:
-          type: string
-      additionalProperties: true
-    CarrierIntegrationBriefingResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        generatedAt:
-          type: string
-        providers:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        summary:
-          type: object
-          properties:
-            configuredProviders:
-              type: integer
-            linkedShipments:
-              type: integer
-            shipmentsWithCarrierErrors:
-              type: integer
-            unmatchedOceanEvents:
-              type: integer
-          additionalProperties: false
-        linkedShipments:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        safety:
-          type: string
-      additionalProperties: true
-    DeliveryBriefingResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        generatedAt:
-          type: string
-        sampledShipmentCount:
-          type: integer
-        deliveryShipmentCount:
-          type: integer
-        summary:
-          type: object
-          properties:
-            ready:
-              type: integer
-            out_for_delivery:
-              type: integer
-            failed_or_refused:
-              type: integer
-            delivered_pod_pending:
-              type: integer
-            pod_verified:
-              type: integer
-          additionalProperties: false
-        attentionCount:
-          type: integer
-        attention:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        privacy:
-          type: string
-      additionalProperties: true
-    FreightAuditBriefingResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        generatedAt:
-          type: string
-        query:
-          type: string
-        sampledPayableCount:
-          type: integer
-        supplierBillCount:
-          type: integer
-        summary:
-          type: object
-          properties:
-            matched:
-              type: integer
-            reviewRequired:
-              type: integer
-            disputed:
-              type: integer
-            approvedVariance:
-              type: integer
-            pendingOrStale:
-              type: integer
-            paymentBlocked:
-              type: integer
-          additionalProperties: false
-        attentionCount:
-          type: integer
-        attention:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        matches:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        safety:
-          type: string
-      additionalProperties: true
-    SearchResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        query:
-          type: string
-        kind:
-          type: string
-        status:
-          type: string
-        count:
-          type: integer
-        results:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-      additionalProperties: true
-    JobFileResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        job:
-          type: object
-          properties: {}
-          additionalProperties: true
-        route:
-          type: object
-          properties: {}
-          additionalProperties: true
-        customer:
-          type: object
-          properties: {}
-          additionalProperties: true
-        readiness:
-          type: object
-          properties: {}
-          additionalProperties: true
-        delivery:
-          type: object
-          properties: {}
-          additionalProperties: true
-        tasks:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        customsSteps:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        documentRequirements:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        documents:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        events:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
-        activity:
-          type: array
-          items:
-            type: object
-            properties: {}
-            additionalProperties: true
       additionalProperties: true
     ErrorResponse:
       type: object
