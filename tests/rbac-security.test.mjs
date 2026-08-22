@@ -91,10 +91,12 @@ test("restricted staff can access their primary or handling branch only", () => 
   assert.equal(canAccessBranchSet(kathmanduScope, "invalid", []), false);
 });
 
-test("Management keeps all-branch recovery access even when branch data is malformed", () => {
+test("Management is organization-wide only for valid canonical branches", () => {
   assert.equal(canAccessBranchValue(managementScope, "Birgunj"), true);
-  assert.equal(canAccessBranchValue(managementScope, undefined), true);
-  assert.equal(canAccessBranchSet(managementScope, undefined, []), true);
+  assert.equal(canAccessBranchValue(managementScope, "Kolkata"), true);
+  assert.equal(canAccessBranchValue(managementScope, undefined), false);
+  assert.equal(canAccessBranchValue(managementScope, "Kathmandu "), false);
+  assert.equal(canAccessBranchSet(managementScope, undefined, []), false);
 });
 
 test("linked enquiries inherit shipment or customer branch scope and fail closed when links are broken", () => {
@@ -134,7 +136,7 @@ test("linked enquiries inherit shipment or customer branch scope and fail closed
     shipment_reference: "KCPL-S-MISSING",
     customer_id: null,
     shipment_exists: false,
-  }), true);
+  }), false);
 });
 
 test("role and branch matrix keeps finance privilege separate from location scope", () => {
@@ -224,7 +226,7 @@ test("partner ownership is branch-scoped while Global remains operationally visi
   assert.equal(canAccessPartnerOwner(kathmanduScope, "Birgunj"), false);
   assert.equal(canAccessPartnerOwner(kathmanduScope, "Global"), true);
   assert.equal(canAccessPartnerOwner(kathmanduScope, undefined), false);
-  assert.equal(canAccessPartnerOwner(managementScope, undefined), true);
+  assert.equal(canAccessPartnerOwner(managementScope, undefined), false);
 });
 
 test("partner edit and finance privileges remain separate", () => {
