@@ -1,23 +1,11 @@
-import { timingSafeEqual } from "node:crypto";
 import { ingestMaerskDcsaPayloadSafely } from "../../../../admin/carrier-integrations/maersk-webhook.server";
+import { maerskMachineAuthorized } from "../../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
-export function maerskWebhookAuthorized(request: Request) {
-  const expected = process.env.MAERSK_WEBHOOK_SECRET?.trim() ?? "";
-  if (!expected) return { ok: false as const, status: 503, error: "Maersk webhook ingestion is not configured." };
-  const header = request.headers.get("authorization") ?? "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!supplied) return { ok: false as const, status: 401, error: "Bearer authentication is required." };
-  const expectedBuffer = Buffer.from(expected);
-  const suppliedBuffer = Buffer.from(supplied);
-  if (expectedBuffer.length !== suppliedBuffer.length || !timingSafeEqual(expectedBuffer, suppliedBuffer)) {
-    return { ok: false as const, status: 401, error: "Maersk webhook authentication failed." };
-  }
-  return { ok: true as const };
-}
+export const maerskWebhookAuthorized = maerskMachineAuthorized;
 
 export async function POST(request: Request) {
   const auth = maerskWebhookAuthorized(request);
