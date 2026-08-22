@@ -22,9 +22,11 @@ export async function POST(request: Request) {
   }
   const reference = clean(body.reference, 160);
   const rawStatus = clean(body.rawStatus ?? body.status, 300);
+  const providerEventId = clean(body.providerEventId ?? body.provider_event_id, 240);
   const sourceText = clean(body.source, 40) as TrackingSource;
   const source: TrackingSource = trackingSources.includes(sourceText) && sourceText !== "manual" ? sourceText : "webhook";
   if (!reference || !rawStatus) return json({ ok: false, error: "reference and rawStatus are required." }, 400);
+  if (!providerEventId) return json({ ok: false, error: "providerEventId is required for idempotent machine tracking ingestion." }, 400);
   const provider = clean(body.provider, 180) || "External tracking feed";
   const result = await recordOrderedTrackingEvent(reference, {
     rawStatus,
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     eventTime: clean(body.eventTime ?? body.event_time, 80),
     source,
     provider,
-    providerEventId: clean(body.providerEventId ?? body.provider_event_id, 240),
+    providerEventId,
     details: clean(body.details, 3000),
     eta: clean(body.eta, 80),
     confidence: optionalNumber(body.confidence),
