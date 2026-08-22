@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       if (status === "exception" || overdueEta || reconciliationBlocked) {
         attention.push({
           reference: doc.id,
+          status,
           canonicalWorkflowStatus: status,
           observedExternalMilestone: nullable(data.external_observed_milestone),
           observedExternalAt: nullable(data.external_observed_at),
@@ -81,11 +82,12 @@ export async function GET(request: Request) {
       generatedAt: new Date().toISOString(),
       sampledShipmentCount: snapshot.size,
       activeShipmentCount: activeCount,
+      statusCounts: counts,
       canonicalStatusCounts: counts,
       activeShipmentsByPrimaryBranch: branchCounts,
       attentionCount: attention.length,
       attention: attention.slice(0, 30),
-      statusSemantics: "canonicalWorkflowStatus is KCPL workflow truth. observedExternalMilestone is provider-observed visibility evidence and may legitimately be ahead of canonical workflow state.",
+      statusSemantics: "statusCounts and attention[].status are compatibility aliases for KCPL canonical workflow state. canonicalWorkflowStatus is KCPL workflow truth. observedExternalMilestone is provider-observed visibility evidence and may legitimately be ahead of canonical workflow state.",
       note: snapshot.size === 750 ? "Counts are based on the 750 most recently updated shipments." : null,
     });
   } catch (error) {
