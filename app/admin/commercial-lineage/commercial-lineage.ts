@@ -23,10 +23,17 @@ export type CommercialFxSnapshot = {
   modified_on: string | null;
   source_npr_per_unit: number | null;
   target_npr_per_unit: number | null;
+  override_actor_name?: string | null;
+  override_actor_email?: string | null;
+  override_reason?: string | null;
+  override_at?: string | null;
 };
 
 export type CommercialProcurementSnapshot = {
   rate_card_id: string | null;
+  rate_card_branch?: string | null;
+  rate_card_origin?: string | null;
+  rate_card_destination?: string | null;
   rate_card_updated_at: string | null;
   rate_card_valid_from: string | null;
   rate_card_valid_until: string | null;
@@ -52,6 +59,7 @@ export type CommercialPricingSnapshot = {
   customer_id: string;
   pricing_rule_id: string | null;
   pricing_rule_scope: string | null;
+  pricing_policy_id?: string | null;
   markup_percent: number;
   target_margin_percent: number | null;
   minimum_margin_percent: number;
@@ -187,13 +195,21 @@ function canonicalFx(fx: CommercialFxSnapshot | null) {
 
 /**
  * Canonical fingerprint payload. This is deliberately an ordered tuple rather
- * than arbitrary object serialization. Labels, notes, created/updated times,
- * actor metadata and activity history are intentionally excluded.
+ * than arbitrary object serialization. Existing v1 snapshots retain their old
+ * payload exactly; provenance tuples are appended only when the new fields are
+ * present so historical fingerprints remain verifiable.
  */
 export function commercialFingerprintPayload(snapshot: CommercialSnapshot) {
   const procurementCurrency = normalizeCommercialCurrency(snapshot.procurement.currency);
   const sellCurrency = snapshot.pricing ? normalizeCommercialCurrency(snapshot.pricing.sell_currency) : "";
-  return [
+  const rateApplicability = ("rate_card_branch" in snapshot.procurement || "rate_card_origin" in snapshot.procurement || "rate_card_destination" in snapshot.procurement)
+    ? [nullableText(snapshot.procurement.rate_card_branch), nullableText(snapshot.procurement.rate_card_origin), nullableText(snapshot.procurement.rate_card_destination)]
+    : null;
+  const pricingPolicy = snapshot.pricing && "pricing_policy_id" in snapshot.pricing ? nullableText(snapshot.pricing.pricing_policy_id) : null;
+  const manualFxProvenance = snapshot.fx && snapshot.fx.source === "manual_override" && ("override_reason" in snapshot.fx || "override_actor_email" in snapshot.fx || "override_at" in snapshot.fx)
+    ? [nullableText(snapshot.fx.override_actor_name), nullableText(snapshot.fx.override_actor_email), nullableText(snapshot.fx.override_reason), nullableText(snapshot.fx.override_at)]
+    : null;
+  const payload = [
     "kcpl-commercial-v1",
     [
       normalizeCommercialId(snapshot.order_id),
@@ -255,6 +271,11 @@ export function commercialFingerprintPayload(snapshot: CommercialSnapshot) {
       normalizeCommercialCurrency(snapshot.negotiation.final_currency),
     ] : null,
   ];
+  const provenance: unknown[] = [];
+  if (rateApplicability) provenance.push(["rate_applicability", ...rateApplicability]);
+  if (pricingPolicy) provenance.push(["pricing_policy", pricingPolicy]);
+  if (manualFxProvenance) provenance.push(["manual_fx", ...manualFxProvenance]);
+  return provenance.length ? [...payload, ...provenance] : payload;
 }
 
 export function commercialFingerprint(snapshot: CommercialSnapshot) {
@@ -271,6 +292,11 @@ export function commercialSnapshotIntegrity(snapshot: CommercialSnapshot) {
   if (!procurementCurrency) errors.push("missing_procurement_currency");
   const procurementTotal = commercialMoney(snapshot.procurement.total, procurementCurrency);
   if (procurementTotal === null || procurementTotal < 0) errors.push("invalid_procurement_total");
+  if ("rate_card_branch" in snapshot.procurement) {
+    const rateBranch = text(snapshot.procurement.rate_card_branch);
+    if (!rateBranch) errors.push("missing_rate_card_branch");
+    else if (rateBranch !== "Global" && rateBranch !== text(snapshot.branch)) errors.push("rate_card_branch_mismatch");
+  }
   if (snapshot.pricing) {
     const sellCurrency = normalizeCommercialCurrency(snapshot.pricing.sell_currency);
     const sell = commercialMoney(snapshot.pricing.sell_amount, sellCurrency);
@@ -279,6 +305,9 @@ export function commercialSnapshotIntegrity(snapshot: CommercialSnapshot) {
     if (normalizeCommercialId(snapshot.pricing.customer_id) !== normalizeCommercialId(snapshot.customer_id)) errors.push("customer_mismatch");
     if (snapshot.fx) {
       if (normalizeCommercialCurrency(snapshot.fx.source_currency) !== procurementCurrency) errors.push("fx_source_mismatch");
+      if (snapshot.fx.source === "manual_override" && ("override_reason" in snapshot.fx || "override_actor_email" in snapshot.fx || "override_at" in snapshot.fx)) {
+        if (!text(snapshot.fx.override_actor_email) || !text(snapshot.fx.override_reason) || !text(snapshot.fx.override_at)) errors.push("manual_fx_provenance_missing");
+      }
       if (normalizeCommercialCurrency(snapshot.fx.target_currency) !== sellCurrency) errors.push("fx_target_mismatch");
       if (procurementCurrency !== sellCurrency && (!(snapshot.fx.rate && Number.isFinite(snapshot.fx.rate)) || snapshot.fx.rate <= 0)) errors.push("missing_fx_rate");
     } else if (procurementCurrency !== sellCurrency) errors.push("missing_fx");
@@ -414,14 +443,21 @@ export function deriveConsolidationAllocationSnapshot(base: CommercialSnapshot, 
   partnerId: string;
   partnerName?: string | null;
   masterRateCardId?: string | null;
+  masterRateCardBranch?: string | null;
+  masterRateCardOrigin?: string | null;
+  masterRateCardDestination?: string | null;
   mode?: string | null;
 }): CommercialSnapshot {
   const currency = normalizeCommercialCurrency(input.currency);
+  const rateScope = input.masterRateCardBranch?.trim() || base.procurement.rate_card_branch?.trim() || null;
   const next = {
     ...base,
     procurement: {
       ...base.procurement,
       rate_card_id: input.masterRateCardId ? normalizeCommercialId(input.masterRateCardId) : null,
+      ...(rateScope ? { rate_card_branch: rateScope } : {}),
+      ...(input.masterRateCardOrigin !== undefined ? { rate_card_origin: input.masterRateCardOrigin?.trim() || null } : {}),
+      ...(input.masterRateCardDestination !== undefined ? { rate_card_destination: input.masterRateCardDestination?.trim() || null } : {}),
       rate_card_updated_at: null,
       rate_card_valid_from: null,
       rate_card_valid_until: null,
