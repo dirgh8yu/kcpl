@@ -156,8 +156,10 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       if (masterVersionResult.kind !== "ready") return { kind: "commercial_review_required" as const };
       const masterVersion = masterVersionResult.version;
       if (!commercialPointerMatches(masterOrder, masterVersion) || normalizeCommercialId(tender.get("final_commercial_version_id")) && normalizeCommercialId(tender.get("final_commercial_version_id")) !== masterVersion.id) return { kind: "stale_commercial_state" as const };
-      const masterBookable = await assertBookableCommercialVersionInTransaction(transaction, masterVersion);
-      if (masterBookable.decision.ok === false) return { kind: masterBookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+      if (masterVersion.snapshot.pricing) {
+        const masterBookable = await assertBookableCommercialVersionInTransaction(transaction, masterVersion);
+        if (masterBookable.decision.ok === false) return { kind: masterBookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+      }
 
       if (text(load.get("status")) === "booked") {
         const masterShipmentReference = nullable(load.get("master_shipment_reference"));
