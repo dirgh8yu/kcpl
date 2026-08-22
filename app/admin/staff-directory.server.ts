@@ -1,4 +1,5 @@
 import { firebaseAdminAuth, firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { resolveStaffAuthority, type StaffDirectoryState } from "./staff-authority-policy";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
 import {
   kcplStaffRoles,
@@ -55,13 +56,16 @@ function branchList(value: unknown): KcplBranch[] {
 
 /**
  * Persisted staff state is the authorization authority once a profile exists.
- * Malformed roles, scopes, or active flags fail closed instead of inheriting an
- * environment-configured role or an organization-wide branch scope.
+ * Malformed roles, scopes, branch lists or active flags fail closed instead of
+ * inheriting environment-configured authority or organization-wide scope.
  */
 function profileFromData(uid: string, data: Record<string, unknown>): KcplStaffProfile | null {
   const role = roleValue(data.role);
   const scope = branchScopeValue(data.branch_scope);
-  if (!role || !scope || typeof data.active !== "boolean") return null;
+  if (!role || !scope || typeof data.active !== "boolean" || !Array.isArray(data.branches)) return null;
+  if (data.branches.some((item) => !kcplBranches.includes(item as KcplBranch))) return null;
+  const branches = branchList(data.branches);
+  if (scope === "selected" && branches.length === 0) return null;
   const email = text(data.email).trim().toLowerCase();
   if (!email) return null;
 
@@ -73,7 +77,7 @@ function profileFromData(uid: string, data: Record<string, unknown>): KcplStaffP
     phone: nullable(data.phone),
     role,
     branch_scope: scope,
-    branches: branchList(data.branches),
+    branches,
     active: data.active,
     created_at: text(data.created_at),
     updated_at: text(data.updated_at),
@@ -94,15 +98,28 @@ function isConfiguredAdmin(email: string) {
   return configuredAdminEmails().has(email.trim().toLowerCase());
 }
 
+async function staffDirectoryState(): Promise<StaffDirectoryState> {
+  if (!firebaseRuntimeConfigured()) return "unavailable";
+  try {
+    const snapshot = await firebaseAdminDb().collection("staff_profiles").limit(1).get();
+    return snapshot.empty ? "empty" : "nonempty";
+  } catch {
+    return "unavailable";
+  }
+}
+
 /**
  * KCPL_ADMIN_EMAILS is a bootstrap mechanism only. It may establish the first
- * Management account while the directory is empty, but it never overrides a
- * persisted staff profile or grants fallback authority after staff state exists.
+ * Management account while Firestore positively confirms the directory is empty.
+ * A lookup failure is not equivalent to an empty directory.
  */
 export async function canBootstrapEmptyStaffDirectory(email: string) {
-  if (!firebaseRuntimeConfigured() || !isConfiguredAdmin(email)) return false;
-  const snapshot = await firebaseAdminDb().collection("staff_profiles").limit(1).get();
-  return snapshot.empty;
+  const decision = resolveStaffAuthority({
+    profile: { exists: false },
+    configuredBootstrap: isConfiguredAdmin(email),
+    directoryState: await staffDirectoryState(),
+  });
+  return decision.kind === "bootstrap";
 }
 
 export async function staffProfileByUid(uid: string, _email = "") {
@@ -179,34 +196,66 @@ export async function isActiveStaffProfile(uid: string, email: string) {
 }
 
 export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext> {
-  const profile = await staffProfileByUid(user.uid, user.email);
-  if (profile) {
-    if (!profile.active) throw new Error("Inactive staff profile");
-    const permissions = staffCapabilitiesForRole(profile.role);
-    // KCPL policy: a persisted Management role is intentionally organization-wide.
-    // Non-management all-branch scope remains explicit in the persisted profile.
-    const canAccessAll = profile.role === "management" || profile.branch_scope === "all";
+  if (!firebaseRuntimeConfigured()) throw new Error("Staff directory is unavailable");
+  const uid = user.uid.trim();
+  if (!uid) throw new Error("Staff profile is required");
+
+  let snapshot: FirebaseFirestore.DocumentSnapshot;
+  try {
+    snapshot = await firebaseAdminDb().collection("staff_profiles").doc(uid).get();
+  } catch {
+    throw new Error("Staff directory is unavailable");
+  }
+
+  if (snapshot.exists) {
+    const raw = snapshot.data() as Record<string, unknown>;
+    const decision = resolveStaffAuthority({
+      profile: {
+        exists: true,
+        active: raw.active,
+        role: raw.role,
+        branchScope: raw.branch_scope,
+        branches: raw.branches,
+      },
+      configuredBootstrap: isConfiguredAdmin(user.email),
+      directoryState: "nonempty",
+    });
+    if (decision.kind !== "profile") throw new Error("Staff profile is not authorized");
+    const profile = profileFromData(uid, raw);
+    if (!profile) throw new Error("Staff profile is not authorized");
+    const permissions = staffCapabilitiesForRole(decision.role);
+    // KCPL policy: a valid persisted Management role is intentionally organization-wide.
+    // Management does not bypass malformed record branches; branch helpers still fail closed.
+    const canAccessAll = decision.role === "management" || decision.branchScope === "all";
     return {
       profile,
       permissions,
       can_access_all_branches: canAccessAll,
-      branches: canAccessAll ? [...kcplBranches] : profile.branches,
+      branches: canAccessAll ? [...kcplBranches] : decision.branches,
     };
   }
 
-  if (!(await canBootstrapEmptyStaffDirectory(user.email))) {
+  const decision = resolveStaffAuthority({
+    profile: { exists: false },
+    configuredBootstrap: isConfiguredAdmin(user.email),
+    directoryState: await staffDirectoryState(),
+  });
+  if (decision.kind !== "bootstrap") {
+    if (decision.kind === "denied" && decision.reason === "directory_unavailable") {
+      throw new Error("Staff directory is unavailable");
+    }
     throw new Error("Staff profile is required");
   }
 
   const bootstrapProfile: KcplStaffProfile = {
-    uid: user.uid,
+    uid,
     email: user.email.toLowerCase(),
     display_name: user.displayName,
     job_title: null,
     phone: null,
-    role: "management",
-    branch_scope: "all",
-    branches: [...kcplBranches],
+    role: decision.role,
+    branch_scope: decision.branchScope,
+    branches: decision.branches,
     active: true,
     created_at: "",
     updated_at: "",
@@ -214,9 +263,9 @@ export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext
   };
   return {
     profile: bootstrapProfile,
-    permissions: staffCapabilitiesForRole("management"),
+    permissions: staffCapabilitiesForRole(decision.role),
     can_access_all_branches: true,
-    branches: [...kcplBranches],
+    branches: decision.branches,
   };
 }
 
