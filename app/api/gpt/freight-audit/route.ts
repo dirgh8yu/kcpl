@@ -12,6 +12,7 @@ export async function GET(request: Request) {
   if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "Firebase is unavailable." }, 503);
 
   try {
+    const query = new URL(request.url).searchParams.get("q")?.trim().toLowerCase().slice(0, 180) ?? "";
     const db = firebaseAdminDb();
     const payableSnapshot = await db.collection("payables").orderBy("updated_at", "desc").limit(1000).get();
     const billDocs = payableSnapshot.docs.filter((doc) => text(doc.get("record_type")) !== "opening_balance" && text(doc.get("status")) !== "void");
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
     for (let index = 0; index < auditRefs.length; index += 250) auditSnapshots.push(...await db.getAll(...auditRefs.slice(index, index + 250)));
     const audits = new Map(auditSnapshots.filter((snapshot) => snapshot.exists).map((snapshot) => [snapshot.id, snapshot.data() as Record<string, unknown>]));
 
-    const rows = billDocs.map((doc) => {
+    const allRows = billDocs.map((doc) => {
       const bill = doc.data() as Record<string, unknown>;
       const audit = audits.get(doc.id);
       const rawStatus = text(audit?.status, "pending") as FreightAuditStatus;
@@ -55,10 +56,12 @@ export async function GET(request: Request) {
       };
     });
 
+    const rows = query ? allRows.filter((row) => [row.payableReference, row.supplierName, row.supplierBillReference, row.shipmentReference, row.branch, row.auditStatus].filter(Boolean).some((value) => String(value).toLowerCase().includes(query))) : allRows;
     const attention = rows.filter((row) => !row.paymentAllowed || row.auditStatus === "disputed").slice(0, 50);
     return gptActionJson({
       ok: true,
       generatedAt: new Date().toISOString(),
+      query: query || null,
       sampledPayableCount: payableSnapshot.size,
       supplierBillCount: rows.length,
       summary: {
@@ -71,6 +74,7 @@ export async function GET(request: Request) {
       },
       attentionCount: attention.length,
       attention,
+      matches: query ? rows.slice(0, 50) : undefined,
       safety: "This Custom GPT action is read-only. It cannot approve variances, approve supplier bills, or record payments.",
     });
   } catch (error) {
