@@ -1,4 +1,5 @@
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types.ts";
+import type { CanonicalDeliveryCompletionResult } from "../delivery/canonical-delivery-policy.ts";
 import type { PickupAppointmentStatus } from "../pickups/pickup-appointments";
 import type { TrackingMilestone, TrackingSource } from "./tracking-visibility";
 
@@ -22,6 +23,7 @@ export type ExternalPromotionInput = {
   deliveryWorkflowComplete?: boolean;
   hasBlockingException?: boolean;
   isLateObservation?: boolean;
+  canonicalDeliveryDecision?: CanonicalDeliveryCompletionResult | null;
 };
 
 export type ExternalDerivedExceptionPlan = {
@@ -74,14 +76,20 @@ export function evaluateExternalPromotion(input: ExternalPromotionInput): Extern
   if (input.isLateObservation) return { decision: "observe_only", targetStatus, reason: "late_external_observation" };
   if (input.pickupStatus === "cancelled") return { decision: "blocked", targetStatus, reason: "pickup_cancelled" };
   if (input.observedMilestone === "picked_up" && input.pickupStatus !== "picked_up") return { decision: "blocked", targetStatus, reason: "pickup_reconciliation_required" };
-  if (input.hasBlockingException) return { decision: "blocked", targetStatus, reason: "blocking_operational_exception" };
 
-  const requiresRelease = customsReleaseRequiredForDirection(input.direction);
-  if ((targetStatus === "out_for_delivery" || targetStatus === "delivered") && requiresRelease && input.customsClearanceStatus !== "released") return { decision: "blocked", targetStatus, reason: "customs_not_released" };
-  if (targetStatus === "delivered" && input.podStatus !== "verified") return { decision: "blocked", targetStatus, reason: "pod_not_verified" };
-  if (targetStatus === "delivered" && input.deliveryWorkflowComplete !== true) return { decision: "blocked", targetStatus, reason: "delivery_verification_required" };
+  if (targetStatus === "delivered") {
+    const completion = input.canonicalDeliveryDecision;
+    if (!completion) return { decision: "blocked", targetStatus, reason: "canonical_delivery_authority_required" };
+    if (completion.decision === "already_complete") return { decision: "no_change", targetStatus, reason: "canonical_delivered_is_terminal" };
+    if (completion.decision !== "complete") return { decision: "blocked", targetStatus, reason: completion.reason };
+  } else {
+    if (input.hasBlockingException) return { decision: "blocked", targetStatus, reason: "blocking_operational_exception" };
+    const requiresRelease = customsReleaseRequiredForDirection(input.direction);
+    if (targetStatus === "out_for_delivery" && requiresRelease && input.customsClearanceStatus !== "released") return { decision: "blocked", targetStatus, reason: "customs_not_released" };
+  }
+
   if (canonicalRank[targetStatus] <= canonicalRank[input.canonicalStatus]) return { decision: "no_change", targetStatus, reason: "canonical_state_not_regressed" };
-  return { decision: "promote", targetStatus, reason: "kcpl_external_promotion_policy_satisfied" };
+  return { decision: "promote", targetStatus, reason: targetStatus === "delivered" ? "canonical_delivery_authority_satisfied" : "kcpl_external_promotion_policy_satisfied" };
 }
 
 export function externalObservationIsNewer(currentObservedAt: string | null | undefined, nextObservedAt: string) {
