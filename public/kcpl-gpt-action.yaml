@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.2.0
+  version: 1.3.0
   description: >-
     Read-only access to authorised Kapileshwor Cargo operational data. Use these
-    actions for current KCPL shipments, Job Files, customers, quotes, delivery/POD status,
-    Freight Audit/Match-Pay controls and operations briefings.
+    actions for current KCPL shipments, Job Files, customers, quotes, pickup/appointment status,
+    delivery/POD status, Freight Audit/Match-Pay controls and operations briefings.
 servers:
   - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
 security:
@@ -43,6 +43,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BriefingResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/gpt/pickups:
+    get:
+      operationId: getKcplPickupBriefing
+      summary: Get the KCPL pickup and appointment briefing
+      description: >-
+        Return booked shipments awaiting pickup scheduling, requested and confirmed appointment
+        windows, driver/vehicle assignment, missed pickups and pickups completed today. This action
+        is read-only and cannot schedule, confirm, assign, complete or cancel a pickup.
+      responses:
+        "200":
+          description: Current pickup and appointment briefing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PickupBriefingResponse"
         "401":
           description: Invalid API key.
           content:
@@ -230,6 +251,44 @@ components:
             properties: {}
             additionalProperties: true
         note:
+          type: string
+      additionalProperties: true
+    PickupBriefingResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+        sampledShipmentCount:
+          type: integer
+        pickupShipmentCount:
+          type: integer
+        summary:
+          type: object
+          properties:
+            unscheduled:
+              type: integer
+            requested:
+              type: integer
+            confirmed:
+              type: integer
+            driver_assigned:
+              type: integer
+            missed:
+              type: integer
+            picked_up_today:
+              type: integer
+          additionalProperties: false
+        attentionCount:
+          type: integer
+        attention:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        safety:
           type: string
       additionalProperties: true
     DeliveryBriefingResponse:
