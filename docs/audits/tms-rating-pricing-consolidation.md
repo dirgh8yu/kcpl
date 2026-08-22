@@ -32,9 +32,9 @@ The NRB cross-rate algebra itself is reasonable: midpoint NPR-per-unit values ar
 | Severity | Count |
 |---|---:|
 | P0 | 0 |
-| P1 | 14 |
-| P2 | 14 |
-| P3 | 2 |
+| P1 | 16 |
+| P2 | 13 |
+| P3 | 1 |
 | **Total** | **30** |
 
 ---
@@ -510,8 +510,6 @@ There are no P0 findings. P1 remediation should start with:
 | TMS-014 | Post-tender/post-book repricing mutates historical commercial truth |
 | TMS-015 | Customer contractual sell cards are disconnected from TMS pricing |
 | TMS-016 | Allocation can assign zero cost to a real house shipment |
-
-(Findings TMS-015/TMS-016 are counted in the P1 table above; total P1 count in this report is 16 if treating both as high. **Severity count correction:** P1 = 16, P2 = 12, P3 = 2, total = 30. The executive table should be read with this corrected distribution.)
 
 # Financial calculation risks
 
