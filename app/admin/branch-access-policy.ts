@@ -31,25 +31,20 @@ export function branchAccessSet(primary: unknown, handling: unknown): AccessBran
 }
 
 /**
- * Read/list compatibility policy. Management and explicitly all-branch staff may
- * review legacy records whose branch metadata is incomplete so those records can
- * be identified and repaired. Mutation code must use canMutateBranchValue instead.
+ * Legacy policy: branchless or malformed records are not readable through scoped
+ * server helpers, even for Management. They must be repaired through an explicit
+ * maintenance workflow before normal access resumes. We prefer temporary denial
+ * over silently turning an ambiguous legacy record into organization-wide data.
  */
 export function canAccessBranchValue(scope: BranchAccessScope, branch: unknown) {
-  if (scope.can_access_all_branches) return true;
-  const parsed = strictBranchValue(branch);
-  return Boolean(parsed && scope.branches.includes(parsed));
-}
-
-/**
- * Server-authoritative mutation policy. A canonical record must carry a valid KCPL
- * branch before anyone, including Management, may mutate it. This keeps legacy
- * branchless records reviewable but never accidentally globally writable.
- */
-export function canMutateBranchValue(scope: BranchAccessScope, branch: unknown) {
   const parsed = strictBranchValue(branch);
   if (!parsed) return false;
   return scope.can_access_all_branches || scope.branches.includes(parsed);
+}
+
+/** Canonical mutation policy. The target record itself must carry a valid KCPL branch. */
+export function canMutateBranchValue(scope: BranchAccessScope, branch: unknown) {
+  return canAccessBranchValue(scope, branch);
 }
 
 export function compatibleRecordBranches(...branches: unknown[]) {
@@ -60,18 +55,16 @@ export function compatibleRecordBranches(...branches: unknown[]) {
 }
 
 export function canAccessBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
-  if (scope.can_access_all_branches) return true;
-  return branchAccessSet(primary, handling).some((branch) => scope.branches.includes(branch));
-}
-
-export function canMutateBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
   const branches = branchAccessSet(primary, handling);
   if (branches.length === 0) return false;
   return scope.can_access_all_branches || branches.some((branch) => scope.branches.includes(branch));
 }
 
+export function canMutateBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
+  return canAccessBranchSet(scope, primary, handling);
+}
+
 export function canAccessQuoteLinkedRecords(scope: BranchAccessScope, input: QuoteLinkedAccessInput) {
-  if (scope.can_access_all_branches) return true;
   if (input.shipment_reference) {
     if (!input.shipment_exists) return false;
     return canAccessBranchSet(scope, input.shipment_primary_branch, input.shipment_handling_branches);
