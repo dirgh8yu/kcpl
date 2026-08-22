@@ -36,6 +36,7 @@ export async function POST(request: Request) {
   if (result.kind === "already_linked") return json({ ok: false, error: "This supplier bill is already linked to that Partner." }, 409);
   if (result.kind === "already_linked_other") return json({ ok: false, error: "This supplier bill is already linked to another valid Partner and cannot be reassigned by reconciliation." }, 409);
   if (result.kind === "duplicate_supplier_bill") return json({ ok: false, error: "Linking this record would create a duplicate supplier bill reference for the selected Partner. Review the existing bills first." }, 409);
+  if (result.kind === "scope_mismatch") return json({ ok: false, error: "The selected branch-owned Partner is incompatible with this supplier bill's canonical branch." }, 409);
   if (result.kind === "forbidden") return json({ ok: false, error: "This supplier bill or Partner is outside your finance or branch access." }, 403);
   return json({ ok: false, error: "Supplier reconciliation storage is unavailable." }, 503);
 }
