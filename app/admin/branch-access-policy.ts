@@ -30,15 +30,44 @@ export function branchAccessSet(primary: unknown, handling: unknown): AccessBran
   return [...new Set([...(parsedPrimary ? [parsedPrimary] : []), ...strictBranchArray(handling)])];
 }
 
+/**
+ * Read/list compatibility policy. Management and explicitly all-branch staff may
+ * review legacy records whose branch metadata is incomplete so those records can
+ * be identified and repaired. Mutation code must use canMutateBranchValue instead.
+ */
 export function canAccessBranchValue(scope: BranchAccessScope, branch: unknown) {
   if (scope.can_access_all_branches) return true;
   const parsed = strictBranchValue(branch);
   return Boolean(parsed && scope.branches.includes(parsed));
 }
 
+/**
+ * Server-authoritative mutation policy. A canonical record must carry a valid KCPL
+ * branch before anyone, including Management, may mutate it. This keeps legacy
+ * branchless records reviewable but never accidentally globally writable.
+ */
+export function canMutateBranchValue(scope: BranchAccessScope, branch: unknown) {
+  const parsed = strictBranchValue(branch);
+  if (!parsed) return false;
+  return scope.can_access_all_branches || scope.branches.includes(parsed);
+}
+
+export function compatibleRecordBranches(...branches: unknown[]) {
+  if (branches.length === 0) return false;
+  const parsed = branches.map(strictBranchValue);
+  if (parsed.some((branch) => branch === null)) return false;
+  return parsed.every((branch) => branch === parsed[0]);
+}
+
 export function canAccessBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
   if (scope.can_access_all_branches) return true;
   return branchAccessSet(primary, handling).some((branch) => scope.branches.includes(branch));
+}
+
+export function canMutateBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
+  const branches = branchAccessSet(primary, handling);
+  if (branches.length === 0) return false;
+  return scope.can_access_all_branches || branches.some((branch) => scope.branches.includes(branch));
 }
 
 export function canAccessQuoteLinkedRecords(scope: BranchAccessScope, input: QuoteLinkedAccessInput) {
