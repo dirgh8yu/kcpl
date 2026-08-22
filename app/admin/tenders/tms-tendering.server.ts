@@ -231,7 +231,9 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
       const pointer = text(order.get("active_tender_id")).trim().toUpperCase();
       if (activeState.live.length > 1) return { kind: "state_conflict" as const };
       if (activeState.live.length === 1) {
-        const liveId = activeState.live[0].id;
+        const live = activeState.live[0];
+        const liveId = live.id;
+        if (branchValue(live.get("branch")) !== branch) return { kind: "state_conflict" as const };
         if (pointer && pointer !== liveId) {
           const pointerDoc = activeState.all.find((doc) => doc.id === pointer);
           if (!pointerDoc) return { kind: "state_conflict" as const };
@@ -244,6 +246,7 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
       if (pointer) {
         const pointerDoc = activeState.all.find((doc) => doc.id === pointer);
         if (!pointerDoc) return { kind: "state_conflict" as const };
+        if (branchValue(pointerDoc.get("branch")) !== branch) return { kind: "state_conflict" as const };
         const pointerTender = tenderFromData(pointerDoc.id, pointerDoc.data() as Record<string, unknown>);
         if (pointerTender && tenderIsActive(pointerTender.status) && !tenderIsExpired(pointerTender, now)) return { kind: "active_tender" as const };
       }
@@ -338,6 +341,7 @@ async function applyTenderResponse(
       const orderRef = db.collection("transport_orders").doc(tender.order_id);
       const order = await transaction.get(orderRef);
       if (!order.exists) return { kind: "missing_order" as const };
+      if (branchValue(order.get("branch")) !== branch) return { kind: "state_conflict" as const };
 
       const authoritative = tenderIsActive(tender.status) ? await authoritativeTenderInTransaction(transaction, order, tender, now) : null;
       if (tenderIsExpired(tender, now)) {
@@ -461,6 +465,7 @@ export async function cancelTmsTender(tenderIdValue: string, note: string, actor
       const orderRef = db.collection("transport_orders").doc(tender.order_id);
       const order = await transaction.get(orderRef);
       if (!order.exists) return { kind: "missing_order" as const };
+      if (branchValue(order.get("branch")) !== branch) return { kind: "state_conflict" as const };
       if (tender.status !== expectedStatus || tender.updated_at !== expectedUpdatedAt) return { kind: "state_conflict" as const };
       if (!tenderCanCancel(tender.status)) return { kind: "invalid_transition" as const };
       const authoritative = await authoritativeTenderInTransaction(transaction, order, tender, now);
@@ -508,6 +513,7 @@ async function createBookedShipment(
       const orderRef = db.collection("transport_orders").doc(tender.order_id);
       const order = await transaction.get(orderRef);
       if (!order.exists) return { kind: "missing_order" as const };
+      if (branchValue(order.get("branch")) !== branch) return { kind: "state_conflict" as const };
       const orderData = order.data() as Record<string, unknown>;
 
       if (tender.status === "booked") {
@@ -692,6 +698,7 @@ export async function confirmTmsTenderBooking(tenderIdValue: string, input: Tend
   if (!staffCanAccessBranch(staff, record.branch)) return { kind: "forbidden" as const };
   const order = await orderSnapshot(record.tender.order_id);
   if (!order) return { kind: "missing_order" as const };
+  if (order.branch !== record.branch) return { kind: "state_conflict" as const };
 
   const loadId = nullable(order.data.consolidation_load_id);
   if (order.data.is_consolidation_master === true && loadId) {
