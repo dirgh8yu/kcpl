@@ -61,6 +61,80 @@ export type TmsTender = {
   updated_at: string;
 };
 
+export type TenderAuthorityDecision = "authoritative" | "legacy_unique" | "stale" | "missing" | "ambiguous";
+
+function normalizedId(value: string | null | undefined) {
+  return (value ?? "").trim().toUpperCase();
+}
+
+export function resolveTenderAuthority(activeTenderId: string | null | undefined, liveTenderIds: string[], candidateTenderId: string): TenderAuthorityDecision {
+  const live = [...new Set(liveTenderIds.map(normalizedId).filter(Boolean))];
+  const candidate = normalizedId(candidateTenderId);
+  const pointer = normalizedId(activeTenderId);
+  if (!candidate) return "missing";
+  if (live.length > 1) return "ambiguous";
+  if (live.length === 0) return "missing";
+  if (live[0] !== candidate) return "stale";
+  if (pointer === candidate) return "authoritative";
+  if (!pointer || !live.includes(pointer)) return "legacy_unique";
+  return "stale";
+}
+
+export type RepeatedRejectedTenderDecision = "idempotent" | "repair_clear" | "stale" | "state_conflict";
+
+export function repeatedRejectedTenderDecision(input: {
+  orderStatus: string;
+  activeTenderId?: string | null;
+  rejectedTenderId: string;
+  liveTenderIds: string[];
+}): RepeatedRejectedTenderDecision {
+  const live = [...new Set(input.liveTenderIds.map(normalizedId).filter(Boolean))];
+  const pointer = normalizedId(input.activeTenderId);
+  const rejected = normalizedId(input.rejectedTenderId);
+  if (live.length > 0) return "stale";
+  if (pointer && pointer !== rejected) return "stale";
+  if (input.orderStatus !== "selected" && input.orderStatus !== "tendering") return "state_conflict";
+  if (input.orderStatus === "selected" && !pointer) return "idempotent";
+  return "repair_clear";
+}
+
+export type BookingRetryDecision = "idempotent" | "booking_conflict" | "state_conflict";
+
+export function bookingRetryDecision(input: {
+  requestedBookingReference: string;
+  tenderBookingReference?: string | null;
+  orderBookingReference?: string | null;
+  tenderShipmentReference?: string | null;
+  orderShipmentReference?: string | null;
+  shipmentExists: boolean;
+  shipmentOrderId?: string | null;
+  expectedOrderId: string;
+  shipmentTenderId?: string | null;
+  expectedTenderId: string;
+  shipmentBookingReference?: string | null;
+  shipmentBranch?: string | null;
+  expectedBranch: string;
+  shipmentCustomerId?: string | null;
+  expectedCustomerId: string;
+  shipmentConsolidationLoadId?: string | null;
+}): BookingRetryDecision {
+  const requested = input.requestedBookingReference.trim();
+  const tenderBooking = (input.tenderBookingReference ?? "").trim();
+  const orderBooking = (input.orderBookingReference ?? "").trim();
+  if (!requested || tenderBooking !== requested || orderBooking !== requested) return "booking_conflict";
+  const tenderShipment = normalizedId(input.tenderShipmentReference);
+  const orderShipment = normalizedId(input.orderShipmentReference);
+  if (!tenderShipment || tenderShipment !== orderShipment) return "state_conflict";
+  if (!input.shipmentExists) return "state_conflict";
+  if (normalizedId(input.shipmentOrderId) !== normalizedId(input.expectedOrderId)) return "state_conflict";
+  if (normalizedId(input.shipmentTenderId) !== normalizedId(input.expectedTenderId)) return "state_conflict";
+  if ((input.shipmentBookingReference ?? "").trim() !== requested) return "state_conflict";
+  if ((input.shipmentBranch ?? "").trim() !== input.expectedBranch.trim()) return "state_conflict";
+  if (normalizedId(input.shipmentCustomerId) !== normalizedId(input.expectedCustomerId)) return "state_conflict";
+  if ((input.shipmentConsolidationLoadId ?? "").trim()) return "state_conflict";
+  return "idempotent";
+}
+
 export function tenderIsTerminal(status: TmsTenderStatus) {
   return ["rejected", "expired", "cancelled", "booked"].includes(status);
 }
