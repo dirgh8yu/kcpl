@@ -49,11 +49,15 @@ async function shipmentSource(reference: string, staff: KcplStaffContext) {
   const branch = branchValue(data.primary_branch) ?? branchValue(Array.isArray(data.handling_branches) ? data.handling_branches[0] : null);
   if (!branch) return { kind: "invalid_branch" as const };
   if (!staffCanAccessBranch(staff, branch)) return { kind: "forbidden" as const };
+  const quoteId = nullable(data.quote_reference);
+  const customerId = nullable(data.customer_id);
+  const orderId = nullable(data.transport_order_id);
+  const tenderId = nullable(data.tender_id);
   const [quote, customer, order, tender] = await Promise.all([
-    nullable(data.quote_reference) ? db.collection("quotes").doc(nullable(data.quote_reference)!).get() : null,
-    nullable(data.customer_id) ? db.collection("customers").doc(nullable(data.customer_id)!).get() : null,
-    nullable(data.transport_order_id) ? db.collection("transport_orders").doc(nullable(data.transport_order_id)!).get() : null,
-    nullable(data.tender_id) ? db.collection("transport_tenders").doc(nullable(data.tender_id)!).get() : null,
+    quoteId ? db.collection("quotes").doc(quoteId).get() : null,
+    customerId ? db.collection("customers").doc(customerId).get() : null,
+    orderId ? db.collection("transport_orders").doc(orderId).get() : null,
+    tenderId ? db.collection("transport_tenders").doc(tenderId).get() : null,
   ]);
   const q = quote?.exists ? quote.data() as Record<string, unknown> : {};
   const c = customer?.exists ? customer.data() as Record<string, unknown> : {};
@@ -62,14 +66,14 @@ async function shipmentSource(reference: string, staff: KcplStaffContext) {
   const source: FreightDocumentSource = {
     reference: id,
     branch,
-    customer_id: nullable(data.customer_id),
+    customer_id: customerId,
     customer_name: text(c.display_name, text(q.company_name, text(q.contact_name, "Customer"))),
     origin: text(o.origin, text(q.origin, text(data.origin))),
     destination: text(o.destination, text(q.destination, text(data.destination))),
     mode: text(o.mode, text(q.mode, text(data.mode))),
     booking_reference: nullable(data.booking_reference) ?? nullable(t.booking_reference),
     carrier_name: nullable(t.partner_name) ?? nullable(data.carrier),
-    transport_order_id: nullable(data.transport_order_id),
+    transport_order_id: orderId,
     pieces: num(o.pieces),
     weight_kg: num(o.weight_kg),
     volume_cbm: num(o.volume_cbm),
@@ -80,7 +84,7 @@ async function shipmentSource(reference: string, staff: KcplStaffContext) {
     cargo_description: text(q.cargo_type, text(o.notes, "General cargo")),
     updated_at: text(data.updated_at),
   };
-  return { kind: "ready" as const, source, shipmentRef, shipment, shipmentData: data };
+  return { kind: "ready" as const, source, shipmentRef };
 }
 
 function generatedRow(reference: string, doc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot): GeneratedFreightDocumentRow | null {
@@ -109,7 +113,8 @@ export async function listFreightDocumentWorkspace(staff: KcplStaffContext) {
   const shipments = await db.collection("shipments").orderBy("updated_at", "desc").limit(1500).get();
   const eligible = shipments.docs.filter((doc) => {
     const status = text(doc.get("status"));
-    const branch = branchValue(doc.get("primary_branch")) ?? branchValue(Array.isArray(doc.get("handling_branches")) ? (doc.get("handling_branches") as unknown[])[0] : null);
+    const handling = doc.get("handling_branches");
+    const branch = branchValue(doc.get("primary_branch")) ?? branchValue(Array.isArray(handling) ? handling[0] : null);
     return Boolean(branch && staffCanAccessBranch(staff, branch) && status !== "cancelled");
   });
   const quoteIds = eligible.map((doc) => nullable(doc.get("quote_reference"))).filter((v): v is string => Boolean(v));
@@ -117,10 +122,15 @@ export async function listFreightDocumentWorkspace(staff: KcplStaffContext) {
   const orderIds = eligible.map((doc) => nullable(doc.get("transport_order_id"))).filter((v): v is string => Boolean(v));
   const tenderIds = eligible.map((doc) => nullable(doc.get("tender_id"))).filter((v): v is string => Boolean(v));
   const [quotes, customers, orders, tenders, generatedSnapshot] = await Promise.all([
-    getAll("quotes", quoteIds), getAll("customers", customerIds), getAll("transport_orders", orderIds), getAll("transport_tenders", tenderIds), db.collectionGroup("documents").where("generated_by_engine", "==", true).limit(5000).get(),
+    getAll("quotes", quoteIds),
+    getAll("customers", customerIds),
+    getAll("transport_orders", orderIds),
+    getAll("transport_tenders", tenderIds),
+    db.collectionGroup("documents").limit(5000).get(),
   ]);
   const generated = new Map<string, GeneratedFreightDocumentRow[]>();
   for (const doc of generatedSnapshot.docs) {
+    if (doc.get("generated_by_engine") !== true) continue;
     const reference = doc.ref.parent.parent?.id ?? "";
     if (!reference) continue;
     const row = generatedRow(reference, doc);
@@ -138,15 +148,35 @@ export async function listFreightDocumentWorkspace(staff: KcplStaffContext) {
     const order = orders.get(text(data.transport_order_id)) ?? {};
     const tender = tenders.get(text(data.tender_id)) ?? {};
     const source: FreightDocumentSource = {
-      reference: doc.id, branch, customer_id: customerId,
+      reference: doc.id,
+      branch,
+      customer_id: customerId,
       customer_name: text(customer.display_name, text(quote.company_name, text(quote.contact_name, "Customer"))),
-      origin: text(order.origin, text(quote.origin, text(data.origin))), destination: text(order.destination, text(quote.destination, text(data.destination))),
-      mode: text(order.mode, text(quote.mode, text(data.mode))), booking_reference: nullable(data.booking_reference) ?? nullable(tender.booking_reference),
-      carrier_name: nullable(tender.partner_name) ?? nullable(data.carrier), transport_order_id: nullable(data.transport_order_id), pieces: num(order.pieces), weight_kg: num(order.weight_kg), volume_cbm: num(order.volume_cbm), container_count: num(order.container_count), equipment: nullable(order.equipment), pickup_date: nullable(order.pickup_date), delivery_date: nullable(order.delivery_date), cargo_description: text(quote.cargo_type, text(order.notes, "General cargo")), updated_at: text(data.updated_at),
+      origin: text(order.origin, text(quote.origin, text(data.origin))),
+      destination: text(order.destination, text(quote.destination, text(data.destination))),
+      mode: text(order.mode, text(quote.mode, text(data.mode))),
+      booking_reference: nullable(data.booking_reference) ?? nullable(tender.booking_reference),
+      carrier_name: nullable(tender.partner_name) ?? nullable(data.carrier),
+      transport_order_id: nullable(data.transport_order_id),
+      pieces: num(order.pieces),
+      weight_kg: num(order.weight_kg),
+      volume_cbm: num(order.volume_cbm),
+      container_count: num(order.container_count),
+      equipment: nullable(order.equipment),
+      pickup_date: nullable(order.pickup_date),
+      delivery_date: nullable(order.delivery_date),
+      cargo_description: text(quote.cargo_type, text(order.notes, "General cargo")),
+      updated_at: text(data.updated_at),
     };
     const docs = (generated.get(doc.id) ?? []).sort((a, b) => b.generated_at.localeCompare(a.generated_at));
     const primary = primaryCarriageDocumentKind(source.mode);
-    return [{ ...source, recommended_kinds: recommendedGeneratedDocumentKinds(source.mode), generated_documents: docs, current_generated_count: docs.filter((item) => !item.superseded).length, missing_primary_carriage_document: Boolean(primary && !docs.some((item) => item.kind === primary && !item.superseded)) }];
+    return [{
+      ...source,
+      recommended_kinds: recommendedGeneratedDocumentKinds(source.mode),
+      generated_documents: docs,
+      current_generated_count: docs.filter((item) => !item.superseded).length,
+      missing_primary_carriage_document: Boolean(primary && !docs.some((item) => item.kind === primary && !item.superseded)),
+    }];
   });
   const summary = {
     eligible: rows.length,
@@ -183,18 +213,52 @@ export async function generateFreightDocument(reference: string, input: FreightD
   const filename = `${generatedReference(input.kind, scope.source.reference)}-R${revision}.pdf`;
   const storagePath = `shipments/${scope.source.reference}/generated-documents/${input.kind}/${generation}/${filename}`;
   const file = firebaseAdminBucket().file(storagePath);
-  await file.save(pdf, { resumable: false, contentType: "application/pdf", metadata: { cacheControl: "private, max-age=0, no-store", metadata: { shipmentReference: scope.source.reference, generatedDocumentKind: input.kind, revision: String(revision), sha256 } } });
+  await file.save(pdf, {
+    resumable: false,
+    contentType: "application/pdf",
+    metadata: { cacheControl: "private, max-age=0, no-store", metadata: { shipmentReference: scope.source.reference, generatedDocumentKind: input.kind, revision: String(revision), sha256 } },
+  });
 
   const documentId = numericId();
   const documentRef = scope.shipmentRef.collection("documents").doc(String(documentId));
   const previousCurrent = prior.find((doc) => text(doc.get("review_status")) !== "superseded") ?? null;
   const documentData = {
-    id: documentId, shipment_reference: scope.source.reference, filename, content_type: "application/pdf", size_bytes: pdf.length,
-    document_type: generatedDocumentTypeMap[input.kind], storage_path: storagePath, uploaded_at: now, uploaded_by: "KCPL Freight Document Engine", uploaded_by_email: actor.email || null,
-    review_status: "received", customer_safe: input.customerSafe, review_note: null, reviewed_at: null, reviewed_by: null, reviewed_by_email: null, verified_at: null, verified_by: null, verified_by_email: null,
-    expires_on: null, supersedes_document_id: previousCurrent ? Number(previousCurrent.id) : null, superseded_by_document_id: null, deleted_at: null, deleted_by: null, deleted_by_email: null, sha256,
-    generated_by_engine: true, generated_document_kind: input.kind, generated_document_label: generatedFreightDocumentLabels[input.kind], generated_revision: revision, generated_at: now, generated_by_name: actor.name || null, generated_by_email: actor.email || null,
-    source_snapshot_at: scope.source.updated_at || now, source_transport_order_id: scope.source.transport_order_id, source_booking_reference: scope.source.booking_reference,
+    id: documentId,
+    shipment_reference: scope.source.reference,
+    filename,
+    content_type: "application/pdf",
+    size_bytes: pdf.length,
+    document_type: generatedDocumentTypeMap[input.kind],
+    storage_path: storagePath,
+    uploaded_at: now,
+    uploaded_by: "KCPL Freight Document Engine",
+    uploaded_by_email: actor.email || null,
+    review_status: "received",
+    customer_safe: input.customerSafe,
+    review_note: null,
+    reviewed_at: null,
+    reviewed_by: null,
+    reviewed_by_email: null,
+    verified_at: null,
+    verified_by: null,
+    verified_by_email: null,
+    expires_on: null,
+    supersedes_document_id: previousCurrent ? Number(previousCurrent.id) : null,
+    superseded_by_document_id: null,
+    deleted_at: null,
+    deleted_by: null,
+    deleted_by_email: null,
+    sha256,
+    generated_by_engine: true,
+    generated_document_kind: input.kind,
+    generated_document_label: generatedFreightDocumentLabels[input.kind],
+    generated_revision: revision,
+    generated_at: now,
+    generated_by_name: actor.name || null,
+    generated_by_email: actor.email || null,
+    source_snapshot_at: scope.source.updated_at || now,
+    source_transport_order_id: scope.source.transport_order_id,
+    source_booking_reference: scope.source.booking_reference,
     generated_input: normalizedInput,
     controlled_draft: true,
   };
@@ -203,7 +267,17 @@ export async function generateFreightDocument(reference: string, input: FreightD
     if (previousCurrent) batch.update(previousCurrent.ref, { review_status: "superseded", superseded_by_document_id: documentId, updated_at: now });
     batch.create(documentRef, documentData);
     batch.update(scope.shipmentRef, { generated_freight_document_count: FieldValue.increment(1), latest_generated_document_at: now, updated_at: now });
-    batch.create(scope.shipmentRef.collection("job_activity").doc(), { type: "freight_document_generated", title: `${generatedFreightDocumentLabels[input.kind]} generated`, detail: `${filename} · revision ${revision} · SHA-256 ${sha256.slice(0, 12)}…`, branch: scope.source.branch, actor_name: actor.name, actor_email: actor.email, created_at: now, document_id: documentId, generated_document_kind: input.kind });
+    batch.create(scope.shipmentRef.collection("job_activity").doc(), {
+      type: "freight_document_generated",
+      title: `${generatedFreightDocumentLabels[input.kind]} generated`,
+      detail: `${filename} · revision ${revision} · SHA-256 ${sha256.slice(0, 12)}…`,
+      branch: scope.source.branch,
+      actor_name: actor.name,
+      actor_email: actor.email,
+      created_at: now,
+      document_id: documentId,
+      generated_document_kind: input.kind,
+    });
     await batch.commit();
   } catch (error) {
     await file.delete({ ignoreNotFound: true }).catch(() => undefined);
