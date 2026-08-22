@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
+import { commercialVersionFromDocument } from "../commercial-lineage/commercial-lineage.server";
+import { normalizeCommercialId } from "../commercial-lineage/commercial-lineage";
 import { crmCurrencies, kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { freightAuditPaymentAllowed, freightAuditStatuses, normalizeAuditReference, type FreightAuditStatus } from "../freight-audit/freight-audit";
@@ -14,6 +16,7 @@ import {
   freightAuditEconomicFingerprint,
   normalizeSettlementCurrency,
   paymentDocumentId,
+  resolveBookedCommercialLineage,
   resolveSettlementBasis,
   sameMoney,
   settlementCurrenciesMatch,
@@ -48,41 +51,24 @@ function status(value: unknown) { return text(value).trim(); }
 function isTmsShipment(data: Record<string, unknown>) { return Boolean(nullable(data.transport_order_id) || nullable(data.tender_id) || nullable(data.procurement_rate_card_id)); }
 
 async function writePayablePaymentActivity(input: {
-  paymentId: string;
-  billReference: string;
-  shipmentReference: string | null;
-  supplierId: string | null;
-  currency: string;
-  amount: number;
-  remaining: number;
-  actor: Actor;
+  paymentId: string; billReference: string; shipmentReference: string | null; supplierId: string | null;
+  currency: string; amount: number; remaining: number; actor: Actor; commercialVersionId?: string | null; commercialFingerprint?: string | null;
 }) {
   const db = firebaseAdminDb();
   const now = new Date().toISOString();
   const detail = `${input.currency} ${input.amount.toFixed(2)} paid · ${input.currency} ${input.remaining.toFixed(2)} remaining`;
+  const activity = {
+    type: "payables_activity", title: `Supplier payment recorded: ${input.billReference}`, detail,
+    commercial_version_id: input.commercialVersionId ?? null, commercial_fingerprint: input.commercialFingerprint ?? null,
+    actor_name: input.actor.name, actor_email: input.actor.email, created_at: now,
+  };
   const writes: Promise<unknown>[] = [];
-  if (input.shipmentReference) {
-    writes.push(db.collection("shipments").doc(input.shipmentReference).collection("job_activity").doc(`payable-${input.paymentId}`).set({
-      type: "payables_activity", title: `Supplier payment recorded: ${input.billReference}`, detail,
-      actor_name: input.actor.name, actor_email: input.actor.email, created_at: now,
-    }, { merge: true }));
-  }
-  if (input.supplierId && isPartnerReference(input.supplierId)) {
-    writes.push(db.collection("partners").doc(input.supplierId).collection("activity").doc(`payable-${input.paymentId}`).set({
-      type: "payables_activity", title: `Supplier payment recorded: ${input.billReference}`, detail,
-      actor_name: input.actor.name, actor_email: input.actor.email, created_at: now,
-    }, { merge: true }));
-  }
+  if (input.shipmentReference) writes.push(db.collection("shipments").doc(input.shipmentReference).collection("job_activity").doc(`payable-${input.paymentId}`).set(activity, { merge: true }));
+  if (input.supplierId && isPartnerReference(input.supplierId)) writes.push(db.collection("partners").doc(input.supplierId).collection("activity").doc(`payable-${input.paymentId}`).set(activity, { merge: true }));
   await Promise.all(writes.map((write) => write.catch(() => undefined)));
 }
 
-async function legacyDuplicateInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  supplierKey: string,
-  supplierId: string,
-  supplierName: string,
-  normalizedReference: string,
-) {
+async function legacyDuplicateInTransaction(transaction: FirebaseFirestore.Transaction, supplierKey: string, supplierId: string, supplierName: string, normalizedReference: string) {
   const db = firebaseAdminDb();
   const queries: FirebaseFirestore.Query[] = [
     db.collection("payables").where("normalized_supplier_bill_reference", "==", normalizedReference).limit(50),
@@ -124,13 +110,10 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
   const reference = payableReference();
   const billRef = db.collection("payables").doc(reference);
 
-  const result = await db.runTransaction(async (transaction) => {
+  return db.runTransaction(async (transaction) => {
     const shipmentRef = shipmentId ? db.collection("shipments").doc(shipmentId) : null;
     const supplierRef = supplierId ? db.collection("partners").doc(supplierId) : null;
-    const [shipment, supplier] = await Promise.all([
-      shipmentRef ? transaction.get(shipmentRef) : Promise.resolve(null),
-      supplierRef ? transaction.get(supplierRef) : Promise.resolve(null),
-    ]);
+    const [shipment, supplier] = await Promise.all([shipmentRef ? transaction.get(shipmentRef) : Promise.resolve(null), supplierRef ? transaction.get(supplierRef) : Promise.resolve(null)]);
     if (shipmentId && !shipment?.exists) return { kind: "shipment_missing" as const };
     if (supplierId && !supplier?.exists) return { kind: "supplier_missing" as const };
     if (supplier?.exists && !canAccessPartnerOwner(context, supplier.get("owner_branch"))) return { kind: "supplier_forbidden" as const };
@@ -144,7 +127,6 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     if (!supplierName) return { kind: "supplier_required" as const };
     const supplierKey = supplierIdentityKey(supplier?.exists ? supplierId : "", supplierName);
     if (!supplierKey) return { kind: "supplier_required" as const };
-
     const termsDays = supplier?.exists ? Math.max(0, Math.round(numberValue(supplier.get("payment_terms_days")))) : 30;
     const dueDate = input.dueDate.trim() || addDays(billDate, termsDays);
     const dateError = payableDateError(billDate, dueDate);
@@ -172,13 +154,7 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     const taxTotal = Math.round(subtotal * (taxRate / 100) * 100) / 100;
     const total = Math.round((subtotal + taxTotal) * 100) / 100;
     const now = new Date().toISOString();
-    transaction.set(uniqueRef, {
-      supplier_key: supplierKey,
-      normalized_supplier_bill_reference: normalizedSupplierBillReference,
-      payable_reference: reference,
-      created_at: now,
-      updated_at: now,
-    });
+    transaction.set(uniqueRef, { supplier_key: supplierKey, normalized_supplier_bill_reference: normalizedSupplierBillReference, payable_reference: reference, created_at: now, updated_at: now });
     transaction.create(billRef, {
       reference, record_type: "bill", supplier_id: supplier?.exists ? supplierId : null, supplier_key: supplierKey,
       supplier_invoice_key: uniqueKey, supplier_name: supplierName, supplier_bill_reference: supplierBillReference,
@@ -190,20 +166,12 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
       settlement_basis_version: 1, notes: input.notes.trim() || null, created_by_name: actor.name, created_by_email: actor.email,
       created_at: now, updated_at: now,
     });
-    transaction.create(billRef.collection("activity").doc("created"), {
-      type: "payable_created", title: "Supplier bill created", detail: `${input.currency} ${total.toFixed(2)} · ${supplierName}`,
-      actor_name: actor.name, actor_email: actor.email, created_at: now,
-    });
+    transaction.create(billRef.collection("activity").doc("created"), { type: "payable_created", title: "Supplier bill created", detail: `${input.currency} ${total.toFixed(2)} · ${supplierName}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
     return { kind: "created" as const, reference };
   });
-  return result;
 }
 
-async function duplicateForFingerprint(
-  transaction: FirebaseFirestore.Transaction,
-  reference: string,
-  bill: Record<string, unknown>,
-) {
+async function duplicateForFingerprint(transaction: FirebaseFirestore.Transaction, reference: string, bill: Record<string, unknown>) {
   const normalized = text(bill.normalized_supplier_bill_reference) || normalizeAuditReference(nullable(bill.supplier_bill_reference));
   if (!normalized) return null;
   const snapshot = await transaction.get(firebaseAdminDb().collection("payables").where("normalized_supplier_bill_reference", "==", normalized).limit(25));
@@ -239,9 +207,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     const supplierId = nullable(bill.supplier_id)?.toUpperCase() ?? null;
     if (supplierId && isPartnerReference(supplierId)) {
       const supplier = await transaction.get(db.collection("partners").doc(supplierId));
-      if (!supplier.exists || !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), billBranch)) {
-        return { kind: "relationship_mismatch" as const };
-      }
+      if (!supplier.exists || !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), billBranch)) return { kind: "relationship_mismatch" as const };
     }
     const currentStatus = status(bill.status);
     if (currentStatus === "paid" || numberValue(bill.balance_due) <= 0) return { kind: "already_paid" as const };
@@ -250,61 +216,38 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     const billCurrency = normalizeSettlementCurrency(bill.currency);
     if (!billCurrency || !crmCurrencies.includes(billCurrency as (typeof crmCurrencies)[number])) return { kind: "invalid_financial_state" as const, reason: "invalid_currency" as const };
     if (requestCurrency && !settlementCurrenciesMatch(requestCurrency, billCurrency)) return { kind: "currency_mismatch" as const };
-    const basisResult = resolveSettlementBasis({
-      subtotal: bill.subtotal, taxes: bill.tax_total, adjustments: bill.adjustment_total, credits: bill.credit_total,
-      storedTotal: bill.total, amountAlreadyPaid: bill.amount_paid, storedOutstanding: bill.balance_due,
-    });
+    const basisResult = resolveSettlementBasis({ subtotal: bill.subtotal, taxes: bill.tax_total, adjustments: bill.adjustment_total, credits: bill.credit_total, storedTotal: bill.total, amountAlreadyPaid: bill.amount_paid, storedOutstanding: bill.balance_due });
     if (!basisResult.ok) return { kind: "invalid_financial_state" as const, reason: basisResult.reason };
     const applied = applySettlementPayment(basisResult.basis, input.amount);
     if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
 
-    const requestFingerprint = settlementRequestFingerprint({
-      accountReference: normalizedReference, amount: applied.amount, currency: billCurrency, paymentDate, method: input.method,
-      externalReference: input.reference,
-    });
+    const requestFingerprint = settlementRequestFingerprint({ accountReference: normalizedReference, amount: applied.amount, currency: billCurrency, paymentDate, method: input.method, externalReference: input.reference });
     const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "", requestFingerprint);
     const paymentRef = billRef.collection("payments").doc(paymentId);
     const existingPayment = await transaction.get(paymentRef);
     if (existingPayment.exists) {
-      if (text(existingPayment.get("request_fingerprint")) === requestFingerprint) {
-        return {
-          kind: "idempotent" as const, paymentId, currency: billCurrency, amount: numberValue(existingPayment.get("amount")),
-          remaining: numberValue(existingPayment.get("balance_after")), shipmentReference: nullable(bill.shipment_reference), supplierId,
-        };
-      }
+      if (text(existingPayment.get("request_fingerprint")) === requestFingerprint) return {
+        kind: "idempotent" as const, paymentId, currency: billCurrency, amount: numberValue(existingPayment.get("amount")),
+        remaining: numberValue(existingPayment.get("balance_after")), shipmentReference: nullable(bill.shipment_reference), supplierId,
+        commercialVersionId: nullable(existingPayment.get("booked_commercial_version_id")), commercialFingerprint: nullable(existingPayment.get("booked_commercial_fingerprint")),
+      };
       return { kind: "idempotency_conflict" as const };
     }
 
-    const auditRef = db.collection("freight_audits").doc(normalizedReference);
-    const audit = await transaction.get(auditRef);
+    const audit = await transaction.get(db.collection("freight_audits").doc(normalizedReference));
     if (!audit.exists) return { kind: "audit_missing" as const };
     const auditStatus = text(audit.get("status")) as FreightAuditStatus;
     if (!freightAuditStatuses.includes(auditStatus) || !freightAuditPaymentAllowed(auditStatus)) return { kind: "audit_blocked" as const, auditStatus };
 
     const shipmentReference = nullable(bill.shipment_reference)?.toUpperCase() ?? null;
-    const shipmentRef = shipmentReference ? db.collection("shipments").doc(shipmentReference) : null;
-    const shipment = shipmentRef ? await transaction.get(shipmentRef) : null;
-    if (shipmentReference && (!shipment?.exists || !compatibleRecordBranches(billBranch, shipment.get("primary_branch")))) {
-      return { kind: "relationship_mismatch" as const };
-    }
+    const shipment = shipmentReference ? await transaction.get(db.collection("shipments").doc(shipmentReference)) : null;
+    if (shipmentReference && (!shipment?.exists || !compatibleRecordBranches(billBranch, shipment.get("primary_branch")))) return { kind: "relationship_mismatch" as const };
     const shipmentData = shipment?.exists ? shipment.data() as Record<string, unknown> : {};
-    const orderId = nullable(shipmentData.transport_order_id);
-    const rateCardId = nullable(shipmentData.procurement_rate_card_id);
-    const [order, rateCard, duplicateOf] = await Promise.all([
-      orderId ? transaction.get(db.collection("transport_orders").doc(orderId)) : Promise.resolve(null),
-      rateCardId ? transaction.get(db.collection("partner_rate_cards").doc(rateCardId)) : Promise.resolve(null),
-      duplicateForFingerprint(transaction, normalizedReference, bill),
-    ]);
-    if (orderId && (!order?.exists || !compatibleRecordBranches(billBranch, order.get("branch")))) {
-      return { kind: "relationship_mismatch" as const };
-    }
-    const currentFingerprint = freightAuditEconomicFingerprint({
-      payableReference: normalizedReference, bill,
-      shipment: shipment?.exists ? shipment.data() as Record<string, unknown> : null,
-      order: order?.exists ? order.data() as Record<string, unknown> : null,
-      rateCard: rateCard?.exists ? rateCard.data() as Record<string, unknown> : null,
-      duplicateOf,
-    });
+    const orderId = normalizeCommercialId(shipmentData.transport_order_id);
+    const order = orderId ? await transaction.get(db.collection("transport_orders").doc(orderId)) : null;
+    if (orderId && (!order?.exists || !compatibleRecordBranches(billBranch, order.get("branch")))) return { kind: "relationship_mismatch" as const };
+    const duplicateOf = await duplicateForFingerprint(transaction, normalizedReference, bill);
+    const currentFingerprint = freightAuditEconomicFingerprint({ payableReference: normalizedReference, bill, shipment: shipment?.exists ? shipmentData : null, duplicateOf });
     const auditFingerprint = text(audit.get("commercial_fingerprint"));
     const auditEconomicStateMatches = auditFingerprint === currentFingerprint
       && settlementCurrenciesMatch(audit.get("invoice_currency"), billCurrency)
@@ -313,10 +256,25 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       && sameMoney(numberValue(audit.get("invoice_total")), basisResult.basis.totalPayable);
     if (!auditEconomicStateMatches) return { kind: "audit_stale" as const };
 
-    if (shipment?.exists && isTmsShipment(shipmentData) && auditStatus === "not_applicable") {
-      const issues = Array.isArray(audit.get("issues")) ? audit.get("issues") as Array<Record<string, unknown>> : [];
-      const ancillary = issues.some((item) => item.code === "ancillary_supplier_bill");
-      if (!ancillary) return { kind: "audit_stale" as const };
+    const issues = Array.isArray(audit.get("issues")) ? audit.get("issues") as Array<Record<string, unknown>> : [];
+    const ancillary = issues.some((item) => item.code === "ancillary_supplier_bill");
+    let commercialVersionId: string | null = null;
+    let commercialFingerprint: string | null = null;
+    if (shipment?.exists && isTmsShipment(shipmentData)) {
+      if (auditStatus === "not_applicable") {
+        if (!ancillary) return { kind: "audit_stale" as const };
+      } else {
+        const lineage = resolveBookedCommercialLineage(shipmentData);
+        if (!lineage.ok) return { kind: "audit_stale" as const };
+        commercialVersionId = lineage.versionId;
+        commercialFingerprint = lineage.fingerprint;
+        if (normalizeCommercialId(audit.get("booked_commercial_version_id")) !== lineage.versionId || text(audit.get("booked_commercial_fingerprint")) !== lineage.fingerprint) return { kind: "audit_stale" as const };
+        if (!order?.exists || normalizeCommercialId(order.get("booked_commercial_version_id")) !== lineage.versionId || text(order.get("booked_commercial_fingerprint")) !== lineage.fingerprint) return { kind: "audit_stale" as const };
+        const versionDoc = await transaction.get(db.collection("commercial_versions").doc(lineage.versionId));
+        if (!versionDoc.exists) return { kind: "audit_stale" as const };
+        const storedVersion = commercialVersionFromDocument(versionDoc.id, versionDoc.data() as Record<string, unknown>);
+        if (!storedVersion || storedVersion.fingerprint !== lineage.fingerprint || normalizeCommercialId(storedVersion.snapshot.order_id) !== orderId) return { kind: "audit_stale" as const };
+      }
     }
 
     const now = new Date().toISOString();
@@ -327,6 +285,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       idempotency_key: input.idempotencyKey?.trim() || requestFingerprint, approved_settlement_amount: basisResult.basis.totalPayable,
       approved_settlement_currency: billCurrency, settlement_basis_version: 1, balance_before: basisResult.basis.outstandingAmount,
       balance_after: applied.nextOutstanding, freight_audit_status: auditStatus, freight_audit_fingerprint: auditFingerprint,
+      booked_commercial_version_id: commercialVersionId, booked_commercial_fingerprint: commercialFingerprint,
       recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
     });
     transaction.update(billRef, {
@@ -334,15 +293,18 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       payment_status: applied.nextOutstanding <= 0.00001 ? "paid" : "partially_paid", last_payment_id: paymentId,
       last_payment_at: now, last_payment_by_name: actor.name, last_payment_by_email: actor.email,
       approved_settlement_amount: basisResult.basis.totalPayable, approved_settlement_currency: billCurrency,
-      settlement_basis_version: 1, last_payment_audit_fingerprint: auditFingerprint, updated_at: now,
+      settlement_basis_version: 1, last_payment_audit_fingerprint: auditFingerprint,
+      last_payment_commercial_version_id: commercialVersionId, last_payment_commercial_fingerprint: commercialFingerprint,
+      updated_at: now,
     });
-    return { kind: "updated" as const, paymentId, currency: billCurrency, amount: applied.amount, remaining: applied.nextOutstanding, shipmentReference, supplierId };
+    return { kind: "updated" as const, paymentId, currency: billCurrency, amount: applied.amount, remaining: applied.nextOutstanding, shipmentReference, supplierId, commercialVersionId, commercialFingerprint };
   });
 
   if (outcome.kind === "updated") {
     await writePayablePaymentActivity({
       paymentId: outcome.paymentId, billReference: normalizedReference, shipmentReference: outcome.shipmentReference,
       supplierId: outcome.supplierId, currency: outcome.currency, amount: outcome.amount, remaining: outcome.remaining, actor,
+      commercialVersionId: outcome.commercialVersionId, commercialFingerprint: outcome.commercialFingerprint,
     });
   }
   return outcome;
