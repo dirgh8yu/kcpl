@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   pickupTransitionAllowed,
   pickupNeedsAttention,
+  pickupWindowOverdue,
   summarizePickups,
   validAppointmentWindow,
 } from "../app/admin/pickups/pickup-appointments.ts";
@@ -63,10 +64,12 @@ test("missed appointments can be rescheduled without reopening a completed picku
   assert.equal(pickupTransitionAllowed("picked_up", "missed"), false);
 });
 
-test("unscheduled bookings and overdue windows need attention", () => {
+test("unscheduled bookings need attention but are not missed pickups", () => {
   assert.equal(pickupNeedsAttention(base, "2026-08-22T06:00:00.000Z"), true);
+  assert.equal(pickupWindowOverdue(base, "2026-08-22T06:00:00.000Z"), false);
   const overdue = { ...base, status: "confirmed", confirmed_window_start: "2026-08-22T01:00:00.000Z", confirmed_window_end: "2026-08-22T02:00:00.000Z" };
   assert.equal(pickupNeedsAttention(overdue, "2026-08-22T06:00:00.000Z"), true);
+  assert.equal(pickupWindowOverdue(overdue, "2026-08-22T06:00:00.000Z"), true);
   const future = { ...overdue, confirmed_window_end: "2026-08-22T08:00:00.000Z" };
   assert.equal(pickupNeedsAttention(future, "2026-08-22T06:00:00.000Z"), false);
 });
@@ -85,6 +88,6 @@ test("pickup summary separates workflow states and completed pickups", () => {
   assert.equal(summary.requested, 1);
   assert.equal(summary.confirmed, 1);
   assert.equal(summary.driver_assigned, 1);
-  assert.equal(summary.missed, 2); // explicit missed + unscheduled booking needing attention
+  assert.equal(summary.missed, 1);
   assert.equal(summary.picked_up_today, 1);
 });
