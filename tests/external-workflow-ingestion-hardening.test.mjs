@@ -61,3 +61,34 @@ test("pickup duplicate domain replay still executes shared observation reconcili
   const duplicateReturn = code.indexOf("if (domainResult.kind === \"duplicate\")", trackingCall);
   assert.ok(trackingCall >= 0 && duplicateReturn > trackingCall);
 });
+
+test("DHL sync rejects missing canonical primary branch before provider ingestion", async () => {
+  const code = await source("../app/admin/carrier-integrations/carrier-integrations.server.ts");
+  const syncStart = code.indexOf("export async function syncDhlTracking");
+  const trackingNumber = code.indexOf("const trackingNumber", syncStart);
+  const preflight = code.slice(syncStart, trackingNumber);
+  assert.match(preflight, /canonicalBranch = branchValue\(scope\.data\.primary_branch\)/);
+  assert.match(preflight, /if \(!canonicalBranch\) return \{ kind: "invalid_branch"/);
+});
+
+test("DHL sync propagates concurrent invalid branch instead of reporting false success", async () => {
+  const code = await source("../app/admin/carrier-integrations/carrier-integrations.server.ts");
+  const syncStart = code.indexOf("export async function syncDhlTracking");
+  const scheduleStart = code.indexOf("function objectArray", syncStart);
+  const sync = code.slice(syncStart, scheduleStart);
+  assert.match(sync, /saved\.kind === "invalid_branch" \|\| saved\.kind === "missing" \|\| saved\.kind === "unavailable"/);
+  assert.match(sync, /return saved/);
+  assert.match(sync, /branch: canonicalBranch/);
+});
+
+test("legacy Maersk compatibility export delegates to the #128-safe ingestion helper", async () => {
+  const code = await source("../app/admin/carrier-integrations/carrier-integrations.server.ts");
+  assert.match(code, /import \{ ingestMaerskDcsaPayloadSafely \} from "\.\/maersk-webhook\.server"/);
+  assert.match(code, /export async function ingestMaerskDcsaPayload\(payload: unknown\) \{\s*return ingestMaerskDcsaPayloadSafely\(payload\);\s*\}/);
+});
+
+test("carrier admin server contains no first-success Maersk shipment matcher", async () => {
+  const code = await source("../app/admin/carrier-integrations/carrier-integrations.server.ts");
+  assert.doesNotMatch(code, /findShipmentForDcsaEvent/);
+  assert.doesNotMatch(code, /if \(matches\.size === 1\) break/);
+});
