@@ -51,6 +51,7 @@ export async function POST(request: Request) {
   return json({
     ok: true,
     event: result.event,
+    status: result.status,
     canonicalStatus: result.status,
     promotionDecision: result.promotion.decision,
     promotionReason: result.promotion.reason,
