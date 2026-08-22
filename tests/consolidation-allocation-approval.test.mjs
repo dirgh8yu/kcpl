@@ -120,8 +120,11 @@ test("55 different booking reference retains #127 booking conflict", () => asser
 test("56 twenty-house package remains below configured consolidation cap", () => {
   const members = Array.from({ length: 20 }, (_, index) => member(`ORD-${index + 1}`, index + 1));
   const result = allocate(100000, "NPR", members);
+  const scale = 10 ** consolidationCurrencyDecimals("NPR");
+  const allocatedUnits = result.allocations.reduce((total, item) => total + Math.round(item.amount * scale), 0);
   assert.equal(result.allocations.length, 20);
-  assert.equal(sum(result.allocations.map((item) => item.amount)), 100000);
+  assert.equal(allocatedUnits, Math.round(100000 * scale));
+  assert.equal(result.total, 100000);
 });
 test("57 partial booking graph is protected by one Firestore transaction", () => {
   assert.match(booking, /runTransaction/);
