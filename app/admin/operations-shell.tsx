@@ -43,38 +43,28 @@ import {
 } from "./workflow-navigation";
 
 type StoredWorkspace = { href: string; label: string };
-type IconType = typeof LayoutDashboard;
 
-const workspaceIcons: Record<string, IconType> = {
-  home: LayoutDashboard,
-  shipments: Boxes,
-  visibility: Activity,
-  customs: ShieldCheck,
-  documents: FileText,
-  delivery: PackageCheck,
-  alerts: Bell,
-  notifications: Bell,
-  enquiries: PackageSearch,
-  customers: Building2,
-  "market-estimate": Calculator,
-  rating: Calculator,
-  pricing: ReceiptText,
-  consolidation: Boxes,
-  tenders: Handshake,
-  partners: Handshake,
-  receivables: ReceiptText,
-  payables: HandCoins,
-  "freight-audit": ListChecks,
-  "supplier-reconciliation": ListChecks,
-  management: ChartNoAxesCombined,
-  migration: Database,
-  "paper-archive": Archive,
-  "migration-recovery": RotateCcw,
-  staff: UsersRound,
-};
-
-function workspaceIcon(workspace: WorkflowWorkspace) {
-  return workspaceIcons[workspace.id] ?? LayoutDashboard;
+function WorkspaceIcon({ id, size = 16, strokeWidth = 1.8, className }: { id: string; size?: number; strokeWidth?: number; className?: string }) {
+  const props = { size, strokeWidth, className };
+  if (id === "shipments" || id === "consolidation") return <Boxes {...props}/>;
+  if (id === "visibility") return <Activity {...props}/>;
+  if (id === "customs") return <ShieldCheck {...props}/>;
+  if (id === "documents") return <FileText {...props}/>;
+  if (id === "delivery") return <PackageCheck {...props}/>;
+  if (id === "alerts" || id === "notifications") return <Bell {...props}/>;
+  if (id === "enquiries") return <PackageSearch {...props}/>;
+  if (id === "customers") return <Building2 {...props}/>;
+  if (id === "market-estimate" || id === "rating") return <Calculator {...props}/>;
+  if (id === "pricing" || id === "receivables") return <ReceiptText {...props}/>;
+  if (id === "tenders" || id === "partners") return <Handshake {...props}/>;
+  if (id === "payables") return <HandCoins {...props}/>;
+  if (id === "freight-audit" || id === "supplier-reconciliation") return <ListChecks {...props}/>;
+  if (id === "management") return <ChartNoAxesCombined {...props}/>;
+  if (id === "migration") return <Database {...props}/>;
+  if (id === "paper-archive") return <Archive {...props}/>;
+  if (id === "migration-recovery") return <RotateCcw {...props}/>;
+  if (id === "staff") return <UsersRound {...props}/>;
+  return <LayoutDashboard {...props}/>;
 }
 
 function safeStoredWorkspaces(key: string): StoredWorkspace[] {
@@ -228,7 +218,7 @@ export function OperationsShell({
               <p className="px-3 pb-1 pt-2 text-[9px] font-bold uppercase tracking-[.07em] text-[#8f8881]">Start workflow</p>
               <MenuLink href="/admin" icon={<PackageSearch size={14}/>} label="New enquiry / quote" detail="Start with a customer freight request" close={() => setCreateOpen(false)}/>
               <MenuLink href="/admin/crm/new" icon={<Building2 size={14}/>} label="New customer" detail="Create the CRM account first" close={() => setCreateOpen(false)}/>
-              {capabilities.canViewCommercial ? <MenuLink href="/admin/rating?create=order" icon={<Calculator size={14}/>} label="Transport order" detail="Plan cargo and select Partner buy rates" close={() => setCreateOpen(false)}/> : null}
+              {capabilities.canViewCommercial ? <MenuLink href="/admin/rating" icon={<Calculator size={14}/>} label="Transport order" detail="Plan cargo and select Partner buy rates" close={() => setCreateOpen(false)}/> : null}
               {capabilities.canViewCommercial ? <MenuLink href="/admin/pricing" icon={<ReceiptText size={14}/>} label="Price customer movement" detail="Apply sell rules and margin controls" close={() => setCreateOpen(false)}/> : null}
               {capabilities.canViewCommercial ? <MenuLink href="/admin/consolidation" icon={<Boxes size={14}/>} label="Plan consolidation" detail="Combine compatible orders into a master load" close={() => setCreateOpen(false)}/> : null}
               {capabilities.canViewCommercial ? <MenuLink href="/admin/tenders" icon={<Handshake size={14}/>} label="Tender / booking" detail="Issue carrier tender or confirm booking" close={() => setCreateOpen(false)}/> : null}
@@ -242,7 +232,7 @@ export function OperationsShell({
 
       {mobileOpen ? <div className="fixed inset-x-0 bottom-0 top-[58px] z-50 overflow-y-auto bg-[#f3f1ee] p-3 lg:hidden"><div className="mx-auto max-w-xl space-y-4">
         <button type="button" onClick={() => { setMobileOpen(false); setPaletteOpen(true); }} className="flex h-11 w-full items-center gap-2 rounded-[10px] border border-[#d8d2cc] bg-white px-3 text-[#655f59]" aria-label="Open command palette"><Search size={15}/><span className="text-[12px] font-semibold">Search KCPL…</span><span className="ml-auto text-[9px] font-bold text-[#918a83]">⌘K</span></button>
-        {groups.map((group) => <div key={group.group}><p className="mb-1.5 px-2 text-[9px] font-bold uppercase tracking-[.08em] text-[#8f8881]">{group.group}</p><div className="space-y-1">{group.items.map((item) => { const Icon = workspaceIcon(item); const active = activeItem?.id === item.id; return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={`flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[12px] font-semibold ${active ? "bg-white text-[#3e3935] shadow-sm" : "text-[#6e6761]"}`}><Icon size={15} className={active ? "text-[#c15f4a]" : "text-[#8f8881]"}/><span>{item.label}</span></Link>; })}</div></div>)}
+        {groups.map((group) => <div key={group.group}><p className="mb-1.5 px-2 text-[9px] font-bold uppercase tracking-[.08em] text-[#8f8881]">{group.group}</p><div className="space-y-1">{group.items.map((item) => { const active = activeItem?.id === item.id; return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={`flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[12px] font-semibold ${active ? "bg-white text-[#3e3935] shadow-sm" : "text-[#6e6761]"}`}><WorkspaceIcon id={item.id} size={15} className={active ? "text-[#c15f4a]" : "text-[#8f8881]"}/><span>{item.label}</span></Link>; })}</div></div>)}
         <a href={signOutPath} className="flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[12px] font-semibold text-[#9d4748]"><LogOut size={15}/>Sign out</a>
       </div></div> : null}
 
@@ -257,10 +247,9 @@ function SidebarSection({ label, children }: { label: string; children: React.Re
 }
 
 function NavLink({ item, active, collapsed }: { item: WorkflowWorkspace; active: boolean; collapsed: boolean }) {
-  const Icon = workspaceIcon(item);
   return <Link href={item.href} aria-current={active ? "page" : undefined} title={collapsed ? `${item.label} · ${item.hint}` : item.hint} className={`group relative flex min-h-10 items-center rounded-[9px] ${collapsed ? "justify-center" : "gap-2.5 px-2.5"} ${active ? "bg-white text-[#302b27] shadow-[0_2px_8px_rgba(54,43,34,.05)]" : "text-[#625c56] hover:bg-white/70 hover:text-[#3e3935]"}`}>
     {active ? <span className="absolute left-0 h-5 w-[2.5px] rounded-r-full bg-[#df7159]"/> : null}
-    <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-[#bf5f4b]" : "text-[#827b74] group-hover:text-[#615a54]"}/>
+    <WorkspaceIcon id={item.id} size={16} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-[#bf5f4b]" : "text-[#827b74] group-hover:text-[#615a54]"}/>
     {!collapsed ? <span className="truncate text-[12px] font-semibold">{item.label}</span> : null}
   </Link>;
 }
