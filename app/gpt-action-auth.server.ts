@@ -52,7 +52,8 @@ function forbiddenGptField(key: string) {
   const tokens = keyTokens(key);
   const sensitiveToken = tokens.some((token) => ["secret", "password", "credential", "credentials", "authorization"].includes(token));
   if (sensitiveToken) return true;
-  if (hasPair(tokens, "api", "key") || hasPair(tokens, "access", "token") || hasPair(tokens, "refresh", "token")) return true;
+  if (tokens.length === 1 && tokens[0] === "token") return true;
+  if (hasPair(tokens, "api", "key") || hasPair(tokens, "access", "token") || hasPair(tokens, "refresh", "token") || hasPair(tokens, "bearer", "token")) return true;
   if (tokens[0] === "raw" && ["payload", "x12", "edi"].includes(tokens[1] ?? "")) return true;
   if (hasPair(tokens, "signed", "url") || hasPair(tokens, "download", "url") || hasPair(tokens, "private", "url")) return true;
   if (hasPair(tokens, "storage", "path") || hasPair(tokens, "storage", "url")) return true;
