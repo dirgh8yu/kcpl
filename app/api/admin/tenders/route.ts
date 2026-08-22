@@ -2,10 +2,11 @@ import { getAdminAccess } from "../../../admin/admin-auth";
 import { crmCurrencies, type CrmCurrency } from "../../../admin/crm/crm-data";
 import { queueTenderAsEdi204 } from "../../../admin/edi/edi-tender.server";
 import { getStaffContext } from "../../../admin/staff-directory.server";
+import { confirmTmsTenderBookingWithCommercialLineage } from "../../../admin/tenders/tms-booking-lineage-dispatch.server";
 import { sendTmsTenderEmail } from "../../../admin/tenders/tms-tender-email.server";
 import { reconcileExpiredTmsTenders } from "../../../admin/tenders/tms-tender-expiry.server";
 import { tmsTenderChannels, type TmsTenderChannel } from "../../../admin/tenders/tms-tendering";
-import { cancelTmsTender, confirmTmsTenderBooking, createTmsTender, listTmsTenders, respondToTmsTender } from "../../../admin/tenders/tms-tendering.server";
+import { cancelTmsTender, createTmsTender, listTmsTenders, respondToTmsTender } from "../../../admin/tenders/tms-tendering.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
   }
 
   if (action === "book") {
-    const result = await confirmTmsTenderBooking(clean(body.tenderId, 120), { bookingReference: clean(body.bookingReference, 200), pickupConfirmation: clean(body.pickupConfirmation, 1000) }, actor, access.staff);
+    const result = await confirmTmsTenderBookingWithCommercialLineage(clean(body.tenderId, 120), { bookingReference: clean(body.bookingReference, 200), pickupConfirmation: clean(body.pickupConfirmation, 1000) }, actor, access.staff);
     if (result.kind === "unavailable") return json({ ok: false, error: "Booking storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This tender is outside your access." }, 403);
     if (result.kind === "missing" || result.kind === "missing_order" || result.kind === "missing_load") return json({ ok: false, error: "Tender, transport order or consolidation load not found." }, 404);
