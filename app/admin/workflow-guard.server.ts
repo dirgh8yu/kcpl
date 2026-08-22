@@ -3,9 +3,10 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../shipment-document-policy";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types";
 import { shipmentStatuses, type ShipmentStatus } from "../shipment-types";
+import { canAccessBranchSet, strictBranchArray, strictBranchValue } from "./branch-access-policy";
 import { customsClearanceStatusValue, customsReleaseRequired } from "./customs/customs-policy";
-import { kcplBranches, type KcplBranch } from "./crm/crm-data";
-import { staffCanAccessBranch, type KcplStaffContext } from "./staff-directory.server";
+import { type KcplBranch } from "./crm/crm-data";
+import { type KcplStaffContext } from "./staff-directory.server";
 import { buildDocumentIntelligence } from "./workflow-defaults";
 import type { ShipmentWorkflowReadiness, WorkflowDocumentState, WorkflowStage } from "./workflow-guard";
 
@@ -26,10 +27,6 @@ function text(value: unknown, fallback = "") {
 function nullable(value: unknown) {
   const valueText = text(value).trim();
   return valueText || null;
-}
-
-function branchValue(value: unknown, fallback: KcplBranch = "Kathmandu"): KcplBranch {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : fallback;
 }
 
 function statusValue(value: unknown): ShipmentStatus {
@@ -53,10 +50,10 @@ async function loadWorkflowSource(reference: string, context?: KcplStaffContext)
   const shipment = await db.collection("shipments").doc(id).get();
   if (!shipment.exists) return { kind: "missing" as const };
   const data = shipment.data() as Record<string, unknown>;
-  const customerId = nullable(data.customer_id);
-  const customer = customerId ? await db.collection("customers").doc(customerId).get() : null;
-  const branch = branchValue(data.primary_branch, branchValue(customer?.get("primary_branch")));
-  if (context && !staffCanAccessBranch(context, branch)) return { kind: "forbidden" as const };
+  const branch = strictBranchValue(data.primary_branch);
+  if (!branch) return { kind: "forbidden" as const };
+  const handlingBranches = strictBranchArray(data.handling_branches);
+  if (context && !canAccessBranchSet(context, branch, handlingBranches)) return { kind: "forbidden" as const };
   const quoteReference = nullable(data.quote_reference);
   const quote = quoteReference ? await db.collection("quotes").doc(quoteReference).get() : null;
   return {
