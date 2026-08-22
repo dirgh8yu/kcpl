@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: KCPL Operations API
-  version: 1.3.0
+  version: 1.4.0
   description: >-
     Read-only access to authorised Kapileshwor Cargo operational data. Use these
     actions for current KCPL shipments, Job Files, customers, quotes, pickup/appointment status,
-    delivery/POD status, Freight Audit/Match-Pay controls and operations briefings.
+    freight-document controls, delivery/POD status, Freight Audit/Match-Pay controls and operations briefings.
 servers:
   - url: https://kcpl--kcpl-82574.asia-southeast1.hosted.app
 security:
@@ -64,6 +64,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PickupBriefingResponse"
+        "401":
+          description: Invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/gpt/freight-documents:
+    get:
+      operationId: getKcplFreightDocumentBriefing
+      summary: Get the KCPL freight-document briefing
+      description: >-
+        Return generated carriage/execution document status, shipments missing a primary generated
+        carriage document and generated documents awaiting review. This action exposes metadata and
+        hashes only and cannot generate, download, verify or supersede documents.
+      responses:
+        "200":
+          description: Current freight-document control briefing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreightDocumentBriefingResponse"
         "401":
           description: Invalid API key.
           content:
@@ -282,6 +303,38 @@ components:
           additionalProperties: false
         attentionCount:
           type: integer
+        attention:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        safety:
+          type: string
+      additionalProperties: true
+    FreightDocumentBriefingResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+        sampledShipmentCount:
+          type: integer
+        generatedDocumentCount:
+          type: integer
+        summary:
+          type: object
+          properties:
+            currentGenerated:
+              type: integer
+            awaitingReview:
+              type: integer
+            verified:
+              type: integer
+            shipmentAttentionCount:
+              type: integer
+          additionalProperties: false
         attention:
           type: array
           items:
