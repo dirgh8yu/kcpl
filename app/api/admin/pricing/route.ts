@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
+import { assertOrderCommercialMutationAllowed } from "../../../admin/commercial-lineage/commercial-mutation-policy.server";
 import { normalizeCommercialId } from "../../../admin/commercial-lineage/commercial-lineage";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../../../admin/crm/crm-data";
 import {
@@ -56,6 +57,10 @@ async function inferFxMode(orderId: string, sellCurrency: CrmCurrency | null, su
   return "manual";
 }
 
+function lockedCommercialMutationResponse() {
+  return json({ ok: false, error: "This house order is frozen to its released consolidation source commercial version. Use the consolidation workflow rather than repricing or issuing a new independent quote.", code: "RELEASED_CONSOLIDATION_COMMERCIAL_LOCK" }, 409);
+}
+
 export async function GET() {
   const access = await auth();
   if ("response" in access) return access.response;
@@ -104,6 +109,10 @@ export async function POST(request: Request) {
 
   if (action === "calculate") {
     const orderId = clean(body.orderId, 120);
+    const mutation = await assertOrderCommercialMutationAllowed(orderId, access.staff);
+    if (mutation.kind === "locked") return lockedCommercialMutationResponse();
+    if (mutation.kind === "forbidden") return json({ ok: false, error: "This order is outside your commercial access." }, 403);
+    if (mutation.kind === "missing_order") return json({ ok: false, error: "Transport order not found." }, 404);
     const sellCurrencyRaw = clean(body.sellCurrency, 10);
     const sellCurrency = sellCurrencyRaw ? sellCurrencyRaw as CrmCurrency : null;
     if (sellCurrency && !crmCurrencies.includes(sellCurrency)) return json({ ok: false, error: "Choose a valid sell currency." }, 400);
@@ -147,6 +156,10 @@ export async function POST(request: Request) {
 
   if (action === "create_quote") {
     const orderId = clean(body.orderId, 120);
+    const mutation = await assertOrderCommercialMutationAllowed(orderId, access.staff);
+    if (mutation.kind === "locked") return lockedCommercialMutationResponse();
+    if (mutation.kind === "forbidden") return json({ ok: false, error: "This order is outside your commercial access." }, 403);
+    if (mutation.kind === "missing_order") return json({ ok: false, error: "Transport order not found." }, 404);
     const pointer = await commercialPointer(orderId);
     const result = await createQuoteFromOrderPricing(orderId, clean(body.validUntil, 20) || null, clean(body.customerNote, 3000), actor, access.staff, pointer.versionId, pointer.fingerprint);
     if (result.kind === "unavailable") return json({ ok: false, error: "Pricing storage is unavailable." }, 503);
