@@ -1,5 +1,5 @@
 import { getAdminAccess } from "../../../../../admin/admin-auth";
-import { createDeliveryAttempt, getDeliveryControl, reviewPod, updateDeliveryAttempt } from "../../../../../admin/delivery/delivery-control.server";
+import { adoptTrackedDelivery, createDeliveryAttempt, getDeliveryControl, reviewPod, updateDeliveryAttempt } from "../../../../../admin/delivery/delivery-control.server";
 import { deliveryAttemptStatuses, type DeliveryAttemptStatus } from "../../../../../admin/delivery/delivery-control";
 import { getStaffContext } from "../../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../../request-security";
@@ -26,6 +26,7 @@ function errorFor(kind: string) {
   if (kind === "outcome_detail_required") return json({ ok: false, error: "Delivered attempts require a recipient name; failed/refused attempts require a reason of at least 6 characters." }, 400);
   if (kind === "invalid_coordinates") return json({ ok: false, error: "Delivery coordinates are invalid." }, 400);
   if (kind === "already_delivered") return json({ ok: false, error: "This shipment is already delivered and cannot start another attempt." }, 409);
+  if (kind === "not_delivered") return json({ ok: false, error: "Only a shipment already marked Delivered by Live Visibility can be adopted into the POD workflow." }, 409);
   if (kind === "delivery_required") return json({ ok: false, error: "POD can only be reviewed after a delivered attempt." }, 409);
   if (kind === "evidence_required") return json({ ok: false, error: "Upload at least one POD evidence item before verification." }, 409);
   if (kind === "review_note_required") return json({ ok: false, error: "Record a rejection reason of at least 8 characters." }, 400);
@@ -63,6 +64,12 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     }, actor, auth.staff);
     if (result.kind !== "created") return errorFor(result.kind);
     return json({ ok: true, attempt: result.attempt }, 201);
+  }
+
+  if (action === "adopt_delivered") {
+    const result = await adoptTrackedDelivery(reference, actor, auth.staff);
+    if (result.kind !== "created" && result.kind !== "ready") return errorFor(result.kind);
+    return json({ ok: true, attempt: result.attempt });
   }
 
   if (action === "update_attempt") {
