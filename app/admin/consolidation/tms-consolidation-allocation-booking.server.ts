@@ -257,6 +257,10 @@ export async function confirmConsolidatedLoadBookingWithPreparedAllocation(input
       const allocationMap = prepared.allocations;
       if (sourceVersions.length !== houseOrders.length || bookedHouseVersions.length !== houseOrders.length || customerAuthorities.length !== houseOrders.length) return { kind: "commercial_allocation_stale" as const };
       if (houseOrders.some((order) => allocationMap.get(order.id) === undefined)) return { kind: "commercial_allocation_stale" as const };
+      for (const sourceVersion of sourceVersions) {
+        const sourceBookable = await assertBookableCommercialVersionInTransaction(transaction, sourceVersion);
+        if (!sourceBookable.decision.ok) return { kind: "commercial_allocation_stale" as const };
+      }
 
       const customerIds = [...new Set(houseOrders.map((order) => normalizeCommercialId(order.get("customer_id"))))];
       const customers = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
