@@ -40,8 +40,23 @@ function safeEqual(left: string, right: string) {
   return timingSafeEqual(leftBytes, rightBytes);
 }
 
+function keyTokens(key: string) {
+  return key.trim().toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+function hasPair(tokens: string[], left: string, right: string) {
+  return tokens.some((token, index) => token === left && tokens[index + 1] === right);
+}
+
 function forbiddenGptField(key: string) {
-  return /(?:secret|password|credential|api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|raw[_-]?(?:payload|x12|edi)|signed[_-]?url|download[_-]?url|storage[_-]?(?:path|url)|private[_-]?url)/i.test(key);
+  const tokens = keyTokens(key);
+  const sensitiveToken = tokens.some((token) => ["secret", "password", "credential", "credentials", "authorization"].includes(token));
+  if (sensitiveToken) return true;
+  if (hasPair(tokens, "api", "key") || hasPair(tokens, "access", "token") || hasPair(tokens, "refresh", "token")) return true;
+  if (tokens[0] === "raw" && ["payload", "x12", "edi"].includes(tokens[1] ?? "")) return true;
+  if (hasPair(tokens, "signed", "url") || hasPair(tokens, "download", "url") || hasPair(tokens, "private", "url")) return true;
+  if (hasPair(tokens, "storage", "path") || hasPair(tokens, "storage", "url")) return true;
+  return false;
 }
 
 function looksLikePrivateSignedUrl(value: string) {
