@@ -123,6 +123,7 @@ export async function canBootstrapEmptyStaffDirectory(email: string) {
 }
 
 export async function staffProfileByUid(uid: string, _email = "") {
+  void _email;
   if (!firebaseRuntimeConfigured() || !uid.trim()) return null;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").doc(uid.trim()).get();
   if (!snapshot.exists) return null;
