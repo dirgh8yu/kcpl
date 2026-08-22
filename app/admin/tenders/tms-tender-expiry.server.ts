@@ -28,12 +28,17 @@ export async function reconcileExpiredTmsTenders() {
       const orderRef = db.collection("transport_orders").doc(orderId);
       const order = await transaction.get(orderRef);
       transaction.update(tenderDoc.ref, { status: "expired", updated_at: now });
-      if (order.exists && text(order.get("active_tender_id")) === tenderDoc.id && order.get("status") === "tendering") {
-        transaction.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
-        transaction.create(orderRef.collection("events").doc(`evt-${crypto.randomUUID()}`), {
+      if (order.exists && text(order.get("active_tender_id")).trim().toUpperCase() === tenderDoc.id) {
+        const orderStatus = text(order.get("status"));
+        if (orderStatus === "selected" || orderStatus === "tendering") {
+          transaction.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
+        } else {
+          transaction.update(orderRef, { active_tender_id: null, updated_at: now });
+        }
+        transaction.create(orderRef.collection("events").doc(`tender-expired-${tenderDoc.id}`), {
           type: "tender_expired",
           title: `Tender expired: ${text(freshTender.get("tender_reference")) || tenderDoc.id}`,
-          detail: `No response was recorded by ${due}. The order is available for re-tendering.`,
+          detail: `No response was recorded by ${due}. The tender is no longer active.`,
           actor_name: "KCPL Tender Desk",
           actor_email: null,
           created_at: now,
