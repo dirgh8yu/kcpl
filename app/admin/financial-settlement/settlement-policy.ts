@@ -6,7 +6,7 @@ import {
   normalizeCommercialId,
   sameCommercialMoney,
   type CommercialSnapshot,
-} from "../commercial-lineage/commercial-lineage";
+} from "../commercial-lineage/commercial-lineage.ts";
 
 export type SettlementBasis = {
   invoiceSubtotal: number;
