@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { adminSecurityConfigurationValid } from "./admin-security-config";
-import { isActiveStaffProfile, staffProfileByUid } from "./staff-directory.server";
+import { canBootstrapEmptyStaffDirectory, staffProfileByUid } from "./staff-directory.server";
 
 export const ADMIN_SESSION_COOKIE = "kcpl_admin_session";
 export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -37,13 +37,18 @@ export function isAllowedAdminEmail(email: string | undefined | null) {
 
 export async function isAuthorizedAdminUser(uid: string, email: string | undefined | null) {
   if (!email) return false;
-  if (isAllowedAdminEmail(email)) {
-    // An explicit inactive staff profile overrides the bootstrap allowlist so a
-    // management user can suspend access without deleting Firebase Auth users.
-    const profile = await staffProfileByUid(uid, email).catch(() => null);
-    return profile ? profile.active : true;
+  try {
+    // Once a persisted profile exists, it is authoritative even when the email is
+    // present in KCPL_ADMIN_EMAILS. The environment allowlist is bootstrap-only.
+    const profile = await staffProfileByUid(uid, email);
+    if (profile) return profile.active;
+    if (!isAllowedAdminEmail(email)) return false;
+    return await canBootstrapEmptyStaffDirectory(email);
+  } catch {
+    // Firebase/profile lookup failures must never turn an allowlisted email into a
+    // fallback Management principal.
+    return false;
   }
-  return isActiveStaffProfile(uid, email).catch(() => false);
 }
 
 export async function getAdminAccess(): Promise<AdminAccess> {

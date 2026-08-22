@@ -30,6 +30,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (gate.kind === "blocked") return json({ ok: false, error: "Match-Pay is blocking payment. Resolve the freight audit discrepancy or obtain Management variance approval first.", code: "FREIGHT_AUDIT_BLOCKED", audit: gate.audit }, 409);
   if (gate.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
   if (gate.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
+  if (gate.kind === "relationship_mismatch") return json({ ok: false, error: "This supplier bill has an incompatible shipment or order branch relationship." }, 409);
   if (gate.kind === "unavailable") return json({ ok: false, error: "Freight Audit storage is unavailable." }, 503);
 
   const idempotencyKey = request.headers.get("idempotency-key")?.trim() || (typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "");
@@ -46,6 +47,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (result.kind === "updated" || result.kind === "idempotent") return json({ ok: true, idempotent: result.kind === "idempotent" });
   if (result.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
+  if (result.kind === "relationship_mismatch") return json({ ok: false, error: "This supplier bill has an incompatible supplier, shipment or order branch relationship." }, 409);
   if (result.kind === "invalid_amount" || result.kind === "invalid_payment_date" || result.kind === "invalid_method" || result.kind === "invalid_currency") return json({ ok: false, error: "The supplier payment request is invalid." }, 400);
   if (result.kind === "already_paid") return json({ ok: false, code: "ALREADY_PAID", error: "This supplier bill is already fully paid." }, 409);
   if (result.kind === "overpayment") return json({ ok: false, code: "OVERPAYMENT", error: "The payment exceeds the current outstanding balance." }, 409);

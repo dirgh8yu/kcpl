@@ -8,7 +8,7 @@ export function crmBranchValue(value: unknown): KcplBranch | null {
 
 export function staffCanUseCrmBranch(context: KcplStaffContext, branch: string | null | undefined) {
   const parsed = crmBranchValue(branch);
-  return context.can_access_all_branches || Boolean(parsed && staffCanAccessBranch(context, parsed));
+  return Boolean(parsed && staffCanAccessBranch(context, parsed));
 }
 
 export async function checkCrmCustomerAccess(customerId: string, context: KcplStaffContext) {
@@ -18,9 +18,7 @@ export async function checkCrmCustomerAccess(customerId: string, context: KcplSt
   if (!snapshot.exists || snapshot.get("archived") === true) return { kind: "missing" as const };
 
   const branch = crmBranchValue(snapshot.get("primary_branch"));
-  if (!context.can_access_all_branches && (!branch || !staffCanAccessBranch(context, branch))) {
-    return { kind: "forbidden" as const };
-  }
+  if (!branch || !staffCanAccessBranch(context, branch)) return { kind: "forbidden" as const };
 
   return { kind: "ready" as const, branch, id, snapshot };
 }

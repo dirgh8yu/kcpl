@@ -1,6 +1,6 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue, strictBranchValue } from "../branch-access-policy";
-import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
+import { canAccessPartnerOwner, isPartnerReference, partnerOwnerCompatibleWithBranch } from "../partners/partner-policy";
 import { normalizeSupplierBillReference, supplierIdentityKey } from "../payables/payables-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { isDuplicateSupplierIdentityCandidate } from "../partners/reconciliation/supplier-reconciliation-policy";
@@ -38,7 +38,9 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
     if (!partner.exists) return { kind: "missing_partner" as const };
     const billBranch = strictBranchValue(bill.get("branch"));
     if (!billBranch || !canAccessBranchValue(context, billBranch)) return { kind: "forbidden" as const };
-    if (!canAccessPartnerOwner(context, partner.get("owner_branch"))) return { kind: "forbidden" as const };
+    const partnerOwner = partner.get("owner_branch");
+    if (!canAccessPartnerOwner(context, partnerOwner)) return { kind: "forbidden" as const };
+    if (!partnerOwnerCompatibleWithBranch(partnerOwner, billBranch)) return { kind: "scope_mismatch" as const };
     const billStatus = text(bill.get("status"));
     if (billStatus === "void") return { kind: "void_bill" as const };
     if (numberValue(bill.get("amount_paid")) > 0 || !existingPayments.empty || ["partially_paid", "paid"].includes(billStatus) || ["partially_paid", "paid"].includes(text(bill.get("payment_status")))) {

@@ -1,5 +1,5 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { canAccessBranchValue } from "../branch-access-policy";
+import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { crmCurrencies } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { recomputeCustomerFinance } from "../finance/finance.server";
@@ -83,7 +83,25 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     const invoiceSnapshot = await transaction.get(invoiceRef);
     if (!invoiceSnapshot.exists) return { kind: "missing" as const };
     const invoice = invoiceSnapshot.data() as Record<string, unknown>;
-    if (!context.permissions.canManageFinance || !canAccessBranchValue(context, invoice.branch)) return { kind: "forbidden" as const };
+    const branch = strictBranchValue(invoice.branch);
+    if (!branch || !canAccessBranchValue(context, branch)) return { kind: "forbidden" as const };
+
+    const customerId = text(invoice.customer_id).trim().toUpperCase();
+    if (!customerId) return { kind: "relationship_mismatch" as const };
+    const shipmentReference = nullable(invoice.shipment_reference)?.toUpperCase() ?? null;
+    const [customer, shipment] = await Promise.all([
+      transaction.get(db.collection("customers").doc(customerId)),
+      shipmentReference ? transaction.get(db.collection("shipments").doc(shipmentReference)) : Promise.resolve(null),
+    ]);
+    if (!customer.exists || !compatibleRecordBranches(branch, customer.get("primary_branch"))) return { kind: "relationship_mismatch" as const };
+    if (shipmentReference && (!shipment?.exists || !compatibleRecordBranches(branch, shipment.get("primary_branch")))) {
+      return { kind: "relationship_mismatch" as const };
+    }
+    if (shipment?.exists) {
+      const shipmentCustomerId = text(shipment.get("customer_id")).trim().toUpperCase();
+      if (shipmentCustomerId && shipmentCustomerId !== customerId) return { kind: "relationship_mismatch" as const };
+    }
+
     const currentStatus = text(invoice.status);
     if (currentStatus === "paid" || numberValue(invoice.balance_due) <= 0) return { kind: "already_paid" as const };
     if (!["issued", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
@@ -109,7 +127,7 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     if (existingPayment.exists) {
       if (text(existingPayment.get("request_fingerprint")) === requestFingerprint) {
         return {
-          kind: "idempotent" as const, paymentId, customerId: text(invoice.customer_id), shipmentReference: nullable(invoice.shipment_reference),
+          kind: "idempotent" as const, paymentId, customerId, shipmentReference,
           currency: invoiceCurrency, amount: numberValue(existingPayment.get("amount")), remaining: numberValue(existingPayment.get("balance_after")),
         };
       }
@@ -132,7 +150,7 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
       settlement_basis_amount: basis.basis.totalPayable, settlement_basis_currency: invoiceCurrency, settlement_basis_version: 1, updated_at: now,
     });
     return {
-      kind: "updated" as const, paymentId, customerId: text(invoice.customer_id), shipmentReference: nullable(invoice.shipment_reference),
+      kind: "updated" as const, paymentId, customerId, shipmentReference,
       currency: invoiceCurrency, amount: applied.amount, remaining: applied.nextOutstanding,
     };
   });

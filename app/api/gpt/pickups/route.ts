@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     const now = new Date().toISOString();
     const rows: PickupQueueRow[] = relevant.flatMap((doc) => {
       const shipment = doc.data() as Record<string, unknown>;
-      const primary = branchValue(shipment.primary_branch) ?? branchValue(Array.isArray(shipment.handling_branches) ? shipment.handling_branches[0] : null);
+      const primary = branchValue(shipment.primary_branch);
       if (!primary) return [];
       const customerId = nullable(shipment.customer_id);
       const quote = quotes.get(text(shipment.quote_reference)) ?? {};

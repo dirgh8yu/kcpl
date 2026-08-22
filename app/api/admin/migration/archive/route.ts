@@ -13,6 +13,7 @@ import {
   type ArchiveCategory,
   type ArchiveEntityType,
 } from "../../../../admin/migration/archive/archive-data";
+import { canManagePaperArchive } from "../../../../admin/migration/archive/archive-scope-policy";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 
 function json(body: unknown, status = 200) {
@@ -23,7 +24,7 @@ async function authorizeArchive() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   const staff = await getStaffContext(access.user);
-  if (staff.permissions.role !== "management") return { response: json({ ok: false, error: "Paper archive access is restricted to KCPL Management." }, 403) };
+  if (!canManagePaperArchive(staff.permissions.role)) return { response: json({ ok: false, error: "Paper archive access is restricted to KCPL Management." }, 403) };
   return { user: access.user };
 }
 

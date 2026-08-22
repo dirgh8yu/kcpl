@@ -3,20 +3,17 @@ import { evaluateFreightAutomation } from "../../../admin/alerts/freight-automat
 import { dispatchAllAssignmentEmails } from "../../../admin/notifications/assignment-email.server";
 import { dispatchPendingAlertEmails } from "../../../admin/notifications/notification-email.server";
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
+import { automationMachineAuthorized } from "../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
-function bearer(request: Request) {
-  const value = request.headers.get("authorization")?.trim() ?? "";
-  return value.startsWith("Bearer ") ? value.slice(7).trim() : "";
-}
+export const automationIntegrationAuthorized = automationMachineAuthorized;
 
 export async function POST(request: Request) {
-  const configured = process.env.KCPL_AUTOMATION_SECRET?.trim() ?? "";
-  if (!configured) return json({ ok: false, error: "Automation scheduler authentication is not configured." }, 503);
-  if (bearer(request) !== configured) return json({ ok: false, error: "Automation authentication failed." }, 401);
+  const auth = automationIntegrationAuthorized(request);
+  if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
   try {
     const [result, payables, freight] = await Promise.all([
       evaluateAutomationRules(),

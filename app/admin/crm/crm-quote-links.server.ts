@@ -1,5 +1,6 @@
 import type { DocumentSnapshot } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { canMutateBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { recomputeCustomerFinance } from "../finance/finance.server";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "./crm-data";
@@ -125,13 +126,24 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
     if (!targetSnapshot.exists) return { kind: "missing_customer" as const };
     if (!quoteSnapshot.exists) return { kind: "missing_quote" as const };
 
+    const targetBranch = strictBranchValue(targetSnapshot.get("primary_branch"));
+    if (!targetBranch) return { kind: "invalid_branch" as const };
+    if (context && !canMutateBranchValue(context, targetBranch)) return { kind: "forbidden" as const };
+
     const currentCustomerId = nullable(quoteSnapshot.get("customer_id"));
     const shipmentReference = nullable(quoteSnapshot.get("shipment_reference"));
     const shipmentRef = shipmentReference ? db.collection("shipments").doc(shipmentReference) : null;
     const shipmentSnapshot = shipmentRef ? await transaction.get(shipmentRef) : null;
-    const shipmentCustomerId = shipmentSnapshot?.exists ? nullable(shipmentSnapshot.get("customer_id")) : null;
-    if (shipmentSnapshot?.exists && !shipmentVisible(shipmentSnapshot, context)) return { kind: "forbidden" as const };
+    if (shipmentRef && !shipmentSnapshot?.exists) return { kind: "missing_shipment" as const };
 
+    const shipmentBranch = shipmentSnapshot?.exists ? strictBranchValue(shipmentSnapshot.get("primary_branch")) : null;
+    if (shipmentSnapshot?.exists) {
+      if (!shipmentBranch) return { kind: "invalid_branch" as const };
+      if (!compatibleRecordBranches(targetBranch, shipmentBranch)) return { kind: "branch_mismatch" as const };
+      if (context && !canMutateBranchValue(context, shipmentBranch)) return { kind: "forbidden" as const };
+    }
+
+    const shipmentCustomerId = shipmentSnapshot?.exists ? nullable(shipmentSnapshot.get("customer_id")) : null;
     const previousQuoteRef = currentCustomerId && currentCustomerId !== id
       ? db.collection("customers").doc(currentCustomerId)
       : null;
@@ -141,6 +153,13 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
 
     const previousQuoteSnapshot = previousQuoteRef ? await transaction.get(previousQuoteRef) : null;
     const previousShipmentSnapshot = previousShipmentRef ? await transaction.get(previousShipmentRef) : null;
+    if (previousQuoteRef && !previousQuoteSnapshot?.exists) return { kind: "related_customer_missing" as const };
+    if (previousShipmentRef && !previousShipmentSnapshot?.exists) return { kind: "related_customer_missing" as const };
+    for (const previous of [previousQuoteSnapshot, previousShipmentSnapshot]) {
+      if (!previous?.exists) continue;
+      if (!compatibleRecordBranches(targetBranch, previous.get("primary_branch"))) return { kind: "branch_mismatch" as const };
+    }
+
     const quoteAlreadyLinked = currentCustomerId === id;
     const shipmentAlreadyLinked = !shipmentSnapshot?.exists || shipmentCustomerId === id;
     const affectedCustomerIds = [...new Set([id, currentCustomerId, shipmentCustomerId].filter((value): value is string => Boolean(value)))];
@@ -238,7 +257,7 @@ export async function linkQuoteToCrmCustomer(customerId: string, quoteReference:
 export async function createCrmCustomerFromQuote(
   quoteReference: string,
   actor: Actor,
-  primaryBranch: KcplBranch = "Kathmandu",
+  primaryBranch?: KcplBranch,
   context?: KcplStaffContext,
 ) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
@@ -250,10 +269,17 @@ export async function createCrmCustomerFromQuote(
   if (currentCustomerId) return { kind: "already_linked" as const, customerId: currentCustomerId };
 
   const shipmentReference = nullable(quote.get("shipment_reference"));
-  if (shipmentReference && context) {
+  let canonicalBranch = strictBranchValue(primaryBranch);
+  if (shipmentReference) {
     const shipment = await db.collection("shipments").doc(shipmentReference).get();
-    if (!shipment.exists || !shipmentVisible(shipment, context)) return { kind: "forbidden" as const };
+    if (!shipment.exists) return { kind: "missing_shipment" as const };
+    const shipmentBranch = strictBranchValue(shipment.get("primary_branch"));
+    if (!shipmentBranch) return { kind: "invalid_branch" as const };
+    if (canonicalBranch && canonicalBranch !== shipmentBranch) return { kind: "branch_mismatch" as const };
+    canonicalBranch = shipmentBranch;
   }
+  if (!canonicalBranch) return { kind: "invalid_branch" as const };
+  if (context && !canMutateBranchValue(context, canonicalBranch)) return { kind: "forbidden" as const };
 
   const displayName = text(quote.get("company_name"), text(quote.get("contact_name"), "New customer")).trim();
   const primaryEmail = text(quote.get("contact_email")).trim().toLowerCase();
@@ -282,7 +308,7 @@ export async function createCrmCustomerFromQuote(
     industry: "",
     taxId: "",
     country: "Not recorded",
-    primaryBranch,
+    primaryBranch: canonicalBranch,
     accountManagerUid,
     accountManagerName,
     accountManagerEmail,

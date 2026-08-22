@@ -215,6 +215,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
+    if (result.kind === "invalid_branch") return crmJson({ ok: false, error: "The customer has invalid canonical branch data and must be repaired before it can be edited." }, 409);
+    if (result.kind === "branch_conflict") return crmJson({ ok: false, error: `Customer branch cannot change while linked ${result.relation.replaceAll("_", " ")} ${result.reference} belongs to another branch.` }, 409);
     if (includesCommercial && preferredCurrency !== currentPreferredCurrency) await recomputeCustomerFinance(id);
     const customer = await getCrmCustomer(id);
     const financeSnapshot = auth.permissions.canViewCommercial

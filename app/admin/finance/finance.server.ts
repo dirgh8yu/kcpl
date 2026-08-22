@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { canAccessBranchValue } from "../branch-access-policy";
+import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { type KcplStaffContext } from "../staff-directory.server";
 import {
@@ -38,7 +38,8 @@ function currencyValue(value: unknown): CrmCurrency {
 }
 
 function branchValue(value: unknown): KcplBranch {
-  return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : "Kathmandu";
+  if (!kcplBranches.includes(value as KcplBranch)) throw new Error("Finance record requires a canonical KCPL branch");
+  return value as KcplBranch;
 }
 
 function invoiceStatus(value: unknown): FinanceInvoiceStatus {
@@ -233,9 +234,24 @@ export async function recomputeCustomerFinance(customerId: string) {
 export async function getFinanceInvoice(reference: string, context: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!canAccessFinance(context)) return { kind: "forbidden" as const };
-  const snapshot = await firebaseAdminDb().collection("invoices").doc(reference.trim().toUpperCase()).get();
+  const db = firebaseAdminDb();
+  const snapshot = await db.collection("invoices").doc(reference.trim().toUpperCase()).get();
   if (!snapshot.exists) return { kind: "missing" as const };
-  if (!canAccessInvoice(context, snapshot.get("branch"))) return { kind: "forbidden" as const };
+  const branch = strictBranchValue(snapshot.get("branch"));
+  if (!branch || !canAccessInvoice(context, branch)) return { kind: "forbidden" as const };
+  const customerId = text(snapshot.get("customer_id")).trim().toUpperCase();
+  if (!customerId) return { kind: "relationship_mismatch" as const };
+  const shipmentReference = nullable(snapshot.get("shipment_reference"))?.toUpperCase() ?? null;
+  const [customer, shipment] = await Promise.all([
+    db.collection("customers").doc(customerId).get(),
+    shipmentReference ? db.collection("shipments").doc(shipmentReference).get() : Promise.resolve(null),
+  ]);
+  if (!customer.exists || !compatibleRecordBranches(branch, customer.get("primary_branch"))) return { kind: "relationship_mismatch" as const };
+  if (shipmentReference && (!shipment?.exists || !compatibleRecordBranches(branch, shipment.get("primary_branch")))) return { kind: "relationship_mismatch" as const };
+  if (shipment?.exists) {
+    const shipmentCustomerId = text(shipment.get("customer_id")).trim().toUpperCase();
+    if (shipmentCustomerId && shipmentCustomerId !== customerId) return { kind: "relationship_mismatch" as const };
+  }
   const invoice = await invoiceFromSnapshot(snapshot);
   return { kind: "ready" as const, invoice };
 }
@@ -315,11 +331,19 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
   const customer = await db.collection("customers").doc(customerId).get();
   if (!customer.exists) return { kind: "customer_missing" as const };
   const rawBranch = shipment?.exists ? shipment.get("primary_branch") : customer.get("primary_branch");
-  if (!canAccessInvoice(context, rawBranch)) return { kind: "forbidden" as const };
-  const branch = branchValue(rawBranch);
+  const branch = strictBranchValue(rawBranch);
+  if (!branch || !canAccessInvoice(context, branch)) return { kind: "forbidden" as const };
+  if (!compatibleRecordBranches(branch, customer.get("primary_branch"))) return { kind: "relationship_mismatch" as const };
 
   const quoteReference = shipment?.exists ? nullable(shipment.get("quote_reference")) : null;
   const quote = quoteReference ? await db.collection("quotes").doc(quoteReference).get() : null;
+  if (quoteReference && !quote?.exists) return { kind: "relationship_mismatch" as const };
+  if (quote?.exists) {
+    const quoteShipmentId = text(quote.get("shipment_reference")).trim().toUpperCase();
+    const quoteCustomerId = text(quote.get("customer_id")).trim().toUpperCase();
+    if (quoteShipmentId && quoteShipmentId !== shipmentId) return { kind: "relationship_mismatch" as const };
+    if (quoteCustomerId && quoteCustomerId !== customerId) return { kind: "relationship_mismatch" as const };
+  }
   const quoteData = quote?.exists ? quote.data() as Record<string, unknown> : {};
   const issueDate = safeDate(input.issueDate, operationalDate());
   const paymentTerms = Math.max(0, Math.floor(numberValue(customer.get("payment_terms_days"))));

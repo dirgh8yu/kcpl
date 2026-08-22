@@ -17,6 +17,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
   const result = await getFinanceInvoice(reference, staff);
   if (result.kind === "missing") return <Gate title="Invoice not found" detail="This invoice reference does not exist."/>;
   if (result.kind === "forbidden") return <Gate title="Outside your finance access" detail="This invoice belongs to a branch outside your staff scope."/>;
+  if (result.kind === "relationship_mismatch") return <Gate title="Invoice relationship requires repair" detail="This invoice is linked to customer or shipment records with incompatible canonical scope and cannot be opened until the relationship is repaired."/>;
   if (result.kind === "unavailable") return <Gate title="Finance unavailable" detail="The Firestore finance backend is unavailable for this deployment."/>;
   return <InvoiceWorkspace invoice={result.invoice} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>;
 }

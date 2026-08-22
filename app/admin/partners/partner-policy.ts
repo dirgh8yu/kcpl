@@ -12,6 +12,18 @@ export function canAccessPartnerOwner(scope: BranchAccessScope, ownerBranch: unk
   return canAccessBranchValue(scope, ownerBranch);
 }
 
+/**
+ * Viewing a partner and linking it to a branch-scoped operational/financial
+ * record are different decisions. Global partners are organization-compatible;
+ * a branch-owned partner may only be linked to that exact canonical branch.
+ */
+export function partnerOwnerCompatibleWithBranch(ownerBranch: unknown, recordBranch: unknown) {
+  const branch = strictBranchValue(recordBranch);
+  if (!branch) return false;
+  if (ownerBranch === "Global") return true;
+  return strictBranchValue(ownerBranch) === branch;
+}
+
 export function canEditPartnerNetwork(permissions: StaffCapabilities) {
   return permissions.role !== "operations";
 }

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { resolveStaffIdentity } from "../staff-directory.server";
 import type {
   CrmAccountStatus,
@@ -73,6 +74,33 @@ export async function updateCrmCustomer(
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(customerRef);
     if (!snapshot.exists || snapshot.get("archived") === true) return { kind: "missing" as const };
+    const currentBranch = strictBranchValue(snapshot.get("primary_branch"));
+    if (!currentBranch) return { kind: "invalid_branch" as const };
+
+    if (currentBranch !== input.primaryBranch) {
+      const [shipments, invoices, payables, quotes] = await Promise.all([
+        transaction.get(db.collection("shipments").where("customer_id", "==", id)),
+        transaction.get(db.collection("invoices").where("customer_id", "==", id)),
+        transaction.get(db.collection("payables").where("customer_id", "==", id)),
+        transaction.get(db.collection("quotes").where("customer_id", "==", id)),
+      ]);
+      for (const shipment of shipments.docs) {
+        if (!compatibleRecordBranches(input.primaryBranch, shipment.get("primary_branch"))) return { kind: "branch_conflict" as const, relation: "shipment" as const, reference: shipment.id };
+      }
+      for (const invoice of invoices.docs) {
+        if (!compatibleRecordBranches(input.primaryBranch, invoice.get("branch"))) return { kind: "branch_conflict" as const, relation: "invoice" as const, reference: invoice.id };
+      }
+      for (const payable of payables.docs) {
+        if (!compatibleRecordBranches(input.primaryBranch, payable.get("branch"))) return { kind: "branch_conflict" as const, relation: "payable" as const, reference: payable.id };
+      }
+      const linkedShipmentIds = [...new Set(quotes.docs.map((quote) => typeof quote.get("shipment_reference") === "string" ? quote.get("shipment_reference").trim().toUpperCase() : "").filter(Boolean))];
+      for (const shipmentId of linkedShipmentIds) {
+        const linkedShipment = await transaction.get(db.collection("shipments").doc(shipmentId));
+        if (!linkedShipment.exists || !compatibleRecordBranches(input.primaryBranch, linkedShipment.get("primary_branch"))) {
+          return { kind: "branch_conflict" as const, relation: "quote_shipment" as const, reference: shipmentId };
+        }
+      }
+    }
 
     const update: Record<string, unknown> = {
       entity_kind: input.entityKind,

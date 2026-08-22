@@ -30,19 +30,41 @@ export function branchAccessSet(primary: unknown, handling: unknown): AccessBran
   return [...new Set([...(parsedPrimary ? [parsedPrimary] : []), ...strictBranchArray(handling)])];
 }
 
+/**
+ * Legacy policy: branchless or malformed records are not readable through scoped
+ * server helpers, even for Management. They must be repaired through an explicit
+ * maintenance workflow before normal access resumes. We prefer temporary denial
+ * over silently turning an ambiguous legacy record into organization-wide data.
+ */
 export function canAccessBranchValue(scope: BranchAccessScope, branch: unknown) {
-  if (scope.can_access_all_branches) return true;
   const parsed = strictBranchValue(branch);
-  return Boolean(parsed && scope.branches.includes(parsed));
+  if (!parsed) return false;
+  return scope.can_access_all_branches || scope.branches.includes(parsed);
+}
+
+/** Canonical mutation policy. The target record itself must carry a valid KCPL branch. */
+export function canMutateBranchValue(scope: BranchAccessScope, branch: unknown) {
+  return canAccessBranchValue(scope, branch);
+}
+
+export function compatibleRecordBranches(...branches: unknown[]) {
+  if (branches.length === 0) return false;
+  const parsed = branches.map(strictBranchValue);
+  if (parsed.some((branch) => branch === null)) return false;
+  return parsed.every((branch) => branch === parsed[0]);
 }
 
 export function canAccessBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
-  if (scope.can_access_all_branches) return true;
-  return branchAccessSet(primary, handling).some((branch) => scope.branches.includes(branch));
+  const branches = branchAccessSet(primary, handling);
+  if (branches.length === 0) return false;
+  return scope.can_access_all_branches || branches.some((branch) => scope.branches.includes(branch));
+}
+
+export function canMutateBranchSet(scope: BranchAccessScope, primary: unknown, handling: unknown) {
+  return canAccessBranchSet(scope, primary, handling);
 }
 
 export function canAccessQuoteLinkedRecords(scope: BranchAccessScope, input: QuoteLinkedAccessInput) {
-  if (scope.can_access_all_branches) return true;
   if (input.shipment_reference) {
     if (!input.shipment_exists) return false;
     return canAccessBranchSet(scope, input.shipment_primary_branch, input.shipment_handling_branches);

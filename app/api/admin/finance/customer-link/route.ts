@@ -1,10 +1,21 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
+import { authorizeFinanceCustomerLink } from "../../../../admin/finance/finance-authorization.server";
 import { confirmInvoiceCustomerForShipment, createInvoiceCustomerFromShipmentQuote } from "../../../../admin/finance/finance-linking.server";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
+}
+
+function authorizationFailure(kind: string) {
+  if (kind === "unavailable") return json({ ok: false, error: "Finance authorization storage is unavailable." }, 503);
+  if (kind === "shipment_missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (kind === "customer_missing") return json({ ok: false, error: "CRM customer not found." }, 404);
+  if (kind === "quote_missing") return json({ ok: false, error: "The originating quote could not be found for this shipment." }, 404);
+  if (kind === "invalid_branch") return json({ ok: false, error: "Shipment has no authoritative KCPL branch and cannot be changed." }, 409);
+  if (kind === "relationship_mismatch") return json({ ok: false, error: "Shipment, quote and customer must belong to a compatible KCPL branch." }, 409);
+  return json({ ok: false, error: "You cannot modify finance records for this branch." }, 403);
 }
 
 export async function POST(request: Request) {
@@ -25,13 +36,16 @@ export async function POST(request: Request) {
   const actor = { name: access.user.displayName, email: access.user.email };
 
   if (action === "create_from_quote") {
-    const result = await createInvoiceCustomerFromShipmentQuote(shipmentReference, actor);
+    const authorization = await authorizeFinanceCustomerLink(shipmentReference, null, staff);
+    if (authorization.kind !== "authorized") return authorizationFailure(authorization.kind);
+    const result = await createInvoiceCustomerFromShipmentQuote(shipmentReference, actor, staff);
     if (result.kind === "created_and_linked" || result.kind === "linked") {
       return json({ ok: true, customerId: result.customerId, customerName: "customerName" in result ? result.customerName : undefined });
     }
     if (result.kind === "possible_duplicate") {
-      return json({ ok: false, code: "possible_duplicate", error: "A similar CRM customer already exists. Confirm the existing customer instead.", suggestions: result.suggestions }, 409);
+      return json({ ok: false, code: "possible_duplicate", error: "A similar CRM customer already exists in this branch. Confirm the existing customer instead.", suggestions: result.suggestions }, 409);
     }
+    if (["forbidden", "invalid_branch", "relationship_mismatch", "customer_missing"].includes(result.kind)) return authorizationFailure(result.kind);
     if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment not found." }, 404);
     if (result.kind === "quote_missing") return json({ ok: false, error: "The originating quote could not be found for this shipment." }, 404);
     if (result.kind === "unavailable") return json({ ok: false, error: "CRM customer creation is temporarily unavailable." }, 503);
@@ -41,9 +55,12 @@ export async function POST(request: Request) {
   const customerId = typeof body.customerId === "string" ? body.customerId.trim().toUpperCase() : "";
   if (!customerId) return json({ ok: false, error: "Choose a CRM customer." }, 400);
 
-  const result = await confirmInvoiceCustomerForShipment(shipmentReference, customerId, actor);
+  const authorization = await authorizeFinanceCustomerLink(shipmentReference, customerId, staff);
+  if (authorization.kind !== "authorized") return authorizationFailure(authorization.kind);
+  const result = await confirmInvoiceCustomerForShipment(shipmentReference, customerId, actor, staff);
   if (result.kind === "linked") return json({ ok: true, customerId: result.customerId });
   if (result.kind === "already_linked") return json({ ok: false, error: `This shipment is already linked to ${result.customerId}.` }, 409);
+  if (["forbidden", "invalid_branch", "relationship_mismatch", "customer_missing"].includes(result.kind)) return authorizationFailure(result.kind);
   if (result.kind === "missing_customer") return json({ ok: false, error: "CRM customer not found. Check the KCPL-C reference." }, 404);
   if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (result.kind === "quote_missing") return json({ ok: false, error: "The originating quote could not be found for this shipment." }, 404);

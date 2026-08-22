@@ -37,9 +37,17 @@ export async function POST(request: Request) {
   catch { return json({ ok: false, error: "The EDI request could not be read." }, 400); }
   const action = clean(body.action, 40);
   if (action !== "queue_204") return json({ ok: false, error: "Unknown EDI staff action." }, 400);
-  const result = await queueTenderAsEdi204(clean(body.tenderId, 140), { name: access.user.displayName, email: access.user.email });
+  const result = await queueTenderAsEdi204(
+    clean(body.tenderId, 140),
+    { name: access.user.displayName, email: access.user.email },
+    access.staff,
+  );
   if (result.kind === "unavailable") return json({ ok: false, error: "EDI storage is unavailable." }, 503);
   if (result.kind === "missing" || result.kind === "missing_order") return json({ ok: false, error: "Tender or transport order not found." }, 404);
+  if (result.kind === "forbidden") return json({ ok: false, error: "You cannot dispatch a tender for this branch." }, 403);
+  if (result.kind === "invalid_branch" || result.kind === "branch_mismatch" || result.kind === "partner_branch_mismatch") {
+    return json({ ok: false, error: "Tender, order and partner scope is inconsistent and cannot be dispatched." }, 409);
+  }
   if (result.kind === "invalid_state") return json({ ok: false, error: "Only a sent tender can be queued as EDI 204." }, 409);
   if (result.kind === "already_dispatched") return json({ ok: false, error: "This tender was already dispatched by email and cannot also be converted to EDI 204." }, 409);
   if (result.kind === "wrong_channel") return json({ ok: false, error: "This tender channel cannot be converted to EDI 204." }, 409);

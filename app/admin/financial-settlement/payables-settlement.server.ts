@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { canAccessBranchValue } from "../branch-access-policy";
+import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { freightAuditPaymentAllowed, freightAuditStatuses, normalizeAuditReference, type FreightAuditStatus } from "../freight-audit/freight-audit";
 import { jobCostCategories } from "../job-file";
-import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
+import { canAccessPartnerOwner, isPartnerReference, partnerOwnerCompatibleWithBranch } from "../partners/partner-policy";
 import type { CreatePayableInput } from "../payables/payables-data";
 import { normalizeSupplierBillReference, payableDateError, supplierIdentityKey, validPayableCalendarDate } from "../payables/payables-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
@@ -139,6 +139,7 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     if (!kcplBranches.includes(rawBranch as KcplBranch)) return { kind: "invalid_branch" as const };
     if (!canAccess(context, rawBranch)) return { kind: "forbidden" as const };
     const branch = rawBranch as KcplBranch;
+    if (supplier?.exists && !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), branch)) return { kind: "supplier_scope_mismatch" as const };
     const supplierName = supplier?.exists ? text(supplier.get("display_name"), supplierId) : input.supplierName.trim();
     if (!supplierName) return { kind: "supplier_required" as const };
     const supplierKey = supplierIdentityKey(supplier?.exists ? supplierId : "", supplierName);
@@ -152,6 +153,8 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     const customerId = nullable(shipmentData.customer_id);
     const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
     const customer = customerRef ? await transaction.get(customerRef) : null;
+    if (customerId && !customer?.exists) return { kind: "customer_missing" as const };
+    if (customer?.exists && !compatibleRecordBranches(branch, customer.get("primary_branch"))) return { kind: "customer_scope_mismatch" as const };
     const uniqueKey = supplierInvoiceUniquenessKey(supplierKey, normalizedSupplierBillReference);
     const uniqueRef = db.collection("supplier_invoice_uniques").doc(uniqueKey);
     const unique = await transaction.get(uniqueRef);
@@ -231,7 +234,15 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     const billSnapshot = await transaction.get(billRef);
     if (!billSnapshot.exists) return { kind: "missing" as const };
     const bill = billSnapshot.data() as Record<string, unknown>;
-    if (!canAccess(context, bill.branch)) return { kind: "forbidden" as const };
+    const billBranch = strictBranchValue(bill.branch);
+    if (!billBranch || !canAccess(context, billBranch)) return { kind: "forbidden" as const };
+    const supplierId = nullable(bill.supplier_id)?.toUpperCase() ?? null;
+    if (supplierId && isPartnerReference(supplierId)) {
+      const supplier = await transaction.get(db.collection("partners").doc(supplierId));
+      if (!supplier.exists || !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), billBranch)) {
+        return { kind: "relationship_mismatch" as const };
+      }
+    }
     const currentStatus = status(bill.status);
     if (currentStatus === "paid" || numberValue(bill.balance_due) <= 0) return { kind: "already_paid" as const };
     if (!["approved", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
@@ -258,7 +269,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       if (text(existingPayment.get("request_fingerprint")) === requestFingerprint) {
         return {
           kind: "idempotent" as const, paymentId, currency: billCurrency, amount: numberValue(existingPayment.get("amount")),
-          remaining: numberValue(existingPayment.get("balance_after")), shipmentReference: nullable(bill.shipment_reference), supplierId: nullable(bill.supplier_id),
+          remaining: numberValue(existingPayment.get("balance_after")), shipmentReference: nullable(bill.shipment_reference), supplierId,
         };
       }
       return { kind: "idempotency_conflict" as const };
@@ -273,6 +284,9 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     const shipmentReference = nullable(bill.shipment_reference)?.toUpperCase() ?? null;
     const shipmentRef = shipmentReference ? db.collection("shipments").doc(shipmentReference) : null;
     const shipment = shipmentRef ? await transaction.get(shipmentRef) : null;
+    if (shipmentReference && (!shipment?.exists || !compatibleRecordBranches(billBranch, shipment.get("primary_branch")))) {
+      return { kind: "relationship_mismatch" as const };
+    }
     const shipmentData = shipment?.exists ? shipment.data() as Record<string, unknown> : {};
     const orderId = nullable(shipmentData.transport_order_id);
     const rateCardId = nullable(shipmentData.procurement_rate_card_id);
@@ -281,6 +295,9 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       rateCardId ? transaction.get(db.collection("partner_rate_cards").doc(rateCardId)) : Promise.resolve(null),
       duplicateForFingerprint(transaction, normalizedReference, bill),
     ]);
+    if (orderId && (!order?.exists || !compatibleRecordBranches(billBranch, order.get("branch")))) {
+      return { kind: "relationship_mismatch" as const };
+    }
     const currentFingerprint = freightAuditEconomicFingerprint({
       payableReference: normalizedReference, bill,
       shipment: shipment?.exists ? shipment.data() as Record<string, unknown> : null,
@@ -319,7 +336,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       approved_settlement_amount: basisResult.basis.totalPayable, approved_settlement_currency: billCurrency,
       settlement_basis_version: 1, last_payment_audit_fingerprint: auditFingerprint, updated_at: now,
     });
-    return { kind: "updated" as const, paymentId, currency: billCurrency, amount: applied.amount, remaining: applied.nextOutstanding, shipmentReference, supplierId: nullable(bill.supplier_id) };
+    return { kind: "updated" as const, paymentId, currency: billCurrency, amount: applied.amount, remaining: applied.nextOutstanding, shipmentReference, supplierId };
   });
 
   if (outcome.kind === "updated") {

@@ -35,6 +35,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (result.kind === "updated" || result.kind === "idempotent") return json({ ok: true, idempotent: result.kind === "idempotent" });
   if (result.kind === "missing") return json({ ok: false, error: "Invoice not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This invoice is outside your finance or branch access." }, 403);
+  if (result.kind === "relationship_mismatch") return json({ ok: false, error: "This invoice has an incompatible customer or shipment branch relationship." }, 409);
   if (["invalid_amount", "invalid_payment_date", "invalid_method", "invalid_currency"].includes(result.kind)) return json({ ok: false, error: "The payment request is invalid." }, 400);
   if (result.kind === "already_paid") return json({ ok: false, code: "ALREADY_PAID", error: "This invoice is already fully collected." }, 409);
   if (result.kind === "overpayment") return json({ ok: false, code: "OVERPAYMENT", error: "The payment exceeds the current outstanding balance." }, 409);

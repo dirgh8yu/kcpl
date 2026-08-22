@@ -1,6 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { firebaseAdminDb, firebaseAdminStorage, firebaseStorageBucketName } from "../../../firebase-admin.server";
+import { compatibleRecordBranches } from "../../branch-access-policy";
 import { kcplBranches, type KcplBranch } from "../../crm/crm-data";
+import { partnerOwnerCompatibleWithBranch } from "../../partners/partner-policy";
 import {
   archiveCategories,
   archiveEntityTypes,
@@ -9,6 +11,7 @@ import {
   type PaperArchiveDashboard,
   type PaperArchiveRecord,
 } from "./archive-data";
+import { archiveLinkedRecordAllowed, archiveRelationshipScope } from "./archive-scope-policy";
 
 export const PAPER_ARCHIVE_MAX_FILE_BYTES = 20 * 1024 * 1024;
 
@@ -79,6 +82,7 @@ function recordFromSnapshot(id: string, data: FirebaseFirestore.DocumentData): P
     title: text(data.title) || id,
     category: archiveCategories.includes(data.category as ArchiveCategory) ? data.category as ArchiveCategory : "other",
     document_date: text(data.document_date) || null,
+    // Legacy presentation fallback only. Authorization and relationship checks never consume this parsed value.
     branch: kcplBranches.includes(data.branch as KcplBranch) ? data.branch as KcplBranch : "Kathmandu",
     physical_reference: text(data.physical_reference) || null,
     notes: text(data.notes) || null,
@@ -109,7 +113,7 @@ export async function listPaperArchive(): Promise<PaperArchiveDashboard | null> 
   return { records, storage_available: paperArchiveStorageAvailable(), total: records.length };
 }
 
-async function resolveEntity(entityTypeValue: ArchiveEntityType, rawReference: string | null) {
+async function resolveEntity(entityTypeValue: ArchiveEntityType, rawReference: string | null, archiveBranch: KcplBranch) {
   if (entityTypeValue === "general") return { reference: null, label: null };
   const reference = text(rawReference);
   if (!reference) throw new Error("Choose a linked record reference for this archive item.");
@@ -130,6 +134,20 @@ async function resolveEntity(entityTypeValue: ArchiveEntityType, rawReference: s
   if (!snapshot?.exists) throw new Error(`Linked ${entityTypeValue.replaceAll("_", " ")} record ${reference} was not found.`);
 
   const data = snapshot.data() ?? {};
+  let branchCompatible: boolean | undefined;
+  if (archiveRelationshipScope(entityTypeValue) === "branch") {
+    branchCompatible = entityTypeValue === "customer"
+      ? compatibleRecordBranches(archiveBranch, data.primary_branch)
+      : entityTypeValue === "shipment"
+        ? compatibleRecordBranches(archiveBranch, data.primary_branch)
+        : entityTypeValue === "partner"
+          ? partnerOwnerCompatibleWithBranch(data.owner_branch, archiveBranch)
+          : compatibleRecordBranches(archiveBranch, data.branch);
+  }
+  if (!archiveLinkedRecordAllowed({ entityType: entityTypeValue, canonicalRecordExists: true, branchCompatible })) {
+    throw new Error(`Linked ${entityTypeValue.replaceAll("_", " ")} record ${snapshot.id} belongs to a different or invalid branch.`);
+  }
+
   const label = entityTypeValue === "customer" || entityTypeValue === "partner"
     ? text(data.display_name) || snapshot.id
     : entityTypeValue === "receivable"
@@ -160,7 +178,7 @@ export async function createPaperArchiveRecord(input: ArchiveCreateInput, actor:
   const validation = validatePaperArchiveInput(input);
   if (validation) return { kind: "invalid" as const, error: validation };
 
-  const linked = await resolveEntity(input.entityType, input.entityReference);
+  const linked = await resolveEntity(input.entityType, input.entityReference, input.branch);
   const now = new Date().toISOString();
   const id = `ARC-${now.slice(0, 10).replaceAll("-", "")}-${randomBytes(4).toString("hex").toUpperCase()}`;
   const storagePath = `migration-archive/${id}/${randomUUID()}-${safeFilename(input.filename)}`;
