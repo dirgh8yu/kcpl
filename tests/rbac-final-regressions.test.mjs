@@ -168,17 +168,17 @@ test("EDI 204 dispatch requires canonical tender/order scope and compatible expl
 
   const route = readFileSync(resolve("app/api/admin/tenders/route.ts"), "utf8");
   const edi = readFileSync(resolve("app/admin/edi/edi-tender.server.ts"), "utf8");
-  assert.match(route, /queueTenderAsEdi204\([^;]*auth\.staff\)/s);
-  assert.match(edi, /compatibleRecordBranches\(branch, order\.get\("branch"\)\)/);
+  assert.match(route, /queueTenderAsEdi204\([^;]*access\.staff\)/s);
+  assert.match(edi, /compatibleRecordBranches\(tenderBranch, order\.get\("branch"\)\)/);
   assert.match(edi, /partnerOwnerCompatibleWithBranch/);
 });
 
 test("CRM and finance relationship guards remain branch compatible before mutation", () => {
   const customer = readFileSync(resolve("app/admin/crm/crm-customer-management.server.ts"), "utf8");
   assert.match(customer, /branch_conflict/);
-  assert.match(customer, /transaction\.get\(shipmentQuery\)/);
-  assert.match(customer, /transaction\.get\(invoiceQuery\)/);
-  assert.match(customer, /transaction\.get\(payableQuery\)/);
+  assert.match(customer, /transaction\.get\(db\.collection\("shipments"\)\.where\("customer_id", "==", id\)\)/);
+  assert.match(customer, /transaction\.get\(db\.collection\("invoices"\)\.where\("customer_id", "==", id\)\)/);
+  assert.match(customer, /transaction\.get\(db\.collection\("payables"\)\.where\("customer_id", "==", id\)\)/);
   assert.ok(customer.indexOf("branch_conflict") < customer.indexOf("transaction.update(customerRef"));
 
   const ap = readFileSync(resolve("app/admin/financial-settlement/payables-settlement.server.ts"), "utf8");
