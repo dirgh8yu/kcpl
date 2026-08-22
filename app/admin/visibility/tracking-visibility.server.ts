@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import type { ShipmentEvent, ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
+import {
+  readCanonicalDeliveryCompletionFactsInTransaction,
+  writeCanonicalDeliveryCompletionInTransaction,
+} from "../delivery/canonical-delivery-authority.server";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import {
   canonicalShipmentStatus,
@@ -445,27 +449,31 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
     }
 
     const canonicalBefore = canonicalShipmentStatus(shipment.status);
-    const blockerSnapshots = canonicalBefore && machine
-      ? await Promise.all(blockerQueries(scope).map((query) => transaction.get(query)))
-      : [];
-    const hasBlockingException = blockerSnapshots.some((snapshot) => !snapshot.empty);
     const currentLastAt = nullable(shipment.tracking_last_event_at);
     const currentExternalAt = nullable(shipment.external_observed_at);
     const late = externalObservationIsLate(currentLastAt, currentExternalAt, event.event_time);
+    const deliveredCandidate = Boolean(machine && milestone === "delivered" && canonicalBefore && canonicalBefore !== "delivered" && canonicalBefore !== "exception" && !late);
+    const canonicalDeliveryRead = deliveredCandidate
+      ? await readCanonicalDeliveryCompletionFactsInTransaction(transaction, scope.ref, shipmentSnapshot)
+      : null;
+    const blockerSnapshots = canonicalBefore && machine && milestone !== "delivered"
+      ? await Promise.all(blockerQueries(scope).map((query) => transaction.get(query)))
+      : [];
+    const hasBlockingException = blockerSnapshots.some((snapshot) => !snapshot.empty);
     const currentEta = nullable(shipment.eta);
     const originalEta = nullable(shipment.tracking_original_eta) ?? currentEta ?? eta;
     const mode = text(shipment.mode);
+    const canonicalDeliveryDecision = canonicalDeliveryRead?.kind === "ready" ? canonicalDeliveryRead.evaluation : null;
     const promotion = evaluateExternalPromotion({
       canonicalStatus: canonicalBefore,
       observedMilestone: milestone,
       source: event.source,
       direction: nullable(shipment.direction),
       customsClearanceStatus: nullable(shipment.customs_clearance_status),
-      podStatus: nullable(shipment.delivery_pod_status),
       pickupStatus: nullable(shipment.pickup_status),
-      deliveryWorkflowComplete: text(shipment.delivery_last_attempt_status) === "delivered" && text(shipment.delivery_pod_status) === "verified",
       hasBlockingException,
       isLateObservation: late,
+      canonicalDeliveryDecision,
     });
     const canonicalAfter = canonicalBefore && promotion.decision === "promote" && promotion.targetStatus ? promotion.targetStatus : canonicalBefore;
     const latestTracking = externalObservationIsNewer(currentLastAt, event.event_time);
@@ -479,7 +487,24 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
       nextEta: eta,
       isLateObservation: late,
     });
+
+    // All authority reads above complete before any write. repairDerivedExceptions performs its reads first,
+    // then starts the write phase for this transaction.
     await repairDerivedExceptions(transaction, scope, fingerprint, activityBranch, plans, receivedAt);
+
+    let deliveryCompletionId: string | null = null;
+    if (
+      promotion.decision === "promote"
+      && promotion.targetStatus === "delivered"
+      && canonicalDeliveryRead?.kind === "ready"
+      && canonicalDeliveryRead.evaluation.decision === "complete"
+    ) {
+      deliveryCompletionId = writeCanonicalDeliveryCompletionInTransaction(transaction, canonicalDeliveryRead.facts, {
+        source: "external_reconciliation",
+        actor: { name: "KCPL External Reconciliation", email: "external-reconciliation@kcpl.internal" },
+        completedAt: receivedAt,
+      });
+    }
 
     const storedEvent = {
       ...event,
@@ -490,6 +515,7 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
       promotion_reason: promotion.reason,
       canonical_status_before: canonicalBefore,
       canonical_status_after: canonicalAfter,
+      canonical_delivery_completion_id: deliveryCompletionId,
       eta_previous: currentEta,
       derived_exceptions: plans,
     };
@@ -497,7 +523,7 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
     writeObservationAncillaryEffects(transaction, scope, fingerprint, event, activityBranch, canonicalBefore, canonicalAfter, promotion.decision, promotion.reason, late);
 
     const update: Record<string, unknown> = { updated_at: receivedAt };
-    if (canonicalBefore && canonicalAfter && canonicalAfter !== canonicalBefore) update.status = canonicalAfter;
+    if (canonicalBefore && canonicalAfter && canonicalAfter !== canonicalBefore && canonicalAfter !== "delivered") update.status = canonicalAfter;
     if (latestTracking) {
       Object.assign(update, {
         tracking_last_event_at: event.event_time,
@@ -524,12 +550,12 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
       });
     }
     transaction.update(scope.ref, update);
-    return { kind: "created" as const, canonicalAfter, promotion, historical: late, openedExceptions: plans.map((plan) => plan.title) };
+    return { kind: "created" as const, canonicalAfter, promotion, deliveryCompletionId, historical: late, openedExceptions: plans.map((plan) => plan.title) };
   });
 
   if (result.kind === "duplicate") return { kind: "duplicate" as const, event: trackingEventFromData(fingerprint, scope.id, result.data), repaired_side_effects: result.repaired };
   if (result.kind !== "created") return result;
-  return { kind: "created" as const, event, status: result.canonicalAfter, promotion: result.promotion, opened_exceptions: result.openedExceptions, historical: result.historical };
+  return { kind: "created" as const, event, status: result.canonicalAfter, promotion: result.promotion, delivery_completion_id: result.deliveryCompletionId, opened_exceptions: result.openedExceptions, historical: result.historical };
 }
 
 export async function runTrackingHealthSweep(context?: KcplStaffContext) {
