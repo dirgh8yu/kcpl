@@ -87,6 +87,9 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
           initialEvidence={delivery.evidence}
           initialPodStatus={delivery.pod_status}
           initialShipmentStatus={delivery.shipment_status}
+          initialExternalObservedMilestone={delivery.external_observed_milestone}
+          initialExternalObservedAt={delivery.external_observed_at}
+          initialExternalObservedProvider={delivery.external_observed_provider}
           canReview={staff.permissions.canManageCustomerDocuments}
         />
       ) : null}
