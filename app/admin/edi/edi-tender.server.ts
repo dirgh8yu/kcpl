@@ -13,7 +13,10 @@ export async function queueTenderAsEdi204(tenderIdValue: string, actor: Actor) {
   const tenderRef = firebaseAdminDb().collection("transport_tenders").doc(tenderId);
   const tender = await tenderRef.get();
   if (!tender.exists) return { kind: "missing" as const };
-  if (text(tender.get("channel")) !== "edi_204") return { kind: "wrong_channel" as const };
+  if (text(tender.get("status")) !== "sent") return { kind: "invalid_state" as const };
+  const currentChannel = text(tender.get("channel"));
+  if (currentChannel === "email") return { kind: "already_dispatched" as const };
+  if (currentChannel !== "manual" && currentChannel !== "edi_204") return { kind: "wrong_channel" as const };
   const orderId = text(tender.get("order_id")).toUpperCase();
   const order = await firebaseAdminDb().collection("transport_orders").doc(orderId).get();
   if (!order.exists) return { kind: "missing_order" as const };
@@ -41,7 +44,7 @@ export async function queueTenderAsEdi204(tenderIdValue: string, actor: Actor) {
   }, actor);
   const now = new Date().toISOString();
   if (result.kind === "queued" || result.kind === "duplicate") {
-    await tenderRef.update({ edi_204_status: result.kind === "queued" ? "queued" : "queued_duplicate", edi_204_transaction_id: result.transactionId, updated_at: now });
+    await tenderRef.update({ channel: "edi_204", edi_204_status: result.kind === "queued" ? "queued" : "queued_duplicate", edi_204_transaction_id: result.transactionId, updated_at: now });
   } else {
     await tenderRef.update({ edi_204_status: "queue_failed", updated_at: now });
   }
