@@ -1,4 +1,4 @@
-import type { CrmCurrency, KcplBranch } from "../crm/crm-data";
+import { kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data.ts";
 
 export const tmsModes = ["air", "sea", "road", "rail", "courier", "multimodal"] as const;
 export type TmsMode = (typeof tmsModes)[number];
@@ -124,14 +124,22 @@ export function ratingQuantity(order: Pick<TmsOrder, "weight_kg" | "volume_cbm" 
   return 1;
 }
 
-export function calculateRating(order: TmsOrder, card: PartnerBuyRateCard): RatingResult | null {
-  if (order.mode !== card.mode && card.mode !== "multimodal") return null;
-  if (!rateLocationMatches(card.origin, order.origin) || !rateLocationMatches(card.destination, order.destination)) return null;
-  if (order.equipment && card.equipment && key(order.equipment) !== key(card.equipment)) return null;
-  if (!rateCardIsValidOn(card, order.pickup_date || new Date().toISOString())) return null;
-
+/** Commercial applicability is independent from whether a staff member can see both branches. */
+export function rateCardAppliesToOrder(order: TmsOrder, card: PartnerBuyRateCard, dateIso = order.pickup_date || new Date().toISOString()) {
+  if (!kcplBranches.includes(order.branch)) return false;
+  if (card.branch !== "Global" && (!kcplBranches.includes(card.branch) || card.branch !== order.branch)) return false;
+  if (order.mode !== card.mode && card.mode !== "multimodal") return false;
+  if (!rateLocationMatches(card.origin, order.origin) || !rateLocationMatches(card.destination, order.destination)) return false;
+  if (order.equipment && card.equipment && key(order.equipment) !== key(card.equipment)) return false;
+  if (!rateCardIsValidOn(card, dateIso)) return false;
   const quantity = ratingQuantity(order, card.unit);
-  if (quantity <= 0 && !["flat", "per_shipment"].includes(card.unit)) return null;
+  if (quantity <= 0 && !["flat", "per_shipment"].includes(card.unit)) return false;
+  return true;
+}
+
+export function calculateRating(order: TmsOrder, card: PartnerBuyRateCard): RatingResult | null {
+  if (!rateCardAppliesToOrder(order, card)) return null;
+  const quantity = ratingQuantity(order, card.unit);
   const rawLinehaul = card.rate * quantity;
   const linehaul = Math.max(rawLinehaul, card.minimum_charge ?? 0);
   const fuel = linehaul * Math.max(0, card.fuel_surcharge_percent) / 100;

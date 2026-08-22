@@ -26,6 +26,9 @@ function commercialConflict(kind: string) {
   if (kind === "approval_required") return json({ ok: false, error: "Management approval is required for this exact commercial version." }, 409);
   if (kind === "commercial_review_required") return json({ ok: false, error: "The historical commercial basis cannot be proven safely. Commercial review is required before continuing." }, 409);
   if (kind === "stale_commercial_state") return json({ ok: false, error: "Commercial economics changed concurrently. Refresh and use the authoritative version before continuing." }, 409);
+  if (kind === "customer_quote_required") return json({ ok: false, error: "Issue the exact current customer quote before tendering or booking.", code: "customer_quote_required" }, 409);
+  if (kind === "customer_quote_stale") return json({ ok: false, error: "The customer quote or acceptance does not match the exact current commercial version.", code: "customer_quote_stale" }, 409);
+  if (kind === "customer_acceptance_required") return json({ ok: false, error: "Record customer acceptance for the exact current sell authority before booking.", code: "customer_acceptance_required" }, 409);
   return null;
 }
 

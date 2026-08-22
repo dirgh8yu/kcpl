@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
+  assertCustomerQuoteIssuedInTransaction,
+  assertCustomerSellAuthorityInTransaction,
+  persistPreparedCustomerSellAuthorityCarryForwardInTransaction,
+  prepareCustomerSellAuthorityCarryForwardInTransaction,
+} from "../commercial-authority/customer-sell-authority.server";
+import {
   assertBookableCommercialVersionInTransaction,
   commercialBookedSnapshotFields,
   commercialEventPayload,
@@ -279,6 +285,8 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
       if (!isMaster) {
         const bookable = await assertBookableCommercialVersionInTransaction(transaction, version);
         if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+        const customerQuote = await assertCustomerQuoteIssuedInTransaction(transaction, version);
+        if (!customerQuote.ok) return { kind: customerQuote.reason };
       }
       if (resolved.legacy_reconstructed) {
         if (!isMaster || version.snapshot.pricing) return { kind: "pricing_required" as const };
@@ -440,7 +448,11 @@ async function applyTenderResponse(
         snapshot: nextSnapshot, previousVersionId: baseVersion.id, reason: "counteroffer", actor,
         sourceReferences: { tender_id: tender.id, offered_commercial_version_id: baseVersion.id, rate_card_id: baseVersion.snapshot.procurement.rate_card_id },
       });
+      const preparedCustomerAuthority = await prepareCustomerSellAuthorityCarryForwardInTransaction(transaction, baseVersion, nextVersion, actor, now);
+      if (preparedCustomerAuthority.kind === "conflict") return { kind: "stale_commercial_state" as const };
+
       persistCommercialVersionInTransaction(transaction, nextVersion);
+      persistPreparedCustomerSellAuthorityCarryForwardInTransaction(transaction, preparedCustomerAuthority);
       const pricing = nextVersion.snapshot.pricing;
       const needsFxReview = Boolean(pricing && pricing.converted_buy_cost === null);
       const projection = counterPricingProjection(order.get("pricing_snapshot"), nextVersion);
@@ -604,13 +616,10 @@ async function createBookedShipment(tenderIdValue: string, expectedUpdatedAt: st
       if (!customerId) return { kind: "customer_required" as const };
       const customerRef = db.collection("customers").doc(customerId);
       const customer = await transaction.get(customerRef);
-      if (!customer.exists || customer.get("archived") === true) return { kind: "customer_missing" as const };
-
-      const explicitQuoteReference = nullable(orderData.quoted_reference);
-      if (explicitQuoteReference) {
-        const explicitQuote = await transaction.get(db.collection("quotes").doc(explicitQuoteReference));
-        if (!explicitQuote.exists || normalizeCommercialId(explicitQuote.get("commercial_version_id")) !== version.id || text(explicitQuote.get("commercial_fingerprint")) !== version.fingerprint) return { kind: "stale_commercial_state" as const };
-      }
+      if (!customer.exists || customer.get("archived") === true || branchValue(customer.get("primary_branch")) !== branch) return { kind: "customer_missing" as const };
+      const customerAuthority = await assertCustomerSellAuthorityInTransaction(transaction, version);
+      if (!customerAuthority.ok) return { kind: customerAuthority.reason };
+      const explicitQuoteReference = customerAuthority.quoteReference;
 
       const quoteReference = bridgeQuoteReference(tender.order_id);
       const quoteRef = db.collection("quotes").doc(quoteReference);
@@ -623,7 +632,7 @@ async function createBookedShipment(tenderIdValue: string, expectedUpdatedAt: st
       }
       transaction.set(quoteRef, {
         reference: quoteReference, status: "won", migration_hidden: true, source: "tms_order_booking_bridge",
-        transport_order_id: tender.order_id, customer_id: customerId, company_name: text(customer.get("display_name"), customerId),
+        branch, transport_order_id: tender.order_id, customer_id: customerId, company_name: text(customer.get("display_name"), customerId),
         contact_name: "", contact_email: text(customer.get("primary_email")), phone: text(customer.get("primary_phone")),
         origin: text(orderData.origin), destination: text(orderData.destination), mode, cargo_type: "",
         quote_currency: version.snapshot.pricing?.sell_currency ?? text(customer.get("preferred_currency"), "NPR"),

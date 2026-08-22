@@ -1,4 +1,10 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { customerSellEconomicsMatch } from "../commercial-authority/commercial-authority";
+import {
+  assertCustomerSellAuthorityInTransaction,
+  createCarriedCustomerSellAuthorityInTransaction,
+  type CustomerSellAuthority,
+} from "../commercial-authority/customer-sell-authority.server";
 import {
   assertBookableCommercialVersionInTransaction,
   commercialBookedSnapshotFields,
@@ -172,6 +178,8 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       if (masterVersionResult.kind !== "ready") return { kind: "commercial_review_required" as const };
       const masterVersion = masterVersionResult.version;
       if (!commercialPointerMatches(masterOrder, masterVersion) || normalizeCommercialId(tender.get("final_commercial_version_id")) && normalizeCommercialId(tender.get("final_commercial_version_id")) !== masterVersion.id) return { kind: "stale_commercial_state" as const };
+      const masterRateBranch = masterVersion.snapshot.procurement.rate_card_branch?.trim() ?? "";
+      if (!masterRateBranch || (masterRateBranch !== "Global" && masterRateBranch !== branch)) return { kind: "commercial_review_required" as const };
       if (masterVersion.snapshot.pricing) {
         const masterBookable = await assertBookableCommercialVersionInTransaction(transaction, masterVersion);
         if (masterBookable.decision.ok === false) return { kind: masterBookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
@@ -248,13 +256,17 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       }
 
       const sourceVersions: CommercialVersion[] = [];
+      const sourceCustomerAuthorities: CustomerSellAuthority[] = [];
       for (const order of houseOrders) {
         const released = releasedSourceMap.get(order.id)!;
         const source = await loadCommercialVersionInTransaction(transaction, released.versionId, released.fingerprint, order.id);
         if (source.kind !== "ready") return { kind: "commercial_review_required" as const };
         const bookable = await assertBookableCommercialVersionInTransaction(transaction, source.version);
         if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
+        const customerAuthority = await assertCustomerSellAuthorityInTransaction(transaction, source.version);
+        if (!customerAuthority.ok) return { kind: customerAuthority.reason };
         sourceVersions.push(source.version);
+        sourceCustomerAuthorities.push({ quoteReference: customerAuthority.quoteReference, acceptance: customerAuthority.acceptance });
       }
 
       const allocations = allocateProcurementCost(commercials.amount, members);
@@ -267,7 +279,15 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
         const allocation = allocationMap.get(order.id);
         if (allocation === undefined) return { kind: "state_conflict" as const };
         const snapshot = deriveConsolidationAllocationSnapshot(source.snapshot, {
-          amount: allocation, currency: commercials.currency, partnerId, partnerName, masterRateCardId: rateCardId, mode: text(masterOrder.get("mode")),
+          amount: allocation,
+          currency: commercials.currency,
+          partnerId,
+          partnerName,
+          masterRateCardId: rateCardId,
+          masterRateCardBranch: masterRateBranch,
+          masterRateCardOrigin: masterVersion.snapshot.procurement.rate_card_origin ?? null,
+          masterRateCardDestination: masterVersion.snapshot.procurement.rate_card_destination ?? null,
+          mode: text(masterOrder.get("mode")),
         });
         const derived = newCommercialVersion({
           snapshot, previousVersionId: source.id, reason: "consolidation_allocation", actor,
@@ -276,6 +296,7 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
         const integrity = derived.snapshot.pricing;
         if (!integrity || integrity.converted_buy_cost === null) return { kind: "commercial_review_required" as const };
         if (integrity.approval_required) return { kind: "approval_required" as const };
+        if (!customerSellEconomicsMatch(source.snapshot, derived.snapshot)) return { kind: "customer_quote_stale" as const };
         bookedHouseVersions.push(derived);
       }
 
@@ -283,6 +304,11 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       const customers = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
       if (customers.some((customer) => !customer.exists || customer.get("archived") === true)) return { kind: "customer_missing" as const };
       const customerMap = new Map(customers.map((customer) => [customer.id, customer]));
+      for (const order of houseOrders) {
+        const customer = customerMap.get(normalizeCommercialId(order.get("customer_id")));
+        const orderBranch = branchValue(order.get("branch"));
+        if (!customer || !orderBranch || branchValue(customer.get("primary_branch")) !== orderBranch) return { kind: "customer_missing" as const };
+      }
       const masterQuoteRef = db.collection("quotes").doc(masterBridgeQuoteReference(load.id));
       const houseQuoteRefs = new Map(houseOrders.map((order) => [order.id, db.collection("quotes").doc(bridgeQuoteReference(order.id))]));
       const [masterQuote, ...houseQuotes] = await Promise.all([transaction.get(masterQuoteRef), ...houseOrders.map((order) => transaction.get(houseQuoteRefs.get(order.id)!))]);
@@ -305,7 +331,7 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
 
       transaction.set(masterQuoteRef, {
         reference: masterBridgeQuoteReference(load.id), status: "won", migration_hidden: true, source: "tms_consolidation_master_bridge",
-        consolidation_load_id: load.id, customer_id: null, company_name: `Consolidation ${text(load.get("reference"), load.id)}`,
+        branch, consolidation_load_id: load.id, customer_id: null, company_name: `Consolidation ${text(load.get("reference"), load.id)}`,
         contact_name: "", contact_email: "", phone: "", origin, destination, mode: text(load.get("mode")), cargo_type: "Consolidated freight",
         quote_currency: commercials.currency, quoted_amount: null, internal_cost: commercials.amount, shipment_reference: masterShipmentReference,
         commercial_version_id: masterVersion.id, commercial_fingerprint: masterVersion.fingerprint, commercial_snapshot: masterVersion.snapshot, commercial_locked: true,
@@ -333,25 +359,31 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
         const order = houseOrders[index];
         const source = sourceVersions[index];
         const version = bookedHouseVersions[index];
+        const customerAuthority = sourceCustomerAuthorities[index];
         const customerId = normalizeCommercialId(order.get("customer_id"));
         const customer = customerMap.get(customerId)!;
         const allocation = allocationMap.get(order.id) ?? 0;
         const reference = houseReferenceMap.get(order.id)!;
         persistCommercialVersionInTransaction(transaction, version);
+        const carried = createCarriedCustomerSellAuthorityInTransaction(transaction, source, version, customerAuthority, actor, now);
+        if (carried.kind !== "carried") return { kind: "customer_quote_stale" as const };
         const quoteRef = houseQuoteRefs.get(order.id)!;
         transaction.set(quoteRef, {
           reference: bridgeQuoteReference(order.id), status: "won", migration_hidden: true, source: "tms_consolidation_house_bridge",
+          branch: branchValue(order.get("branch")) ?? branch,
           transport_order_id: order.id, consolidation_load_id: load.id, customer_id: customerId, company_name: text(customer.get("display_name"), customerId),
           contact_name: "", contact_email: text(customer.get("primary_email")), phone: text(customer.get("primary_phone")),
           origin: text(order.get("origin")), destination: text(order.get("destination")), mode: text(order.get("mode")), cargo_type: "",
           quote_currency: version.snapshot.pricing!.sell_currency, quoted_amount: version.snapshot.pricing!.sell_amount,
           internal_cost: version.snapshot.pricing!.converted_buy_cost, shipment_reference: reference,
+          customer_quote_reference: customerAuthority.quoteReference,
           commercial_version_id: version.id, commercial_fingerprint: version.fingerprint, commercial_snapshot: version.snapshot, commercial_locked: true,
           source_commercial_version_id: source.id, source_commercial_fingerprint: source.fingerprint,
           created_at: houseQuotes[index].exists ? text(houseQuotes[index].get("created_at"), now) : now, updated_at: now,
         }, { merge: true });
         transaction.create(db.collection("shipments").doc(reference), {
-          reference, quote_reference: bridgeQuoteReference(order.id), transport_order_id: order.id, consolidation_load_id: load.id,
+          reference, quote_reference: bridgeQuoteReference(order.id), customer_quote_reference: customerAuthority.quoteReference,
+          transport_order_id: order.id, consolidation_load_id: load.id,
           master_shipment_reference: masterShipmentReference, master_booking_reference: bookingReference, tender_id: tender.id, tender_reference: tenderReference,
           customer_id: customerId, primary_branch: branchValue(order.get("branch")) ?? branch, handling_branches: [branchValue(order.get("branch")) ?? branch],
           origin: text(order.get("origin")), destination: text(order.get("destination")), mode: text(order.get("mode")), job_priority: "standard",

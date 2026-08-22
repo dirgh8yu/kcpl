@@ -3,6 +3,11 @@ import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { getNrbForexSnapshot, type NrbForexSnapshot } from "../../integrations/nrb-forex.server";
 import {
+  COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
+  COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+  COMMERCIAL_POLICY_ID,
+} from "../commercial-authority/commercial-authority";
+import {
   commercialEventPayload,
   commercialOrderPointer,
   createCommercialApprovalInTransaction,
@@ -64,10 +69,9 @@ type PricingOverrides = {
   sellCurrency?: CrmCurrency | null;
   fxMode?: PricingFxMode | null;
   fxRate?: number | null;
+  fxOverrideReason?: string | null;
   markupPercent?: number | null;
   targetMarginPercent?: number | null;
-  minimumMarginPercent?: number | null;
-  approvalBelowMarginPercent?: number | null;
   accessorialCost?: number | null;
   accessorialMarkupPercent?: number | null;
   fixedMarkup?: number | null;
@@ -118,10 +122,10 @@ function pricingRuleFromData(id: string, data: Record<string, unknown>): Pricing
     sell_currency: currencyValue(data.sell_currency),
     markup_percent: nullableNum(data.markup_percent),
     target_margin_percent: nullableNum(data.target_margin_percent),
-    minimum_margin_percent: Math.max(0, num(data.minimum_margin_percent, 10)),
+    minimum_margin_percent: COMMERCIAL_MINIMUM_MARGIN_PERCENT,
     accessorial_markup_percent: Math.max(0, num(data.accessorial_markup_percent, 15)),
     fixed_markup: Math.max(0, num(data.fixed_markup)),
-    approval_below_margin_percent: Math.max(0, num(data.approval_below_margin_percent, 12)),
+    approval_below_margin_percent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
     notes: nullable(data.notes),
     created_at: text(data.created_at),
     updated_at: text(data.updated_at),
@@ -220,7 +224,7 @@ export async function createPricingRule(input: PricingRuleInput, actor: Actor, s
     if (!customer) return { kind: "customer_missing" as const };
     if (!staffCanAccessBranch(staff, customer.customer.primary_branch)) return { kind: "forbidden" as const };
   }
-  const percentages = [input.markupPercent, input.targetMarginPercent, input.minimumMarginPercent, input.accessorialMarkupPercent, input.approvalBelowMarginPercent].filter((value): value is number => value !== null && value !== undefined);
+  const percentages = [input.markupPercent, input.targetMarginPercent, input.accessorialMarkupPercent].filter((value): value is number => value !== null && value !== undefined);
   if (percentages.some((value) => !Number.isFinite(value) || value < 0 || value >= 100)) return { kind: "invalid" as const };
   if (!Number.isFinite(input.fixedMarkup) || input.fixedMarkup < 0) return { kind: "invalid" as const };
   const id = `PR-${Date.now()}-${randomBytes(3).toString("hex").toUpperCase()}`;
@@ -229,9 +233,9 @@ export async function createPricingRule(input: PricingRuleInput, actor: Actor, s
     name: input.name.trim() || id, active: input.active, priority: Math.trunc(input.priority || 0), scope: input.scope,
     branch: input.branch || null, customer_id: customerId, origin: input.origin?.trim() || null, destination: input.destination?.trim() || null,
     mode: input.mode || null, sell_currency: input.sellCurrency || null, markup_percent: input.markupPercent ?? null,
-    target_margin_percent: input.targetMarginPercent ?? null, minimum_margin_percent: input.minimumMarginPercent,
+    target_margin_percent: input.targetMarginPercent ?? null, minimum_margin_percent: COMMERCIAL_MINIMUM_MARGIN_PERCENT,
     accessorial_markup_percent: input.accessorialMarkupPercent, fixed_markup: input.fixedMarkup,
-    approval_below_margin_percent: input.approvalBelowMarginPercent, notes: input.notes?.trim() || null,
+    approval_below_margin_percent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT, pricing_policy_id: COMMERCIAL_POLICY_ID, notes: input.notes?.trim() || null,
     created_by_name: actor.name, created_by_email: actor.email, created_at: now, updated_at: now,
   };
   await firebaseAdminDb().collection("pricing_rules").doc(id).create(data);
@@ -260,10 +264,11 @@ function nrbFx(snapshot: NrbForexSnapshot, sourceCurrency: CrmCurrency, targetCu
   };
 }
 
-function manualFx(sourceCurrency: CrmCurrency, targetCurrency: CrmCurrency, rate: number): CommercialFxSnapshot {
+function manualFx(sourceCurrency: CrmCurrency, targetCurrency: CrmCurrency, rate: number, actor: Actor, reason: string, now: string): CommercialFxSnapshot {
   return {
     source_currency: sourceCurrency, target_currency: targetCurrency, rate, source: "manual_override",
-    effective_date: null, published_on: null, modified_on: null, source_npr_per_unit: null, target_npr_per_unit: null,
+    effective_date: now.slice(0, 10), published_on: null, modified_on: null, source_npr_per_unit: null, target_npr_per_unit: null,
+    override_actor_name: actor.name, override_actor_email: actor.email.toLowerCase(), override_reason: reason.trim(), override_at: now,
   };
 }
 
@@ -319,6 +324,8 @@ function storedProjection(input: {
 export async function calculateOrderPricing(orderId: string, overrides: PricingOverrides, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (overrides.fxMode === "manual" && !staff.permissions.canOverrideFx) return { kind: "manual_fx_forbidden" as const };
+  if (overrides.fxMode === "manual" && !overrides.fxOverrideReason?.trim()) return { kind: "manual_fx_reason_required" as const };
   let nrbSnapshot: NrbForexSnapshot | null = null;
   if (overrides.fxMode === "nrb") {
     try { nrbSnapshot = await getNrbForexSnapshot(); }
@@ -379,10 +386,12 @@ export async function calculateOrderPricing(orderId: string, overrides: PricingO
         const resolvedFx = nrbSnapshot ? nrbFx(nrbSnapshot, buyCurrency, sellCurrency) : null;
         if (!resolvedFx?.rate) return { kind: "fx_required" as const, buyCurrency, sellCurrency };
         fx = resolvedFx;
-      } else {
+      } else if (overrides.fxMode === "manual") {
         const rate = overrides.fxRate ?? 0;
         if (!Number.isFinite(rate) || rate <= 0) return { kind: "fx_required" as const, buyCurrency, sellCurrency };
-        fx = manualFx(buyCurrency, sellCurrency, rate);
+        fx = manualFx(buyCurrency, sellCurrency, rate, actor, overrides.fxOverrideReason ?? "", new Date().toISOString());
+      } else {
+        return { kind: "fx_required" as const, buyCurrency, sellCurrency };
       }
 
       const pricingInput: PricingInput = {
@@ -392,8 +401,8 @@ export async function calculateOrderPricing(orderId: string, overrides: PricingO
         fx_rate: fx.rate ?? 0,
         markup_percent: overrides.markupPercent ?? defaults.markup_percent,
         target_margin_percent: overrides.targetMarginPercent ?? defaults.target_margin_percent,
-        minimum_margin_percent: overrides.minimumMarginPercent ?? defaults.minimum_margin_percent,
-        approval_below_margin_percent: overrides.approvalBelowMarginPercent ?? defaults.approval_below_margin_percent,
+        minimum_margin_percent: COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+        approval_below_margin_percent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
         accessorial_cost: Math.max(0, overrides.accessorialCost ?? 0),
         accessorial_markup_percent: overrides.accessorialMarkupPercent ?? defaults.accessorial_markup_percent,
         fixed_markup: overrides.fixedMarkup ?? defaults.fixed_markup,
@@ -408,6 +417,7 @@ export async function calculateOrderPricing(orderId: string, overrides: PricingO
         customer_id: customer.id,
         pricing_rule_id: rule?.id ?? null,
         pricing_rule_scope: rule?.scope ?? null,
+        pricing_policy_id: COMMERCIAL_POLICY_ID,
         markup_percent: pricingInput.markup_percent,
         target_margin_percent: pricingInput.target_margin_percent ?? null,
         minimum_margin_percent: pricingInput.minimum_margin_percent,
@@ -436,6 +446,7 @@ export async function calculateOrderPricing(orderId: string, overrides: PricingO
         sourceReferences: {
           rate_card_id: previous.snapshot.procurement.rate_card_id,
           pricing_rule_id: rule?.id ?? null,
+          pricing_policy_id: COMMERCIAL_POLICY_ID,
           customer_id: customer.id,
           tender_id: counterTender?.id ?? null,
         },
@@ -592,6 +603,7 @@ export async function createQuoteFromOrderPricing(
         status: "quoted",
         source: "tms_sell_pricing_engine",
         migration_hidden: false,
+        branch,
         transport_order_id: order.id,
         customer_id: customer.id,
         company_name: customer.display_name,
@@ -606,6 +618,7 @@ export async function createQuoteFromOrderPricing(
         customer_quote_note: customerNote.trim() || null,
         pricing_snapshot_id: projection.id,
         pricing_rule_id: pricing.pricing_rule_id,
+        pricing_policy_id: pricing.pricing_policy_id ?? COMMERCIAL_POLICY_ID,
         pricing_rule_name: projection.rule?.name ?? null,
         gross_profit: pricing.gross_profit,
         gross_margin_percent: pricing.gross_margin_percent,

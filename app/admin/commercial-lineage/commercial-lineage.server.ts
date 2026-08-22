@@ -165,6 +165,11 @@ async function reconstructLegacySelectedVersion(
   const rateCard = await transaction.get(firebaseAdminDb().collection("partner_rate_cards").doc(rateCardId));
   if (!rateCard.exists) return { kind: "commercial_review_required", reason: "legacy_rate_card_missing" };
   const card = rateCard.data() as Record<string, unknown>;
+  const branch = text(data.branch);
+  const mode = text(data.mode);
+  if (!branch || !mode) return { kind: "commercial_review_required", reason: "legacy_order_identity_missing" };
+  const cardBranch = text(card.branch);
+  if (!cardBranch || (cardBranch !== "Global" && cardBranch !== branch)) return { kind: "commercial_review_required", reason: "legacy_rate_card_branch_mismatch" };
   const cardPartner = normalizeCommercialId(card.partner_id);
   const cardCurrency = normalizeCommercialCurrency(card.currency);
   const unit = text(card.unit, "flat");
@@ -178,9 +183,6 @@ async function reconstructLegacySelectedVersion(
   const accessorials = Math.max(0, numberOrNull(card.accessorial_flat) ?? 0);
   const total = linehaul + fuel + accessorials;
   if (cardPartner !== selectedPartner || cardCurrency !== selectedCurrency || !sameCommercialMoney(total, selectedCost, selectedCurrency)) return { kind: "commercial_review_required", reason: "legacy_selected_economics_not_provable" };
-  const branch = text(data.branch);
-  const mode = text(data.mode);
-  if (!branch || !mode) return { kind: "commercial_review_required", reason: "legacy_order_identity_missing" };
   const snapshot: CommercialSnapshot = {
     schema_version: COMMERCIAL_VERSION_SCHEMA,
     order_id: order.id,
@@ -189,6 +191,9 @@ async function reconstructLegacySelectedVersion(
     mode,
     procurement: {
       rate_card_id: rateCardId,
+      rate_card_branch: cardBranch,
+      rate_card_origin: nullable(card.origin),
+      rate_card_destination: nullable(card.destination),
       rate_card_updated_at: nullable(card.updated_at),
       rate_card_valid_from: nullable(card.valid_from),
       rate_card_valid_until: nullable(card.valid_until),
