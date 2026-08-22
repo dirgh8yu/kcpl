@@ -1,4 +1,4 @@
-import { kcplBranches, type KcplBranch } from "./crm/crm-data";
+import { kcplBranches, type KcplBranch } from "./crm/crm-data.ts";
 
 export type CanonicalRecordCandidate = {
   id: string;
