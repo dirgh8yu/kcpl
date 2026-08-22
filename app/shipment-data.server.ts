@@ -284,10 +284,12 @@ export async function updateShipment(reference: string, values: ShipmentUpdateIn
     if (!snapshot.exists) return { kind: "missing" as const };
 
     const currentStatus = shipmentStatus(snapshot.data()?.status);
-    const customerId = nullableString(snapshot.get("customer_id"));
+    if (currentStatus === "delivered" && values.status !== "delivered") return { kind: "terminal_delivered" as const };
+    if (currentStatus !== "delivered" && values.status === "delivered") return { kind: "canonical_delivery_authority_required" as const };
+    const statusChanged = currentStatus !== values.status;
+    const customerId = statusChanged ? nullableString(snapshot.get("customer_id")) : null;
     const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
     const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
-    const statusChanged = currentStatus !== values.status;
 
     transaction.update(shipmentRef, {
       status: values.status,
@@ -314,23 +316,6 @@ export async function updateShipment(reference: string, values: ShipmentUpdateIn
       transaction.set(shipmentRef.collection("events").doc(String(eventId)), event);
 
       if (customerRef && customerSnapshot?.exists) {
-        const wasDelivered = currentStatus === "delivered";
-        const isDelivered = values.status === "delivered";
-        let activeCount = numberValue(customerSnapshot.get("active_shipment_count"));
-        let completedCount = numberValue(customerSnapshot.get("completed_shipment_count"));
-        if (!wasDelivered && isDelivered) {
-          activeCount = Math.max(0, activeCount - 1);
-          completedCount += 1;
-        } else if (wasDelivered && !isDelivered) {
-          activeCount += 1;
-          completedCount = Math.max(0, completedCount - 1);
-        }
-
-        transaction.update(customerRef, {
-          active_shipment_count: activeCount,
-          completed_shipment_count: completedCount,
-          updated_at: updatedAt,
-        });
         transaction.create(customerRef.collection("activity").doc(crmActivityId(`${normalized}-status`)), {
           type: "shipment_status_changed",
           title: `${normalized}: ${shipmentStatusLabels[values.status]}`,
@@ -347,7 +332,7 @@ export async function updateShipment(reference: string, values: ShipmentUpdateIn
     return { kind: "updated" as const };
   });
 
-  if (result.kind === "missing") return result;
+  if (result.kind !== "updated") return result;
   return { kind: "updated" as const, shipment: await loadShipment(normalized) };
 }
 
