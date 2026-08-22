@@ -32,18 +32,16 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
 
   return db.runTransaction(async (transaction) => {
     const [bill, partner, audit, existingPayments] = await Promise.all([
-      transaction.get(billRef),
-      transaction.get(partnerRef),
-      transaction.get(auditRef),
-      transaction.get(billRef.collection("payments").limit(1)),
+      transaction.get(billRef), transaction.get(partnerRef), transaction.get(auditRef), transaction.get(billRef.collection("payments").limit(1)),
     ]);
     if (!bill.exists) return { kind: "missing_bill" as const };
     if (!partner.exists) return { kind: "missing_partner" as const };
     const billBranch = strictBranchValue(bill.get("branch"));
     if (!billBranch || !canAccessBranchValue(context, billBranch)) return { kind: "forbidden" as const };
     if (!canAccessPartnerOwner(context, partner.get("owner_branch"))) return { kind: "forbidden" as const };
-    if (text(bill.get("status")) === "void") return { kind: "void_bill" as const };
-    if (numberValue(bill.get("amount_paid")) > 0 || !existingPayments.empty || ["partially_paid", "paid"].includes(text(bill.get("payment_status")))) {
+    const billStatus = text(bill.get("status"));
+    if (billStatus === "void") return { kind: "void_bill" as const };
+    if (numberValue(bill.get("amount_paid")) > 0 || !existingPayments.empty || ["partially_paid", "paid"].includes(billStatus) || ["partially_paid", "paid"].includes(text(bill.get("payment_status")))) {
       return { kind: "financially_locked" as const };
     }
 
@@ -99,6 +97,9 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
     transaction.update(billRef, {
       supplier_id: partnerId, supplier_name: partnerName, supplier_key: targetSupplierKey,
       supplier_invoice_key: targetUniqueKey || null, normalized_supplier_bill_reference: normalizedBillReference || null,
+      status: "draft", payment_status: "unpaid", approved_at: null, approved_by_name: null, approved_by_email: null,
+      approval_invalidated_at: now, approval_invalidated_by_name: actor.name, approval_invalidated_by_email: actor.email,
+      approval_invalidation_reason: "supplier_identity_changed",
       supplier_reconciled_at: now, supplier_reconciled_by_name: actor.name, supplier_reconciled_by_email: actor.email,
       supplier_reconciled_from_id: currentSupplierId, supplier_reconciled_from_name: currentSupplierName || null, updated_at: now,
     });
@@ -107,7 +108,7 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
       payable_reference: billReference, created_at: targetUnique?.exists ? text(targetUnique.get("created_at"), now) : now, updated_at: now,
     });
     if (oldUniqueRef && oldUnique?.exists && text(oldUnique.get("payable_reference")) === billReference) transaction.delete(oldUniqueRef);
-    if (costRef && cost?.exists) transaction.update(costRef, { partner_id: partnerId, vendor: partnerName, updated_at: now });
+    if (costRef && cost?.exists) transaction.delete(costRef);
 
     if (audit.exists) {
       transaction.update(auditRef, {
@@ -117,7 +118,7 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
       });
     }
 
-    const detail = `${billReference} relinked from ${currentSupplierName || currentSupplierId || "unidentified supplier"} to ${partnerName}. Freight Audit approval, when present, was invalidated.`;
+    const detail = `${billReference} relinked from ${currentSupplierName || currentSupplierId || "unidentified supplier"} to ${partnerName}. AP approval, published job cost and Freight Audit approval were invalidated for review.`;
     transaction.set(partnerRef.collection("activity").doc(`reconcile-${billReference}`), {
       type: "supplier_reconciliation", title: "Legacy supplier bill reconciled", detail,
       actor_name: actor.name, actor_email: actor.email, created_at: now,
