@@ -489,8 +489,8 @@ test("41 tender versus repricing and booking versus repricing races share the or
 test("42 counteroffer versus V1 approval cannot transfer approval to derived V2", () => {
   assert.match(tenderServer, /commercialOrderPointer\(nextVersion/);
   assert.match(lineageServer, /pricing_approval_status: approvalStatus/);
-  assert.match(lineageServer, /pricing_approval_version_id: null/);
-  assert.match(lineageServer, /pricing_approval_fingerprint: null/);
+  assert.match(lineageServer, /pricing_approval_version_id: approvalStatus === "approved" \? version\.id : null/);
+  assert.match(lineageServer, /pricing_approval_fingerprint: approvalStatus === "approved" \? version\.fingerprint : null/);
   assert.match(tenderServer, /counteroffer_commercial_version_created/);
   assert.match(pricingServer, /projection\.commercial_version_id !== version\.id/);
 });
@@ -515,11 +515,15 @@ test("45 booking dispatcher leaves no supported admin route on the old non-linea
   assert.match(bookingDispatcher, /return confirmTmsTenderBooking\(tenderId, input, actor, staff\)/);
 });
 
-test("46 expected profitability integration reads booked fields and validated Freight Audit rather than current rate pricing or FX", () => {
+test("46 expected profitability integration verifies booked snapshot and matching validated Freight Audit rather than current rate pricing or FX", () => {
   assert.match(financeServer, /customerCommercialProfitabilitySummary/);
   const profitabilityServer = source("app/admin/commercial-lineage/commercial-profitability.server.ts");
-  assert.match(profitabilityServer, /expected_customer_revenue/);
-  assert.match(profitabilityServer, /expected_procurement_cost/);
+  assert.match(profitabilityServer, /resolveBookedCommercialLineage\(shipmentData\)/);
+  assert.match(profitabilityServer, /lineage\.snapshot\.pricing\?\.sell_amount/);
+  assert.match(profitabilityServer, /lineage\.snapshot\.procurement\.total/);
+  assert.match(profitabilityServer, /booked_commercial_version_id/);
+  assert.match(profitabilityServer, /booked_commercial_fingerprint/);
+  assert.match(profitabilityServer, /value\.versionId === lineage\.versionId && value\.fingerprint === lineage\.fingerprint/);
   assert.match(profitabilityServer, /matched/);
   assert.match(profitabilityServer, /approved_variance/);
   assert.doesNotMatch(profitabilityServer, /partner_rate_cards|pricing_rules|getNrbForexSnapshot|fxRate|convertCurrency/);
