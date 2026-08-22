@@ -1,4 +1,5 @@
 import { firebaseAdminDb } from "../../firebase-admin.server";
+import { resolveBookedCommercialLineage } from "../financial-settlement/settlement-policy";
 import { normalizeCommercialCurrency } from "./commercial-lineage";
 import { commercialProfitabilityFromFacts } from "./commercial-profitability";
 
@@ -16,6 +17,13 @@ function validatedAuditStatus(value: unknown) {
   return value === "matched" || value === "approved_variance";
 }
 
+type ActualProcurementFact = {
+  amount: number;
+  currency: string;
+  versionId: string;
+  fingerprint: string;
+};
+
 export async function customerCommercialProfitabilitySummary(customerId: string, aggregationCurrency: string) {
   const normalizedCustomerId = customerId.trim().toUpperCase();
   const currency = normalizeCommercialCurrency(aggregationCurrency);
@@ -29,17 +37,19 @@ export async function customerCommercialProfitabilitySummary(customerId: string,
   const auditSnapshots = payableDocs.length
     ? await db.getAll(...payableDocs.map((doc) => db.collection("freight_audits").doc(doc.id)))
     : [];
-  const actualByShipment = new Map<string, Array<{ amount: number; currency: string }>>();
+  const actualByShipment = new Map<string, ActualProcurementFact[]>();
   for (let index = 0; index < payableDocs.length; index += 1) {
     const payable = payableDocs[index];
     const audit = auditSnapshots[index];
-    if (!audit?.exists || !validatedAuditStatus(audit.get("status"))) continue;
+    if (!audit?.exists || !validatedAuditStatus(audit.get("status")) || text(audit.get("commercial_lineage_status")) !== "versioned") continue;
     const shipmentReference = text(payable.get("shipment_reference")).toUpperCase();
     const amount = numberOrNull(audit.get("invoice_subtotal"));
     const auditCurrency = normalizeCommercialCurrency(audit.get("invoice_currency"));
-    if (!shipmentReference || amount === null || amount < 0 || !auditCurrency) continue;
+    const versionId = text(audit.get("booked_commercial_version_id")).toUpperCase();
+    const fingerprint = text(audit.get("booked_commercial_fingerprint"));
+    if (!shipmentReference || amount === null || amount < 0 || !auditCurrency || !versionId || !fingerprint) continue;
     const values = actualByShipment.get(shipmentReference) ?? [];
-    values.push({ amount, currency: auditCurrency });
+    values.push({ amount, currency: auditCurrency, versionId, fingerprint });
     actualByShipment.set(shipmentReference, values);
   }
 
@@ -54,12 +64,13 @@ export async function customerCommercialProfitabilitySummary(customerId: string,
   let versionedShipmentCount = 0;
 
   for (const shipment of shipmentsSnapshot.docs) {
-    const versionId = text(shipment.get("booked_commercial_version_id"));
-    const fingerprint = text(shipment.get("booked_commercial_fingerprint"));
-    if (!versionId || !fingerprint) continue;
+    const shipmentData = shipment.data() as Record<string, unknown>;
+    const lineage = resolveBookedCommercialLineage(shipmentData);
+    if (!lineage.ok) continue;
     versionedShipmentCount += 1;
 
-    const actualValues = actualByShipment.get(shipment.id) ?? [];
+    const actualValues = (actualByShipment.get(shipment.id) ?? [])
+      .filter((value) => value.versionId === lineage.versionId && value.fingerprint === lineage.fingerprint);
     const actualCurrencies = [...new Set(actualValues.map((value) => value.currency))];
     const actual = actualCurrencies.length === 1
       ? { amount: actualValues.reduce((sum, value) => sum + value.amount, 0), currency: actualCurrencies[0] }
@@ -67,12 +78,12 @@ export async function customerCommercialProfitabilitySummary(customerId: string,
 
     const facts = commercialProfitabilityFromFacts({
       expectedRevenue: {
-        amount: numberOrNull(shipment.get("expected_customer_revenue")),
-        currency: text(shipment.get("expected_customer_revenue_currency")) || null,
+        amount: lineage.snapshot.pricing?.sell_amount ?? null,
+        currency: lineage.snapshot.pricing?.sell_currency ?? null,
       },
       expectedProcurement: {
-        amount: numberOrNull(shipment.get("expected_procurement_cost")),
-        currency: text(shipment.get("expected_procurement_currency")) || null,
+        amount: lineage.snapshot.procurement.total,
+        currency: lineage.snapshot.procurement.currency,
       },
       actualProcurement: actual,
     });
@@ -106,6 +117,6 @@ export async function customerCommercialProfitabilitySummary(customerId: string,
     commercial_expected_comparable_count: expectedComparableCount,
     commercial_actual_comparable_count: actualComparableCount,
     commercial_uncomparable_shipment_count: uncomparableCount,
-    commercial_profitability_basis: "booked_lineage_plus_validated_freight_audit",
+    commercial_profitability_basis: "verified_booked_lineage_plus_matching_validated_freight_audit",
   };
 }
