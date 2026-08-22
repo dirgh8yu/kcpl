@@ -14,7 +14,11 @@ function json(body: unknown, status = 200) {
 
 async function authorize() {
   const access = await getAdminAccess();
-  if (access.kind === "authorized") return { user: access.user, staff: await getStaffContext(access.user) };
+  if (access.kind === "authorized") {
+    const staff = await getStaffContext(access.user);
+    if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Shipment execution access is required." }, 403) };
+    return { user: access.user, staff };
+  }
   if (access.kind === "signed-out") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   return { response: json({ ok: false, error: "Admin access is not configured." }, 503) };
 }
