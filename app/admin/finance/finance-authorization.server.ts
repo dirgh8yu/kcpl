@@ -8,9 +8,9 @@ function text(value: unknown) {
 
 /**
  * Authorizes finance customer-link mutations from canonical Firestore records.
- * Request-supplied branch values are intentionally ignored. Shipment, customer
- * and quote relationships must resolve to one compatible KCPL branch before any
- * downstream helper is allowed to mutate them.
+ * Request-supplied branch values are intentionally ignored. Shipment, current
+ * customer, target customer and quote relationships must resolve to one
+ * compatible KCPL branch before any downstream helper is allowed to mutate.
  */
 export async function authorizeFinanceCustomerLink(
   shipmentReference: string,
@@ -18,6 +18,7 @@ export async function authorizeFinanceCustomerLink(
   context: KcplStaffContext,
 ) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const shipmentId = shipmentReference.trim().toUpperCase();
   if (!shipmentId) return { kind: "shipment_missing" as const };
@@ -27,6 +28,15 @@ export async function authorizeFinanceCustomerLink(
   const branch = strictBranchValue(shipment.get("primary_branch"));
   if (!branch) return { kind: "invalid_branch" as const };
   if (!canMutateBranchValue(context, branch)) return { kind: "forbidden" as const };
+
+  const currentCustomerId = text(shipment.get("customer_id")).toUpperCase();
+  if (currentCustomerId) {
+    const currentCustomer = await db.collection("customers").doc(currentCustomerId).get();
+    if (!currentCustomer.exists) return { kind: "customer_missing" as const };
+    if (!compatibleRecordBranches(branch, currentCustomer.get("primary_branch"))) {
+      return { kind: "relationship_mismatch" as const };
+    }
+  }
 
   const quoteReference = text(shipment.get("quote_reference")).toUpperCase();
   if (quoteReference) {
@@ -53,5 +63,11 @@ export async function authorizeFinanceCustomerLink(
     }
   }
 
-  return { kind: "authorized" as const, branch, shipmentId, quoteReference: quoteReference || null };
+  return {
+    kind: "authorized" as const,
+    branch,
+    shipmentId,
+    quoteReference: quoteReference || null,
+    currentCustomerId: currentCustomerId || null,
+  };
 }
