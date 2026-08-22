@@ -57,6 +57,8 @@ type LoadMember = {
   shipment_reference: string | null;
 };
 
+type ReleasedCommercialSource = { orderId: string; versionId: string; fingerprint: string };
+
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
 function nullable(value: unknown) { const output = text(value).trim(); return output || null; }
 function numberValue(value: unknown, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
@@ -93,6 +95,17 @@ function memberFromData(value: unknown): LoadMember | null {
 function loadMembers(load: FirebaseFirestore.DocumentSnapshot) {
   const raw = load.get("members");
   return Array.isArray(raw) ? raw.map(memberFromData).filter((member): member is LoadMember => Boolean(member)) : [];
+}
+
+function releasedCommercialSources(load: FirebaseFirestore.DocumentSnapshot) {
+  const raw = load.get("released_commercial_sources");
+  if (!Array.isArray(raw)) return [] as ReleasedCommercialSource[];
+  return raw.map((value) => {
+    if (!value || typeof value !== "object") return null;
+    const data = value as Record<string, unknown>;
+    const source = { orderId: normalizeCommercialId(data.order_id), versionId: normalizeCommercialId(data.commercial_version_id), fingerprint: text(data.commercial_fingerprint) };
+    return source.orderId && source.versionId && source.fingerprint ? source : null;
+  }).filter((value): value is ReleasedCommercialSource => Boolean(value));
 }
 
 function actualTenderCommercials(tender: FirebaseFirestore.DocumentSnapshot) {
@@ -149,6 +162,9 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       if (!branch || !staffCanAccessBranch(staff, branch)) return { kind: "forbidden" as const };
       const members = loadMembers(load);
       if (members.length < 2 || members.length > MAX_LOAD_ORDERS) return { kind: "state_conflict" as const };
+      const releasedSources = releasedCommercialSources(load);
+      const releasedSourceMap = new Map(releasedSources.map((source) => [source.orderId, source]));
+      if (releasedSources.length !== members.length || releasedSourceMap.size !== members.length || members.some((member) => !releasedSourceMap.has(member.order_id))) return { kind: "commercial_review_required" as const };
       if (!masterOrder.exists || normalizeCommercialId(load.get("master_order_id")) !== masterOrder.id) return { kind: "invalid_master" as const };
       if (!tender.exists || normalizeCommercialId(tender.get("order_id")) !== masterOrder.id || branchValue(tender.get("branch")) !== branch) return { kind: "state_conflict" as const };
 
@@ -194,10 +210,14 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
           const order = houseOrders[index];
           const shipment = shipments[index];
           const quote = quotes[index];
+          const released = releasedSourceMap.get(order.id);
           const bookedVersionId = normalizeCommercialId(order.get("booked_commercial_version_id"));
           const bookedFp = text(order.get("booked_commercial_fingerprint"));
-          if (!bookedVersionId || !bookedFp || !shipment?.exists || normalizeCommercialId(shipment.get("booked_commercial_version_id")) !== bookedVersionId || text(shipment.get("booked_commercial_fingerprint")) !== bookedFp
-            || !quote?.exists || normalizeCommercialId(quote.get("commercial_version_id")) !== bookedVersionId || text(quote.get("commercial_fingerprint")) !== bookedFp) return { kind: "state_conflict" as const };
+          if (!released || normalizeCommercialId(order.get("consolidation_source_commercial_version_id")) !== released.versionId || text(order.get("consolidation_source_commercial_fingerprint")) !== released.fingerprint
+            || !bookedVersionId || !bookedFp || !shipment?.exists || normalizeCommercialId(shipment.get("source_commercial_version_id")) !== released.versionId || text(shipment.get("source_commercial_fingerprint")) !== released.fingerprint
+            || normalizeCommercialId(shipment.get("booked_commercial_version_id")) !== bookedVersionId || text(shipment.get("booked_commercial_fingerprint")) !== bookedFp
+            || !quote?.exists || normalizeCommercialId(quote.get("source_commercial_version_id")) !== released.versionId || text(quote.get("source_commercial_fingerprint")) !== released.fingerprint
+            || normalizeCommercialId(quote.get("commercial_version_id")) !== bookedVersionId || text(quote.get("commercial_fingerprint")) !== bookedFp) return { kind: "state_conflict" as const };
         }
         return { kind: "booked" as const, masterShipmentReference, shipmentReferences: refs, idempotent: true };
       }
@@ -219,14 +239,18 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       const houseOrders = await Promise.all(houseRefs.map((ref) => transaction.get(ref)));
       if (houseOrders.some((order) => !order.exists)) return { kind: "missing_order" as const };
       for (const order of houseOrders) {
+        const released = releasedSourceMap.get(order.id);
         if (!normalizeCommercialId(order.get("customer_id"))) return { kind: "customer_required" as const };
-        if (normalizeCommercialId(order.get("consolidation_load_id")) !== load.id || normalizeCommercialId(order.get("consolidation_master_order_id")) !== masterOrder.id || order.get("procurement_locked_by_load") !== true) return { kind: "state_conflict" as const };
+        if (!released || normalizeCommercialId(order.get("consolidation_load_id")) !== load.id || normalizeCommercialId(order.get("consolidation_master_order_id")) !== masterOrder.id || order.get("procurement_locked_by_load") !== true
+          || normalizeCommercialId(order.get("consolidation_source_commercial_version_id")) !== released.versionId || text(order.get("consolidation_source_commercial_fingerprint")) !== released.fingerprint
+          || normalizeCommercialId(order.get("commercial_version_id")) !== released.versionId || text(order.get("commercial_fingerprint")) !== released.fingerprint) return { kind: "state_conflict" as const };
         if (text(order.get("status")) === "booked" || nullable(order.get("shipment_reference"))) return { kind: "state_conflict" as const };
       }
 
       const sourceVersions: CommercialVersion[] = [];
       for (const order of houseOrders) {
-        const source = await loadCommercialVersionInTransaction(transaction, order.get("commercial_version_id"), order.get("commercial_fingerprint"), order.id);
+        const released = releasedSourceMap.get(order.id)!;
+        const source = await loadCommercialVersionInTransaction(transaction, released.versionId, released.fingerprint, order.id);
         if (source.kind !== "ready") return { kind: "commercial_review_required" as const };
         const bookable = await assertBookableCommercialVersionInTransaction(transaction, source.version);
         if (bookable.decision.ok === false) return { kind: bookable.decision.reason as "pricing_required" | "approval_required" | "commercial_review_required" };
