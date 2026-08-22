@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { quoteCurrencies, type QuoteCurrency, quoteStatuses, type QuoteStatus } from "../../../../admin/admin-data";
 import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
+import { acceptCurrentTmsCustomerQuote } from "../../../../admin/commercial-authority/customer-sell-authority.server";
 import { assertQuoteEconomicEditAllowed } from "../../../../admin/commercial-lineage/quote-commercial-policy.server";
 import { createCrmCustomerFromQuote } from "../../../../admin/crm/crm-quote-links.server";
 import { checkQuoteBranchAccess } from "../../../../admin/quote-access.server";
@@ -135,6 +136,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     });
     if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
+    if (result.kind === "locked") return json({ ok: false, error: "Versioned TMS quote economics are immutable. Reprice the Transport Order instead.", code: "VERSIONED_QUOTE_COMMERCIAL_LOCK" }, 409);
 
     return json({
       ok: true,
@@ -149,6 +151,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const assignedToPhone = clean(body.assignedToPhone).slice(0, 80);
   if (!quoteStatuses.includes(status as QuoteStatus)) return json({ ok: false, error: "Choose a valid quote status." }, 400);
   if (assignedToEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assignedToEmail)) return json({ ok: false, error: "Choose a staff member with a valid email address." }, 400);
+
+  let acceptedTmsQuote: { quoteReference: string; commercialVersionId: string; idempotent: boolean } | null = null;
+  if (status === "won") {
+    const acceptance = await acceptCurrentTmsCustomerQuote(reference, { name: auth.user.displayName, email: auth.user.email }, auth.staff);
+    if (acceptance.kind === "unavailable") return json({ ok: false, error: "Customer acceptance storage is unavailable." }, 503);
+    if (acceptance.kind === "forbidden") return json({ ok: false, error: "Commercial access is required to record customer acceptance." }, 403);
+    if (acceptance.kind === "missing" || acceptance.kind === "missing_order") return json({ ok: false, error: "Quote or transport order not found." }, 404);
+    if (acceptance.kind === "customer_missing") return json({ ok: false, error: "The quote customer is missing or belongs to a different branch.", code: "CUSTOMER_AUTHORITY_MISMATCH" }, 409);
+    if (acceptance.kind === "stale_commercial_quote") return json({ ok: false, error: "This customer quote is for an older commercial version. Issue and accept the current quote instead.", code: "stale_commercial_quote" }, 409);
+    if (acceptance.kind === "invalid_tms_quote" || acceptance.kind === "invalid_transition") return json({ ok: false, error: "This TMS quote cannot become customer authority from its current state.", code: "TMS_QUOTE_AUTHORITY_INVALID" }, 409);
+    if (acceptance.kind === "accepted") acceptedTmsQuote = acceptance;
+  }
 
   const result = await updateQuoteAdmin(reference, status as QuoteStatus, {
     uid: assignedToUid,
@@ -170,9 +184,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
 
   let shipment = null;
   let shipmentWarning: string | null = null;
-  if (status === "won") {
+  if (status === "won" && !acceptedTmsQuote) {
     try {
       const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName, auth.user.email);
+      if (shipmentResult.kind === "tms-authority-required") {
+        return json({ ok: false, error: "TMS/versioned quotes can create shipments only through canonical Tender and Booking.", code: "TMS_BOOKING_REQUIRED" }, 409);
+      }
       if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") {
         shipment = shipmentResult.shipment;
         if (shipment) {
@@ -189,7 +206,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
       }
     } catch (error) {
       console.error("Failed to create KCPL shipment from won quote", reference, error);
-      shipmentWarning = "The quote was saved as Won, but its shipment could not be initialized yet. Reload the enquiry and retry before continuing operations.";
+      shipmentWarning = "The quote was saved as Won, but its shipment could not be initialized yet. Use the explicit Won mutation again before continuing operations.";
     }
   }
 
@@ -203,6 +220,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     assignedToPhone,
     shipment,
     shipmentWarning,
+    customerAcceptance: acceptedTmsQuote ? {
+      status: "accepted",
+      quoteReference: acceptedTmsQuote.quoteReference,
+      commercialVersionId: acceptedTmsQuote.commercialVersionId,
+      idempotent: acceptedTmsQuote.idempotent,
+    } : null,
   });
 }
 
