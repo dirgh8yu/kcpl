@@ -837,7 +837,7 @@ export async function loadPreparedConsolidationAllocationForBookingInTransaction
   houseOrders: FirebaseFirestore.DocumentSnapshot[];
 }): Promise<
   | { kind: "ready"; prepared: PreparedAllocationForBooking }
-  | { kind: "allocation_not_prepared" | "commercial_allocation_stale" | "approval_required" | "customer_acceptance_required" | "customer_quote_stale" | "commercial_review_required" }
+  | { kind: "allocation_not_prepared" | "commercial_allocation_stale" | "approval_required" | "customer_quote_required" | "customer_acceptance_required" | "customer_quote_stale" | "commercial_review_required" }
 > {
   const packageIdValue = normalizeCommercialId(input.load.get("current_allocation_package_id"));
   const packageFingerprintValue = text(input.load.get("current_allocation_package_fingerprint"));
