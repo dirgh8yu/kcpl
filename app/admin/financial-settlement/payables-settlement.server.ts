@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { canAccessBranchValue } from "../branch-access-policy";
+import { canAccessBranchValue, compatibleRecordBranches } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { freightAuditPaymentAllowed, freightAuditStatuses, normalizeAuditReference, type FreightAuditStatus } from "../freight-audit/freight-audit";
 import { jobCostCategories } from "../job-file";
-import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
+import { canAccessPartnerOwner, isPartnerReference, partnerOwnerCompatibleWithBranch } from "../partners/partner-policy";
 import type { CreatePayableInput } from "../payables/payables-data";
 import { normalizeSupplierBillReference, payableDateError, supplierIdentityKey, validPayableCalendarDate } from "../payables/payables-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
@@ -139,6 +139,7 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     if (!kcplBranches.includes(rawBranch as KcplBranch)) return { kind: "invalid_branch" as const };
     if (!canAccess(context, rawBranch)) return { kind: "forbidden" as const };
     const branch = rawBranch as KcplBranch;
+    if (supplier?.exists && !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), branch)) return { kind: "supplier_scope_mismatch" as const };
     const supplierName = supplier?.exists ? text(supplier.get("display_name"), supplierId) : input.supplierName.trim();
     if (!supplierName) return { kind: "supplier_required" as const };
     const supplierKey = supplierIdentityKey(supplier?.exists ? supplierId : "", supplierName);
@@ -152,6 +153,8 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     const customerId = nullable(shipmentData.customer_id);
     const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
     const customer = customerRef ? await transaction.get(customerRef) : null;
+    if (customerId && !customer?.exists) return { kind: "customer_missing" as const };
+    if (customer?.exists && !compatibleRecordBranches(branch, customer.get("primary_branch"))) return { kind: "customer_scope_mismatch" as const };
     const uniqueKey = supplierInvoiceUniquenessKey(supplierKey, normalizedSupplierBillReference);
     const uniqueRef = db.collection("supplier_invoice_uniques").doc(uniqueKey);
     const unique = await transaction.get(uniqueRef);
