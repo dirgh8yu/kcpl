@@ -1,4 +1,4 @@
-import { kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
+import { kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data.ts";
 
 export const tmsModes = ["air", "sea", "road", "rail", "courier", "multimodal"] as const;
 export type TmsMode = (typeof tmsModes)[number];
