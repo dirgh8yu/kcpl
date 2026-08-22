@@ -1,9 +1,7 @@
 import { firebaseAdminAuth, firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
 import {
-  configuredStaffRoleForEmail,
   kcplStaffRoles,
-  staffCapabilitiesForEmail,
   staffCapabilitiesForRole,
   type KcplStaffRole,
 } from "./staff-permissions";
@@ -42,27 +40,41 @@ function nullable(value: unknown) {
   return valueText || null;
 }
 
-function roleValue(value: unknown, fallback: KcplStaffRole): KcplStaffRole {
-  return kcplStaffRoles.includes(value as KcplStaffRole) ? value as KcplStaffRole : fallback;
+function roleValue(value: unknown): KcplStaffRole | null {
+  return kcplStaffRoles.includes(value as KcplStaffRole) ? value as KcplStaffRole : null;
+}
+
+function branchScopeValue(value: unknown): "all" | "selected" | null {
+  return value === "all" || value === "selected" ? value : null;
 }
 
 function branchList(value: unknown): KcplBranch[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch));
+  return [...new Set(value.filter((item): item is KcplBranch => kcplBranches.includes(item as KcplBranch)))];
 }
 
-function profileFromData(uid: string, data: Record<string, unknown>, fallbackRole: KcplStaffRole): KcplStaffProfile {
-  const scope = data.branch_scope === "selected" ? "selected" : "all";
+/**
+ * Persisted staff state is the authorization authority once a profile exists.
+ * Malformed roles, scopes, or active flags fail closed instead of inheriting an
+ * environment-configured role or an organization-wide branch scope.
+ */
+function profileFromData(uid: string, data: Record<string, unknown>): KcplStaffProfile | null {
+  const role = roleValue(data.role);
+  const scope = branchScopeValue(data.branch_scope);
+  if (!role || !scope || typeof data.active !== "boolean") return null;
+  const email = text(data.email).trim().toLowerCase();
+  if (!email) return null;
+
   return {
     uid,
-    email: text(data.email).trim().toLowerCase(),
-    display_name: text(data.display_name, text(data.email).split("@")[0] || "KCPL Staff"),
+    email,
+    display_name: text(data.display_name, email.split("@")[0] || "KCPL Staff"),
     job_title: nullable(data.job_title),
     phone: nullable(data.phone),
-    role: roleValue(data.role, fallbackRole),
+    role,
     branch_scope: scope,
     branches: branchList(data.branches),
-    active: data.active !== false,
+    active: data.active,
     created_at: text(data.created_at),
     updated_at: text(data.updated_at),
     updated_by: nullable(data.updated_by),
@@ -82,17 +94,22 @@ function isConfiguredAdmin(email: string) {
   return configuredAdminEmails().has(email.trim().toLowerCase());
 }
 
-async function canBootstrapEmptyStaffDirectory(email: string) {
-  if (!isConfiguredAdmin(email)) return false;
+/**
+ * KCPL_ADMIN_EMAILS is a bootstrap mechanism only. It may establish the first
+ * Management account while the directory is empty, but it never overrides a
+ * persisted staff profile or grants fallback authority after staff state exists.
+ */
+export async function canBootstrapEmptyStaffDirectory(email: string) {
+  if (!firebaseRuntimeConfigured() || !isConfiguredAdmin(email)) return false;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").limit(1).get();
   return snapshot.empty;
 }
 
-export async function staffProfileByUid(uid: string, email = "") {
+export async function staffProfileByUid(uid: string, _email = "") {
   if (!firebaseRuntimeConfigured() || !uid.trim()) return null;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").doc(uid.trim()).get();
   if (!snapshot.exists) return null;
-  return profileFromData(uid.trim(), snapshot.data() as Record<string, unknown>, staffCapabilitiesForEmail(email).role);
+  return profileFromData(uid.trim(), snapshot.data() as Record<string, unknown>);
 }
 
 export async function staffProfileByEmail(email: string) {
@@ -102,7 +119,7 @@ export async function staffProfileByEmail(email: string) {
   const snapshot = await firebaseAdminDb().collection("staff_profiles").where("email", "==", normalized).limit(1).get();
   if (snapshot.empty) return null;
   const doc = snapshot.docs[0];
-  return profileFromData(doc.id, doc.data() as Record<string, unknown>, "operations");
+  return profileFromData(doc.id, doc.data() as Record<string, unknown>);
 }
 
 export function resolveStaffIdentityFromProfiles(
@@ -164,23 +181,11 @@ export async function isActiveStaffProfile(uid: string, email: string) {
 export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext> {
   const profile = await staffProfileByUid(user.uid, user.email);
   if (profile) {
-    if (isConfiguredAdmin(user.email)) {
-      const managementProfile: KcplStaffProfile = {
-        ...profile,
-        role: "management",
-        branch_scope: "all",
-        branches: [...kcplBranches],
-      };
-      return {
-        profile: managementProfile,
-        permissions: staffCapabilitiesForRole("management"),
-        can_access_all_branches: true,
-        branches: [...kcplBranches],
-      };
-    }
-
+    if (!profile.active) throw new Error("Inactive staff profile");
     const permissions = staffCapabilitiesForRole(profile.role);
-    const canAccessAll = profile.branch_scope === "all" || profile.role === "management";
+    // KCPL policy: a persisted Management role is intentionally organization-wide.
+    // Non-management all-branch scope remains explicit in the persisted profile.
+    const canAccessAll = profile.role === "management" || profile.branch_scope === "all";
     return {
       profile,
       permissions,
@@ -189,48 +194,43 @@ export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext
     };
   }
 
-  const explicitlyConfiguredRole = configuredStaffRoleForEmail(user.email);
-  const bootstrapManagement = explicitlyConfiguredRole === null
-    ? await canBootstrapEmptyStaffDirectory(user.email)
-    : false;
-  const configuredAdmin = isConfiguredAdmin(user.email);
-  const fallbackRole: KcplStaffRole = configuredAdmin || bootstrapManagement
-    ? "management"
-    : explicitlyConfiguredRole ?? "operations";
-  const hasExplicitFallbackAccess = configuredAdmin || bootstrapManagement || explicitlyConfiguredRole !== null;
-  const permissions = staffCapabilitiesForRole(fallbackRole);
-  const effectiveProfile: KcplStaffProfile = {
+  if (!(await canBootstrapEmptyStaffDirectory(user.email))) {
+    throw new Error("Staff profile is required");
+  }
+
+  const bootstrapProfile: KcplStaffProfile = {
     uid: user.uid,
     email: user.email.toLowerCase(),
     display_name: user.displayName,
     job_title: null,
     phone: null,
-    role: fallbackRole,
-    branch_scope: hasExplicitFallbackAccess ? "all" : "selected",
-    branches: hasExplicitFallbackAccess ? [...kcplBranches] : [],
+    role: "management",
+    branch_scope: "all",
+    branches: [...kcplBranches],
     active: true,
     created_at: "",
     updated_at: "",
     updated_by: null,
   };
   return {
-    profile: effectiveProfile,
-    permissions,
-    can_access_all_branches: hasExplicitFallbackAccess,
-    branches: hasExplicitFallbackAccess ? [...kcplBranches] : [],
+    profile: bootstrapProfile,
+    permissions: staffCapabilitiesForRole("management"),
+    can_access_all_branches: true,
+    branches: [...kcplBranches],
   };
 }
 
 export function staffCanAccessBranch(context: KcplStaffContext, branch: string | null | undefined) {
-  if (context.can_access_all_branches) return true;
-  if (!branch) return false;
-  return context.branches.includes(branch as KcplBranch);
+  if (!branch || !kcplBranches.includes(branch as KcplBranch)) return false;
+  return context.can_access_all_branches || context.branches.includes(branch as KcplBranch);
 }
 
 export async function listStaffProfiles() {
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").orderBy("display_name", "asc").limit(500).get();
-  return snapshot.docs.map((doc) => profileFromData(doc.id, doc.data() as Record<string, unknown>, "operations"));
+  return snapshot.docs
+    .map((doc) => profileFromData(doc.id, doc.data() as Record<string, unknown>))
+    .filter((profile): profile is KcplStaffProfile => profile !== null);
 }
 
 async function matchingAssignmentRefs(
@@ -368,7 +368,8 @@ export async function saveStaffProfile(input: StaffProfileInput, actor: Actor) {
     updated_by: actor.email,
   };
   await ref.set(document, { merge: true });
-  const profile = profileFromData(authUser.uid, document, input.role);
+  const profile = profileFromData(authUser.uid, document);
+  if (!profile) throw new Error("Saved staff profile failed runtime authorization validation");
   try {
     await synchronizeStaffIdentityAssignments(profile, previousEmail);
   } catch (error) {
