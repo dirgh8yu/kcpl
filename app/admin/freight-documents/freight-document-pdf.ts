@@ -8,7 +8,7 @@ import {
 type Line = { text: string; bold?: boolean; size?: number; gapBefore?: number };
 
 function ascii(value: string) {
-  return value.normalize("NFKD").replace(/[^\x20-\x7E]/g, "?");
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "?");
 }
 
 function escapePdf(value: string) {
