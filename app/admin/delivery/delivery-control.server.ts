@@ -149,6 +149,9 @@ export async function getDeliveryControl(reference: string, context: KcplStaffCo
     reference: scope.reference,
     attempts,
     evidence,
+    shipment_status: text(scope.data.status, "booking_confirmed"),
+    current_location: nullable(scope.data.current_location),
+    tracking_last_event_at: nullable(scope.data.tracking_last_event_at),
     pod_status: text(scope.data.delivery_pod_status, "not_received") as "not_received" | "received" | "rejected" | "verified",
     pod_document_id: nullable(scope.data.delivery_pod_document_id),
     pod_verified_at: nullable(scope.data.delivery_pod_verified_at),
@@ -215,55 +218,126 @@ export async function createDeliveryAttempt(reference: string, input: CreateAtte
   if (scope.kind !== "ready") return scope;
   const scheduledFor = validIso(input.scheduledFor);
   if (!deliveryOutcomeValid("scheduled", { scheduledFor: scheduledFor ?? "" })) return { kind: "schedule_required" as const };
-  if (text(scope.data.status) === "delivered" || text(scope.data.delivery_pod_status) === "verified") return { kind: "already_delivered" as const };
+  const db = firebaseAdminDb();
   const now = new Date().toISOString();
-  const attemptNumber = Math.max(0, numberOrNull(scope.data.delivery_attempt_count) ?? 0) + 1;
   const attemptRef = scope.ref.collection("delivery_attempts").doc(id("attempt"));
-  const data = {
-    attempt_number: attemptNumber,
-    status: "scheduled" as const,
-    scheduled_for: scheduledFor,
-    event_time: null,
-    location: input.location.trim() || null,
-    latitude: null,
-    longitude: null,
-    recipient_name: null,
-    recipient_phone: null,
-    recipient_relation: null,
-    driver_name: input.driverName.trim() || null,
-    driver_phone: input.driverPhone.trim() || null,
-    vehicle_reference: input.vehicleReference.trim() || null,
-    failure_reason: null,
-    notes: input.notes.trim() || null,
-    created_at: now,
-    created_by_name: actor.name || null,
-    created_by_email: actor.email || null,
-    updated_at: now,
-    updated_by_name: actor.name || null,
-    updated_by_email: actor.email || null,
-  };
-  const batch = firebaseAdminDb().batch();
-  batch.set(attemptRef, data);
-  batch.update(scope.ref, {
-    delivery_attempt_count: attemptNumber,
-    delivery_last_attempt_status: "scheduled",
-    delivery_last_attempt_at: now,
-    delivery_next_at: scheduledFor,
-    delivery_state: "delivery_active",
-    updated_at: now,
+  const result = await db.runTransaction(async (transaction) => {
+    const shipmentSnapshot = await transaction.get(scope.ref);
+    if (!shipmentSnapshot.exists) return { kind: "missing" as const };
+    const shipment = shipmentSnapshot.data() as Record<string, unknown>;
+    if (text(shipment.status) === "delivered" || text(shipment.delivery_pod_status) === "verified") return { kind: "already_delivered" as const };
+    const attemptNumber = Math.max(0, numberOrNull(shipment.delivery_attempt_count) ?? 0) + 1;
+    const data = {
+      attempt_number: attemptNumber,
+      status: "scheduled" as const,
+      scheduled_for: scheduledFor,
+      event_time: null,
+      location: input.location.trim() || null,
+      latitude: null,
+      longitude: null,
+      recipient_name: null,
+      recipient_phone: null,
+      recipient_relation: null,
+      driver_name: input.driverName.trim() || null,
+      driver_phone: input.driverPhone.trim() || null,
+      vehicle_reference: input.vehicleReference.trim() || null,
+      failure_reason: null,
+      notes: input.notes.trim() || null,
+      created_at: now,
+      created_by_name: actor.name || null,
+      created_by_email: actor.email || null,
+      updated_at: now,
+      updated_by_name: actor.name || null,
+      updated_by_email: actor.email || null,
+    };
+    transaction.create(attemptRef, data);
+    transaction.update(scope.ref, {
+      delivery_attempt_count: attemptNumber,
+      delivery_last_attempt_status: "scheduled",
+      delivery_last_attempt_at: now,
+      delivery_next_at: scheduledFor,
+      delivery_state: "delivery_active",
+      updated_at: now,
+    });
+    transaction.set(scope.ref.collection("job_activity").doc(), {
+      type: "delivery_attempt_scheduled",
+      title: `Delivery attempt ${attemptNumber} scheduled`,
+      detail: [scheduledFor ? `Scheduled ${scheduledFor}` : null, input.location, input.driverName || input.vehicleReference].filter(Boolean).join(" · ") || null,
+      branch: scope.primary,
+      actor_name: actor.name,
+      actor_email: actor.email,
+      created_at: now,
+      delivery_attempt_id: attemptRef.id,
+    });
+    return { kind: "created" as const, data };
   });
-  batch.set(scope.ref.collection("job_activity").doc(), {
-    type: "delivery_attempt_scheduled",
-    title: `Delivery attempt ${attemptNumber} scheduled`,
-    detail: [scheduledFor ? `Scheduled ${scheduledFor}` : null, input.location, input.driverName || input.vehicleReference].filter(Boolean).join(" · ") || null,
-    branch: scope.primary,
-    actor_name: actor.name,
-    actor_email: actor.email,
-    created_at: now,
-    delivery_attempt_id: attemptRef.id,
+  if (result.kind !== "created") return result;
+  return { kind: "created" as const, attempt: attemptFromData(attemptRef.id, scope.reference, result.data) };
+}
+
+export async function adoptTrackedDelivery(reference: string, actor: Actor, context: KcplStaffContext) {
+  const scope = await shipmentScope(reference, context);
+  if (scope.kind !== "ready") return scope;
+  const db = firebaseAdminDb();
+  const attemptRef = scope.ref.collection("delivery_attempts").doc("tracking-delivery");
+  const now = new Date().toISOString();
+  const result = await db.runTransaction(async (transaction) => {
+    const [shipmentSnapshot, attemptSnapshot] = await Promise.all([transaction.get(scope.ref), transaction.get(attemptRef)]);
+    if (!shipmentSnapshot.exists) return { kind: "missing" as const };
+    if (attemptSnapshot.exists) return { kind: "ready" as const, data: attemptSnapshot.data() as Record<string, unknown> };
+    const shipment = shipmentSnapshot.data() as Record<string, unknown>;
+    if (text(shipment.status) !== "delivered") return { kind: "not_delivered" as const };
+    const attemptNumber = Math.max(0, numberOrNull(shipment.delivery_attempt_count) ?? 0) + 1;
+    const eventTime = validIso(nullable(shipment.tracking_last_event_at)) ?? validIso(nullable(shipment.updated_at)) ?? now;
+    const podStatus = text(shipment.delivery_pod_status, "not_received");
+    const data = {
+      attempt_number: attemptNumber,
+      status: "delivered" as const,
+      scheduled_for: null,
+      event_time: eventTime,
+      location: nullable(shipment.current_location),
+      latitude: null,
+      longitude: null,
+      recipient_name: nullable(shipment.delivery_recipient_name),
+      recipient_phone: null,
+      recipient_relation: null,
+      driver_name: null,
+      driver_phone: null,
+      vehicle_reference: nullable(shipment.carrier_reference),
+      failure_reason: null,
+      notes: "Delivery record adopted from the normalized carrier/counterpart tracking milestone. POD evidence remains subject to KCPL verification.",
+      created_at: now,
+      created_by_name: actor.name || null,
+      created_by_email: actor.email || null,
+      updated_at: now,
+      updated_by_name: actor.name || null,
+      updated_by_email: actor.email || null,
+      adopted_from_tracking: true,
+    };
+    transaction.create(attemptRef, data);
+    transaction.update(scope.ref, {
+      delivery_attempt_count: attemptNumber,
+      delivery_last_attempt_status: "delivered",
+      delivery_last_attempt_at: eventTime,
+      delivery_next_at: null,
+      delivery_state: podStatus === "verified" ? "pod_verified" : "delivered_pod_pending",
+      delivery_pod_status: podStatus === "verified" || podStatus === "received" || podStatus === "rejected" ? podStatus : "not_received",
+      updated_at: now,
+    });
+    transaction.set(scope.ref.collection("job_activity").doc(), {
+      type: "delivery_tracking_adopted",
+      title: "Carrier delivery milestone adopted into Delivery Control",
+      detail: "The existing Delivered tracking milestone was linked to the POD workflow without creating a duplicate shipment movement event.",
+      branch: scope.primary,
+      actor_name: actor.name,
+      actor_email: actor.email,
+      created_at: now,
+      delivery_attempt_id: attemptRef.id,
+    });
+    return { kind: "created" as const, data };
   });
-  await batch.commit();
-  return { kind: "created" as const, attempt: attemptFromData(attemptRef.id, scope.reference, data) };
+  if (result.kind === "ready" || result.kind === "created") return { kind: result.kind, attempt: attemptFromData(attemptRef.id, scope.reference, result.data) } as const;
+  return result;
 }
 
 function milestoneForDelivery(status: DeliveryAttemptStatus) {
@@ -275,8 +349,8 @@ function milestoneForDelivery(status: DeliveryAttemptStatus) {
 
 function shipmentStatusForDelivery(status: DeliveryAttemptStatus, current: string) {
   if (status === "delivered") return "delivered";
-  if (status === "refused") return "exception";
-  if (status === "out_for_delivery" || status === "failed") return "out_for_delivery";
+  if (status === "refused" || status === "failed") return "exception";
+  if (status === "out_for_delivery") return "out_for_delivery";
   return current || "out_for_delivery";
 }
 
