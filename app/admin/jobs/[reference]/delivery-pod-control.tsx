@@ -11,6 +11,7 @@ type DeliveryResponse = {
   attempts?: DeliveryAttempt[];
   evidence?: PodEvidence[];
   pod_status?: "not_received" | "received" | "rejected" | "verified";
+  shipment_status?: string;
   attempt?: DeliveryAttempt;
 };
 
@@ -28,16 +29,18 @@ function statusTone(status: DeliveryAttemptStatus): "neutral" | "info" | "warnin
   return "warning";
 }
 
-export function DeliveryPodControl({ reference, initialAttempts, initialEvidence, initialPodStatus, canReview }: {
+export function DeliveryPodControl({ reference, initialAttempts, initialEvidence, initialPodStatus, initialShipmentStatus, canReview }: {
   reference: string;
   initialAttempts: DeliveryAttempt[];
   initialEvidence: PodEvidence[];
   initialPodStatus: "not_received" | "received" | "rejected" | "verified";
+  initialShipmentStatus: string;
   canReview: boolean;
 }) {
   const [attempts, setAttempts] = useState(initialAttempts);
   const [evidence, setEvidence] = useState(initialEvidence);
   const [podStatus, setPodStatus] = useState(initialPodStatus);
+  const [shipmentStatus, setShipmentStatus] = useState(initialShipmentStatus);
   const [selectedAttemptId, setSelectedAttemptId] = useState(initialAttempts.find((item) => item.status === "scheduled" || item.status === "out_for_delivery")?.id ?? initialAttempts[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
@@ -57,6 +60,7 @@ export function DeliveryPodControl({ reference, initialAttempts, initialEvidence
     const data = await response.json() as DeliveryResponse;
     if (!response.ok || !data.ok || !data.attempts || !data.evidence || !data.pod_status) throw new Error(data.error || "Delivery Control could not be refreshed.");
     setAttempts(data.attempts); setEvidence(data.evidence); setPodStatus(data.pod_status);
+    if (data.shipment_status) setShipmentStatus(data.shipment_status);
     if (!data.attempts.some((item) => item.id === selectedAttemptId)) setSelectedAttemptId(data.attempts[0]?.id ?? "");
   }
 
@@ -76,6 +80,17 @@ export function DeliveryPodControl({ reference, initialAttempts, initialEvidence
       setSchedule({ scheduledFor: "", location: "", driverName: "", driverPhone: "", vehicleReference: "", notes: "" });
       setNotice({ tone: "success", text: "Delivery attempt scheduled and written to the Job File audit trail." });
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Delivery attempt could not be scheduled." }); }
+    finally { setBusy(false); }
+  }
+
+  async function adoptDelivered() {
+    setBusy(true); setNotice(null);
+    try {
+      const data = await post({ action: "adopt_delivered" });
+      await refresh();
+      if (data.attempt) setSelectedAttemptId(data.attempt.id);
+      setNotice({ tone: "success", text: "The existing carrier/counterpart Delivered milestone is now linked to Delivery Control. No duplicate movement event was created; POD can be attached and verified normally." });
+    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "The Delivered tracking milestone could not be adopted." }); }
     finally { setBusy(false); }
   }
 
@@ -123,16 +138,16 @@ export function DeliveryPodControl({ reference, initialAttempts, initialEvidence
       {notice ? <OpsNotice tone={notice.tone}>{notice.text}</OpsNotice> : null}
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-4">
-          <form onSubmit={scheduleAttempt} className="rounded-[12px] border border-[#e7dfd8] bg-[#fcfaf8] p-4">
+          {shipmentStatus === "delivered" ? <div className="rounded-[12px] border border-[#e7dfd8] bg-[#fcfaf8] p-4"><div className="flex items-center gap-2"><PackageCheck size={14}/><h3 className="text-[12px] font-bold text-[#4d453f]">Shipment already marked Delivered</h3></div>{deliveredAttempt ? <p className="mt-2 text-[10px] leading-5 text-[#7f756d]">Delivery Control already has the delivered attempt. Continue with POD evidence and verification.</p> : <><p className="mt-2 text-[10px] leading-5 text-[#7f756d]">Live Visibility or a carrier/counterpart feed recorded delivery before a KCPL delivery attempt existed. Adopt that milestone to begin POD closeout without creating another Delivered event.</p><div className="mt-3"><OpsButton variant="primary" onClick={adoptDelivered} disabled={busy}><PackageCheck size={12}/>Adopt Delivered milestone</OpsButton></div></>}</div> : <form onSubmit={scheduleAttempt} className="rounded-[12px] border border-[#e7dfd8] bg-[#fcfaf8] p-4">
             <div className="mb-3 flex items-center gap-2"><Truck size={14}/><h3 className="text-[12px] font-bold text-[#4d453f]">Schedule delivery attempt</h3></div>
             <div className="grid gap-3 sm:grid-cols-2"><OpsField label="Delivery date / time"><input className="ops-input" type="datetime-local" value={schedule.scheduledFor} onChange={(event) => setSchedule((current) => ({ ...current, scheduledFor: event.target.value }))} required/></OpsField><OpsField label="Delivery location"><input className="ops-input" value={schedule.location} onChange={(event) => setSchedule((current) => ({ ...current, location: event.target.value }))} placeholder="Consignee / delivery address"/></OpsField><OpsField label="Driver"><input className="ops-input" value={schedule.driverName} onChange={(event) => setSchedule((current) => ({ ...current, driverName: event.target.value }))}/></OpsField><OpsField label="Vehicle reference"><input className="ops-input" value={schedule.vehicleReference} onChange={(event) => setSchedule((current) => ({ ...current, vehicleReference: event.target.value }))}/></OpsField></div>
             <OpsField label="Instructions / notes"><textarea className="ops-textarea" value={schedule.notes} onChange={(event) => setSchedule((current) => ({ ...current, notes: event.target.value }))}/></OpsField>
             <div className="mt-3 flex justify-end"><OpsButton type="submit" variant="primary" disabled={busy}><Truck size={12}/>Schedule attempt</OpsButton></div>
-          </form>
+          </form>}
 
           <div className="rounded-[12px] border border-[#e7dfd8] bg-white p-4">
             <h3 className="text-[12px] font-bold text-[#4d453f]">Attempt history</h3>
-            {!attempts.length ? <div className="mt-3"><OpsEmptyState icon={<Truck size={16}/>} title="No delivery attempts" description="Schedule the first final-mile attempt when the shipment is ready."/></div> : <div className="mt-3 space-y-2">{attempts.map((attempt) => <button key={attempt.id} type="button" onClick={() => setSelectedAttemptId(attempt.id)} className={`w-full rounded-[10px] border p-3 text-left ${selectedAttemptId === attempt.id ? "border-[#d9aa96] bg-[#fff8f4]" : "border-[#ebe4de] bg-[#fdfcfb]"}`}><div className="flex items-center justify-between gap-2"><span className="text-[11px] font-bold text-[#4f4741]">Attempt {attempt.attempt_number}</span><OpsBadge tone={statusTone(attempt.status)}>{deliveryAttemptStatusLabels[attempt.status]}</OpsBadge></div><div className="mt-1 text-[10px] text-[#8c827a]">{attempt.event_time ? dateTime(attempt.event_time) : attempt.scheduled_for ? `Scheduled ${dateTime(attempt.scheduled_for)}` : dateTime(attempt.updated_at)}{attempt.location ? ` · ${attempt.location}` : ""}</div>{attempt.failure_reason ? <div className="mt-2 text-[10px] text-[#9c594d]">{attempt.failure_reason}</div> : null}</button>)}</div>}
+            {!attempts.length ? <div className="mt-3"><OpsEmptyState icon={<Truck size={16}/>} title="No delivery attempts" description={shipmentStatus === "delivered" ? "Adopt the existing Delivered tracking milestone to start POD closeout." : "Schedule the first final-mile attempt when the shipment is ready."}/></div> : <div className="mt-3 space-y-2">{attempts.map((attempt) => <button key={attempt.id} type="button" onClick={() => setSelectedAttemptId(attempt.id)} className={`w-full rounded-[10px] border p-3 text-left ${selectedAttemptId === attempt.id ? "border-[#d9aa96] bg-[#fff8f4]" : "border-[#ebe4de] bg-[#fdfcfb]"}`}><div className="flex items-center justify-between gap-2"><span className="text-[11px] font-bold text-[#4f4741]">Attempt {attempt.attempt_number}</span><OpsBadge tone={statusTone(attempt.status)}>{deliveryAttemptStatusLabels[attempt.status]}</OpsBadge></div><div className="mt-1 text-[10px] text-[#8c827a]">{attempt.event_time ? dateTime(attempt.event_time) : attempt.scheduled_for ? `Scheduled ${dateTime(attempt.scheduled_for)}` : dateTime(attempt.updated_at)}{attempt.location ? ` · ${attempt.location}` : ""}</div>{attempt.failure_reason ? <div className="mt-2 text-[10px] text-[#9c594d]">{attempt.failure_reason}</div> : null}</button>)}</div>}
           </div>
         </div>
 
