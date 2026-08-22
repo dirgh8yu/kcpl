@@ -6,6 +6,9 @@ import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import { ensureBookingArtifacts, TMS_BOOKING_ARTIFACT_SEED_VERSION } from "./tms-booking-artifacts.server";
 import {
+  bookingRetryDecision,
+  repeatedRejectedTenderDecision,
+  resolveTenderAuthority,
   tenderCanBook,
   tenderCanCancel,
   tenderFinalCommercials,
@@ -151,11 +154,12 @@ async function authoritativeTenderInTransaction(
   tender: TmsTender,
   now: string,
 ) {
-  const pointer = text(orderSnapshotValue.get("active_tender_id")).trim().toUpperCase();
-  if (pointer) return pointer === tender.id ? "authoritative" as const : "stale" as const;
   const state = await activeTenderDocsInTransaction(transaction, tender.order_id, now);
-  if (state.live.length === 1 && state.live[0].id === tender.id) return "legacy_unique" as const;
-  return state.live.length === 0 ? "missing" as const : "ambiguous" as const;
+  return resolveTenderAuthority(
+    text(orderSnapshotValue.get("active_tender_id")) || null,
+    state.live.map((doc) => doc.id),
+    tender.id,
+  );
 }
 
 function responseMatches(tender: TmsTender, input: TenderResponseInput) {
@@ -337,9 +341,11 @@ async function applyTenderResponse(
 
       const authoritative = tenderIsActive(tender.status) ? await authoritativeTenderInTransaction(transaction, order, tender, now) : null;
       if (tenderIsExpired(tender, now)) {
+        const orderStatus = text(order.get("status"));
         transaction.update(tenderRef, { status: "expired", updated_at: now });
         if (authoritative === "authoritative" || authoritative === "legacy_unique") {
-          transaction.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
+          if (orderStatus === "selected" || orderStatus === "tendering") transaction.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
+          else transaction.update(orderRef, { active_tender_id: null, updated_at: now });
           transaction.create(orderRef.collection("events").doc(orderEventId), {
             type: "tender_expired",
             title: `Tender expired: ${tender.tender_reference}`,
@@ -359,8 +365,16 @@ async function applyTenderResponse(
           if (orderStatus !== "selected" && orderStatus !== "tendering") return { kind: "state_conflict" as const };
           if (authoritative === "legacy_unique" || orderStatus !== "tendering") transaction.update(orderRef, { status: "tendering", active_tender_id: tender.id, updated_at: now });
         } else if (tender.status === "rejected") {
-          if (orderStatus !== "selected" && orderStatus !== "tendering") return { kind: "state_conflict" as const };
-          if (text(order.get("active_tender_id")).trim().toUpperCase() === tender.id || orderStatus !== "selected") transaction.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
+          const activeState = await activeTenderDocsInTransaction(transaction, tender.order_id, now);
+          const decision = repeatedRejectedTenderDecision({
+            orderStatus,
+            activeTenderId: text(order.get("active_tender_id")) || null,
+            rejectedTenderId: tender.id,
+            liveTenderIds: activeState.live.map((doc) => doc.id),
+          });
+          if (decision === "stale") return { kind: "stale_tender" as const };
+          if (decision === "state_conflict") return { kind: "state_conflict" as const };
+          if (decision === "repair_clear") transaction.update(orderRef, { status: "selected", active_tender_id: null, updated_at: now });
         }
         if (edi) transaction.set(edi.transactionRef, ediProcessedFields(edi, tender, tender.order_id, branch, now), { merge: true });
         return { kind: "updated" as const, tender, idempotent: true };
@@ -500,9 +514,30 @@ async function createBookedShipment(
         const existingReference = tender.shipment_reference;
         const existingBookingReference = tender.booking_reference;
         if (!existingReference || !existingBookingReference || text(order.get("shipment_reference")).trim().toUpperCase() !== existingReference.toUpperCase()) return { kind: "state_conflict" as const };
-        if (existingBookingReference !== bookingReference || text(order.get("booking_reference")) !== bookingReference) return { kind: "booking_conflict" as const };
-        const existingShipment = await transaction.get(db.collection("shipments").doc(existingReference.toUpperCase()));
-        if (!existingShipment.exists || text(existingShipment.get("transport_order_id")).trim().toUpperCase() !== tender.order_id || text(existingShipment.get("tender_id")).trim().toUpperCase() !== tender.id || text(existingShipment.get("carrier_reference")) !== bookingReference) return { kind: "state_conflict" as const };
+        const existingShipmentRef = db.collection("shipments").doc(existingReference.toUpperCase());
+        const quoteRef = db.collection("quotes").doc(bridgeQuoteReference(tender.order_id));
+        const [existingShipment, quote] = await Promise.all([transaction.get(existingShipmentRef), transaction.get(quoteRef)]);
+        const expectedCustomerId = text(orderData.customer_id).trim().toUpperCase();
+        const decision = bookingRetryDecision({
+          requestedBookingReference: bookingReference,
+          tenderBookingReference: existingBookingReference,
+          orderBookingReference: text(order.get("booking_reference")),
+          tenderShipmentReference: existingReference,
+          orderShipmentReference: text(order.get("shipment_reference")),
+          shipmentExists: existingShipment.exists,
+          shipmentOrderId: existingShipment.exists ? text(existingShipment.get("transport_order_id")) : null,
+          expectedOrderId: tender.order_id,
+          shipmentTenderId: existingShipment.exists ? text(existingShipment.get("tender_id")) : null,
+          expectedTenderId: tender.id,
+          shipmentBookingReference: existingShipment.exists ? text(existingShipment.get("carrier_reference")) : null,
+          shipmentBranch: existingShipment.exists ? text(existingShipment.get("primary_branch")) : null,
+          expectedBranch: branch,
+          shipmentCustomerId: existingShipment.exists ? text(existingShipment.get("customer_id")) : null,
+          expectedCustomerId,
+          shipmentConsolidationLoadId: existingShipment.exists ? nullable(existingShipment.get("consolidation_load_id")) : null,
+        });
+        if (decision !== "idempotent") return { kind: decision as "booking_conflict" | "state_conflict" };
+        if (!expectedCustomerId || !quote.exists || text(quote.get("transport_order_id")).trim().toUpperCase() !== tender.order_id || text(quote.get("shipment_reference")).trim().toUpperCase() !== existingReference.toUpperCase()) return { kind: "state_conflict" as const };
         return { kind: "booked" as const, shipmentReference: existingReference, idempotent: true };
       }
       if (tender.status !== expectedStatus || tender.updated_at !== expectedUpdatedAt) return { kind: "state_conflict" as const };
