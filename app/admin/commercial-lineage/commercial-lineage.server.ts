@@ -17,39 +17,17 @@ import {
 
 type Actor = { name: string; email: string };
 
-type ResolvedVersion = {
-  kind: "ready";
-  version: CommercialVersion;
-  legacy_reconstructed: boolean;
-};
+type ResolvedVersion = { kind: "ready"; version: CommercialVersion; legacy_reconstructed: boolean };
 
 export type CommercialVersionResolution =
   | ResolvedVersion
   | { kind: "missing_commercial_version" }
   | { kind: "commercial_review_required"; reason: string };
 
-function text(value: unknown, fallback = "") {
-  return typeof value === "string" ? value : fallback;
-}
-
-function nullable(value: unknown) {
-  const output = text(value).trim();
-  return output || null;
-}
-
-function numberOrNull(value: unknown) {
-  if (value === null || value === undefined || value === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function boolOrNull(value: unknown) {
-  return typeof value === "boolean" ? value : null;
-}
-
-function versionId() {
-  return `CV-${Date.now()}-${randomBytes(6).toString("hex").toUpperCase()}`;
-}
+function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
+function nullable(value: unknown) { const output = text(value).trim(); return output || null; }
+function numberOrNull(value: unknown) { if (value === null || value === undefined || value === "") return null; const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
+function versionId() { return `CV-${Date.now()}-${randomBytes(6).toString("hex").toUpperCase()}`; }
 
 export function newCommercialVersion(input: {
   snapshot: CommercialSnapshot;
@@ -93,15 +71,18 @@ export function commercialVersionDocument(version: CommercialVersion) {
   };
 }
 
-function versionFromDocument(id: string, data: Record<string, unknown>): CommercialVersion | null {
+export function commercialVersionFromDocument(id: string, data: Record<string, unknown>): CommercialVersion | null {
   const snapshot = data.snapshot as CommercialSnapshot | undefined;
   if (!snapshot || typeof snapshot !== "object") return null;
   const fingerprint = text(data.commercial_fingerprint);
   if (!fingerprint || commercialFingerprint(snapshot) !== fingerprint) return null;
   const integrity = commercialSnapshotIntegrity(snapshot);
   if (!integrity.ok) return null;
+  const storedId = normalizeCommercialId(text(data.commercial_version_id, id));
+  if (!storedId || storedId !== normalizeCommercialId(id)) return null;
+  if (normalizeCommercialId(data.order_id) !== normalizeCommercialId(snapshot.order_id)) return null;
   return {
-    id: normalizeCommercialId(text(data.commercial_version_id, id)),
+    id: storedId,
     fingerprint,
     snapshot,
     previous_version_id: nullable(data.previous_version_id),
@@ -117,7 +98,10 @@ export function persistCommercialVersionInTransaction(transaction: FirebaseFires
   transaction.create(firebaseAdminDb().collection("commercial_versions").doc(version.id), commercialVersionDocument(version));
 }
 
-export function commercialOrderPointer(version: CommercialVersion, approvalStatus: "not_required" | "pending" | "approved" | "review_required" = version.snapshot.pricing?.approval_required ? "pending" : "not_required") {
+export function commercialOrderPointer(
+  version: CommercialVersion,
+  approvalStatus: "not_required" | "pending" | "approved" | "review_required" = version.snapshot.pricing?.approval_required ? "pending" : "not_required",
+) {
   return {
     commercial_version_id: version.id,
     commercial_fingerprint: version.fingerprint,
@@ -139,11 +123,21 @@ export async function loadCommercialVersionInTransaction(
   if (!id || !expectedFingerprint) return { kind: "missing_commercial_version" };
   const snapshot = await transaction.get(firebaseAdminDb().collection("commercial_versions").doc(id));
   if (!snapshot.exists) return { kind: "commercial_review_required", reason: "commercial_version_missing" };
-  const version = versionFromDocument(snapshot.id, snapshot.data() as Record<string, unknown>);
+  const version = commercialVersionFromDocument(snapshot.id, snapshot.data() as Record<string, unknown>);
   if (!version || version.fingerprint !== expectedFingerprint) return { kind: "commercial_review_required", reason: "commercial_version_integrity" };
-  if (expectedOrderId && normalizeCommercialId(version.snapshot.order_id) !== normalizeCommercialId(expectedOrderId)) {
-    return { kind: "commercial_review_required", reason: "commercial_version_order_mismatch" };
-  }
+  if (expectedOrderId && normalizeCommercialId(version.snapshot.order_id) !== normalizeCommercialId(expectedOrderId)) return { kind: "commercial_review_required", reason: "commercial_version_order_mismatch" };
+  return { kind: "ready", version, legacy_reconstructed: false };
+}
+
+export async function loadCommercialVersion(versionIdValue: unknown, fingerprintValue: unknown, expectedOrderId?: string | null): Promise<CommercialVersionResolution> {
+  const id = normalizeCommercialId(versionIdValue);
+  const expectedFingerprint = text(fingerprintValue);
+  if (!id || !expectedFingerprint) return { kind: "missing_commercial_version" };
+  const snapshot = await firebaseAdminDb().collection("commercial_versions").doc(id).get();
+  if (!snapshot.exists) return { kind: "commercial_review_required", reason: "commercial_version_missing" };
+  const version = commercialVersionFromDocument(snapshot.id, snapshot.data() as Record<string, unknown>);
+  if (!version || version.fingerprint !== expectedFingerprint) return { kind: "commercial_review_required", reason: "commercial_version_integrity" };
+  if (expectedOrderId && normalizeCommercialId(version.snapshot.order_id) !== normalizeCommercialId(expectedOrderId)) return { kind: "commercial_review_required", reason: "commercial_version_order_mismatch" };
   return { kind: "ready", version, legacy_reconstructed: false };
 }
 
@@ -162,16 +156,12 @@ async function reconstructLegacySelectedVersion(
   actor: Actor,
 ): Promise<CommercialVersionResolution> {
   const data = order.data() as Record<string, unknown>;
-  if (text(data.status) === "booked" || nullable(data.shipment_reference)) {
-    return { kind: "commercial_review_required", reason: "legacy_booked_history_unproven" };
-  }
+  if (text(data.status) === "booked" || nullable(data.shipment_reference)) return { kind: "commercial_review_required", reason: "legacy_booked_history_unproven" };
   const rateCardId = normalizeCommercialId(data.selected_rate_card_id);
   const selectedPartner = normalizeCommercialId(data.selected_partner_id);
   const selectedCurrency = normalizeCommercialCurrency(data.selected_currency);
   const selectedCost = numberOrNull(data.selected_cost);
-  if (!rateCardId || !selectedPartner || !selectedCurrency || selectedCost === null || selectedCost < 0) {
-    return { kind: "missing_commercial_version" };
-  }
+  if (!rateCardId || !selectedPartner || !selectedCurrency || selectedCost === null || selectedCost < 0) return { kind: "missing_commercial_version" };
   const rateCard = await transaction.get(firebaseAdminDb().collection("partner_rate_cards").doc(rateCardId));
   if (!rateCard.exists) return { kind: "commercial_review_required", reason: "legacy_rate_card_missing" };
   const card = rateCard.data() as Record<string, unknown>;
@@ -187,9 +177,7 @@ async function reconstructLegacySelectedVersion(
   const fuel = linehaul * fuelPercent / 100;
   const accessorials = Math.max(0, numberOrNull(card.accessorial_flat) ?? 0);
   const total = linehaul + fuel + accessorials;
-  if (cardPartner !== selectedPartner || cardCurrency !== selectedCurrency || !sameCommercialMoney(total, selectedCost, selectedCurrency)) {
-    return { kind: "commercial_review_required", reason: "legacy_selected_economics_not_provable" };
-  }
+  if (cardPartner !== selectedPartner || cardCurrency !== selectedCurrency || !sameCommercialMoney(total, selectedCost, selectedCurrency)) return { kind: "commercial_review_required", reason: "legacy_selected_economics_not_provable" };
   const branch = text(data.branch);
   const mode = text(data.mode);
   if (!branch || !mode) return { kind: "commercial_review_required", reason: "legacy_order_identity_missing" };
@@ -225,25 +213,12 @@ async function reconstructLegacySelectedVersion(
     fx: null,
     negotiation: null,
   };
-  const version = newCommercialVersion({
-    snapshot,
-    reason: "legacy_selected_reconstructed",
-    actor,
-    sourceReferences: { rate_card_id: rateCardId },
-  });
+  const version = newCommercialVersion({ snapshot, reason: "legacy_selected_reconstructed", actor, sourceReferences: { rate_card_id: rateCardId } });
   return { kind: "ready", version, legacy_reconstructed: true };
 }
 
-/**
- * Legacy policy: unbooked selected orders can be reconstructed only when the
- * current rate card exactly proves their stored selected economics. Booked
- * history is never fabricated from today's configuration.
- */
-export async function resolveCurrentCommercialVersionInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  order: FirebaseFirestore.DocumentSnapshot,
-  actor: Actor,
-): Promise<CommercialVersionResolution> {
+/** Legacy policy: only an unbooked selected record that can be exactly proved from its stored projection may be reconstructed. Booked history is never fabricated from today's rate card or FX. */
+export async function resolveCurrentCommercialVersionInTransaction(transaction: FirebaseFirestore.Transaction, order: FirebaseFirestore.DocumentSnapshot, actor: Actor): Promise<CommercialVersionResolution> {
   const id = normalizeCommercialId(order.get("commercial_version_id"));
   const fingerprint = text(order.get("commercial_fingerprint"));
   if (id || fingerprint) {
@@ -253,19 +228,17 @@ export async function resolveCurrentCommercialVersionInTransaction(
   return reconstructLegacySelectedVersion(transaction, order, actor);
 }
 
-export async function loadCommercialApprovalInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  version: CommercialVersion,
-): Promise<CommercialApprovalAttestation | null> {
+export async function loadCommercialApprovalInTransaction(transaction: FirebaseFirestore.Transaction, version: CommercialVersion): Promise<CommercialApprovalAttestation | null> {
   if (!version.snapshot.pricing?.approval_required) return null;
   const approval = await transaction.get(firebaseAdminDb().collection("commercial_approvals").doc(version.id));
   if (!approval.exists) return null;
   const data = approval.data() as Record<string, unknown>;
+  if (text(data.status) !== "approved") return null;
   const candidate: CommercialApprovalAttestation = {
     commercial_version_id: text(data.commercial_version_id),
     commercial_fingerprint: text(data.commercial_fingerprint),
     order_id: text(data.order_id),
-    status: text(data.status) === "approved" ? "approved" : "approved",
+    status: "approved",
     approved_at: text(data.approved_at),
     approved_by_name: text(data.approved_by_name),
     approved_by_email: text(data.approved_by_email),
@@ -274,32 +247,17 @@ export async function loadCommercialApprovalInTransaction(
   return commercialApprovalSatisfied(version, candidate) ? candidate : null;
 }
 
-export function createCommercialApprovalInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  version: CommercialVersion,
-  actor: Actor,
-  note: string,
-  now = new Date().toISOString(),
-) {
+export function createCommercialApprovalInTransaction(transaction: FirebaseFirestore.Transaction, version: CommercialVersion, actor: Actor, note: string, now = new Date().toISOString()) {
   const ref = firebaseAdminDb().collection("commercial_approvals").doc(version.id);
   const approval: CommercialApprovalAttestation = {
-    commercial_version_id: version.id,
-    commercial_fingerprint: version.fingerprint,
-    order_id: normalizeCommercialId(version.snapshot.order_id),
-    status: "approved",
-    approved_at: now,
-    approved_by_name: actor.name,
-    approved_by_email: actor.email,
-    note: note.trim() || null,
+    commercial_version_id: version.id, commercial_fingerprint: version.fingerprint, order_id: normalizeCommercialId(version.snapshot.order_id), status: "approved",
+    approved_at: now, approved_by_name: actor.name, approved_by_email: actor.email, note: note.trim() || null,
   };
   transaction.create(ref, approval);
   return approval;
 }
 
-export async function assertBookableCommercialVersionInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  version: CommercialVersion,
-) {
+export async function assertBookableCommercialVersionInTransaction(transaction: FirebaseFirestore.Transaction, version: CommercialVersion) {
   const approval = await loadCommercialApprovalInTransaction(transaction, version);
   return { approval, decision: commercialVersionBookable(version, approval) };
 }
@@ -327,7 +285,6 @@ export function legacyBookedCommercialSnapshot(shipment: Record<string, unknown>
   if (embedded && typeof embedded === "object" && id && fingerprint) {
     const snapshot = embedded as CommercialSnapshot;
     if (commercialFingerprint(snapshot) === fingerprint && commercialSnapshotIntegrity(snapshot).ok) return snapshot;
-    return null;
   }
   return null;
 }
@@ -345,19 +302,8 @@ export function legacyBookedLineageStatus(shipment: Record<string, unknown>) {
 
 export function commercialEventPayload(version: CommercialVersion, type: string, actor: Actor, detail?: string | null) {
   return {
-    type,
-    title: type.replaceAll("_", " "),
-    detail: detail ?? `${version.id} · ${version.fingerprint.slice(0, 12)}`,
-    commercial_version_id: version.id,
-    commercial_fingerprint: version.fingerprint,
-    previous_version_id: version.previous_version_id,
-    reason: version.reason,
-    actor_name: actor.name,
-    actor_email: actor.email,
-    created_at: new Date().toISOString(),
+    type, title: type.replaceAll("_", " "), detail: detail ?? `${version.id} · ${version.fingerprint.slice(0, 12)}`,
+    commercial_version_id: version.id, commercial_fingerprint: version.fingerprint, previous_version_id: version.previous_version_id, reason: version.reason,
+    actor_name: actor.name, actor_email: actor.email, created_at: new Date().toISOString(),
   };
-}
-
-export function commercialBoolean(value: unknown) {
-  return boolOrNull(value);
 }
