@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { compatibleRecordBranches, strictBranchValue, type AccessBranch } from "../branch-access-policy";
 import { resolveCanonicalRecordCandidates } from "../canonical-record-match";
+import { resolveEdi990TenderTarget, validateEdi990CanonicalChain } from "./edi-match-policy";
 import { ingestEdiPayload } from "./edi-gateway.server";
 import { parse214, parse990, parseX12 } from "./edi-x12";
 
@@ -47,32 +48,55 @@ async function quarantine(raw: string, set: "990" | "214", partnerValue: string,
 async function preflight990(raw: string) {
   const parsed = parse990(raw);
   const db = firebaseAdminDb();
-  let tender: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
 
   if (parsed.tenderReference) {
     const matches = await db.collection("transport_tenders").where("tender_reference", "==", parsed.tenderReference).limit(3).get();
-    if (matches.size !== 1) return { kind: "reject" as const, message: "EDI 990 tender reference is not unique.", branch: null };
-    tender = matches.docs[0];
-    if (parsed.orderReference && text(tender.get("order_id")).toUpperCase() !== parsed.orderReference.toUpperCase()) {
-      return { kind: "reject" as const, message: "EDI 990 tender and order references resolve to different authority chains.", branch: null };
-    }
+    docs = matches.docs;
   } else if (parsed.orderReference) {
     const matches = await db.collection("transport_tenders").where("order_id", "==", parsed.orderReference.toUpperCase()).limit(10).get();
-    const sent = matches.docs.filter((doc) => text(doc.get("status")) === "sent");
-    if (sent.length !== 1) return { kind: "reject" as const, message: "EDI 990 order reference does not resolve to one active tender.", branch: null };
-    tender = sent[0];
-  } else {
-    return { kind: "reject" as const, message: "EDI 990 contains no authoritative KCPL tender or order reference.", branch: null };
+    docs = matches.docs;
   }
 
-  const branch = strictBranchValue(tender.get("branch"));
-  const orderId = text(tender.get("order_id")).toUpperCase();
-  if (!branch || !orderId) return { kind: "reject" as const, message: "EDI 990 target tender has incomplete canonical scope.", branch };
-  const order = await db.collection("transport_orders").doc(orderId).get();
-  if (!order.exists || !compatibleRecordBranches(branch, order.get("branch"))) {
-    return { kind: "reject" as const, message: "EDI 990 tender and order have incompatible KCPL branch scope.", branch };
+  const target = resolveEdi990TenderTarget({
+    hasTenderReference: Boolean(parsed.tenderReference),
+    suppliedOrderReference: parsed.orderReference,
+    candidates: docs.map((doc) => ({
+      id: doc.id,
+      orderId: text(doc.get("order_id")).toUpperCase(),
+      branch: doc.get("branch"),
+      status: text(doc.get("status")),
+    })),
+  });
+  if (target.kind === "reject") {
+    const message = target.reason === "missing_reference"
+      ? "EDI 990 contains no authoritative KCPL tender or order reference."
+      : target.reason === "tender_not_unique"
+        ? "EDI 990 tender reference is not unique."
+        : target.reason === "order_not_unique"
+          ? "EDI 990 order reference does not resolve to one active tender."
+          : "EDI 990 tender and order references resolve to different authority chains.";
+    return { kind: "reject" as const, message, branch: null };
   }
-  return { kind: "ready" as const, branch };
+
+  const tender = docs.find((doc) => doc.id === target.tender.id);
+  if (!tender) return { kind: "reject" as const, message: "EDI 990 canonical tender could not be reloaded.", branch: null };
+  const orderId = target.tender.orderId.trim().toUpperCase();
+  const order = orderId ? await db.collection("transport_orders").doc(orderId).get() : null;
+  const chain = validateEdi990CanonicalChain({
+    tender: target.tender,
+    orderExists: Boolean(order?.exists),
+    orderBranch: order?.exists ? order.get("branch") : null,
+  });
+  if (chain.kind === "reject") {
+    const message = chain.reason === "invalid_tender_scope"
+      ? "EDI 990 target tender has incomplete canonical scope."
+      : chain.reason === "missing_order"
+        ? "EDI 990 target tender references a missing order."
+        : "EDI 990 tender and order have incompatible KCPL branch scope.";
+    return { kind: "reject" as const, message, branch: chain.branch };
+  }
+  return { kind: "ready" as const, branch: chain.branch };
 }
 
 async function preflight214(raw: string) {
