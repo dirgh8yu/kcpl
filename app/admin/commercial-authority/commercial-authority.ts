@@ -3,7 +3,7 @@ import {
   normalizeCommercialId,
   sameCommercialMoney,
   type CommercialSnapshot,
-} from "../commercial-lineage/commercial-lineage";
+} from "../commercial-lineage/commercial-lineage.ts";
 
 export const COMMERCIAL_POLICY_ID = "kcpl-server-commercial-policy-v1";
 export const COMMERCIAL_MINIMUM_MARGIN_PERCENT = 10;
