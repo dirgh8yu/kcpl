@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import {
   allocateProcurementCost,
   assessLoadCompatibility,
@@ -9,6 +10,10 @@ import {
   normalizeStopSequence,
   validateStopPrecedence,
 } from "../app/admin/consolidation/tms-consolidation.ts";
+
+const consolidationServer = readFileSync(new URL("../app/admin/consolidation/tms-consolidation.server.ts", import.meta.url), "utf8");
+const consolidationRoute = readFileSync(new URL("../app/api/admin/consolidation/route.ts", import.meta.url), "utf8");
+const ratingServer = readFileSync(new URL("../app/admin/rating/tms-rating.server.ts", import.meta.url), "utf8");
 
 function order(overrides = {}) {
   return {
@@ -141,4 +146,57 @@ test("savings are only claimed when every prior cost is currency-comparable", ()
   assert.deepEqual(sameCurrency, { baseline: 1100, consolidated: 900, savings: 200 });
   const mixed = consolidationSavings({ members: [member({ id: "ORD-1", selected_currency: "NPR" }), member({ id: "ORD-2", selected_currency: "USD" })], procurement_cost: 900, procurement_currency: "NPR" });
   assert.equal(mixed, null);
+});
+
+test("14 one consolidation membership is claimed transactionally on the house order", () => {
+  assert.match(consolidationServer, /createConsolidationLoad[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /addOrderToConsolidationLoad[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /consolidation_load_id/);
+  assert.match(consolidationServer, /membership_conflict/);
+});
+
+test("15 double release is idempotent and creates one deterministic master order in a transaction", () => {
+  assert.match(consolidationServer, /releaseConsolidationToProcurement[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /masterOrderId\(record\.load\.id\)/);
+  assert.match(consolidationServer, /transaction\.create\(masterRef, master\)/);
+  assert.match(consolidationServer, /kind: "ready" as const, masterOrderId/);
+});
+
+test("16 release versus membership or stop mutation shares the load transaction lock", () => {
+  assert.match(consolidationServer, /removeOrderFromConsolidationLoad[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /reorderConsolidationStops[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /updateConsolidationStop[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /record\.load\.status !== "draft"/);
+});
+
+test("17 consolidated booking is one atomic core transaction with idempotent retry", () => {
+  assert.match(consolidationServer, /confirmConsolidatedLoadBooking[\s\S]*?runTransaction/);
+  assert.match(consolidationServer, /record\.load\.status === "booked"/);
+  assert.match(consolidationServer, /idempotent: true/);
+  assert.match(consolidationServer, /booking_conflict/);
+});
+
+test("18 exactly one master shipment is committed with the load and master order", () => {
+  assert.match(consolidationServer, /transaction\.create\(masterShipmentRef/);
+  assert.match(consolidationServer, /master_shipment_reference: masterShipmentReference/);
+  assert.match(consolidationServer, /transaction\.update\(masterOrderRef/);
+});
+
+test("19 exactly one house shipment per member is committed before the load becomes booked", () => {
+  assert.match(consolidationServer, /houseReferenceMap/);
+  assert.match(consolidationServer, /transaction\.create\(db\.collection\("shipments"\)\.doc\(reference\)/);
+  assert.match(consolidationServer, /members: updatedMembers/);
+  assert.match(consolidationServer, /houseRecords\.some\(\(item\) => item\.order\.status === "booked"/);
+});
+
+test("released house orders remain procurement-locked against independent rating", () => {
+  assert.match(consolidationServer, /procurement_locked_by_load: true/);
+  assert.match(ratingServer, /procurement_locked_by_load/);
+});
+
+test("consolidation API preserves commercial RBAC and same-origin checks", () => {
+  assert.match(consolidationRoute, /isTrustedSameOriginRequest/);
+  assert.match(consolidationRoute, /canViewCommercial/);
+  assert.match(consolidationServer, /permissions\.canEditCommercial/);
+  assert.match(consolidationServer, /staffCanAccessBranch/);
 });
