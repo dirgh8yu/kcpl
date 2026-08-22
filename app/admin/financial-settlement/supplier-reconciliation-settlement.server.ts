@@ -1,7 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue, strictBranchValue } from "../branch-access-policy";
 import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
-import { normalizeSupplierBillReference, normalizeSupplierName, supplierIdentityKey } from "../payables/payables-policy";
+import { normalizeSupplierBillReference, supplierIdentityKey } from "../payables/payables-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { isDuplicateSupplierIdentityCandidate } from "../partners/reconciliation/supplier-reconciliation-policy";
 import { supplierInvoiceUniquenessKey } from "./settlement-policy";
