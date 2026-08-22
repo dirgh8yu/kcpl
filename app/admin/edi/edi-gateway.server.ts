@@ -182,8 +182,12 @@ async function matchShipmentFor214(parsed: ReturnType<typeof parse214>) {
     const snapshot = await db.collection("shipments").doc(direct).get();
     if (snapshot.exists) candidates.set(snapshot.id, snapshot);
   }
-  for (const reference of [parsed.carrierReference, parsed.bookingReference].filter((value): value is string => Boolean(value))) {
-    const result = await db.collection("shipments").where("carrier_reference", "==", reference).limit(3).get();
+  if (parsed.carrierReference) {
+    const result = await db.collection("shipments").where("carrier_reference", "==", parsed.carrierReference).limit(3).get();
+    for (const doc of result.docs) candidates.set(doc.id, doc);
+  }
+  if (parsed.bookingReference) {
+    const result = await db.collection("shipments").where("booking_reference", "==", parsed.bookingReference).limit(3).get();
     for (const doc of result.docs) candidates.set(doc.id, doc);
   }
   if (parsed.tenderReference) {
