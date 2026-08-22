@@ -1,7 +1,6 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
   assertBookableCommercialVersionInTransaction,
-  commercialEventPayload,
   persistCommercialVersionInTransaction,
   resolveCurrentCommercialVersionInTransaction,
 } from "../commercial-lineage/commercial-lineage.server";
