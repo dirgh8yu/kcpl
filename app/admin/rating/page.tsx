@@ -9,7 +9,7 @@ import { TmsRatingWorkspace } from "./tms-rating-workspace";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Rate Desk | KCPL Operations", robots: { index: false, follow: false } };
 
-export default async function RatingPage() {
+export default async function RatingPage({ searchParams }: { searchParams: Promise<{ order?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Rate Desk is available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
@@ -18,6 +18,8 @@ export default async function RatingPage() {
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
     isManagement: staff.permissions.role === "management",
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Rate comparison contains supplier commercial pricing and is restricted to Commercial, Accounts and Management." embedded/></OperationsShell>;
 
@@ -37,13 +39,19 @@ export default async function RatingPage() {
 
   if (orders.kind !== "ready" || rateCards.kind !== "ready" || !partners) return <OperationsShell {...shellProps}><Gate title="Rate Desk unavailable" detail="KCPL order or partner pricing storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
 
+  const { order } = await searchParams;
+  const requestedOrder = order?.trim().toUpperCase() ?? "";
+  const orderedOrders = requestedOrder
+    ? [...orders.orders].sort((a, b) => Number(b.id === requestedOrder) - Number(a.id === requestedOrder))
+    : orders.orders;
+
   return (
     <OperationsShell {...shellProps}>
       <div className="px-4 pt-4 lg:px-5">
         <div className="flex justify-end"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="sm">Open Tender Desk →</Link></div>
       </div>
       <TmsRatingWorkspace
-        initialOrders={orders.orders}
+        initialOrders={orderedOrders}
         initialRateCards={rateCards.rateCards}
         partners={partners.partners.filter((partner) => partner.status === "active").map((partner) => ({ id: partner.id, name: partner.display_name }))}
         branches={staff.branches}
