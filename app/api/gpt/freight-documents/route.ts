@@ -11,12 +11,13 @@ export async function GET(request: Request) {
   if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "Firebase is unavailable." }, 503);
   try {
     const db = firebaseAdminDb();
-    const [shipments, generatedDocs] = await Promise.all([
+    const [shipments, allDocuments] = await Promise.all([
       db.collection("shipments").orderBy("updated_at", "desc").limit(1200).get(),
-      db.collectionGroup("documents").where("generated_by_engine", "==", true).limit(5000).get(),
+      db.collectionGroup("documents").limit(5000).get(),
     ]);
+    const generatedDocs = allDocuments.docs.filter((doc) => doc.get("generated_by_engine") === true);
     const byShipment = new Map<string, Array<{ id: string; kind: GeneratedFreightDocumentKind; label: string; filename: string; revision: number; status: string; generatedAt: string; sha256: string }>>();
-    for (const doc of generatedDocs.docs) {
+    for (const doc of generatedDocs) {
       const reference = doc.ref.parent.parent?.id ?? "";
       const kind = text(doc.get("generated_document_kind")) as GeneratedFreightDocumentKind;
       if (!reference || !generatedFreightDocumentKinds.includes(kind)) continue;
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
       ok: true,
       generatedAt: new Date().toISOString(),
       sampledShipmentCount: shipments.size,
-      generatedDocumentCount: generatedDocs.size,
+      generatedDocumentCount: generatedDocs.length,
       summary: {
         currentGenerated: allCurrent.length,
         awaitingReview: allCurrent.filter((item) => item.status === "received" || item.status === "under_review").length,
