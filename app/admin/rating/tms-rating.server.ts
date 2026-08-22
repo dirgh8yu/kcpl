@@ -254,6 +254,9 @@ function selectedRateSnapshot(order: TmsOrder, card: PartnerBuyRateCard, result:
     mode: order.mode,
     procurement: {
       rate_card_id: card.id,
+      rate_card_branch: card.branch,
+      rate_card_origin: card.origin,
+      rate_card_destination: card.destination,
       rate_card_updated_at: card.updated_at || null,
       rate_card_valid_from: card.valid_from,
       rate_card_valid_until: card.valid_until,
