@@ -72,7 +72,7 @@ export function evaluateExternalPromotion(input: ExternalPromotionInput): Extern
   if (input.canonicalStatus === "delivered") return { decision: "no_change", targetStatus: "delivered", reason: "canonical_delivered_is_terminal" };
   if (input.canonicalStatus === "exception") return { decision: "blocked", targetStatus, reason: "canonical_exception_requires_kcpl_resolution" };
   if (input.isLateObservation) return { decision: "observe_only", targetStatus, reason: "late_external_observation" };
-  if (input.observedMilestone === "picked_up" && input.pickupStatus === "cancelled") return { decision: "blocked", targetStatus, reason: "pickup_cancelled" };
+  if (input.pickupStatus === "cancelled") return { decision: "blocked", targetStatus, reason: "pickup_cancelled" };
   if (input.observedMilestone === "picked_up" && input.pickupStatus !== "picked_up") return { decision: "blocked", targetStatus, reason: "pickup_reconciliation_required" };
   if (input.hasBlockingException) return { decision: "blocked", targetStatus, reason: "blocking_operational_exception" };
 
