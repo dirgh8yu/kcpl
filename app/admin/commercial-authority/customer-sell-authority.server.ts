@@ -21,7 +21,7 @@ export type CustomerSellAuthorityFailure =
   | "customer_quote_stale"
   | "customer_acceptance_required";
 
-type CustomerAcceptanceRecord = {
+export type CustomerAcceptanceRecord = {
   commercial_version_id: string;
   commercial_fingerprint: string;
   order_id: string;
@@ -34,6 +34,8 @@ type CustomerAcceptanceRecord = {
   accepted_by_email: string;
   acceptance_source: string;
 };
+
+export type CustomerSellAuthority = { quoteReference: string; acceptance: CustomerAcceptanceRecord };
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
 function branchValue(value: unknown): KcplBranch | null { return kcplBranches.includes(value as KcplBranch) ? value as KcplBranch : null; }
@@ -126,26 +128,9 @@ export async function assertCustomerSellAuthorityInTransaction(
   return { ok: true, quoteReference: record.quote_reference, acceptance: record };
 }
 
-export async function carryForwardCustomerSellAuthorityInTransaction(
-  transaction: FirebaseFirestore.Transaction,
-  sourceVersion: CommercialVersion,
-  derivedVersion: CommercialVersion,
-  actor: Actor,
-) {
-  if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" as const };
-  const source = await assertCustomerSellAuthorityInTransaction(transaction, sourceVersion);
-  if (!source.ok) return { kind: "not_carried" as const };
-  const ref = acceptanceRef(derivedVersion.id);
-  const existing = await transaction.get(ref);
-  if (existing.exists) {
-    const record = acceptanceFromData(existing.data() as Record<string, unknown>);
-    return record && acceptanceMatchesVersion(record, derivedVersion)
-      ? { kind: "carried" as const, quoteReference: record.quote_reference, idempotent: true }
-      : { kind: "conflict" as const };
-  }
+function carriedAcceptanceDocument(sourceVersion: CommercialVersion, derivedVersion: CommercialVersion, source: CustomerSellAuthority, actor: Actor, now: string) {
   const pricing = derivedVersion.snapshot.pricing!;
-  const now = new Date().toISOString();
-  transaction.create(ref, {
+  return {
     status: "accepted",
     commercial_version_id: derivedVersion.id,
     commercial_fingerprint: derivedVersion.fingerprint,
@@ -166,7 +151,42 @@ export async function carryForwardCustomerSellAuthorityInTransaction(
     carried_forward_by_email: actor.email,
     immutable: true,
     created_at: now,
-  });
+  };
+}
+
+/** Write-only helper for callers that already completed every transaction read. */
+export function createCarriedCustomerSellAuthorityInTransaction(
+  transaction: FirebaseFirestore.Transaction,
+  sourceVersion: CommercialVersion,
+  derivedVersion: CommercialVersion,
+  source: CustomerSellAuthority,
+  actor: Actor,
+  now = new Date().toISOString(),
+) {
+  if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" as const };
+  if (!acceptanceMatchesVersion(source.acceptance, sourceVersion) || source.quoteReference !== source.acceptance.quote_reference) return { kind: "conflict" as const };
+  transaction.create(acceptanceRef(derivedVersion.id), carriedAcceptanceDocument(sourceVersion, derivedVersion, source, actor, now));
+  return { kind: "carried" as const, quoteReference: source.quoteReference, idempotent: false };
+}
+
+export async function carryForwardCustomerSellAuthorityInTransaction(
+  transaction: FirebaseFirestore.Transaction,
+  sourceVersion: CommercialVersion,
+  derivedVersion: CommercialVersion,
+  actor: Actor,
+) {
+  if (!customerSellEconomicsMatch(sourceVersion.snapshot, derivedVersion.snapshot)) return { kind: "not_carried" as const };
+  const source = await assertCustomerSellAuthorityInTransaction(transaction, sourceVersion);
+  if (!source.ok) return { kind: "not_carried" as const };
+  const ref = acceptanceRef(derivedVersion.id);
+  const existing = await transaction.get(ref);
+  if (existing.exists) {
+    const record = acceptanceFromData(existing.data() as Record<string, unknown>);
+    return record && acceptanceMatchesVersion(record, derivedVersion)
+      ? { kind: "carried" as const, quoteReference: record.quote_reference, idempotent: true }
+      : { kind: "conflict" as const };
+  }
+  transaction.create(ref, carriedAcceptanceDocument(sourceVersion, derivedVersion, source, actor, new Date().toISOString()));
   return { kind: "carried" as const, quoteReference: source.quoteReference, idempotent: false };
 }
 
