@@ -1,4 +1,8 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
+import {
+  COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
+  COMMERCIAL_MINIMUM_MARGIN_PERCENT,
+} from "../../../admin/commercial-authority/commercial-authority";
 import { assertOrderCommercialMutationAllowed } from "../../../admin/commercial-lineage/commercial-mutation-policy.server";
 import { normalizeCommercialId } from "../../../admin/commercial-lineage/commercial-lineage";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../../../admin/crm/crm-data";
@@ -10,11 +14,10 @@ import {
   listPricingWorkspace,
   type PricingFxMode,
 } from "../../../admin/pricing/tms-pricing.server";
-import { deriveNrbMidpointFxRate, pricingRuleScopes, type PricingRuleScope } from "../../../admin/pricing/tms-pricing";
+import { pricingRuleScopes, type PricingRuleScope } from "../../../admin/pricing/tms-pricing";
 import { tmsModes, type TmsMode } from "../../../admin/rating/tms-rating";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { firebaseAdminDb } from "../../../firebase-admin.server";
-import { getNrbForexSnapshot } from "../../../integrations/nrb-forex.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
@@ -41,22 +44,6 @@ async function commercialPointer(orderId: string) {
   };
 }
 
-async function inferFxMode(orderId: string, sellCurrency: CrmCurrency | null, suppliedRate: number | null): Promise<PricingFxMode | null> {
-  if (!sellCurrency || !suppliedRate || suppliedRate <= 0) return null;
-  const order = await firebaseAdminDb().collection("transport_orders").doc(orderId.trim().toUpperCase()).get();
-  if (!order.exists) return null;
-  const buyCurrency = clean(order.get("selected_currency"), 10) as CrmCurrency;
-  if (!crmCurrencies.includes(buyCurrency) || buyCurrency === sellCurrency) return "manual";
-  try {
-    const snapshot = await getNrbForexSnapshot();
-    const nrbRate = deriveNrbMidpointFxRate(buyCurrency, sellCurrency, snapshot.rates);
-    if (nrbRate && Math.abs(nrbRate - suppliedRate) <= 0.000000001) return "nrb";
-  } catch {
-    // A manual rate remains usable if the NRB reference endpoint is unavailable.
-  }
-  return "manual";
-}
-
 function lockedCommercialMutationResponse() {
   return json({ ok: false, error: "This house order is frozen to its released consolidation source commercial version. Use the consolidation workflow rather than repricing or issuing a new independent quote.", code: "RELEASED_CONSOLIDATION_COMMERCIAL_LOCK" }, 409);
 }
@@ -66,7 +53,7 @@ export async function GET() {
   if ("response" in access) return access.response;
   const result = await listPricingWorkspace(access.staff);
   if (result.kind !== "ready") return json({ ok: false, error: "Pricing storage is unavailable." }, 503);
-  return json({ ok: true, ...result, canManageRules: access.staff.permissions.canManageRateCards, canApprove: access.staff.permissions.role === "management" });
+  return json({ ok: true, ...result, canManageRules: access.staff.permissions.canManageRateCards, canApprove: access.staff.permissions.role === "management", canOverrideFx: access.staff.permissions.canOverrideFx });
 }
 
 export async function POST(request: Request) {
@@ -94,8 +81,8 @@ export async function POST(request: Request) {
       name: clean(body.name, 180), scope, priority: optionalNumber(body.priority) ?? 0, branch,
       customerId: clean(body.customerId, 120) || null, origin: clean(body.origin, 180) || null, destination: clean(body.destination, 180) || null,
       mode, sellCurrency, markupPercent: optionalNumber(body.markupPercent), targetMarginPercent: optionalNumber(body.targetMarginPercent),
-      minimumMarginPercent: optionalNumber(body.minimumMarginPercent) ?? 10, accessorialMarkupPercent: optionalNumber(body.accessorialMarkupPercent) ?? 15,
-      fixedMarkup: optionalNumber(body.fixedMarkup) ?? 0, approvalBelowMarginPercent: optionalNumber(body.approvalBelowMarginPercent) ?? 12,
+      minimumMarginPercent: COMMERCIAL_MINIMUM_MARGIN_PERCENT, accessorialMarkupPercent: optionalNumber(body.accessorialMarkupPercent) ?? 15,
+      fixedMarkup: optionalNumber(body.fixedMarkup) ?? 0, approvalBelowMarginPercent: COMMERCIAL_APPROVAL_BELOW_MARGIN_PERCENT,
       notes: clean(body.notes, 2000) || null, active: booleanValue(body.active),
     }, actor, access.staff);
     if (result.kind === "unavailable") return json({ ok: false, error: "Pricing storage is unavailable." }, 503);
@@ -113,28 +100,36 @@ export async function POST(request: Request) {
     if (mutation.kind === "locked") return lockedCommercialMutationResponse();
     if (mutation.kind === "forbidden") return json({ ok: false, error: "This order is outside your commercial access." }, 403);
     if (mutation.kind === "missing_order") return json({ ok: false, error: "Transport order not found." }, 404);
+    if (body.minimumMarginPercent !== undefined || body.approvalBelowMarginPercent !== undefined) {
+      return json({ ok: false, error: "Approval thresholds are server-owned policy and cannot be supplied by a pricing request.", code: "COMMERCIAL_POLICY_SERVER_OWNED" }, 400);
+    }
     const sellCurrencyRaw = clean(body.sellCurrency, 10);
     const sellCurrency = sellCurrencyRaw ? sellCurrencyRaw as CrmCurrency : null;
     if (sellCurrency && !crmCurrencies.includes(sellCurrency)) return json({ ok: false, error: "Choose a valid sell currency." }, 400);
     const suppliedRate = optionalNumber(body.fxRate);
     const explicitFxMode = clean(body.fxMode, 20);
-    const fxMode: PricingFxMode | null = explicitFxMode === "nrb" || explicitFxMode === "manual"
-      ? explicitFxMode
-      : await inferFxMode(orderId, sellCurrency, suppliedRate);
+    if (explicitFxMode && explicitFxMode !== "nrb" && explicitFxMode !== "manual") return json({ ok: false, error: "Choose automatic NRB FX or an authorized manual override." }, 400);
+    if (suppliedRate !== null && explicitFxMode !== "manual") return json({ ok: false, error: "A caller-supplied FX rate requires explicit manual override mode.", code: "MANUAL_FX_MODE_REQUIRED" }, 400);
+    const manualFx = explicitFxMode === "manual";
+    if (manualFx && !access.staff.permissions.canOverrideFx) return json({ ok: false, error: "Only Management can apply a manual FX override.", code: "MANUAL_FX_FORBIDDEN" }, 403);
+    const fxReason = clean(body.fxReason, 1000);
+    if (manualFx && !fxReason) return json({ ok: false, error: "Management manual FX overrides require a reason.", code: "MANUAL_FX_REASON_REQUIRED" }, 400);
+    const fxMode: PricingFxMode = manualFx ? "manual" : "nrb";
     const result = await calculateOrderPricing(orderId, {
-      sellCurrency, fxMode, fxRate: suppliedRate,
+      sellCurrency, fxMode, fxRate: manualFx ? suppliedRate : null, fxOverrideReason: manualFx ? fxReason : null,
       markupPercent: optionalNumber(body.markupPercent), targetMarginPercent: optionalNumber(body.targetMarginPercent),
-      minimumMarginPercent: optionalNumber(body.minimumMarginPercent), approvalBelowMarginPercent: optionalNumber(body.approvalBelowMarginPercent),
       accessorialCost: optionalNumber(body.accessorialCost), accessorialMarkupPercent: optionalNumber(body.accessorialMarkupPercent),
       fixedMarkup: optionalNumber(body.fixedMarkup), discount: optionalNumber(body.discount),
     }, actor, access.staff);
     if (result.kind === "unavailable") return json({ ok: false, error: "Pricing storage is unavailable." }, 503);
     if (result.kind === "forbidden") return json({ ok: false, error: "This order is outside your commercial access." }, 403);
+    if (result.kind === "manual_fx_forbidden") return json({ ok: false, error: "Only Management can apply a manual FX override.", code: "MANUAL_FX_FORBIDDEN" }, 403);
+    if (result.kind === "manual_fx_reason_required") return json({ ok: false, error: "Management manual FX overrides require a reason.", code: "MANUAL_FX_REASON_REQUIRED" }, 400);
     if (result.kind === "missing_order") return json({ ok: false, error: "Transport order not found or it does not have a selected buy cost." }, 404);
     if (result.kind === "customer_required") return json({ ok: false, error: "Link this transport order to a KCPL customer before pricing it." }, 409);
     if (result.kind === "customer_missing") return json({ ok: false, error: "The linked customer could not be found." }, 404);
-    if (result.kind === "fx_unavailable") return json({ ok: false, error: "NRB FX reference is temporarily unavailable. Enter an explicit manual FX rate if commercial policy permits it." }, 502);
-    if (result.kind === "fx_required") return json({ ok: false, error: `Enter the ${result.buyCurrency} → ${result.sellCurrency} FX rate before calculating the sell price.`, fxRequired: true }, 409);
+    if (result.kind === "fx_unavailable") return json({ ok: false, error: "NRB FX reference is temporarily unavailable. Management may use an explicit audited manual override when necessary." }, 502);
+    if (result.kind === "fx_required") return json({ ok: false, error: `A server-derived ${result.buyCurrency} → ${result.sellCurrency} FX rate is required before calculating the sell price.`, fxRequired: true }, 409);
     if (result.kind === "locked") return json({ ok: false, error: "Commercial economics are locked at this workflow stage. Cancel/re-tender or use the explicit counteroffer review path." }, 409);
     if (result.kind === "commercial_review_required") return json({ ok: false, error: "The order's historical commercial basis cannot be proven automatically. Commercial review is required.", reason: result.reason }, 409);
     if (result.kind === "invalid_currency" || result.kind === "invalid_pricing") return json({ ok: false, error: "Pricing inputs are invalid." }, 400);
