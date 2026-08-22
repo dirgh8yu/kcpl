@@ -124,7 +124,7 @@ export function allocateConsolidationProcurement(
   });
 
   const floorTotal = working.reduce((sum, item) => sum + item.floor_units, 0);
-  let residualUnits = totalUnits - floorTotal;
+  const residualUnits = totalUnits - floorTotal;
   if (residualUnits < 0 || residualUnits > working.length) return { ok: false, reason: "invalid_total" };
   const recipients = [...working].sort((left, right) => {
     const fractionDelta = right.fraction - left.fraction;
