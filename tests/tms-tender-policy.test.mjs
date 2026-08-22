@@ -145,6 +145,12 @@ test("one-active-tender creation is owned by a Firestore transaction and order p
   assert.match(tenderServer, /active_tender_id: id/);
 });
 
+test("legacy pointer repair requires tender and order branch agreement", () => {
+  assert.match(tenderServer, /branchValue\(live\.get\("branch"\)\) !== branch/);
+  const orderBranchChecks = tenderServer.match(/branchValue\(order\.get\("branch"\)\) !== branch/g) ?? [];
+  assert.ok(orderBranchChecks.length >= 3);
+});
+
 test("tender response and cancellation revalidate state inside transactions", () => {
   assert.match(tenderServer, /expectedStatus/);
   assert.match(tenderServer, /expectedUpdatedAt/);
