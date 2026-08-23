@@ -6,14 +6,14 @@ import { listTmsOrders } from "../rating/tms-rating.server";
 import { getStaffContext } from "../staff-directory.server";
 import { reconcileExpiredTmsTenders } from "./tms-tender-expiry.server";
 import { listTmsTenders } from "./tms-tendering.server";
-import { TmsTenderWorkspace } from "./tms-tender-workspace";
+import { V4TenderWorkspace } from "./v4-tender-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Tender Desk | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Tender Workspace | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function TenderDeskPage({ searchParams }: { searchParams: Promise<{ tender?: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Tender Desk is available only to authorised staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Tender Workspace is available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
@@ -36,11 +36,11 @@ export default async function TenderDeskPage({ searchParams }: { searchParams: P
       listCrmCustomers(staff),
     ]);
   } catch (error) {
-    console.error("Failed to load KCPL Tender Desk", error);
-    return <OperationsShell {...shellProps}><Gate title="Tender Desk could not be loaded" detail="KCPL tender data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    console.error("Failed to load KCPL Tender Workspace", error);
+    return <OperationsShell {...shellProps}><Gate title="Tender Workspace could not be loaded" detail="KCPL tender data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
 
-  if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Tender Desk unavailable" detail="KCPL order, tender or customer storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Tender Workspace unavailable" detail="KCPL order, tender or customer storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
 
   const { tender } = await searchParams;
   const requestedTender = tender?.trim().toUpperCase() ?? "";
@@ -48,19 +48,16 @@ export default async function TenderDeskPage({ searchParams }: { searchParams: P
   const orderedTenders = targetTender ? [targetTender, ...tenders.tenders.filter((item) => item.id !== targetTender.id)] : tenders.tenders;
   const orderedOrders = targetTender ? [...orders.orders].sort((a, b) => Number(b.id === targetTender.order_id) - Number(a.id === targetTender.order_id)) : orders.orders;
 
-  return (
-    <OperationsShell {...shellProps}>
-      <div className="px-4 pt-4 lg:px-5"><div className="flex flex-wrap justify-end gap-2"><Link href="/admin/edi" className="ops-button" data-variant="secondary" data-size="sm">EDI 204 / 990 →</Link><Link href="/admin/pickups" className="ops-button" data-variant="secondary" data-size="sm">Booked? Schedule pickup →</Link><Link href="/admin/freight-documents" className="ops-button" data-variant="primary" data-size="sm">Prepare freight documents →</Link></div></div>
-      <TmsTenderWorkspace
-        initialOrders={orderedOrders}
-        initialTenders={orderedTenders}
-        customers={customers.map((customer) => ({ id: customer.id, name: customer.display_name, branch: customer.primary_branch }))}
-        canManage={staff.permissions.canEditCommercial}
-      />
-    </OperationsShell>
-  );
+  return <OperationsShell {...shellProps}>
+    <V4TenderWorkspace
+      initialOrders={orderedOrders}
+      initialTenders={orderedTenders}
+      customers={customers.map((customer) => ({ id: customer.id, name: customer.display_name, branch: customer.primary_branch }))}
+      canManage={staff.permissions.canEditCommercial}
+    />
+  </OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#342f2b] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[16px] border border-[#e5ddd6] bg-white p-8 shadow-[0_18px_50px_rgba(67,49,38,.06)]"><p className="ops-eyebrow">KCPL Tender Desk</p><h1 className="mt-3 text-[27px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[12px] leading-6 text-[#776e67]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="ops-button" data-variant="primary" data-size="md">Rate Desk</Link><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link></div></section></main>;
+  return <main className={`grid place-items-center bg-[#f6f6f3] p-6 text-[#141414] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[#e2e2e2] bg-white p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[#dc143c]">KCPL Tender Workspace</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#5b5b5b]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[6px] bg-[#dc143c] px-3 text-[12px] font-semibold text-white">Transport Orders</Link><Link href="/admin/partners" className="inline-flex h-8 items-center rounded-[6px] border border-[#e2e2e2] bg-white px-3 text-[12px] font-semibold">Partners</Link></div></section></main>;
 }
