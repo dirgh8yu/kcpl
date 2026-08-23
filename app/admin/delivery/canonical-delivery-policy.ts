@@ -1,4 +1,4 @@
-import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
+import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types.ts";
 
 export const canonicalDeliveryBlockerCodes = [
   "invalid_canonical_status",
