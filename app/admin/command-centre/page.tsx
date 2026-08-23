@@ -3,17 +3,15 @@ import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { evaluateFreightAutomation } from "../alerts/freight-automation.server";
 import { getStaffContext } from "../staff-directory.server";
-import { kcplStaffRoleLabels, staffCapabilitiesForEmail } from "../staff-permissions";
+import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
 import { loadCommandCentre } from "./command-centre.server";
-import { CommandCentreWorkspace } from "./command-centre-workspace";
-import { RoleHomeDefaults } from "./role-home-defaults";
 import { loadWorkflowOverview } from "./workflow-overview.server";
-import { WorkflowOverviewStrip } from "./workflow-overview";
+import { V4OperationsOverview } from "./v4-operations-overview";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Operations Home | KCPL",
+  title: "Operations | KCPL",
   robots: { index: false, follow: false },
 };
 
@@ -68,14 +66,7 @@ async function loadState(user: StaffUser) {
       loadWorkflowOverview(staff),
     ]);
     if (!data) return { kind: "unavailable" as const, shell };
-    return {
-      kind: "ready" as const,
-      data,
-      overview,
-      role: staff.permissions.role,
-      roleLabel: kcplStaffRoleLabels[staff.permissions.role],
-      shell,
-    };
+    return { kind: "ready" as const, data, overview, shell };
   } catch (error) {
     console.error("Failed to load KCPL Operations Home data", error);
     return { kind: "error" as const, shell };
@@ -96,35 +87,13 @@ export default async function CommandCentrePage() {
     isManagement: state.shell.isManagement,
   };
 
-  if (state.kind === "restricted") {
-    return <OperationsShell {...shellProps}><Gate title="Operations Home is restricted" detail="Your current staff role does not include operational Job File access." embedded /></OperationsShell>;
-  }
-  if (state.kind === "unavailable") {
-    return <OperationsShell {...shellProps}><Gate title="Operations data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /></OperationsShell>;
-  }
-  if (state.kind === "error") {
-    return <OperationsShell {...shellProps}><Gate title="Operations Home could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded /></OperationsShell>;
-  }
+  if (state.kind === "restricted") return <OperationsShell {...shellProps}><Gate title="Operations Home is restricted" detail="Your current staff role does not include operational Job File access." embedded /></OperationsShell>;
+  if (state.kind === "unavailable") return <OperationsShell {...shellProps}><Gate title="Operations data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /></OperationsShell>;
+  if (state.kind === "error") return <OperationsShell {...shellProps}><Gate title="Operations Home could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded /></OperationsShell>;
 
-  return (
-    <OperationsShell {...shellProps}>
-      <RoleHomeDefaults role={state.role}/>
-      <WorkflowOverviewStrip overview={state.overview}/>
-      <CommandCentreWorkspace data={state.data} roleLabel={state.roleLabel}/>
-    </OperationsShell>
-  );
+  return <OperationsShell {...shellProps}><V4OperationsOverview data={state.data} overview={state.overview}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return (
-    <main className={`grid place-items-center bg-[#f3f1ee] p-6 text-[#26221f] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}>
-      <section className="w-full max-w-xl rounded-[16px] border border-[#ddd8d2] bg-white p-8 shadow-[0_12px_36px_rgba(54,43,34,.06)] sm:p-10">
-        <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[#fbebe6] text-[#b45c47]"><ShieldCheck size={17}/></span>
-        <p className="mt-5 text-[10px] font-bold text-[#8f8179]">KCPL Operations</p>
-        <h1 className="mt-2 text-[28px] font-[730] leading-tight tracking-[-.04em] text-[#26221f]">{title}</h1>
-        <p className="mt-3 text-[13px] leading-6 text-[#736d67]">{detail}</p>
-        <div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="ops-button" data-variant="primary" data-size="md">Open Enquiries</Link><Link href="/" className="ops-button" data-variant="secondary" data-size="md">KCPL website</Link></div>
-      </section>
-    </main>
-  );
+  return <main className={`grid place-items-center bg-[#f6f6f3] p-6 text-[#141414] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[12px] border border-[#e2e2e2] bg-white p-8 shadow-[0_12px_36px_rgba(0,0,0,.05)] sm:p-10"><span className="grid h-10 w-10 place-items-center rounded-[8px] bg-[#fff0f2] text-[#dc143c]"><ShieldCheck size={17}/></span><p className="mt-5 text-[11px] font-semibold text-[#dc143c]">KCPL Operations</p><h1 className="mt-2 text-[28px] font-semibold tracking-[-.035em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#5b5b5b]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="inline-flex h-9 items-center rounded-[7px] bg-[#dc143c] px-4 text-[12px] font-semibold text-white">Open Enquiries</Link><Link href="/" className="inline-flex h-9 items-center rounded-[7px] border border-[#e2e2e2] bg-white px-4 text-[12px] font-semibold">KCPL website</Link></div></section></main>;
 }
