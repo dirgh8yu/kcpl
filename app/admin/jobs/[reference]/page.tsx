@@ -14,9 +14,10 @@ import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
 import { ShipmentExceptionControl } from "./shipment-exception-control";
 import { SmartDocumentIntelligence } from "./smart-document-intelligence";
 import { WorkflowSpine } from "./workflow-spine";
+import { V4ShipmentDetailOverview } from "./v4-shipment-detail-overview";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Digital Job File | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Shipment Detail | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function JobFilePage({ params }: { params: Promise<{ reference: string }> }) {
   const access = await getAdminAccess();
@@ -46,77 +47,30 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
   const exceptionBranches = [...new Set([result.job.primary_branch, ...result.job.handling_branches])]
     .filter((branch) => staffCanAccessBranch(staff, branch));
 
-  return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff={staff.permissions.canManageStaff}
-      canManageFinance={staff.permissions.canManageFinance}
-      canViewCommercial={staff.permissions.canViewCommercial}
-      canManageJobFile={staff.permissions.canManageJobFile}
-      isManagement={staff.permissions.role === "management"}
-    >
-      <div className="ops-content-wide pt-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[#e5ded8] bg-[#fffdfa] px-3 py-2.5 shadow-[0_4px_16px_rgba(54,43,34,.03)]">
-          <div className="min-w-0"><p className="ops-eyebrow">Shipment workflow</p><p className="mt-0.5 truncate text-[10px] font-semibold text-[#675f58]">{result.job.reference} · jump directly to the operational control you need</p></div>
-          <div className="flex flex-wrap gap-2">
-            <Link href={`/admin/pickups?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Pickup scheduling</Link>
-            <Link href={`/admin/freight-documents?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Freight documents</Link>
-            <Link href={`/admin/visibility?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Live visibility</Link>
-            <Link href={`/admin/delivery?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Delivery & POD</Link>
-            <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="sm">Document Vault</Link>
-            {staff.permissions.canManageFinance ? <Link href={`/admin/freight-audit?q=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Freight Audit</Link> : null}
-          </div>
-        </div>
-      </div>
+  return <OperationsShell
+    userName={access.user.displayName}
+    canManageStaff={staff.permissions.canManageStaff}
+    canManageFinance={staff.permissions.canManageFinance}
+    canViewCommercial={staff.permissions.canViewCommercial}
+    canManageJobFile={staff.permissions.canManageJobFile}
+    isManagement={staff.permissions.role === "management"}
+  >
+    <V4ShipmentDetailOverview job={result.job}/>
+
+    <section id="operational-controls" className="border-t border-[#e2e2e2] bg-[#f6f6f3] pb-20 pt-2">
+      <div className="ops-content-wide pt-4"><div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#e2e2e2] bg-white px-4 py-3"><div><p className="text-[11px] font-medium text-[#737373]">DEEP OPERATIONS</p><p className="mt-1 text-[13px] font-semibold text-[#141414]">Workflow, documents, exceptions, delivery evidence and Digital Job File controls</p></div><div className="flex flex-wrap gap-2"><Link href={`/admin/pickups?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Pickup</Link><Link href={`/admin/freight-documents?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Documents</Link><Link href={`/admin/visibility?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Tracking</Link><Link href={`/admin/delivery?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Delivery & POD</Link></div></div></div>
       <WorkflowSpine initialWorkflow={workflow.readiness} initialJob={result.job} canOverride={staff.permissions.role === "management"}/>
       <SmartDocumentIntelligence initialWorkflow={workflow.readiness}/>
-      {exceptionCases.kind === "ready" && exceptionBranches.length ? (
-        <ShipmentExceptionControl
-          reference={result.job.reference}
-          branches={exceptionBranches}
-          initialExceptions={exceptionCases.exceptions}
-          initialSummary={exceptionCases.summary}
-          currentUserName={access.user.displayName}
-          currentUserEmail={access.user.email}
-        />
-      ) : null}
-      {delivery.kind === "ready" ? (
-        <DeliveryPodControl
-          reference={result.job.reference}
-          initialAttempts={delivery.attempts}
-          initialEvidence={delivery.evidence}
-          initialPodStatus={delivery.pod_status}
-          initialShipmentStatus={delivery.shipment_status}
-          initialExternalObservedMilestone={delivery.external_observed_milestone}
-          initialExternalObservedAt={delivery.external_observed_at}
-          initialExternalObservedProvider={delivery.external_observed_provider}
-          canReview={staff.permissions.canManageCustomerDocuments}
-        />
-      ) : null}
-      <JobFileWorkspace
-        initialJob={result.job}
-        role={staff.permissions.role}
-        canManageBranches={staff.permissions.role === "management"}
-        currentUserName={access.user.displayName}
-        currentUserEmail={access.user.email}
-        nowIso={new Date().toISOString()}
-      />
+      {exceptionCases.kind === "ready" && exceptionBranches.length ? <ShipmentExceptionControl reference={result.job.reference} branches={exceptionBranches} initialExceptions={exceptionCases.exceptions} initialSummary={exceptionCases.summary} currentUserName={access.user.displayName} currentUserEmail={access.user.email}/> : null}
+      {delivery.kind === "ready" ? <DeliveryPodControl reference={result.job.reference} initialAttempts={delivery.attempts} initialEvidence={delivery.evidence} initialPodStatus={delivery.pod_status} initialShipmentStatus={delivery.shipment_status} initialExternalObservedMilestone={delivery.external_observed_milestone} initialExternalObservedAt={delivery.external_observed_at} initialExternalObservedProvider={delivery.external_observed_provider} canReview={staff.permissions.canManageCustomerDocuments}/> : null}
+      <JobFileWorkspace initialJob={result.job} role={staff.permissions.role} canManageBranches={staff.permissions.role === "management"} currentUserName={access.user.displayName} currentUserEmail={access.user.email} nowIso={new Date().toISOString()}/>
       {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline}/> : null}
-      {staff.permissions.canManageJobCosts ? (
-        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
-          <Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm">Job profitability</Link>
-          {staff.permissions.canManageFinance ? (
-            <>
-              <Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Create invoice</Link>
-              <Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button border-[#ead5b1] bg-[#fff8ec] text-[#8d5d22] shadow-[0_8px_28px_rgba(54,43,34,.08)]" data-variant="secondary" data-size="sm">Add supplier bill</Link>
-            </>
-          ) : null}
-        </div>
-      ) : null}
-    </OperationsShell>
-  );
+    </section>
+
+    {staff.permissions.canManageJobCosts ? <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2"><Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm">Job profitability</Link>{staff.permissions.canManageFinance ? <><Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Create invoice</Link><Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button border-[#ead5b1] bg-[#fff8ec] text-[#8d5d22] shadow-[0_8px_28px_rgba(54,43,34,.08)]" data-variant="secondary" data-size="sm">Add supplier bill</Link></> : null}</div> : null}
+  </OperationsShell>;
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#514840]"><section className="w-full max-w-xl rounded-[15px] border border-[#e6ded7] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Digital Job File</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/shipments" className="ops-button" data-variant="primary" data-size="md">Shipments</Link><Link href="/admin" className="ops-button" data-variant="secondary" data-size="md">Operations</Link></div></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f6f6f3] p-6 text-[#141414]"><section className="w-full max-w-xl rounded-[12px] border border-[#e2e2e2] bg-white p-8 shadow-[0_16px_48px_rgba(0,0,0,.05)]"><p className="text-[11px] font-semibold text-[#dc143c]">KCPL Digital Job File</p><h1 className="mt-3 text-[28px] font-semibold tracking-[-.035em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#5b5b5b]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/shipments" className="inline-flex h-9 items-center rounded-[7px] bg-[#dc143c] px-4 text-[12px] font-semibold text-white">Shipments</Link><Link href="/admin/command-centre" className="inline-flex h-9 items-center rounded-[7px] border border-[#e2e2e2] bg-white px-4 text-[12px] font-semibold">Operations</Link></div></section></main>;
 }
