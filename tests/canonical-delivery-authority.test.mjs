@@ -141,7 +141,12 @@ test("56 adoption preserves provider identity and observed time", () => assert.m
 test("57 adoption does not fabricate recipient details", () => assert.match(deliveryServer, /recipient_name: null,[\s\S]{0,80}recipient_phone: null/));
 test("58 adoption does not set canonical shipment Delivered", () => {
   const block = deliveryServer.slice(deliveryServer.indexOf("export async function adoptTrackedDelivery"), deliveryServer.indexOf("function milestoneForDelivery"));
-  assert.doesNotMatch(block, /transaction\.update\(scope\.ref, \{[\s\S]*?status: "delivered"/);
+  const shipmentUpdateStart = block.indexOf("transaction.update(scope.ref, {");
+  assert.notEqual(shipmentUpdateStart, -1);
+  const shipmentUpdateEnd = block.indexOf("});", shipmentUpdateStart);
+  assert.notEqual(shipmentUpdateEnd, -1);
+  const shipmentUpdate = block.slice(shipmentUpdateStart, shipmentUpdateEnd);
+  assert.doesNotMatch(shipmentUpdate, /^\s*status\s*:/m);
 });
 test("59 adopted delivery plus verified POD and all gates can complete", () => assert.equal(decision().decision, "complete"));
 test("60 duplicate tracked adoption is deterministic and idempotent", () => assert.match(deliveryServer, /delivery_attempts"\)\.doc\("tracking-delivery"\)[\s\S]{0,400}attemptSnapshot\.exists/));
