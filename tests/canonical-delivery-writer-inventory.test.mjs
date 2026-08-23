@@ -122,7 +122,7 @@ const expectedReviewedSurfaces = [
     id: "central canonical Delivered transaction writer",
     file: "app/admin/delivery/canonical-delivery-authority.server.ts",
     patterns: [
-      /export async function writeCanonicalDeliveryCompletionInTransaction\(/,
+      /export function writeCanonicalDeliveryCompletionInTransaction\(/,
       /transaction\.update\(facts\.shipmentRef, \{[\s\S]{0,160}status: "delivered"/,
     ],
   },
