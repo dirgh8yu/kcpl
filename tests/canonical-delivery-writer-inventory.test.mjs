@@ -122,7 +122,7 @@ const expectedReviewedSurfaces = [
     id: "central canonical Delivered transaction writer",
     file: "app/admin/delivery/canonical-delivery-authority.server.ts",
     patterns: [
-      /function writeCanonicalDeliveryCompletionInTransaction/,
+      /export async function writeCanonicalDeliveryCompletionInTransaction\(/,
       /transaction\.update\(facts\.shipmentRef, \{[\s\S]{0,160}status: "delivered"/,
     ],
   },
@@ -139,7 +139,8 @@ const expectedReviewedSurfaces = [
     file: "app/api/admin/shipments/[reference]/route.ts",
     patterns: [
       /if \(status === "delivered"\)/,
-      /reconcileCanonicalDelivery\(reference, \{[\s\S]{0,220}source: "direct_admin_request"/,
+      /reconcileCanonicalDelivery\(reference/,
+      /source: "direct_admin_request"/,
     ],
   },
   {
@@ -154,8 +155,10 @@ const expectedReviewedSurfaces = [
     id: "Delivery Control physical evidence delegation",
     file: "app/admin/delivery/delivery-control.server.ts",
     patterns: [
-      /input\.status === "delivered"[\s\S]{0,180}reconcileCanonicalDelivery/,
-      /source: "manual_delivery"/,
+      /export async function updateDeliveryAttempt\(/,
+      /canonical_status_unchanged: input\.status === "delivered"/,
+      /if \(input\.status !== "delivered"\) shipmentUpdate\.status = shipmentStatusForDelivery/,
+      /await reconcileCanonicalDelivery\(scope\.reference, \{ source: "manual_delivery"/,
     ],
   },
   {
@@ -170,8 +173,10 @@ const expectedReviewedSurfaces = [
     id: "external Delivered observation policy",
     file: "app/admin/visibility/external-workflow-state.ts",
     patterns: [
-      /milestone === "delivered"\) return "delivered"/,
-      /if \(targetStatus === "delivered"\)[\s\S]{0,260}canonical_delivery_authority_required/,
+      /if \(milestone === "delivered"\) return "delivered"/,
+      /if \(targetStatus === "delivered"\)/,
+      /canonical_delivery_authority_required/,
+      /canonical_delivery_authority_satisfied/,
     ],
   },
   {
@@ -186,8 +191,10 @@ const expectedReviewedSurfaces = [
     id: "tracked-delivery adoption remains evidence-first",
     file: "app/admin/delivery/delivery-control.server.ts",
     patterns: [
-      /function adoptTrackedDelivery|function adoptTrackedDelivery|export async function adoptTrackedDelivery/,
-      /source: "manual_delivery"/,
+      /export async function adoptTrackedDelivery\(/,
+      /external_observed_milestone\) !== "delivered"/,
+      /status: "delivered" as const/,
+      /await reconcileCanonicalDelivery\(scope\.reference, \{ source: "manual_delivery"/,
     ],
   },
   {
