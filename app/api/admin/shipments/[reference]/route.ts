@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
+import { reconcileCanonicalDelivery } from "../../../../admin/delivery/canonical-delivery-authority.server";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { checkShipmentBranchAccess } from "../../../../admin/shipment-access.server";
 import { getShipmentWorkflowReadiness, recordWorkflowOverride, validateShipmentTransition } from "../../../../admin/workflow-guard.server";
@@ -91,6 +92,47 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (carrierReference.length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
   if (customerNote.length > 2000) return json({ ok: false, error: "Customer update must be 2000 characters or fewer." }, 400);
 
+  if (status === "delivered") {
+    const completion = await reconcileCanonicalDelivery(reference, {
+      source: "direct_admin_request",
+      actor: { name: auth.user.displayName, email: auth.user.email },
+      context: auth.staff,
+      shipmentPatch: {
+        eta: eta || null,
+        current_location: currentLocation || null,
+        carrier: carrier || null,
+        carrier_reference: carrierReference || null,
+        customer_note: customerNote || null,
+      },
+    });
+    if (completion.kind === "unavailable") return json({ ok: false, error: "Canonical delivery controls are unavailable." }, 503);
+    if (completion.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+    if (completion.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
+    if (completion.kind === "invalid_branch") return json({ ok: false, error: completion.blockers.join(" "), code: "INVALID_PRIMARY_BRANCH", blockerCodes: completion.blocker_codes, blockers: completion.blockers, completionStatus: completion.completionStatus, canonicalStatus: completion.canonicalStatus }, 409);
+    if (completion.kind === "invalid_state" || completion.kind === "pending") {
+      return json({
+        ok: false,
+        error: completion.blockers.join(" "),
+        code: "CANONICAL_DELIVERY_BLOCKED",
+        blockerCodes: completion.blocker_codes,
+        blockers: completion.blockers,
+        completionStatus: completion.completionStatus,
+        canonicalStatus: completion.canonicalStatus,
+        canOverride: false,
+      }, 409);
+    }
+    const workflow = await getShipmentWorkflowReadiness(reference, auth.staff);
+    return json({
+      ok: true,
+      canonicalStatus: "delivered",
+      completionStatus: completion.completionStatus,
+      completionId: completion.kind === "completed" ? completion.completionId : null,
+      blockers: [],
+      overrideUsed: false,
+      workflow: workflow.kind === "ready" ? workflow.readiness : null,
+    });
+  }
+
   const transition = await validateShipmentTransition(reference, status as ShipmentStatus, auth.staff, overrideReason);
   if (transition.kind === "unavailable") return json({ ok: false, error: "Workflow controls are unavailable." }, 503);
   if (transition.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
@@ -118,6 +160,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
 
   if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+  if (result.kind === "terminal_delivered") return json({ ok: false, error: "Canonical Delivered is terminal. Record post-delivery issues through the exception workflow." }, 409);
+  if (result.kind === "canonical_delivery_authority_required") return json({ ok: false, error: "Delivered must be recorded through KCPL canonical delivery authority." }, 409);
   if (transition.overrideUsed) {
     await recordWorkflowOverride(reference, fromStatus, status as ShipmentStatus, transition.overrideReason, { name: auth.user.displayName, email: auth.user.email });
   }

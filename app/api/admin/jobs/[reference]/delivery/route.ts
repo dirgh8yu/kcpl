@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../../../admin/admin-auth";
+import { reconcileCanonicalDelivery, type CanonicalDeliveryReconciliationResult } from "../../../../../admin/delivery/canonical-delivery-authority.server";
 import { adoptTrackedDelivery, createDeliveryAttempt, getDeliveryControl, reviewPod, updateDeliveryAttempt } from "../../../../../admin/delivery/delivery-control.server";
 import { deliveryAttemptStatuses, type DeliveryAttemptStatus } from "../../../../../admin/delivery/delivery-control";
 import { getStaffContext } from "../../../../../admin/staff-directory.server";
@@ -21,17 +22,30 @@ function errorFor(kind: string) {
   if (kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (kind === "missing_attempt") return json({ ok: false, error: "Delivery attempt not found." }, 404);
   if (kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
+  if (kind === "invalid_branch") return json({ ok: false, error: "A valid canonical shipment primary branch is required." }, 409);
   if (kind === "schedule_required") return json({ ok: false, error: "Choose a valid delivery date and time." }, 400);
   if (kind === "invalid_status" || kind === "invalid_transition") return json({ ok: false, error: "That delivery lifecycle transition is not allowed." }, 409);
   if (kind === "outcome_detail_required") return json({ ok: false, error: "Delivered attempts require a recipient name; failed/refused attempts require a reason of at least 6 characters." }, 400);
   if (kind === "invalid_coordinates") return json({ ok: false, error: "Delivery coordinates are invalid." }, 400);
-  if (kind === "already_delivered") return json({ ok: false, error: "This shipment is already delivered and cannot start another attempt." }, 409);
-  if (kind === "not_delivered") return json({ ok: false, error: "Only a shipment already marked Delivered by Live Visibility can be adopted into the POD workflow." }, 409);
-  if (kind === "delivery_required") return json({ ok: false, error: "POD can only be reviewed after a delivered attempt." }, 409);
+  if (kind === "already_delivered") return json({ ok: false, error: "This shipment is already canonically Delivered and cannot start or adopt another normal attempt." }, 409);
+  if (kind === "tracking_delivery_required") return json({ ok: false, error: "No current external Delivered observation is available to adopt into Delivery Control." }, 409);
+  if (kind === "delivery_required") return json({ ok: false, error: "POD can only be reviewed after a delivered Delivery Control attempt." }, 409);
   if (kind === "evidence_required") return json({ ok: false, error: "Upload at least one POD evidence item before verification." }, 409);
   if (kind === "review_note_required") return json({ ok: false, error: "Record a rejection reason of at least 8 characters." }, 400);
   if (kind === "already_verified") return json({ ok: false, error: "Verified POD is immutable. Use Document Vault supersession controls if a replacement is required." }, 409);
   return json({ ok: false, error: "The delivery action could not be completed." }, 400);
+}
+
+function completionPayload(completion: CanonicalDeliveryReconciliationResult | null | undefined) {
+  if (!completion) return { canonicalStatus: null, completionStatus: "not_requested", blockerCodes: [] as string[], blockers: [] as string[], completionId: null };
+  if (completion.kind === "completed") return { canonicalStatus: completion.canonicalStatus, completionStatus: completion.completionStatus, blockerCodes: [] as string[], blockers: [] as string[], completionId: completion.completionId };
+  if (completion.kind === "already_complete") return { canonicalStatus: completion.canonicalStatus, completionStatus: completion.completionStatus, blockerCodes: [] as string[], blockers: [] as string[], completionId: null };
+  if (completion.kind === "pending" || completion.kind === "invalid_state" || completion.kind === "invalid_branch") {
+    return { canonicalStatus: completion.canonicalStatus, completionStatus: completion.completionStatus, blockerCodes: completion.blocker_codes, blockers: completion.blockers, completionId: null };
+  }
+  if (completion.kind === "unavailable") return { canonicalStatus: null, completionStatus: "reconciliation_unavailable", blockerCodes: ["reconciliation_unavailable"], blockers: ["Physical delivery evidence is safe, but canonical reconciliation is temporarily unavailable."], completionId: null };
+  if (completion.kind === "missing") return { canonicalStatus: null, completionStatus: "missing", blockerCodes: ["shipment_missing"], blockers: ["Shipment no longer exists."], completionId: null };
+  return { canonicalStatus: null, completionStatus: "forbidden", blockerCodes: ["branch_forbidden"], blockers: ["Canonical reconciliation is outside this staff member's branch authority."], completionId: null };
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ reference: string }> }) {
@@ -69,7 +83,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (action === "adopt_delivered") {
     const result = await adoptTrackedDelivery(reference, actor, auth.staff);
     if (result.kind !== "created" && result.kind !== "ready") return errorFor(result.kind);
-    return json({ ok: true, attempt: result.attempt });
+    return json({ ok: true, attempt: result.attempt, attemptStatus: "delivered", ...completionPayload(result.completion) });
   }
 
   if (action === "update_attempt") {
@@ -90,7 +104,8 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       notes: clean(body.notes, 3000),
     }, actor, auth.staff);
     if (result.kind !== "updated") return errorFor(result.kind);
-    return json({ ok: true, attempt: result.attempt });
+    if (!("attempt" in result)) return json({ ok: false, error: "Delivery attempt state could not be refreshed after the transaction committed." }, 500);
+    return json({ ok: true, attempt: result.attempt, attemptStatus: result.attempt.status, ...completionPayload(result.completion) });
   }
 
   if (action === "review_pod") {
@@ -99,8 +114,17 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     const decision = clean(body.decision, 20);
     if (!attemptId || (decision !== "verify" && decision !== "reject")) return json({ ok: false, error: "Choose the delivered attempt and POD review decision." }, 400);
     const result = await reviewPod(reference, attemptId, decision, clean(body.note, 2000), body.customerSafe === true, actor, auth.staff);
+    if (result.kind === "already_verified" && decision === "verify") return json({ ok: true, podStatus: "verified", ...completionPayload(result.completion) });
     if (result.kind !== "verified" && result.kind !== "rejected") return errorFor(result.kind);
-    return json({ ok: true, ...result });
+    return json({ ok: true, ...result, podStatus: result.kind === "verified" ? "verified" : "rejected", ...completionPayload("completion" in result ? result.completion : null) });
+  }
+
+  if (action === "reconcile_delivery") {
+    const completion = await reconcileCanonicalDelivery(reference, { source: "manual_reconciliation", actor, context: auth.staff });
+    if (completion.kind === "unavailable") return json({ ok: false, error: "Canonical delivery reconciliation is unavailable." }, 503);
+    if (completion.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
+    if (completion.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
+    return json({ ok: true, ...completionPayload(completion) });
   }
 
   return json({ ok: false, error: "Unknown delivery action." }, 400);

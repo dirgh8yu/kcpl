@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { evaluateCanonicalDeliveryCompletion } from "../app/admin/delivery/canonical-delivery-policy.ts";
 import {
   canonicalShipmentStatus,
   customsReleaseRequiredForDirection,
@@ -12,17 +13,30 @@ import {
   externalObservationIsNewer,
 } from "../app/admin/visibility/external-workflow-state.ts";
 
+const completionBase = {
+  canonicalStatus: "out_for_delivery",
+  primaryBranchValid: true,
+  customerLinked: true,
+  jobClosed: false,
+  deliveryAttemptExists: true,
+  deliveryAttemptStatus: "delivered",
+  deliveryAttemptMatchesPod: true,
+  podStatus: "verified",
+  podManifestVerified: true,
+  requiredDocumentsReady: true,
+  customsReleaseRequired: true,
+  customsChecklistReady: true,
+  customsClearanceStatus: "released",
+  hasBlockingException: false,
+};
+const completionDecision = (overrides = {}) => evaluateCanonicalDeliveryCompletion({ ...completionBase, ...overrides });
 const base = {
-  canonicalStatus: "in_transit",
+  canonicalStatus: "out_for_delivery",
   observedMilestone: "delivered",
   source: "carrier_api",
-  direction: "import",
-  customsClearanceStatus: "released",
-  podStatus: "verified",
   pickupStatus: "picked_up",
-  deliveryWorkflowComplete: true,
-  hasBlockingException: false,
   isLateObservation: false,
+  canonicalDeliveryDecision: completionDecision(),
 };
 const decision = (overrides = {}) => evaluateExternalPromotion({ ...base, ...overrides });
 const source = async (path) => readFile(new URL(path, import.meta.url), "utf8");
@@ -37,20 +51,20 @@ test("2 valid reconciled pickup observation may promote through domain policy", 
 test("3 in-transit observation normalizes to an in_transit candidate", () => {
   assert.equal(externalMilestoneCandidateStatus("departed"), "in_transit");
 });
-test("4 carrier Delivered with Customs unreleased never canonically delivers", () => {
-  assert.equal(decision({ customsClearanceStatus: "lodged" }).reason, "customs_not_released");
+test("4 carrier Delivered consumes shared Customs release authority", () => {
+  assert.equal(decision({ canonicalDeliveryDecision: completionDecision({ customsClearanceStatus: "lodged" }) }).reason, "customs_not_released");
 });
-test("5 carrier Delivered with Customs released and POD missing remains blocked", () => {
-  assert.equal(decision({ podStatus: "not_received" }).reason, "pod_not_verified");
+test("5 carrier Delivered consumes shared POD verification authority", () => {
+  assert.equal(decision({ canonicalDeliveryDecision: completionDecision({ podStatus: "not_received", podManifestVerified: false }) }).reason, "pod_not_verified");
 });
-test("6 carrier Delivered with all KCPL gates satisfied may promote", () => {
-  assert.deepEqual(decision(), { decision: "promote", targetStatus: "delivered", reason: "kcpl_external_promotion_policy_satisfied" });
+test("6 carrier Delivered with all shared KCPL completion gates satisfied may promote", () => {
+  assert.deepEqual(decision(), { decision: "promote", targetStatus: "delivered", reason: "canonical_delivery_authority_satisfied" });
 });
-test("7 blocking operational exception prevents otherwise valid delivery promotion", () => {
-  assert.equal(decision({ hasBlockingException: true }).reason, "blocking_operational_exception");
+test("7 blocking operational exception is propagated from shared delivery authority", () => {
+  assert.equal(decision({ canonicalDeliveryDecision: completionDecision({ hasBlockingException: true }) }).reason, "blocking_operational_exception");
 });
 test("8 provider Customs milestone does not fabricate KCPL Customs release", () => {
-  const result = decision({ canonicalStatus: "in_transit", observedMilestone: "import_customs", customsClearanceStatus: "lodged", podStatus: "not_received", deliveryWorkflowComplete: false });
+  const result = decision({ canonicalStatus: "in_transit", observedMilestone: "import_customs", customsClearanceStatus: "lodged" });
   assert.equal(result.targetStatus, "customs_clearance");
   assert.notEqual(result.targetStatus, "delivered");
 });
@@ -63,8 +77,8 @@ test("10 manual tracking is never canonical workflow authority", () => {
 test("11 carrier exception is observation plus exception workflow, not canonical overwrite", () => {
   assert.equal(decision({ observedMilestone: "exception" }).decision, "observe_only");
 });
-test("12 delivery workflow verification remains independent from POD evidence", () => {
-  assert.equal(decision({ podStatus: "verified", deliveryWorkflowComplete: false }).reason, "delivery_verification_required");
+test("12 physical delivery workflow evidence is required independently from POD", () => {
+  assert.equal(decision({ canonicalDeliveryDecision: completionDecision({ deliveryAttemptExists: false, deliveryAttemptStatus: null }) }).reason, "delivery_attempt_required");
 });
 
 // Invalid canonical state must fail closed.
