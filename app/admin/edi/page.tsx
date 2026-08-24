@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
+import { OpsPage } from "../operations-ui";
 import { getStaffContext } from "../staff-directory.server";
 import { listTmsTenders } from "../tenders/tms-tendering.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listEdiGatewayDashboard } from "./edi-gateway.server";
 import { EdiWorkspace } from "./edi-workspace";
 
@@ -33,9 +34,9 @@ export default async function EdiGatewayPage() {
   }
   if (dashboard.kind !== "ready" || tenders.kind !== "ready") return <OperationsShell {...shell}><Gate title="EDI Gateway unavailable" detail="Firebase EDI storage is unavailable for this deployment." embedded/></OperationsShell>;
   const eligible = tenders.tenders.filter((tender) => tender.status === "sent" && (tender.channel === "manual" || tender.channel === "edi_204"));
-  return <OperationsShell {...shell}><EdiWorkspace initialRows={dashboard.rows} initialSummary={dashboard.summary} initialConfigured={dashboard.configured} initialEligibleTenders={eligible} canQueue204={staff.permissions.canEditCommercial}/></OperationsShell>;
+  return <OperationsShell {...shell}><OpsPage><EdiWorkspace initialRows={dashboard.rows} initialSummary={dashboard.summary} initialConfigured={dashboard.configured} initialEligibleTenders={eligible} canQueue204={staff.permissions.canEditCommercial}/></OpsPage></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#514840] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[15px] border border-[#e5ddd6] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Freight EDI</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md">Tender Desk</Link><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="md">Live Visibility</Link></div></section></main>;
+  return <V4WorkspaceGate eyebrow="KCPL Network · EDI Gateway" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/edi", label: "EDI Gateway", primary: true }, { href: "/admin/tenders", label: "Tender Desk" }, { href: "/admin/visibility", label: "Live Visibility" }, { href: "/admin/carrier-integrations", label: "Carrier Integrations" }]}/>;
 }
