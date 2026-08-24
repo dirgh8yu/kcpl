@@ -13,6 +13,10 @@ export async function GET() {
     return json({
       ok: true,
       role: staff.permissions.role,
+      scope: {
+        allBranches: staff.can_access_all_branches,
+        branches: staff.branches,
+      },
       capabilities: {
         canViewCommercial: staff.permissions.canViewCommercial,
         canManageJobFile: staff.permissions.canManageJobFile,

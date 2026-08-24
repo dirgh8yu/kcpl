@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { redirect } from "next/navigation";
 import { getAdminAccess } from "../admin-auth";
+import { loginHref } from "../admin-entry";
 import { evaluateFreightAutomation } from "../alerts/freight-automation.server";
-import { getStaffContext } from "../staff-directory.server";
-import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
+import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { loadCommandCentre } from "./command-centre.server";
 import { loadWorkflowOverview } from "./workflow-overview.server";
 import { V4OperationsOverview } from "./v4-operations-overview";
@@ -24,24 +24,25 @@ type ShellState = {
   isManagement: boolean;
 };
 
-function fallbackShellState(user: StaffUser): ShellState {
-  const permissions = staffCapabilitiesForEmail(user.email);
-  return {
-    canManageStaff: permissions.canManageStaff,
-    canManageFinance: permissions.canManageFinance,
-    canViewCommercial: permissions.canViewCommercial,
-    canManageJobFile: permissions.canManageJobFile,
-    isManagement: permissions.role === "management",
-  };
-}
+type LoadState =
+  | { kind: "authority_error" }
+  | { kind: "restricted"; shell: ShellState }
+  | { kind: "unavailable"; shell: ShellState }
+  | { kind: "error"; shell: ShellState }
+  | {
+      kind: "ready";
+      shell: ShellState;
+      data: NonNullable<Awaited<ReturnType<typeof loadCommandCentre>>>;
+      overview: Awaited<ReturnType<typeof loadWorkflowOverview>>;
+    };
 
-async function loadState(user: StaffUser) {
+async function loadState(user: StaffUser): Promise<LoadState> {
   let staff;
   try {
     staff = await getStaffContext(user);
   } catch (error) {
     console.error("Failed to resolve KCPL staff context for Operations Home", error);
-    return { kind: "error" as const, shell: fallbackShellState(user) };
+    return { kind: "authority_error" };
   }
 
   const shell: ShellState = {
@@ -52,7 +53,7 @@ async function loadState(user: StaffUser) {
     isManagement: staff.permissions.role === "management",
   };
 
-  if (!staff.permissions.canManageJobFile) return { kind: "restricted" as const, shell };
+  if (!staff.permissions.canManageJobFile) return { kind: "restricted", shell };
 
   try {
     await evaluateFreightAutomation();
@@ -65,19 +66,31 @@ async function loadState(user: StaffUser) {
       loadCommandCentre(staff),
       loadWorkflowOverview(staff),
     ]);
-    if (!data) return { kind: "unavailable" as const, shell };
-    return { kind: "ready" as const, data, overview, shell };
+    if (!data) return { kind: "unavailable", shell };
+    return { kind: "ready", data, overview, shell };
   } catch (error) {
     console.error("Failed to load KCPL Operations Home data", error);
-    return { kind: "error" as const, shell };
+    return { kind: "error", shell };
   }
 }
 
 export default async function CommandCentrePage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Operations Home is available only to authorised KCPL staff." />;
+  if (access.kind !== "authorized") redirect(loginHref("/admin/command-centre"));
 
   const state = await loadState(access.user);
+  if (state.kind === "authority_error") {
+    return <V4WorkspaceGate
+      eyebrow="KCPL Operations"
+      title="Staff access could not be resolved"
+      detail="KCPL could not verify your current staff role and branch scope. The workspace has failed closed rather than guessing your access."
+      actions={[
+        { href: "/api/admin/session?logout=1", label: "Sign in again", primary: true },
+        { href: "/", label: "KCPL website" },
+      ]}
+    />;
+  }
+
   const shellProps = {
     userName: access.user.displayName,
     canManageStaff: state.shell.canManageStaff,
@@ -87,13 +100,34 @@ export default async function CommandCentrePage() {
     isManagement: state.shell.isManagement,
   };
 
-  if (state.kind === "restricted") return <OperationsShell {...shellProps}><Gate title="Operations Home is restricted" detail="Your current staff role does not include operational Job File access." embedded /></OperationsShell>;
-  if (state.kind === "unavailable") return <OperationsShell {...shellProps}><Gate title="Operations data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /></OperationsShell>;
-  if (state.kind === "error") return <OperationsShell {...shellProps}><Gate title="Operations Home could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded /></OperationsShell>;
+  if (state.kind === "restricted") {
+    return <OperationsShell {...shellProps}>
+      <Gate title="Operations Home is restricted" detail="Your current staff role does not include operational Job File access." />
+    </OperationsShell>;
+  }
+  if (state.kind === "unavailable") {
+    return <OperationsShell {...shellProps}>
+      <Gate title="Operations data is unavailable" detail="The Firebase operational data service is not available for this deployment." />
+    </OperationsShell>;
+  }
+  if (state.kind === "error") {
+    return <OperationsShell {...shellProps}>
+      <Gate title="Operations Home could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." />
+    </OperationsShell>;
+  }
 
   return <OperationsShell {...shellProps}><V4OperationsOverview data={state.data} overview={state.overview}/></OperationsShell>;
 }
 
-function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f6f6f3] p-6 text-[#141414] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[12px] border border-[#e2e2e2] bg-white p-8 shadow-[0_12px_36px_rgba(0,0,0,.05)] sm:p-10"><span className="grid h-10 w-10 place-items-center rounded-[8px] bg-[#fff0f2] text-[#dc143c]"><ShieldCheck size={17}/></span><p className="mt-5 text-[11px] font-semibold text-[#dc143c]">KCPL Operations</p><h1 className="mt-2 text-[28px] font-semibold tracking-[-.035em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#5b5b5b]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="inline-flex h-9 items-center rounded-[7px] bg-[#dc143c] px-4 text-[12px] font-semibold text-white">Open Enquiries</Link><Link href="/" className="inline-flex h-9 items-center rounded-[7px] border border-[#e2e2e2] bg-white px-4 text-[12px] font-semibold">KCPL website</Link></div></section></main>;
+function Gate({ title, detail }: { title: string; detail: string }) {
+  return <V4WorkspaceGate
+    eyebrow="KCPL Operations"
+    title={title}
+    detail={detail}
+    embedded
+    actions={[
+      { href: "/admin/shipments", label: "Open shipments", primary: true },
+      { href: "/admin/notifications", label: "Notifications" },
+    ]}
+  />;
 }
