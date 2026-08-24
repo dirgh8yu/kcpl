@@ -10,7 +10,13 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[12px]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[13px]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[14px]"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-xl"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[15px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[16px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[18px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[20px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-xl"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-2xl"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-3xl"] {
   border-radius: 0 !important;
 }
 
@@ -19,20 +25,25 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#eee7e1]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e5ddd6]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#eadfd4]"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8cec7]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8cec7]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e4ddd6]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#ece5df]"] {
   border-color: #e2e2e2 !important;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fcfaf8]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#faf9f5]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#faf9f7]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#faf7f4]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fffdfa]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fff9f4]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fff8f5]"] {
   background-color: #fbfbf9 !important;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8ad91]"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#dca99d]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#dca99d]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d5ae8f]"] {
   border-color: #e2e2e2 !important;
   background-color: #fbfbf9 !important;
   box-shadow: inset 2px 0 0 #dc143c !important;
@@ -44,7 +55,10 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4f4741]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#5b514a]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#39312c]"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4c433d]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4c433d]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#332d29]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#443b35]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4d453f]"] {
   color: #141414 !important;
 }
 
@@ -53,7 +67,10 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#746b64]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#7f756d]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#81766e]"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#887e76]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#887e76]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#71675f]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#756c65]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#796f68]"] {
   color: #5b5b5b !important;
 }
 
@@ -61,13 +78,17 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#8e837b]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#9a9088]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#8d837b]"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#9b9189]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#9b9189]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#91877f]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#948a82]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#968b82]"] {
   color: #737373 !important;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[0_"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[inset_"] {
-  box-shadow: none;
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[inset_"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) .shadow-sm {
+  box-shadow: none !important;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) button[class*="border"][class*="bg-white"],
@@ -78,6 +99,12 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) details,
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) summary {
   border-radius: 0;
+}
+
+.ops-page .invoice-sheet {
+  border-radius: 0 !important;
+  border-color: #e2e2e2 !important;
+  box-shadow: none !important;
 }
 
 /* Legacy CRM dashboard shell. */
