@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listFreightDocumentWorkspace } from "./freight-documents.server";
 import { FreightDocumentsWorkspace } from "./freight-documents-workspace";
 
@@ -28,5 +28,14 @@ export default async function FreightDocumentsPage({ searchParams }: { searchPar
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#342f2b] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[16px] border border-[#e5ddd6] bg-white p-8"><p className="ops-eyebrow">KCPL Freight Documents</p><h1 className="mt-3 text-[27px] font-[730]">{title}</h1><p className="mt-3 text-[12px] leading-6 text-[#776e67]">{detail}</p><Link href="/admin/shipments" className="ops-button mt-6 inline-flex" data-variant="primary" data-size="md">Shipments</Link></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Freight Documents"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/shipments", label: "Shipments", primary: true },
+      { href: "/admin/documents", label: "Document Vault" },
+    ]}
+  />;
 }
