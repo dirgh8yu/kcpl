@@ -12,6 +12,7 @@ import "./globals.css";
 import "./admin/operations-theme.css";
 import "./admin/operations-polish.css";
 import "./admin/operations-hotfix.css";
+import "./admin/operations-v4-compat.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
