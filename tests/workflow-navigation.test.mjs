@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { loginHref, safeAdminNext } from "../app/admin/admin-entry.ts";
 import {
   activeWorkspace,
   groupedWorkspaces,
@@ -46,6 +47,7 @@ test("finance workspaces require finance capability", () => {
 });
 
 test("active workspace picks the most specific nested route", () => {
+  assert.equal(activeWorkspace("/admin/enquiries", full)?.id, "enquiries");
   assert.equal(activeWorkspace("/admin/jobs/KCPL-S-20260822-X", full)?.id, "shipments");
   assert.equal(activeWorkspace("/admin/pickups", full)?.id, "pickups");
   assert.equal(activeWorkspace("/admin/freight-documents", full)?.id, "freight-documents");
@@ -53,6 +55,17 @@ test("active workspace picks the most specific nested route", () => {
   assert.equal(activeWorkspace("/admin/edi", full)?.id, "edi");
   assert.equal(activeWorkspace("/admin/partners/reconciliation", full)?.id, "supplier-reconciliation");
   assert.equal(activeWorkspace("/admin/migration/archive", full)?.id, "paper-archive");
+});
+
+test("admin entry accepts only internal admin return paths", () => {
+  assert.equal(safeAdminNext(undefined), "/admin/command-centre");
+  assert.equal(safeAdminNext("/admin"), "/admin/command-centre");
+  assert.equal(safeAdminNext("/admin/shipments"), "/admin/shipments");
+  assert.equal(safeAdminNext("/admin/enquiries?enquiry=KCPL-Q-1"), "/admin/enquiries?enquiry=KCPL-Q-1");
+  assert.equal(safeAdminNext("/admin/login?next=/admin/staff"), "/admin/command-centre");
+  assert.equal(safeAdminNext("//evil.example/admin"), "/admin/command-centre");
+  assert.equal(safeAdminNext("https://evil.example/admin"), "/admin/command-centre");
+  assert.equal(loginHref("/admin/shipments"), "/admin/login?next=%2Fadmin%2Fshipments");
 });
 
 test("menu groups follow operational pipeline order", () => {

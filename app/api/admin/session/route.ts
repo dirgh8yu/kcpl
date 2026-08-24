@@ -55,5 +55,5 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  return redirectTo(request, "/", clearAdminSessionCookie());
+  return redirectTo(request, "/admin/login", clearAdminSessionCookie());
 }

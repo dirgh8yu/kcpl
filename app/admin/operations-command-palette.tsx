@@ -90,7 +90,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
     const needle = query.trim().toLowerCase();
     const allowedIds = new Set(workspaces.map((workspace) => workspace.id));
     const quickActionCandidates: PaletteEntry[] = [
-      { key: "action:new-enquiry", title: "New enquiry / quote", subtitle: "Open the customer freight request desk", meta: null, href: "/admin", kind: "action" },
+      { key: "action:new-enquiry", title: "New enquiry / quote", subtitle: "Open the customer freight request desk", meta: null, href: "/admin/enquiries", kind: "action" },
       { key: "action:new-customer", title: "New customer", subtitle: "Open Customers to create a Customer 360 account", meta: null, href: "/admin/crm", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
       ...(allowedIds.has("rating") ? [{ key: "action:new-order", title: "New transport order", subtitle: "Open Orders & Rate Desk to create and rate cargo", meta: null, href: "/admin/rating", kind: "action" as const }] : []),
@@ -126,33 +126,19 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
       <section className="w-full max-w-[720px] overflow-hidden rounded-[10px] border border-[#e2e2e2] bg-white shadow-[0_24px_72px_rgba(0,0,0,.18)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
         <div className="flex items-center gap-3 border-b border-[#e2e2e2] px-4 py-3">
           <Search size={16} className="shrink-0 text-[#dc143c]"/>
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => Math.min(entries.length - 1, current + 1)); }
-              else if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => Math.max(0, current - 1)); }
-              else if (event.key === "Enter" && selected) { event.preventDefault(); go(selected.href); }
-              else if (event.key === "Escape") { event.preventDefault(); onClose(); }
-            }}
-            className="min-w-0 flex-1 bg-transparent text-[14px] font-medium text-[#141414] outline-none placeholder:text-[#737373]"
-            placeholder="Search KCPL, jobs, customers, orders, tenders, partners…"
-            aria-label="Search KCPL"
-          />
+          <input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => {
+            if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => Math.min(entries.length - 1, current + 1)); }
+            else if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => Math.max(0, current - 1)); }
+            else if (event.key === "Enter" && selected) { event.preventDefault(); go(selected.href); }
+            else if (event.key === "Escape") { event.preventDefault(); onClose(); }
+          }} className="min-w-0 flex-1 bg-transparent text-[14px] font-medium text-[#141414] outline-none placeholder:text-[#737373]" placeholder="Search KCPL, jobs, customers, orders, tenders, partners…" aria-label="Search KCPL"/>
           {busy && query.trim().length >= 2 ? <span className="text-[9px] font-semibold uppercase tracking-[.08em] text-[#737373]">Searching</span> : null}
           <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-[6px] text-[#737373] hover:bg-[#f7f7f7] hover:text-[#141414]" aria-label="Close command palette"><X size={15}/></button>
         </div>
 
         <div className="max-h-[66vh] overflow-y-auto p-2">
           {!entries.length ? <div className="px-4 py-12 text-center"><FileSearch size={20} className="mx-auto text-[#737373]"/><p className="mt-3 text-[12px] font-semibold text-[#141414]">No matching KCPL records</p><p className="mt-1 text-[10px] text-[#737373]">Try a shipment reference, customer, lane, carrier, order, tender or invoice number.</p></div> : entries.map((entry, index) => (
-            <button
-              type="button"
-              key={entry.key}
-              onMouseEnter={() => setSelectedIndex(index)}
-              onClick={() => go(entry.href)}
-              className={`flex w-full items-center gap-3 rounded-[6px] px-3 py-2.5 text-left ${index === selectedIndex ? "bg-[#f7f7f7] shadow-[inset_2px_0_0_#dc143c]" : "hover:bg-[#fbfbf9]"}`}
-            >
+            <button type="button" key={entry.key} onMouseEnter={() => setSelectedIndex(index)} onClick={() => go(entry.href)} className={`flex w-full items-center gap-3 rounded-[6px] px-3 py-2.5 text-left ${index === selectedIndex ? "bg-[#f7f7f7] shadow-[inset_2px_0_0_#dc143c]" : "hover:bg-[#fbfbf9]"}`}>
               <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-[#f7f7f7] ${index === selectedIndex ? "text-[#dc143c]" : "text-[#737373]"}`}>{resultIcon(entry.kind)}</span>
               <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><strong className="truncate text-[11px] font-semibold text-[#141414]">{entry.title}</strong><span className="shrink-0 rounded-[5px] border border-[#e2e2e2] bg-white px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[.05em] text-[#737373]">{kindLabel(entry.kind)}</span></span><span className="mt-0.5 block truncate text-[9px] text-[#737373]">{entry.subtitle}</span></span>
               {entry.meta ? <span className="hidden shrink-0 text-[9px] font-medium text-[#737373] sm:block">{entry.meta.replaceAll("_", " ")}</span> : null}
