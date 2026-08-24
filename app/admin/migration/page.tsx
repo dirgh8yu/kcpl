@@ -3,6 +3,7 @@ import { Archive, RotateCcw } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listMigrationBatches } from "./migration-batches.server";
 import { MigrationWorkspace } from "./migration-workspace";
 
@@ -12,27 +13,29 @@ export const metadata = { title: "Migration Hub | KCPL Operations", robots: { in
 export default async function MigrationPage() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Migration Hub is available only to authorised Management staff."/>;
+
   const staff = await getStaffContext(access.user);
-  if (staff.permissions.role !== "management") return <Gate title="Management access required" detail="Bulk migration can create company master data, so this workspace is restricted to the Management role."/>;
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
+    isManagement: staff.permissions.role === "management",
+  };
+  if (staff.permissions.role !== "management") return <OperationsShell {...shellProps}><Gate embedded title="Management access required" detail="Bulk migration can create company master data, so this workspace is restricted to the Management role."/></OperationsShell>;
+
   const batchDashboard = await listMigrationBatches().catch((error) => {
     console.error("Failed to preload KCPL migration batch history", error);
     return null;
   });
 
-  return <OperationsShell
-    userName={access.user.displayName}
-    canManageStaff={staff.permissions.canManageStaff}
-    canManageFinance={staff.permissions.canManageFinance}
-    isManagement
-  >
+  return <OperationsShell {...shellProps}>
+    <div className="border-b border-[#e2e2e2] bg-[#f7f7f7]"><div className="ops-content-wide flex min-h-[48px] flex-wrap items-center gap-2 py-2"><span className="mr-auto text-[11px] font-medium text-[#5b5b5b]">Migration controls</span><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="sm"><Archive size={12}/>Paper Archive</Link>{staff.permissions.canManageFinance ? <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="sm"><RotateCcw size={12}/>Recovery</Link> : null}</div></div>
     <MigrationWorkspace initialBatchDashboard={batchDashboard}/>
-    <div className="fixed bottom-5 right-5 z-40 hidden items-center gap-2 sm:flex">
-      <Link href="/admin/migration/archive" className="ops-button shadow-[0_10px_30px_rgba(98,62,45,.12)]" data-variant="secondary" data-size="md"><Archive size={13}/>Paper Archive</Link>
-      {staff.permissions.canManageFinance ? <Link href="/admin/migration/recovery" className="ops-button shadow-[0_10px_30px_rgba(98,62,45,.18)]" data-variant="primary" data-size="md"><RotateCcw size={13}/>Stage 4C · Recovery</Link> : null}
-    </div>
   </OperationsShell>;
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f8f6f3] p-6 text-[#332d29]"><section className="w-full max-w-xl rounded-[18px] border border-[#e7dfd8] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[9px] font-extrabold uppercase tracking-[.13em] text-[#bd644e]">KCPL Migration Hub</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="primary" data-size="md">Operations Home</Link><Link href="/admin" className="ops-button" data-variant="secondary" data-size="md">Enquiries</Link></div></section></main>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate eyebrow="KCPL Organisation · Migration Hub" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration", label: "Migration Hub", primary: true }, { href: "/admin/migration/archive", label: "Paper Archive" }, { href: "/admin/management", label: "Management" }]}/>;
 }
