@@ -1,20 +1,21 @@
 import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
-import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.server";
-import { checkShipmentBranchAccess } from "../../shipment-access.server";
+import { getDeliveryControl } from "../../delivery/delivery-control.server";
 import { getDigitalJobFile } from "../../job-file.server";
-import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
+import { OperationsShell } from "../../operations-shell";
 import { getShipmentActivityTimeline } from "../../shipment-activity.server";
 import { getShipmentExceptions } from "../../shipment-exceptions.server";
-import { getDeliveryControl } from "../../delivery/delivery-control.server";
-import { OperationsShell } from "../../operations-shell";
+import { checkShipmentBranchAccess } from "../../shipment-access.server";
+import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.server";
+import { V4WorkspaceGate } from "../../v4-workspace-gate";
+import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { DeliveryPodControl } from "./delivery-pod-control";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
 import { ShipmentExceptionControl } from "./shipment-exception-control";
 import { SmartDocumentIntelligence } from "./smart-document-intelligence";
-import { WorkflowSpine } from "./workflow-spine";
 import { V4ShipmentDetailOverview } from "./v4-shipment-detail-overview";
+import { WorkflowSpine } from "./workflow-spine";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Shipment Detail | KCPL Operations", robots: { index: false, follow: false } };
@@ -58,7 +59,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
     <V4ShipmentDetailOverview job={result.job}/>
 
     <section id="operational-controls" className="border-t border-[#e2e2e2] bg-[#f6f6f3] pb-20 pt-2">
-      <div className="ops-content-wide pt-4"><div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#e2e2e2] bg-white px-4 py-3"><div><p className="text-[11px] font-medium text-[#737373]">DEEP OPERATIONS</p><p className="mt-1 text-[13px] font-semibold text-[#141414]">Workflow, documents, exceptions, delivery evidence and Digital Job File controls</p></div><div className="flex flex-wrap gap-2"><Link href={`/admin/pickups?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Pickup</Link><Link href={`/admin/freight-documents?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Documents</Link><Link href={`/admin/visibility?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Tracking</Link><Link href={`/admin/delivery?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Delivery & POD</Link></div></div></div>
+      <div className="ops-content-wide pt-4"><div className="flex flex-wrap items-center justify-between gap-3 border-y border-[#e2e2e2] bg-white px-4 py-3"><div><p className="text-[11px] font-medium text-[#737373]">DEEP OPERATIONS</p><p className="mt-1 text-[13px] font-semibold text-[#141414]">Workflow, documents, exceptions, delivery evidence and Digital Job File controls</p></div><div className="flex flex-wrap gap-2"><Link href={`/admin/pickups?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Pickup</Link><Link href={`/admin/freight-documents?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Documents</Link><Link href={`/admin/visibility?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Tracking</Link><Link href={`/admin/delivery?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Delivery & POD</Link></div></div></div>
       <WorkflowSpine initialWorkflow={workflow.readiness} initialJob={result.job} canOverride={staff.permissions.role === "management"}/>
       <SmartDocumentIntelligence initialWorkflow={workflow.readiness}/>
       {exceptionCases.kind === "ready" && exceptionBranches.length ? <ShipmentExceptionControl reference={result.job.reference} branches={exceptionBranches} initialExceptions={exceptionCases.exceptions} initialSummary={exceptionCases.summary} currentUserName={access.user.displayName} currentUserEmail={access.user.email}/> : null}
@@ -67,10 +68,18 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
       {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline}/> : null}
     </section>
 
-    {staff.permissions.canManageJobCosts ? <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2"><Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm">Job profitability</Link>{staff.permissions.canManageFinance ? <><Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Create invoice</Link><Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button border-[#ead5b1] bg-[#fff8ec] text-[#8d5d22] shadow-[0_8px_28px_rgba(54,43,34,.08)]" data-variant="secondary" data-size="sm">Add supplier bill</Link></> : null}</div> : null}
+    {staff.permissions.canManageJobCosts ? <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2"><Link href={`/admin/jobs/${encodeURIComponent(result.job.reference)}/profitability`} className="ops-button" data-variant="secondary" data-size="sm">Job profitability</Link>{staff.permissions.canManageFinance ? <><Link href={`/admin/finance/new/${encodeURIComponent(result.job.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Create invoice</Link><Link href={`/admin/payables?shipment=${encodeURIComponent(result.job.reference)}`} className="ops-button border-[#ead9ae] bg-[#fffaf0] text-[#945b00]" data-variant="secondary" data-size="sm">Add supplier bill</Link></> : null}</div> : null}
   </OperationsShell>;
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f6f6f3] p-6 text-[#141414]"><section className="w-full max-w-xl rounded-[12px] border border-[#e2e2e2] bg-white p-8 shadow-[0_16px_48px_rgba(0,0,0,.05)]"><p className="text-[11px] font-semibold text-[#dc143c]">KCPL Digital Job File</p><h1 className="mt-3 text-[28px] font-semibold tracking-[-.035em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#5b5b5b]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/shipments" className="inline-flex h-9 items-center rounded-[7px] bg-[#dc143c] px-4 text-[12px] font-semibold text-white">Shipments</Link><Link href="/admin/command-centre" className="inline-flex h-9 items-center rounded-[7px] border border-[#e2e2e2] bg-white px-4 text-[12px] font-semibold">Operations</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Digital Job File"
+    title={title}
+    detail={detail}
+    actions={[
+      { href: "/admin/shipments", label: "Shipments", primary: true },
+      { href: "/admin/command-centre", label: "Operations Overview" },
+    ]}
+  />;
 }
