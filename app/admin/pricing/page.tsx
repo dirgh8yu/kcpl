@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
-import { listPricingWorkspace } from "./tms-pricing.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { TmsPricingWorkspace } from "./tms-pricing-workspace";
+import { listPricingWorkspace } from "./tms-pricing.server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pricing Desk | KCPL Operations", robots: { index: false, follow: false } };
@@ -38,7 +38,7 @@ export default async function PricingPage() {
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} isManagement={permissions.role === "management"}><Gate title="Pricing Desk could not be loaded" detail="KCPL pricing data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Pricing Desk could not be loaded" detail="KCPL pricing data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -46,6 +46,8 @@ export default async function PricingPage() {
     userName: access.user.displayName,
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Sell pricing contains customer-specific rates, procurement costs and margin controls." embedded/></OperationsShell>;
@@ -61,5 +63,14 @@ export default async function PricingPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#342f2b] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[16px] border border-[#e5ddd6] bg-white p-8 shadow-[0_18px_50px_rgba(67,49,38,.06)]"><p className="ops-eyebrow">KCPL Pricing Desk</p><h1 className="mt-3 text-[27px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[12px] leading-6 text-[#776e67]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="ops-button" data-variant="primary" data-size="md">Rate Desk</Link><Link href="/admin" className="ops-button" data-variant="secondary" data-size="md">Enquiries</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Pricing Desk"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/rating", label: "Rate Desk", primary: true },
+      { href: "/admin", label: "Enquiries" },
+    ]}
+  />;
 }
