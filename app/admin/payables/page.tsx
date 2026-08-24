@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { OperationsShell } from "../operations-shell";
 import { listPartnerOptions } from "../partners/partners.server";
 import { kcplStaffRoleLabels, staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listPayablesDashboard } from "./payables.server";
 import { PayablesWorkspace } from "./payables-workspace";
 
@@ -16,20 +16,13 @@ type StaffResult =
   | { kind: "error"; permissions: StaffCapabilities };
 
 async function resolveStaff(user: { uid: string; email: string; displayName: string }): Promise<StaffResult> {
-  try {
-    return { kind: "ready", staff: await getStaffContext(user) };
-  } catch (error) {
-    console.error("Failed to resolve KCPL staff context for Accounts Payable", error);
-    return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) };
-  }
+  try { return { kind: "ready", staff: await getStaffContext(user) }; }
+  catch (error) { console.error("Failed to resolve KCPL staff context for Accounts Payable", error); return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) }; }
 }
 
 async function loadWorkspace(staff: Awaited<ReturnType<typeof getStaffContext>>) {
   try {
-    const [dashboard, partnerOptions] = await Promise.all([
-      listPayablesDashboard(staff),
-      listPartnerOptions(staff),
-    ]);
+    const [dashboard, partnerOptions] = await Promise.all([listPayablesDashboard(staff), listPartnerOptions(staff)]);
     return dashboard && partnerOptions ? { kind: "ready" as const, dashboard, partnerOptions } : { kind: "unavailable" as const };
   } catch (error) {
     console.error("Failed to load KCPL Accounts Payable", error);
@@ -44,7 +37,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} isManagement={permissions.role === "management"}><Gate title="Accounts Payable could not be loaded" detail="KCPL payable data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Accounts Payable could not be loaded" detail="KCPL payable data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -52,6 +45,8 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
     userName: access.user.displayName,
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
   if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate title="Accounts Payable is restricted" detail="Supplier bills and payments are available to Management and Accounts roles only." embedded/></OperationsShell>;
@@ -67,23 +62,9 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   const branchOptions = (staff.can_access_all_branches ? [...kcplBranches] : staff.branches) as KcplBranch[];
   const defaultBranch = branchOptions[0] ?? "Kathmandu";
 
-  return (
-    <OperationsShell {...shellProps}>
-      <PayablesWorkspace
-        dashboard={loaded.dashboard}
-        roleLabel={kcplStaffRoleLabels[staff.permissions.role]}
-        initialShipment={initialShipment}
-        initialPartner={initialPartner}
-        initialCreate={initialCreate}
-        partnerOptions={loaded.partnerOptions}
-        branchOptions={branchOptions}
-        defaultBranch={defaultBranch}
-      />
-      <div className="fixed bottom-5 right-5 z-40"><Link href="/admin/freight-audit" className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Freight Audit & Match-Pay</Link></div>
-    </OperationsShell>
-  );
+  return <OperationsShell {...shellProps}><PayablesWorkspace dashboard={loaded.dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]} initialShipment={initialShipment} initialPartner={initialPartner} initialCreate={initialCreate} partnerOptions={loaded.partnerOptions} branchOptions={branchOptions} defaultBranch={defaultBranch}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#332d29] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[18px] border border-[#e6ddd6] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[9px] font-extrabold uppercase tracking-[.13em] text-[#bd644e]">KCPL Finance</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[#81776f]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/finance" className="rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[10px] font-bold text-white">Receivables</Link><Link href="/admin/command-centre" className="rounded-[11px] border border-[#e2d9d2] bg-white px-4 py-2.5 text-[10px] font-bold text-[#665c55]">Operations Home</Link></div></section></main>;
+  return <V4WorkspaceGate eyebrow="KCPL Finance · Payables" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/payables", label: "Payables", primary: true }, { href: "/admin/freight-audit", label: "Freight Audit" }, { href: "/admin/finance", label: "Receivables" }]}/>;
 }
