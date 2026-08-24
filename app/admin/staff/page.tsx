@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
-import { getStaffContext, listStaffProfiles } from "../staff-directory.server";
 import { OperationsShell } from "../operations-shell";
+import { getStaffContext, listStaffProfiles } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { StaffManager } from "./staff-manager";
 
 export const dynamic = "force-dynamic";
@@ -10,23 +10,24 @@ export const metadata = { title: "Staff | KCPL Operations", robots: { index: fal
 export default async function StaffPage() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Staff management is available only inside KCPL Operations."/>;
-  const context = await getStaffContext(access.user);
-  if (!context.permissions.canManageStaff) return <Gate title="Management access required" detail="Only KCPL Management can change staff roles and branch access."/>;
-  const profiles = await listStaffProfiles();
-  if (profiles === null) return <Gate title="Staff directory unavailable" detail="Firestore could not load the KCPL staff directory."/>;
 
-  return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff
-      canManageFinance={context.permissions.canManageFinance}
-      isManagement={context.permissions.role === "management"}
-    >
-      <StaffManager initialProfiles={profiles}/>
-    </OperationsShell>
-  );
+  const context = await getStaffContext(access.user);
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: context.permissions.canManageStaff,
+    canManageFinance: context.permissions.canManageFinance,
+    canViewCommercial: context.permissions.canViewCommercial,
+    canManageJobFile: context.permissions.canManageJobFile,
+    isManagement: context.permissions.role === "management",
+  };
+  if (!context.permissions.canManageStaff) return <OperationsShell {...shellProps}><Gate embedded title="Management access required" detail="Only KCPL Management can change staff roles and branch access."/></OperationsShell>;
+
+  const profiles = await listStaffProfiles();
+  if (profiles === null) return <OperationsShell {...shellProps}><Gate embedded title="Staff directory unavailable" detail="Firestore could not load the KCPL staff directory."/></OperationsShell>;
+
+  return <OperationsShell {...shellProps}><StaffManager initialProfiles={profiles}/></OperationsShell>;
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[#f5f6f7] p-6 text-[#10263f]"><section className="w-full max-w-xl rounded-xl border border-[#dfe3e8] bg-white p-8"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#8a6c36]">KCPL Staff</p><h1 className="mt-3 text-2xl font-bold">{title}</h1><p className="mt-3 text-sm leading-6 text-[#68747f]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin" className="rounded-lg bg-[#10263f] px-4 py-2.5 text-xs font-bold text-white">Operations</Link><Link href="/admin/crm" className="rounded-lg border border-[#dfe3e8] px-4 py-2.5 text-xs font-bold">Customers</Link></div></section></main>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate eyebrow="KCPL Organisation · People & Branches" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/staff", label: "People & Branches", primary: true }, { href: "/admin/management", label: "Management" }, { href: "/admin/notifications", label: "Notifications" }]}/>;
 }
