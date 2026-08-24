@@ -113,11 +113,6 @@ export function OperationsShell({
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    setMobileOpen(false);
-    setPaletteOpen(false);
-  }, [pathname]);
-
   const workspaces = useMemo(() => visibleWorkspaces(capabilities), [capabilities]);
   const activeItem = useMemo(() => activeWorkspace(pathname, capabilities), [pathname, capabilities]);
   const initials = initialsFor(userName);
