@@ -8,21 +8,21 @@ export function CrmCustomerJump({ customers }: { customers: CrmCustomerSummary[]
   if (!customers.length) return null;
 
   return (
-    <div className="border-b border-black/10 bg-[#e9e4d8] px-5 py-2.5 text-[#10263f] lg:px-8">
-      <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3">
+    <div className="border-b border-[#e2e2e2] bg-[#f6f6f3] px-4 py-2.5 sm:px-6 lg:px-7">
+      <div className="mx-auto flex max-w-[1152px] flex-wrap items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-black uppercase tracking-[.16em] text-black/40">Operational workspace</span>
-          <span className="ml-2 text-xs font-bold">Open Customer 360</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[.06em] text-[#737373]">Customer workspace</span>
+          <span className="ml-2 text-[12px] font-semibold text-[#141414]">Open Customer 360</span>
         </div>
         <select
           defaultValue=""
           onChange={(event) => {
             if (event.target.value) router.push(`/admin/crm/${encodeURIComponent(event.target.value)}`);
           }}
-          className="min-h-9 min-w-[240px] rounded-xl border border-black/10 bg-white px-3 text-xs font-bold outline-none focus:border-[#b78a3e]"
+          className="h-8 min-w-[240px] rounded-[6px] border border-[#e2e2e2] bg-white px-3 text-[12px] font-medium text-[#141414] outline-none focus:border-[#9a9a9a] focus:ring-2 focus:ring-black/[.06]"
           aria-label="Open a Customer 360 workspace"
         >
-          <option value="">Choose customer / partner…</option>
+          <option value="">Choose customer…</option>
           {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.display_name} · {customer.primary_branch}</option>)}
         </select>
       </div>

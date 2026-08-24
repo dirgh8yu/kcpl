@@ -13,6 +13,7 @@ import "./admin/operations-theme.css";
 import "./admin/operations-polish.css";
 import "./admin/operations-hotfix.css";
 import "./admin/operations-v4-compat.css";
+import "./admin/commercial-v4-compat.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -74,12 +75,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
-        <StructuredData data={organizationSchema} />
+        <StructuredData data={organizationSchema}/>
         {children}
-        <OperationsNavigationFallback />
-        <OperationsGlobalSearch />
-        <MobileQuoteCta />
-        <Suspense fallback={null}><Analytics /></Suspense>
+        <OperationsNavigationFallback/>
+        <OperationsGlobalSearch/>
+        <MobileQuoteCta/>
+        <Suspense fallback={null}><Analytics/></Suspense>
       </body>
     </html>
   );

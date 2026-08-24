@@ -1,75 +1,117 @@
 /* V4 compatibility for older admin fragments that still carry one-off Tailwind
- * colours/radii inside an OpsPage. Scoped to .ops-page so the public site and
- * the direct V4 shell are untouched. Remove selectors as each workspace is
- * migrated to semantic Ops primitives.
+ * colours/radii. The OpsPage scope covers most current workspaces. The second
+ * scope is the legacy CRM dashboard root, which predates OpsPage but still runs
+ * only inside KCPL Operations. Remove these selectors as each fragment migrates
+ * to semantic Ops primitives.
  */
 
-.ops-page [class*="rounded-[10px]"],
-.ops-page [class*="rounded-[11px]"],
-.ops-page [class*="rounded-[12px]"],
-.ops-page [class*="rounded-[13px]"],
-.ops-page [class*="rounded-[14px]"],
-.ops-page [class*="rounded-xl"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[10px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[11px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[12px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[13px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-[14px]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-xl"] {
   border-radius: 0 !important;
 }
 
-.ops-page [class*="border-[#e8e1db]"],
-.ops-page [class*="border-[#e8e0d9]"],
-.ops-page [class*="border-[#eee7e1]"],
-.ops-page [class*="border-[#e5ddd6]"],
-.ops-page [class*="border-[#eadfd4]"],
-.ops-page [class*="border-[#d8cec7]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e8e1db]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e8e0d9]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#eee7e1]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e5ddd6]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#eadfd4]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8cec7]"] {
   border-color: #e2e2e2 !important;
 }
 
-.ops-page [class*="bg-[#fcfaf8]"],
-.ops-page [class*="bg-[#faf9f5]"],
-.ops-page [class*="bg-[#faf9f7]"],
-.ops-page [class*="bg-[#fff9f4]"],
-.ops-page [class*="bg-[#fff8f5]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fcfaf8]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#faf9f5]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#faf9f7]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fff9f4]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fff8f5]"] {
   background-color: #fbfbf9 !important;
 }
 
-.ops-page [class*="border-[#d8ad91]"],
-.ops-page [class*="border-[#dca99d]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8ad91]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#dca99d]"] {
   border-color: #e2e2e2 !important;
   background-color: #fbfbf9 !important;
   box-shadow: inset 2px 0 0 #dc143c !important;
 }
 
-.ops-page [class*="text-[#342f2b]"],
-.ops-page [class*="text-[#3b342f]"],
-.ops-page [class*="text-[#4b423c]"],
-.ops-page [class*="text-[#4f4741]"],
-.ops-page [class*="text-[#5b514a]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#342f2b]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#3b342f]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4b423c]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4f4741]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#5b514a]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#39312c]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4c433d]"] {
   color: #141414 !important;
 }
 
-.ops-page [class*="text-[#514840]"],
-.ops-page [class*="text-[#6e625a]"],
-.ops-page [class*="text-[#746b64]"],
-.ops-page [class*="text-[#7f756d]"],
-.ops-page [class*="text-[#81766e]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#514840]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#6e625a]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#746b64]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#7f756d]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#81766e]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#887e76]"] {
   color: #5b5b5b !important;
 }
 
-.ops-page [class*="text-[#8b8179]"],
-.ops-page [class*="text-[#8e837b]"],
-.ops-page [class*="text-[#9a9088]"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#8b8179]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#8e837b]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#9a9088]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#8d837b]"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#9b9189]"] {
   color: #737373 !important;
 }
 
-.ops-page [class*="shadow-[0_"],
-.ops-page [class*="shadow-[inset_"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[0_"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[inset_"] {
   box-shadow: none;
 }
 
-.ops-page button[class*="border"][class*="bg-white"],
-.ops-page a[class*="border"][class*="bg-white"] {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) button[class*="border"][class*="bg-white"],
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) a[class*="border"][class*="bg-white"] {
   box-shadow: none;
 }
 
-.ops-page details,
-.ops-page summary {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) details,
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) summary {
   border-radius: 0;
+}
+
+/* Legacy CRM dashboard shell. */
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] {
+  min-height: calc(100vh - 54px) !important;
+  background: #f6f6f3 !important;
+  color: #141414 !important;
+}
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > section:first-child {
+  border-color: #e2e2e2 !important;
+  background: #f6f6f3 !important;
+  padding-top: 18px !important;
+  padding-bottom: 14px !important;
+  backdrop-filter: none !important;
+}
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > section:first-child > div,
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > div {
+  max-width: 1152px !important;
+  margin-inline: auto !important;
+}
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > section:first-child h1 {
+  margin-top: 2px !important;
+  color: #141414 !important;
+  font-size: 22px !important;
+  font-weight: 650 !important;
+  line-height: 30px !important;
+  letter-spacing: -.02em !important;
+}
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] aside {
+  border-color: #e2e2e2 !important;
+  background: #fff !important;
+}
+main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] aside > div:first-child {
+  border-color: #e2e2e2 !important;
+  background: #f7f7f7 !important;
+  backdrop-filter: none !important;
 }

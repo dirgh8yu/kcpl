@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
-import { AdminDashboard } from "./admin-dashboard";
+import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "./admin-auth";
-import { AdminLogin } from "./admin-login";
-import { getStaffContext, type KcplStaffContext } from "./staff-directory.server";
+import { AdminDashboard } from "./admin-dashboard";
 import type { QuoteSummary } from "./admin-data";
+import { AdminLogin } from "./admin-login";
 import { OperationsShell } from "./operations-shell";
+import { getStaffContext, type KcplStaffContext } from "./staff-directory.server";
+import { V4WorkspaceGate } from "./v4-workspace-gate";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Enquiries | KCPL Operations", robots: { index: false, follow: false } };
@@ -33,6 +34,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     userName: access.user.displayName,
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
   const { enquiry } = await searchParams;
@@ -49,18 +52,24 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 }
 
 function AdminLoginPage() {
-  return <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f8f6f3] p-6 text-[#332d29]">
-    <div className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-[#f1c9b8]/25 blur-3xl"/>
-    <div className="pointer-events-none absolute -bottom-24 -left-24 h-[360px] w-[360px] rounded-full bg-[#e7dccd]/40 blur-3xl"/>
-    <section className="relative w-full max-w-[460px] rounded-[20px] border border-[#e6ddd6] bg-[#fffdfa]/95 p-8 shadow-[0_24px_70px_rgba(75,56,43,.08)] sm:p-10">
-      <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#e8755d] text-[12px] font-black text-white shadow-[0_8px_22px_rgba(191,91,68,.14)]">K</span><div><p className="text-[12px] font-[760] tracking-[-.02em] text-[#443b35]">KCPL Operations</p><p className="mt-0.5 text-[10px] font-semibold text-[#8f857d]">Private freight workspace</p></div></div>
-      <div className="mt-8"><p className="text-[10px] font-bold text-[#a45c49]">Authorised staff</p><h1 className="mt-2 text-[29px] font-[735] tracking-[-.045em] leading-[1.05]">Welcome back.</h1><p className="mt-3 text-[13px] leading-6 text-[#756d66]">Sign in with your KCPL Firebase staff account to work enquiries, shipments, Job Files, customers, finance and operational alerts.</p></div>
+  return <main className="grid min-h-screen place-items-center bg-[#f6f6f3] p-6 text-[#141414]">
+    <section className="w-full max-w-[460px] border-y border-[#e2e2e2] bg-white px-8 py-9 sm:px-10">
+      <div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-[6px] bg-[#dc143c] text-[12px] font-semibold text-white">K</span><div><p className="text-[13px] font-semibold text-[#141414]">KCPL Operations</p><p className="mt-0.5 text-[10px] font-medium text-[#737373]">Private freight workspace</p></div></div>
+      <div className="mt-7"><p className="text-[10px] font-semibold uppercase tracking-[.06em] text-[#737373]">Authorised staff</p><h1 className="mt-2 text-[24px] font-semibold leading-[32px] tracking-[-.02em]">Sign in</h1><p className="mt-2 text-[13px] leading-6 text-[#5b5b5b]">Use your KCPL Firebase staff account to access enquiries, shipments, customers, finance and operational controls.</p></div>
       <AdminLogin/>
-      <div className="mt-6 flex items-center justify-between gap-3 border-t border-[#eee7e1] pt-4"><span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#8f857d]"><ShieldCheck size={11}/>Firebase-authenticated staff only</span><Link href="/" className="inline-flex items-center gap-1 text-[10px] font-bold text-[#a96752]"><ArrowLeft size={10}/>Website</Link></div>
+      <div className="mt-6 flex items-center justify-between gap-3 border-t border-[#e2e2e2] pt-4"><span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-[#737373]"><ShieldCheck size={11}/>Firebase-authenticated staff only</span><Link href="/" className="text-[10px] font-semibold text-[#5b5b5b] hover:text-[#141414]">Public website</Link></div>
     </section>
   </main>;
 }
 
 function AdminGate({ title, detail, signOutPath, embedded = false }: { title: string; detail: string; signOutPath?: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#332d29] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[18px] border border-[#e6ddd6] bg-[#fffdfa] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)] sm:p-10"><span className="grid h-10 w-10 place-items-center rounded-[12px] bg-[#f3e8e1] text-[#b6654f]"><ShieldCheck size={16}/></span><p className="mt-5 text-[10px] font-bold text-[#a45c49]">KCPL Operations</p><h1 className="mt-2 text-[27px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#756d66]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/" className="rounded-[11px] bg-[#e8755d] px-4 py-2.5 text-[11px] font-bold text-white">Return to website</Link>{signOutPath ? <a href={signOutPath} className="rounded-[11px] border border-[#e2d9d2] bg-white px-4 py-2.5 text-[11px] font-bold text-[#665c55]">Sign out</a> : null}</div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Operations"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={signOutPath
+      ? [{ href: "/admin/command-centre", label: "Operations Overview", primary: true }, { href: signOutPath, label: "Sign out" }]
+      : [{ href: "/", label: "Public website", primary: true }]}
+  />;
 }
