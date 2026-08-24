@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Manrope, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
-import { OperationsGlobalSearch } from "./admin/operations-global-search";
-import { OperationsNavigationFallback } from "./admin/operations-navigation-fallback";
-import "./admin/commercial-v4-compat.css";
-import "./admin/operations-hotfix.css";
-import "./admin/operations-polish.css";
-import "./admin/operations-theme.css";
-import "./admin/operations-v4-compat.css";
 import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
 import { MobileQuoteCta } from "./components/mobile-quote-cta";
 import { StructuredData } from "./components/structured-data";
-import "./globals.css";
+import { OperationsGlobalSearch } from "./admin/operations-global-search";
+import { OperationsNavigationFallback } from "./admin/operations-navigation-fallback";
 import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
+import "./globals.css";
+import "./admin/operations-theme.css";
+import "./admin/operations-polish.css";
+import "./admin/operations-hotfix.css";
+import "./admin/operations-v4-compat.css";
+import "./admin/commercial-v4-compat.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
