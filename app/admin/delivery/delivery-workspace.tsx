@@ -43,7 +43,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     <OpsPageHeader
       eyebrow="Final mile"
       title="Delivery & POD Control"
-      description="Control final-mile attempts, failed or refused deliveries and proof-of-delivery closeout. Verified POD is sealed into the Digital Job File and can satisfy operational closeout."
+      description="Control final-mile attempts, failed or refused deliveries and proof-of-delivery closeout. Verified POD is sealed into the Digital Job File before canonical shipment completion can be satisfied."
       actions={<><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="md">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="primary" data-size="md">Shipments</Link></>}
     />
     <OpsStatStrip>
@@ -55,19 +55,19 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     </OpsStatStrip>
 
     <div className="ops-content-wide ops-stack">
-      <OpsSurface eyebrow="Control tower" title="Final-mile queue" description={`${rows.length} delivery movement${rows.length === 1 ? "" : "s"} shown.`}>
-        <div className="mb-4 max-w-xl"><OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch, route or recipient…"/></div>
+      <OpsSurface eyebrow="Control tower" title="Final-mile queue" description={`${rows.length} delivery movement${rows.length === 1 ? "" : "s"} shown.`} bodyClassName="ops-surface-body-flush">
+        <div className="ops-toolbar"><div className="w-full max-w-[420px]"><OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch, route or recipient…"/></div></div>
         {!rows.length ? <OpsEmptyState icon={<Search size={18}/>} title="No delivery movements match this view" description="Change the filter or search terms to see another final-mile queue."/> : (
-          <div className="overflow-x-auto rounded-[12px] border border-[#e8e1db]">
-            <table className="min-w-full text-left text-[11px]">
-              <thead className="bg-[#faf7f4] text-[#81776f]"><tr><th className="px-4 py-3">Shipment</th><th className="px-4 py-3">Customer / route</th><th className="px-4 py-3">State</th><th className="px-4 py-3">Attempt</th><th className="px-4 py-3">POD</th><th className="px-4 py-3"></th></tr></thead>
-              <tbody>{rows.map((row) => <tr key={row.reference} className="border-t border-[#eee7e2] bg-white align-top">
-                <td className="px-4 py-3"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="font-bold text-[#3f3833] hover:underline">{row.reference}</Link><div className="mt-1 text-[10px] text-[#91877f]">{row.primary_branch}</div></td>
-                <td className="px-4 py-3"><div className="font-semibold text-[#514943]">{row.customer_name}</div><div className="mt-1 text-[#8b8179]">{row.origin} → {row.destination} · {row.mode}</div></td>
-                <td className="px-4 py-3">{stateBadge(row)}<div className="mt-2 text-[10px] text-[#8b8179]">{row.current_location || "Location not recorded"}</div></td>
-                <td className="px-4 py-3"><div className="font-semibold text-[#5d554f]">{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : "No attempt yet"}</div><div className="mt-1 text-[10px] text-[#938981]">{row.next_delivery_at ? `Next ${dateTime(row.next_delivery_at)}` : dateTime(row.last_attempt_at)}</div></td>
-                <td className="px-4 py-3"><div className="font-semibold capitalize text-[#5d554f]">{row.pod_status.replaceAll("_", " ")}</div><div className="mt-1 text-[10px] text-[#938981]">{row.pod_evidence_count} evidence item{row.pod_evidence_count === 1 ? "" : "s"}</div></td>
-                <td className="px-4 py-3 text-right"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} className="ops-button" data-variant="secondary" data-size="sm">Open control</Link></td>
+          <div className="ops-table-wrap">
+            <table className="ops-table min-w-[900px] w-full table-fixed text-left">
+              <thead><tr><th className="w-[150px]">Shipment</th><th className="w-[230px]">Customer / route</th><th className="w-[170px]">State</th><th className="w-[190px]">Attempt</th><th className="w-[150px]">POD</th><th className="w-[110px] text-right">Action</th></tr></thead>
+              <tbody>{rows.map((row) => <tr key={row.reference}>
+                <td><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="text-[12px] font-semibold text-[#141414] hover:text-[#dc143c]">{row.reference}</Link><div className="mt-1 text-[10px] text-[#737373]">{row.primary_branch}</div></td>
+                <td><div className="font-medium text-[#141414]">{row.customer_name}</div><div className="mt-1 truncate text-[11px] text-[#737373]">{row.origin} → {row.destination} · {row.mode}</div></td>
+                <td>{stateBadge(row)}<div className="mt-2 truncate text-[10px] text-[#737373]">{row.current_location || "Location not recorded"}</div></td>
+                <td><div className="font-medium text-[#5b5b5b]">{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : "No attempt yet"}</div><div className="mt-1 text-[10px] text-[#737373]">{row.next_delivery_at ? `Next ${dateTime(row.next_delivery_at)}` : dateTime(row.last_attempt_at)}</div></td>
+                <td><div className="font-medium capitalize text-[#5b5b5b]">{row.pod_status.replaceAll("_", " ")}</div><div className="mt-1 text-[10px] text-[#737373]">{row.pod_evidence_count} evidence item{row.pod_evidence_count === 1 ? "" : "s"}</div></td>
+                <td className="text-right"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} className="ops-button" data-variant="secondary" data-size="sm">Open control</Link></td>
               </tr>)}</tbody>
             </table>
           </div>
