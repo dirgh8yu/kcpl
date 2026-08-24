@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listDeliveryWorkspace } from "./delivery-control.server";
 import { DeliveryWorkspace } from "./delivery-workspace";
 
@@ -37,5 +37,14 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#514840] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[15px] border border-[#e5ddd6] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Delivery & POD</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/shipments" className="ops-button" data-variant="primary" data-size="md">Shipments</Link><Link href="/admin" className="ops-button" data-variant="secondary" data-size="md">Operations</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Delivery & POD"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/shipments", label: "Shipments", primary: true },
+      { href: "/admin/command-centre", label: "Operations Overview" },
+    ]}
+  />;
 }

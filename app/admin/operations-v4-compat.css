@@ -1,0 +1,75 @@
+/* V4 compatibility for older admin fragments that still carry one-off Tailwind
+ * colours/radii inside an OpsPage. Scoped to .ops-page so the public site and
+ * the direct V4 shell are untouched. Remove selectors as each workspace is
+ * migrated to semantic Ops primitives.
+ */
+
+.ops-page [class*="rounded-[10px]"],
+.ops-page [class*="rounded-[11px]"],
+.ops-page [class*="rounded-[12px]"],
+.ops-page [class*="rounded-[13px]"],
+.ops-page [class*="rounded-[14px]"],
+.ops-page [class*="rounded-xl"] {
+  border-radius: 0 !important;
+}
+
+.ops-page [class*="border-[#e8e1db]"],
+.ops-page [class*="border-[#e8e0d9]"],
+.ops-page [class*="border-[#eee7e1]"],
+.ops-page [class*="border-[#e5ddd6]"],
+.ops-page [class*="border-[#eadfd4]"],
+.ops-page [class*="border-[#d8cec7]"] {
+  border-color: #e2e2e2 !important;
+}
+
+.ops-page [class*="bg-[#fcfaf8]"],
+.ops-page [class*="bg-[#faf9f5]"],
+.ops-page [class*="bg-[#faf9f7]"],
+.ops-page [class*="bg-[#fff9f4]"],
+.ops-page [class*="bg-[#fff8f5]"] {
+  background-color: #fbfbf9 !important;
+}
+
+.ops-page [class*="border-[#d8ad91]"],
+.ops-page [class*="border-[#dca99d]"] {
+  border-color: #e2e2e2 !important;
+  background-color: #fbfbf9 !important;
+  box-shadow: inset 2px 0 0 #dc143c !important;
+}
+
+.ops-page [class*="text-[#342f2b]"],
+.ops-page [class*="text-[#3b342f]"],
+.ops-page [class*="text-[#4b423c]"],
+.ops-page [class*="text-[#4f4741]"],
+.ops-page [class*="text-[#5b514a]"] {
+  color: #141414 !important;
+}
+
+.ops-page [class*="text-[#514840]"],
+.ops-page [class*="text-[#6e625a]"],
+.ops-page [class*="text-[#746b64]"],
+.ops-page [class*="text-[#7f756d]"],
+.ops-page [class*="text-[#81766e]"] {
+  color: #5b5b5b !important;
+}
+
+.ops-page [class*="text-[#8b8179]"],
+.ops-page [class*="text-[#8e837b]"],
+.ops-page [class*="text-[#9a9088]"] {
+  color: #737373 !important;
+}
+
+.ops-page [class*="shadow-[0_"],
+.ops-page [class*="shadow-[inset_"] {
+  box-shadow: none;
+}
+
+.ops-page button[class*="border"][class*="bg-white"],
+.ops-page a[class*="border"][class*="bg-white"] {
+  box-shadow: none;
+}
+
+.ops-page details,
+.ops-page summary {
+  border-radius: 0;
+}

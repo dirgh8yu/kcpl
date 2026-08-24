@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listPickupWorkspace } from "./pickup-appointments.server";
 import { PickupAppointmentsWorkspace } from "./pickup-appointments-workspace";
 
@@ -12,7 +12,14 @@ export default async function PickupPage({ searchParams }: { searchParams: Promi
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Pickup & Appointment Scheduling is available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
-  const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: staff.permissions.role === "management" };
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
+    isManagement: staff.permissions.role === "management",
+  };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Pickup access restricted" detail="Digital Job File access is required for Pickup & Appointment Scheduling."/></OperationsShell>;
   let result: Awaited<ReturnType<typeof listPickupWorkspace>>;
   try { result = await listPickupWorkspace(staff); }
@@ -23,5 +30,14 @@ export default async function PickupPage({ searchParams }: { searchParams: Promi
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#514840] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[15px] border border-[#e5ddd6] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Pickup Scheduling</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md">Tender & Booking</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="md">Shipments</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Pickup Scheduling"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/tenders", label: "Tender & Booking", primary: true },
+      { href: "/admin/shipments", label: "Shipments" },
+    ]}
+  />;
 }

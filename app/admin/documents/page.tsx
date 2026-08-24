@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listDocumentVault } from "./documents-data.server";
 import { DocumentsWorkspace } from "./documents-workspace";
 
@@ -16,6 +16,8 @@ export default async function DocumentsPage() {
     userName: access.user.displayName,
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Shipment document access is not available for this staff role." embedded/></OperationsShell>;
@@ -38,5 +40,14 @@ export default async function DocumentsPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#514840] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[15px] border border-[#e6ded7] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Document Vault</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="primary" data-size="md">Operations home</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="md">Shipments</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Document Vault"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/command-centre", label: "Operations Overview", primary: true },
+      { href: "/admin/shipments", label: "Shipments" },
+    ]}
+  />;
 }

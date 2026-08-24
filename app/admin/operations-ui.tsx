@@ -47,6 +47,7 @@ export function OpsSurface({
   action,
   children,
   className,
+  bodyClassName,
   flush = false,
   priority = "normal",
 }: {
@@ -56,6 +57,7 @@ export function OpsSurface({
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  bodyClassName?: string;
   flush?: boolean;
   priority?: "normal" | "info" | "success" | "warning" | "danger";
 }) {
@@ -71,14 +73,11 @@ export function OpsSurface({
           {action ? <div className="ops-surface-action">{action}</div> : null}
         </div>
       ) : null}
-      <div className={cx("ops-surface-body", flush && "ops-surface-body-flush")}>{children}</div>
+      <div className={cx("ops-surface-body", flush && "ops-surface-body-flush", bodyClassName)}>{children}</div>
     </section>
   );
 }
 
-// Compatibility facade for integration panels that were built before the latest
-// Operations UI naming pass. Keeping it here prevents API-backed workspaces from
-// being disconnected during visual refactors.
 export function OpsPanel(props: Parameters<typeof OpsSurface>[0]) {
   return <OpsSurface {...props}/>;
 }
@@ -172,9 +171,10 @@ export function OpsEmptyState({
 }
 
 export function OpsErrorState({ title, detail, action, tone = "warning" }: { title: ReactNode; detail?: ReactNode; action?: ReactNode; tone?: "warning" | "danger" | "neutral" }) {
-  return <div className="m-3 rounded-[12px] border border-[#eadfd4] bg-[#fffaf5] p-4" role={tone === "danger" ? "alert" : "status"}>
-    <strong className="block text-[11px] text-[#4b423c]">{title}</strong>
-    {detail ? <p className="mt-1 text-[10px] leading-5 text-[#81776f]">{detail}</p> : null}
+  const toneClass = tone === "danger" ? "border-[#f0cccc] bg-[#fff6f6]" : tone === "warning" ? "border-[#ead9ae] bg-[#fffaf0]" : "border-[#e2e2e2] bg-white";
+  return <div className={`m-3 border p-4 ${toneClass}`} role={tone === "danger" ? "alert" : "status"}>
+    <strong className="block text-[12px] font-semibold text-[#141414]">{title}</strong>
+    {detail ? <p className="mt-1 text-[11px] leading-[17px] text-[#5b5b5b]">{detail}</p> : null}
     {action ? <div className="mt-3">{action}</div> : null}
   </div>;
 }
@@ -196,14 +196,14 @@ export function OpsButton({
 }
 
 export function OpsMetricStrip({ children, columns = 4 }: { children: ReactNode; columns?: number }) {
-  return <div className="grid gap-px bg-[#ece7e2]" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns)}, minmax(0, 1fr))` }}>{children}</div>;
+  return <div className="grid gap-px bg-[#e2e2e2]" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns)}, minmax(0, 1fr))` }}>{children}</div>;
 }
 
 export function OpsMetric({ icon, label, value, detail }: { icon?: ReactNode; label: ReactNode; value: ReactNode; detail?: ReactNode }) {
   return <div className="bg-white p-3.5">
-    <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[.08em] text-[#8f857d]">{icon}{label}</div>
-    <div className="mt-1.5 text-[17px] font-[720] tracking-[-.03em] text-[#3b342f]">{value}</div>
-    {detail ? <div className="mt-1 text-[9px] text-[#91877f]">{detail}</div> : null}
+    <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[.04em] text-[#737373]">{icon}{label}</div>
+    <div className="mt-1.5 text-[17px] font-semibold tracking-[-.02em] text-[#141414]">{value}</div>
+    {detail ? <div className="mt-1 text-[10px] text-[#737373]">{detail}</div> : null}
   </div>;
 }
 
