@@ -85,7 +85,12 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
   useEffect(() => {
     if (!selected) return;
     const canonical = { uid: selected.uid, name: selected.display_name, email: selected.email, phone: selected.phone ?? "" };
-    if (value.uid === canonical.uid && value.name === canonical.name && value.email === canonical.email && value.phone === canonical.phone) return;
+    const sameCanonicalFields =
+      (!value.uid || value.uid === canonical.uid) &&
+      value.name === canonical.name &&
+      value.email === canonical.email &&
+      value.phone === canonical.phone;
+    if (sameCanonicalFields) return;
     onChange(canonical);
   }, [onChange, selected, value.email, value.name, value.phone, value.uid]);
 
