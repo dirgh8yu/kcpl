@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, FileWarning, Landmark, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { shipmentStatusLabels } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsMono, OpsNotice, OpsPage, OpsProgress } from "../operations-ui";
 import type { CustomsAgentOption } from "./customs-clearance";
 import { CustomsClearanceEditor } from "./customs-clearance-editor";
 import type { CustomsDeskRow } from "./customs-data.server";
@@ -75,30 +75,7 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
       if (risk !== "all" && row.risk !== risk) return false;
       if (state !== "all" && row.state !== state) return false;
       if (!terms.length) return true;
-      const haystack = [
-        row.reference,
-        row.quote_reference,
-        row.customer_name,
-        row.origin,
-        row.destination,
-        row.mode,
-        row.document_direction,
-        row.branch ?? "",
-        row.assigned_to_name ?? "",
-        row.assigned_to_email ?? "",
-        row.current_location ?? "",
-        row.clearance.status,
-        row.clearance.entry_point ?? "",
-        row.clearance.declaration_reference ?? "",
-        row.clearance.agent_name ?? "",
-        row.clearance.hold_reason ?? "",
-        row.clearance.release_evidence ?? "",
-        shipmentStatusLabels[row.status],
-        ...row.open_steps.map((step) => `${step.title} ${step.detail ?? ""}`),
-        ...row.missing_documents.map((document) => `${document.label} ${document.reason}`),
-        ...row.document_advisories,
-        ...row.customs_integrity_warnings,
-      ].join(" ").toLowerCase();
+      const haystack = [row.reference, row.quote_reference, row.customer_name, row.origin, row.destination, row.mode, row.document_direction, row.branch ?? "", row.assigned_to_name ?? "", row.assigned_to_email ?? "", row.current_location ?? "", row.clearance.status, row.clearance.entry_point ?? "", row.clearance.declaration_reference ?? "", row.clearance.agent_name ?? "", row.clearance.hold_reason ?? "", row.clearance.release_evidence ?? "", shipmentStatusLabels[row.status], ...row.open_steps.map((step) => `${step.title} ${step.detail ?? ""}`), ...row.missing_documents.map((document) => `${document.label} ${document.reason}`), ...row.document_advisories, ...row.customs_integrity_warnings].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
   }, [branch, query, risk, rows, state]);
@@ -130,76 +107,85 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
     setState("all");
   }
 
-  return (
-    <OpsPage>
-      <OpsPageHeader
-        eyebrow="Operations"
-        title="Customs control"
-        description="Branch-aware customs work, required documents and explicit release evidence in one control queue. Internal checklist readiness is kept separate from an actual Customs release."
-        meta={<><span>{counts.queue} shipments</span><span>{counts.openSteps} required steps open</span><span>{counts.missingDocs} required documents missing</span>{counts.integrity ? <span>{counts.integrity} data integrity warning{counts.integrity === 1 ? "" : "s"}</span> : null}</>}
-        actions={<><Link href="/admin/alerts" className="ops-button" data-variant="secondary" data-size="md">Tasks & alerts</Link><OpsButton variant="primary" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh data</OpsButton></>}
-      />
+  const metrics: Array<{ label: string; value: number; active: boolean; onClick: () => void; alert?: boolean }> = [
+    { label: "Queue", value: counts.queue, active: risk === "all" && state === "all", onClick: () => { setRisk("all"); setState("all"); } },
+    { label: "Critical", value: counts.critical, active: risk === "critical", onClick: () => setRisk(risk === "critical" ? "all" : "critical"), alert: counts.critical > 0 },
+    { label: "Blocked", value: counts.blocked, active: state === "blocked", onClick: () => setState(state === "blocked" ? "all" : "blocked"), alert: counts.blocked > 0 },
+    { label: "Awaiting release", value: counts.awaitingRelease, active: state === "awaiting_release", onClick: () => setState(state === "awaiting_release" ? "all" : "awaiting_release"), alert: counts.awaitingRelease > 0 },
+    { label: "Released", value: counts.released, active: state === "released", onClick: () => setState(state === "released" ? "all" : "released") },
+  ];
 
-      <OpsStatStrip>
-        <OpsStat label="Queue" value={counts.queue} icon={<ShieldCheck size={13}/>} active={risk === "all" && state === "all"} onClick={() => { setRisk("all"); setState("all"); }}/>
-        <OpsStat label="Critical" value={counts.critical} icon={<AlertTriangle size={13}/>} tone={counts.critical ? "danger" : "neutral"} active={risk === "critical"} onClick={() => setRisk(risk === "critical" ? "all" : "critical")}/>
-        <OpsStat label="Blocked" value={counts.blocked} icon={<FileWarning size={13}/>} tone={counts.blocked ? "warning" : "neutral"} active={state === "blocked"} onClick={() => setState(state === "blocked" ? "all" : "blocked")}/>
-        <OpsStat label="Awaiting release" value={counts.awaitingRelease} icon={<Landmark size={13}/>} tone={counts.awaitingRelease ? "warning" : "neutral"} active={state === "awaiting_release"} onClick={() => setState(state === "awaiting_release" ? "all" : "awaiting_release")}/>
-        <OpsStat label="Customs released" value={counts.released} icon={<CheckCircle2 size={13}/>} tone="success" active={state === "released"} onClick={() => setState(state === "released" ? "all" : "released")}/>
-      </OpsStatStrip>
+  return <OpsPage>
+    <main className="min-h-[calc(100vh-64px)] bg-[#F6F6F3] text-[#101010]">
+      <div className="mx-auto w-full max-w-[1320px] px-4 pb-14 pt-8 sm:px-6 lg:px-8">
+        <header className="grid gap-6 border-b border-[#101010] pb-7 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div>
+            <p className="text-[10px] font-normal uppercase tracking-[0.11em] text-[#DC143C]">Operations · Border control</p>
+            <h1 className="mt-3 text-[clamp(36px,4vw,52px)] font-normal leading-[1.04] tracking-[-0.04em]">Customs</h1>
+            <p className="mt-3 max-w-3xl text-[14px] leading-6 text-[#5B5B57]">A branch-aware clearance desk for required customs work, document readiness and explicit release evidence. Checklist completion never substitutes for an actual Customs release.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2"><Link href="/admin/alerts" className="inline-flex h-10 items-center border border-[#A5A5A0] px-3 text-[12px] hover:border-[#101010] hover:bg-[#EEEEE8]">Tasks & alerts</Link><button type="button" onClick={() => router.refresh()} className="inline-flex h-10 items-center gap-2 border border-[#DC143C] bg-[#DC143C] px-4 text-[12px] font-medium text-white hover:border-[#B61032] hover:bg-[#B61032]"><RefreshCw size={13}/>Refresh data</button></div>
+        </header>
 
-      <div className="ops-content ops-stack">
-        {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
+        <section className="grid border-b border-[#D6D6D0] sm:grid-cols-5" aria-label="Customs status summary">
+          {metrics.map((item, index) => <button key={item.label} type="button" onClick={item.onClick} className={`min-h-[106px] border-b border-[#D6D6D0] px-4 py-5 text-left transition-colors hover:bg-[#EEEEE8] sm:border-b-0 ${index < metrics.length - 1 ? "sm:border-r sm:border-[#D6D6D0]" : ""} ${item.active ? "bg-[#EEEEE8]" : ""}`}><span className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.07em] text-[#5B5B57]"><span>{item.label}</span>{item.active ? <span className="h-2 w-2 bg-[#DC143C]"/> : null}</span><strong className={`mt-4 block text-[31px] font-normal leading-none tracking-[-0.045em] ${item.alert ? "text-[#DC143C]" : "text-[#101010]"}`}>{item.value}</strong></button>)}
+        </section>
 
-        <OpsSurface eyebrow="Clearance queue" title="What customs needs next" description={`${visible.length} shipment${visible.length === 1 ? "" : "s"} match this view. International jobs remain awaiting release until Customs release is explicitly recorded.`} flush>
-          <div className="ops-toolbar">
-            <label className="relative min-w-[240px] flex-1"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9b9189]"/><input className="ops-input pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, declaration, customs point, agent or warning"/></label>
-            <select className="ops-select" value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-            <select className="ops-select" value={risk} onChange={(event) => setRisk(event.target.value as RiskFilter)}><option value="all">All risk</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="normal">Normal</option></select>
-            <select className="ops-select" value={state} onChange={(event) => setState(event.target.value as StateFilter)}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="awaiting_release">Awaiting release</option><option value="ready">Checklist ready</option><option value="released">Customs released</option></select>
-            <OpsButton variant="ghost" size="sm" onClick={reset}>Reset</OpsButton>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-b border-[#D6D6D0] pb-4 text-[11px] text-[#5B5B57]"><span>{counts.openSteps} required steps open</span><span>{counts.missingDocs} required documents missing</span>{counts.integrity ? <span className="text-[#A80E2F]">{counts.integrity} data integrity warning{counts.integrity === 1 ? "" : "s"}</span> : null}</div>
+        {notice ? <div className="mt-5"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
+
+        <section className="mt-6 border-y border-[#D6D6D0]">
+          <div className="flex flex-col gap-2 border-b border-[#101010] py-4 lg:flex-row lg:items-center">
+            <label className="relative min-w-[260px] flex-1"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#777771]"/><input className="h-10 w-full border border-[#BDBDB6] bg-white pl-9 pr-3 text-[12px] outline-none placeholder:text-[#8A8A84]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, declaration, customs point, agent or warning"/></label>
+            <select className="h-10 border border-[#BDBDB6] bg-white px-3 text-[12px]" value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+            <select className="h-10 border border-[#BDBDB6] bg-white px-3 text-[12px]" value={risk} onChange={(event) => setRisk(event.target.value as RiskFilter)}><option value="all">All risk</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="normal">Normal</option></select>
+            <select className="h-10 border border-[#BDBDB6] bg-white px-3 text-[12px]" value={state} onChange={(event) => setState(event.target.value as StateFilter)}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="awaiting_release">Awaiting release</option><option value="ready">Checklist ready</option><option value="released">Customs released</option></select>
+            <button type="button" onClick={reset} className="h-10 border border-[#A5A5A0] px-3 text-[12px] hover:border-[#101010] hover:bg-[#EEEEE8]">Reset</button>
+            <span className="text-[11px] text-[#5B5B57]">{visible.length} shown</span>
           </div>
 
-          {visible.length ? <div className="divide-y divide-[#eee7e1]">{visible.map((row) => (
-            <article key={row.reference} className="px-4 py-5 sm:px-5">
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_230px_230px_auto] xl:items-start">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><OpsBadge tone={riskTone(row.risk)} dot>{row.risk}</OpsBadge><OpsBadge tone={stateTone(row.state)}>{stateLabel(row.state)}</OpsBadge><OpsBadge>{shipmentStatusLabels[row.status]}</OpsBadge><OpsBadge tone="info">{directionLabel(row.document_direction)}</OpsBadge>{row.branch ? <OpsBadge><Landmark size={10}/>{row.branch}</OpsBadge> : <OpsBadge tone="warning">Branch repair needed</OpsBadge>}</div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2"><h3 className="text-[14px] font-[730] text-[#3e3833]"><OpsMono>{row.reference}</OpsMono></h3><span className="text-[11px] text-[#857b73]">{row.origin} → {row.destination} · {row.mode}</span></div>
-                  <p className="mt-1 text-[11px] font-semibold text-[#625a53]">{row.customer_name}</p>
-                  <p className="mt-2 text-[10px] leading-5 text-[#857b73]">{row.assigned_to_name || row.assigned_to_email ? `Owner ${row.assigned_to_name || row.assigned_to_email}` : "No operational owner"}{row.current_location ? ` · ${row.current_location}` : ""}{row.eta ? ` · ETA ${dateLabel(row.eta)}` : " · ETA not set"}</p>
+          {!visible.length ? <div className="grid min-h-[360px] place-items-center px-8 text-center"><div><ShieldCheck size={20} className="mx-auto text-[#777771]"/><p className="mt-4 text-[15px] font-medium">No customs work matches this view</p><p className="mt-2 text-[12px] leading-5 text-[#777771]">Reset the filters to check the full accessible clearance queue.</p><button type="button" onClick={reset} className="mt-4 border-b border-[#101010] pb-0.5 text-[11px] hover:border-[#DC143C] hover:text-[#DC143C]">Reset filters</button></div></div> : <div>{visible.map((row) => (
+            <article key={row.reference} className="border-b border-[#D6D6D0] last:border-b-0">
+              <div className="grid gap-5 px-0 py-5 lg:grid-cols-[minmax(0,1.25fr)_190px_190px_auto] lg:items-start">
+                <div className="min-w-0 px-4 sm:px-0">
+                  <div className="flex flex-wrap items-center gap-2"><OpsBadge tone={riskTone(row.risk)}>{row.risk}</OpsBadge><OpsBadge tone={stateTone(row.state)}>{stateLabel(row.state)}</OpsBadge><OpsBadge>{shipmentStatusLabels[row.status]}</OpsBadge><OpsBadge tone="info">{directionLabel(row.document_direction)}</OpsBadge></div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2"><OpsMono>{row.reference}</OpsMono><span className="text-[11px] text-[#5B5B57]">{row.origin} → {row.destination} · {row.mode}</span></div>
+                  <p className="mt-1 text-[12px] font-medium">{row.customer_name}</p>
+                  <p className="mt-2 text-[10px] leading-5 text-[#777771]">{row.assigned_to_name || row.assigned_to_email ? `Owner · ${row.assigned_to_name || row.assigned_to_email}` : "No operational owner"}{row.branch ? ` · ${row.branch}` : " · Branch repair needed"}{row.current_location ? ` · ${row.current_location}` : ""}{row.eta ? ` · ETA ${dateLabel(row.eta)}` : " · ETA not set"}</p>
                 </div>
 
-                <div className="rounded-[11px] border border-[#e9e2dc] bg-[#faf8f5] p-3.5">
-                  <div className="flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#887e76]">Checklist</span><strong className="text-[11px] text-[#514840]">{row.customs_completed}/{row.customs_required}</strong></div>
-                  <div className="mt-2"><OpsProgress value={row.customs_completed} max={Math.max(row.customs_required, 1)} tone={row.customs_open ? "warning" : "success"}/></div>
-                  <p className="mt-2 text-[10px] leading-5 text-[#81776f]">{row.customs_open ? `${row.customs_open} required step${row.customs_open === 1 ? "" : "s"} open` : "Required checklist steps complete"}</p>
-                  {row.customs_other_branch_open ? <p className="mt-1 text-[10px] font-semibold leading-5 text-[#8c674f]">{row.customs_other_branch_open} open step{row.customs_other_branch_open === 1 ? " is" : "s are"} owned by another branch.</p> : null}
-                </div>
-
-                <div className="rounded-[11px] border border-[#e9e2dc] bg-[#faf8f5] p-3.5">
-                  <div className="flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#887e76]">Required documents</span><strong className="text-[11px] text-[#514840]">{row.document_present}/{row.document_required}</strong></div>
-                  <div className="mt-2"><OpsProgress value={row.document_present} max={Math.max(row.document_required, 1)} tone={row.missing_documents.length ? "warning" : "success"}/></div>
-                  <p className="mt-2 text-[10px] leading-5 text-[#81776f]">{row.missing_documents.length ? `Missing: ${row.missing_documents.map((item) => item.label).join(", ")}` : "Required document pack complete"}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-2 xl:justify-end"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Open Job File</Link></div>
+                <Readiness label="Checklist" current={row.customs_completed} total={row.customs_required} warning={row.customs_open > 0} detail={row.customs_open ? `${row.customs_open} required open` : "Complete"}/>
+                <Readiness label="Documents" current={row.document_present} total={row.document_required} warning={row.missing_documents.length > 0} detail={row.missing_documents.length ? `${row.missing_documents.length} missing` : "Complete"}/>
+                <div className="px-4 text-left lg:px-0 lg:text-right"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="inline-flex h-9 items-center border-b border-[#101010] text-[11px] hover:border-[#DC143C] hover:text-[#DC143C]">Open Job File →</Link></div>
               </div>
 
-              <CustomsClearanceEditor row={row} agents={customsAgents}/>
+              <div className="border-t border-[#D6D6D0] bg-[#EEEEE8] px-4 py-5 sm:px-5">
+                <CustomsClearanceEditor row={row} agents={customsAgents}/>
 
-              {row.customs_integrity_warnings.length ? <div className="mt-3 rounded-[11px] border border-[#e7c9c3] bg-[#fff7f5] p-3.5"><p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#a55353]">Data integrity blocker</p>{row.customs_integrity_warnings.map((warning) => <p key={warning} className="mt-1.5 flex items-start gap-2 text-[10px] leading-5 text-[#865f5f]"><AlertTriangle size={11} className="mt-1 shrink-0"/>{warning}</p>)}</div> : null}
-              {row.missing_documents.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{row.missing_documents.map((document) => <div key={document.type} className="rounded-[10px] border border-[#eadcc8] bg-[#fffaf2] p-3.5"><div className="flex items-center gap-2"><FileWarning size={12} className="text-[#9c6a30]"/><strong className="text-[11px] text-[#654f35]">{document.label}</strong></div><p className="mt-1.5 text-[10px] leading-5 text-[#806c55]">{document.reason}</p></div>)}</div> : null}
-              {row.document_advisories.length ? <div className="mt-3 rounded-[10px] border border-[#ded8cf] bg-[#faf8f5] p-3.5"><p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8f8176]">Compliance review</p>{row.document_advisories.map((advisory) => <p key={advisory} className="mt-1.5 flex items-start gap-2 text-[10px] leading-5 text-[#806a55]"><AlertTriangle size={10} className="mt-1 shrink-0"/>{advisory}</p>)}</div> : null}
+                {row.customs_integrity_warnings.length ? <AlertBlock title="Data integrity blocker" tone="danger" items={row.customs_integrity_warnings}/> : null}
+                {row.missing_documents.length ? <div className="mt-4 border-t border-[#CFCFC8] pt-4"><p className="text-[10px] font-medium uppercase tracking-[0.07em] text-[#72500C]">Required documents missing</p><div className="mt-2 grid gap-2 md:grid-cols-2">{row.missing_documents.map((document) => <div key={document.type} className="border-l-2 border-[#D9C293] pl-3"><strong className="text-[11px] font-medium">{document.label}</strong><p className="mt-1 text-[10px] leading-5 text-[#777771]">{document.reason}</p></div>)}</div></div> : null}
+                {row.document_advisories.length ? <AlertBlock title="Compliance review" tone="warning" items={row.document_advisories}/> : null}
 
-              {row.open_steps.length ? <div className="mt-4 grid gap-2 md:grid-cols-2">{row.open_steps.map((step) => {
-                const isBusy = busy === `${row.reference}:${step.id}`;
-                return <div key={step.id} className="flex items-start justify-between gap-3 rounded-[11px] border border-[#eadfd7] bg-[#fffdfa] p-3.5"><div className="min-w-0"><strong className="text-[11px] text-[#514840]">{step.title}</strong><p className="mt-1 text-[10px] leading-5 text-[#81776f]">{step.branch}{step.detail ? ` · ${step.detail}` : ""}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeStep(row, step.id)}><CheckCircle2 size={11}/>{isBusy ? "Saving…" : "Complete"}</OpsButton></div>;
-              })}</div> : row.customs_other_branch_open ? <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#eadcc8] bg-[#fffaf2] p-3 text-[10px] leading-5 text-[#806a55]"><Landmark size={12}/>No open customs steps belong to your branch. Other branch work must finish before this shipment is ready.</div> : row.customs_open ? <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#e7c9c3] bg-[#fff7f5] p-3 text-[10px] leading-5 text-[#865f5f]"><AlertTriangle size={12}/>Open customs work exists but cannot be actioned until its branch assignment is repaired.</div> : <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-[#d8e2d8] bg-[#f5f9f5] p-3 text-[10px] text-[#617564]"><CheckCircle2 size={12}/>All required customs checklist steps are complete. International jobs still require an explicit Customs release record before final-mile progression.</div>}
+                <div className="mt-4 border-t border-[#CFCFC8] pt-4">
+                  <div className="grid grid-cols-[34px_minmax(0,1fr)] gap-3"><span className="pt-0.5 text-[10px] font-medium text-[#DC143C]">NEXT</span><div><h3 className="text-[13px] font-medium">Customs work queue</h3><p className="mt-1 text-[10px] leading-5 text-[#777771]">Complete only the steps owned by your branch. Release remains a separate control.</p></div></div>
+                  {row.open_steps.length ? <div className="mt-3 border-t border-[#CFCFC8]">{row.open_steps.map((step) => {
+                    const isBusy = busy === `${row.reference}:${step.id}`;
+                    return <div key={step.id} className="flex items-start justify-between gap-4 border-b border-[#CFCFC8] py-3"><div className="min-w-0"><strong className="text-[11px] font-medium">{step.title}</strong><p className="mt-1 text-[10px] leading-5 text-[#777771]">{step.branch}{step.detail ? ` · ${step.detail}` : ""}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeStep(row, step.id)}><CheckCircle2 size={11}/>{isBusy ? "Saving…" : "Complete"}</OpsButton></div>;
+                  })}</div> : row.customs_other_branch_open ? <p className="mt-3 border-l-2 border-[#D9C293] pl-3 text-[10px] leading-5 text-[#72500C]">No open customs steps belong to your branch. Other branch work must finish before this shipment is ready.</p> : row.customs_open ? <p className="mt-3 border-l-2 border-[#E6A4B0] pl-3 text-[10px] leading-5 text-[#A80E2F]">Open customs work exists but cannot be actioned until its branch assignment is repaired.</p> : <p className="mt-3 border-l-2 border-[#A7CCB7] pl-3 text-[10px] leading-5 text-[#18794E]">All required customs checklist steps are complete. International jobs still require an explicit Customs release record before final-mile progression.</p>}
+                </div>
+              </div>
             </article>
-          ))}</div> : <OpsEmptyState kind="healthy" icon={<ShieldCheck size={18}/>} title="No customs work matches this view" description="Reset the filters to check the full accessible customs queue." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton>}/>} 
-        </OpsSurface>
+          ))}</div>}
+        </section>
       </div>
-    </OpsPage>
-  );
+    </main>
+  </OpsPage>;
+}
+
+function Readiness({ label, current, total, warning, detail }: { label: string; current: number; total: number; warning: boolean; detail: string }) {
+  return <div className="px-4 sm:px-0"><div className="flex items-center justify-between gap-2"><span className="text-[10px] uppercase tracking-[0.06em] text-[#777771]">{label}</span><strong className="text-[11px] font-medium">{current}/{total}</strong></div><div className="mt-2"><OpsProgress value={current} max={Math.max(total, 1)} tone={warning ? "warning" : "success"}/></div><p className={`mt-2 text-[10px] ${warning ? "text-[#72500C]" : "text-[#777771]"}`}>{detail}</p></div>;
+}
+
+function AlertBlock({ title, tone, items }: { title: string; tone: "danger" | "warning"; items: string[] }) {
+  return <div className="mt-4 border-t border-[#CFCFC8] pt-4"><p className={`text-[10px] font-medium uppercase tracking-[0.07em] ${tone === "danger" ? "text-[#A80E2F]" : "text-[#72500C]"}`}>{title}</p>{items.map((item) => <p key={item} className="mt-2 flex items-start gap-2 text-[10px] leading-5 text-[#666660]"><AlertTriangle size={11} className="mt-1 shrink-0"/>{item}</p>)}</div>;
 }
