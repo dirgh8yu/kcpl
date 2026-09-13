@@ -12,7 +12,7 @@
   --kcpl-faint: #878780;
   --kcpl-line: #D6D6D0;
   --kcpl-line-soft: #E7E7E1;
-  --kcpl-secondary: #EEEE E8;
+  --kcpl-secondary: #EEEEE8;
   min-height: 100vh;
   background: var(--kcpl-canvas);
   color: var(--kcpl-ink);
@@ -40,7 +40,7 @@
 /* Shared legacy Operations primitives */
 .kcpl-admin-content .kcpl-ops {
   --ops-canvas: var(--kcpl-canvas);
-  --ops-canvas-warm: #EEEE E8;
+  --ops-canvas-warm: #EEEEE8;
   --ops-surface: #FFFFFF;
   --ops-surface-strong: #FFFFFF;
   --ops-surface-soft: #F1F1EC;
@@ -65,9 +65,7 @@
   font-synthesis: none;
 }
 
-.kcpl-admin-content .ops-page {
-  background: var(--kcpl-canvas) !important;
-}
+.kcpl-admin-content .ops-page { background: var(--kcpl-canvas) !important; }
 
 .kcpl-admin-content .ops-page-header {
   padding: 32px clamp(20px, 3.2vw, 48px) 24px;
@@ -250,7 +248,7 @@
 .kcpl-ops-overview .overview-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--kcpl-ink); border-bottom: 1px solid var(--kcpl-line); }
 .kcpl-ops-overview .overview-metric { min-height: 132px; padding: 22px 24px; border-right: 1px solid var(--kcpl-line); transition: background .18s; }
 .kcpl-ops-overview .overview-metric:last-child { border-right: 0; }
-.kcpl-ops-overview .overview-metric:hover { background: #EEEE E8; }
+.kcpl-ops-overview .overview-metric:hover { background: #EEEEE8; }
 .kcpl-ops-overview .overview-metric-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--kcpl-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
 .kcpl-ops-overview .overview-metric-value { margin-top: 24px; font-size: 40px; line-height: 1; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
 .kcpl-ops-overview .overview-metric-detail { margin-top: 9px; color: var(--kcpl-muted); font-size: 12px; }
@@ -267,7 +265,7 @@
 .kcpl-ops-overview .overview-count { min-width: 24px; height: 24px; display: inline-grid; place-items: center; margin-left: 8px; background: var(--kcpl-crimson); color: #fff; font-size: 11px; }
 
 .kcpl-ops-overview .overview-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: center; min-height: 82px; padding: 16px 0; border-bottom: 1px solid var(--kcpl-line); transition: background .16s; }
-.kcpl-ops-overview .overview-row:hover { background: #EEEE E8; }
+.kcpl-ops-overview .overview-row:hover { background: #EEEEE8; }
 .kcpl-ops-overview .overview-row-main { min-width: 0; }
 .kcpl-ops-overview .overview-row-meta { display: flex; flex-wrap: wrap; gap: 9px 14px; color: var(--kcpl-muted); font-size: 11px; }
 .kcpl-ops-overview .overview-row-title { margin-top: 6px; color: var(--kcpl-ink); font-size: 14px; font-weight: 500; }
@@ -298,7 +296,7 @@
 
 .kcpl-ops-overview .overview-activity { padding-top: 48px; }
 .kcpl-ops-overview .overview-activity-row { display: grid; grid-template-columns: 72px 180px minmax(0,1fr) 160px 20px; align-items: center; gap: 18px; min-height: 58px; border-bottom: 1px solid var(--kcpl-line); color: var(--kcpl-muted); font-size: 12px; }
-.kcpl-ops-overview .overview-activity-row:hover { background: #EEEE E8; }
+.kcpl-ops-overview .overview-activity-row:hover { background: #EEEEE8; }
 .kcpl-ops-overview .overview-activity-row strong { color: var(--kcpl-ink); font-weight: 500; }
 
 /* Shared operations register/table treatment, including Shipments. */
@@ -309,7 +307,7 @@
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] table thead tr { border-bottom: 1px solid var(--kcpl-ink) !important; }
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] table th { color: var(--kcpl-muted) !important; font-size: 10px !important; font-weight: 500 !important; letter-spacing: .06em; }
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] table td { border-color: var(--kcpl-line) !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] aside[class*="bg-[#fdfdfd]"] { border-left: 1px solid var(--kcpl-line); background: #EEEE E8 !important; box-shadow: none !important; }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] aside[class*="bg-[#fdfdfd]"] { border-left: 1px solid var(--kcpl-line); background: #EEEEE8 !important; box-shadow: none !important; }
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] input,
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] select,
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] button { border-radius: 3px !important; }
