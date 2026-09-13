@@ -118,10 +118,10 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
   const selected = entries[selectedIndex] ?? null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/20 px-3 pt-[10vh]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="w-full max-w-[720px] overflow-hidden rounded-[10px] border border-[#e2e2e2] bg-white shadow-[0_24px_72px_rgba(0,0,0,.18)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
-        <div className="flex items-center gap-3 border-b border-[#e2e2e2] px-4 py-3">
-          <Search size={16} className="shrink-0 text-[#dc143c]"/>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-[#101010]/30 px-3 pt-[10vh]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="w-full max-w-[760px] overflow-hidden border border-[#101010] bg-[#F6F6F3] shadow-[0_24px_72px_rgba(16,16,16,.18)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
+        <div className="flex items-center gap-3 border-b border-[#101010] px-4 py-4 sm:px-5">
+          <Search size={16} className="shrink-0 text-[#DC143C]"/>
           <input
             ref={inputRef}
             value={query}
@@ -132,32 +132,32 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
               else if (event.key === "Enter" && selected) { event.preventDefault(); go(selected.href); }
               else if (event.key === "Escape") { event.preventDefault(); onClose(); }
             }}
-            className="min-w-0 flex-1 bg-transparent text-[14px] font-medium text-[#141414] outline-none placeholder:text-[#737373]"
+            className="min-w-0 flex-1 bg-transparent text-[14px] font-normal text-[#101010] outline-none placeholder:text-[#777771]"
             placeholder="Search KCPL, jobs, customers, orders, tenders, partners…"
             aria-label="Search KCPL"
           />
-          {busy && query.trim().length >= 2 ? <span className="text-[9px] font-semibold uppercase tracking-[.08em] text-[#737373]">Searching</span> : null}
-          <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-[6px] text-[#737373] hover:bg-[#f7f7f7] hover:text-[#141414]" aria-label="Close command palette"><X size={15}/></button>
+          {busy && query.trim().length >= 2 ? <span className="text-[9px] font-normal uppercase tracking-[.09em] text-[#777771]">Searching</span> : null}
+          <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center border-l border-[#D6D6D0] text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Close command palette"><X size={15}/></button>
         </div>
 
-        <div className="max-h-[66vh] overflow-y-auto p-2">
-          {!entries.length ? <div className="px-4 py-12 text-center"><FileSearch size={20} className="mx-auto text-[#737373]"/><p className="mt-3 text-[12px] font-semibold text-[#141414]">No matching KCPL records</p><p className="mt-1 text-[10px] text-[#737373]">Try a shipment reference, customer, lane, carrier, order, tender or invoice number.</p></div> : entries.map((entry, index) => (
+        <div className="max-h-[66vh] overflow-y-auto">
+          {!entries.length ? <div className="px-5 py-14 text-center"><FileSearch size={20} className="mx-auto text-[#777771]"/><p className="mt-4 text-[13px] font-medium text-[#101010]">No matching KCPL records</p><p className="mt-2 text-[11px] text-[#777771]">Try a shipment reference, customer, lane, carrier, order, tender or invoice number.</p></div> : entries.map((entry, index) => (
             <button
               type="button"
               key={entry.key}
               onMouseEnter={() => setSelectedIndex(index)}
               onClick={() => go(entry.href)}
-              className={`flex w-full items-center gap-3 rounded-[6px] px-3 py-2.5 text-left ${index === selectedIndex ? "bg-[#f7f7f7] shadow-[inset_2px_0_0_#dc143c]" : "hover:bg-[#fbfbf9]"}`}
+              className={`grid min-h-[64px] w-full grid-cols-[32px_minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-[#D6D6D0] px-4 py-3 text-left transition-colors sm:px-5 ${index === selectedIndex ? "bg-[#EEEEE8] shadow-[inset_2px_0_0_#DC143C]" : "hover:bg-[#F0F0EA]"}`}
             >
-              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-[#f7f7f7] ${index === selectedIndex ? "text-[#dc143c]" : "text-[#737373]"}`}>{resultIcon(entry.kind)}</span>
-              <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><strong className="truncate text-[11px] font-semibold text-[#141414]">{entry.title}</strong><span className="shrink-0 rounded-[5px] border border-[#e2e2e2] bg-white px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[.05em] text-[#737373]">{kindLabel(entry.kind)}</span></span><span className="mt-0.5 block truncate text-[9px] text-[#737373]">{entry.subtitle}</span></span>
-              {entry.meta ? <span className="hidden shrink-0 text-[9px] font-medium text-[#737373] sm:block">{entry.meta.replaceAll("_", " ")}</span> : null}
-              <ArrowRight size={12} className="shrink-0 text-[#737373]"/>
+              <span className={`${index === selectedIndex ? "text-[#DC143C]" : "text-[#777771]"}`}>{resultIcon(entry.kind)}</span>
+              <span className="min-w-0"><span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"><strong className="truncate text-[12px] font-medium text-[#101010]">{entry.title}</strong><span className="shrink-0 border border-[#BEBEB7] px-1.5 py-0.5 text-[8px] font-normal uppercase tracking-[.06em] text-[#777771]">{kindLabel(entry.kind)}</span></span><span className="mt-1 block truncate text-[10px] text-[#777771]">{entry.subtitle}</span></span>
+              {entry.meta ? <span className="hidden shrink-0 text-[9px] text-[#777771] sm:block">{entry.meta.replaceAll("_", " ")}</span> : <span/>}
+              <ArrowRight size={12} className="shrink-0 text-[#777771]"/>
             </button>
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e2e2e2] bg-[#f7f7f7] px-4 py-2 text-[8px] font-medium text-[#737373]"><span>↑↓ move · Enter open · Esc close</span><span>⌘K / Ctrl+K opens anywhere in KCPL Operations</span></div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#101010] bg-[#EEEEE8] px-4 py-2.5 text-[8px] font-normal uppercase tracking-[0.05em] text-[#777771] sm:px-5"><span>↑↓ move · Enter open · Esc close</span><span>⌘K / Ctrl+K · KCPL search</span></div>
       </section>
     </div>
   );
