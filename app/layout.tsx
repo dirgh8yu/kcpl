@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Manrope, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, Instrument_Serif, Manrope, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
@@ -15,13 +15,19 @@ import "./admin/operations-hotfix.css";
 import "./admin/operations-v4-compat.css";
 import "./admin/commercial-v4-compat.css";
 import "./brand-system.css";
+import "./admin/operations-editorial.css";
+
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+});
 
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
 });
 
-// Kept temporarily while legacy sections are migrated. New KCPL UI must use Manrope.
+// Legacy public sections can still reference these variables while the KCPL staff UI uses Geist.
 const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
 
@@ -77,7 +83,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
+      <body className={`${geist.variable} ${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
         <StructuredData data={organizationSchema}/>
         {children}
         <OperationsNavigationFallback/>

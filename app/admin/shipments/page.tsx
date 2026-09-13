@@ -32,12 +32,21 @@ export default async function ShipmentsPage() {
 
   if (!data) return <OperationsShell {...shellProps}><Gate title="Shipment backend unavailable" detail="Firestore is not available for this deployment. Navigation and search remain available." embedded/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}>
-    <ShipmentsWorkspace data={data} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/>
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2"><Link href="/admin/delivery" className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="secondary" data-size="sm">Delivery & POD</Link><Link href="/admin/visibility" className="ops-button shadow-[0_8px_28px_rgba(54,43,34,.10)]" data-variant="primary" data-size="sm">Live visibility</Link></div>
-  </OperationsShell>;
+  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[#f8f6f3] p-6 text-[#514840] ${embedded ? "min-h-[calc(100vh-58px)]" : "min-h-screen"}`}><section className="w-full max-w-xl rounded-[15px] border border-[#e5ddd6] bg-white p-8 shadow-[0_16px_48px_rgba(60,45,34,.06)]"><p className="ops-eyebrow">KCPL Shipments</p><h1 className="mt-3 text-[28px] font-[730] tracking-[-.04em] text-[#342f2b]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[#746b64]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin" className="ops-button" data-variant="primary" data-size="md">Operations</Link><Link href="/" className="ops-button" data-variant="secondary" data-size="md">KCPL website</Link></div></section></main>;
+  return (
+    <main className={`grid place-items-center bg-[#F6F6F3] p-6 text-[#101010] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}>
+      <section className="w-full max-w-xl border-y border-[#101010] py-8">
+        <p className="text-[10px] uppercase tracking-[0.11em] text-[#DC143C]">KCPL Shipments</p>
+        <h1 className="mt-3 text-[32px] font-normal tracking-[-.04em]">{title}</h1>
+        <p className="mt-4 text-[14px] leading-6 text-[#5B5B57]">{detail}</p>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link href="/admin" className="inline-flex min-h-11 items-center border border-[#DC143C] bg-[#DC143C] px-5 text-[12px] font-medium text-white hover:border-[#B61032] hover:bg-[#B61032]">Operations</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center border border-[#A5A5A0] px-5 text-[12px] font-medium text-[#101010] hover:border-[#101010] hover:bg-[#EEEEE8]">KCPL website</Link>
+        </div>
+      </section>
+    </main>
+  );
 }
