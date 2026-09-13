@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FilePlus2, FileText, RefreshCw, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsNotice, OpsPage } from "../operations-ui";
 import { generatedFreightDocumentKinds, generatedFreightDocumentLabels, generatedReference, type FreightDocumentQueueRow, type GeneratedFreightDocumentKind } from "./freight-documents";
 
 type Summary = { eligible: number; missing_primary: number; generated_current: number; review_pending: number };
