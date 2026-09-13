@@ -1,15 +1,20 @@
 /* KCPL Operations action hierarchy
-   Buttons stay quiet at rest; KCPL crimson appears on interaction. */
+   All operational action buttons use the brand crimson. */
 
 .kcpl-admin-shell .ops-button,
 .kcpl-admin-shell .ops-button[data-variant="primary"],
 .kcpl-admin-shell .ops-button[data-variant="secondary"],
 .kcpl-admin-shell .ops-button[data-variant="ghost"],
 .kcpl-admin-shell .ops-button[data-variant="danger"] {
-  border-color: #A5A5A0 !important;
-  background: #FFFFFF !important;
-  color: #101010 !important;
+  border-color: #DC143C !important;
+  background: #DC143C !important;
+  color: #FFFFFF !important;
   box-shadow: none !important;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease !important;
 }
 
 .kcpl-admin-shell .ops-button:hover:not(:disabled),
@@ -17,9 +22,11 @@
 .kcpl-admin-shell .ops-button[data-variant="secondary"]:hover:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="ghost"]:hover:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="danger"]:hover:not(:disabled) {
-  border-color: #DC143C !important;
-  background: #DC143C !important;
+  border-color: #B61032 !important;
+  background: #B61032 !important;
   color: #FFFFFF !important;
+  box-shadow: 0 7px 18px rgba(220, 20, 60, .18) !important;
+  transform: translateY(-1px);
 }
 
 .kcpl-admin-shell .ops-button:active:not(:disabled),
@@ -27,30 +34,39 @@
 .kcpl-admin-shell .ops-button[data-variant="secondary"]:active:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="ghost"]:active:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="danger"]:active:not(:disabled) {
-  border-color: #B61032 !important;
-  background: #B61032 !important;
+  border-color: #9C0D2A !important;
+  background: #9C0D2A !important;
   color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(220, 20, 60, .16) !important;
+  transform: translateY(0);
 }
 
 .kcpl-admin-shell .ops-button:disabled {
   cursor: not-allowed;
   border-color: #D6D6D0 !important;
-  background: #F6F6F3 !important;
+  background: #EEEEE8 !important;
   color: #878780 !important;
+  box-shadow: none !important;
+  transform: none !important;
   opacity: 1;
 }
 
-/* Page-level action links/buttons that still carry literal filled Tailwind classes
-   follow the same white-at-rest, crimson-on-hover interaction. */
+/* Older page-level action links/buttons that still carry literal fills
+   follow the same KCPL crimson interaction language. */
 .kcpl-admin-shell a[class*="bg-[#DC143C]"],
 .kcpl-admin-shell button[class*="bg-[#DC143C]"],
 .kcpl-admin-shell a[class*="bg-[#dc143c]"],
 .kcpl-admin-shell button[class*="bg-[#dc143c]"],
 .kcpl-admin-shell a[class*="bg-[#101010]"],
 .kcpl-admin-shell button[class*="bg-[#101010]"] {
-  border-color: #A5A5A0 !important;
-  background: #FFFFFF !important;
-  color: #101010 !important;
+  border-color: #DC143C !important;
+  background: #DC143C !important;
+  color: #FFFFFF !important;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease !important;
 }
 
 .kcpl-admin-shell a[class*="bg-[#DC143C]"]:hover,
@@ -59,13 +75,40 @@
 .kcpl-admin-shell button[class*="bg-[#dc143c]"]:hover:not(:disabled),
 .kcpl-admin-shell a[class*="bg-[#101010]"]:hover,
 .kcpl-admin-shell button[class*="bg-[#101010]"]:hover:not(:disabled) {
-  border-color: #DC143C !important;
-  background: #DC143C !important;
+  border-color: #B61032 !important;
+  background: #B61032 !important;
   color: #FFFFFF !important;
+  box-shadow: 0 7px 18px rgba(220, 20, 60, .18) !important;
+  transform: translateY(-1px);
 }
 
-/* Keep crimson where it communicates selection, progress, warning or brand state. */
+.kcpl-admin-shell a[class*="bg-[#DC143C]"]:active,
+.kcpl-admin-shell button[class*="bg-[#DC143C]"]:active:not(:disabled),
+.kcpl-admin-shell a[class*="bg-[#dc143c]"]:active,
+.kcpl-admin-shell button[class*="bg-[#dc143c]"]:active:not(:disabled),
+.kcpl-admin-shell a[class*="bg-[#101010]"]:active,
+.kcpl-admin-shell button[class*="bg-[#101010]"]:active:not(:disabled) {
+  border-color: #9C0D2A !important;
+  background: #9C0D2A !important;
+  box-shadow: 0 2px 8px rgba(220, 20, 60, .16) !important;
+  transform: translateY(0);
+}
+
+/* Keep crimson selection/progress indicators unchanged. */
 .kcpl-admin-shell [aria-current="page"] > span[class*="bg-[#DC143C]"],
 .kcpl-admin-shell [aria-current="page"] > span[class*="bg-[#dc143c]"] {
   background: #DC143C !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-shell .ops-button,
+  .kcpl-admin-shell a[class*="bg-[#DC143C]"],
+  .kcpl-admin-shell button[class*="bg-[#DC143C]"],
+  .kcpl-admin-shell a[class*="bg-[#dc143c]"],
+  .kcpl-admin-shell button[class*="bg-[#dc143c]"],
+  .kcpl-admin-shell a[class*="bg-[#101010]"],
+  .kcpl-admin-shell button[class*="bg-[#101010]"] {
+    transition: none !important;
+    transform: none !important;
+  }
 }
