@@ -5,24 +5,23 @@ export function Logo({ inverse = false, variant = "default" }: { inverse?: boole
   const isHeader = variant === "header";
 
   return (
-    <Link href="/" aria-label="Kapileshwor Cargo home" className={`brand-lockup ${isHeader ? "brand-lockup-header" : ""}`}>
-      <span className="brand-mark">
-        <Image src="/images/brand/kcpl-logo-mark.png" alt="" fill sizes={isHeader ? "48px" : "44px"} className="object-cover" />
+    <Link
+      href="/"
+      aria-label="Kapileshwor Cargo home"
+      className={`brand-lockup ${isHeader ? "brand-lockup-header" : ""}`}
+    >
+      <span className="brand-mark" aria-hidden="true">
+        <Image
+          src="/images/brand/kcpl-gateway-k.svg"
+          alt=""
+          fill
+          sizes={isHeader ? "46px" : "44px"}
+          className="object-contain"
+        />
       </span>
-      <span className={`brand-copy ${inverse ? "is-inverse" : ""}`}>
-        {isHeader ? (
-          <span className="brand-header-rail">
-            <span className="brand-header-stage" aria-hidden="true">
-              <span className="brand-header-full">Kapileshwor Cargo <b>Pvt. Ltd.</b></span>
-              <span className="brand-header-short"><strong>KCPL</strong><small>Kathmandu · Nepal</small></span>
-            </span>
-          </span>
-        ) : (
-          <>
-            <span className="brand-name-default">Kapileshwor Cargo</span>
-            <span className="brand-meta-default">Pvt. Ltd. · Nepal</span>
-          </>
-        )}
+      <span className={`brand-wordmark ${inverse ? "is-inverse" : ""}`}>
+        <span className="brand-wordmark-name">Kapileshwor</span>
+        <span className="brand-wordmark-meta">Cargo Pvt. Ltd.</span>
       </span>
     </Link>
   );
