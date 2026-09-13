@@ -1,0 +1,606 @@
+/* KCPL Commercial deep refinement
+ * Final-pass UI rules for nested Commercial workspaces and legacy detail screens.
+ * Brand source: KCPL identity system — Crimson #DC143C, Black #101010,
+ * canvas #F6F6F3, Manrope ExtraBold / SemiBold.
+ */
+
+.kcpl-admin-shell[data-commercial-context] {
+  --kcpl-c: #DC143C;
+  --kcpl-c-dark: #B61032;
+  --kcpl-ink: #101010;
+  --kcpl-copy: #4F4F4A;
+  --kcpl-muted: #686862;
+  --kcpl-muted-2: #878780;
+  --kcpl-line: #D6D6D0;
+  --kcpl-line-strong: #AFAFA8;
+  --kcpl-canvas: #F6F6F3;
+  --kcpl-soft: #EEEEE8;
+  --kcpl-white: #FFFFFF;
+}
+
+/* ---- Interaction quality ------------------------------------------------ */
+
+.kcpl-admin-shell[data-commercial-context] :is(
+  a,
+  button,
+  input,
+  select,
+  textarea
+):focus-visible {
+  outline: 2px solid var(--kcpl-c) !important;
+  outline-offset: 2px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] button,
+.kcpl-admin-shell[data-commercial-context] a,
+.kcpl-admin-shell[data-commercial-context] input,
+.kcpl-admin-shell[data-commercial-context] select,
+.kcpl-admin-shell[data-commercial-context] textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kcpl-admin-shell[data-commercial-context] :is(button, a)[aria-disabled="true"],
+.kcpl-admin-shell[data-commercial-context] button:disabled {
+  cursor: not-allowed;
+}
+
+.kcpl-admin-shell[data-commercial-context] input[type="checkbox"],
+.kcpl-admin-shell[data-commercial-context] input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--kcpl-c);
+}
+
+/* ---- Remove residual generated-card styling ----------------------------- */
+
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="bg-[#faf7f4]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#faf7f4]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="bg-[#f2ece7]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#f2ece7]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="bg-[#f1ebe6]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#f1ebe6]"] {
+  background: var(--kcpl-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="border-[#ebe3dc]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="border-[#ebe3dc]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="border-[#eae2dc]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="border-[#eae2dc]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="border-[#eee7e1]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="border-[#eee7e1]"] {
+  border-color: var(--kcpl-line) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#514840]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#514840]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#5b524b]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#5b524b]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#615850]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#615850]"] {
+  color: var(--kcpl-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#8c827a]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#8c827a]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#80766e]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#80766e]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#928880]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#928880]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#9c928a]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#9c928a]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#9e948c]"],
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#9e948c]"] {
+  color: var(--kcpl-muted) !important;
+}
+
+/* Tiny legacy typography was visually noisy and difficult to scan. */
+.kcpl-admin-shell[data-commercial-context] .ops-content :is([class*="text-[8px]"], [class*="text-[9px]"]),
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide :is([class*="text-[8px]"], [class*="text-[9px]"]) {
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content :is([class*="text-[10px]"]),
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide :is([class*="text-[10px]"]) {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+/* ---- Customer 360 ------------------------------------------------------- */
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-grid-main {
+  align-items: start;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-grid-main > aside {
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  .kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-grid-main > aside {
+    position: sticky !important;
+    top: 132px !important;
+    align-self: start;
+  }
+}
+
+/* Inline Customer 360 editors read as work areas, not cards inside cards. */
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide form[class*="rounded-[14px]"] {
+  margin-bottom: 16px !important;
+  border: 1px solid var(--kcpl-line) !important;
+  border-left: 3px solid var(--kcpl-c) !important;
+  border-radius: 0 !important;
+  background: var(--kcpl-white) !important;
+  padding: 16px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide div[class*="rounded-[13px]"] {
+  border: 1px solid var(--kcpl-line) !important;
+  border-radius: 0 !important;
+  background: var(--kcpl-white) !important;
+  padding: 14px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide span[class*="grid h-9 w-9"] {
+  border: 1px solid var(--kcpl-line) !important;
+  border-radius: 0 !important;
+  background: var(--kcpl-canvas) !important;
+  color: var(--kcpl-c) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide button[class*="rounded-full"] {
+  border-radius: 2px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#fff6f2]"] {
+  border-color: #E7B9C4 !important;
+  border-left: 3px solid var(--kcpl-c) !important;
+  border-radius: 0 !important;
+  background: #FFF8FA !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#fff6f2]"] p:first-child {
+  color: var(--kcpl-c) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#fff6f2]"] p:last-child {
+  color: var(--kcpl-copy) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide a:hover {
+  color: var(--kcpl-c) !important;
+}
+
+/* Commercial finance data is a ledger. */
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-surface-body > .divide-y > div[class*="justify-between"] {
+  min-height: 38px;
+  padding-block: 9px !important;
+}
+
+/* ---- Legacy order / booking detail screens ------------------------------ */
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] {
+  min-width: 0;
+  padding-top: 24px !important;
+  background: var(--kcpl-canvas) !important;
+  color: var(--kcpl-ink) !important;
+  font-family: var(--font-manrope), var(--font-geist), Arial, sans-serif !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div[class*="max-w-[1152px]"] {
+  max-width: 1380px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header[class*="border-b"] {
+  border-color: var(--kcpl-ink) !important;
+  padding: 8px 0 18px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header h1 {
+  color: var(--kcpl-ink) !important;
+  font-size: clamp(26px, 2.6vw, 36px) !important;
+  font-weight: 800 !important;
+  line-height: 1.06 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header p[class*="text-[14px]"] {
+  margin-top: 8px !important;
+  color: var(--kcpl-ink) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header p[class*="text-[12px]"],
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header p[class*="text-[11px]"] {
+  color: var(--kcpl-muted) !important;
+  font-size: 11px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav {
+  margin-top: 18px !important;
+  gap: 24px !important;
+  border-top: 1px solid var(--kcpl-line);
+  padding-top: 7px;
+  scrollbar-width: none;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav::-webkit-scrollbar {
+  display: none;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav :is(a, span) {
+  min-height: 36px;
+  color: var(--kcpl-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav :is(a, span):hover {
+  color: var(--kcpl-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:grid-cols-[minmax(0,800px)_351px]"] {
+  align-items: start;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:border-r"] {
+  border-color: var(--kcpl-line) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] section[class*="border-b"][class*="py-6"] {
+  border-color: var(--kcpl-line) !important;
+  padding-block: 22px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] section[class*="border-b"][class*="py-6"] > h2 {
+  margin-bottom: 15px !important;
+  color: var(--kcpl-ink) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl dt {
+  color: var(--kcpl-muted) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl dd {
+  color: var(--kcpl-ink) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+  min-height: 0 !important;
+  border-left: 1px solid var(--kcpl-line);
+  background: var(--kcpl-white) !important;
+  padding: 20px !important;
+}
+
+@media (min-width: 1024px) {
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+    position: sticky;
+    top: 132px;
+    align-self: start;
+  }
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside > p[class*="text-[11px]"] {
+  color: var(--kcpl-c) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside h2 {
+  color: var(--kcpl-ink) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside > div[class*="border-t"] {
+  border-color: var(--kcpl-line) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside a[class*="text-[#dc143c]"] {
+  color: var(--kcpl-c) !important;
+}
+
+/* Status pills stay semantic while avoiding candy-coloured blocks. */
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#edf8f2]"],
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#eef5ff]"],
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#fff7e6]"],
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#f7f7f7]"] {
+  border: 1px solid var(--kcpl-line) !important;
+  border-radius: 999px !important;
+  background: var(--kcpl-white) !important;
+  font-weight: 600 !important;
+}
+
+/* Booking execution lineage becomes a compact register. */
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-white"] {
+  border-color: var(--kcpl-line) !important;
+  background: var(--kcpl-white) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-white"] > div {
+  min-height: 58px;
+  border-color: var(--kcpl-line) !important;
+}
+
+/* ---- Workbench lists, tables and dense controls ------------------------- */
+
+.kcpl-admin-shell[data-commercial-context] .ops-record-row {
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-record-row:hover {
+  background: var(--kcpl-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-record-row[data-selected] {
+  background: var(--kcpl-canvas) !important;
+  box-shadow: inset 3px 0 0 var(--kcpl-c) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] table {
+  background: var(--kcpl-white);
+}
+
+.kcpl-admin-shell[data-commercial-context] table thead {
+  background: var(--kcpl-canvas);
+}
+
+.kcpl-admin-shell[data-commercial-context] table th {
+  height: 38px;
+  color: var(--kcpl-muted) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.kcpl-admin-shell[data-commercial-context] table td {
+  min-height: 44px;
+  color: var(--kcpl-copy);
+  vertical-align: middle;
+}
+
+.kcpl-admin-shell[data-commercial-context] table tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.kcpl-admin-shell[data-commercial-context] table tbody tr:hover {
+  background: var(--kcpl-canvas) !important;
+}
+
+/* Inputs use one predictable enterprise control language. */
+.kcpl-admin-shell[data-commercial-context] :is(
+  .ops-field input,
+  .ops-field select,
+  .ops-field textarea,
+  .ops-input,
+  .ops-search,
+  form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  form select,
+  form textarea
+) {
+  border-color: var(--kcpl-line-strong) !important;
+  border-radius: 2px !important;
+  background: var(--kcpl-white) !important;
+  color: var(--kcpl-ink) !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] :is(
+  .ops-field input,
+  .ops-field select,
+  .ops-search,
+  form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  form select
+) {
+  min-height: 40px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] :is(
+  .ops-field input,
+  .ops-field select,
+  .ops-field textarea,
+  .ops-input,
+  form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  form select,
+  form textarea
+):focus {
+  border-color: var(--kcpl-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-field-label {
+  color: var(--kcpl-ink) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-field small {
+  color: var(--kcpl-muted) !important;
+  line-height: 1.45 !important;
+}
+
+/* ---- Mobile commercial QA fixes ---------------------------------------- */
+
+@media (max-width: 900px) {
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:grid-cols-[minmax(0,800px)_351px]"] {
+    display: block !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:border-r"] {
+    border-right: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+    position: static !important;
+    margin-top: 0;
+    border-top: 1px solid var(--kcpl-ink);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
+    scroll-padding-inline: 16px;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav > a {
+    min-height: 48px;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
+    gap: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions,
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > * {
+    width: 100%;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > .ops-button,
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > a,
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div .ops-button,
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div a {
+    width: 100%;
+    min-height: 44px !important;
+    justify-content: center;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-surface-header {
+    display: block !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-surface-action .ops-button,
+  .kcpl-admin-shell[data-commercial-context] .ops-surface-action > a {
+    min-height: 42px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-content-wide form[class*="rounded-[14px]"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-content-wide form[class*="rounded-[14px]"] > [class*="sm:col-span-2"] {
+    grid-column: auto !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-surface-body > div[class*="grid-cols-2"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] {
+    padding: 16px 14px 28px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header[class*="border-b"] {
+    padding-bottom: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header h1 {
+    font-size: 27px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header > div > div:last-child[class*="flex"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header > div > div:last-child[class*="flex"] > :is(a, button) {
+    width: 100%;
+    min-height: 44px !important;
+    height: auto !important;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] section[class*="border-b"][class*="py-6"] {
+    padding-block: 18px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl[class*="sm:grid-cols-2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 18px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+    margin-inline: -14px;
+    padding: 18px 14px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] :is(
+    .ops-field input,
+    .ops-field select,
+    .ops-search,
+    form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    form select
+  ) {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] :is(.ops-field textarea, .ops-input, form textarea) {
+    font-size: 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-record-row {
+    min-height: 72px;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-split-list {
+    max-height: 42vh !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] table {
+    min-width: 760px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header > div > div:last-child[class*="flex"] {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl[class*="sm:grid-cols-2"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-shell[data-commercial-context] *,
+  .kcpl-admin-shell[data-commercial-context] *::before,
+  .kcpl-admin-shell[data-commercial-context] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
