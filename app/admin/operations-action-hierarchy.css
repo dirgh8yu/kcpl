@@ -1,0 +1,61 @@
+/* KCPL Operations action hierarchy
+   Crimson is an accent/status signal, not the default action fill. */
+
+.kcpl-admin-shell .ops-button[data-variant="primary"] {
+  border-color: #101010 !important;
+  background: #101010 !important;
+  color: #FFFFFF !important;
+}
+
+.kcpl-admin-shell .ops-button[data-variant="primary"]:hover:not(:disabled) {
+  border-color: #2A2A27 !important;
+  background: #2A2A27 !important;
+  color: #FFFFFF !important;
+}
+
+.kcpl-admin-shell .ops-button[data-variant="primary"]:active:not(:disabled) {
+  border-color: #000000 !important;
+  background: #000000 !important;
+}
+
+.kcpl-admin-shell .ops-button[data-variant="danger"] {
+  border-color: #DC143C !important;
+  background: transparent !important;
+  color: #B61032 !important;
+}
+
+.kcpl-admin-shell .ops-button[data-variant="danger"]:hover:not(:disabled) {
+  border-color: #B61032 !important;
+  background: #FFF0F3 !important;
+  color: #9C0D2A !important;
+}
+
+.kcpl-admin-shell .ops-button:disabled {
+  cursor: not-allowed;
+  opacity: .46;
+}
+
+/* Older page-level primary links that still carry a literal crimson Tailwind fill
+   follow the same neutral-primary hierarchy. */
+.kcpl-admin-shell a[class*="bg-[#DC143C]"],
+.kcpl-admin-shell button[class*="bg-[#DC143C]"],
+.kcpl-admin-shell a[class*="bg-[#dc143c]"],
+.kcpl-admin-shell button[class*="bg-[#dc143c]"] {
+  border-color: #101010 !important;
+  background: #101010 !important;
+  color: #FFFFFF !important;
+}
+
+.kcpl-admin-shell a[class*="bg-[#DC143C]"]:hover,
+.kcpl-admin-shell button[class*="bg-[#DC143C]"]:hover,
+.kcpl-admin-shell a[class*="bg-[#dc143c]"]:hover,
+.kcpl-admin-shell button[class*="bg-[#dc143c]"]:hover {
+  border-color: #2A2A27 !important;
+  background: #2A2A27 !important;
+}
+
+/* Keep crimson where it communicates selection, progress, warning or brand state. */
+.kcpl-admin-shell [aria-current="page"] > span[class*="bg-[#DC143C]"],
+.kcpl-admin-shell [aria-current="page"] > span[class*="bg-[#dc143c]"] {
+  background: #DC143C !important;
+}
