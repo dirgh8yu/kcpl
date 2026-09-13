@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Check, CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity, type AutomationAlertStatus } from "./alert-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 
