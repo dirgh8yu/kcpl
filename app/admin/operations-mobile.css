@@ -1,0 +1,368 @@
+/* KCPL Operations mobile stabilization
+   Loaded last so it can correct layout pressure without changing workflow logic. */
+
+.kcpl-admin-shell[data-operations-context] {
+  overflow-x: clip;
+}
+
+.kcpl-admin-shell[data-operations-context] .kcpl-admin-content {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.kcpl-admin-shell[data-operations-context] .kcpl-admin-content > *,
+.kcpl-admin-shell[data-operations-context] .ops-page,
+.kcpl-admin-shell[data-operations-context] .ops-content,
+.kcpl-admin-shell[data-operations-context] .ops-content-wide,
+.kcpl-admin-shell[data-operations-context] .ops-page-header-main,
+.kcpl-admin-shell[data-operations-context] .ops-page-heading,
+.kcpl-admin-shell[data-operations-context] .ops-surface,
+.kcpl-admin-shell[data-operations-context] .ops-surface-header > *,
+.kcpl-admin-shell[data-operations-context] .ops-surface-body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.kcpl-admin-shell[data-operations-context] .ops-mono,
+.kcpl-admin-shell[data-operations-context] .ops-page-heading h1,
+.kcpl-admin-shell[data-operations-context] .ops-surface h2,
+.kcpl-admin-shell[data-operations-context] .ops-surface h3,
+.kcpl-admin-shell[data-operations-context] a[href^="mailto:"],
+.kcpl-admin-shell[data-operations-context] a[href^="tel:"] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.kcpl-admin-shell[data-operations-context] > nav[aria-label="Operations workflow navigation"],
+.kcpl-admin-shell[data-operations-context] nav[aria-label="Shipment record sections"] {
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kcpl-admin-shell[data-operations-context] > nav[aria-label="Operations workflow navigation"]::-webkit-scrollbar,
+.kcpl-admin-shell[data-operations-context] nav[aria-label="Shipment record sections"]::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .kcpl-admin-shell[data-operations-context] > nav[aria-label="Operations workflow navigation"] {
+    gap: 22px !important;
+    padding-inline: 16px !important;
+    scroll-snap-type: x proximity;
+  }
+
+  .kcpl-admin-shell[data-operations-context] > nav[aria-label="Operations workflow navigation"] > a {
+    scroll-snap-align: start;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-header {
+    padding: 20px 16px 16px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-header-main {
+    gap: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-heading h1 {
+    margin-top: 7px !important;
+    font-size: clamp(27px, 8vw, 34px) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-description {
+    margin-top: 9px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-meta {
+    gap: 6px 10px !important;
+    margin-top: 9px !important;
+    font-size: 10px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-actions {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-actions > * {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-actions > :only-child,
+  .kcpl-admin-shell[data-operations-context] .ops-page-actions > :nth-child(3):last-child {
+    grid-column: 1 / -1;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-content,
+  .kcpl-admin-shell[data-operations-context] .ops-content-wide {
+    padding: 14px 16px 28px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stack {
+    gap: 12px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-header {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 11px !important;
+    padding: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-header h2 {
+    margin-top: 5px !important;
+    font-size: 20px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -.03em !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-description {
+    margin-top: 6px !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-action {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-action > div {
+    width: 100%;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-body {
+    padding: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-body-flush {
+    padding: 0 !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stat-strip {
+    display: grid !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    overflow: hidden !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stat {
+    min-width: 0 !important;
+    min-height: 74px !important;
+    padding: 12px 14px !important;
+    border-right: 1px solid var(--kcpl-line, #D6D6D0) !important;
+    border-bottom: 1px solid var(--kcpl-line, #D6D6D0) !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stat:nth-child(2n) {
+    border-right: 0 !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stat:nth-last-child(-n + 2) {
+    border-bottom: 0 !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stat-value {
+    margin-top: 6px !important;
+    font-size: 22px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-stat-detail {
+    font-size: 9px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-button {
+    min-height: 42px !important;
+    min-width: 0;
+    padding-inline: 12px !important;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-field input,
+  .kcpl-admin-shell[data-operations-context] .ops-field select,
+  .kcpl-admin-shell[data-operations-context] .ops-field textarea,
+  .kcpl-admin-shell[data-operations-context] .ops-input,
+  .kcpl-admin-shell[data-operations-context] .ops-select,
+  .kcpl-admin-shell[data-operations-context] .ops-textarea {
+    width: 100%;
+    min-width: 0;
+    font-size: 16px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-field textarea,
+  .kcpl-admin-shell[data-operations-context] .ops-textarea {
+    min-height: 84px;
+  }
+
+  .kcpl-admin-shell[data-operations-context] input[type="file"] {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-empty {
+    min-height: 0 !important;
+    padding: 24px 14px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-body .flex.justify-between,
+  .kcpl-admin-shell[data-operations-context] .ops-surface-body .flex.items-center.gap-2 {
+    flex-wrap: wrap;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-surface-body .text-right {
+    text-align: left !important;
+  }
+
+  /* The Digital Job File is a section inside Shipment Detail, not a second full-page hero. */
+  .kcpl-admin-shell[data-operations-context] #operational-controls .ops-page {
+    min-height: 0 !important;
+    background: transparent !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #operational-controls .ops-page-header {
+    margin: 0 16px;
+    padding: 18px 0 14px !important;
+    background: transparent !important;
+    border-top: 1px solid #101010;
+    border-bottom: 1px solid #D6D6D0;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #operational-controls .ops-page-heading h1 {
+    font-size: 24px !important;
+    line-height: 1.08 !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #operational-controls .ops-page-description {
+    font-size: 12px !important;
+  }
+
+  /* Deep-operation and commercial shortcuts become deliberate two-column mobile controls. */
+  .kcpl-admin-shell[data-operations-context] #operational-controls > .ops-content-wide:first-child .grid > .flex.flex-wrap {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kcpl-admin-shell[data-operations-context] #operational-controls > .ops-content-wide:first-child .grid > .flex.flex-wrap > .ops-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Workflow stages: replace the 820px desktop rail with compact mobile stage cards. */
+  .kcpl-admin-shell[data-operations-context] [class~="min-w-[820px]"] {
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] [class~="min-w-[820px]"] > div {
+    min-width: 0 !important;
+    padding: 10px 8px !important;
+    border: 1px solid #E3E3DD;
+    background: #FFFFFF;
+  }
+
+  .kcpl-admin-shell[data-operations-context] [class~="min-w-[820px]"] > div > span.absolute {
+    display: none !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] [class~="min-w-[820px]"] span[class*="max-w-[120px]"] {
+    max-width: none !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] [class~="min-w-[820px]"] + * {
+    max-width: 100%;
+  }
+
+  /* Final-mile summary is four facts, not four full-width phone cards. */
+  .kcpl-admin-shell[data-operations-context] #delivery-pod .ops-surface-body > .grid.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #delivery-pod .ops-surface-body > .grid.gap-2 > div {
+    min-width: 0;
+    padding: 11px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #delivery-pod form[class*="rounded"] {
+    padding: 12px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #delivery-pod .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 12px !important;
+  }
+
+  /* Shipment-detail hero and context rail. */
+  .kcpl-admin-shell[data-operations-context] .kcpl-admin-content > main[class*="bg-[#F6F6F3]"] {
+    padding: 22px 16px 24px !important;
+    overflow-x: clip;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .kcpl-admin-content > main[class*="bg-[#F6F6F3]"] h1 {
+    font-size: clamp(29px, 9vw, 36px) !important;
+    line-height: 1.06 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .kcpl-admin-shell[data-operations-context] nav[aria-label="Shipment record sections"] {
+    gap: 20px !important;
+    scroll-snap-type: x proximity;
+  }
+
+  .kcpl-admin-shell[data-operations-context] nav[aria-label="Shipment record sections"] > a {
+    scroll-snap-align: start;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #shipment-overview section {
+    padding-block: 20px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #shipment-overview aside {
+    min-height: 0 !important;
+    padding: 20px 16px !important;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #shipment-overview [class*="grid-cols-[150px_minmax(0,1fr)]"] {
+    grid-template-columns: 112px minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .kcpl-admin-shell[data-operations-context] .ops-page-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-shell[data-operations-context] .ops-page-actions > :nth-child(3):last-child {
+    grid-column: auto;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #operational-controls > .ops-content-wide:first-child .grid > .flex.flex-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-shell[data-operations-context] #delivery-pod .ops-surface-body > .grid.gap-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
