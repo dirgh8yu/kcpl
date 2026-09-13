@@ -13,12 +13,12 @@ import "./admin/operations-theme.css";
 import "./admin/operations-polish.css";
 import "./admin/operations-hotfix.css";
 import "./admin/operations-v4-compat.css";
-import "./admin/commercial-v4-compat.css";
 import "./brand-system.css";
 import "./admin/operations-editorial.css";
 import "./admin/operations-mobile.css";
 import "./admin/operations-action-hierarchy.css";
 import "./admin/operations-detail-refinement.css";
+import "./admin/commercial-v4-compat.css";
 
 const geist = Geist({
   variable: "--font-geist",
