@@ -36,7 +36,16 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Workflow and policy tests
-        run: npm test
+        run: npm test 2>&1 | tee test-output.txt
+
+      - name: Upload test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcpl-test-output
+          path: test-output.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Production build
         run: npm run build
