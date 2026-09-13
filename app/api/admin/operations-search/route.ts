@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       const company = text(data.company_name) || text(data.contact_name, "Enquiry");
       const searchText = [doc.id, company, text(data.contact_name), text(data.contact_email), text(data.phone), text(data.origin), text(data.destination), text(data.mode), text(data.cargo_type), text(data.status), shipmentReference, customerId].filter(Boolean).join(" ");
       if (!matches(searchText, query)) continue;
-      results.push({ kind: "quote", id: doc.id, title: doc.id, subtitle: `${company} · ${text(data.origin, "Origin")} → ${text(data.destination, "Destination")}`, meta: text(data.status) || null, href: `/admin?enquiry=${encodeURIComponent(doc.id)}` });
+      results.push({ kind: "quote", id: doc.id, title: doc.id, subtitle: `${company} · ${text(data.origin, "Origin")} → ${text(data.destination, "Destination")}`, meta: text(data.status) || null, href: `/admin/enquiries?enquiry=${encodeURIComponent(doc.id)}` });
     }
 
     for (const doc of orders) {

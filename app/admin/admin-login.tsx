@@ -58,7 +58,6 @@ export function AdminLogin() {
             inputMode="email"
             autoComplete="username"
             required
-            autoFocus
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             aria-invalid={Boolean(error)}
