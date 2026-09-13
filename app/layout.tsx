@@ -18,7 +18,6 @@ import "./brand-system.css";
 import "./admin/operations-editorial.css";
 import "./admin/operations-mobile.css";
 import "./admin/operations-action-hierarchy.css";
-import "./admin/operations-detail-refinement.css";
 
 const geist = Geist({
   variable: "--font-geist",
