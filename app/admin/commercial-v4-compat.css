@@ -1,118 +1,738 @@
-/* KCPL V4 Commercial compatibility layer.
- * These selectors cover two legacy split/workbench surfaces that predate the
- * shared OpsPage shell. Keep all API and workflow logic in the React modules.
+/* KCPL Commercial workspace
+ * Source of truth: KCPL Figma identity — Crimson #DC143C, Black #101010,
+ * neutral canvas #F6F6F3, Manrope ExtraBold + SemiBold.
+ * Keep commercial screens dense, legible and operational rather than card-heavy.
  */
 
-/* Enquiries desk */
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] {
-  min-height: calc(100vh - 54px) !important;
-  background: #f6f6f3 !important;
-  color: #141414 !important;
+.kcpl-admin-shell[data-commercial-context] {
+  --commercial-crimson: #DC143C;
+  --commercial-crimson-dark: #B61032;
+  --commercial-ink: #101010;
+  --commercial-muted: #686862;
+  --commercial-muted-2: #878780;
+  --commercial-line: #D6D6D0;
+  --commercial-line-dark: #AFAFA8;
+  --commercial-canvas: #F6F6F3;
+  --commercial-soft: #EEEEE8;
+  --commercial-white: #FFFFFF;
+  overflow-x: clip;
+  background: var(--commercial-canvas);
+  color: var(--commercial-ink);
+  font-family: var(--font-manrope), var(--font-geist), Arial, sans-serif;
 }
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] .ops-split-list,
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] .ops-split-detail {
-  background: #fff !important;
-  border-color: #e2e2e2 !important;
+
+.kcpl-admin-shell[data-commercial-context] .kcpl-admin-content {
+  min-width: 0;
+  overflow-x: clip;
+  background: var(--commercial-canvas);
 }
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="border-[#e2ddd8]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="border-[#e8e3de]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="border-[#dfd9d3]"] {
-  border-color: #e2e2e2 !important;
+
+.kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
 }
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="text-[#2f2a26]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="text-[#554f49]"] {
-  color: #141414 !important;
+
+.kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav::-webkit-scrollbar {
+  display: none;
 }
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="text-[#817a73]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="text-[#9a928b]"] {
-  color: #737373 !important;
+
+.kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav > a {
+  scroll-snap-align: start;
 }
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] header[class*="sticky"] {
-  top: 0 !important;
+
+/* Page hierarchy */
+.kcpl-admin-shell[data-commercial-context] .ops-page,
+.kcpl-admin-shell[data-commercial-context] main {
+  min-width: 0;
+  background: var(--commercial-canvas) !important;
+  color: var(--commercial-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-page-header {
+  padding: 28px 32px 22px !important;
+  border-bottom: 1px solid var(--commercial-ink) !important;
+  background: var(--commercial-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
+  align-items: flex-end !important;
+  gap: 28px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-page-heading {
+  max-width: 820px;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-page-heading h1,
+.kcpl-admin-shell[data-commercial-context] main > section:first-child h1 {
+  color: var(--commercial-ink) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: clamp(28px, 3vw, 40px) !important;
+  font-weight: 800 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-page-description {
+  max-width: 720px !important;
+  margin-top: 8px !important;
+  color: var(--commercial-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-page-meta {
+  margin-top: 12px !important;
+  color: var(--commercial-muted) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-eyebrow {
+  color: var(--commercial-crimson) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-content,
+.kcpl-admin-shell[data-commercial-context] .ops-content-wide {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 22px 32px 36px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-stack {
+  gap: 16px !important;
+}
+
+/* Surfaces: restrained registers, not floating cards. */
+.kcpl-admin-shell[data-commercial-context] .ops-surface {
+  overflow: hidden;
+  border: 1px solid var(--commercial-line) !important;
+  border-radius: 2px !important;
+  background: var(--commercial-white) !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-surface-header {
+  min-height: 68px !important;
+  padding: 15px 18px 13px !important;
+  border-bottom: 1px solid var(--commercial-line) !important;
+  background: var(--commercial-white) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-surface-header h2 {
+  margin-top: 3px !important;
+  color: var(--commercial-ink) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-surface-description {
+  max-width: 720px;
+  margin-top: 4px !important;
+  color: var(--commercial-muted) !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-surface-body {
+  padding: 18px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-surface-body-flush {
+  padding: 0 !important;
+}
+
+/* Commercial metrics read like a ledger. */
+.kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
+  width: 100%;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--commercial-line) !important;
+  background: var(--commercial-white) !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-stat {
+  min-height: 82px !important;
+  padding: 13px 16px !important;
+  border-color: var(--commercial-line) !important;
+  background: var(--commercial-white) !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] button.ops-stat:hover {
+  background: var(--commercial-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-stat[data-active] {
+  box-shadow: inset 0 -2px 0 var(--commercial-crimson) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-stat-label {
+  color: var(--commercial-muted) !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-stat-value {
+  margin-top: 6px !important;
+  color: var(--commercial-ink) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-stat-detail {
+  color: var(--commercial-muted-2) !important;
+}
+
+/* Buttons follow the KCPL crimson interaction language. */
+.kcpl-admin-shell[data-commercial-context] .ops-button,
+.kcpl-admin-shell[data-commercial-context] .ops-button[data-variant="primary"],
+.kcpl-admin-shell[data-commercial-context] .ops-button[data-variant="secondary"],
+.kcpl-admin-shell[data-commercial-context] .ops-button[data-variant="ghost"],
+.kcpl-admin-shell[data-commercial-context] .ops-button[data-variant="danger"] {
+  min-height: 38px;
+  border: 1px solid var(--commercial-crimson) !important;
+  border-radius: 2px !important;
+  background: var(--commercial-crimson) !important;
+  color: #FFFFFF !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-button:hover:not(:disabled) {
+  border-color: var(--commercial-crimson-dark) !important;
+  background: var(--commercial-crimson-dark) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(220,20,60,.14) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-button:disabled {
+  border-color: var(--commercial-line) !important;
+  background: var(--commercial-soft) !important;
+  color: var(--commercial-muted-2) !important;
+  opacity: 1 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] button[class*="bg-[#dc143c]"],
+.kcpl-admin-shell[data-commercial-context] a[class*="bg-[#dc143c]"],
+.kcpl-admin-shell[data-commercial-context] button[class*="bg-[#DC143C]"],
+.kcpl-admin-shell[data-commercial-context] a[class*="bg-[#DC143C]"] {
+  border-radius: 2px !important;
+  background: var(--commercial-crimson) !important;
+  color: #FFFFFF !important;
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] button[class*="bg-[#dc143c]"]:hover:not(:disabled),
+.kcpl-admin-shell[data-commercial-context] a[class*="bg-[#dc143c]"]:hover,
+.kcpl-admin-shell[data-commercial-context] button[class*="bg-[#DC143C]"]:hover:not(:disabled),
+.kcpl-admin-shell[data-commercial-context] a[class*="bg-[#DC143C]"]:hover {
+  background: var(--commercial-crimson-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(220,20,60,.14) !important;
+}
+
+/* Filters and tabs stay quiet so actions remain obvious. */
+.kcpl-admin-shell[data-commercial-context] .ops-filter-pills {
+  gap: 3px !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-filter-pill {
+  min-height: 30px !important;
+  border: 0 !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--commercial-muted) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-filter-pill:hover {
+  color: var(--commercial-ink) !important;
+  background: var(--commercial-soft) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-filter-pill[data-active] {
+  border-bottom-color: var(--commercial-crimson) !important;
+  background: transparent !important;
+  color: var(--commercial-ink) !important;
+  font-weight: 700 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-segmented {
+  gap: 22px !important;
+  border-bottom: 1px solid var(--commercial-line) !important;
+  background: transparent !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-segmented button {
+  min-height: 38px !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--commercial-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-segmented button:hover,
+.kcpl-admin-shell[data-commercial-context] .ops-segmented button[data-active] {
+  color: var(--commercial-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-segmented button[data-active] {
+  border-bottom-color: var(--commercial-crimson) !important;
+  font-weight: 700 !important;
+}
+
+/* Badges are supporting metadata, never the dominant visual. */
+.kcpl-admin-shell[data-commercial-context] .ops-badge {
+  min-height: 22px !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-mono {
+  color: var(--commercial-muted) !important;
+  font-size: 10px !important;
+}
+
+/* Form system */
+.kcpl-admin-shell[data-commercial-context] .ops-field-label,
+.kcpl-admin-shell[data-commercial-context] label > span:first-child {
+  color: var(--commercial-muted) !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.kcpl-admin-shell[data-commercial-context] select {
+  min-height: 40px !important;
+  border: 1px solid var(--commercial-line-dark) !important;
+  border-radius: 2px !important;
+  background: var(--commercial-white) !important;
+  color: var(--commercial-ink) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] textarea {
+  min-height: 96px !important;
+  border: 1px solid var(--commercial-line-dark) !important;
+  border-radius: 2px !important;
+  background: var(--commercial-white) !important;
+  color: var(--commercial-ink) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] input:focus,
+.kcpl-admin-shell[data-commercial-context] select:focus,
+.kcpl-admin-shell[data-commercial-context] textarea:focus {
+  outline: 2px solid rgba(220,20,60,.16) !important;
+  outline-offset: 0 !important;
+  border-color: var(--commercial-crimson) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-search {
+  min-height: 40px !important;
+  border: 1px solid var(--commercial-line-dark) !important;
+  border-radius: 2px !important;
+  background: var(--commercial-white) !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-search input {
+  min-height: 0 !important;
+  height: auto !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-field small {
+  color: var(--commercial-muted-2) !important;
+  font-size: 9px !important;
+  line-height: 1.4 !important;
+}
+
+/* Enquiry + customer split workspaces */
+.kcpl-admin-shell[data-commercial-context] .ops-split {
+  min-width: 0;
+  background: var(--commercial-white) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-split-list {
+  border-color: var(--commercial-line) !important;
+  background: var(--commercial-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-split-detail {
+  min-width: 0;
+  background: var(--commercial-white) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-record-row {
+  position: relative;
+  border-color: var(--commercial-line) !important;
+  background: var(--commercial-white) !important;
+  color: var(--commercial-ink) !important;
+  transition: background-color 120ms ease !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-record-row:hover {
+  background: var(--commercial-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-record-row[data-selected] {
+  background: var(--commercial-soft) !important;
+  box-shadow: inset 3px 0 0 var(--commercial-crimson) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] .ops-route,
+.kcpl-admin-shell[data-commercial-context] .ops-record-row strong {
+  color: var(--commercial-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] header[class*="sticky"] {
+  border-color: var(--commercial-line) !important;
   background: rgba(255,255,255,.98) !important;
   backdrop-filter: none !important;
 }
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] header[class*="sticky"] h2 {
-  color: #141414 !important;
-  font-size: 20px !important;
-  font-weight: 650 !important;
-  letter-spacing: -.02em !important;
-}
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="rounded-[10px]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="rounded-[11px]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="rounded-[12px]"],
-main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f3f1ee]"] [class*="rounded-[14px]"] {
-  border-radius: 0 !important;
+
+/* Notice and empty states stay factual and compact. */
+.kcpl-admin-shell[data-commercial-context] .ops-notice {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  font-size: 11px !important;
 }
 
-/* External Market Estimate */
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] {
-  min-height: auto !important;
-  background: #f6f6f3 !important;
-  color: #141414 !important;
-  border-top: 1px solid #e2e2e2;
-}
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] > header {
-  border-color: #e2e2e2 !important;
-  background: #f6f6f3 !important;
-  padding-top: 16px !important;
-  padding-bottom: 12px !important;
-}
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] > header > div,
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] > div[class*="grid"] {
-  max-width: 1152px !important;
-}
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] > header h1 {
-  margin-top: 2px !important;
-  color: #141414 !important;
-  font-size: 18px !important;
-  font-weight: 650 !important;
-  line-height: 26px !important;
-  letter-spacing: -.01em !important;
-}
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] > header p,
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="text-[#68747f]"],
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="text-[#7a858f]"],
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="text-[#88929a]"] {
-  color: #737373 !important;
-}
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] section,
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] aside > div {
-  border-color: #e2e2e2 !important;
-  border-radius: 0 !important;
+.kcpl-admin-shell[data-commercial-context] .ops-empty {
+  border-radius: 2px !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="rounded-2xl"],
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="rounded-xl"],
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="rounded-lg"] {
-  border-radius: 6px !important;
+
+.kcpl-admin-shell[data-commercial-context] .ops-empty-icon {
+  border-radius: 2px !important;
+}
+
+/* Tables become the default language for high-density commercial records. */
+.kcpl-admin-shell[data-commercial-context] table {
+  border-collapse: collapse;
+  background: var(--commercial-white);
+  color: var(--commercial-ink);
+}
+
+.kcpl-admin-shell[data-commercial-context] thead tr {
+  border-bottom: 1px solid var(--commercial-ink) !important;
+  background: var(--commercial-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] th {
+  color: var(--commercial-muted) !important;
+  font-family: var(--font-manrope), sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.045em !important;
+  text-transform: uppercase;
+}
+
+.kcpl-admin-shell[data-commercial-context] tbody tr {
+  border-color: var(--commercial-line) !important;
+  background: var(--commercial-white) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] tbody tr:hover {
+  background: var(--commercial-canvas) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] td {
+  color: var(--commercial-muted) !important;
+  font-size: 11px !important;
+}
+
+/* Remove legacy warm/pastel SaaS styling across Commercial. */
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#f3f1ee]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#f8f6f3]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#f5f6f7]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#fffdfa]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#faf7f3]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#fff8f5]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#f1ebe6]"] {
+  background: var(--commercial-white) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#e2ddd8]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#e8e3de]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#dfd9d3]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#e8e0d9]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#e7dfd8]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#e9e2dc]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#eee7e1]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#d9cec6]"],
+.kcpl-admin-shell[data-commercial-context] [class*="border-[#e2e2e2]"] {
+  border-color: var(--commercial-line) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#2f2a26]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#332d29]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#39312c]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#4c433d]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#4b423c]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#554f49]"] {
+  color: var(--commercial-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#817a73]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#9a928b]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#887e76]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#8d837b]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#a19890]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#8a8078]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#766b63]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#62584f]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#625b55]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#5b5b5b]"],
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#737373]"] {
+  color: var(--commercial-muted) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[14px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[12px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[11px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[10px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[9px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[8px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[7px]"],
+.kcpl-admin-shell[data-commercial-context] [class*="rounded-[6px]"] {
+  border-radius: 2px !important;
   box-shadow: none !important;
 }
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] input,
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] select {
-  min-height: 32px !important;
-  height: 32px !important;
-  border-color: #e2e2e2 !important;
-  border-radius: 6px !important;
-  background: #fff !important;
-  color: #141414 !important;
-  font-size: 12px !important;
+
+/* Selected procurement / pricing rows: one explicit brand cue, no tinted card. */
+.kcpl-admin-shell[data-commercial-context] button[class*="border-[#dca99d]"] {
+  border-color: var(--commercial-line-dark) !important;
+  border-left: 3px solid var(--commercial-crimson) !important;
+  background: var(--commercial-canvas) !important;
 }
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] button[type="submit"] {
-  min-height: 32px !important;
-  height: 32px !important;
-  border-radius: 6px !important;
-  background: #dc143c !important;
-  padding-inline: 14px !important;
-  font-size: 12px !important;
-  font-weight: 650 !important;
+
+/* Legacy Transport Order / Tender workflow navigation. */
+.kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] {
+  border-bottom: 1px solid var(--commercial-ink) !important;
+  background: transparent !important;
+  scrollbar-width: none;
 }
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="bg-[#0a1828]"] {
-  background: #242424 !important;
+
+.kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"]::-webkit-scrollbar {
+  display: none;
 }
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="bg-[#10263f]"] {
-  background: #242424 !important;
+
+.kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] a,
+.kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] span {
+  font-family: var(--font-manrope), sans-serif !important;
 }
-main[class*="min-h-screen"][class*="bg-[#f5f6f7]"] [class*="text-[#10263f]"] {
-  color: #141414 !important;
+
+/* Market Estimate legacy surfaces */
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-screen"] > header,
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-screen"] > section,
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-screen"] aside > div {
+  border-color: var(--commercial-line) !important;
+  border-radius: 2px !important;
+  background: var(--commercial-white) !important;
+  box-shadow: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#0a1828]"],
+.kcpl-admin-shell[data-commercial-context] [class*="bg-[#10263f]"] {
+  background: var(--commercial-ink) !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] [class*="text-[#10263f]"] {
+  color: var(--commercial-ink) !important;
+}
+
+/* Customer workspace hero is intentionally flatter than a marketing page. */
+.kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] {
+  border-color: var(--commercial-ink) !important;
+  background: var(--commercial-canvas) !important;
+  backdrop-filter: none !important;
+}
+
+.kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] > div {
+  max-width: 1440px !important;
+}
+
+/* Keep long identifiers, customer emails and route strings from breaking layouts. */
+.kcpl-admin-shell[data-commercial-context] .ops-mono,
+.kcpl-admin-shell[data-commercial-context] a[href^="mailto:"],
+.kcpl-admin-shell[data-commercial-context] a[href^="tel:"] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 1180px) {
+  .kcpl-admin-shell[data-commercial-context] .ops-page-header {
+    padding-inline: 24px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-content,
+  .kcpl-admin-shell[data-commercial-context] .ops-content-wide {
+    padding-inline: 24px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
+    gap: 22px !important;
+    padding-inline: 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-header {
+    padding: 20px 16px 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
+    display: block !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-heading h1,
+  .kcpl-admin-shell[data-commercial-context] main > section:first-child h1 {
+    font-size: 28px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions {
+    width: 100%;
+    margin-top: 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions .ops-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-content,
+  .kcpl-admin-shell[data-commercial-context] .ops-content-wide {
+    padding: 14px 16px 28px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-surface-header {
+    min-height: 0 !important;
+    padding: 13px 14px 12px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-surface-body {
+    padding: 14px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-surface-action {
+    width: 100%;
+    margin-top: 10px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
+    display: grid !important;
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    overflow: visible !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-stat {
+    min-width: 0 !important;
+    min-height: 72px !important;
+    padding: 11px 12px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-stat-value {
+    font-size: 21px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-split {
+    display: block !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-split-list {
+    max-height: 46vh !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--commercial-ink) !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-split-detail {
+    overflow: visible !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] header[class*="sticky"] {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  .kcpl-admin-shell[data-commercial-context] select,
+  .kcpl-admin-shell[data-commercial-context] textarea {
+    font-size: 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] {
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] table {
+    font-size: 11px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] {
+    padding: 20px 16px 16px !important;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] > div {
+    align-items: flex-start !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
+    grid-template-columns: 1fr 1fr !important;
+  }
 }
