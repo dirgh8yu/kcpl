@@ -11,7 +11,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,6 +34,9 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Workflow and policy tests
+        run: npm test
 
       - name: Production build
         run: npm run build
