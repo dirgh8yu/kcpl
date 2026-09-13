@@ -55,17 +55,6 @@ function modeOptions(jobs: CommandCentreJob[]) {
   return [...new Set(jobs.map((job) => job.mode.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-const tabs = [
-  { label: "Shipments", href: "/admin/shipments", active: true },
-  { label: "Pickup scheduling", href: "/admin/pickups" },
-  { label: "Live visibility", href: "/admin/visibility" },
-  { label: "Customs", href: "/admin/customs" },
-  { label: "Freight documents", href: "/admin/freight-documents" },
-  { label: "Document vault", href: "/admin/documents" },
-  { label: "Delivery & POD", href: "/admin/delivery" },
-  { label: "Tasks & alerts", href: "/admin/alerts" },
-];
-
 export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreData; roleLabel: string }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"active" | "all" | ShipmentStatus>("active");
@@ -105,15 +94,6 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
           </div>
           <Link href="/admin/command-centre" className="inline-flex min-h-10 items-center border-b border-[#101010] pb-1 text-[12px] text-[#101010] transition-colors hover:border-[#DC143C] hover:text-[#DC143C]">Operations overview →</Link>
         </header>
-
-        <nav className="flex min-h-[58px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0]" aria-label="Operations workflow">
-          {tabs.map((tab) => (
-            <Link key={tab.label} href={tab.href} className={`relative flex h-[58px] shrink-0 items-center text-[12px] ${tab.active ? "font-medium text-[#101010]" : "font-normal text-[#5B5B57] hover:text-[#101010]"}`}>
-              {tab.label}
-              {tab.active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}
-            </Link>
-          ))}
-        </nav>
 
         <div className="flex min-h-[72px] flex-wrap items-center gap-2 border-b border-[#D6D6D0] py-4">
           <label className="flex h-10 min-w-[250px] flex-1 items-center border border-[#BDBDB6] bg-white px-3 md:max-w-[330px]"><span className="mr-2 text-[12px] text-[#777771]">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, AWB, customer…" className="min-w-0 flex-1 bg-transparent text-[12px] font-normal outline-none placeholder:text-[#777771]"/></label>
