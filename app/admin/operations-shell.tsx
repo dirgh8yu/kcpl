@@ -30,6 +30,16 @@ const operationsWorkflow = [
   { label: "Alerts", href: "/admin/alerts", prefixes: ["/admin/alerts"] },
 ] as const;
 
+const commercialWorkflow = [
+  { label: "Enquiries", href: "/admin/enquiries", prefixes: ["/admin/enquiries"] },
+  { label: "Customers", href: "/admin/crm", prefixes: ["/admin/crm"] },
+  { label: "Orders & Rates", href: "/admin/rating", prefixes: ["/admin/rating"] },
+  { label: "Pricing", href: "/admin/pricing", prefixes: ["/admin/pricing"] },
+  { label: "Load Planner", href: "/admin/consolidation", prefixes: ["/admin/consolidation"] },
+  { label: "Tender & Booking", href: "/admin/tenders", prefixes: ["/admin/tenders"] },
+  { label: "Market Estimate", href: "/admin/market-estimate", prefixes: ["/admin/market-estimate"] },
+] as const;
+
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
 }
@@ -126,6 +136,7 @@ export function OperationsShell({
   const systemHref = capabilities.isManagement ? "/admin/management" : "/admin/notifications";
   const systemActive = ["/admin/management", "/admin/migration", "/admin/staff", "/admin/notifications"].some((prefix) => pathname.startsWith(prefix));
   const operationsContext = capabilities.canManageJobFile && operationsWorkflow.some((item) => item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)));
+  const commercialContext = capabilities.canViewCommercial && commercialWorkflow.some((item) => item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)));
 
   const macroNav = useMemo<MacroNavItem[]>(() => [
     { label: "Overview", href: "/admin/command-centre", active: (path) => path.startsWith("/admin/command-centre") },
@@ -151,9 +162,10 @@ export function OperationsShell({
   }, []);
 
   const visibleMacroNav = macroNav.filter((item) => item.visible !== false);
+  const secondaryContext = operationsContext || commercialContext;
 
   return (
-    <div className="kcpl-admin-shell min-h-screen bg-[#F6F6F3] text-[#101010] [font-family:var(--font-geist),Arial,sans-serif]" data-operations-context={operationsContext || undefined}>
+    <div className="kcpl-admin-shell min-h-screen bg-[#F6F6F3] text-[#101010] [font-family:var(--font-geist),Arial,sans-serif]" data-operations-context={operationsContext || undefined} data-commercial-context={commercialContext || undefined}>
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-[252px] flex-col border-r border-[#D6D6D0] bg-[#F6F6F3] lg:flex">
         <Link href="/admin/command-centre" className="flex h-[84px] items-center border-b border-[#D6D6D0] px-6" aria-label="KCPL Operations overview"><BrandLockup /></Link>
         <div className="border-b border-[#D6D6D0] px-6 py-5"><p className="text-[10px] font-normal uppercase tracking-[0.11em] text-[#DC143C]">Operations desk</p><p className="mt-2 text-[13px] font-medium leading-5 text-[#101010]">{isManagement ? "All branches" : "Assigned branches"}</p><p className="mt-0.5 text-[11px] font-normal leading-4 text-[#6D6D67]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div>
@@ -170,10 +182,11 @@ export function OperationsShell({
       </header>
 
       {operationsContext ? <nav className="fixed inset-x-0 top-[64px] z-30 flex h-[50px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0] bg-[#F6F6F3] px-4 sm:px-5 lg:left-[252px] lg:px-8" aria-label="Operations workflow navigation">{operationsWorkflow.map((item) => { const active = item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex h-full shrink-0 items-center text-[11px] transition-colors ${active ? "font-medium text-[#101010]" : "font-normal text-[#686862] hover:text-[#101010]"}`}>{item.label}{active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}</Link>; })}</nav> : null}
+      {commercialContext ? <nav className="commercial-workflow-nav fixed inset-x-0 top-[64px] z-30 flex h-[50px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0] bg-[#F6F6F3] px-4 sm:px-5 lg:left-[252px] lg:px-8" aria-label="Commercial workflow navigation">{commercialWorkflow.map((item) => { const active = item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex h-full shrink-0 items-center text-[11px] transition-colors ${active ? "font-semibold text-[#101010]" : "font-medium text-[#686862] hover:text-[#101010]"}`}>{item.label}{active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}</Link>; })}</nav> : null}
 
       {mobileOpen ? <div className="fixed inset-x-0 bottom-0 top-[64px] z-50 overflow-y-auto bg-[#F6F6F3] lg:hidden"><div className="mx-auto max-w-xl"><div className="flex min-h-[82px] items-center border-b border-[#D6D6D0] px-5"><BrandLockup /></div><div className="border-b border-[#D6D6D0] px-5 py-4"><p className="text-[10px] uppercase tracking-[0.11em] text-[#DC143C]">Operations desk</p><p className="mt-1 text-[12px] text-[#5B5B57]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div><button type="button" onClick={() => { setMobileOpen(false); setPaletteOpen(true); }} className="flex min-h-[52px] w-full items-center border-b border-[#D6D6D0] px-5 text-[12px] text-[#5B5B57]"><Search size={14} className="mr-3"/>Search KCPL<span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button><nav aria-label="Mobile KCPL workspaces" className="px-3 py-4">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${active ? "border-[#DC143C] bg-[#EEEEE8] font-medium text-[#101010]" : "border-transparent text-[#5B5B57]"}`}>{item.label}</Link>; })}<Link href={systemHref} aria-current={systemActive ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${systemActive ? "border-[#DC143C] bg-[#EEEEE8] font-medium text-[#101010]" : "border-transparent text-[#5B5B57]"}`}>System</Link></nav><div className="border-t border-[#D6D6D0] px-5 py-5"><p className="text-[13px] font-medium text-[#101010]">{userName}</p><p className="mt-1 text-[11px] text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p><a href={signOutPath} className="mt-5 inline-flex items-center gap-2 border-b border-[#101010] pb-1 text-[12px] text-[#101010]"><LogOut size={13}/>Sign out</a></div></div></div> : null}
 
-      <div className={`kcpl-admin-content min-w-0 lg:pl-[252px] ${operationsContext ? "pt-[114px]" : "pt-[64px]"}`}>{children}</div>
+      <div className={`kcpl-admin-content min-w-0 lg:pl-[252px] ${secondaryContext ? "pt-[114px]" : "pt-[64px]"}`}>{children}</div>
       <OperationsCommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
     </div>
   );
