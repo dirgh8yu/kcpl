@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   activeWorkspace,
   groupedWorkspaces,
@@ -14,6 +16,10 @@ const full = {
   canManageStaff: true,
   isManagement: true,
 };
+
+function repoFile(path) {
+  return fileURLToPath(new URL(`../${path}`, import.meta.url));
+}
 
 test("workflow navigation contains every current TMS handoff workspace", () => {
   const ids = new Set(workflowWorkspaces.map((workspace) => workspace.id));
@@ -57,4 +63,39 @@ test("active workspace picks the most specific nested route", () => {
 
 test("menu groups follow operational pipeline order", () => {
   assert.deepEqual(groupedWorkspaces(full).map((group) => group.group), ["Operate", "Plan & Sell", "Network", "Finance", "Organisation"]);
+});
+
+test("every registered workspace href resolves to a real App Router page", () => {
+  for (const workspace of workflowWorkspaces) {
+    const pathname = workspace.href.split("?")[0];
+    const relative = pathname.replace(/^\//, "");
+    const page = repoFile(`app/${relative.replace(/^app\//, "")}/page.tsx`);
+    assert.equal(existsSync(page), true, `${workspace.id} points to missing page ${workspace.href}`);
+  }
+});
+
+test("admin root remains an authentication gateway and not a business workspace", () => {
+  const source = readFileSync(repoFile("app/admin/page.tsx"), "utf8");
+  assert.match(source, /redirect\("\/admin\/command-centre"\)/);
+  assert.doesNotMatch(source, /<AdminDashboard/);
+});
+
+test("enquiries have a dedicated workspace route", () => {
+  const enquiries = workflowWorkspaces.find((workspace) => workspace.id === "enquiries");
+  assert.equal(enquiries?.href, "/admin/enquiries");
+  assert.equal(activeWorkspace("/admin/enquiries", full)?.id, "enquiries");
+});
+
+test("operations search deep-links quote results into the enquiries workspace", () => {
+  const source = readFileSync(repoFile("app/api/admin/operations-search/route.ts"), "utf8");
+  assert.match(source, /\/admin\/enquiries\?enquiry=/);
+  assert.doesNotMatch(source, /href: `\/admin\?enquiry=/);
+});
+
+test("command palette only advertises quick actions with real destinations", () => {
+  const source = readFileSync(repoFile("app/admin/operations-command-palette.tsx"), "utf8");
+  assert.match(source, /href: "\/admin\/crm\/new"/);
+  assert.match(source, /href: "\/admin\/payables\?create=1"/);
+  assert.doesNotMatch(source, /title: "New enquiry \/ quote"/);
+  assert.doesNotMatch(source, /title: "New transport order"/);
 });
