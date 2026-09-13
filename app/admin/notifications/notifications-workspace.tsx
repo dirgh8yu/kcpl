@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 
 type NotificationResponse = { notifications: OperationsNotification[]; unread_count: number; preferences: NotificationPreferences; email_configured: boolean };
 type StateFilter = "all" | "unread" | "read" | "resolved";
