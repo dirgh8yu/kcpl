@@ -1,0 +1,260 @@
+/*
+ * KCPL brand authority layer.
+ * Source of truth: Figma file o1q9pbJNBPFNsLS1LyZAPU.
+ *
+ * This file is intentionally loaded after legacy/public/admin compatibility CSS.
+ * It establishes the brand contract while older sections are migrated away from
+ * one-off colours and serif typography. Do not add another brand override layer.
+ */
+
+:root {
+  --kcpl-crimson: #dc143c;
+  --kcpl-black: #101010;
+  --kcpl-canvas: #f6f6f3;
+  --kcpl-white: #ffffff;
+  --kcpl-muted: #686861;
+  --kcpl-line: color-mix(in srgb, var(--kcpl-black) 14%, transparent);
+  --kcpl-crimson-hover: color-mix(in srgb, var(--kcpl-crimson) 86%, var(--kcpl-black));
+
+  /* Temporary migration aliases for legacy public CSS. New work must use --kcpl-* tokens. */
+  --background: var(--kcpl-canvas);
+  --foreground: var(--kcpl-black);
+  --navy: var(--kcpl-black);
+  --ink: var(--kcpl-black);
+  --gold: var(--kcpl-crimson);
+  --gold-light: color-mix(in srgb, var(--kcpl-crimson) 78%, white);
+  --offwhite: var(--kcpl-canvas);
+  --slate: var(--kcpl-muted);
+  --line: color-mix(in srgb, var(--kcpl-black) 14%, var(--kcpl-canvas));
+  --red: var(--kcpl-crimson);
+  --rhododendron: var(--kcpl-crimson);
+  --glacier: var(--kcpl-muted);
+  --pine: var(--kcpl-black);
+  --parchment: var(--kcpl-canvas);
+}
+
+html,
+body {
+  background: var(--kcpl-canvas);
+  color: var(--kcpl-black);
+}
+
+body {
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+
+::selection {
+  background: var(--kcpl-crimson);
+  color: var(--kcpl-white);
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-color: var(--kcpl-crimson);
+}
+
+/* Approved Figma wordmark: Gateway K + Manrope ExtraBold / SemiBold. */
+.brand-lockup {
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark,
+.brand-lockup-header .brand-mark {
+  width: 44px;
+  height: 44px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.brand-lockup-header .brand-mark {
+  width: 46px;
+  height: 46px;
+}
+
+.brand-wordmark {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--kcpl-black);
+  line-height: 1;
+}
+
+.brand-wordmark.is-inverse {
+  color: var(--kcpl-white);
+}
+
+.brand-wordmark-name {
+  display: block;
+  font-family: var(--font-manrope), Arial, sans-serif;
+  font-size: .86rem;
+  font-weight: 800;
+  letter-spacing: -.018em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brand-wordmark-meta {
+  display: block;
+  margin-top: .42rem;
+  font-family: var(--font-manrope), Arial, sans-serif;
+  font-size: .46rem;
+  font-weight: 600;
+  letter-spacing: .24em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Retire the old animated serif lockup wherever old markup survives during migration. */
+.brand-header-rail,
+.brand-header-stage,
+.brand-header-full,
+.brand-header-short {
+  font-family: var(--font-manrope), Arial, sans-serif;
+  animation: none;
+}
+
+/* Public navigation uses only the approved crimson / black / canvas system. */
+.site-header.is-scrolled,
+.site-header.menu-is-open {
+  background: rgb(16 16 16 / .96);
+}
+
+.site-header::before {
+  background: linear-gradient(90deg, var(--kcpl-crimson), rgb(220 20 60 / .42) 34%, transparent 86%);
+}
+
+.nav-link::after,
+.header-quote-link::before {
+  background: var(--kcpl-crimson);
+}
+
+.header-quote-link:hover {
+  color: var(--kcpl-white);
+}
+
+.header-quote-link:hover::before {
+  background: var(--kcpl-crimson);
+}
+
+.mobile-nav-panel {
+  background: var(--kcpl-canvas);
+  color: var(--kcpl-black);
+}
+
+.mobile-nav-eyebrow,
+.mobile-nav-links a.is-active strong,
+.mobile-nav-links svg {
+  color: var(--kcpl-crimson);
+}
+
+.mobile-nav-links strong {
+  font-family: var(--font-manrope), Arial, sans-serif;
+  font-weight: 800;
+}
+
+/* Public display typography: no branded serif voice. */
+.hero-phase-intro h1,
+.hero-mobile-copy [role="heading"],
+.hero-phase-copy h2,
+.support-service-copy h3,
+.services-route-copy h3,
+.services-specialist-copy > h2,
+.services-specialist-links strong,
+.services-handling-copy h3 {
+  font-family: var(--font-manrope), Arial, sans-serif;
+  font-weight: 800;
+}
+
+.hero-phase-intro h1,
+.hero-mobile-copy [role="heading"] {
+  line-height: .82;
+  letter-spacing: -.055em;
+}
+
+.hero-phase-copy h2,
+.services-specialist-copy > h2 {
+  line-height: .94;
+  letter-spacing: -.045em;
+}
+
+.hero-kicker,
+.support-service-copy > div,
+.services-route-copy > span,
+.services-specialist-links a > span,
+.services-handling-copy > span {
+  color: var(--kcpl-crimson);
+}
+
+/* Shared interactive treatments. */
+.bg-gold {
+  background-color: var(--kcpl-crimson);
+}
+
+.hover\:bg-gold-light:hover {
+  background-color: var(--kcpl-crimson-hover);
+}
+
+.text-gold,
+.text-red,
+.text-rhododendron {
+  color: var(--kcpl-crimson);
+}
+
+.border-gold {
+  border-color: var(--kcpl-crimson);
+}
+
+/* Operations adopts the same brand foundation. Semantic status colours remain functional. */
+.kcpl-ops {
+  --ops-canvas: var(--kcpl-canvas);
+  --ops-canvas-warm: var(--kcpl-canvas);
+  --ops-surface: var(--kcpl-white);
+  --ops-surface-strong: var(--kcpl-white);
+  --ops-sidebar: var(--kcpl-canvas);
+  --ops-ink: var(--kcpl-black);
+  --ops-accent: var(--kcpl-crimson);
+  --ops-accent-hover: var(--kcpl-crimson-hover);
+  --ops-accent-soft: color-mix(in srgb, var(--kcpl-crimson) 8%, white);
+  --ops-accent-softer: color-mix(in srgb, var(--kcpl-crimson) 4%, white);
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+
+.kcpl-ops .ops-page-heading h1,
+.kcpl-ops .ops-surface-header h2 {
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+
+@media (max-width: 767px) {
+  .brand-lockup-header .brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand-wordmark-name {
+    font-size: .74rem;
+  }
+
+  .brand-wordmark-meta {
+    margin-top: .34rem;
+    font-size: .4rem;
+    letter-spacing: .2em;
+  }
+}
+
+@media (max-width: 390px) {
+  /* Figma usage rule: use the symbol alone when the wordmark becomes too small. */
+  .brand-lockup-header .brand-wordmark {
+    display: none;
+  }
+}
