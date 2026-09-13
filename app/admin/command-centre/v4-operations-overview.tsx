@@ -82,52 +82,56 @@ export function V4OperationsOverview({ data, overview }: { data: CommandCentreDa
   const recent = [...data.jobs].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)).slice(0, 3);
   const movement = movementCounts(data, overview);
 
-  return <main className="min-h-[calc(100vh-54px)] bg-[#f6f6f3] px-4 pb-10 pt-8 text-[#141414] sm:px-6 lg:px-7">
-    <div className="mx-auto w-full max-w-[1152px]">
-      <header className="flex min-h-[76px] flex-wrap items-center justify-between gap-4 border-b border-[#e2e2e2] pb-4">
+  return <main className="min-h-[calc(100vh-56px)] bg-[#F6F6F3] px-4 pb-12 pt-8 text-[#101010] sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-[1180px]">
+      <header className="flex min-h-[96px] flex-wrap items-end justify-between gap-5 border-b border-[#E2E2DD] pb-5">
         <div>
-          <h1 className="text-[22px] font-semibold leading-[30px]">Operations</h1>
-          <p className="mt-1 text-[13px] leading-[19px] text-[#5b5b5b]">{data.totals.active_jobs} active shipments · {data.totals.exception_jobs} exceptions · {data.totals.customs_blockers} customs clearance · {data.totals.deliveries_today} due today</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#DC143C]">KCPL Operations</p>
+          <h1 className="mt-1 text-[28px] font-extrabold leading-[36px] tracking-[-0.035em]">Overview</h1>
+          <p className="mt-1.5 text-[13px] font-medium leading-[20px] text-[#60605B]">{data.totals.active_jobs} active shipments · {data.totals.exception_jobs} exceptions · {data.totals.customs_blockers} customs clearance · {data.totals.deliveries_today} due today</p>
         </div>
-        <Link href="/admin/rating" className="inline-flex h-8 items-center justify-center rounded-[8px] bg-[#dc143c] px-3 text-[12px] font-semibold leading-[17px] text-white transition hover:bg-[#c81035]">New transport order</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/shipments" className="inline-flex h-10 items-center justify-center rounded-[9px] border border-[#DCDCD7] bg-white px-4 text-[12px] font-semibold text-[#101010] transition hover:border-[#C7C7C1]">View shipments</Link>
+          <Link href="/admin/rating" className="inline-flex h-10 items-center justify-center rounded-[9px] bg-[#DC143C] px-4 text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(220,20,60,.14)] transition hover:bg-[#C41235]">Open Rate Desk</Link>
+        </div>
       </header>
 
-      <section className="grid gap-6 py-6 xl:grid-cols-[minmax(0,760px)_minmax(320px,1fr)]">
-        <div className="overflow-hidden rounded-[12px] border border-[#e2e2e2] bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,.03),0_2px_8px_rgba(0,0,0,.04)]">
-          <div className="flex h-11 items-center justify-between border-b border-[#e2e2e2] px-4"><h2 className="text-[15px] font-semibold leading-[22px]">Priority queue</h2><Link href="/admin/alerts" className="text-[12px] font-medium leading-[17px] text-[#5b5b5b] hover:text-[#141414]">{priority.length} requiring action</Link></div>
+      <section className="grid gap-5 py-6 xl:grid-cols-[minmax(0,760px)_minmax(320px,1fr)]">
+        <div className="overflow-hidden rounded-[16px] border border-[#E2E2DD] bg-white shadow-[0_12px_32px_rgba(16,16,16,.035)]">
+          <div className="flex h-12 items-center justify-between border-b border-[#E8E8E3] px-5"><h2 className="text-[14px] font-bold leading-[20px]">Priority queue</h2><Link href="/admin/alerts" className="text-[11px] font-semibold leading-[17px] text-[#6A6A64] transition hover:text-[#DC143C]">{priority.length} requiring action</Link></div>
           {priority.length ? priority.map((job, index) => {
             const issue = issueFor(job);
-            const dot = issue.tone === "danger" ? "#b13a43" : issue.tone === "warning" ? "#a46600" : "#2563a6";
-            return <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className={`relative flex min-h-[60px] items-center gap-3 border-b border-[#e2e2e2] px-4 py-2.5 transition last:border-b-0 hover:bg-[#fbfbf9] ${index === 0 && issue.tone === "danger" ? "bg-[#fff8f9]" : ""}`}>
-              {index === 0 && issue.tone === "danger" ? <span className="absolute bottom-3 left-0 top-3 w-[3px] rounded-r-[2px] bg-[#dc143c]"/> : null}
+            const dot = issue.tone === "danger" ? "#DC143C" : issue.tone === "warning" ? "#9B6100" : "#346AA0";
+            return <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className={`relative flex min-h-[66px] items-center gap-3 border-b border-[#ECECE7] px-5 py-3 transition last:border-b-0 hover:bg-[#FAFAF7] ${index === 0 && issue.tone === "danger" ? "bg-[#DC143C]/[0.025]" : ""}`}>
+              {index === 0 && issue.tone === "danger" ? <span className="absolute bottom-3 left-0 top-3 w-[3px] rounded-r-full bg-[#DC143C]"/> : null}
               <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ backgroundColor: dot }}/>
-              <span className="min-w-0 flex-1"><strong className="block truncate text-[13px] font-medium leading-[19px]">{issue.title}</strong><span className="block truncate text-[12px] font-medium leading-[17px] text-[#5b5b5b]">{route(job)} · {job.reference}</span></span>
-              <span className="hidden w-[92px] truncate text-right text-[12px] font-medium text-[#5b5b5b] sm:block">{owner(job)}</span>
-              <span className="w-[46px] text-right text-[12px] font-semibold text-[#737373]">{relativeAge(job.updated_at)}</span>
+              <span className="min-w-0 flex-1"><strong className="block truncate text-[13px] font-semibold leading-[19px]">{issue.title}</strong><span className="block truncate text-[11px] font-medium leading-[17px] text-[#666660]">{route(job)} · {job.reference}</span></span>
+              <span className="hidden w-[100px] truncate text-right text-[11px] font-semibold text-[#666660] sm:block">{owner(job)}</span>
+              <span className="w-[46px] text-right text-[11px] font-bold text-[#85857F]">{relativeAge(job.updated_at)}</span>
             </Link>;
-          }) : <div className="grid min-h-[300px] place-items-center px-6 text-center"><div><p className="text-[15px] font-semibold">No priority blockers</p><p className="mt-1 text-[12px] text-[#737373]">Current active shipments do not require escalation.</p></div></div>}
+          }) : <div className="grid min-h-[300px] place-items-center px-6 text-center"><div><p className="text-[14px] font-bold">No priority blockers</p><p className="mt-1 text-[12px] font-medium text-[#777771]">Current active shipments do not require escalation.</p></div></div>}
         </div>
 
-        <div className="rounded-[12px] border border-[#e8e8e8] bg-[#fafafa] px-4 py-1">
-          <div className="flex h-11 items-center justify-between border-b border-[#e2e2e2]"><h2 className="text-[15px] font-semibold leading-[22px]">Today</h2><span className="text-[12px] font-medium text-[#5b5b5b]">Nepal time</span></div>
-          {today.length ? today.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex min-h-[60px] items-center gap-3 border-b border-[#e2e2e2] last:border-b-0 hover:bg-white/70">
-            <strong className="w-[50px] text-[12px] font-semibold leading-[17px]">{etaTime(job)}</strong><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium leading-[19px]">{shipmentStatusLabels[job.status]} · {job.reference}</span><span className="block truncate text-[11px] font-medium leading-[15px] text-[#5b5b5b]">{job.destination || job.current_location || route(job)}</span></span>
-          </Link>) : <div className="grid min-h-[300px] place-items-center px-5 text-center"><div><p className="text-[14px] font-semibold">Nothing due today</p><p className="mt-1 text-[12px] text-[#737373]">No shipment ETA falls on the current operational date.</p></div></div>}
-        </div>
-      </section>
-
-      <section className="rounded-[16px] border border-[#e2e2e2] bg-[#f7f7f5] px-5 py-5 shadow-[0_2px_5px_rgba(0,0,0,.04)]">
-        <h2 className="text-[15px] font-semibold leading-[22px]">Movement</h2>
-        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7">
-          {movement.map((item, index) => <Link key={item.label} href={item.href} className={`flex min-h-[74px] flex-col items-center justify-center px-3 py-2.5 transition hover:bg-white/70 ${index < movement.length - 1 ? "xl:border-r xl:border-[#e2e2e2]" : ""}`}><span className="text-[11px] font-medium leading-[15px] text-[#5b5b5b]">{item.label}</span><strong className="mt-0.5 text-[18px] font-semibold leading-[26px]">{item.value}</strong></Link>)}
+        <div className="overflow-hidden rounded-[16px] border border-[#E2E2DD] bg-white px-5 shadow-[0_12px_32px_rgba(16,16,16,.025)]">
+          <div className="flex h-12 items-center justify-between border-b border-[#E8E8E3]"><h2 className="text-[14px] font-bold leading-[20px]">Today</h2><span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#85857F]">Nepal time</span></div>
+          {today.length ? today.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex min-h-[66px] items-center gap-3 border-b border-[#ECECE7] last:border-b-0 hover:bg-[#FAFAF7]">
+            <strong className="w-[50px] text-[11px] font-bold leading-[17px]">{etaTime(job)}</strong><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-semibold leading-[19px]">{shipmentStatusLabels[job.status]} · {job.reference}</span><span className="block truncate text-[11px] font-medium leading-[15px] text-[#666660]">{job.destination || job.current_location || route(job)}</span></span>
+          </Link>) : <div className="grid min-h-[300px] place-items-center px-5 text-center"><div><p className="text-[14px] font-bold">Nothing due today</p><p className="mt-1 text-[12px] font-medium text-[#777771]">No shipment ETA falls on the current operational date.</p></div></div>}
         </div>
       </section>
 
-      <section className="mt-4 rounded-[12px] border border-[#ececec] bg-[#fafafa] px-5 py-[18px]">
-        <div className="flex h-[34px] items-center"><h2 className="text-[15px] font-semibold leading-[22px]">Recent activity</h2><Link href="/admin/shipments" className="ml-auto text-[12px] font-medium leading-[17px] text-[#5b5b5b] hover:text-[#141414]">View all</Link></div>
-        {recent.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex min-h-[44px] items-center gap-3 border-b border-[#e2e2e2] text-[12px] last:border-b-0 hover:bg-white/60 sm:gap-4">
-          <span className="w-[48px] shrink-0 text-[11px] font-medium text-[#737373]">{timeOnly(job.updated_at)}</span><span className="w-[250px] truncate text-[13px] font-medium">{shipmentStatusLabels[job.status]} · {job.current_location || route(job)}</span><span className="min-w-0 flex-1 truncate font-medium text-[#5b5b5b]">{job.reference} · {job.customer_name}</span><span className="hidden text-[11px] font-medium text-[#737373] sm:block">Shipment update</span>
-        </Link>)}
+      <section className="rounded-[16px] border border-[#E2E2DD] bg-white px-5 py-5 shadow-[0_10px_28px_rgba(16,16,16,.025)]">
+        <div className="flex items-center justify-between"><h2 className="text-[14px] font-bold leading-[20px]">Movement</h2><Link href="/admin/shipments" className="text-[11px] font-semibold text-[#666660] transition hover:text-[#DC143C]">Open shipments</Link></div>
+        <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-[12px] border border-[#ECECE7] sm:grid-cols-4 xl:grid-cols-7">
+          {movement.map((item, index) => <Link key={item.label} href={item.href} className={`flex min-h-[82px] flex-col items-center justify-center bg-[#FAFAF7] px-3 py-3 transition hover:bg-white ${index < movement.length - 1 ? "xl:border-r xl:border-[#E8E8E3]" : ""}`}><span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#72726C]">{item.label}</span><strong className="mt-1 text-[20px] font-extrabold leading-[26px] tracking-[-0.02em]">{item.value}</strong></Link>)}
+        </div>
+      </section>
+
+      <section className="mt-5 overflow-hidden rounded-[16px] border border-[#E2E2DD] bg-white px-5 py-4 shadow-[0_10px_28px_rgba(16,16,16,.02)]">
+        <div className="flex h-9 items-center"><h2 className="text-[14px] font-bold leading-[20px]">Recent activity</h2><Link href="/admin/shipments" className="ml-auto text-[11px] font-semibold leading-[17px] text-[#666660] transition hover:text-[#DC143C]">View all shipments</Link></div>
+        {recent.length ? recent.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex min-h-[48px] items-center gap-3 border-b border-[#ECECE7] text-[12px] last:border-b-0 hover:bg-[#FAFAF7] sm:gap-4">
+          <span className="w-[48px] shrink-0 text-[10px] font-semibold text-[#85857F]">{timeOnly(job.updated_at)}</span><span className="w-[250px] truncate text-[12px] font-semibold">{shipmentStatusLabels[job.status]} · {job.current_location || route(job)}</span><span className="min-w-0 flex-1 truncate font-medium text-[#666660]">{job.reference} · {job.customer_name}</span><span className="hidden text-[10px] font-semibold uppercase tracking-[0.05em] text-[#85857F] sm:block">Shipment update</span>
+        </Link>) : <div className="py-8 text-center"><p className="text-[13px] font-semibold text-[#666660]">No recent shipment activity.</p></div>}
       </section>
     </div>
   </main>;

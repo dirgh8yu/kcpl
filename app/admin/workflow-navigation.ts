@@ -28,7 +28,7 @@ export type NavigationCapabilities = {
 };
 
 export const workflowWorkspaces: WorkflowWorkspace[] = [
-  { id: "home", href: "/admin/command-centre", label: "Home", group: "Operate", hint: "Operational day, blockers and workflow handoffs", keywords: ["home", "command centre", "dashboard", "operations"], permission: "all", prefixes: ["/admin/command-centre"] },
+  { id: "home", href: "/admin/command-centre", label: "Overview", group: "Operate", hint: "Operational overview, blockers and workflow handoffs", keywords: ["overview", "home", "command centre", "dashboard", "operations"], permission: "all", prefixes: ["/admin/command-centre"] },
   { id: "shipments", href: "/admin/shipments", label: "Shipments", group: "Operate", hint: "Active movements and Digital Job Files", keywords: ["shipment", "job", "job file", "movement", "cargo"], permission: "job_file", prefixes: ["/admin/shipments", "/admin/jobs/"] },
   { id: "pickups", href: "/admin/pickups", label: "Pickup Scheduling", group: "Operate", hint: "Booking handoff, pickup windows, carrier confirmation and driver assignment", keywords: ["pickup", "appointment", "collection", "vendor", "driver", "booking"], permission: "job_file", prefixes: ["/admin/pickups"] },
   { id: "freight-documents", href: "/admin/freight-documents", label: "Freight Documents", group: "Operate", hint: "Generate controlled BL, AWB, consignment, manifest and execution documents", keywords: ["bol", "bl", "bill of lading", "awb", "air waybill", "manifest", "shipping instruction", "freight documents", "pickup order", "delivery order"], permission: "job_file", prefixes: ["/admin/freight-documents"] },

@@ -86,6 +86,22 @@ test("enquiries have a dedicated workspace route", () => {
   assert.equal(activeWorkspace("/admin/enquiries", full)?.id, "enquiries");
 });
 
+test("primary admin navigation uses Overview and Shipments without ambiguous Home or Operations labels", () => {
+  const overview = workflowWorkspaces.find((workspace) => workspace.id === "home");
+  const shipments = workflowWorkspaces.find((workspace) => workspace.id === "shipments");
+  assert.equal(overview?.label, "Overview");
+  assert.equal(overview?.href, "/admin/command-centre");
+  assert.equal(shipments?.label, "Shipments");
+  assert.equal(shipments?.href, "/admin/shipments");
+
+  const shell = readFileSync(repoFile("app/admin/operations-shell.tsx"), "utf8");
+  assert.match(shell, /label: "Overview", href: "\/admin\/command-centre"/);
+  assert.match(shell, /label: "Shipments", href: "\/admin\/shipments"/);
+  assert.doesNotMatch(shell, /label: "Home", href: "\/admin\/command-centre"/);
+  assert.doesNotMatch(shell, /label: "Operations", href: "\/admin\/shipments"/);
+  assert.match(shell, /pathname\.startsWith\("\/admin\/enquiries"\)/);
+});
+
 test("operations search deep-links quote results into the enquiries workspace", () => {
   const source = readFileSync(repoFile("app/api/admin/operations-search/route.ts"), "utf8");
   assert.match(source, /\/admin\/enquiries\?enquiry=/);
@@ -98,4 +114,10 @@ test("command palette only advertises quick actions with real destinations", () 
   assert.match(source, /href: "\/admin\/payables\?create=1"/);
   assert.doesNotMatch(source, /title: "New enquiry \/ quote"/);
   assert.doesNotMatch(source, /title: "New transport order"/);
+});
+
+test("Overview does not advertise transport-order creation when it only opens the Rate Desk", () => {
+  const source = readFileSync(repoFile("app/admin/command-centre/v4-operations-overview.tsx"), "utf8");
+  assert.equal(source.includes("Open Rate Desk"), true);
+  assert.equal(source.includes("New transport order"), false);
 });
