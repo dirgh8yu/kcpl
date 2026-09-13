@@ -14,11 +14,14 @@ import "./admin/operations-polish.css";
 import "./admin/operations-hotfix.css";
 import "./admin/operations-v4-compat.css";
 import "./admin/commercial-v4-compat.css";
+import "./brand-system.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
 });
+
+// Kept temporarily while legacy sections are migrated. New KCPL UI must use Manrope.
 const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
 
@@ -31,7 +34,7 @@ export const metadata: Metadata = {
   description: defaultDescription,
   applicationName: siteName,
   alternates: { canonical: siteUrl },
-  icons: { icon: "/images/brand/kcpl-logo-mark.png", shortcut: "/images/brand/kcpl-logo-mark.png", apple: "/images/brand/kcpl-logo-mark.png" },
+  icons: { icon: "/images/brand/kcpl-gateway-k.svg", shortcut: "/images/brand/kcpl-gateway-k.svg", apple: "/images/brand/kcpl-gateway-k.svg" },
   openGraph: { type: "website", siteName, title: defaultTitle, description: defaultDescription, url: siteUrl, images: [socialImage] },
   twitter: { card: "summary_large_image", title: defaultTitle, description: defaultDescription, images: [socialImage.url] },
 };
@@ -43,7 +46,7 @@ const organizationSchema = {
   name: company.name,
   alternateName: company.shortName,
   url: siteUrl,
-  logo: absoluteUrl("/images/brand/kcpl-logo-mark.png"),
+  logo: absoluteUrl("/images/brand/kcpl-gateway-k.svg"),
   foundingDate: String(company.founded),
   email: company.email,
   telephone: company.phones[0],
