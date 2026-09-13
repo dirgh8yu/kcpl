@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Activity, Clock3, RefreshCw, RadioTower, Search, ShieldAlert } from "lucide-react";
+import { Activity, RefreshCw, RadioTower, Search, ShieldAlert } from "lucide-react";
 import { OpsBadge, OpsButton, OpsField, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import { shipmentStatusLabels } from "../../shipment-types";
 import { trackingMilestoneLabels, trackingMilestones, type TrackingEvent, type TrackingMilestone, type VisibilityShipment, type VisibilitySummary } from "./tracking-visibility";
