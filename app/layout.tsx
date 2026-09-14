@@ -21,6 +21,7 @@ import "./admin/operations-detail-refinement.css";
 import "./admin/commercial-v4-compat.css";
 import "./admin/commercial-detail-refinement.css";
 import "./admin/operations-overview-refinement.css";
+import "./admin/operations-overview-responsive.css";
 
 const geist = Geist({
   variable: "--font-geist",
