@@ -91,7 +91,7 @@ export default async function CommandCentrePage() {
   if (state.kind === "unavailable") return <OperationsShell {...shellProps}><Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /></OperationsShell>;
   if (state.kind === "error") return <OperationsShell {...shellProps}><Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded /></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><V4OperationsOverview data={state.data} overview={state.overview}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><V4OperationsOverview data={state.data} overview={state.overview} isManagement={state.shell.isManagement}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
