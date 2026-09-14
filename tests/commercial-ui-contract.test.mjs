@@ -42,5 +42,5 @@ test("Commercial UI contract keeps KCPL brand, accessibility and mobile safeguar
   assert.match(css, /:focus-visible/, "keyboard focus treatment is required");
   assert.match(css, /@media \(max-width: 760px\)/, "mobile Commercial layout rules are required");
   assert.match(css, /prefers-reduced-motion: reduce/, "reduced-motion handling is required");
-  assert.match(css, /min-height: 44px !important/, "mobile touch targets must stay at least 44px");
+  assert.match(css, /min-height: 44px/, "mobile touch targets must stay at least 44px");
 });

@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Operations V4 shared refinement layer.
  * This file intentionally targets only the admin `ops-*` primitives. Public-site
  * components do not use these class names. Business state remains owned by the
@@ -47,7 +49,7 @@
   background: var(--ops-canvas);
 }
 
-.ops-page::before { display: none !important; }
+.ops-page::before { display: none; }
 
 .ops-page-header {
   padding: 18px clamp(16px, 2.2vw, 28px) 14px;
@@ -336,15 +338,15 @@ button.ops-stat:hover { background: #fbfbf9; }
 
 .ops-record-row {
   min-height: 48px;
-  border-color: var(--ops-line) !important;
-  border-radius: 0 !important;
-  background: #fff !important;
-  box-shadow: none !important;
+  border-color: var(--ops-line);
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
 }
-.ops-record-row:hover { transform: none; background: #fbfbf9 !important; }
+.ops-record-row:hover { transform: none; background: #fbfbf9; }
 .ops-record-row[data-selected="true"] {
-  background: #fbfbf9 !important;
-  box-shadow: inset 2px 0 0 var(--ops-accent) !important;
+  background: #fbfbf9;
+  box-shadow: inset 2px 0 0 var(--ops-accent);
 }
 
 .ops-filter-pill {
@@ -454,7 +456,7 @@ details { border-radius: 6px; }
 .satellite-marker-activity.has-exception { background: var(--ops-rose); }
 .satellite-location-activity { border-color: var(--ops-line); border-radius: 6px; background: #fff; color: var(--ops-ink-soft); font-size: 10px; }
 .satellite-location-activity strong { color: var(--ops-blue); }
-.satellite-legend-live { background: var(--ops-blue) !important; box-shadow: none; }
+.satellite-legend-live { background: var(--ops-blue); box-shadow: none; }
 
 .ops-command-hero {
   position: relative;
@@ -540,9 +542,11 @@ details { border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) {
   .ops-page *, .ops-page *::before, .ops-page *::after,
   .ops-command-grid *, .ops-command-grid *::before, .ops-command-grid *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
+    scroll-behavior: auto;
+    transition-duration: .01ms;
+    animation-duration: .01ms;
+    animation-iteration-count: 1;
   }
+}
+
 }

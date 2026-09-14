@@ -1,42 +1,9 @@
-/* KCPL staff product typography contract
-   Brand/marketing lockups remain Manrope.
-   Customer portal, tracking, dense tables and internal software use Inter.
-   Loaded last so legacy admin typography cannot override the staff UI font. */
-
-.kcpl-admin-shell {
-  font-family: var(--font-inter), Arial, sans-serif;
-}
-
-/* Legacy workspace styles still reference --font-manrope explicitly.
-   Remap that token inside application content, then make Inter authoritative
-   for every rendered admin descendant so older high-specificity rules cannot leak through. */
-.kcpl-admin-shell .kcpl-admin-content {
-  --font-manrope: var(--font-inter);
-  font-family: var(--font-inter), Arial, sans-serif;
-}
-
-.kcpl-admin-shell.kcpl-admin-shell * {
-  font-family: var(--font-inter), Arial, sans-serif !important;
-}
-
-.kcpl-admin-shell :where(button, input, select, textarea) {
-  font-family: var(--font-inter), Arial, sans-serif !important;
-}
-
-/* The KCPL wordmark/lockup stays on the brand font. */
-.kcpl-admin-shell aside a[aria-label="KCPL Operations overview"],
-.kcpl-admin-shell aside a[aria-label="KCPL Operations overview"] *,
-.kcpl-admin-shell .max-w-xl > :first-child > span,
-.kcpl-admin-shell .max-w-xl > :first-child > span * {
-  font-family: var(--font-manrope), sans-serif !important;
-}
-
-/* Operational identifiers remain monospaced. */
-.kcpl-admin-shell.kcpl-admin-shell .ops-mono,
-.kcpl-admin-shell.kcpl-admin-shell .font-mono,
-.kcpl-admin-shell.kcpl-admin-shell code,
-.kcpl-admin-shell.kcpl-admin-shell pre,
-.kcpl-admin-shell.kcpl-admin-shell kbd,
-.kcpl-admin-shell.kcpl-admin-shell samp {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+/* KCPL staff uses Inter; the KCPL Operations overview brand lockup uses Manrope. */
+.kcpl-admin-shell { font-family: var(--font-inter), Arial, sans-serif; }
+.kcpl-admin-shell .kcpl-admin-content { --font-manrope: var(--font-inter); }
+.kcpl-admin-shell :where(button, input, select, textarea) { font-family: inherit; }
+.kcpl-admin-shell .app-brand { font-family: var(--font-manrope), sans-serif; }
+.kcpl-admin-shell :where(.ops-mono, .font-mono, code, pre, kbd, samp) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
 }

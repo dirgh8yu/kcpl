@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* V4 compatibility for older admin fragments that still carry one-off Tailwind
  * colours/radii. The OpsPage scope covers most current workspaces. The second
  * scope is the legacy CRM dashboard root, which predates OpsPage but still runs
@@ -17,7 +19,7 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-xl"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-2xl"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="rounded-3xl"] {
-  border-radius: 0 !important;
+  border-radius: 0;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e8e1db]"],
@@ -28,7 +30,7 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8cec7]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#e4ddd6]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#ece5df]"] {
-  border-color: #e2e2e2 !important;
+  border-color: #e2e2e2;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fcfaf8]"],
@@ -38,15 +40,15 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fffdfa]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fff9f4]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="bg-[#fff8f5]"] {
-  background-color: #fbfbf9 !important;
+  background-color: #fbfbf9;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d8ad91]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#dca99d]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="border-[#d5ae8f]"] {
-  border-color: #e2e2e2 !important;
-  background-color: #fbfbf9 !important;
-  box-shadow: inset 2px 0 0 #dc143c !important;
+  border-color: #e2e2e2;
+  background-color: #fbfbf9;
+  box-shadow: inset 2px 0 0 #dc143c;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#342f2b]"],
@@ -59,7 +61,7 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#332d29]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#443b35]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#4d453f]"] {
-  color: #141414 !important;
+  color: #141414;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#514840]"],
@@ -71,7 +73,7 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#71675f]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#756c65]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#796f68]"] {
-  color: #5b5b5b !important;
+  color: #5b5b5b;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#8b8179]"],
@@ -82,13 +84,13 @@
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#91877f]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#948a82]"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="text-[#968b82]"] {
-  color: #737373 !important;
+  color: #737373;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[0_"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[inset_"],
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) .shadow-sm {
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) button[class*="border"][class*="bg-white"],
@@ -102,43 +104,45 @@
 }
 
 .ops-page .invoice-sheet {
-  border-radius: 0 !important;
-  border-color: #e2e2e2 !important;
-  box-shadow: none !important;
+  border-radius: 0;
+  border-color: #e2e2e2;
+  box-shadow: none;
 }
 
 /* Legacy CRM dashboard shell. */
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] {
-  min-height: calc(100vh - 54px) !important;
-  background: #f6f6f3 !important;
-  color: #141414 !important;
+  min-height: calc(100vh - 54px);
+  background: #f6f6f3;
+  color: #141414;
 }
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > section:first-child {
-  border-color: #e2e2e2 !important;
-  background: #f6f6f3 !important;
-  padding-top: 18px !important;
-  padding-bottom: 14px !important;
-  backdrop-filter: none !important;
+  border-color: #e2e2e2;
+  background: #f6f6f3;
+  padding-top: 18px;
+  padding-bottom: 14px;
+  backdrop-filter: none;
 }
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > section:first-child > div,
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > div {
-  max-width: 1152px !important;
-  margin-inline: auto !important;
+  max-width: 1152px;
+  margin-inline: auto;
 }
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] > section:first-child h1 {
-  margin-top: 2px !important;
-  color: #141414 !important;
-  font-size: 22px !important;
-  font-weight: 650 !important;
-  line-height: 30px !important;
-  letter-spacing: -.02em !important;
+  margin-top: 2px;
+  color: #141414;
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 30px;
+  letter-spacing: -.02em;
 }
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] aside {
-  border-color: #e2e2e2 !important;
-  background: #fff !important;
+  border-color: #e2e2e2;
+  background: #fff;
 }
 main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"] aside > div:first-child {
-  border-color: #e2e2e2 !important;
-  background: #f7f7f7 !important;
-  backdrop-filter: none !important;
+  border-color: #e2e2e2;
+  background: #f7f7f7;
+  backdrop-filter: none;
+}
+
 }

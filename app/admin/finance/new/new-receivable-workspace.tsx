@@ -56,7 +56,7 @@ export function NewReceivableWorkspace() {
           <OpsField label="Tax %"><input min="0" max="100" step="0.01" type="number" value={form.taxRate} onChange={(event) => setForm({ ...form, taxRate: event.target.value })}/></OpsField>
           <OpsField label="Description"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></OpsField>
           <OpsField label="Invoice notes" className="md:col-span-2 xl:col-span-4"><textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></OpsField>
-          <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4"><OpsButton variant="primary" disabled={busy}><ReceiptText size={13}/>{busy ? "Creating…" : "Create invoice draft"}</OpsButton><Link href="/admin/finance" className="ops-button" data-variant="ghost" data-size="md">Cancel</Link></div>
+          <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy}><ReceiptText size={13}/>{busy ? "Creating…" : "Create invoice draft"}</OpsButton><Link href="/admin/finance" className="ops-button" data-variant="ghost" data-size="md">Cancel</Link></div>
         </form>
       </OpsSurface>
     </div>

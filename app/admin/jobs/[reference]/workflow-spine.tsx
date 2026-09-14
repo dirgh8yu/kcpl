@@ -34,7 +34,7 @@ function stageTone(state: ShipmentWorkflowReadiness["stages"][number]["state"]) 
   if (state === "complete") return "border-[#cddbcf] bg-[#f2f7f2] text-[#5d7562]";
   if (state === "blocked") return "border-[#edc8c4] bg-[#fff5f3] text-[#a9504d]";
   if (state === "current") return "border-[#e7c7b9] bg-[#fff7f2] text-[#a95d48]";
-  return "border-[#e9e2dc] bg-[#faf8f5] text-[#91877f]";
+  return "border-[var(--admin-line)] bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
 }
 
 function isFailure(message: string) {
@@ -270,56 +270,56 @@ export function WorkflowSpine({ initialWorkflow, initialJob, canOverride }: { in
             {index < workflow.stages.length - 1 ? <span className={`absolute left-[calc(50%+13px)] right-[calc(-50%+13px)] top-[13px] h-[2px] ${stage.state === "complete" ? "bg-[#a9c7b2]" : "bg-[#ddd8d2]"}`} aria-hidden="true"/> : null}
             <div className="relative z-10 flex flex-col items-center text-center">
               <span className={`inline-flex h-[27px] w-[27px] items-center justify-center rounded-full border bg-white ${stageTone(stage.state)}`}>{stageIcon(stage.state)}</span>
-              <span className="mt-2 text-[10px] font-bold text-[#49433e]">{stage.label}</span>
-              <span className="mt-1 max-w-[120px] text-[8px] leading-4 text-[#817a73]">{stage.detail}</span>
+              <span className="mt-2 text-[length:var(--app-label-size)] font-bold text-[#49433e]">{stage.label}</span>
+              <span className="mt-1 max-w-[120px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{stage.detail}</span>
             </div>
           </div>)}
         </div>
       </div>
       <div className="mt-4"><OpsProgress value={stagePercent}/></div>
 
-      <div className="mt-5 rounded-[14px] border border-[#e7d9d0] bg-[#fff9f5] p-4 sm:p-5">
+      <div className="mt-5 rounded-[var(--app-radius)] border border-[#e7d9d0] bg-[#fff9f5] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div><p className="ops-eyebrow">Next operational action</p><h3 className="mt-1 text-[14px] font-[740] text-[#473f39]">{nextActionTitle(nextAction, workflow)}</h3><p className="mt-1 max-w-3xl text-[9px] leading-5 text-[#81766e]">{nextActionDetail(nextAction, workflow)}</p></div>
+          <div><p className="ops-eyebrow">Next operational action</p><h3 className="mt-1 text-[14px] font-[740] text-[#473f39]">{nextActionTitle(nextAction, workflow)}</h3><p className="mt-1 max-w-3xl text-[length:var(--app-label-size)] leading-5 text-[#81766e]">{nextActionDetail(nextAction, workflow)}</p></div>
           <div className="flex flex-wrap gap-2"><OpsBadge tone="info"><Truck size={10}/>{shipmentStatusLabels[workflow.status]}</OpsBadge><OpsBadge tone={workflow.assigned_owner ? "success" : "warning"}><UserRound size={10}/>{workflow.assigned_owner ? (job.assigned_to_name || job.assigned_to_email || "Owned") : "Unassigned"}</OpsBadge></div>
         </div>
 
         <div className="mt-4">
           {nextAction.kind === "owner" ? <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]"><StaffAssignmentPicker branch={job.primary_branch} value={owner} onChange={setOwner}/><OpsButton variant="primary" disabled={Boolean(busy) || (!owner.name && !owner.email)} onClick={saveOwner}><UserRound size={12}/>{busy === "owner" ? "Assigning…" : "Assign owner"}</OpsButton></div> : null}
 
-          {nextAction.kind === "customs" ? <div className="grid gap-2">{openCustoms.slice(0, 4).map((step) => <div key={step.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[11px] border border-[#eadfd7] bg-white p-3"><div><strong className="text-[10px] text-[#514840]">{step.title}</strong><p className="mt-1 text-[8px] text-[#928880]">{step.branch}{step.detail ? ` · ${step.detail}` : ""}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeCustoms(step.id, step.title)}><ShieldCheck size={11}/>{busy === `customs:${step.id}` ? "Saving…" : "Mark complete"}</OpsButton></div>)}</div> : null}
+          {nextAction.kind === "customs" ? <div className="grid gap-2">{openCustoms.slice(0, 4).map((step) => <div key={step.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--app-radius)] border border-[#eadfd7] bg-white p-3"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{step.title}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[#928880]">{step.branch}{step.detail ? ` · ${step.detail}` : ""}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeCustoms(step.id, step.title)}><ShieldCheck size={11}/>{busy === `customs:${step.id}` ? "Saving…" : "Mark complete"}</OpsButton></div>)}</div> : null}
 
           {nextAction.kind === "documents" || nextAction.kind === "pod" ? <form onSubmit={uploadRequiredDocument} className="grid gap-3 md:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)_auto]">
             <OpsField label="Required document"><select name="documentType" defaultValue={nextAction.kind === "pod" ? "proof_of_delivery" : operationalMissingDocs[0]?.document_type}>{nextAction.kind === "pod" ? <option value="proof_of_delivery">Proof of Delivery</option> : operationalMissingDocs.map((item) => <option key={item.document_type} value={item.document_type}>{item.label}</option>)}</select></OpsField>
             <OpsField label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField>
-            <div className="self-end"><OpsButton variant="primary" disabled={Boolean(busy)}><Upload size={11}/>{busy === "document" ? "Uploading…" : nextAction.kind === "pod" ? "Upload POD" : "Upload document"}</OpsButton></div>
+            <div className="self-end"><OpsButton type="submit" variant="primary" disabled={Boolean(busy)}><Upload size={11}/>{busy === "document" ? "Uploading…" : nextAction.kind === "pod" ? "Upload POD" : "Upload document"}</OpsButton></div>
           </form> : null}
 
-          {nextAction.kind === "milestone" ? <div className="flex flex-wrap items-center gap-3"><OpsButton variant="primary" disabled={Boolean(busy)} onClick={() => advanceShipment(nextAction.status)}><ArrowRight size={12}/>{busy === "milestone" ? "Updating…" : `Move to ${shipmentStatusLabels[nextAction.status]}`}</OpsButton><span className="text-[8px] text-[#928880]">Current location, ETA and carrier are preserved from this Job File.</span></div> : null}
+          {nextAction.kind === "milestone" ? <div className="flex flex-wrap items-center gap-3"><OpsButton variant="primary" disabled={Boolean(busy)} onClick={() => advanceShipment(nextAction.status)}><ArrowRight size={12}/>{busy === "milestone" ? "Updating…" : `Move to ${shipmentStatusLabels[nextAction.status]}`}</OpsButton><span className="text-[length:var(--app-label-size)] text-[#928880]">Current location, ETA and carrier are preserved from this Job File.</span></div> : null}
 
-          {nextAction.kind === "tasks" ? <div className="grid gap-2">{openTasks.slice(0, 4).map((task) => <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[11px] border border-[#eadfd7] bg-white p-3"><div><strong className="text-[10px] text-[#514840]">{task.title}</strong><p className="mt-1 text-[8px] text-[#928880]">{task.branch}{task.assigned_to_name || task.assigned_to_email ? ` · ${task.assigned_to_name || task.assigned_to_email}` : " · Unassigned"}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeTask(task.id, task.title)}><ClipboardCheck size={11}/>{busy === `task:${task.id}` ? "Saving…" : "Complete"}</OpsButton></div>)}{openTasks.length > 4 ? <p className="text-[8px] text-[#928880]">+ {openTasks.length - 4} more open tasks in the detailed Job File below.</p> : null}</div> : null}
+          {nextAction.kind === "tasks" ? <div className="grid gap-2">{openTasks.slice(0, 4).map((task) => <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--app-radius)] border border-[#eadfd7] bg-white p-3"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{task.title}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[#928880]">{task.branch}{task.assigned_to_name || task.assigned_to_email ? ` · ${task.assigned_to_name || task.assigned_to_email}` : " · Unassigned"}</p></div><OpsButton variant="secondary" size="sm" disabled={Boolean(busy)} onClick={() => completeTask(task.id, task.title)}><ClipboardCheck size={11}/>{busy === `task:${task.id}` ? "Saving…" : "Complete"}</OpsButton></div>)}{openTasks.length > 4 ? <p className="text-[length:var(--app-label-size)] text-[#928880]">+ {openTasks.length - 4} more open tasks in the detailed Job File below.</p> : null}</div> : null}
 
           {nextAction.kind === "close" ? <OpsButton variant="primary" disabled={Boolean(busy)} onClick={() => closeJob()}><PackageCheck size={12}/>{busy === "close" ? "Closing…" : "Close operational job"}</OpsButton> : null}
 
-          {nextAction.kind === "customer" ? <div className="flex items-start gap-2 rounded-[11px] border border-[#efd4cf] bg-white p-3 text-[9px] leading-5 text-[#92524c]"><AlertTriangle size={12} className="mt-0.5 shrink-0"/><span>Return to the linked enquiry or Customer 360 and confirm the CRM customer. Controlled final-mile milestones remain blocked until ownership is established.</span></div> : null}
-          {nextAction.kind === "exception" ? <div className="flex items-start gap-2 rounded-[11px] border border-[#efd4cf] bg-white p-3 text-[9px] leading-5 text-[#92524c]"><AlertTriangle size={12} className="mt-0.5 shrink-0"/><span>This shipment is in Exception. Resolve the operational issue, then use the Shipment workspace to return it to the appropriate movement stage.</span></div> : null}
-          {nextAction.kind === "closed" ? <div className="flex items-start gap-2 rounded-[11px] border border-[#d6e1d6] bg-white p-3 text-[9px] leading-5 text-[#607563]"><LockKeyhole size={12} className="mt-0.5 shrink-0"/><span>This operational job is closed. Its shipment, documents, customs controls and audit trail remain available as the permanent record.</span></div> : null}
-          {nextAction.kind === "review" ? <div className="flex items-start gap-2 rounded-[11px] border border-[#eadfd7] bg-white p-3 text-[9px] leading-5 text-[#776d65]"><AlertTriangle size={12} className="mt-0.5 shrink-0"/><span>Review the remaining closeout controls below. The workflow is not yet ready for an automatic next milestone.</span></div> : null}
+          {nextAction.kind === "customer" ? <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[#efd4cf] bg-white p-3 text-[length:var(--app-label-size)] leading-5 text-[#92524c]"><AlertTriangle size={12} className="mt-0.5 shrink-0"/><span>Return to the linked enquiry or Customer 360 and confirm the CRM customer. Controlled final-mile milestones remain blocked until ownership is established.</span></div> : null}
+          {nextAction.kind === "exception" ? <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[#efd4cf] bg-white p-3 text-[length:var(--app-label-size)] leading-5 text-[#92524c]"><AlertTriangle size={12} className="mt-0.5 shrink-0"/><span>This shipment is in Exception. Resolve the operational issue, then use the Shipment workspace to return it to the appropriate movement stage.</span></div> : null}
+          {nextAction.kind === "closed" ? <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[#d6e1d6] bg-white p-3 text-[length:var(--app-label-size)] leading-5 text-[#607563]"><LockKeyhole size={12} className="mt-0.5 shrink-0"/><span>This operational job is closed. Its shipment, documents, customs controls and audit trail remain available as the permanent record.</span></div> : null}
+          {nextAction.kind === "review" ? <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[#eadfd7] bg-white p-3 text-[length:var(--app-label-size)] leading-5 text-[#776d65]"><AlertTriangle size={12} className="mt-0.5 shrink-0"/><span>Review the remaining closeout controls below. The workflow is not yet ready for an automatic next milestone.</span></div> : null}
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-[13px] border border-[#e9e2dc] bg-[#faf8f5] p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="ops-eyebrow">Operational readiness</p><h3 className="mt-1 text-[12px] font-bold text-[#514840]">Gate health</h3></div><div className="flex gap-2"><OpsBadge tone={workflow.customs_ready ? "success" : "warning"}>{workflow.customs_completed}/{workflow.customs_required} customs</OpsBadge><OpsBadge tone={workflow.document_pack_ready ? "success" : "warning"}>{presentDocs}/{requiredDocs.length} docs</OpsBadge><OpsBadge tone={workflow.open_tasks ? "warning" : "success"}>{workflow.open_tasks} open tasks</OpsBadge></div></div>
-          {workflow.close_blockers.length ? <div className="mt-4 grid gap-2">{workflow.close_blockers.map((blocker) => <div key={blocker} className="flex items-start gap-2 rounded-[10px] border border-[#efd4cf] bg-[#fff7f5] p-2.5 text-[9px] leading-4 text-[#92524c]"><AlertTriangle size={11} className="mt-0.5 shrink-0"/><span>{blocker}</span></div>)}</div> : <div className="mt-4 flex items-start gap-2 rounded-[10px] border border-[#d6e1d6] bg-[#f4f8f4] p-3 text-[9px] leading-4 text-[#607563]"><FileCheck2 size={12} className="mt-0.5 shrink-0"/><span>All operational closeout controls are satisfied. This job is ready to close.</span></div>}
-          {workflow.warnings.length ? <div className="mt-3 space-y-1">{workflow.warnings.map((warning) => <p key={warning} className="text-[8px] leading-4 text-[#8e837b]">• {warning}</p>)}</div> : null}
+        <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="ops-eyebrow">Operational readiness</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">Gate health</h3></div><div className="flex gap-2"><OpsBadge tone={workflow.customs_ready ? "success" : "warning"}>{workflow.customs_completed}/{workflow.customs_required} customs</OpsBadge><OpsBadge tone={workflow.document_pack_ready ? "success" : "warning"}>{presentDocs}/{requiredDocs.length} docs</OpsBadge><OpsBadge tone={workflow.open_tasks ? "warning" : "success"}>{workflow.open_tasks} open tasks</OpsBadge></div></div>
+          {workflow.close_blockers.length ? <div className="mt-4 grid gap-2">{workflow.close_blockers.map((blocker) => <div key={blocker} className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[#efd4cf] bg-[#fff7f5] p-2.5 text-[length:var(--app-label-size)] leading-4 text-[#92524c]"><AlertTriangle size={11} className="mt-0.5 shrink-0"/><span>{blocker}</span></div>)}</div> : <div className="mt-4 flex items-start gap-2 rounded-[var(--app-radius)] border border-[#d6e1d6] bg-[#f4f8f4] p-3 text-[length:var(--app-label-size)] leading-4 text-[#607563]"><FileCheck2 size={12} className="mt-0.5 shrink-0"/><span>All operational closeout controls are satisfied. This job is ready to close.</span></div>}
+          {workflow.warnings.length ? <div className="mt-3 space-y-1">{workflow.warnings.map((warning) => <p key={warning} className="text-[length:var(--app-label-size)] leading-4 text-[#8e837b]">• {warning}</p>)}</div> : null}
         </div>
 
-        <div className="rounded-[13px] border border-[#e9e2dc] bg-[#fffdfa] p-4">
-          <div className="flex items-center gap-2"><Landmark size={13} className="text-[#b46d57]"/><div><p className="ops-eyebrow">Finance lane</p><h3 className="mt-1 text-[12px] font-bold text-[#514840]">Parallel, not a cargo blocker</h3></div></div>
+        <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4">
+          <div className="flex items-center gap-2"><Landmark size={13} className="text-[#b46d57]"/><div><p className="ops-eyebrow">Finance lane</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">Parallel, not a cargo blocker</h3></div></div>
           <div className="mt-4 grid grid-cols-3 gap-2"><Metric label="Invoices" value={workflow.invoice_count}/><Metric label="Issued" value={workflow.issued_invoice_count}/><Metric label="Paid" value={workflow.paid_invoice_count}/></div>
-          <p className="mt-3 text-[8px] leading-4 text-[#8d837b]">{workflow.billing_ready ? "Customer billing has been issued and remains traceable to this shipment." : "Operations may continue, but Accounts should create/issue the customer invoice when commercially appropriate."}</p>
-          {workflow.customer_id ? <p className="mt-2 text-[8px] text-[#9a9088]">Customer <OpsMono>{workflow.customer_id}</OpsMono></p> : null}
+          <p className="mt-3 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{workflow.billing_ready ? "Customer billing has been issued and remains traceable to this shipment." : "Operations may continue, but Accounts should create/issue the customer invoice when commercially appropriate."}</p>
+          {workflow.customer_id ? <p className="mt-2 text-[length:var(--app-label-size)] text-[#9a9088]">Customer <OpsMono>{workflow.customer_id}</OpsMono></p> : null}
         </div>
       </div>
     </OpsSurface>
@@ -355,5 +355,5 @@ function nextActionDetail(action: NextAction, workflow: ShipmentWorkflowReadines
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-[10px] border border-[#ece5df] bg-[#faf8f5] p-2.5"><p className="text-[7px] font-bold uppercase tracking-[.07em] text-[#9b9189]">{label}</p><p className="mt-1 text-[13px] font-bold text-[#514840]">{value}</p></div>;
+  return <div className="rounded-[var(--app-radius)] border border-[#ece5df] bg-[var(--admin-surface-muted)] p-2.5"><p className="text-[7px] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><p className="mt-1 text-[13px] font-bold text-[var(--admin-ink)]">{value}</p></div>;
 }

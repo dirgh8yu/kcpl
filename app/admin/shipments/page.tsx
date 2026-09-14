@@ -16,6 +16,8 @@ export default async function ShipmentsPage() {
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
     canManageStaff: staff.permissions.canManageStaff,
     canManageFinance: staff.permissions.canManageFinance,
     isManagement: staff.permissions.role === "management",
@@ -24,7 +26,7 @@ export default async function ShipmentsPage() {
 
   let data;
   try {
-    data = await loadCommandCentre(staff);
+    data = await loadCommandCentre(staff, { includeDelivered: true });
   } catch (error) {
     console.error("Failed to load KCPL shipment queue", error);
     return <OperationsShell {...shellProps}><Gate title="Shipments could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available and no shipment records have been changed." embedded/></OperationsShell>;
@@ -37,14 +39,14 @@ export default async function ShipmentsPage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return (
-    <main className={`grid place-items-center bg-[#F6F6F3] p-6 text-[#101010] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}>
+    <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}>
       <section className="w-full max-w-xl border-y border-[#101010] py-8">
-        <p className="text-[10px] uppercase tracking-[0.11em] text-[#DC143C]">KCPL Shipments</p>
+        <p className="text-[length:var(--app-label-size)] uppercase tracking-[0.11em] text-[var(--admin-crimson)]">KCPL Shipments</p>
         <h1 className="mt-3 text-[32px] font-normal tracking-[-.04em]">{title}</h1>
-        <p className="mt-4 text-[14px] leading-6 text-[#5B5B57]">{detail}</p>
+        <p className="mt-4 text-[14px] leading-6 text-[var(--admin-muted)]">{detail}</p>
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/admin" className="inline-flex min-h-11 items-center border border-[#DC143C] bg-[#DC143C] px-5 text-[12px] font-medium text-white hover:border-[#B61032] hover:bg-[#B61032]">Operations</Link>
-          <Link href="/" className="inline-flex min-h-11 items-center border border-[#A5A5A0] px-5 text-[12px] font-medium text-[#101010] hover:border-[#101010] hover:bg-[#EEEEE8]">KCPL website</Link>
+          <Link href="/admin" className="inline-flex min-h-11 items-center border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-5 text-[12px] font-medium text-white hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)]">Operations</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center border border-[var(--admin-line-strong)] px-5 text-[12px] font-medium text-[var(--admin-ink)] hover:border-[#101010] hover:bg-[var(--admin-surface-muted)]">KCPL website</Link>
         </div>
       </section>
     </main>

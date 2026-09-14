@@ -89,7 +89,7 @@ export function NewPartnerWorkspace({ ownerOptions }: { ownerOptions: PartnerOwn
           <OpsField label="Preferred currency"><select value={form.preferredCurrency} onChange={(event) => setForm({ ...form, preferredCurrency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></OpsField>
           <OpsField label="Payment terms (days)"><input type="number" min="0" max="3650" step="1" value={form.paymentTermsDays} onChange={(event) => setForm({ ...form, paymentTermsDays: event.target.value })}/></OpsField>
           <OpsField label="Internal note" className="md:col-span-2 xl:col-span-4"><textarea value={form.internalNotes} onChange={(event) => setForm({ ...form, internalNotes: event.target.value })} placeholder="Optional setup context"/></OpsField>
-          <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4"><OpsButton variant="primary" disabled={busy}><Handshake size={13}/>{busy ? "Creating…" : "Create partner"}</OpsButton><Link href="/admin/partners" className="ops-button" data-variant="ghost" data-size="md">Cancel</Link></div>
+          <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy}><Handshake size={13}/>{busy ? "Creating…" : "Create partner"}</OpsButton><Link href="/admin/partners" className="ops-button" data-variant="ghost" data-size="md">Cancel</Link></div>
         </form>
       </OpsSurface>
     </div>

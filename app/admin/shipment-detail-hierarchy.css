@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* Shipment detail hierarchy refinement.
    Keeps the record-led layout while giving primary work, next action, and lower workspaces distinct surface tiers. */
 
@@ -40,8 +42,8 @@
 .shipment-flow-section {
   margin: 0 0 18px;
   padding: 22px 24px;
-  border: 1px solid var(--shipment-line) !important;
-  border-left: 4px solid var(--shipment-crimson) !important;
+  border: 1px solid var(--shipment-line);
+  border-left: 4px solid var(--shipment-crimson);
   background: var(--shipment-white);
   box-shadow: var(--shipment-shadow-soft);
 }
@@ -168,11 +170,11 @@
 }
 
 .shipment-job-file-embedded .ops-page-header {
-  border-bottom-color: var(--shipment-line-strong) !important;
+  border-bottom-color: var(--shipment-line-strong);
 }
 
 .shipment-job-file-embedded .ops-surface {
-  border-top-color: var(--shipment-line-strong) !important;
+  border-top-color: var(--shipment-line-strong);
 }
 
 /* Lower record areas deliberately alternate surface weight. */
@@ -201,7 +203,7 @@
 }
 
 #shipment-exceptions article[data-exception-status] {
-  border-top-color: var(--shipment-line-strong) !important;
+  border-top-color: var(--shipment-line-strong);
 }
 
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 {
@@ -209,7 +211,7 @@
 }
 
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div {
-  background: var(--shipment-white) !important;
+  background: var(--shipment-white);
 }
 
 .shipment-quiet-section {
@@ -265,4 +267,6 @@
     margin-inline: -4px;
     padding: 18px;
   }
+}
+
 }

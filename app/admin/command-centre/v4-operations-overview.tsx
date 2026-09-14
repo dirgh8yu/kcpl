@@ -15,6 +15,7 @@ import {
   Truck,
   X,
 } from "lucide-react";
+import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "../shipments/shipment-queue-policy";
 import { shipmentStatusLabels } from "../../shipment-types";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
 import type { WorkflowOverview } from "./workflow-overview.server";
@@ -50,23 +51,7 @@ type Inspector =
   | { kind: "staff"; staff: StaffLoad }
   | null;
 
-function score(job: CommandCentreJob) {
-  return (job.status === "exception" ? 100 : 0) +
-    (job.priority === "urgent" ? 50 : job.priority === "high" ? 20 : 0) +
-    job.overdue_tasks * 10 +
-    job.required_customs_open * 4 +
-    (!job.assigned_to_name && !job.assigned_to_email ? 3 : 0);
-}
-
-function issueFor(job: CommandCentreJob) {
-  if (job.status === "exception") return { title: "Shipment exception requires review", tone: "danger" as Tone, label: "Exception" };
-  if (job.overdue_tasks > 0) return { title: `${job.overdue_tasks} overdue operational task${job.overdue_tasks === 1 ? "" : "s"}`, tone: "danger" as Tone, label: "Overdue" };
-  if (job.required_customs_open > 0) return { title: `${job.required_customs_open} customs requirement${job.required_customs_open === 1 ? "" : "s"} open`, tone: "warning" as Tone, label: "Customs" };
-  if (!job.assigned_to_name && !job.assigned_to_email) return { title: "Shipment has no assigned owner", tone: "violet" as Tone, label: "Unassigned" };
-  if (job.priority === "urgent") return { title: "Urgent shipment needs attention", tone: "warning" as Tone, label: "Urgent" };
-  if (job.priority === "high") return { title: "High-priority shipment needs attention", tone: "warning" as Tone, label: "High priority" };
-  return { title: `${shipmentStatusLabels[job.status]} movement`, tone: "info" as Tone, label: "Active" };
-}
+function issueFor(job: CommandCentreJob) { return shipmentNextAction(job); }
 
 function relativeAge(value: string, anchor: string) {
   const time = Date.parse(value);
@@ -112,7 +97,7 @@ function operationalKey(value: string) {
 }
 
 function owner(job: CommandCentreJob) {
-  return job.assigned_to_name || job.assigned_to_email || "Unassigned";
+  return job.assigned_to_name || job.assigned_to_email || (job.assigned_to_uid ? "Assigned staff" : "Unassigned");
 }
 
 function route(job: CommandCentreJob) {
@@ -351,7 +336,7 @@ export function V4OperationsOverview({ data, overview, isManagement = false }: {
     deliveries_today: filteredJobs.filter((job) => job.eta && operationalKey(job.eta) === data.operational_date).length,
   }), [data.operational_date, filteredJobs]);
 
-  const attentionJobs = useMemo(() => [...filteredJobs].filter((job) => score(job) > 0).sort((a, b) => score(b) - score(a) || Date.parse(b.updated_at) - Date.parse(a.updated_at)), [filteredJobs]);
+  const attentionJobs = useMemo(() => [...filteredJobs].filter(shipmentNeedsAttention).sort(compareShipmentPriority), [filteredJobs]);
   const priority = attentionJobs.slice(0, 7);
   const today = [...filteredJobs].filter((job) => job.eta && operationalKey(job.eta) === data.operational_date).sort((a, b) => String(a.eta).localeCompare(String(b.eta))).slice(0, 7);
   const recent = [...filteredJobs].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)).slice(0, 8);

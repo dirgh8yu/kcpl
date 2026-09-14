@@ -1,3 +1,5 @@
+> Coding agents: read [AGENTS.md](AGENTS.md) and the [operating system contract](docs/OPERATING_SYSTEM.md) before changing KCPL staff software.
+
 # Kapileshwor Cargo Pvt. Ltd. (KCPL)
 
 KCPL's public website and private freight operations system. The application is a Next.js App Router project with Firebase-backed authentication, operational data and private document storage.

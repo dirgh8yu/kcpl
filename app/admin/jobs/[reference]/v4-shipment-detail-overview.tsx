@@ -9,7 +9,7 @@ function statusClass(status: DigitalJobFile["status"]) {
   if (status === "exception") return "border-[#E6A4B0] text-[#A80E2F]";
   if (status === "customs_clearance" || status === "out_for_delivery") return "border-[#D9C293] text-[#72500C]";
   if (status === "in_transit" || status === "booking_confirmed") return "border-[#A8BDD0] text-[#315D83]";
-  return "border-[#D6D6D0] text-[#5B5B57]";
+  return "border-[var(--admin-line)] text-[var(--admin-muted)]";
 }
 
 function shortDate(value: string | null) {

@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* Interactive KCPL Overview layer.
    Loaded after the shared admin design system and the base Overview refinements. */
 
@@ -526,5 +528,7 @@
   .kcpl-ops-overview .overview-inspector,
   .kcpl-ops-overview .overview-pressure-track > span,
   .kcpl-ops-overview .overview-workflow-row > svg,
-  .kcpl-ops-overview .overview-segmented button { animation: none !important; transition: none !important; }
+  .kcpl-ops-overview .overview-segmented button { animation: none; transition: none; }
+}
+
 }

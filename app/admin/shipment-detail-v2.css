@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL shipment detail — quiet operational record.
    One persistent local nav, one shipment flow, restrained working controls. */
 
@@ -272,83 +274,83 @@
 
 /* Work & file: expose only the useful header actions, remove duplicate headline/stat bands. */
 .shipment-job-file-embedded { padding-top: 24px; }
-.shipment-job-file-embedded .ops-page { min-height: 0 !important; background: transparent !important; }
+.shipment-job-file-embedded .ops-page { min-height: 0; background: transparent; }
 .shipment-job-file-embedded .ops-page-header {
-  display: block !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--shipment-line) !important;
-  padding: 0 0 14px !important;
-  background: transparent !important;
+  display: block;
+  border: 0;
+  border-bottom: 1px solid var(--shipment-line);
+  padding: 0 0 14px;
+  background: transparent;
 }
 .shipment-job-file-embedded .ops-page-header-main {
-  display: flex !important;
-  min-height: 0 !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  padding: 0 !important;
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
 }
-.shipment-job-file-embedded .ops-page-heading { display: none !important; }
+.shipment-job-file-embedded .ops-page-heading { display: none; }
 .shipment-job-file-embedded .ops-page-actions {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  justify-content: flex-end !important;
-  gap: 8px !important;
-  margin: 0 !important;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
 }
-.shipment-job-file-embedded .ops-page-actions > a:first-child { display: none !important; }
-.shipment-job-file-embedded .ops-page > .ops-stat-strip { display: none !important; }
-.shipment-job-file-embedded .ops-content-wide { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+.shipment-job-file-embedded .ops-page-actions > a:first-child { display: none; }
+.shipment-job-file-embedded .ops-page > .ops-stat-strip { display: none; }
+.shipment-job-file-embedded .ops-content-wide { width: 100%; max-width: none; margin: 0; padding: 0; }
 
 .shipment-detail-v2 .ops-grid-main { align-items: start; }
 .shipment-job-file-embedded .ops-grid-main {
-  grid-template-columns: minmax(0, 1fr) !important;
-  gap: 20px !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
 }
 .shipment-job-file-embedded .ops-grid-main > aside {
-  position: static !important;
-  top: auto !important;
-  display: grid !important;
+  position: static;
+  top: auto;
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px !important;
-  border-left: 0 !important;
-  padding-left: 0 !important;
+  gap: 18px;
+  border-left: 0;
+  padding-left: 0;
 }
 
-.shipment-detail-v2 .ops-surface { border-radius: 0 !important; box-shadow: none !important; }
-.shipment-detail-v2 .ops-surface-header { background: transparent !important; }
+.shipment-detail-v2 .ops-surface { border-radius: 0; box-shadow: none; }
+.shipment-detail-v2 .ops-surface-header { background: transparent; }
 .shipment-detail-v2 .ops-surface-description { max-width: 760px; }
-.shipment-detail-v2 :is(#shipment-work, #shipment-exceptions, #shipment-delivery, #shipment-activity) :is(form, article) { border-radius: 2px !important; box-shadow: none !important; }
+.shipment-detail-v2 :is(#shipment-work, #shipment-exceptions, #shipment-delivery, #shipment-activity) :is(form, article) { border-radius: 2px; box-shadow: none; }
 
-.shipment-job-file-embedded .ops-stack { gap: 16px !important; }
+.shipment-job-file-embedded .ops-stack { gap: 16px; }
 .shipment-job-file-embedded .ops-surface {
-  border: 0 !important;
-  border-top: 1px solid var(--shipment-line) !important;
-  background: transparent !important;
+  border: 0;
+  border-top: 1px solid var(--shipment-line);
+  background: transparent;
 }
 .shipment-job-file-embedded .ops-surface-header {
-  min-height: 0 !important;
-  padding: 16px 0 11px !important;
-  border-bottom: 1px solid var(--shipment-line) !important;
+  min-height: 0;
+  padding: 16px 0 11px;
+  border-bottom: 1px solid var(--shipment-line);
 }
-.shipment-job-file-embedded .ops-surface-body { padding: 12px 0 2px !important; }
+.shipment-job-file-embedded .ops-surface-body { padding: 12px 0 2px; }
 .shipment-job-file-embedded .ops-surface form {
-  border-radius: 2px !important;
-  border-color: var(--shipment-line) !important;
-  background: var(--shipment-white) !important;
-  box-shadow: none !important;
+  border-radius: 2px;
+  border-color: var(--shipment-line);
+  background: var(--shipment-white);
+  box-shadow: none;
 }
 .shipment-job-file-embedded .ops-empty {
-  display: block !important;
-  min-height: 0 !important;
-  place-items: initial !important;
-  border: 0 !important;
-  padding: 10px 0 !important;
-  background: transparent !important;
-  text-align: left !important;
+  display: block;
+  min-height: 0;
+  place-items: initial;
+  border: 0;
+  padding: 10px 0;
+  background: transparent;
+  text-align: left;
 }
-.shipment-job-file-embedded .ops-empty-icon { display: none !important; }
-.shipment-job-file-embedded .ops-empty h3 { margin: 0 !important; font-size: 12px !important; font-weight: 650 !important; }
-.shipment-job-file-embedded .ops-empty p { max-width: 680px !important; margin: 4px 0 0 !important; font-size: 11px !important; line-height: 1.5 !important; }
+.shipment-job-file-embedded .ops-empty-icon { display: none; }
+.shipment-job-file-embedded .ops-empty h3 { margin: 0; font-size: 12px; font-weight: 650; }
+.shipment-job-file-embedded .ops-empty p { max-width: 680px; margin: 4px 0 0; font-size: 11px; line-height: 1.5; }
 
 /* All lower sections use the same flat record rhythm. */
 .shipment-detail-block { padding-top: 26px; }
@@ -357,96 +359,96 @@
 .shipment-detail-block > section.ops-surface,
 #shipment-delivery #delivery-pod > .ops-surface,
 #shipment-activity .ops-content-wide > .ops-surface {
-  border: 0 !important;
-  border-top: 1px solid var(--shipment-ink) !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  border-top: 1px solid var(--shipment-ink);
+  background: transparent;
+  box-shadow: none;
 }
 .shipment-detail-block > .ops-surface > .ops-surface-header,
 .shipment-detail-block > section.ops-surface > .ops-surface-header,
 #shipment-delivery #delivery-pod > .ops-surface > .ops-surface-header,
 #shipment-activity .ops-content-wide > .ops-surface > .ops-surface-header {
-  padding-inline: 0 !important;
-  background: transparent !important;
+  padding-inline: 0;
+  background: transparent;
 }
 .shipment-detail-block > .ops-surface > .ops-surface-body,
 .shipment-detail-block > section.ops-surface > .ops-surface-body,
 #shipment-delivery #delivery-pod > .ops-surface > .ops-surface-body,
 #shipment-activity .ops-content-wide > .ops-surface > .ops-surface-body {
-  padding-inline: 0 !important;
+  padding-inline: 0;
 }
 
 /* Exception register: ledger rows, not floating incident cards. */
 #shipment-exceptions article[data-exception-status] {
-  border: 0 !important;
-  border-top: 1px solid var(--shipment-line) !important;
-  border-radius: 0 !important;
-  padding: 16px 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  border-top: 1px solid var(--shipment-line);
+  border-radius: 0;
+  padding: 16px 0;
+  background: transparent;
+  box-shadow: none;
 }
 #shipment-exceptions .ops-stat-strip {
-  border-block-color: var(--shipment-line) !important;
-  background: transparent !important;
+  border-block-color: var(--shipment-line);
+  background: transparent;
 }
 
 /* Delivery: keep controls powerful but visually subordinate. */
 #shipment-delivery #delivery-pod {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 {
-  gap: 0 !important;
+  gap: 0;
   border-block: 1px solid var(--shipment-ink);
 }
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div {
   min-height: 92px;
-  border: 0 !important;
-  border-right: 1px solid var(--shipment-line) !important;
-  border-radius: 0 !important;
-  padding: 14px 16px !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  border-right: 1px solid var(--shipment-line);
+  border-radius: 0;
+  padding: 14px 16px;
+  background: transparent;
+  box-shadow: none;
 }
-#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:first-child { padding-left: 0 !important; }
-#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:last-child { border-right: 0 !important; }
-#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 { display: block !important; }
+#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:first-child { padding-left: 0; }
+#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:last-child { border-right: 0; }
+#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 { display: block; }
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 > .space-y-4 > :is(form, div) {
-  border: 0 !important;
-  border-top: 1px solid var(--shipment-line) !important;
-  border-radius: 0 !important;
-  padding: 18px 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  border-top: 1px solid var(--shipment-line);
+  border-radius: 0;
+  padding: 18px 0;
+  background: transparent;
+  box-shadow: none;
 }
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 > .space-y-4 > form { max-width: 860px; }
 #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 > .space-y-4 > div button.w-full {
-  border: 0 !important;
-  border-top: 1px solid var(--shipment-line) !important;
-  border-radius: 0 !important;
-  padding: 12px 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  border-top: 1px solid var(--shipment-line);
+  border-radius: 0;
+  padding: 12px 0;
+  background: transparent;
+  box-shadow: none;
 }
 #shipment-delivery .ops-empty {
-  min-height: 0 !important;
-  border: 0 !important;
-  padding: 12px 0 !important;
-  background: transparent !important;
-  text-align: left !important;
+  min-height: 0;
+  border: 0;
+  padding: 12px 0;
+  background: transparent;
+  text-align: left;
 }
 
 /* Activity: remove the last large white container while preserving audit readability. */
 .shipment-activity-block { padding-bottom: 12px; }
 #shipment-activity .ops-content-wide {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 0 20px !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 20px;
 }
-#shipment-activity article { background: transparent !important; }
+#shipment-activity article { background: transparent; }
 
 .shipment-quiet-section { padding: 24px 0; border-block: 1px solid var(--shipment-line); }
 .shipment-quiet-section p { margin: 0; color: var(--shipment-crimson); font-size: 10px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
@@ -471,9 +473,9 @@
   .shipment-overview-main { padding-right: 0; }
   .shipment-next-rail { position: static; border-top: 1px solid var(--shipment-line); border-left: 0; padding: 24px 0; }
   .shipment-job-file-embedded .ops-grid-main > aside { grid-template-columns: 1fr; }
-  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:nth-child(2) { border-right: 0 !important; }
-  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:nth-child(-n+2) { border-bottom: 1px solid var(--shipment-line) !important; }
+  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:nth-child(2) { border-right: 0; }
+  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:nth-child(-n+2) { border-bottom: 1px solid var(--shipment-line); }
 }
 
 @media (max-width: 760px) {
@@ -498,21 +500,21 @@
   .shipment-financial-grid > div:last-child { border-bottom: 0; }
   .shipment-detail-anchor { scroll-margin-top: 168px; }
   .shipment-job-file-embedded { padding-top: 20px; }
-  .shipment-job-file-embedded .ops-page-actions { width: 100% !important; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .shipment-job-file-embedded .ops-page-actions > * { width: 100% !important; }
+  .shipment-job-file-embedded .ops-page-actions { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shipment-job-file-embedded .ops-page-actions > * { width: 100%; }
   .shipment-detail-block { padding-top: 20px; }
   .shipment-detail-block + .shipment-detail-block { margin-top: 20px; }
 }
 
 @media (max-width: 560px) {
-  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 { grid-template-columns: 1fr !important; }
+  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 { grid-template-columns: 1fr; }
   #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div {
     min-height: 0;
-    border-right: 0 !important;
-    border-bottom: 1px solid var(--shipment-line) !important;
-    padding: 14px 0 !important;
+    border-right: 0;
+    border-bottom: 1px solid var(--shipment-line);
+    padding: 14px 0;
   }
-  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:last-child { border-bottom: 0 !important; }
+  #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div:last-child { border-bottom: 0; }
 }
 
 @media (max-width: 420px) {
@@ -527,9 +529,11 @@
   .shipment-detail-v2 *,
   .shipment-detail-v2 *::before,
   .shipment-detail-v2 *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
+    scroll-behavior: auto;
+    transition-duration: .01ms;
+    animation-duration: .01ms;
+    animation-iteration-count: 1;
   }
+}
+
 }

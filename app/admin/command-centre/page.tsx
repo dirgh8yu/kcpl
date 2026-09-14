@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
-import { evaluateFreightAutomation } from "../alerts/freight-automation.server";
 import { getStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
@@ -54,11 +53,6 @@ async function loadState(user: StaffUser) {
 
   if (!staff.permissions.canManageJobFile) return { kind: "restricted" as const, shell };
 
-  try {
-    await evaluateFreightAutomation();
-  } catch (error) {
-    console.error("KCPL freight automation evaluation failed during Overview load", error);
-  }
 
   try {
     const [data, overview] = await Promise.all([

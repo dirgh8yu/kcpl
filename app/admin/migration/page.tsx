@@ -31,7 +31,7 @@ export default async function MigrationPage() {
   });
 
   return <OperationsShell {...shellProps}>
-    <div className="border-b border-[#e2e2e2] bg-[#f7f7f7]"><div className="ops-content-wide flex min-h-[48px] flex-wrap items-center gap-2 py-2"><span className="mr-auto text-[11px] font-medium text-[#5b5b5b]">Migration controls</span><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="sm"><Archive size={12}/>Paper Archive</Link>{staff.permissions.canManageFinance ? <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="sm"><RotateCcw size={12}/>Recovery</Link> : null}</div></div>
+    <div className="border-b border-[var(--admin-line)] bg-[var(--admin-surface-muted)]"><div className="ops-content-wide flex min-h-[48px] flex-wrap items-center gap-2 py-2"><span className="mr-auto text-[11px] font-medium text-[var(--admin-muted)]">Migration controls</span><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="sm"><Archive size={12}/>Paper Archive</Link>{staff.permissions.canManageFinance ? <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="sm"><RotateCcw size={12}/>Recovery</Link> : null}</div></div>
     <MigrationWorkspace initialBatchDashboard={batchDashboard}/>
   </OperationsShell>;
 }

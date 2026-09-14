@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Operations editorial system
    Source of truth: dirgh8yu/kcpl-website visual language.
    This layer is intentionally loaded after compatibility CSS so legacy
@@ -35,7 +37,7 @@
 .kcpl-admin-shell h3 { letter-spacing: -.035em; }
 
 .kcpl-admin-content { min-width: 0; background: var(--kcpl-canvas); }
-.kcpl-admin-content > main { background: var(--kcpl-canvas) !important; }
+.kcpl-admin-content > main { background: var(--kcpl-canvas); }
 
 /* Shared legacy Operations primitives */
 .kcpl-admin-content .kcpl-ops {
@@ -65,7 +67,7 @@
   font-synthesis: none;
 }
 
-.kcpl-admin-content .ops-page { background: var(--kcpl-canvas) !important; }
+.kcpl-admin-content .ops-page { background: var(--kcpl-canvas); }
 
 .kcpl-admin-content .ops-page-header {
   padding: 32px clamp(20px, 3.2vw, 48px) 24px;
@@ -187,8 +189,8 @@
 
 .kcpl-admin-content .ops-button {
   min-height: 44px;
-  border-radius: 3px !important;
-  box-shadow: none !important;
+  border-radius: 3px;
+  box-shadow: none;
   font-weight: 500;
 }
 
@@ -219,18 +221,18 @@
 .kcpl-admin-content [class*="rounded-[9px]"],
 .kcpl-admin-content [class*="rounded-[8px]"],
 .kcpl-admin-content [class*="rounded-[7px]"],
-.kcpl-admin-content [class*="rounded-[6px]"] { border-radius: 4px !important; }
+.kcpl-admin-content [class*="rounded-[6px]"] { border-radius: 4px; }
 
 .kcpl-admin-content [class*="shadow-[0_8px"],
 .kcpl-admin-content [class*="shadow-[0_10px"],
 .kcpl-admin-content [class*="shadow-[0_12px"],
 .kcpl-admin-content [class*="shadow-[0_16px"],
-.kcpl-admin-content [class*="shadow-[0_18px"] { box-shadow: none !important; }
+.kcpl-admin-content [class*="shadow-[0_18px"] { box-shadow: none; }
 
 .kcpl-admin-content table { border-collapse: collapse; }
 .kcpl-admin-content thead { border-bottom: 1px solid var(--kcpl-ink); }
-.kcpl-admin-content tbody tr { border-bottom-color: var(--kcpl-line) !important; }
-.kcpl-admin-content tbody tr:hover { background: #F0F0EA !important; }
+.kcpl-admin-content tbody tr { border-bottom-color: var(--kcpl-line); }
+.kcpl-admin-content tbody tr:hover { background: #F0F0EA; }
 
 /* Brand-specific Operations overview */
 .kcpl-ops-overview { min-height: calc(100vh - 56px); background: var(--kcpl-canvas); }
@@ -300,17 +302,17 @@
 .kcpl-ops-overview .overview-activity-row strong { color: var(--kcpl-ink); font-weight: 500; }
 
 /* Shared operations register/table treatment, including Shipments. */
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] { background: var(--kcpl-canvas) !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] > div[class*="max-w-"] { max-width: 1320px !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] h1 { font-weight: 400 !important; letter-spacing: -.035em !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] nav { border-color: var(--kcpl-line) !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] table thead tr { border-bottom: 1px solid var(--kcpl-ink) !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] table th { color: var(--kcpl-muted) !important; font-size: 10px !important; font-weight: 500 !important; letter-spacing: .06em; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] table td { border-color: var(--kcpl-line) !important; }
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] aside[class*="bg-[#fdfdfd]"] { border-left: 1px solid var(--kcpl-line); background: #EEEEE8 !important; box-shadow: none !important; }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] { background: var(--kcpl-canvas); }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] > div[class*="max-w-"] { max-width: 1320px; }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] h1 { font-weight: 400; letter-spacing: -.035em; }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] nav { border-color: var(--kcpl-line); }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] table thead tr { border-bottom: 1px solid var(--kcpl-ink); }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] table th { color: var(--kcpl-muted); font-size: 10px; font-weight: 500; letter-spacing: .06em; }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] table td { border-color: var(--kcpl-line); }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] aside[class*="bg-[#fdfdfd]"] { border-left: 1px solid var(--kcpl-line); background: #EEEEE8; box-shadow: none; }
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] input,
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] select,
-.kcpl-admin-content main[class*="bg-[#f6f6f3]"] button { border-radius: 3px !important; }
+.kcpl-admin-content main[class*="bg-[#f6f6f3]"] button { border-radius: 3px; }
 
 @media (max-width: 1024px) {
   .kcpl-ops-overview-inner { width: min(100% - 40px, 1320px); padding-top: 34px; }
@@ -336,5 +338,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kcpl-admin-shell *, .kcpl-admin-shell *::before, .kcpl-admin-shell *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .kcpl-admin-shell *, .kcpl-admin-shell *::before, .kcpl-admin-shell *::after { scroll-behavior: auto; transition-duration: .01ms; animation-duration: .01ms; animation-iteration-count: 1; }
+}
+
 }

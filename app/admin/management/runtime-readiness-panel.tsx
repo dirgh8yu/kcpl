@@ -73,18 +73,18 @@ export function RuntimeReadinessPanel() {
         description="Live configuration checks for the services KCPL Operations depends on. This view reports configuration state only and never exposes credentials or secret values."
         action={<OpsButton variant="ghost" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={12} className={loading ? "animate-spin" : ""}/>{loading ? "Checking" : "Refresh"}</OpsButton>}
       >
-        {loading && !readiness ? <p className="text-[10px] text-[#81776f]">Checking the production runtime…</p> : error ? <OpsEmptyState icon={<ShieldAlert size={17}/>} title="Readiness check unavailable" description={error}/> : readiness ? <>
+        {loading && !readiness ? <p className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Checking the production runtime…</p> : error ? <OpsEmptyState icon={<ShieldAlert size={17}/>} title="Readiness check unavailable" description={error}/> : readiness ? <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <OpsBadge tone={tone(readiness.overall)} dot>{readiness.overall === "ready" ? "Production ready" : readiness.overall === "warning" ? "Ready with warnings" : "Production blocked"}</OpsBadge>
-            <span className="text-[9px] font-semibold text-[#81776f]">{readiness.summary.ready} ready · {readiness.summary.warnings} warnings · {readiness.summary.blocked} blocked</span>
+            <span className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{readiness.summary.ready} ready · {readiness.summary.warnings} warnings · {readiness.summary.blocked} blocked</span>
           </div>
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {readiness.checks.map((item) => <div key={item.id} className="rounded-[12px] border border-[#e8e0d9] bg-[#fffdfa] p-3.5">
+            {readiness.checks.map((item) => <div key={item.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3.5">
               <div className="flex items-start justify-between gap-3">
-                <strong className="flex items-center gap-2 text-[10px] text-[#514840]"><span className={item.status === "ready" ? "text-[#66806b]" : item.status === "warning" ? "text-[#9a682f]" : "text-[#b65355]"}><StatusIcon status={item.status}/></span>{item.label}</strong>
+                <strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><span className={item.status === "ready" ? "text-[#66806b]" : item.status === "warning" ? "text-[#9a682f]" : "text-[#b65355]"}><StatusIcon status={item.status}/></span>{item.label}</strong>
                 <OpsBadge tone={tone(item.status)}>{item.status}</OpsBadge>
               </div>
-              <p className="mt-2 text-[9px] leading-4 text-[#81776f]">{item.detail}</p>
+              <p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{item.detail}</p>
             </div>)}
           </div>
         </> : null}

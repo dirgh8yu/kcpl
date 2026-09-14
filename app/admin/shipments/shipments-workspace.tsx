@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap, OpsToolbar } from "../operations-ui";
+import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
+import { useWorkspaceQuery } from "../use-workspace-query";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap, OpsToolbar } from "../operations-ui";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 
@@ -27,17 +29,9 @@ function shortDate(value: string | null) {
 }
 
 function owner(job: CommandCentreJob) {
-  return job.assigned_to_name || job.assigned_to_email || "Unassigned";
+  return job.assigned_to_name || job.assigned_to_email || (job.assigned_to_uid ? "Assigned staff" : "Unassigned");
 }
 
-function nextAction(job: CommandCentreJob) {
-  if (job.status === "exception") return { title: "Review shipment exception", detail: "Movement is blocked until the exception is resolved." };
-  if (job.overdue_tasks > 0) return { title: `Resolve ${job.overdue_tasks} overdue task${job.overdue_tasks === 1 ? "" : "s"}`, detail: "Operational work is past its due time." };
-  if (job.required_customs_open > 0) return { title: "Complete customs requirements", detail: `${job.required_customs_open} required customs item${job.required_customs_open === 1 ? " is" : "s are"} still open.` };
-  if (!job.assigned_to_name && !job.assigned_to_email) return { title: "Assign shipment owner", detail: "This active movement currently has no operational owner." };
-  if (job.open_tasks > 0) return { title: `Complete ${job.open_tasks} open task${job.open_tasks === 1 ? "" : "s"}`, detail: "Open the Job File for the current operational checklist." };
-  return { title: "Review shipment record", detail: "No blocking task is exposed in the shipment register." };
-}
 
 function route(job: CommandCentreJob) {
   return `${job.origin || "Origin"} → ${job.destination || "Destination"}`;
@@ -48,11 +42,25 @@ function modeOptions(jobs: CommandCentreJob[]) {
 }
 
 export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreData; roleLabel: string }) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"active" | "all" | ShipmentStatus>("active");
-  const [branch, setBranch] = useState<"all" | KcplBranch>("all");
-  const [mode, setMode] = useState("all");
-  const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const { params, search, update } = useWorkspaceQuery();
+  const query = params.get("q") ?? "";
+  const requestedStatus = params.get("status") ?? "active";
+  const status = ["active", "all", ...shipmentStatuses].includes(requestedStatus) ? requestedStatus : "active";
+  const requestedBranch = params.get("branch") ?? "all";
+  const branch = data.accessible_branches.includes(requestedBranch as KcplBranch) ? requestedBranch : "all";
+  const requestedMode = params.get("mode") ?? "all";
+  const mode = data.jobs.some((job) => job.mode === requestedMode) ? requestedMode : "all";
+  const attention = params.get("attention") === "1";
+  const sort = params.get("sort") === "updated" ? "updated" : "priority";
+  const selectedReference = params.get("selected");
+  const pageSize = 50;
+  const requestedPage = Number(params.get("page") || "1");
+  const setFilters = (values: Record<string, string | null>) => update({ ...values, page: null, selected: null });
+  const setQuery = (value: string) => setFilters({ q: value });
+  const setStatus = (value: string) => setFilters({ status: value === "active" ? null : value });
+  const setBranch = (value: string) => setFilters({ branch: value === "all" ? null : value });
+  const setMode = (value: string) => setFilters({ mode: value === "all" ? null : value });
+  const setSelectedReference = (value: string) => update({ selected: value });
 
   const modes = useMemo(() => modeOptions(data.jobs), [data.jobs]);
   const filtered = useMemo(() => {
@@ -60,26 +68,36 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
     return data.jobs.filter((job) => {
       if (status !== "all" && status !== "active" && job.status !== status) return false;
       if (status === "active" && job.status === "delivered") return false;
-      if (branch !== "all" && job.primary_branch !== branch && !job.handling_branches.includes(branch)) return false;
+      if (branch !== "all" && job.primary_branch !== branch && !job.handling_branches.includes(branch as KcplBranch)) return false;
+      if (attention && !shipmentNeedsAttention(job)) return false;
       if (mode !== "all" && job.mode !== mode) return false;
       if (!terms.length) return true;
       const haystack = [job.reference, job.quote_reference, job.customer_name, job.origin, job.destination, job.mode, job.carrier ?? "", owner(job), shipmentStatusLabels[job.status]].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
-    }).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
-  }, [branch, data.jobs, mode, query, status]);
+    }).sort(sort === "priority" ? compareShipmentPriority : (a, b) => (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0) || a.reference.localeCompare(b.reference));
+  }, [attention, branch, data.jobs, mode, query, sort, status]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const selected = (selectedReference ? filtered.find((job) => job.reference === selectedReference) : null) || filtered[0] || null;
-  const active = data.jobs.filter((job) => job.status !== "delivered").length;
-  const inTransit = data.jobs.filter((job) => job.status === "in_transit").length;
-  const customs = data.jobs.filter((job) => job.status === "customs_clearance").length;
-  const delivery = data.jobs.filter((job) => job.status === "out_for_delivery").length;
-  const exceptions = data.jobs.filter((job) => job.status === "exception").length;
+  const selected = (selectedReference ? pageRows.find((job) => job.reference === selectedReference) : null) || pageRows[0] || null;
+  // Counts respect the same branch/mode/query scope; each metric selects its own state.
+  const metricScope = data.jobs.filter((job) => {
+    if (branch !== "all" && job.primary_branch !== branch && !job.handling_branches.includes(branch as KcplBranch)) return false;
+    if (mode !== "all" && job.mode !== mode) return false;
+    if (attention && !shipmentNeedsAttention(job)) return false;
+    const haystack = [job.reference, job.quote_reference, job.customer_name, job.origin, job.destination, job.mode, job.carrier ?? "", owner(job), shipmentStatusLabels[job.status]].join(" ").toLowerCase();
+    return query.trim().toLowerCase().split(/\s+/).filter(Boolean).every((term) => haystack.includes(term));
+  });
+  const active = metricScope.filter((job) => job.status !== "delivered").length;
+  const inTransit = metricScope.filter((job) => job.status === "in_transit").length;
+  const customs = metricScope.filter((job) => job.status === "customs_clearance").length;
+  const delivery = metricScope.filter((job) => job.status === "out_for_delivery").length;
+  const exceptions = metricScope.filter((job) => job.status === "exception").length;
+  const returnTo = `/admin/shipments${search}`;
 
   function resetFilters() {
-    setQuery("");
-    setStatus("active");
-    setBranch("all");
-    setMode("all");
+    update({ q: null, status: null, branch: null, mode: null, attention: null, sort: null, page: null, selected: null });
   }
 
   return (
@@ -87,26 +105,29 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
       <OpsPageHeader
         eyebrow="Operations · Shipment register"
         title="Shipments"
-        description="Live shipment ownership, movement state, customs readiness and delivery commitments in one operational register."
+        description="Select a shipment to inspect its next action. Exceptions and overdue work appear first."
         meta={<span>{roleLabel} · {filtered.length} shown</span>}
         actions={<Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations overview</Link>}
       >
         <OpsStatStrip className="shipments-stat-strip">
-          <OpsStat label="Active" value={active} detail="Open movements"/>
-          <OpsStat label="In transit" value={inTransit} detail="Freight moving" tone="info"/>
-          <OpsStat label="Customs" value={customs} detail="Clearance activity" tone={customs ? "warning" : "neutral"}/>
-          <OpsStat label="Delivery" value={delivery} detail="Final mile" tone="info"/>
-          <OpsStat label="Exceptions" value={exceptions} detail="Requires review" tone={exceptions ? "danger" : "neutral"}/>
+          <OpsStat active={status === "active"} onClick={() => setStatus("active")} label="Active" value={active} detail="Open movements"/>
+          <OpsStat active={status === "in_transit"} onClick={() => setStatus("in_transit")} label="In transit" value={inTransit} detail="Freight moving" tone="info"/>
+          <OpsStat active={status === "customs_clearance"} onClick={() => setStatus("customs_clearance")} label="Customs" value={customs} detail="Clearance activity" tone={customs ? "warning" : "neutral"}/>
+          <OpsStat active={status === "out_for_delivery"} onClick={() => setStatus("out_for_delivery")} label="Delivery" value={delivery} detail="Final mile" tone="info"/>
+          <OpsStat active={status === "exception"} onClick={() => setStatus("exception")} label="Exceptions" value={exceptions} detail="Requires review" tone={exceptions ? "danger" : "neutral"}/>
         </OpsStatStrip>
       </OpsPageHeader>
 
       <div className="ops-content ops-content-wide shipments-register-content">
+        {data.partial ? <OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the shipment record.</OpsNotice> : null}
         <OpsToolbar className="shipments-toolbar">
           <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, quote, customer, route or carrier" aria-label="Search shipments"/>
           <select aria-label="Filter by shipment state" value={status} onChange={(event) => setStatus(event.target.value as "active" | "all" | ShipmentStatus)} className="shipments-filter"><option value="active">Active</option><option value="all">All states</option>{shipmentStatuses.map((item) => <option key={item} value={item}>{shipmentStatusLabels[item]}</option>)}</select>
           <select aria-label="Filter by branch" value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)} className="shipments-filter"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select>
           <select aria-label="Filter by freight mode" value={mode} onChange={(event) => setMode(event.target.value)} className="shipments-filter"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-          <OpsButton type="button" variant="secondary" onClick={resetFilters}>Reset</OpsButton>
+          <select aria-label="Sort shipments" className="shipments-filter" value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })}><option value="priority">Priority first</option><option value="updated">Recently updated</option></select>
+          <OpsButton aria-pressed={attention} variant={attention ? "primary" : "secondary"} onClick={() => setFilters({ attention: attention ? null : "1" })}>Needs attention</OpsButton>
+          <OpsButton type="button" variant="ghost" onClick={resetFilters}>Reset</OpsButton>
           <span className="shipments-result-count" aria-live="polite">{filtered.length} shipment{filtered.length === 1 ? "" : "s"}</span>
         </OpsToolbar>
 
@@ -114,13 +135,13 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
           <OpsTableWrap className="shipments-table-wrap">
             <table className="ops-table shipments-table" aria-label="Shipment register">
               <thead><tr><th>Shipment</th><th>Route</th><th>Customer</th><th>State</th><th>ETA</th><th>Owner</th></tr></thead>
-              <tbody>{filtered.length ? filtered.map((job) => {
+              <tbody>{filtered.length ? pageRows.map((job) => {
                 const chosen = selected?.reference === job.reference;
                 return (
                   <tr
                     key={job.reference}
                     data-selected={chosen || undefined}
-                    aria-selected={chosen}
+                    aria-label={`${job.reference}, ${shipmentStatusLabels[job.status]}, ${chosen ? "selected" : "select to inspect"}`}
                     tabIndex={0}
                     onClick={() => setSelectedReference(job.reference)}
                     onKeyDown={(event) => {
@@ -143,17 +164,22 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
           </OpsTableWrap>
 
           <aside className="shipment-peek-panel" aria-label="Selected shipment summary">
-            {selected ? <ShipmentPeek job={selected}/> : <OpsEmptyState compact title="No shipment selected" description="Choose a shipment row to inspect its next action and readiness."/>}
+            {selected ? <ShipmentPeek job={selected} returnTo={returnTo}/> : <OpsEmptyState compact title="No shipment selected" description="Choose a shipment row to inspect its next action and readiness."/>}
           </aside>
         </section>
+        <div className="ops-pagination" aria-label="Shipment pages"><span aria-live="polite">{filtered.length ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, filtered.length)} of ${filtered.length}` : "0 shipments"}</span><div className="ops-pagination-actions"><OpsButton size="sm" disabled={page <= 1} onClick={() => update({ page: String(page - 1), selected: null }, "push")}>Previous</OpsButton><span>Page {page} of {pageCount}</span><OpsButton size="sm" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1), selected: null }, "push")}>Next</OpsButton></div></div>
       </div>
     </OpsPage>
   );
 }
 
-function ShipmentPeek({ job }: { job: CommandCentreJob }) {
-  const action = nextAction(job);
-  const customs = job.required_customs_open > 0 ? `${job.required_customs_open} open` : "No blockers";
+function ShipmentPeek({ job, returnTo }: { job: CommandCentreJob; returnTo: string }) {
+  const action = shipmentNextAction(job);
+  function withReturn(href: string) {
+    const [path, hash] = href.split("#");
+    return `${path}?returnTo=${encodeURIComponent(returnTo)}${hash ? `#${hash}` : ""}`;
+  }
+  const customs = job.required_customs_open > 0 ? `${job.required_customs_open} open` : "No open items in snapshot";
   const exception = job.status === "exception" ? "Open" : "None";
   return (
     <div className="shipment-peek">
@@ -186,7 +212,7 @@ function ShipmentPeek({ job }: { job: CommandCentreJob }) {
         <PeekRow label="Owner" value={owner(job)}/>
       </section>
 
-      <div className="shipment-peek-actions"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="primary" data-size="md">Open shipment</Link><span>Select a row to inspect it; open the Job File when action is required.</span></div>
+      <div className="shipment-peek-actions"><Link href={withReturn(action.href)} className="ops-button" data-variant="primary" data-size="md">{action.title}</Link><Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary">Open shipment</Link><span>Select a row to inspect it; open the Job File when action is required.</span></div>
     </div>
   );
 }

@@ -61,14 +61,14 @@ export function CustomsClearanceEditor({ row, agents }: { row: CustomsDeskRow; a
     }
   }
 
-  return <div className="mt-3 rounded-[11px] border border-[#e4ddd7] bg-[#fbf9f6] p-3.5">
+  return <div className="mt-3 rounded-[var(--app-radius)] border border-[#e4ddd7] bg-[#fbf9f6] p-3.5">
     {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#887e76]">Customs clearance record</span><OpsBadge tone={clearanceTone(row.clearance.status)} dot>{customsClearanceStatusLabels[row.clearance.status]}</OpsBadge>{row.release_required ? <OpsBadge tone="info">Release required</OpsBadge> : <OpsBadge>Release not required by lane rule</OpsBadge>}</div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] leading-5 text-[#746a63]"><span>Point: <strong className="text-[#514840]">{row.clearance.entry_point || "Not recorded"}</strong></span><span>Declaration/ref: <strong className="text-[#514840]">{row.clearance.declaration_reference || "Not recorded"}</strong></span><span>Agent: <strong className="text-[#514840]">{row.clearance.agent_name || "Not assigned"}</strong></span>{row.clearance.released_at ? <span>Last release: <strong className="text-[#617564]">{timeLabel(row.clearance.released_at)}</strong></span> : null}</div>
-        {row.clearance.status === "held" && row.clearance.hold_reason ? <p className="mt-2 flex items-start gap-2 text-[10px] leading-5 text-[#9a5552]"><ShieldAlert size={12} className="mt-1 shrink-0"/>{row.clearance.hold_reason}</p> : null}
-        {row.clearance.release_evidence ? <p className="mt-1 text-[10px] leading-5 text-[#81776f]">Release evidence: {row.clearance.release_evidence}</p> : null}
+        <div className="flex flex-wrap items-center gap-2"><span className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[#887e76]">Customs clearance record</span><OpsBadge tone={clearanceTone(row.clearance.status)} dot>{customsClearanceStatusLabels[row.clearance.status]}</OpsBadge>{row.release_required ? <OpsBadge tone="info">Release required</OpsBadge> : <OpsBadge>Release not required by lane rule</OpsBadge>}</div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--app-label-size)] leading-5 text-[#746a63]"><span>Point: <strong className="text-[var(--admin-ink)]">{row.clearance.entry_point || "Not recorded"}</strong></span><span>Declaration/ref: <strong className="text-[var(--admin-ink)]">{row.clearance.declaration_reference || "Not recorded"}</strong></span><span>Agent: <strong className="text-[var(--admin-ink)]">{row.clearance.agent_name || "Not assigned"}</strong></span>{row.clearance.released_at ? <span>Last release: <strong className="text-[#617564]">{timeLabel(row.clearance.released_at)}</strong></span> : null}</div>
+        {row.clearance.status === "held" && row.clearance.hold_reason ? <p className="mt-2 flex items-start gap-2 text-[length:var(--app-label-size)] leading-5 text-[#9a5552]"><ShieldAlert size={12} className="mt-1 shrink-0"/>{row.clearance.hold_reason}</p> : null}
+        {row.clearance.release_evidence ? <p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Release evidence: {row.clearance.release_evidence}</p> : null}
       </div>
       <OpsButton variant="secondary" size="sm" onClick={() => setOpen((value) => !value)}><Pencil size={11}/>{open ? "Close" : "Update clearance"}</OpsButton>
     </div>
@@ -83,7 +83,7 @@ export function CustomsClearanceEditor({ row, agents }: { row: CustomsDeskRow; a
         {form.status === "released" ? <OpsField label="Release evidence / note" className="md:col-span-2"><textarea value={form.releaseEvidence} onChange={(event) => setForm({ ...form, releaseEvidence: event.target.value })} placeholder="Portal confirmation, broker confirmation, release email or other evidence"/></OpsField> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2"><OpsButton variant="primary" disabled={busy} onClick={() => void save()}><CheckCircle2 size={11}/>{busy ? "Saving…" : form.status === "released" ? "Record Customs release" : "Save clearance"}</OpsButton><OpsButton variant="ghost" disabled={busy} onClick={() => setOpen(false)}><X size={11}/>Cancel</OpsButton></div>
-      {form.status === "released" ? <p className="mt-3 text-[10px] leading-5 text-[#8a6755]">Release is a controlled operational fact. KCPL requires a customs point plus either a declaration/reference or a release-evidence note before this status can be saved.</p> : null}
+      {form.status === "released" ? <p className="mt-3 text-[length:var(--app-label-size)] leading-5 text-[#8a6755]">Release is a controlled operational fact. KCPL requires a customs point plus either a declaration/reference or a release-evidence note before this status can be saved.</p> : null}
     </div> : null}
   </div>;
 }
