@@ -5,7 +5,7 @@ import { getAdminAccess } from "../admin-auth";
 import { getStaffContext, type KcplStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
-import { OpsEmptyState, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
+import { OpsPage, OpsPageHeader } from "../operations-ui";
 import { loadCommandCentre } from "./command-centre.server";
 import type { CommandCentreData } from "./command-centre-data";
 import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview.server";
@@ -91,17 +91,19 @@ async function OverviewData({ staff, isManagement }: { staff: KcplStaffContext; 
 
 function OverviewLoading() {
   return (
-    <div aria-busy="true" aria-label="Loading Operations Overview">
-      <OpsPage>
+    <div className="overview-loading-region" aria-busy="true" aria-label="Loading Operations Overview">
+      <OpsPage className="overview-loading-page">
         <OpsPageHeader
           eyebrow="Operations · Overview"
-          title="Operations overview"
+          title="Command centre"
           description="Loading the current operational snapshot and desk summaries."
         />
-        <div className="ops-content ops-content-wide">
-          <OpsSurface>
-            <OpsEmptyState compact title="Loading operational snapshot" description="Current freight risk, commitments and workload are being prepared."/>
-          </OpsSurface>
+        <div className="ops-content ops-content-wide overview-loading-content" aria-hidden="true">
+          <div className="overview-loading-toolbar"/>
+          <div className="overview-loading-stats">{Array.from({ length: 6 }, (_, index) => <span key={index}/>)}</div>
+          <div className="overview-loading-grid"><span/><span/></div>
+          <div className="overview-loading-panel"/>
+          <div className="overview-loading-panel"/>
         </div>
       </OpsPage>
     </div>
@@ -135,5 +137,5 @@ export default async function CommandCentrePage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`kcpl-overview-gate ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}><section className="kcpl-overview-gate-card"><span className="kcpl-overview-gate-mark"><ShieldCheck size={16} strokeWidth={1.75} aria-hidden="true"/></span><p className="kcpl-overview-gate-kicker">KCPL Operations</p><h1>{title}</h1><p>{detail}</p><div className="kcpl-overview-gate-actions"><Link href="/admin/enquiries">Open Enquiries</Link><Link href="/">KCPL website</Link></div></section></main>;
+  return <main className={`kcpl-overview-gate font-[var(--font-inter)] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}><section className="kcpl-overview-gate-card"><span className="kcpl-overview-gate-mark"><ShieldCheck size={16} strokeWidth={1.75} aria-hidden="true"/></span><p className="kcpl-overview-gate-kicker">KCPL Operations</p><h1>{title}</h1><p>{detail}</p><div className="kcpl-overview-gate-actions"><Link href="/admin/enquiries">Open Enquiries</Link><Link href="/">KCPL website</Link></div></section></main>;
 }
