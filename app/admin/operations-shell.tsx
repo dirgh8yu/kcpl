@@ -41,6 +41,7 @@ export function OperationsShell({
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [refreshing, startRefresh] = useTransition();
   const [resolvedCapabilities, setResolvedCapabilities] = useState<NavigationCapabilities | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -95,6 +96,14 @@ export function OperationsShell({
   }, [mobileOpen]);
 
   function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
+  function toggleGroup(group: string) {
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }
 
   return (
     <div className="kcpl-admin-shell" data-operations-context={activeItem?.group === "Operate" || undefined} data-commercial-context={activeItem?.group === "Plan & Sell" || undefined} data-workspace-group={activeItem?.group} data-workspace-id={activeItem?.id || "unscoped"}>
@@ -107,8 +116,8 @@ export function OperationsShell({
         </Link>
         <div className="app-scope"><span className="app-scope-mark" style={{ background: "var(--admin-success)" }}/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
         <nav className="app-workspaces" aria-label="KCPL workspaces">
-          {groups.map(({ group, items }) => <details key={group} className="app-nav-group" defaultOpen>
-            <summary>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
+          {groups.map(({ group, items }) => <details key={group} className="app-nav-group" open={!collapsedGroups.has(group)}>
+            <summary onClick={(event) => { event.preventDefault(); toggleGroup(group); }}>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
             {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}
           </details>)}
         </nav>
