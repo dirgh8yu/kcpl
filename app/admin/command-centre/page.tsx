@@ -2,13 +2,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
+import type { QuoteSummary } from "../admin-data";
 import { getStaffContext, type KcplStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
-import { OpsPage, OpsPageHeader } from "../operations-ui";
+import { OpsPage } from "../operations-ui";
 import { loadCommandCentre } from "./command-centre.server";
 import type { CommandCentreData } from "./command-centre-data";
-import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview.server";
 import { V4OperationsOverview } from "./v4-operations-overview";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ type StaffState =
   | { kind: "error"; shell: ShellState };
 
 type OverviewState =
-  | { kind: "ready"; data: CommandCentreData; overview: WorkflowOverview }
+  | { kind: "ready"; data: CommandCentreData; enquiries: QuoteSummary[] | null }
   | { kind: "unavailable" }
   | { kind: "error" };
 
@@ -70,40 +70,40 @@ async function loadStaffState(user: StaffUser): Promise<StaffState> {
 
 async function loadOverviewState(staff: KcplStaffContext): Promise<OverviewState> {
   try {
-    const [data, overview] = await Promise.all([
-      loadCommandCentre(staff),
-      loadWorkflowOverview(staff),
-    ]);
+    const dataPromise = loadCommandCentre(staff);
+    const enquiriesPromise = import("../admin-data.server")
+      .then(({ listQuoteSummaries }) => listQuoteSummaries(staff))
+      .catch((error) => {
+        console.error("Failed to load KCPL enquiry snapshot for Overview", error);
+        return null;
+      });
+    const [data, enquiries] = await Promise.all([dataPromise, enquiriesPromise]);
     if (!data) return { kind: "unavailable" };
-    return { kind: "ready", data, overview };
+    return { kind: "ready", data, enquiries };
   } catch (error) {
     console.error("Failed to load KCPL Overview data", error);
     return { kind: "error" };
   }
 }
 
-async function OverviewData({ staff, isManagement }: { staff: KcplStaffContext; isManagement: boolean }) {
+async function OverviewData({ staff }: { staff: KcplStaffContext }) {
   const state = await loadOverviewState(staff);
   if (state.kind === "unavailable") return <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded />;
   if (state.kind === "error") return <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded />;
-  return <V4OperationsOverview data={state.data} overview={state.overview} isManagement={isManagement}/>;
+  return <V4OperationsOverview data={state.data} enquiries={state.enquiries}/>;
 }
 
 function OverviewLoading() {
   return (
     <div className="overview-loading-region" aria-busy="true" aria-label="Loading Operations Overview">
       <OpsPage className="overview-loading-page">
-        <OpsPageHeader
-          eyebrow="Operations · Overview"
-          title="Command centre"
-          description="Loading the current operational snapshot and desk summaries."
-        />
-        <div className="ops-content ops-content-wide overview-loading-content" aria-hidden="true">
-          <div className="overview-loading-toolbar"/>
-          <div className="overview-loading-stats">{Array.from({ length: 6 }, (_, index) => <span key={index}/>)}</div>
-          <div className="overview-loading-grid"><span/><span/></div>
-          <div className="overview-loading-panel"/>
-          <div className="overview-loading-panel"/>
+        <div className="px-4 py-5 md:px-6 md:py-6" aria-hidden="true">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0"><div className="h-8 w-32 rounded-md bg-[var(--admin-surface-muted)]"/><div className="mt-2 h-5 w-72 max-w-full rounded-md bg-[var(--admin-surface-muted)]"/></div>
+            <div className="flex gap-2"><span className="h-10 w-10 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)]"/><span className="h-10 w-36 rounded-md bg-[var(--admin-crimson)] opacity-20"/></div>
+          </div>
+          <div className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-line)] md:grid-cols-3 xl:grid-cols-6">{Array.from({ length: 6 }, (_, index) => <span key={index} className="h-24 bg-[var(--admin-surface)]"/>)}</div>
+          <div className="grid gap-4 xl:grid-cols-3"><div className="h-80 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] xl:col-span-2"/><div className="h-80 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)]"/></div>
         </div>
       </OpsPage>
     </div>
@@ -130,7 +130,7 @@ export default async function CommandCentrePage() {
   return (
     <OperationsShell {...shellProps}>
       <Suspense fallback={<OverviewLoading/>}>
-        <OverviewData staff={state.staff} isManagement={state.shell.isManagement}/>
+        <OverviewData staff={state.staff}/>
       </Suspense>
     </OperationsShell>
   );
