@@ -3,41 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  BarChart2,
-  BarChart3,
-  Bell,
-  Calendar,
-  CheckSquare,
-  ChevronDown,
-  ChevronRight,
-  ClipboardList,
-  CreditCard,
-  Database,
-  FileText,
-  Folder,
-  Globe,
-  Home,
-  Layers,
-  LogOut,
-  Map,
-  Menu,
-  MessageSquare,
-  Network,
-  Receipt,
-  RefreshCw,
-  Scale,
-  Search,
-  Shield,
-  Tag,
-  TrendingUp,
-  Truck,
-  Users,
-  Users2,
-  X,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { OperationsCommandPalette } from "./operations-command-palette";
 import { OperationsNotificationCentre } from "./operations-notification-centre";
@@ -46,36 +12,8 @@ import {
   groupedWorkspaces,
   visibleWorkspaces,
   type NavigationCapabilities,
-  type WorkspaceIconName,
 } from "./workflow-navigation";
-
-const WORKSPACE_ICONS: Record<WorkspaceIconName, LucideIcon> = {
-  Home,
-  Truck,
-  Calendar,
-  FileText,
-  Map,
-  Shield,
-  Folder,
-  CheckSquare,
-  Bell,
-  MessageSquare,
-  Users,
-  TrendingUp,
-  BarChart3,
-  Tag,
-  Layers,
-  ClipboardList,
-  Globe,
-  Zap,
-  Network,
-  CreditCard,
-  Receipt,
-  Scale,
-  BarChart2,
-  Database,
-  Users2,
-};
+import { WorkspaceIcon } from "./workflow-icon";
 
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
@@ -141,6 +79,7 @@ export function OperationsShell({
   useEffect(() => {
     if (!mobileOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const restoreFocus = menuButton.current;
     document.body.style.overflow = "hidden";
     sidebar.current?.querySelector<HTMLElement>("a, button, summary")?.focus();
     function trap(event: KeyboardEvent) {
@@ -152,7 +91,7 @@ export function OperationsShell({
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }
     window.addEventListener("keydown", trap);
-    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); menuButton.current?.focus(); };
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); restoreFocus?.focus(); };
   }, [mobileOpen]);
 
   function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
@@ -170,10 +109,7 @@ export function OperationsShell({
         <nav className="app-workspaces" aria-label="KCPL workspaces">
           {groups.map(({ group, items }) => <details key={group} className="app-nav-group" open={activeItem?.group === group || undefined}>
             <summary>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
-            {items.map((workspace) => {
-              const Icon = WORKSPACE_ICONS[workspace.icon];
-              return <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><Icon size={17} strokeWidth={1.75} aria-hidden="true"/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>;
-            })}
+            {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}
           </details>)}
         </nav>
         <div className="app-sidebar-footer">
