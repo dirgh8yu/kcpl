@@ -17,6 +17,7 @@ export type WorkspaceIconName =
   | "Folder"
   | "CheckSquare"
   | "Bell"
+  | "BellRing"
   | "MessageSquare"
   | "Users"
   | "TrendingUp"
@@ -65,7 +66,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "documents", href: "/admin/documents", label: "Documents", group: "Operate", hint: "Verified Document Vault and review queue", keywords: ["documents", "vault", "verification", "pod", "awb", "bol"], permission: "job_file", icon: "Folder", prefixes: ["/admin/documents"] },
   { id: "delivery", href: "/admin/delivery", label: "Delivery & POD", group: "Operate", hint: "Final-mile attempts, proof of delivery and redelivery", keywords: ["delivery", "pod", "proof", "recipient", "redelivery"], permission: "job_file", icon: "CheckSquare", prefixes: ["/admin/delivery"] },
   { id: "alerts", href: "/admin/alerts", label: "Tasks & Alerts", group: "Operate", hint: "Exceptions, ownership and follow-up", keywords: ["alerts", "tasks", "exceptions", "follow up"], permission: "all", icon: "Bell", prefixes: ["/admin/alerts"] },
-  { id: "notifications", href: "/admin/notifications", label: "Notifications", group: "Operate", hint: "Assignment and automation notification history", keywords: ["notifications", "history", "automation"], permission: "all", icon: "Bell", prefixes: ["/admin/notifications"] },
+  { id: "notifications", href: "/admin/notifications", label: "Notifications", group: "Operate", hint: "Assignment and automation notification history", keywords: ["notifications", "history", "automation"], permission: "all", icon: "BellRing", prefixes: ["/admin/notifications"] },
 
   { id: "enquiries", href: "/admin/enquiries", label: "Enquiries", group: "Plan & Sell", hint: "Incoming freight requests and quote pipeline", keywords: ["enquiry", "quote", "request", "lead"], permission: "all", icon: "MessageSquare", prefixes: ["/admin/enquiries"] },
   { id: "customers", href: "/admin/crm", label: "Customers", group: "Plan & Sell", hint: "Customer accounts and Customer 360", keywords: ["customer", "crm", "account"], permission: "all", icon: "Users", prefixes: ["/admin/crm"] },
