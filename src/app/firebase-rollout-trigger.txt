@@ -1,0 +1,4 @@
+KCPL Firebase App Hosting rollout trigger.
+The backend rollout filter is currently configured to watch src/app/* while the application source lives under app/*.
+This trigger publishes the current main branch, including admin Inter typography commits dba002ae72359ad6c52684be40fde75108c266a7 and 4f731076f4861612f6ee7e213146c9d91f9a7824.
+Triggered: 2026-09-14T11:45+10:00
