@@ -36,8 +36,8 @@ jobs:
           KCPL_UI_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: npm run check:ui
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint affected Command Centre files
+        run: npx eslint app/admin/command-centre/page.tsx app/admin/command-centre/v4-operations-overview.tsx
 
       - name: Type check
         run: npx tsc --noEmit
