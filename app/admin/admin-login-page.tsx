@@ -5,7 +5,7 @@ import { AdminLogin } from "./admin-login";
 
 export function AdminLoginPage() {
   return (
-    <main className="min-h-screen bg-[#F6F6F3] text-[#101010]">
+    <main className="kcpl-admin-shell min-h-screen bg-[#F6F6F3] text-[#101010]">
       <div className="grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
         <section className="relative hidden overflow-hidden border-r border-black/10 bg-[#101010] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
           <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,.09)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.09)_1px,transparent_1px)] [background-size:44px_44px]" />
