@@ -1,0 +1,24 @@
+/* Final responsive placement rules for the Operations Overview workflow register. */
+@media (max-width: 760px) {
+  .kcpl-ops-overview .overview-workflow-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .kcpl-ops-overview .overview-workflow-action {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .kcpl-ops-overview .overview-workflow-row > svg {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    color: var(--overview-faint);
+  }
+
+  .kcpl-ops-overview .overview-workflow-support {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
