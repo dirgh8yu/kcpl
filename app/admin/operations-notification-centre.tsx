@@ -137,7 +137,6 @@ export function OperationsNotificationCentre() {
         type="button"
         onClick={() => { setOpen((current) => !current); setSettingsOpen(false); if (!open) void load(); }}
         className="app-icon-button app-notification-toggle"
-        aria-expanded={open}
         aria-label={unread ? `Open notifications, ${unread} unread` : "Open notifications"}
         aria-expanded={open}
       >
