@@ -7,7 +7,8 @@ import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
 import { OpsEmptyState, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import { loadCommandCentre } from "./command-centre.server";
-import { loadWorkflowOverview } from "./workflow-overview.server";
+import type { CommandCentreData } from "./command-centre-data";
+import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview.server";
 import { V4OperationsOverview } from "./v4-operations-overview";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,11 @@ type StaffState =
   | { kind: "ready"; staff: KcplStaffContext; shell: ShellState }
   | { kind: "restricted"; shell: ShellState }
   | { kind: "error"; shell: ShellState };
+
+type OverviewState =
+  | { kind: "ready"; data: CommandCentreData; overview: WorkflowOverview }
+  | { kind: "unavailable" }
+  | { kind: "error" };
 
 function fallbackShellState(user: StaffUser): ShellState {
   const permissions = staffCapabilitiesForEmail(user.email);
@@ -62,18 +68,25 @@ async function loadStaffState(user: StaffUser): Promise<StaffState> {
   return { kind: "ready", staff, shell };
 }
 
-async function OverviewData({ staff, isManagement }: { staff: KcplStaffContext; isManagement: boolean }) {
+async function loadOverviewState(staff: KcplStaffContext): Promise<OverviewState> {
   try {
     const [data, overview] = await Promise.all([
       loadCommandCentre(staff),
       loadWorkflowOverview(staff),
     ]);
-    if (!data) return <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded />;
-    return <V4OperationsOverview data={data} overview={overview} isManagement={isManagement}/>;
+    if (!data) return { kind: "unavailable" };
+    return { kind: "ready", data, overview };
   } catch (error) {
     console.error("Failed to load KCPL Overview data", error);
-    return <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded />;
+    return { kind: "error" };
   }
+}
+
+async function OverviewData({ staff, isManagement }: { staff: KcplStaffContext; isManagement: boolean }) {
+  const state = await loadOverviewState(staff);
+  if (state.kind === "unavailable") return <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded />;
+  if (state.kind === "error") return <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded />;
+  return <V4OperationsOverview data={state.data} overview={state.overview} isManagement={isManagement}/>;
 }
 
 function OverviewLoading() {
