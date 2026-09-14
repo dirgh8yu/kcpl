@@ -88,7 +88,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
         return;
       }
       if (event.key !== "Tab") return;
-      const elements = Array.from(dialog.querySelectorAll<HTMLElement>('input,button:not([tabindex="-1"]),[tabindex="0"]'));
+      const elements = Array.from(dialog!.querySelectorAll<HTMLElement>('input,button:not([tabindex="-1"]),[tabindex="0"]'));
       const first = elements[0];
       const last = elements.at(-1);
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
