@@ -7,7 +7,13 @@ import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "l
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { OperationsCommandPalette } from "./operations-command-palette";
 import { OperationsNotificationCentre } from "./operations-notification-centre";
-import { activeWorkspace, groupedWorkspaces, visibleWorkspaces, type NavigationCapabilities } from "./workflow-navigation";
+import {
+  activeWorkspace,
+  groupedWorkspaces,
+  visibleWorkspaces,
+  type NavigationCapabilities,
+} from "./workflow-navigation";
+import { WorkspaceIcon } from "./workflow-icon";
 
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
@@ -73,8 +79,9 @@ export function OperationsShell({
   useEffect(() => {
     if (!mobileOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const restoreFocus = menuButton.current;
     document.body.style.overflow = "hidden";
-    sidebar.current?.querySelector<HTMLElement>("a, button")?.focus();
+    sidebar.current?.querySelector<HTMLElement>("a, button, summary")?.focus();
     function trap(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
       const controls = Array.from(sidebar.current?.querySelectorAll<HTMLElement>('a[href], button, summary') ?? []).filter((node) => node.getClientRects().length > 0);
@@ -84,7 +91,7 @@ export function OperationsShell({
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }
     window.addEventListener("keydown", trap);
-    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); menuButton.current?.focus(); };
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); restoreFocus?.focus(); };
   }, [mobileOpen]);
 
   function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
@@ -95,26 +102,26 @@ export function OperationsShell({
       {mobileOpen ? <button type="button" className="app-nav-backdrop" onClick={() => setMobileOpen(false)} aria-label="Close navigation"/> : null}
       <aside ref={sidebar} className="app-sidebar" data-open={mobileOpen || undefined} aria-label="Application navigation">
         <Link href="/admin/command-centre" className="app-brand" aria-label="KCPL Operations overview" onClick={() => setMobileOpen(false)}>
-          <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={27} height={27} priority/>
+          <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={28} height={28} priority/>
           <span><strong>KCPL</strong><small>Operating system</small></span>
         </Link>
         <div className="app-scope"><span className="app-scope-mark"/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
         <nav className="app-workspaces" aria-label="KCPL workspaces">
-          {groups.map(({ group, items }) => <details key={`${group}:${activeItem?.group === group}`} className="app-nav-group" open={activeItem?.group === group || undefined}>
-            <summary>{group}<ChevronDown size={12} aria-hidden="true"/></summary>
-            {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span>{workspace.label}</span>{workspace.id === activeItem?.id ? <ChevronRight size={12} aria-hidden="true"/> : null}</Link>)}
+          {groups.map(({ group, items }) => <details key={group} className="app-nav-group" open={activeItem?.group === group || undefined}>
+            <summary>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
+            {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}
           </details>)}
         </nav>
         <div className="app-sidebar-footer">
-          <button type="button" className="app-nav-search" onClick={openSearch}><Search size={14}/><span>Find anything</span><kbd>Ctrl / ⌘ K</kbd></button>
-          <div className="app-account"><span className="app-avatar">{initials}</span><span className="app-account-name">{userName}<small>{capabilities.isManagement ? "Management" : "KCPL staff"}</small></span><a href={signOutPath} aria-label="Sign out"><LogOut size={15}/></a></div>
+          <button type="button" className="app-nav-search" onClick={openSearch}><Search size={15} strokeWidth={1.75} aria-hidden="true"/><span>Find anything</span><kbd>⌘ K</kbd></button>
+          <div className="app-account"><span className="app-avatar">{initials}</span><span className="app-account-name">{userName}<small>{capabilities.isManagement ? "Management" : "KCPL staff"}</small></span><a href={signOutPath} aria-label="Sign out"><LogOut size={16} strokeWidth={1.75} aria-hidden="true"/></a></div>
         </div>
       </aside>
       <header className="app-topbar">
-        <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={17}/> : <Menu size={17}/>}</button>
-        <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={12} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={12} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
-        <button type="button" className="app-global-search" onClick={openSearch}><Search size={14}/><span>Search records and workspaces</span><kbd>⌘ K</kbd></button>
-        <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={15} className={refreshing ? "app-refreshing" : undefined}/></button>
+        <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={18} strokeWidth={1.75}/> : <Menu size={18} strokeWidth={1.75}/>}</button>
+        <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
+        <button type="button" className="app-global-search" onClick={openSearch}><Search size={15} strokeWidth={1.75} aria-hidden="true"/><span>Search records and workspaces</span><kbd>⌘ K</kbd></button>
+        <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : undefined}/></button>
         <OperationsNotificationCentre/>
       </header>
       <div id="workspace-content" tabIndex={-1} className="kcpl-admin-content">{children}</div>
