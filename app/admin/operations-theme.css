@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 .kcpl-ops {
   --ops-canvas: #f8f6f3;
   --ops-canvas-warm: #f4f0ec;
@@ -52,38 +54,38 @@
 /* Safety net while older admin modules are migrated to the shared primitives. */
 .kcpl-ops [class*="bg-[#091624]"],
 .kcpl-ops [class*="bg-[#0a1828]"],
-.kcpl-ops [class*="bg-[#10263f]"] { background-color: var(--ops-accent) !important; }
+.kcpl-ops [class*="bg-[#10263f]"] { background-color: var(--ops-accent); }
 .kcpl-ops [class*="bg-[#f3f0e7]"],
-.kcpl-ops [class*="bg-[#f5f6f7]"] { background-color: var(--ops-canvas) !important; }
+.kcpl-ops [class*="bg-[#f5f6f7]"] { background-color: var(--ops-canvas); }
 .kcpl-ops [class*="bg-[#f8f9fa]"],
 .kcpl-ops [class*="bg-[#faf9f5]"],
-.kcpl-ops [class*="bg-[#fafbfb]"] { background-color: #faf7f4 !important; }
-.kcpl-ops [class*="text-[#10263f]"] { color: var(--ops-ink) !important; }
+.kcpl-ops [class*="bg-[#fafbfb]"] { background-color: #faf7f4; }
+.kcpl-ops [class*="text-[#10263f]"] { color: var(--ops-ink); }
 .kcpl-ops [class*="text-[#263a50]"],
 .kcpl-ops [class*="text-[#344556]"],
 .kcpl-ops [class*="text-[#42515e]"],
-.kcpl-ops [class*="text-[#42505e]"] { color: #514943 !important; }
+.kcpl-ops [class*="text-[#42505e]"] { color: #514943; }
 .kcpl-ops [class*="text-[#8a6c36]"],
 .kcpl-ops [class*="text-[#9a783d]"],
 .kcpl-ops [class*="text-[#785c2d]"],
 .kcpl-ops [class*="text-[#80612e]"],
-.kcpl-ops [class*="text-[#775b2c]"] { color: #bd644e !important; }
+.kcpl-ops [class*="text-[#775b2c]"] { color: #bd644e; }
 .kcpl-ops [class*="border-[#dfe3e8]"],
 .kcpl-ops [class*="border-[#e1e5e8]"],
 .kcpl-ops [class*="border-[#e1e5e9]"],
-.kcpl-ops [class*="border-[#e2e6e9]"] { border-color: var(--ops-line) !important; }
+.kcpl-ops [class*="border-[#e2e6e9]"] { border-color: var(--ops-line); }
 .kcpl-ops [class*="border-[#e8ebee]"],
 .kcpl-ops [class*="border-[#edf0f2]"],
-.kcpl-ops [class*="border-black/10"] { border-color: var(--ops-line-soft) !important; }
+.kcpl-ops [class*="border-black/10"] { border-color: var(--ops-line-soft); }
 .kcpl-ops [class*="focus:border-[#aa8748]"]:focus,
-.kcpl-ops [class*="focus:border-[#9e7b3e]"]:focus { border-color: var(--ops-accent) !important; }
+.kcpl-ops [class*="focus:border-[#9e7b3e]"]:focus { border-color: var(--ops-accent); }
 .kcpl-ops [class*="hover:border-[#b78a3e]"]:hover,
-.kcpl-ops [class*="hover:border-[#c5aa78]"]:hover { border-color: #e2a38f !important; }
-.kcpl-ops [class*="shadow-[inset_3px_0_0_#b78a3e]"] { box-shadow: inset 3px 0 0 var(--ops-accent) !important; }
-.kcpl-ops [class*="rounded-[28px]"], .kcpl-ops [class*="rounded-[26px]"] { border-radius: 18px !important; }
+.kcpl-ops [class*="hover:border-[#c5aa78]"]:hover { border-color: #e2a38f; }
+.kcpl-ops [class*="shadow-[inset_3px_0_0_#b78a3e]"] { box-shadow: inset 3px 0 0 var(--ops-accent); }
+.kcpl-ops [class*="rounded-[28px]"], .kcpl-ops [class*="rounded-[26px]"] { border-radius: 18px; }
 .kcpl-ops [class*="rounded-xl"] { border-radius: 13px; }
 .kcpl-ops [class*="rounded-lg"] { border-radius: 11px; }
-.kcpl-ops [class~="sticky"][class~="top-0"] { top: 58px !important; }
+.kcpl-ops [class~="sticky"][class~="top-0"] { top: 58px; }
 
 /* Shared page anatomy */
 .ops-page {
@@ -281,4 +283,6 @@ button.ops-stat:hover { background: rgba(255, 255, 255, .74); }
 
 @media (prefers-reduced-motion: no-preference) {
   .kcpl-ops a, .kcpl-ops button, .kcpl-ops input, .kcpl-ops select, .kcpl-ops textarea { transition-duration: 170ms; }
+}
+
 }

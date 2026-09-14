@@ -5,8 +5,6 @@ import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
 import { MobileQuoteCta } from "./components/mobile-quote-cta";
 import { StructuredData } from "./components/structured-data";
-import { OperationsGlobalSearch } from "./admin/operations-global-search";
-import { OperationsNavigationFallback } from "./admin/operations-navigation-fallback";
 import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
 import "./globals.css";
 import "./admin/operations-theme.css";
@@ -27,6 +25,7 @@ import "./admin/operations-overview-interactive.css";
 import "./admin/shipment-detail-v2.css";
 import "./admin/admin-typography.css";
 import "./admin/shipment-detail-hierarchy.css";
+import "./admin/operations-system.css";
 
 const geist = Geist({
   variable: "--font-geist",
@@ -102,8 +101,6 @@ export default function RootLayout({
       <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
         <StructuredData data={organizationSchema}/>
         {children}
-        <OperationsNavigationFallback/>
-        <OperationsGlobalSearch/>
         <MobileQuoteCta/>
         <Suspense fallback={null}><Analytics/></Suspense>
       </body>

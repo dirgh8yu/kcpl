@@ -10,12 +10,12 @@ const typographyPath = new URL("../app/admin/admin-typography.css", import.meta.
 const shipmentsPath = new URL("../app/admin/shipments/shipments-workspace.tsx", import.meta.url);
 const gatePath = new URL("../app/admin/v4-workspace-gate.tsx", import.meta.url);
 
-test("admin shell derives secondary navigation from the canonical workspace registry", async () => {
+test("admin shell derives grouped navigation from the canonical workspace registry", async () => {
   const shell = await readFile(shellPath, "utf8");
-  assert.match(shell, /workspace\.group === activeItem\.group/);
+  assert.match(shell, /groupedWorkspaces\(capabilities\)/);
   assert.match(shell, /data-workspace-group=/);
   assert.match(shell, /data-workspace-id=/);
-  assert.match(shell, /workspace-secondary-nav/);
+  assert.match(shell, /app-workspaces/);
   assert.doesNotMatch(shell, /const operationsWorkflow = \[/);
   assert.doesNotMatch(shell, /const commercialWorkflow = \[/);
 });

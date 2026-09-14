@@ -1,6 +1,6 @@
 # KCPL Brand System
 
-This document is the implementation contract for KCPL visual work in the website, customer portal, and Operations UI.
+This document is the KCPL brand foundation for public visual work. For `/admin`, `docs/OPERATING_SYSTEM.md` and `app/admin/operations-system.css` take precedence for software typography, density, components and interaction. Staff UI uses Inter; Manrope remains the brand typeface.
 
 ## Source of truth
 
@@ -39,7 +39,7 @@ The KCPL brand typeface is **Manrope**.
 
 1. Do not introduce serif display fonts into KCPL product or marketing UI.
 2. Cormorant Garamond and Instrument Serif are legacy website styling and must not be used for new work.
-3. Headings must use Manrope, not a fallback serif.
+3. Public brand headings use Manrope. Staff software headings use Inter through the operating system contract.
 4. Uppercase and wide tracking should be reserved for short labels, the wordmark descriptor, and small navigation/eyebrow copy—not paragraphs.
 5. Typography must remain readable at mobile sizes; brand styling never overrides accessibility.
 

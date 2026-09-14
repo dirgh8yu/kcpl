@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* Shared production fixes for KCPL Operations. Keep narrow and intentional. */
 
 /*
@@ -29,4 +31,6 @@
 
 .kcpl-ops .ops-command-hero::after {
   clip-path: inset(0 0 70px 0);
+}
+
 }

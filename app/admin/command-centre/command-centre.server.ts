@@ -1,3 +1,4 @@
+import { compareShipmentPriority } from "../shipments/shipment-queue-policy";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { jobPriorities, type JobPriority } from "../job-file";
@@ -52,10 +53,6 @@ function shipmentIdFromChild(path: FirebaseFirestore.DocumentReference) {
   return path.parent.parent?.id ?? "";
 }
 
-function timestamp(value: string) {
-  const time = Date.parse(value);
-  return Number.isFinite(time) ? time : 0;
-}
 
 function hasCustomsRisk(job: CommandCentreJob, today: string) {
   if (job.required_customs_open <= 0) return false;
@@ -78,7 +75,7 @@ async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>)
   return result;
 }
 
-export async function loadCommandCentre(context: KcplStaffContext): Promise<CommandCentreData | null> {
+export async function loadCommandCentre(context: KcplStaffContext, options: { includeDelivered?: boolean } = {}): Promise<CommandCentreData | null> {
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const [shipmentsSnapshot, tasksSnapshot, customsSnapshot, staffProfiles] = await Promise.all([
@@ -95,7 +92,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
   const accessibleShipmentRows = shipmentsSnapshot.docs.flatMap((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const status = statusValue(data.status);
-    if (status === "delivered") return [];
+    if (status === "delivered" && !options.includeDelivered) return [];
     const primaryValue = branchValue(data.primary_branch);
     const handlingValue = branchArray(data.handling_branches);
     const accessBranches = [...new Set([...(primaryValue ? [primaryValue] : []), ...handlingValue])];
@@ -202,19 +199,12 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
     };
   });
 
-  jobs.sort((a, b) => {
-    const score = (job: CommandCentreJob) =>
-      (job.status === "exception" ? 100 : 0) +
-      (job.priority === "urgent" ? 50 : job.priority === "high" ? 20 : 0) +
-      job.overdue_tasks * 10 +
-      (hasCustomsRisk(job, today) ? job.required_customs_open * 4 : 0) +
-      (!job.assigned_to_name && !job.assigned_to_email ? 3 : 0);
-    return score(b) - score(a) || timestamp(b.updated_at) - timestamp(a.updated_at);
-  });
+  jobs.sort(compareShipmentPriority);
+  const activeJobs = jobs.filter((job) => job.status !== "delivered");
 
   const accessibleBranches = context.can_access_all_branches ? [...kcplBranches] : context.branches;
   const branchLoad: CommandCentreBranchLoad[] = accessibleBranches.map((branch) => {
-    const branchJobs = jobs.filter((job) => job.primary_branch === branch || job.handling_branches.includes(branch));
+    const branchJobs = activeJobs.filter((job) => job.primary_branch === branch || job.handling_branches.includes(branch));
     return {
       branch,
       active_jobs: branchJobs.length,
@@ -243,7 +233,7 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
       overdue_tasks: task?.overdue ?? 0,
     });
   }
-  for (const job of jobs) {
+  for (const job of activeJobs) {
     const email = job.assigned_to_email?.toLowerCase() ?? "";
     const name = job.assigned_to_name ?? "Unassigned";
     if (!job.assigned_to_uid && !email && name === "Unassigned") continue;
@@ -267,15 +257,16 @@ export async function loadCommandCentre(context: KcplStaffContext): Promise<Comm
 
   return {
     generated_at: new Date().toISOString(),
+    partial: shipmentsSnapshot.size >= 2000 || tasksSnapshot.size >= 8000 || customsSnapshot.size >= 5000,
     operational_date: today,
     accessible_branches: accessibleBranches,
     totals: {
-      active_jobs: jobs.length,
-      urgent_jobs: jobs.filter((job) => job.priority === "urgent").length,
+      active_jobs: activeJobs.length,
+      urgent_jobs: activeJobs.filter((job) => job.priority === "urgent").length,
       overdue_tasks: jobs.reduce((sum, job) => sum + job.overdue_tasks, 0),
       customs_blockers: jobs.filter((job) => hasCustomsRisk(job, today)).reduce((sum, job) => sum + job.required_customs_open, 0),
-      deliveries_today: jobs.filter((job) => job.eta?.slice(0, 10) === today).length,
-      unassigned_jobs: jobs.filter((job) => !job.assigned_to_name && !job.assigned_to_email).length,
+      deliveries_today: activeJobs.filter((job) => job.eta?.slice(0, 10) === today).length,
+      unassigned_jobs: activeJobs.filter((job) => !job.assigned_to_uid && !job.assigned_to_name && !job.assigned_to_email).length,
       exception_jobs: jobs.filter((job) => job.status === "exception").length,
     },
     jobs,

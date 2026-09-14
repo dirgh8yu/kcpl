@@ -1,0 +1,3 @@
+Read `AGENTS.md` and `docs/OPERATING_SYSTEM.md` before modifying this repository. These are the current KCPL UI and workflow contracts.
+
+For `/admin`, reuse OperationsShell, operations-ui.tsx, operations-system.css tokens and workflow-navigation.ts. Never add another visual theme, override stylesheet, parallel command palette or optimistic permission default. Form submissions require explicit type="submit". Shipment priority uses shipment-queue-policy.ts; actual mutations use existing server policies. Preserve URL filter/selection/return state. Do not increase or regenerate the UI contract baseline. Follow the user's requested validation and merge scope.

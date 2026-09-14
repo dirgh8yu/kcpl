@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Operations overview refinement
    Dense control-board treatment using the KCPL identity palette.
    Loaded after legacy Operations styles so Overview stays deliberate and flat. */
@@ -260,8 +262,8 @@
 
 .kcpl-ops-overview .overview-section-kicker {
   margin: 0 0 4px;
-  color: var(--overview-crimson) !important;
-  font-size: 9px !important;
+  color: var(--overview-crimson);
+  font-size: 9px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: .09em;
@@ -810,10 +812,10 @@
 }
 
 .kcpl-overview-gate-kicker {
-  margin-top: 18px !important;
-  color: #DC143C !important;
-  font-size: 9px !important;
-  font-weight: 700 !important;
+  margin-top: 18px;
+  color: #DC143C;
+  font-size: 9px;
+  font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -1074,10 +1076,10 @@
 @media (prefers-reduced-motion: reduce) {
   .kcpl-ops-overview *,
   .kcpl-overview-gate * {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
   }
 
   .kcpl-ops-overview .overview-text-action:hover,
@@ -1085,4 +1087,6 @@
   .kcpl-overview-gate-actions a:hover {
     transform: none;
   }
+}
+
 }

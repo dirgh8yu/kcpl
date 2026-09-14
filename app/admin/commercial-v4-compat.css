@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Commercial workspace
  * Source of truth: KCPL Figma identity — Crimson #DC143C, Black #101010,
  * neutral canvas #F6F6F3, Manrope ExtraBold + SemiBold.
@@ -45,19 +47,19 @@
 .kcpl-admin-shell[data-commercial-context] .ops-page,
 .kcpl-admin-shell[data-commercial-context] main {
   min-width: 0;
-  background: var(--commercial-canvas) !important;
-  color: var(--commercial-ink) !important;
+  background: var(--commercial-canvas);
+  color: var(--commercial-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-page-header {
-  padding: 28px 32px 22px !important;
-  border-bottom: 1px solid var(--commercial-ink) !important;
-  background: var(--commercial-canvas) !important;
+  padding: 28px 32px 22px;
+  border-bottom: 1px solid var(--commercial-ink);
+  background: var(--commercial-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
-  align-items: flex-end !important;
-  gap: 28px !important;
+  align-items: flex-end;
+  gap: 28px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-page-heading {
@@ -66,33 +68,33 @@
 
 .kcpl-admin-shell[data-commercial-context] .ops-page-heading h1,
 .kcpl-admin-shell[data-commercial-context] main > section:first-child h1 {
-  color: var(--commercial-ink) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: clamp(28px, 3vw, 40px) !important;
-  font-weight: 800 !important;
-  line-height: 1.04 !important;
-  letter-spacing: -0.045em !important;
+  color: var(--commercial-ink);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-page-description {
-  max-width: 720px !important;
-  margin-top: 8px !important;
-  color: var(--commercial-muted) !important;
-  font-size: 12px !important;
-  line-height: 1.55 !important;
+  max-width: 720px;
+  margin-top: 8px;
+  color: var(--commercial-muted);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-page-meta {
-  margin-top: 12px !important;
-  color: var(--commercial-muted) !important;
+  margin-top: 12px;
+  color: var(--commercial-muted);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-eyebrow {
-  color: var(--commercial-crimson) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.11em !important;
+  color: var(--commercial-crimson);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 
@@ -101,98 +103,98 @@
   width: 100%;
   max-width: 1440px;
   margin-inline: auto;
-  padding: 22px 32px 36px !important;
+  padding: 22px 32px 36px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-stack {
-  gap: 16px !important;
+  gap: 16px;
 }
 
 /* Surfaces: restrained registers, not floating cards. */
 .kcpl-admin-shell[data-commercial-context] .ops-surface {
   overflow: hidden;
-  border: 1px solid var(--commercial-line) !important;
-  border-radius: 2px !important;
-  background: var(--commercial-white) !important;
-  box-shadow: none !important;
+  border: 1px solid var(--commercial-line);
+  border-radius: 2px;
+  background: var(--commercial-white);
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-surface-header {
-  min-height: 68px !important;
-  padding: 15px 18px 13px !important;
-  border-bottom: 1px solid var(--commercial-line) !important;
-  background: var(--commercial-white) !important;
+  min-height: 68px;
+  padding: 15px 18px 13px;
+  border-bottom: 1px solid var(--commercial-line);
+  background: var(--commercial-white);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-surface-header h2 {
-  margin-top: 3px !important;
-  color: var(--commercial-ink) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 16px !important;
-  font-weight: 700 !important;
-  line-height: 1.25 !important;
-  letter-spacing: -0.025em !important;
+  margin-top: 3px;
+  color: var(--commercial-ink);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-surface-description {
   max-width: 720px;
-  margin-top: 4px !important;
-  color: var(--commercial-muted) !important;
-  font-size: 11px !important;
-  line-height: 1.45 !important;
+  margin-top: 4px;
+  color: var(--commercial-muted);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-surface-body {
-  padding: 18px !important;
+  padding: 18px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-surface-body-flush {
-  padding: 0 !important;
+  padding: 0;
 }
 
 /* Commercial metrics read like a ledger. */
 .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
   width: 100%;
-  border-top: 0 !important;
-  border-bottom: 1px solid var(--commercial-line) !important;
-  background: var(--commercial-white) !important;
-  box-shadow: none !important;
+  border-top: 0;
+  border-bottom: 1px solid var(--commercial-line);
+  background: var(--commercial-white);
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-stat {
-  min-height: 82px !important;
-  padding: 13px 16px !important;
-  border-color: var(--commercial-line) !important;
-  background: var(--commercial-white) !important;
-  box-shadow: none !important;
+  min-height: 82px;
+  padding: 13px 16px;
+  border-color: var(--commercial-line);
+  background: var(--commercial-white);
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] button.ops-stat:hover {
-  background: var(--commercial-canvas) !important;
+  background: var(--commercial-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-stat[data-active] {
-  box-shadow: inset 0 -2px 0 var(--commercial-crimson) !important;
+  box-shadow: inset 0 -2px 0 var(--commercial-crimson);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-stat-label {
-  color: var(--commercial-muted) !important;
-  font-size: 10px !important;
-  font-weight: 650 !important;
-  letter-spacing: 0.02em !important;
+  color: var(--commercial-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-stat-value {
-  margin-top: 6px !important;
-  color: var(--commercial-ink) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.04em !important;
+  margin-top: 6px;
+  color: var(--commercial-ink);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-stat-detail {
-  color: var(--commercial-muted-2) !important;
+  color: var(--commercial-muted-2);
 }
 
 /* Buttons follow the KCPL crimson interaction language. */
@@ -202,250 +204,250 @@
 .kcpl-admin-shell[data-commercial-context] .ops-button[data-variant="ghost"],
 .kcpl-admin-shell[data-commercial-context] .ops-button[data-variant="danger"] {
   min-height: 38px;
-  border: 1px solid var(--commercial-crimson) !important;
-  border-radius: 2px !important;
-  background: var(--commercial-crimson) !important;
-  color: #FFFFFF !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  box-shadow: none !important;
-  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease !important;
+  border: 1px solid var(--commercial-crimson);
+  border-radius: 2px;
+  background: var(--commercial-crimson);
+  color: #FFFFFF;
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: none;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-button:hover:not(:disabled) {
-  border-color: var(--commercial-crimson-dark) !important;
-  background: var(--commercial-crimson-dark) !important;
-  color: #FFFFFF !important;
+  border-color: var(--commercial-crimson-dark);
+  background: var(--commercial-crimson-dark);
+  color: #FFFFFF;
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(220,20,60,.14) !important;
+  box-shadow: 0 5px 14px rgba(220,20,60,.14);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-button:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-button:disabled {
-  border-color: var(--commercial-line) !important;
-  background: var(--commercial-soft) !important;
-  color: var(--commercial-muted-2) !important;
-  opacity: 1 !important;
+  border-color: var(--commercial-line);
+  background: var(--commercial-soft);
+  color: var(--commercial-muted-2);
+  opacity: 1;
 }
 
 .kcpl-admin-shell[data-commercial-context] button[class*="bg-[#dc143c]"],
 .kcpl-admin-shell[data-commercial-context] a[class*="bg-[#dc143c]"],
 .kcpl-admin-shell[data-commercial-context] button[class*="bg-[#DC143C]"],
 .kcpl-admin-shell[data-commercial-context] a[class*="bg-[#DC143C]"] {
-  border-radius: 2px !important;
-  background: var(--commercial-crimson) !important;
-  color: #FFFFFF !important;
-  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease !important;
+  border-radius: 2px;
+  background: var(--commercial-crimson);
+  color: #FFFFFF;
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
 }
 
 .kcpl-admin-shell[data-commercial-context] button[class*="bg-[#dc143c]"]:hover:not(:disabled),
 .kcpl-admin-shell[data-commercial-context] a[class*="bg-[#dc143c]"]:hover,
 .kcpl-admin-shell[data-commercial-context] button[class*="bg-[#DC143C]"]:hover:not(:disabled),
 .kcpl-admin-shell[data-commercial-context] a[class*="bg-[#DC143C]"]:hover {
-  background: var(--commercial-crimson-dark) !important;
+  background: var(--commercial-crimson-dark);
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(220,20,60,.14) !important;
+  box-shadow: 0 5px 14px rgba(220,20,60,.14);
 }
 
 /* Filters and tabs stay quiet so actions remain obvious. */
 .kcpl-admin-shell[data-commercial-context] .ops-filter-pills {
-  gap: 3px !important;
+  gap: 3px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-filter-pill {
-  min-height: 30px !important;
-  border: 0 !important;
-  border-bottom: 1px solid transparent !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: var(--commercial-muted) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  box-shadow: none !important;
+  min-height: 30px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--commercial-muted);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-filter-pill:hover {
-  color: var(--commercial-ink) !important;
-  background: var(--commercial-soft) !important;
+  color: var(--commercial-ink);
+  background: var(--commercial-soft);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-filter-pill[data-active] {
-  border-bottom-color: var(--commercial-crimson) !important;
-  background: transparent !important;
-  color: var(--commercial-ink) !important;
-  font-weight: 700 !important;
+  border-bottom-color: var(--commercial-crimson);
+  background: transparent;
+  color: var(--commercial-ink);
+  font-weight: 700;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-segmented {
-  gap: 22px !important;
-  border-bottom: 1px solid var(--commercial-line) !important;
-  background: transparent !important;
+  gap: 22px;
+  border-bottom: 1px solid var(--commercial-line);
+  background: transparent;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-segmented button {
-  min-height: 38px !important;
-  border: 0 !important;
-  border-bottom: 2px solid transparent !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: var(--commercial-muted) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  box-shadow: none !important;
+  min-height: 38px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--commercial-muted);
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-segmented button:hover,
 .kcpl-admin-shell[data-commercial-context] .ops-segmented button[data-active] {
-  color: var(--commercial-ink) !important;
+  color: var(--commercial-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-segmented button[data-active] {
-  border-bottom-color: var(--commercial-crimson) !important;
-  font-weight: 700 !important;
+  border-bottom-color: var(--commercial-crimson);
+  font-weight: 700;
 }
 
 /* Badges are supporting metadata, never the dominant visual. */
 .kcpl-admin-shell[data-commercial-context] .ops-badge {
-  min-height: 22px !important;
-  border-radius: 2px !important;
-  box-shadow: none !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 9px !important;
-  font-weight: 650 !important;
-  letter-spacing: 0 !important;
+  min-height: 22px;
+  border-radius: 2px;
+  box-shadow: none;
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-mono {
-  color: var(--commercial-muted) !important;
-  font-size: 10px !important;
+  color: var(--commercial-muted);
+  font-size: 10px;
 }
 
 /* Form system */
 .kcpl-admin-shell[data-commercial-context] .ops-field-label,
 .kcpl-admin-shell[data-commercial-context] label > span:first-child {
-  color: var(--commercial-muted) !important;
-  font-size: 10px !important;
-  font-weight: 650 !important;
+  color: var(--commercial-muted);
+  font-size: 10px;
+  font-weight: 650;
 }
 
 .kcpl-admin-shell[data-commercial-context] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .kcpl-admin-shell[data-commercial-context] select {
-  min-height: 40px !important;
-  border: 1px solid var(--commercial-line-dark) !important;
-  border-radius: 2px !important;
-  background: var(--commercial-white) !important;
-  color: var(--commercial-ink) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 12px !important;
-  box-shadow: none !important;
+  min-height: 40px;
+  border: 1px solid var(--commercial-line-dark);
+  border-radius: 2px;
+  background: var(--commercial-white);
+  color: var(--commercial-ink);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 12px;
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] textarea {
-  min-height: 96px !important;
-  border: 1px solid var(--commercial-line-dark) !important;
-  border-radius: 2px !important;
-  background: var(--commercial-white) !important;
-  color: var(--commercial-ink) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 12px !important;
-  box-shadow: none !important;
+  min-height: 96px;
+  border: 1px solid var(--commercial-line-dark);
+  border-radius: 2px;
+  background: var(--commercial-white);
+  color: var(--commercial-ink);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 12px;
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] input:focus,
 .kcpl-admin-shell[data-commercial-context] select:focus,
 .kcpl-admin-shell[data-commercial-context] textarea:focus {
-  outline: 2px solid rgba(220,20,60,.16) !important;
-  outline-offset: 0 !important;
-  border-color: var(--commercial-crimson) !important;
+  outline: 2px solid rgba(220,20,60,.16);
+  outline-offset: 0;
+  border-color: var(--commercial-crimson);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-search {
-  min-height: 40px !important;
-  border: 1px solid var(--commercial-line-dark) !important;
-  border-radius: 2px !important;
-  background: var(--commercial-white) !important;
-  box-shadow: none !important;
+  min-height: 40px;
+  border: 1px solid var(--commercial-line-dark);
+  border-radius: 2px;
+  background: var(--commercial-white);
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-search input {
-  min-height: 0 !important;
-  height: auto !important;
-  border: 0 !important;
-  outline: 0 !important;
-  background: transparent !important;
+  min-height: 0;
+  height: auto;
+  border: 0;
+  outline: 0;
+  background: transparent;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-field small {
-  color: var(--commercial-muted-2) !important;
-  font-size: 9px !important;
-  line-height: 1.4 !important;
+  color: var(--commercial-muted-2);
+  font-size: 9px;
+  line-height: 1.4;
 }
 
 /* Enquiry + customer split workspaces */
 .kcpl-admin-shell[data-commercial-context] .ops-split {
   min-width: 0;
-  background: var(--commercial-white) !important;
+  background: var(--commercial-white);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-split-list {
-  border-color: var(--commercial-line) !important;
-  background: var(--commercial-canvas) !important;
+  border-color: var(--commercial-line);
+  background: var(--commercial-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-split-detail {
   min-width: 0;
-  background: var(--commercial-white) !important;
+  background: var(--commercial-white);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-record-row {
   position: relative;
-  border-color: var(--commercial-line) !important;
-  background: var(--commercial-white) !important;
-  color: var(--commercial-ink) !important;
-  transition: background-color 120ms ease !important;
+  border-color: var(--commercial-line);
+  background: var(--commercial-white);
+  color: var(--commercial-ink);
+  transition: background-color 120ms ease;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-record-row:hover {
-  background: var(--commercial-canvas) !important;
+  background: var(--commercial-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-record-row[data-selected] {
-  background: var(--commercial-soft) !important;
-  box-shadow: inset 3px 0 0 var(--commercial-crimson) !important;
+  background: var(--commercial-soft);
+  box-shadow: inset 3px 0 0 var(--commercial-crimson);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-route,
 .kcpl-admin-shell[data-commercial-context] .ops-record-row strong {
-  color: var(--commercial-ink) !important;
+  color: var(--commercial-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] header[class*="sticky"] {
-  border-color: var(--commercial-line) !important;
-  background: rgba(255,255,255,.98) !important;
-  backdrop-filter: none !important;
+  border-color: var(--commercial-line);
+  background: rgba(255,255,255,.98);
+  backdrop-filter: none;
 }
 
 /* Notice and empty states stay factual and compact. */
 .kcpl-admin-shell[data-commercial-context] .ops-notice {
-  border-radius: 2px !important;
-  box-shadow: none !important;
-  font-size: 11px !important;
+  border-radius: 2px;
+  box-shadow: none;
+  font-size: 11px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-empty {
-  border-radius: 2px !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-empty-icon {
-  border-radius: 2px !important;
+  border-radius: 2px;
 }
 
 /* Tables become the default language for high-density commercial records. */
@@ -456,31 +458,31 @@
 }
 
 .kcpl-admin-shell[data-commercial-context] thead tr {
-  border-bottom: 1px solid var(--commercial-ink) !important;
-  background: var(--commercial-canvas) !important;
+  border-bottom: 1px solid var(--commercial-ink);
+  background: var(--commercial-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] th {
-  color: var(--commercial-muted) !important;
-  font-family: var(--font-manrope), sans-serif !important;
-  font-size: 10px !important;
-  font-weight: 650 !important;
-  letter-spacing: 0.045em !important;
+  color: var(--commercial-muted);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.045em;
   text-transform: uppercase;
 }
 
 .kcpl-admin-shell[data-commercial-context] tbody tr {
-  border-color: var(--commercial-line) !important;
-  background: var(--commercial-white) !important;
+  border-color: var(--commercial-line);
+  background: var(--commercial-white);
 }
 
 .kcpl-admin-shell[data-commercial-context] tbody tr:hover {
-  background: var(--commercial-canvas) !important;
+  background: var(--commercial-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] td {
-  color: var(--commercial-muted) !important;
-  font-size: 11px !important;
+  color: var(--commercial-muted);
+  font-size: 11px;
 }
 
 /* Remove legacy warm/pastel SaaS styling across Commercial. */
@@ -491,7 +493,7 @@
 .kcpl-admin-shell[data-commercial-context] [class*="bg-[#faf7f3]"],
 .kcpl-admin-shell[data-commercial-context] [class*="bg-[#fff8f5]"],
 .kcpl-admin-shell[data-commercial-context] [class*="bg-[#f1ebe6]"] {
-  background: var(--commercial-white) !important;
+  background: var(--commercial-white);
 }
 
 .kcpl-admin-shell[data-commercial-context] [class*="border-[#e2ddd8]"],
@@ -503,7 +505,7 @@
 .kcpl-admin-shell[data-commercial-context] [class*="border-[#eee7e1]"],
 .kcpl-admin-shell[data-commercial-context] [class*="border-[#d9cec6]"],
 .kcpl-admin-shell[data-commercial-context] [class*="border-[#e2e2e2]"] {
-  border-color: var(--commercial-line) !important;
+  border-color: var(--commercial-line);
 }
 
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#2f2a26]"],
@@ -512,7 +514,7 @@
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#4c433d]"],
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#4b423c]"],
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#554f49]"] {
-  color: var(--commercial-ink) !important;
+  color: var(--commercial-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#817a73]"],
@@ -526,7 +528,7 @@
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#625b55]"],
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#5b5b5b]"],
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#737373]"] {
-  color: var(--commercial-muted) !important;
+  color: var(--commercial-muted);
 }
 
 .kcpl-admin-shell[data-commercial-context] [class*="rounded-[14px]"],
@@ -537,21 +539,21 @@
 .kcpl-admin-shell[data-commercial-context] [class*="rounded-[8px]"],
 .kcpl-admin-shell[data-commercial-context] [class*="rounded-[7px]"],
 .kcpl-admin-shell[data-commercial-context] [class*="rounded-[6px]"] {
-  border-radius: 2px !important;
-  box-shadow: none !important;
+  border-radius: 2px;
+  box-shadow: none;
 }
 
 /* Selected procurement / pricing rows: one explicit brand cue, no tinted card. */
 .kcpl-admin-shell[data-commercial-context] button[class*="border-[#dca99d]"] {
-  border-color: var(--commercial-line-dark) !important;
-  border-left: 3px solid var(--commercial-crimson) !important;
-  background: var(--commercial-canvas) !important;
+  border-color: var(--commercial-line-dark);
+  border-left: 3px solid var(--commercial-crimson);
+  background: var(--commercial-canvas);
 }
 
 /* Legacy Transport Order / Tender workflow navigation. */
 .kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] {
-  border-bottom: 1px solid var(--commercial-ink) !important;
-  background: transparent !important;
+  border-bottom: 1px solid var(--commercial-ink);
+  background: transparent;
   scrollbar-width: none;
 }
 
@@ -561,37 +563,37 @@
 
 .kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] a,
 .kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] span {
-  font-family: var(--font-manrope), sans-serif !important;
+  font-family: var(--font-manrope), sans-serif;
 }
 
 /* Market Estimate legacy surfaces */
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-screen"] > header,
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-screen"] > section,
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-screen"] aside > div {
-  border-color: var(--commercial-line) !important;
-  border-radius: 2px !important;
-  background: var(--commercial-white) !important;
-  box-shadow: none !important;
+  border-color: var(--commercial-line);
+  border-radius: 2px;
+  background: var(--commercial-white);
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] [class*="bg-[#0a1828]"],
 .kcpl-admin-shell[data-commercial-context] [class*="bg-[#10263f]"] {
-  background: var(--commercial-ink) !important;
+  background: var(--commercial-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] [class*="text-[#10263f]"] {
-  color: var(--commercial-ink) !important;
+  color: var(--commercial-ink);
 }
 
 /* Customer workspace hero is intentionally flatter than a marketing page. */
 .kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] {
-  border-color: var(--commercial-ink) !important;
-  background: var(--commercial-canvas) !important;
-  backdrop-filter: none !important;
+  border-color: var(--commercial-ink);
+  background: var(--commercial-canvas);
+  backdrop-filter: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] > div {
-  max-width: 1440px !important;
+  max-width: 1440px;
 }
 
 /* Keep long identifiers, customer emails and route strings from breaking layouts. */
@@ -604,41 +606,41 @@
 
 @media (max-width: 1180px) {
   .kcpl-admin-shell[data-commercial-context] .ops-page-header {
-    padding-inline: 24px !important;
+    padding-inline: 24px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-content,
   .kcpl-admin-shell[data-commercial-context] .ops-content-wide {
-    padding-inline: 24px !important;
+    padding-inline: 24px;
   }
 }
 
 @media (max-width: 760px) {
   .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
-    gap: 22px !important;
-    padding-inline: 16px !important;
+    gap: 22px;
+    padding-inline: 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-header {
-    padding: 20px 16px 16px !important;
+    padding: 20px 16px 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
-    display: block !important;
+    display: block;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-heading h1,
   .kcpl-admin-shell[data-commercial-context] main > section:first-child h1 {
-    font-size: 28px !important;
+    font-size: 28px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions {
     width: 100%;
-    margin-top: 16px !important;
+    margin-top: 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div {
-    display: grid !important;
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
@@ -650,80 +652,80 @@
 
   .kcpl-admin-shell[data-commercial-context] .ops-content,
   .kcpl-admin-shell[data-commercial-context] .ops-content-wide {
-    padding: 14px 16px 28px !important;
+    padding: 14px 16px 28px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-surface-header {
-    min-height: 0 !important;
-    padding: 13px 14px 12px !important;
+    min-height: 0;
+    padding: 13px 14px 12px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-surface-body {
-    padding: 14px !important;
+    padding: 14px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-surface-action {
     width: 100%;
-    margin-top: 10px !important;
+    margin-top: 10px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-    display: grid !important;
-    grid-auto-flow: row !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    overflow: visible !important;
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-stat {
-    min-width: 0 !important;
-    min-height: 72px !important;
-    padding: 11px 12px !important;
+    min-width: 0;
+    min-height: 72px;
+    padding: 11px 12px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-stat-value {
-    font-size: 21px !important;
+    font-size: 21px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-split {
-    display: block !important;
+    display: block;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-split-list {
-    max-height: 46vh !important;
-    border-right: 0 !important;
-    border-bottom: 1px solid var(--commercial-ink) !important;
+    max-height: 46vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--commercial-ink);
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-split-detail {
-    overflow: visible !important;
+    overflow: visible;
   }
 
   .kcpl-admin-shell[data-commercial-context] header[class*="sticky"] {
-    position: relative !important;
-    top: auto !important;
+    position: relative;
+    top: auto;
   }
 
   .kcpl-admin-shell[data-commercial-context] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
   .kcpl-admin-shell[data-commercial-context] select,
   .kcpl-admin-shell[data-commercial-context] textarea {
-    font-size: 16px !important;
+    font-size: 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] nav[aria-label="Operations workflow"] {
-    overflow-x: auto !important;
+    overflow-x: auto;
     overscroll-behavior-x: contain;
   }
 
   .kcpl-admin-shell[data-commercial-context] table {
-    font-size: 11px !important;
+    font-size: 11px;
   }
 
   .kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] {
-    padding: 20px 16px 16px !important;
+    padding: 20px 16px 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] main > section:first-child[class*="border-b"] > div {
-    align-items: flex-start !important;
+    align-items: flex-start;
   }
 }
 
@@ -733,6 +735,8 @@
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr;
   }
+}
+
 }

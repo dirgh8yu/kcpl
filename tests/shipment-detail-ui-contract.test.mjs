@@ -45,12 +45,12 @@ test("shipment detail gives a truthful next action when an international customs
 
 test("shipment detail keeps working controls accessible without returning to SaaS card layouts", async () => {
   const css = await readFile(cssPath, "utf8");
-  assert.match(css, /\.shipment-job-file-embedded \.ops-page-header \{[\s\S]*display: block !important/);
-  assert.match(css, /\.shipment-job-file-embedded \.ops-page-heading \{ display: none !important; \}/);
-  assert.match(css, /\.shipment-job-file-embedded \.ops-page > \.ops-stat-strip \{ display: none !important; \}/);
-  assert.match(css, /\.shipment-job-file-embedded \.ops-grid-main \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-page-header \{[\s\S]*display: block/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-page-heading \{ display: none; \}/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-page > \.ops-stat-strip \{ display: none; \}/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-grid-main \{[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(css, /#shipment-exceptions article\[data-exception-status\]/);
-  assert.match(css, /#shipment-delivery #delivery-pod \.ops-surface-body > \.grid\.gap-5 \{ display: block !important; \}/);
+  assert.match(css, /#shipment-delivery #delivery-pod \.ops-surface-body > \.grid\.gap-5 \{ display: block; \}/);
   assert.match(css, /#shipment-activity \.ops-content-wide/);
 });
 

@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Commercial deep refinement
  * Final-pass UI rules for nested Commercial workspaces and legacy detail screens.
  * Brand source: KCPL identity system — Crimson #DC143C, Black #101010,
@@ -27,8 +29,8 @@
   select,
   textarea
 ):focus-visible {
-  outline: 2px solid var(--kcpl-c) !important;
-  outline-offset: 2px !important;
+  outline: 2px solid var(--kcpl-c);
+  outline-offset: 2px;
 }
 
 .kcpl-admin-shell[data-commercial-context] button,
@@ -59,7 +61,7 @@
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#f2ece7]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="bg-[#f1ebe6]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#f1ebe6]"] {
-  background: var(--kcpl-canvas) !important;
+  background: var(--kcpl-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="border-[#ebe3dc]"],
@@ -68,7 +70,7 @@
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="border-[#eae2dc]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="border-[#eee7e1]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="border-[#eee7e1]"] {
-  border-color: var(--kcpl-line) !important;
+  border-color: var(--kcpl-line);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#514840]"],
@@ -77,7 +79,7 @@
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#5b524b]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#615850]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#615850]"] {
-  color: var(--kcpl-ink) !important;
+  color: var(--kcpl-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#8c827a]"],
@@ -90,20 +92,20 @@
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#9c928a]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content [class*="text-[#9e948c]"],
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="text-[#9e948c]"] {
-  color: var(--kcpl-muted) !important;
+  color: var(--kcpl-muted);
 }
 
 /* Tiny legacy typography was visually noisy and difficult to scan. */
 .kcpl-admin-shell[data-commercial-context] .ops-content :is([class*="text-[8px]"], [class*="text-[9px]"]),
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide :is([class*="text-[8px]"], [class*="text-[9px]"]) {
-  font-size: 11px !important;
-  line-height: 1.5 !important;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content :is([class*="text-[10px]"]),
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide :is([class*="text-[10px]"]) {
-  font-size: 12px !important;
-  line-height: 1.45 !important;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* ---- Customer 360 ------------------------------------------------------- */
@@ -118,108 +120,108 @@
 
 @media (min-width: 1280px) {
   .kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-grid-main > aside {
-    position: sticky !important;
-    top: 132px !important;
+    position: sticky;
+    top: 132px;
     align-self: start;
   }
 }
 
 /* Inline Customer 360 editors read as work areas, not cards inside cards. */
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide form[class*="rounded-[14px]"] {
-  margin-bottom: 16px !important;
-  border: 1px solid var(--kcpl-line) !important;
-  border-left: 3px solid var(--kcpl-c) !important;
-  border-radius: 0 !important;
-  background: var(--kcpl-white) !important;
-  padding: 16px !important;
+  margin-bottom: 16px;
+  border: 1px solid var(--kcpl-line);
+  border-left: 3px solid var(--kcpl-c);
+  border-radius: 0;
+  background: var(--kcpl-white);
+  padding: 16px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide div[class*="rounded-[13px]"] {
-  border: 1px solid var(--kcpl-line) !important;
-  border-radius: 0 !important;
-  background: var(--kcpl-white) !important;
-  padding: 14px !important;
+  border: 1px solid var(--kcpl-line);
+  border-radius: 0;
+  background: var(--kcpl-white);
+  padding: 14px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide span[class*="grid h-9 w-9"] {
-  border: 1px solid var(--kcpl-line) !important;
-  border-radius: 0 !important;
-  background: var(--kcpl-canvas) !important;
-  color: var(--kcpl-c) !important;
+  border: 1px solid var(--kcpl-line);
+  border-radius: 0;
+  background: var(--kcpl-canvas);
+  color: var(--kcpl-c);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide button[class*="rounded-full"] {
-  border-radius: 2px !important;
+  border-radius: 2px;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#fff6f2]"] {
-  border-color: #E7B9C4 !important;
-  border-left: 3px solid var(--kcpl-c) !important;
-  border-radius: 0 !important;
-  background: #FFF8FA !important;
+  border-color: #E7B9C4;
+  border-left: 3px solid var(--kcpl-c);
+  border-radius: 0;
+  background: #FFF8FA;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#fff6f2]"] p:first-child {
-  color: var(--kcpl-c) !important;
+  color: var(--kcpl-c);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide [class*="bg-[#fff6f2]"] p:last-child {
-  color: var(--kcpl-copy) !important;
+  color: var(--kcpl-copy);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide a:hover {
-  color: var(--kcpl-c) !important;
+  color: var(--kcpl-c);
 }
 
 /* Commercial finance data is a ledger. */
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-surface-body > .divide-y > div[class*="justify-between"] {
   min-height: 38px;
-  padding-block: 9px !important;
+  padding-block: 9px;
 }
 
 /* ---- Legacy order / booking detail screens ------------------------------ */
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] {
   min-width: 0;
-  padding-top: 24px !important;
-  background: var(--kcpl-canvas) !important;
-  color: var(--kcpl-ink) !important;
-  font-family: var(--font-manrope), var(--font-geist), Arial, sans-serif !important;
+  padding-top: 24px;
+  background: var(--kcpl-canvas);
+  color: var(--kcpl-ink);
+  font-family: var(--font-manrope), var(--font-geist), Arial, sans-serif;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div[class*="max-w-[1152px]"] {
-  max-width: 1380px !important;
+  max-width: 1380px;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header[class*="border-b"] {
-  border-color: var(--kcpl-ink) !important;
-  padding: 8px 0 18px !important;
+  border-color: var(--kcpl-ink);
+  padding: 8px 0 18px;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header h1 {
-  color: var(--kcpl-ink) !important;
-  font-size: clamp(26px, 2.6vw, 36px) !important;
-  font-weight: 800 !important;
-  line-height: 1.06 !important;
-  letter-spacing: -0.04em !important;
+  color: var(--kcpl-ink);
+  font-size: clamp(26px, 2.6vw, 36px);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header p[class*="text-[14px]"] {
-  margin-top: 8px !important;
-  color: var(--kcpl-ink) !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  margin-top: 8px;
+  color: var(--kcpl-ink);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header p[class*="text-[12px]"],
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header p[class*="text-[11px]"] {
-  color: var(--kcpl-muted) !important;
-  font-size: 11px !important;
+  color: var(--kcpl-muted);
+  font-size: 11px;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav {
-  margin-top: 18px !important;
-  gap: 24px !important;
+  margin-top: 18px;
+  gap: 24px;
   border-top: 1px solid var(--kcpl-line);
   padding-top: 7px;
   scrollbar-width: none;
@@ -231,14 +233,14 @@
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav :is(a, span) {
   min-height: 36px;
-  color: var(--kcpl-muted) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  color: var(--kcpl-muted);
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav :is(a, span):hover {
-  color: var(--kcpl-ink) !important;
+  color: var(--kcpl-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:grid-cols-[minmax(0,800px)_351px]"] {
@@ -246,41 +248,41 @@
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:border-r"] {
-  border-color: var(--kcpl-line) !important;
+  border-color: var(--kcpl-line);
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] section[class*="border-b"][class*="py-6"] {
-  border-color: var(--kcpl-line) !important;
-  padding-block: 22px !important;
+  border-color: var(--kcpl-line);
+  padding-block: 22px;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] section[class*="border-b"][class*="py-6"] > h2 {
-  margin-bottom: 15px !important;
-  color: var(--kcpl-ink) !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.02em !important;
+  margin-bottom: 15px;
+  color: var(--kcpl-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl dt {
-  color: var(--kcpl-muted) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
+  color: var(--kcpl-muted);
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: .02em;
   text-transform: uppercase;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl dd {
-  color: var(--kcpl-ink) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  color: var(--kcpl-ink);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
-  min-height: 0 !important;
+  min-height: 0;
   border-left: 1px solid var(--kcpl-line);
-  background: var(--kcpl-white) !important;
-  padding: 20px !important;
+  background: var(--kcpl-white);
+  padding: 20px;
 }
 
 @media (min-width: 1024px) {
@@ -292,25 +294,25 @@
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside > p[class*="text-[11px]"] {
-  color: var(--kcpl-c) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  color: var(--kcpl-c);
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: .1em;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside h2 {
-  color: var(--kcpl-ink) !important;
-  font-size: 16px !important;
-  font-weight: 700 !important;
+  color: var(--kcpl-ink);
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside > div[class*="border-t"] {
-  border-color: var(--kcpl-line) !important;
+  border-color: var(--kcpl-line);
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside a[class*="text-[#dc143c]"] {
-  color: var(--kcpl-c) !important;
+  color: var(--kcpl-c);
 }
 
 /* Status pills stay semantic while avoiding candy-coloured blocks. */
@@ -318,21 +320,21 @@
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#eef5ff]"],
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#fff7e6]"],
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] span[class*="bg-[#f7f7f7]"] {
-  border: 1px solid var(--kcpl-line) !important;
-  border-radius: 999px !important;
-  background: var(--kcpl-white) !important;
-  font-weight: 600 !important;
+  border: 1px solid var(--kcpl-line);
+  border-radius: 999px;
+  background: var(--kcpl-white);
+  font-weight: 600;
 }
 
 /* Booking execution lineage becomes a compact register. */
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-white"] {
-  border-color: var(--kcpl-line) !important;
-  background: var(--kcpl-white) !important;
+  border-color: var(--kcpl-line);
+  background: var(--kcpl-white);
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-white"] > div {
   min-height: 58px;
-  border-color: var(--kcpl-line) !important;
+  border-color: var(--kcpl-line);
 }
 
 /* ---- Workbench lists, tables and dense controls ------------------------- */
@@ -342,12 +344,12 @@
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-record-row:hover {
-  background: var(--kcpl-canvas) !important;
+  background: var(--kcpl-canvas);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-record-row[data-selected] {
-  background: var(--kcpl-canvas) !important;
-  box-shadow: inset 3px 0 0 var(--kcpl-c) !important;
+  background: var(--kcpl-canvas);
+  box-shadow: inset 3px 0 0 var(--kcpl-c);
 }
 
 .kcpl-admin-shell[data-commercial-context] table {
@@ -360,9 +362,9 @@
 
 .kcpl-admin-shell[data-commercial-context] table th {
   height: 38px;
-  color: var(--kcpl-muted) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  color: var(--kcpl-muted);
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
 }
@@ -378,7 +380,7 @@
 }
 
 .kcpl-admin-shell[data-commercial-context] table tbody tr:hover {
-  background: var(--kcpl-canvas) !important;
+  background: var(--kcpl-canvas);
 }
 
 /* Inputs use one predictable enterprise control language. */
@@ -392,11 +394,11 @@
   form select,
   form textarea
 ) {
-  border-color: var(--kcpl-line-strong) !important;
-  border-radius: 2px !important;
-  background: var(--kcpl-white) !important;
-  color: var(--kcpl-ink) !important;
-  box-shadow: none !important;
+  border-color: var(--kcpl-line-strong);
+  border-radius: 2px;
+  background: var(--kcpl-white);
+  color: var(--kcpl-ink);
+  box-shadow: none;
 }
 
 .kcpl-admin-shell[data-commercial-context] :is(
@@ -406,7 +408,7 @@
   form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
   form select
 ) {
-  min-height: 40px !important;
+  min-height: 40px;
 }
 
 .kcpl-admin-shell[data-commercial-context] :is(
@@ -418,34 +420,34 @@
   form select,
   form textarea
 ):focus {
-  border-color: var(--kcpl-ink) !important;
+  border-color: var(--kcpl-ink);
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-field-label {
-  color: var(--kcpl-ink) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  color: var(--kcpl-ink);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-field small {
-  color: var(--kcpl-muted) !important;
-  line-height: 1.45 !important;
+  color: var(--kcpl-muted);
+  line-height: 1.45;
 }
 
 /* ---- Mobile commercial QA fixes ---------------------------------------- */
 
 @media (max-width: 900px) {
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:grid-cols-[minmax(0,800px)_351px]"] {
-    display: block !important;
+    display: block;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:border-r"] {
-    border-right: 0 !important;
-    padding-right: 0 !important;
+    border-right: 0;
+    padding-right: 0;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
-    position: static !important;
+    position: static;
     margin-top: 0;
     border-top: 1px solid var(--kcpl-ink);
     border-left: 0;
@@ -462,7 +464,7 @@
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
-    gap: 14px !important;
+    gap: 14px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions,
@@ -471,9 +473,9 @@
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions {
-    display: grid !important;
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px !important;
+    gap: 8px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions > .ops-button,
@@ -481,71 +483,71 @@
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div .ops-button,
   .kcpl-admin-shell[data-commercial-context] .ops-page-actions > div a {
     width: 100%;
-    min-height: 44px !important;
+    min-height: 44px;
     justify-content: center;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-surface-header {
-    display: block !important;
+    display: block;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-surface-action .ops-button,
   .kcpl-admin-shell[data-commercial-context] .ops-surface-action > a {
-    min-height: 42px !important;
+    min-height: 42px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-content-wide form[class*="rounded-[14px]"] {
-    grid-template-columns: minmax(0, 1fr) !important;
-    padding: 14px !important;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-content-wide form[class*="rounded-[14px]"] > [class*="sm:col-span-2"] {
-    grid-column: auto !important;
+    grid-column: auto;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-content-wide .ops-surface-body > div[class*="grid-cols-2"] {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] {
-    padding: 16px 14px 28px !important;
+    padding: 16px 14px 28px;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header[class*="border-b"] {
-    padding-bottom: 14px !important;
+    padding-bottom: 14px;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header h1 {
-    font-size: 27px !important;
+    font-size: 27px;
     overflow-wrap: anywhere;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header > div > div:last-child[class*="flex"] {
-    display: grid !important;
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header > div > div:last-child[class*="flex"] > :is(a, button) {
     width: 100%;
-    min-height: 44px !important;
-    height: auto !important;
+    min-height: 44px;
+    height: auto;
     justify-content: center;
     text-align: center;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] section[class*="border-b"][class*="py-6"] {
-    padding-block: 18px !important;
+    padding-block: 18px;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl[class*="sm:grid-cols-2"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 16px 18px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 18px;
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
     margin-inline: -14px;
-    padding: 18px 14px !important;
+    padding: 18px 14px;
   }
 
   .kcpl-admin-shell[data-commercial-context] :is(
@@ -555,12 +557,12 @@
     form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
     form select
   ) {
-    min-height: 44px !important;
-    font-size: 16px !important;
+    min-height: 44px;
+    font-size: 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] :is(.ops-field textarea, .ops-input, form textarea) {
-    font-size: 16px !important;
+    font-size: 16px;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-record-row {
@@ -568,7 +570,7 @@
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-split-list {
-    max-height: 42vh !important;
+    max-height: 42vh;
   }
 
   .kcpl-admin-shell[data-commercial-context] table {
@@ -586,11 +588,11 @@
   }
 
   .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] dl[class*="sm:grid-cols-2"] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
   .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -598,9 +600,11 @@
   .kcpl-admin-shell[data-commercial-context] *,
   .kcpl-admin-shell[data-commercial-context] *::before,
   .kcpl-admin-shell[data-commercial-context] *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
   }
+}
+
 }

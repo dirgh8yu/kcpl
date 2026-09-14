@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { getDeliveryControl } from "../../delivery/delivery-control.server";
 import { getDigitalJobFile } from "../../job-file.server";
@@ -17,12 +18,14 @@ import { V4ShipmentDetailOverview } from "./v4-shipment-detail-overview";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Shipment Detail | KCPL Operations", robots: { index: false, follow: false } };
 
-export default async function JobFilePage({ params }: { params: Promise<{ reference: string }> }) {
+export default async function JobFilePage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ returnTo?: string | string[] }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Digital Job Files are available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
   const { reference } = await params;
+  const { returnTo: requestedReturn } = await searchParams;
+  const returnTo = typeof requestedReturn === "string" && (requestedReturn === "/admin/shipments" || requestedReturn.startsWith("/admin/shipments?")) ? requestedReturn : "/admin/shipments";
   const shipmentAccess = await checkShipmentBranchAccess(reference, staff);
   if (shipmentAccess.kind === "unavailable") return <Gate title="Job File unavailable" detail="Firestore is not available for this deployment."/>;
   if (shipmentAccess.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
@@ -53,6 +56,7 @@ export default async function JobFilePage({ params }: { params: Promise<{ refere
     canManageJobFile={staff.permissions.canManageJobFile}
     isManagement={staff.permissions.role === "management"}
   >
+    <div className="app-record-return"><Link href={returnTo}>← Back to shipments</Link></div>
     <V4ShipmentDetailOverview job={result.job} readiness={workflow.readiness}>
       <div id="shipment-work" className="shipment-detail-anchor shipment-job-file-embedded">
         <JobFileWorkspace

@@ -135,22 +135,22 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
   }
 
   return (
-    <section className="bg-[#f4f1e9] px-5 pb-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[26px] border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+    <section className="bg-[var(--admin-surface-muted)] px-5 pb-6 lg:px-8">
+      <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[10px] font-black uppercase tracking-[.17em] text-[#b78a3e]">Account controls</p>
-              <span className="flex items-center gap-1 rounded-full bg-[#10263f] px-2.5 py-1 text-[9px] font-black uppercase tracking-[.08em] text-white"><ShieldCheck size={11} />{kcplStaffRoleLabels[permissions.role]}</span>
+              <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.17em] text-[#b78a3e]">Account controls</p>
+              <span className="flex items-center gap-1 rounded-full bg-[var(--admin-crimson)] px-2.5 py-1 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.08em] text-white"><ShieldCheck size={11} />{kcplStaffRoleLabels[permissions.role]}</span>
             </div>
             <p className="mt-2 text-xs leading-5 text-black/45">Edit the master CRM profile. Archive preserves the complete customer history.</p>
           </div>
           <div className="flex gap-2">
-            {permissions.canArchiveCustomer ? <button type="button" disabled={busy} onClick={archiveCustomer} className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700"><Archive size={13} />Archive</button> : null}
-            {permissions.canEditCustomer ? <button type="button" onClick={() => setOpen((value) => !value)} className="flex items-center gap-2 rounded-xl bg-[#10263f] px-3 py-2 text-[10px] font-black text-white">{open ? <X size={13} /> : <Pencil size={13} />}{open ? "Close editor" : "Edit customer"}</button> : null}
+            {permissions.canArchiveCustomer ? <button type="button" disabled={busy} onClick={archiveCustomer} className="flex items-center gap-2 rounded-[var(--app-radius)] border border-rose-200 bg-rose-50 px-3 py-2 text-[length:var(--app-label-size)] font-semibold text-rose-700"><Archive size={13} />Archive</button> : null}
+            {permissions.canEditCustomer ? <button type="button" onClick={() => setOpen((value) => !value)} className="flex items-center gap-2 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 py-2 text-[length:var(--app-label-size)] font-semibold text-white">{open ? <X size={13} /> : <Pencil size={13} />}{open ? "Close editor" : "Edit customer"}</button> : null}
           </div>
         </div>
-        {notice ? <div className="mt-4 rounded-xl bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427]">{notice}</div> : null}
+        {notice ? <div className="mt-4 rounded-[var(--app-radius)] bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427]">{notice}</div> : null}
 
         {open ? <form onSubmit={save} className="mt-6 space-y-6 border-t border-black/10 pt-6">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -164,7 +164,7 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
             <Field label="Primary branch"><select className="crm360-input" value={form.primaryBranch} onChange={(event) => field("primaryBranch", event.target.value)}>{kcplBranches.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
           </div>
 
-          <div><p className="mb-2 text-[9px] font-black uppercase tracking-[.13em] text-black/40">Relationships</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} disabled={type === "customer"} className={`rounded-full border px-3 py-1.5 text-[9px] font-black ${form.relationshipTypes.includes(type) ? "border-[#10263f] bg-[#10263f] text-white" : "border-black/10 bg-[#faf9f5] text-black/50"}`}>{crmRelationshipLabels[type]}</button>)}</div></div>
+          <div><p className="mb-2 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-black/40">Relationships</p><div className="flex flex-wrap gap-2">{crmRelationshipTypes.map((type) => <button key={type} type="button" onClick={() => toggleRelationship(type)} disabled={type === "customer"} className={`rounded-full border px-3 py-1.5 text-[length:var(--app-label-size)] font-semibold ${form.relationshipTypes.includes(type) ? "border-[#10263f] bg-[var(--admin-crimson)] text-white" : "border-black/10 bg-[var(--admin-surface-muted)] text-black/50"}`}>{crmRelationshipLabels[type]}</button>)}</div></div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field label="Primary email"><input type="email" className="crm360-input" value={form.primaryEmail} onChange={(event) => field("primaryEmail", event.target.value)} /></Field>
@@ -181,20 +181,20 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
 
           <Field label="Internal account summary"><textarea className="crm360-input min-h-24 resize-y" value={form.internalSummary} onChange={(event) => field("internalSummary", event.target.value)} /></Field>
 
-          {permissions.canEditCommercial ? <div className="rounded-2xl border border-[#d4ad62]/30 bg-[#fffaf0] p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#8b6b32]">Commercial pricing</p><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {permissions.canEditCommercial ? <div className="rounded-[var(--app-radius)] border border-[#d4ad62]/30 bg-[#fffaf0] p-4"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-[#8b6b32]">Commercial pricing</p><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field label="Currency"><select className="crm360-input" value={form.preferredCurrency} onChange={(event) => field("preferredCurrency", event.target.value)}>{crmCurrencies.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
             <Field label="Default markup %"><input inputMode="decimal" className="crm360-input" value={form.markupPercent} onChange={(event) => field("markupPercent", event.target.value)} /></Field>
             <Field label="Preferred carriers"><input className="crm360-input" value={form.preferredCarriers} onChange={(event) => field("preferredCarriers", event.target.value)} /></Field>
             <div className="md:col-span-2 xl:col-span-4"><Field label="Pricing notes"><textarea className="crm360-input min-h-20 resize-y" value={form.pricingNotes} onChange={(event) => field("pricingNotes", event.target.value)} /></Field></div>
           </div></div> : null}
 
-          {permissions.canManageCredit ? <div className="rounded-2xl border border-black/10 bg-[#faf9f5] p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-black/40">Credit control</p><div className="mt-4 grid gap-3 md:grid-cols-3">
+          {permissions.canManageCredit ? <div className="rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface-muted)] p-4"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-black/40">Credit control</p><div className="mt-4 grid gap-3 md:grid-cols-3">
             <Field label="Payment terms days"><input inputMode="numeric" className="crm360-input" value={form.paymentTermsDays} onChange={(event) => field("paymentTermsDays", event.target.value)} /></Field>
             <Field label="Credit limit"><input inputMode="decimal" className="crm360-input" value={form.creditLimit} onChange={(event) => field("creditLimit", event.target.value)} /></Field>
             <Field label="Outstanding balance"><div className="crm360-input flex items-center bg-[#f4f1ed] text-[#6f6862]">{customer.commercial.outstanding_balance === null ? "No receivable balance" : `${customer.preferred_currency} ${customer.commercial.outstanding_balance.toLocaleString("en-AU", { maximumFractionDigits: 2 })}`} · calculated from Receivables</div></Field>
           </div></div> : null}
 
-          <div className="flex justify-end"><button type="submit" disabled={busy || !form.relationshipTypes.length} className="flex items-center gap-2 rounded-xl bg-[#10263f] px-5 py-3 text-xs font-black text-white disabled:opacity-50"><Save size={14} />{busy ? "Saving…" : "Save customer"}</button></div>
+          <div className="flex justify-end"><button type="submit" disabled={busy || !form.relationshipTypes.length} className="flex items-center gap-2 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 py-3 text-xs font-semibold text-white disabled:opacity-50"><Save size={14} />{busy ? "Saving…" : "Save customer"}</button></div>
         </form> : null}
       </div>
     </section>
@@ -202,5 +202,5 @@ export function CrmCustomerProfileEditor({ customer, permissions }: { customer: 
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.13em] text-black/40">{label}</span>{children}</label>;
+  return <label className="block"><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-black/40">{label}</span>{children}</label>;
 }

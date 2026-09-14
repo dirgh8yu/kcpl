@@ -27,7 +27,7 @@ function toneClass(item: ShipmentActivityItem) {
   if (item.tone === "success") return "border-[#b7cfbb] bg-[#f0f7f1] text-[#5d7862]";
   if (item.tone === "violet") return "border-[#cfc2dc] bg-[#f7f2fb] text-[#775d8f]";
   if (item.tone === "info") return "border-[#b9cfdf] bg-[#f0f6fa] text-[#527590]";
-  return "border-[#ddd6d0] bg-[#faf8f5] text-[#786f68]";
+  return "border-[#ddd6d0] bg-[var(--admin-surface-muted)] text-[#786f68]";
 }
 
 export function ShipmentActivityTimeline({ initialTimeline }: { initialTimeline: ShipmentActivityTimeline }) {
@@ -88,8 +88,8 @@ export function ShipmentActivityTimeline({ initialTimeline }: { initialTimeline:
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5"><strong className="text-[11px] font-[720] text-[#453f3a]">{entry.title}</strong><OpsBadge>{shipmentActivityCategoryLabels[entry.category]}</OpsBadge>{entry.branch ? <OpsBadge>{entry.branch}</OpsBadge> : null}{entry.tone === "danger" ? <OpsBadge tone="danger">Attention</OpsBadge> : null}</div>
-              {entry.detail ? <p className="mt-1 text-[10px] leading-5 text-[#766e67]">{entry.detail}</p> : null}
-              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[8px] font-semibold text-[#9a918a]"><span>{dateTime(entry.occurred_at)}</span><span>{entry.actor_name || entry.actor_email ? `${entry.actor_name || entry.actor_email}${entry.actor_name && entry.actor_email ? ` · ${entry.actor_email}` : ""}` : "System"}</span><span>{entry.source}</span></div>
+              {entry.detail ? <p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[#766e67]">{entry.detail}</p> : null}
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[length:var(--app-label-size)] font-semibold text-[#9a918a]"><span>{dateTime(entry.occurred_at)}</span><span>{entry.actor_name || entry.actor_email ? `${entry.actor_name || entry.actor_email}${entry.actor_name && entry.actor_email ? ` · ${entry.actor_email}` : ""}` : "System"}</span><span>{entry.source}</span></div>
             </div>
           </article>
         ))}</div> : <div className="mt-4"><OpsEmptyState icon={<AlertTriangle size={18}/>} title="No activity matches this view" description="Try another category or clear the search." action={<OpsButton variant="secondary" size="sm" onClick={() => { setCategory("all"); setQuery(""); }}>Reset view</OpsButton>}/></div>}

@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Operations action hierarchy
    All operational action buttons use the brand crimson. */
 
@@ -6,15 +8,15 @@
 .kcpl-admin-shell .ops-button[data-variant="secondary"],
 .kcpl-admin-shell .ops-button[data-variant="ghost"],
 .kcpl-admin-shell .ops-button[data-variant="danger"] {
-  border-color: #DC143C !important;
-  background: #DC143C !important;
-  color: #FFFFFF !important;
-  box-shadow: none !important;
+  border-color: #DC143C;
+  background: #DC143C;
+  color: #FFFFFF;
+  box-shadow: none;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
-    transform 160ms ease !important;
+    transform 160ms ease;
 }
 
 .kcpl-admin-shell .ops-button:hover:not(:disabled),
@@ -22,10 +24,10 @@
 .kcpl-admin-shell .ops-button[data-variant="secondary"]:hover:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="ghost"]:hover:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="danger"]:hover:not(:disabled) {
-  border-color: #B61032 !important;
-  background: #B61032 !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 7px 18px rgba(220, 20, 60, .18) !important;
+  border-color: #B61032;
+  background: #B61032;
+  color: #FFFFFF;
+  box-shadow: 0 7px 18px rgba(220, 20, 60, .18);
   transform: translateY(-1px);
 }
 
@@ -34,20 +36,20 @@
 .kcpl-admin-shell .ops-button[data-variant="secondary"]:active:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="ghost"]:active:not(:disabled),
 .kcpl-admin-shell .ops-button[data-variant="danger"]:active:not(:disabled) {
-  border-color: #9C0D2A !important;
-  background: #9C0D2A !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 2px 8px rgba(220, 20, 60, .16) !important;
+  border-color: #9C0D2A;
+  background: #9C0D2A;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(220, 20, 60, .16);
   transform: translateY(0);
 }
 
 .kcpl-admin-shell .ops-button:disabled {
   cursor: not-allowed;
-  border-color: #D6D6D0 !important;
-  background: #EEEEE8 !important;
-  color: #878780 !important;
-  box-shadow: none !important;
-  transform: none !important;
+  border-color: #D6D6D0;
+  background: #EEEEE8;
+  color: #878780;
+  box-shadow: none;
+  transform: none;
   opacity: 1;
 }
 
@@ -59,14 +61,14 @@
 .kcpl-admin-shell button[class*="bg-[#dc143c]"],
 .kcpl-admin-shell a[class*="bg-[#101010]"],
 .kcpl-admin-shell button[class*="bg-[#101010]"] {
-  border-color: #DC143C !important;
-  background: #DC143C !important;
-  color: #FFFFFF !important;
+  border-color: #DC143C;
+  background: #DC143C;
+  color: #FFFFFF;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
-    transform 160ms ease !important;
+    transform 160ms ease;
 }
 
 .kcpl-admin-shell a[class*="bg-[#DC143C]"]:hover,
@@ -75,10 +77,10 @@
 .kcpl-admin-shell button[class*="bg-[#dc143c]"]:hover:not(:disabled),
 .kcpl-admin-shell a[class*="bg-[#101010]"]:hover,
 .kcpl-admin-shell button[class*="bg-[#101010]"]:hover:not(:disabled) {
-  border-color: #B61032 !important;
-  background: #B61032 !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 7px 18px rgba(220, 20, 60, .18) !important;
+  border-color: #B61032;
+  background: #B61032;
+  color: #FFFFFF;
+  box-shadow: 0 7px 18px rgba(220, 20, 60, .18);
   transform: translateY(-1px);
 }
 
@@ -88,16 +90,16 @@
 .kcpl-admin-shell button[class*="bg-[#dc143c]"]:active:not(:disabled),
 .kcpl-admin-shell a[class*="bg-[#101010]"]:active,
 .kcpl-admin-shell button[class*="bg-[#101010]"]:active:not(:disabled) {
-  border-color: #9C0D2A !important;
-  background: #9C0D2A !important;
-  box-shadow: 0 2px 8px rgba(220, 20, 60, .16) !important;
+  border-color: #9C0D2A;
+  background: #9C0D2A;
+  box-shadow: 0 2px 8px rgba(220, 20, 60, .16);
   transform: translateY(0);
 }
 
 /* Keep crimson selection/progress indicators unchanged. */
 .kcpl-admin-shell [aria-current="page"] > span[class*="bg-[#DC143C]"],
 .kcpl-admin-shell [aria-current="page"] > span[class*="bg-[#dc143c]"] {
-  background: #DC143C !important;
+  background: #DC143C;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -108,7 +110,9 @@
   .kcpl-admin-shell button[class*="bg-[#dc143c]"],
   .kcpl-admin-shell a[class*="bg-[#101010]"],
   .kcpl-admin-shell button[class*="bg-[#101010]"] {
-    transition: none !important;
-    transform: none !important;
+    transition: none;
+    transform: none;
   }
+}
+
 }

@@ -95,11 +95,11 @@ test("primary admin navigation uses Overview and Shipments without ambiguous Hom
   assert.equal(shipments?.href, "/admin/shipments");
 
   const shell = readFileSync(repoFile("app/admin/operations-shell.tsx"), "utf8");
-  assert.match(shell, /label: "Overview", href: "\/admin\/command-centre"/);
-  assert.match(shell, /label: "Shipments", href: "\/admin\/shipments"/);
+  assert.match(shell, /groupedWorkspaces\(capabilities\)/);
+  assert.match(shell, /href=\{workspace\.href\}/);
   assert.doesNotMatch(shell, /label: "Home", href: "\/admin\/command-centre"/);
   assert.doesNotMatch(shell, /label: "Operations", href: "\/admin\/shipments"/);
-  assert.match(shell, /pathname\.startsWith\("\/admin\/enquiries"\)/);
+  assert.match(shell, /activeWorkspace\(pathname, capabilities\)/);
 });
 
 test("operations search deep-links quote results into the enquiries workspace", () => {

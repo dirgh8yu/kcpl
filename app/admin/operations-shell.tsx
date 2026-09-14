@@ -2,104 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, LogOut, Menu, Search, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { OperationsCommandPalette } from "./operations-command-palette";
-import {
-  activeWorkspace,
-  visibleWorkspaces,
-  type NavigationCapabilities,
-  type WorkflowWorkspace,
-} from "./workflow-navigation";
-
-type MacroNavItem = {
-  label: string;
-  href: string;
-  visible?: boolean;
-  active: (pathname: string) => boolean;
-};
+import { OperationsNotificationCentre } from "./operations-notification-centre";
+import { activeWorkspace, groupedWorkspaces, visibleWorkspaces, type NavigationCapabilities } from "./workflow-navigation";
 
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
 }
 
-function groupLabel(group?: WorkflowWorkspace["group"]) {
-  if (group === "Plan & Sell") return "Commercial";
-  if (group === "Finance") return "Finance";
-  if (group === "Network") return "Network";
-  if (group === "Organisation") return "Organisation";
-  return "Operations";
-}
-
-function groupSlug(group?: WorkflowWorkspace["group"]) {
-  if (group === "Plan & Sell") return "commercial";
-  if (group === "Finance") return "finance";
-  if (group === "Network") return "network";
-  if (group === "Organisation") return "organisation";
-  return "operate";
-}
-
-function breadcrumbFor(pathname: string, activeLabel?: string) {
-  if (pathname.startsWith("/admin/jobs/")) {
-    const parts = pathname.split("/").filter(Boolean);
-    const reference = decodeURIComponent(parts[2] || "Shipment");
-    return pathname.includes("/profitability") ? `Shipments / ${reference} / Profitability` : `Shipments / ${reference}`;
-  }
-  if (pathname.startsWith("/admin/command-centre")) return "Overview";
-  if (pathname.startsWith("/admin/shipments")) return "Shipments";
-  if (pathname.startsWith("/admin/pickups")) return "Shipments / Pickup Scheduling";
-  if (pathname.startsWith("/admin/visibility")) return "Shipments / Live Visibility";
-  if (pathname.startsWith("/admin/customs")) return "Shipments / Customs";
-  if (pathname.startsWith("/admin/documents") || pathname.startsWith("/admin/freight-documents")) return "Shipments / Documents";
-  if (pathname.startsWith("/admin/delivery")) return "Shipments / Delivery & POD";
-  if (pathname.startsWith("/admin/alerts")) return "Shipments / Tasks & Alerts";
-
-  if (pathname.startsWith("/admin/enquiries")) return "Commercial / Enquiries";
-  if (pathname.startsWith("/admin/crm")) return `Commercial / ${activeLabel || "Customers"}`;
-  if (pathname.startsWith("/admin/market-estimate")) return "Commercial / Market Estimate";
-  if (pathname.startsWith("/admin/rating")) return "Commercial / Orders & Rate Desk";
-  if (pathname.startsWith("/admin/tenders")) return "Commercial / Tender & Booking";
-  if (pathname.startsWith("/admin/consolidation")) return "Commercial / Load Planner";
-  if (pathname.startsWith("/admin/pricing")) return "Commercial / Pricing Desk";
-
-  if (pathname.startsWith("/admin/partners/reconciliation")) return "Finance / Supplier Reconciliation";
-  if (pathname.startsWith("/admin/finance") || pathname.startsWith("/admin/payables") || pathname.startsWith("/admin/freight-audit")) return `Finance / ${activeLabel || "Workspace"}`;
-
-  if (pathname.startsWith("/admin/partners")) return `Network / ${activeLabel || "Partners"}`;
-  if (pathname.startsWith("/admin/carrier-integrations")) return "Network / Carrier Integrations";
-  if (pathname.startsWith("/admin/edi")) return "Network / EDI Gateway";
-
-  if (pathname.startsWith("/admin/management")) return "Organisation / Management";
-  if (pathname.startsWith("/admin/migration/archive")) return "Organisation / Migration / Paper Archive";
-  if (pathname.startsWith("/admin/migration/recovery") || pathname.startsWith("/admin/migration/batches")) return "Organisation / Migration / Recovery";
-  if (pathname.startsWith("/admin/migration")) return "Organisation / Migration Hub";
-  if (pathname.startsWith("/admin/staff")) return "Organisation / People & Branches";
-  if (pathname.startsWith("/admin/notifications")) return "Notifications";
-
-  return activeLabel || "KCPL Operations";
-}
-
-function BrandLockup() {
-  return (
-    <span className="flex min-w-0 items-center gap-3">
-      <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={28} height={28} className="h-7 w-7 shrink-0" priority />
-      <span className="min-w-0 leading-none">
-        <span className="block text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#101010]">Kapileshwor</span>
-        <span className="mt-[5px] block text-[8px] font-semibold uppercase tracking-[0.22em] text-[#686862]">Cargo Pvt. Ltd.</span>
-      </span>
-    </span>
-  );
+function decodeSegment(value: string) {
+  try { return decodeURIComponent(value); } catch { return value; }
 }
 
 export function OperationsShell({
-  children,
-  userName,
-  canManageStaff = false,
-  canManageFinance = false,
-  isManagement = false,
-  canViewCommercial = true,
-  canManageJobFile = true,
+  children, userName, canManageStaff = false, canManageFinance = false,
+  isManagement = false, canViewCommercial = false, canManageJobFile = false,
   signOutPath = "/api/admin/session?logout=1",
 }: {
   children: React.ReactNode;
@@ -112,40 +32,29 @@ export function OperationsShell({
   signOutPath?: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [capabilities, setCapabilities] = useState<NavigationCapabilities>({ canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement });
+  const [refreshing, startRefresh] = useTransition();
+  const [resolvedCapabilities, setResolvedCapabilities] = useState<NavigationCapabilities | null>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const capabilities = useMemo(() => resolvedCapabilities ?? ({ canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement }), [resolvedCapabilities, canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement]);
 
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/navigation", { cache: "no-store" })
+    const controller = new AbortController();
+    fetch("/api/admin/navigation", { cache: "no-store", signal: controller.signal })
       .then(async (response) => response.ok ? response.json() as Promise<{ capabilities?: NavigationCapabilities }> : null)
-      .then((data) => { if (!cancelled && data?.capabilities) setCapabilities(data.capabilities); })
+      .then((data) => { if (!controller.signal.aborted && data?.capabilities) setResolvedCapabilities(data.capabilities); })
       .catch(() => undefined);
-    return () => { cancelled = true; };
+    return () => controller.abort();
   }, []);
 
   const workspaces = useMemo(() => visibleWorkspaces(capabilities), [capabilities]);
+  const groups = useMemo(() => groupedWorkspaces(capabilities), [capabilities]);
   const activeItem = useMemo(() => activeWorkspace(pathname, capabilities), [pathname, capabilities]);
+  const detail = pathname === activeItem?.href ? "" : decodeSegment(pathname.split("/").filter(Boolean).at(-1) || "");
   const initials = initialsFor(userName);
-  const breadcrumb = breadcrumbFor(pathname, activeItem?.label);
-  const systemHref = capabilities.isManagement ? "/admin/management" : "/admin/notifications";
-  const systemActive = ["/admin/management", "/admin/migration", "/admin/staff", "/admin/notifications"].some((prefix) => pathname.startsWith(prefix));
-  const operationsContext = activeItem?.group === "Operate";
-  const commercialContext = activeItem?.group === "Plan & Sell";
-
-  const macroNav = useMemo<MacroNavItem[]>(() => [
-    { label: "Overview", href: "/admin/command-centre", active: (path) => path.startsWith("/admin/command-centre") },
-    { label: "Shipments", href: "/admin/shipments", visible: capabilities.canManageJobFile, active: (path) => ["/admin/shipments", "/admin/jobs/", "/admin/pickups", "/admin/freight-documents", "/admin/visibility", "/admin/customs", "/admin/documents", "/admin/delivery", "/admin/alerts"].some((prefix) => path.startsWith(prefix)) },
-    { label: "Commercial", href: "/admin/enquiries", visible: capabilities.canViewCommercial, active: (path) => ["/admin/enquiries", "/admin/rating", "/admin/pricing", "/admin/consolidation", "/admin/tenders", "/admin/market-estimate", "/admin/crm"].some((prefix) => path.startsWith(prefix)) },
-    { label: "Finance", href: "/admin/finance", visible: capabilities.canManageFinance, active: (path) => ["/admin/finance", "/admin/payables", "/admin/freight-audit", "/admin/partners/reconciliation"].some((prefix) => path.startsWith(prefix)) },
-    { label: "Network", href: "/admin/partners", active: (path) => (path.startsWith("/admin/partners") && !path.startsWith("/admin/partners/reconciliation")) || ["/admin/carrier-integrations", "/admin/edi"].some((prefix) => path.startsWith(prefix)) },
-  ], [capabilities]);
-
-  const secondaryWorkspaces = useMemo(() => {
-    if (!activeItem || activeItem.id === "notifications") return [];
-    return workspaces.filter((workspace) => workspace.group === activeItem.group && workspace.id !== "notifications");
-  }, [activeItem, workspaces]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -155,45 +64,60 @@ export function OperationsShell({
         setPaletteOpen((current) => !current);
       } else if (event.key === "Escape") {
         setMobileOpen(false);
-        setPaletteOpen(false);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const visibleMacroNav = macroNav.filter((item) => item.visible !== false);
-  const secondaryContext = secondaryWorkspaces.length > 1;
-  const deskLabel = `${groupLabel(activeItem?.group)} desk`;
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    sidebar.current?.querySelector<HTMLElement>("a, button")?.focus();
+    function trap(event: KeyboardEvent) {
+      if (event.key !== "Tab") return;
+      const controls = Array.from(sidebar.current?.querySelectorAll<HTMLElement>('a[href], button, summary') ?? []).filter((node) => node.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+    window.addEventListener("keydown", trap);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); menuButton.current?.focus(); };
+  }, [mobileOpen]);
+
+  function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
 
   return (
-    <div
-      className="kcpl-admin-shell min-h-screen bg-[#F6F6F3] text-[#101010]"
-      data-operations-context={operationsContext || undefined}
-      data-commercial-context={commercialContext || undefined}
-      data-workspace-group={groupSlug(activeItem?.group)}
-      data-workspace-id={activeItem?.id || "unscoped"}
-    >
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[252px] flex-col border-r border-[#D6D6D0] bg-[#F6F6F3] lg:flex">
-        <Link href="/admin/command-centre" className="flex h-[84px] items-center border-b border-[#D6D6D0] px-6" aria-label="KCPL Operations overview"><BrandLockup /></Link>
-        <div className="border-b border-[#D6D6D0] px-6 py-5"><p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-[#DC143C]">{deskLabel}</p><p className="mt-2 text-[13px] font-semibold leading-5 text-[#101010]">{isManagement ? "All branches" : "Assigned branches"}</p><p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#6D6D67]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div>
-        <div className="px-3 py-5"><p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.11em] text-[#777771]">Workspaces</p><nav aria-label="KCPL workspaces">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex min-h-[44px] items-center border-l-2 px-[13px] text-[13px] transition-colors ${active ? "border-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-transparent font-semibold text-[#5B5B57] hover:bg-[#EEEEE8] hover:text-[#101010]"}`}>{item.label}</Link>; })}</nav></div>
-        <div className="mt-auto border-t border-[#D6D6D0]">
-          <button type="button" onClick={() => setPaletteOpen(true)} className="flex min-h-[46px] w-full items-center border-b border-[#D6D6D0] px-6 text-[12px] font-semibold text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Search KCPL"><Search size={13} className="mr-3"/><span>Search KCPL</span><span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button>
-          <Link href={systemHref} aria-current={systemActive ? "page" : undefined} className={`relative flex min-h-[46px] items-center border-b border-l-2 border-b-[#D6D6D0] px-[22px] text-[12px] transition-colors ${systemActive ? "border-l-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-l-transparent font-semibold text-[#5B5B57] hover:bg-[#EEEEE8] hover:text-[#101010]"}`}>System</Link>
-          <div className="flex min-h-[76px] items-center px-6 py-4"><div className="grid h-8 w-8 shrink-0 place-items-center border border-[#101010] text-[10px] font-semibold text-[#101010]">{initials}</div><div className="ml-3 min-w-0 flex-1"><p className="truncate text-[12px] font-semibold leading-[18px] text-[#101010]">{userName}</p><p className="text-[10px] font-semibold leading-[14px] text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p></div><a href={signOutPath} className="grid h-8 w-8 place-items-center text-[#777771] transition-colors hover:text-[#DC143C]" aria-label="Sign out"><LogOut size={14}/></a></div>
+    <div className="kcpl-admin-shell" data-operations-context={activeItem?.group === "Operate" || undefined} data-commercial-context={activeItem?.group === "Plan & Sell" || undefined} data-workspace-group={activeItem?.group} data-workspace-id={activeItem?.id || "unscoped"}>
+      <a className="app-skip-link" href="#workspace-content">Skip to workspace</a>
+      {mobileOpen ? <button type="button" className="app-nav-backdrop" onClick={() => setMobileOpen(false)} aria-label="Close navigation"/> : null}
+      <aside ref={sidebar} className="app-sidebar" data-open={mobileOpen || undefined} aria-label="Application navigation">
+        <Link href="/admin/command-centre" className="app-brand" aria-label="KCPL Operations overview" onClick={() => setMobileOpen(false)}>
+          <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={27} height={27} priority/>
+          <span><strong>KCPL</strong><small>Operating system</small></span>
+        </Link>
+        <div className="app-scope"><span className="app-scope-mark"/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
+        <nav className="app-workspaces" aria-label="KCPL workspaces">
+          {groups.map(({ group, items }) => <details key={`${group}:${activeItem?.group === group}`} className="app-nav-group" open={activeItem?.group === group || undefined}>
+            <summary>{group}<ChevronDown size={12} aria-hidden="true"/></summary>
+            {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span>{workspace.label}</span>{workspace.id === activeItem?.id ? <ChevronRight size={12} aria-hidden="true"/> : null}</Link>)}
+          </details>)}
+        </nav>
+        <div className="app-sidebar-footer">
+          <button type="button" className="app-nav-search" onClick={openSearch}><Search size={14}/><span>Find anything</span><kbd>Ctrl / ⌘ K</kbd></button>
+          <div className="app-account"><span className="app-avatar">{initials}</span><span className="app-account-name">{userName}<small>{capabilities.isManagement ? "Management" : "KCPL staff"}</small></span><a href={signOutPath} aria-label="Sign out"><LogOut size={15}/></a></div>
         </div>
       </aside>
-
-      <header className="fixed inset-x-0 top-0 z-40 h-[64px] border-b border-[#D6D6D0] bg-[#F6F6F3] lg:left-[252px]">
-        <div className="flex h-full items-center px-4 sm:px-5 lg:px-8"><button type="button" onClick={() => setMobileOpen((current) => !current)} className="mr-3 grid h-9 w-9 place-items-center border border-[#AFAFA8] bg-transparent text-[#101010] lg:hidden" aria-label="Toggle navigation">{mobileOpen ? <X size={16}/> : <Menu size={16}/>}</button><p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.07em] text-[#5B5B57]">{breadcrumb}</p><button type="button" onClick={() => setPaletteOpen(true)} className="hidden h-10 w-[280px] items-center border border-[#BDBDB6] bg-white px-3 text-[12px] font-semibold text-[#5B5B57] transition-colors hover:border-[#101010] hover:text-[#101010] md:flex" aria-label="Open command palette"><Search size={13} className="mr-2.5"/><span>Search KCPL</span><span className="ml-auto border-l border-[#D6D6D0] pl-2 text-[10px] text-[#777771]">⌘K</span></button><Link href="/admin/notifications" className="relative ml-3 grid h-10 w-10 place-items-center text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Open notifications"><Bell size={15}/><span className="absolute right-[10px] top-[9px] h-1.5 w-1.5 bg-[#DC143C]"/></Link><span className="ml-1 grid h-8 w-8 place-items-center bg-[#101010] text-[10px] font-semibold text-[#F6F6F3]">{initials}</span></div>
+      <header className="app-topbar">
+        <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={17}/> : <Menu size={17}/>}</button>
+        <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={12} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={12} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
+        <button type="button" className="app-global-search" onClick={openSearch}><Search size={14}/><span>Search records and workspaces</span><kbd>⌘ K</kbd></button>
+        <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={15} className={refreshing ? "app-refreshing" : undefined}/></button>
+        <OperationsNotificationCentre/>
       </header>
-
-      {secondaryContext ? <nav className="workspace-secondary-nav fixed inset-x-0 top-[64px] z-30 flex h-[50px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0] bg-[#F6F6F3] px-4 sm:px-5 lg:left-[252px] lg:px-8" aria-label={`${groupLabel(activeItem?.group)} workflow navigation`}>{secondaryWorkspaces.map((workspace) => { const active = workspace.id === activeItem?.id; return <Link key={workspace.id} href={workspace.href} aria-current={active ? "page" : undefined} className={`relative flex h-full shrink-0 items-center text-[11px] transition-colors ${active ? "font-semibold text-[#101010]" : "font-semibold text-[#686862] hover:text-[#101010]"}`}>{workspace.label}{active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}</Link>; })}</nav> : null}
-
-      {mobileOpen ? <div className="fixed inset-x-0 bottom-0 top-[64px] z-50 overflow-y-auto bg-[#F6F6F3] lg:hidden"><div className="mx-auto max-w-xl"><div className="flex min-h-[82px] items-center border-b border-[#D6D6D0] px-5"><BrandLockup /></div><div className="border-b border-[#D6D6D0] px-5 py-4"><p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-[#DC143C]">{deskLabel}</p><p className="mt-1 text-[12px] font-semibold text-[#5B5B57]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div><button type="button" onClick={() => { setMobileOpen(false); setPaletteOpen(true); }} className="flex min-h-[52px] w-full items-center border-b border-[#D6D6D0] px-5 text-[12px] font-semibold text-[#5B5B57]"><Search size={14} className="mr-3"/>Search KCPL<span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button><nav aria-label="Mobile KCPL workspaces" className="px-3 py-4">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${active ? "border-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-transparent font-semibold text-[#5B5B57]"}`}>{item.label}</Link>; })}<Link href={systemHref} aria-current={systemActive ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${systemActive ? "border-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-transparent font-semibold text-[#5B5B57]"}`}>System</Link></nav>{secondaryContext ? <nav aria-label="Current workspace sections" className="border-t border-[#D6D6D0] px-3 py-4"><p className="px-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#777771]">{groupLabel(activeItem?.group)}</p>{secondaryWorkspaces.map((workspace) => <Link key={workspace.id} href={workspace.href} onClick={() => setMobileOpen(false)} aria-current={workspace.id === activeItem?.id ? "page" : undefined} className={`flex min-h-[44px] items-center px-4 text-[12px] ${workspace.id === activeItem?.id ? "bg-[#EEEEE8] font-semibold text-[#101010]" : "font-semibold text-[#5B5B57]"}`}>{workspace.label}</Link>)}</nav> : null}<div className="border-t border-[#D6D6D0] px-5 py-5"><p className="text-[13px] font-semibold text-[#101010]">{userName}</p><p className="mt-1 text-[11px] font-semibold text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p><a href={signOutPath} className="mt-5 inline-flex items-center gap-2 border-b border-[#101010] pb-1 text-[12px] font-semibold text-[#101010]"><LogOut size={13}/>Sign out</a></div></div></div> : null}
-
-      <div className={`kcpl-admin-content min-w-0 lg:pl-[252px] ${secondaryContext ? "pt-[114px]" : "pt-[64px]"}`}>{children}</div>
+      <div id="workspace-content" tabIndex={-1} className="kcpl-admin-content">{children}</div>
       <OperationsCommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
     </div>
   );

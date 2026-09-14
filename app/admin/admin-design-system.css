@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL staff product design system
    Brand source: Figma identity specifications (Crimson #DC143C, Black #101010,
    Neutral canvas #F6F6F3, Manrope ExtraBold + SemiBold).
@@ -318,7 +320,7 @@ button.ops-button {
   transition: border-color .16s ease, box-shadow .16s ease;
 }
 .ops-search:focus-within { border-color: var(--admin-ink); box-shadow: 0 0 0 1px var(--admin-ink); }
-.ops-search input { min-width: 0; width: 100%; border: 0 !important; outline: 0; background: transparent; padding: 0 !important; min-height: 0 !important; color: var(--admin-ink); font-size: 12px; font-weight: 600; box-shadow: none !important; }
+.ops-search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; padding: 0; min-height: 0; color: var(--admin-ink); font-size: 12px; font-weight: 600; box-shadow: none; }
 .ops-search input::placeholder { color: #8B8B85; }
 
 .ops-field { display: grid; gap: 6px; color: var(--admin-ink); }
@@ -617,9 +619,11 @@ button.ops-button {
   .kcpl-admin-shell *,
   .kcpl-admin-shell *::before,
   .kcpl-admin-shell *::after {
-    scroll-behavior: auto !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
+    scroll-behavior: auto;
+    animation-duration: .01ms;
+    animation-iteration-count: 1;
+    transition-duration: .01ms;
   }
+}
+
 }

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { Search } from "lucide-react";
 
 function cx(...values: Array<string | false | null | undefined>) {
@@ -120,7 +120,7 @@ export function OpsStat({
     </>
   );
   if (onClick) {
-    return <button type="button" onClick={onClick} className="ops-stat" data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{content}</button>;
+    return <button type="button" onClick={onClick} className="ops-stat" aria-pressed={active} data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{content}</button>;
   }
   return <div className="ops-stat" data-tone={tone} data-zero={zero || undefined}>{content}</div>;
 }
@@ -147,7 +147,7 @@ export function OpsSearch({ className, ...props }: InputHTMLAttributes<HTMLInput
   return (
     <label className={cx("ops-search", className)}>
       <Search size={15} aria-hidden="true"/>
-      <input {...props}/>
+      <input type="search" {...props} aria-label={props["aria-label"] ?? props.placeholder ?? "Search records"}/>
     </label>
   );
 }
@@ -191,6 +191,7 @@ export function OpsButton({
   variant,
   tone,
   size = "md",
+  type = "button",
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -199,11 +200,11 @@ export function OpsButton({
   size?: "sm" | "md";
 }) {
   const resolvedVariant = variant ?? tone ?? "secondary";
-  return <button {...props} className={cx("ops-button", className)} data-variant={resolvedVariant} data-size={size}>{children}</button>;
+  return <button {...props} type={type} className={cx("ops-button", className)} data-variant={resolvedVariant} data-size={size}>{children}</button>;
 }
 
 export function OpsMetricStrip({ children, columns = 4 }: { children: ReactNode; columns?: number }) {
-  return <div className="ops-metric-strip" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns)}, minmax(0, 1fr))` }}>{children}</div>;
+  return <div className="ops-metric-strip" style={{ "--ops-metric-columns": Math.max(1, Math.min(8, columns)) } as CSSProperties}>{children}</div>;
 }
 
 export function OpsMetric({ icon, label, value, detail }: { icon?: ReactNode; label: ReactNode; value: ReactNode; detail?: ReactNode }) {

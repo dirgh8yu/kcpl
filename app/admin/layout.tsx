@@ -1,6 +1,5 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
-import { OperationsNotificationBridge } from "./operations-notification-bridge";
 
 const adminInter = Inter({
   subsets: ["latin"],
@@ -12,7 +11,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className={`${adminInter.className} ${adminInter.variable} kcpl-admin-route`}>
       {children}
-      <OperationsNotificationBridge/>
     </div>
   );
 }

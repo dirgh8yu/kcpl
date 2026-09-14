@@ -1,3 +1,4 @@
+@layer theme, base, kcpl-legacy, components, utilities;
 @import "tailwindcss";
 
 @font-face { font-family:"Cormorant Garamond"; src:url("/fonts/cormorant-garamond-latin.woff2") format("woff2"); font-style:normal; font-weight:400 700; font-display:swap; }

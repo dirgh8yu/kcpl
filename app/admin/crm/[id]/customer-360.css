@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 .crm360-input {
   min-height: 32px;
   width: 100%;
@@ -22,13 +24,15 @@
 .crm360-tool > summary span:last-child { color: #dc143c; font-size: 10px; font-weight: 650; }
 .crm360-tool[open] > summary { border-bottom: 1px solid #e2e2e2; background: #f7f7f7; }
 .crm360-tool-body { overflow: hidden; }
-.crm360-tool-body > section { background: transparent !important; padding: 0 !important; }
-.crm360-tool-body > section > div { max-width: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: #fff !important; }
-.crm360-tool-body [class*="bg-[#10263f]"] { background: #dc143c !important; }
-.crm360-tool-body [class*="text-[#10263f]"] { color: #141414 !important; }
-.crm360-tool-body [class*="border-black/10"] { border-color: #e2e2e2 !important; }
-.crm360-tool-body [class*="bg-[#f4f1e9]"] { background: transparent !important; }
-.crm360-tool-body [class*="bg-[#faf9f5]"] { background: #f7f7f7 !important; }
+.crm360-tool-body > section { background: transparent; padding: 0; }
+.crm360-tool-body > section > div { max-width: none; border: 0; border-radius: 0; box-shadow: none; background: #fff; }
+.crm360-tool-body [class*="bg-[#10263f]"] { background: #dc143c; }
+.crm360-tool-body [class*="text-[#10263f]"] { color: #141414; }
+.crm360-tool-body [class*="border-black/10"] { border-color: #e2e2e2; }
+.crm360-tool-body [class*="bg-[#f4f1e9]"] { background: transparent; }
+.crm360-tool-body [class*="bg-[#faf9f5]"] { background: #f7f7f7; }
 .crm360-tool-body [class*="text-black/40"],
 .crm360-tool-body [class*="text-black/45"],
-.crm360-tool-body [class*="text-black/50"] { color: #737373 !important; }
+.crm360-tool-body [class*="text-black/50"] { color: #737373; }
+
+}

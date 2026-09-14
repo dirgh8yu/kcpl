@@ -107,18 +107,18 @@ export function RecoveryPanel({ batchId, rollbackStatus }: { batchId: string; ro
 
         {plan.warnings.length ? <OpsNotice tone={plan.can_execute ? "warning" : "danger"}>{plan.warnings.join(" ")}</OpsNotice> : null}
 
-        <div className="overflow-x-auto rounded-[12px] border border-[#e8e0d9]">
-          <table className="ops-table min-w-[800px]"><thead><tr><th>Type</th><th>Record</th><th>State</th><th>Archive</th><th>Reason</th></tr></thead><tbody>{plan.records.map((record) => <tr key={record.key}><td><OpsBadge tone="neutral">{record.kind}</OpsBadge></td><td>{record.status === "already_reversed" || record.status === "missing" ? <OpsMono>{record.id}</OpsMono> : <Link href={record.href} className="font-bold text-[#b5654f]"><OpsMono>{record.id}</OpsMono></Link>}</td><td><OpsBadge tone={tone(record.status)}>{label(record.status)}</OpsBadge></td><td>{record.archive_relinks ? `${record.archive_relinks} preserved` : "None"}</td><td><span className="text-[9px] leading-4 text-[#776e67]">{record.reasons.length ? record.reasons.join(" ") : "Ownership and untouched-state checks passed."}</span></td></tr>)}</tbody></table>
+        <div className="overflow-x-auto rounded-[var(--app-radius)] border border-[var(--admin-line)]">
+          <table className="ops-table min-w-[800px]"><thead><tr><th>Type</th><th>Record</th><th>State</th><th>Archive</th><th>Reason</th></tr></thead><tbody>{plan.records.map((record) => <tr key={record.key}><td><OpsBadge tone="neutral">{record.kind}</OpsBadge></td><td>{record.status === "already_reversed" || record.status === "missing" ? <OpsMono>{record.id}</OpsMono> : <Link href={record.href} className="font-bold text-[#b5654f]"><OpsMono>{record.id}</OpsMono></Link>}</td><td><OpsBadge tone={tone(record.status)}>{label(record.status)}</OpsBadge></td><td>{record.archive_relinks ? `${record.archive_relinks} preserved` : "None"}</td><td><span className="text-[length:var(--app-label-size)] leading-4 text-[#776e67]">{record.reasons.length ? record.reasons.join(" ") : "Ownership and untouched-state checks passed."}</span></td></tr>)}</tbody></table>
         </div>
 
-        {plan.can_execute ? <div className="rounded-[13px] border border-[#e0c8bd] bg-[#fff8f4] p-4">
-          <div className="flex items-start gap-3"><AlertTriangle size={16} className="mt-0.5 shrink-0 text-[#b5654f]"/><div><strong className="text-[11px] text-[#4d433d]">Final destructive confirmation</strong><p className="mt-1 text-[9px] leading-4 text-[#7f746c]">This removes only the records marked Safe to reverse. It does not erase the migration batch, recovery audit, or Paper Archive evidence. Type the exact confirmation below.</p></div></div>
+        {plan.can_execute ? <div className="rounded-[var(--app-radius)] border border-[#e0c8bd] bg-[#fff8f4] p-4">
+          <div className="flex items-start gap-3"><AlertTriangle size={16} className="mt-0.5 shrink-0 text-[#b5654f]"/><div><strong className="text-[11px] text-[#4d433d]">Final destructive confirmation</strong><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[#7f746c]">This removes only the records marked Safe to reverse. It does not erase the migration batch, recovery audit, or Paper Archive evidence. Type the exact confirmation below.</p></div></div>
           <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <label className="block"><span className="mb-1.5 block text-[8px] font-bold uppercase tracking-[.08em] text-[#94887f]">Type <OpsMono>{plan.confirmation_text}</OpsMono></span><input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="h-10 w-full rounded-[9px] border border-[#d8cec6] bg-white px-3 text-[11px] text-[#4d433d] outline-none focus:border-[#b97864]" autoComplete="off"/></label>
+            <label className="block"><span className="mb-1.5 block text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[#94887f]">Type <OpsMono>{plan.confirmation_text}</OpsMono></span><input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="h-10 w-full rounded-[var(--app-radius)] border border-[#d8cec6] bg-white px-3 text-[11px] text-[#4d433d] outline-none focus:border-[#b97864]" autoComplete="off"/></label>
             <OpsButton variant="danger" disabled={busy === "execute" || !acknowledged || confirmation.trim().toUpperCase() !== plan.confirmation_text} onClick={() => void execute()}>{busy === "execute" ? <LoaderCircle size={12} className="animate-spin"/> : <RotateCcw size={12}/>}Execute controlled rollback</OpsButton>
           </div>
-          <label className="mt-3 flex cursor-pointer items-start gap-2 text-[9px] leading-4 text-[#70665f]"><input type="checkbox" className="mt-0.5" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)}/><span>I reviewed the dry run and understand that this action permanently removes the eligible imported records while retaining the migration and recovery evidence.</span></label>
-          <p className="mt-3 text-[8px] text-[#9a8d84]">Plan <OpsMono>{plan.plan_id}</OpsMono> expires {new Date(plan.expires_at).toLocaleString()}.</p>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-[length:var(--app-label-size)] leading-4 text-[#70665f]"><input type="checkbox" className="mt-0.5" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)}/><span>I reviewed the dry run and understand that this action permanently removes the eligible imported records while retaining the migration and recovery evidence.</span></label>
+          <p className="mt-3 text-[length:var(--app-label-size)] text-[#9a8d84]">Plan <OpsMono>{plan.plan_id}</OpsMono> expires {new Date(plan.expires_at).toLocaleString()}.</p>
         </div> : <OpsNotice tone="danger"><strong>Rollback is blocked.</strong> Stage 4C will not bypass these checks. Resolve the dependencies or review the affected records manually, then generate a fresh dry run.</OpsNotice>}
       </> : null}
     </div>
@@ -126,10 +126,10 @@ export function RecoveryPanel({ batchId, rollbackStatus }: { batchId: string; ro
 }
 
 function Metric({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "success" | "danger" }) {
-  const color = tone === "success" ? "text-[#5f7864]" : tone === "danger" ? "text-[#a74d50]" : "text-[#4d453f]";
-  return <div className="rounded-[11px] border border-[#e8e0d9] bg-[#faf8f5] p-3"><p className="text-[8px] font-bold uppercase tracking-[.07em] text-[#998f87]">{label}</p><strong className={`mt-1 block text-[18px] ${color}`}>{value}</strong></div>;
+  const color = tone === "success" ? "text-[#5f7864]" : tone === "danger" ? "text-[#a74d50]" : "text-[var(--admin-ink)]";
+  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[#998f87]">{label}</p><strong className={`mt-1 block text-[18px] ${color}`}>{value}</strong></div>;
 }
 
 function Safety({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return <div className="rounded-[12px] border border-[#e8e0d9] bg-[#faf8f5] p-4"><strong className="flex items-center gap-2 text-[10px] text-[#514840]">{icon}{title}</strong><p className="mt-2 text-[8px] leading-4 text-[#857b73]">{detail}</p></div>;
+  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4"><strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{icon}{title}</strong><p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[#857b73]">{detail}</p></div>;
 }

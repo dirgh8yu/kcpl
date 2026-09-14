@@ -60,6 +60,7 @@ export type CommandCentreTotals = {
 };
 
 export type CommandCentreData = {
+  partial?: boolean;
   generated_at: string;
   operational_date: string;
   accessible_branches: KcplBranch[];

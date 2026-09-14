@@ -1,3 +1,5 @@
+/* Frozen compatibility rules. New UI belongs in operations-system.css. */
+@layer kcpl-legacy {
 /* KCPL Shipment Detail — operational editorial refinement
    Deliberately flat, dense and functional. No generated-dashboard card stacks. */
 
@@ -28,75 +30,75 @@
 
 /* Major modules read as register sections rather than floating cards. */
 #operational-controls .ops-surface {
-  border: 1px solid var(--detail-line) !important;
-  border-radius: 3px !important;
-  background: var(--detail-white) !important;
-  box-shadow: none !important;
+  border: 1px solid var(--detail-line);
+  border-radius: 3px;
+  background: var(--detail-white);
+  box-shadow: none;
 }
 
 #operational-controls .ops-surface-header {
   min-height: 76px;
   align-items: flex-start;
-  padding: 18px 20px !important;
-  border-bottom: 1px solid var(--detail-line) !important;
-  background: var(--detail-white) !important;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--detail-line);
+  background: var(--detail-white);
 }
 
 #operational-controls .ops-surface-header h2 {
-  margin-top: 4px !important;
-  color: var(--detail-ink) !important;
-  font-size: 17px !important;
-  font-weight: 560 !important;
-  line-height: 1.15 !important;
-  letter-spacing: -.025em !important;
+  margin-top: 4px;
+  color: var(--detail-ink);
+  font-size: 17px;
+  font-weight: 560;
+  line-height: 1.15;
+  letter-spacing: -.025em;
 }
 
 #operational-controls .ops-surface-description {
   max-width: 760px;
-  margin-top: 5px !important;
-  color: var(--detail-muted) !important;
-  font-size: 11px !important;
-  line-height: 1.5 !important;
+  margin-top: 5px;
+  color: var(--detail-muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 #operational-controls .ops-surface-body {
-  padding: 20px !important;
+  padding: 20px;
 }
 
 #operational-controls .ops-eyebrow {
-  color: var(--detail-crimson) !important;
-  font-size: 9px !important;
-  font-weight: 650 !important;
-  letter-spacing: .11em !important;
+  color: var(--detail-crimson);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .11em;
 }
 
 /* Reduce decorative status-pill noise. */
 #operational-controls .ops-badge {
-  min-height: 21px !important;
-  border-radius: 2px !important;
-  padding: 3px 7px !important;
-  box-shadow: none !important;
-  font-size: 9px !important;
-  font-weight: 600 !important;
+  min-height: 21px;
+  border-radius: 2px;
+  padding: 3px 7px;
+  box-shadow: none;
+  font-size: 9px;
+  font-weight: 600;
 }
 
 #operational-controls .ops-progress {
-  height: 4px !important;
-  border-radius: 0 !important;
+  height: 4px;
+  border-radius: 0;
 }
 
 /* Compact blank states. */
 #operational-controls .ops-empty {
-  min-height: 0 !important;
-  padding: 28px 18px !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  min-height: 0;
+  padding: 28px 18px;
+  border-radius: 0;
+  background: transparent;
 }
 
 #operational-controls .ops-empty-icon {
-  border: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Fields should feel like an operations console, not a form-builder template. */
@@ -106,10 +108,10 @@
 #operational-controls .ops-input,
 #operational-controls .ops-select,
 #operational-controls .ops-textarea {
-  border-color: #c9c9c2 !important;
-  border-radius: 2px !important;
-  background: #fff !important;
-  box-shadow: none !important;
+  border-color: #c9c9c2;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: none;
 }
 
 #operational-controls .ops-field input:focus,
@@ -118,8 +120,8 @@
 #operational-controls .ops-input:focus,
 #operational-controls .ops-select:focus,
 #operational-controls .ops-textarea:focus {
-  border-color: var(--detail-crimson) !important;
-  box-shadow: 0 0 0 2px rgba(220, 20, 60, .08) !important;
+  border-color: var(--detail-crimson);
+  box-shadow: 0 0 0 2px rgba(220, 20, 60, .08);
 }
 
 /* Direct spacing between major shipment-detail modules. */
@@ -137,7 +139,7 @@
    -------------------------------------------------------------------------- */
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body {
-  padding-top: 18px !important;
+  padding-top: 18px;
 }
 
 #operational-controls > div:nth-of-type(2) .overflow-x-auto {
@@ -146,71 +148,71 @@
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5:not(.grid) {
-  margin-top: 20px !important;
-  border: 0 !important;
-  border-top: 1px solid var(--detail-ink) !important;
-  border-left: 3px solid var(--detail-crimson) !important;
-  border-radius: 0 !important;
-  background: var(--detail-white) !important;
-  padding: 16px 18px !important;
+  margin-top: 20px;
+  border: 0;
+  border-top: 1px solid var(--detail-ink);
+  border-left: 3px solid var(--detail-crimson);
+  border-radius: 0;
+  background: var(--detail-white);
+  padding: 16px 18px;
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5:not(.grid) h3 {
-  color: var(--detail-ink) !important;
-  font-size: 15px !important;
-  font-weight: 620 !important;
+  color: var(--detail-ink);
+  font-size: 15px;
+  font-weight: 620;
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid {
-  gap: 0 !important;
-  margin-top: 20px !important;
-  border-top: 1px solid var(--detail-line) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
+  gap: 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--detail-line);
+  border-bottom: 1px solid var(--detail-line);
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: #fff !important;
-  padding: 18px !important;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  padding: 18px;
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div + div {
-  border-left: 1px solid var(--detail-line) !important;
+  border-left: 1px solid var(--detail-line);
 }
 
 /* Gate blockers become a ledger. */
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div:first-child .mt-4.grid {
-  gap: 0 !important;
-  border-top: 1px solid var(--detail-line) !important;
+  gap: 0;
+  border-top: 1px solid var(--detail-line);
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div:first-child .mt-4.grid > div {
   min-height: 38px;
   align-items: center;
-  border: 0 !important;
-  border-bottom: 1px solid #e9e9e4 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 9px 0 !important;
+  border: 0;
+  border-bottom: 1px solid #e9e9e4;
+  border-radius: 0;
+  background: transparent;
+  padding: 9px 0;
 }
 
 /* Finance summary becomes one line of accountable totals. */
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div:last-child .grid {
-  gap: 0 !important;
-  border-top: 1px solid var(--detail-line) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
+  gap: 0;
+  border-top: 1px solid var(--detail-line);
+  border-bottom: 1px solid var(--detail-line);
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div:last-child .grid > div {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 12px !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px;
 }
 
 #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div:last-child .grid > div + div {
-  border-left: 1px solid var(--detail-line) !important;
+  border-left: 1px solid var(--detail-line);
 }
 
 /* --------------------------------------------------------------------------
@@ -219,46 +221,46 @@
    -------------------------------------------------------------------------- */
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid {
-  gap: 24px !important;
+  gap: 24px;
 }
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:first-child > .grid {
-  gap: 0 !important;
+  gap: 0;
   border-top: 1px solid var(--detail-ink);
   border-left: 1px solid var(--detail-line);
 }
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:first-child > .grid > div {
   min-height: 102px;
-  border: 0 !important;
-  border-right: 1px solid var(--detail-line) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
-  border-radius: 0 !important;
-  background: #fff !important;
-  padding: 13px !important;
+  border: 0;
+  border-right: 1px solid var(--detail-line);
+  border-bottom: 1px solid var(--detail-line);
+  border-radius: 0;
+  background: #fff;
+  padding: 13px;
 }
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:first-child > .grid > div strong {
-  color: var(--detail-ink) !important;
-  font-size: 10px !important;
-  font-weight: 620 !important;
+  color: var(--detail-ink);
+  font-size: 10px;
+  font-weight: 620;
 }
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:first-child > .grid > div p {
-  color: var(--detail-muted) !important;
+  color: var(--detail-muted);
 }
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:last-child {
-  border: 0 !important;
-  border-left: 1px solid var(--detail-ink) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 2px 0 2px 20px !important;
+  border: 0;
+  border-left: 1px solid var(--detail-ink);
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 0 2px 20px;
 }
 
 #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:last-child > div {
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -271,32 +273,32 @@
 }
 
 #operational-controls > section.ops-surface .ops-stat-strip {
-  grid-auto-columns: minmax(0, 1fr) !important;
-  overflow: hidden !important;
-  border-top: 1px solid var(--detail-ink) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
-  background: transparent !important;
+  grid-auto-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border-top: 1px solid var(--detail-ink);
+  border-bottom: 1px solid var(--detail-line);
+  background: transparent;
 }
 
 #operational-controls > section.ops-surface .ops-stat {
-  min-height: 74px !important;
-  background: transparent !important;
-  padding: 12px 16px !important;
+  min-height: 74px;
+  background: transparent;
+  padding: 12px 16px;
 }
 
 #operational-controls > section.ops-surface article {
-  border: 0 !important;
-  border-top: 1px solid var(--detail-ink) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
-  border-radius: 0 !important;
-  background: #fff !important;
-  padding: 17px 0 !important;
+  border: 0;
+  border-top: 1px solid var(--detail-ink);
+  border-bottom: 1px solid var(--detail-line);
+  border-radius: 0;
+  background: #fff;
+  padding: 17px 0;
 }
 
 #operational-controls > section.ops-surface article h3 {
-  color: var(--detail-ink) !important;
-  font-size: 14px !important;
-  font-weight: 620 !important;
+  color: var(--detail-ink);
+  font-size: 14px;
+  font-weight: 620;
 }
 
 #operational-controls > section.ops-surface article p {
@@ -308,50 +310,50 @@
    -------------------------------------------------------------------------- */
 
 #operational-controls #delivery-pod {
-  padding-top: 18px !important;
-  padding-bottom: 18px !important;
+  padding-top: 18px;
+  padding-bottom: 18px;
 }
 
 #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 {
-  gap: 0 !important;
-  border-top: 1px solid var(--detail-ink) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
+  gap: 0;
+  border-top: 1px solid var(--detail-ink);
+  border-bottom: 1px solid var(--detail-line);
 }
 
 #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 > div {
   min-height: 108px;
-  border: 0 !important;
-  border-right: 1px solid var(--detail-line) !important;
-  border-radius: 0 !important;
-  background: #fff !important;
-  padding: 13px !important;
+  border: 0;
+  border-right: 1px solid var(--detail-line);
+  border-radius: 0;
+  background: #fff;
+  padding: 13px;
 }
 
 #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 > div:last-child {
-  border-right: 0 !important;
+  border-right: 0;
 }
 
 #operational-controls #delivery-pod .ops-surface-body > .grid.gap-5 {
-  gap: 24px !important;
+  gap: 24px;
   margin-top: 22px;
 }
 
 #operational-controls #delivery-pod .space-y-4 > form,
 #operational-controls #delivery-pod .space-y-4 > div {
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 #operational-controls #delivery-pod .space-y-4 > form {
-  border: 0 !important;
-  border-top: 1px solid var(--detail-ink) !important;
-  background: #fff !important;
-  padding: 17px 0 !important;
+  border: 0;
+  border-top: 1px solid var(--detail-ink);
+  background: #fff;
+  padding: 17px 0;
 }
 
 #operational-controls #delivery-pod .space-y-4 > div {
-  border-color: var(--detail-line) !important;
-  background: #fff !important;
+  border-color: var(--detail-line);
+  background: #fff;
 }
 
 /* --------------------------------------------------------------------------
@@ -359,39 +361,39 @@
    -------------------------------------------------------------------------- */
 
 #operational-controls .ops-page {
-  min-height: 0 !important;
+  min-height: 0;
   margin-top: 28px;
-  background: transparent !important;
+  background: transparent;
 }
 
 #operational-controls .ops-page-header {
-  padding: 24px 0 18px !important;
-  border-top: 1px solid var(--detail-ink) !important;
-  border-bottom: 1px solid var(--detail-line) !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
+  padding: 24px 0 18px;
+  border-top: 1px solid var(--detail-ink);
+  border-bottom: 1px solid var(--detail-line);
+  background: transparent;
+  backdrop-filter: none;
 }
 
 #operational-controls .ops-page-heading h1 {
-  color: var(--detail-ink) !important;
-  font-size: clamp(25px, 3vw, 34px) !important;
-  font-weight: 520 !important;
-  letter-spacing: -.035em !important;
+  color: var(--detail-ink);
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 520;
+  letter-spacing: -.035em;
 }
 
 #operational-controls .ops-page-description {
-  color: var(--detail-muted) !important;
+  color: var(--detail-muted);
 }
 
 #operational-controls .ops-page .ops-content,
 #operational-controls .ops-page .ops-content-wide {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 #operational-controls .ops-page .ops-grid-main,
 #operational-controls .ops-page .ops-grid-2 {
-  gap: 18px !important;
+  gap: 18px;
 }
 
 #operational-controls .ops-page .ops-surface + .ops-surface {
@@ -400,17 +402,17 @@
 
 /* Document upload/cost/task internals: reduce nested-card styling. */
 #operational-controls .ops-page form {
-  border-radius: 2px !important;
-  box-shadow: none !important;
+  border-radius: 2px;
+  box-shadow: none;
 }
 
 #operational-controls .ops-page .divide-y > div {
-  border-color: #ecece7 !important;
+  border-color: #ecece7;
 }
 
 /* The status/data ribbon should scan like a ledger, not a carousel. */
 #operational-controls .ops-stat-strip {
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -419,20 +421,20 @@
 
 @media (max-width: 1180px) {
   #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:last-child {
-    border-left: 0 !important;
-    border-top: 1px solid var(--detail-ink) !important;
-    padding: 18px 0 0 !important;
+    border-left: 0;
+    border-top: 1px solid var(--detail-ink);
+    padding: 18px 0 0;
   }
 }
 
 @media (max-width: 900px) {
   #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div + div {
-    border-left: 0 !important;
-    border-top: 1px solid var(--detail-line) !important;
+    border-left: 0;
+    border-top: 1px solid var(--detail-line);
   }
 
   #operational-controls #delivery-pod .ops-surface-body > .grid.gap-5 {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 }
 
@@ -446,38 +448,38 @@
   }
 
   #operational-controls .ops-surface {
-    border-left: 0 !important;
-    border-right: 0 !important;
-    border-radius: 0 !important;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
   }
 
   #operational-controls .ops-surface-header {
     min-height: 0;
-    padding: 15px 16px !important;
+    padding: 15px 16px;
   }
 
   #operational-controls .ops-surface-header h2 {
-    font-size: 18px !important;
+    font-size: 18px;
   }
 
   #operational-controls .ops-surface-description {
-    font-size: 11px !important;
+    font-size: 11px;
   }
 
   #operational-controls .ops-surface-body {
-    padding: 16px !important;
+    padding: 16px;
   }
 
   #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5:not(.grid) {
-    padding: 14px 14px 14px 16px !important;
+    padding: 14px 14px 14px 16px;
   }
 
   #operational-controls > div:nth-of-type(2) .ops-surface-body > .mt-5.grid > div {
-    padding: 15px 0 !important;
+    padding: 15px 0;
   }
 
   #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:first-child > .grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
   #operational-controls > div:nth-of-type(3) .ops-surface-body > .grid > div:first-child > .grid > div {
@@ -485,21 +487,21 @@
   }
 
   #operational-controls > section.ops-surface .ops-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    grid-auto-flow: row !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
   }
 
   #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 > div {
     min-height: 92px;
-    border-bottom: 1px solid var(--detail-line) !important;
+    border-bottom: 1px solid var(--detail-line);
   }
 
   #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 > div:nth-child(2n) {
-    border-right: 0 !important;
+    border-right: 0;
   }
 
   #operational-controls .ops-page {
@@ -509,23 +511,25 @@
   }
 
   #operational-controls .ops-page-header {
-    padding: 18px 0 14px !important;
+    padding: 18px 0 14px;
   }
 
   #operational-controls .ops-page .ops-content,
   #operational-controls .ops-page .ops-content-wide {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
 @media (max-width: 420px) {
   #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2,
   #operational-controls > section.ops-surface .ops-stat-strip {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
   #operational-controls #delivery-pod .ops-surface-body > .grid.gap-2 > div {
-    border-right: 0 !important;
+    border-right: 0;
   }
+}
+
 }

@@ -65,7 +65,7 @@ export default async function MarketEstimatePage() {
 
         <div className="ops-content ops-stack">
           <OpsSurface eyebrow="Integration status" title="Connected reference sources" description="Integration state is visible to staff so an unavailable provider cannot masquerade as a blank result.">
-            <div className="grid border border-[#e2e2e2] md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid border border-[var(--admin-line)] md:grid-cols-2 xl:grid-cols-4">
               <IntegrationCard icon={<RadioTower size={15}/>} title="Freight benchmark" detail="Freightos public estimate adapter" state="available"/>
               <IntegrationCard icon={<CheckCircle2 size={15}/>} title="NRB Forex" detail="Official Nepal Rastra Bank reference rates" state="available"/>
               <IntegrationCard icon={<MapPinned size={15}/>} title="Google Routes + Places" detail={routesConfigured && placesConfigured ? "Firebase secrets detected" : "API code available · check Firebase secrets"} state={routesConfigured && placesConfigured ? "available" : "setup"}/>
@@ -84,16 +84,16 @@ export default async function MarketEstimatePage() {
 }
 
 function IntegrationCard({ icon, title, detail, state }: { icon: React.ReactNode; title: string; detail: string; state: "available" | "setup" }) {
-  return <div className="min-h-[92px] border-b border-r border-[#e2e2e2] bg-white p-3 last:border-r-0">
+  return <div className="min-h-[92px] border-b border-r border-[var(--admin-line)] bg-white p-3 last:border-r-0">
     <div className="flex items-start justify-between gap-3">
       <span className={state === "available" ? "text-[#18794e]" : "text-[#945b00]"}>{icon}</span>
-      <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${state === "available" ? "text-[#18794e]" : "text-[#945b00]"}`}>
+      <span className={`inline-flex items-center gap-1 text-[length:var(--app-label-size)] font-medium ${state === "available" ? "text-[#18794e]" : "text-[#945b00]"}`}>
         {state === "available" ? <CheckCircle2 size={11}/> : <CircleAlert size={11}/>}
         {state === "available" ? "Available" : "Check setup"}
       </span>
     </div>
-    <strong className="mt-3 block text-[12px] font-semibold text-[#141414]">{title}</strong>
-    <p className="mt-1 text-[10px] leading-4 text-[#737373]">{detail}</p>
+    <strong className="mt-3 block text-[12px] font-semibold text-[var(--admin-ink)]">{title}</strong>
+    <p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{detail}</p>
   </div>;
 }
 

@@ -1,14 +1,7 @@
 import type { ReactNode } from "react";
-import { evaluateAutomationRules } from "../alerts/alert-engine.server";
-import { evaluatePayablesAlerts } from "../payables/payables-alerts.server";
 
-export default async function CommandCentreLayout({ children }: { children: ReactNode }) {
-  try {
-    await evaluateAutomationRules();
-    await evaluatePayablesAlerts();
-  } catch (error) {
-    console.error("KCPL automation evaluation failed during Command Centre load", error);
-  }
-
+// Alert generation is owned by the authenticated refresh action and internal
+// automation endpoint. Rendering a workspace must not scan and write the network.
+export default function CommandCentreLayout({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
