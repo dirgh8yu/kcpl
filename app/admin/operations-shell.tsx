@@ -41,6 +41,7 @@ export function OperationsShell({
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [refreshing, startRefresh] = useTransition();
   const [resolvedCapabilities, setResolvedCapabilities] = useState<NavigationCapabilities | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -95,6 +96,14 @@ export function OperationsShell({
   }, [mobileOpen]);
 
   function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
+  function toggleGroup(group: string) {
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }
 
   return (
     <div className="kcpl-admin-shell" data-operations-context={activeItem?.group === "Operate" || undefined} data-commercial-context={activeItem?.group === "Plan & Sell" || undefined} data-workspace-group={activeItem?.group} data-workspace-id={activeItem?.id || "unscoped"}>
@@ -105,10 +114,10 @@ export function OperationsShell({
           <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={28} height={28} priority/>
           <span><strong>KCPL</strong><small>Operating system</small></span>
         </Link>
-        <div className="app-scope"><span className="app-scope-mark"/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
+        <div className="app-scope"><span className="app-scope-mark" style={{ background: "var(--admin-success)" }}/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
         <nav className="app-workspaces" aria-label="KCPL workspaces">
-          {groups.map(({ group, items }) => <details key={group} className="app-nav-group" open={activeItem?.group === group || undefined}>
-            <summary>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
+          {groups.map(({ group, items }) => <details key={group} className="app-nav-group" open={!collapsedGroups.has(group)}>
+            <summary onClick={(event) => { event.preventDefault(); toggleGroup(group); }}>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
             {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}
           </details>)}
         </nav>
@@ -120,7 +129,6 @@ export function OperationsShell({
       <header className="app-topbar">
         <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={18} strokeWidth={1.75}/> : <Menu size={18} strokeWidth={1.75}/>}</button>
         <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
-        <button type="button" className="app-global-search" onClick={openSearch}><Search size={15} strokeWidth={1.75} aria-hidden="true"/><span>Search records and workspaces</span><kbd>⌘ K</kbd></button>
         <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : undefined}/></button>
         <OperationsNotificationCentre/>
       </header>
