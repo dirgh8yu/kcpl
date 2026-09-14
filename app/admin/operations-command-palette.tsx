@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Boxes, Building2, FileSearch, Handshake, PackageSearch, Plus, ReceiptText, Search, X } from "lucide-react";
-import type { WorkflowWorkspace } from "./workflow-navigation";
+import type { WorkflowWorkspace, WorkspaceIconName } from "./workflow-navigation";
 import { workspaceSearchText } from "./workflow-navigation";
+import { WorkspaceIcon } from "./workflow-icon";
 
 type SearchResult = {
   kind: "shipment" | "customer" | "quote" | "order" | "tender" | "partner" | "payable";
@@ -22,15 +23,17 @@ type PaletteEntry = {
   meta: string | null;
   href: string;
   kind: "workspace" | "action" | SearchResult["kind"];
+  icon?: WorkspaceIconName;
 };
 
-function resultIcon(kind: PaletteEntry["kind"]) {
-  if (kind === "action") return <Plus size={14}/>;
-  if (kind === "shipment" || kind === "order") return <Boxes size={14}/>;
-  if (kind === "customer") return <Building2 size={14}/>;
-  if (kind === "partner" || kind === "tender") return <Handshake size={14}/>;
-  if (kind === "payable") return <ReceiptText size={14}/>;
-  if (kind === "quote") return <PackageSearch size={14}/>;
+function resultIcon(entry: PaletteEntry) {
+  if (entry.kind === "workspace" && entry.icon) return <WorkspaceIcon name={entry.icon} size={14}/>;
+  if (entry.kind === "action") return <Plus size={14}/>;
+  if (entry.kind === "shipment" || entry.kind === "order") return <Boxes size={14}/>;
+  if (entry.kind === "customer") return <Building2 size={14}/>;
+  if (entry.kind === "partner" || entry.kind === "tender") return <Handshake size={14}/>;
+  if (entry.kind === "payable") return <ReceiptText size={14}/>;
+  if (entry.kind === "quote") return <PackageSearch size={14}/>;
   return <FileSearch size={14}/>;
 }
 
@@ -48,7 +51,7 @@ function kindLabel(kind: PaletteEntry["kind"]) {
 
 export function OperationsCommandPalette({ open, onClose, workspaces }: { open: boolean; onClose: () => void; workspaces: WorkflowWorkspace[] }) {
   const router = useRouter();
-  const dialogRef = useRef<HTMLElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -72,6 +75,28 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
     });
     return () => { window.cancelAnimationFrame(frame); document.body.style.overflow = previousOverflow; previousFocus?.focus(); };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const elements = Array.from(dialog.querySelectorAll<HTMLElement>('input,button:not([tabindex="-1"]),[tabindex="0"]'));
+      const first = elements[0];
+      const last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+    dialog.addEventListener("keydown", onKeyDown);
+    return () => dialog.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -108,7 +133,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
 
     const matchingWorkspaces = workspaces.filter((workspace) => !needle || workspaceSearchText(workspace).includes(needle));
     const workspaceEntries = (needle ? matchingWorkspaces.slice(0, 18) : matchingWorkspaces)
-      .map((workspace) => ({ key: `workspace:${workspace.id}`, title: workspace.label, subtitle: `${workspace.group} · ${workspace.hint}`, meta: null, href: workspace.href, kind: "workspace" as const }));
+      .map((workspace) => ({ key: `workspace:${workspace.id}`, title: workspace.label, subtitle: `${workspace.group} · ${workspace.hint}`, meta: null, href: workspace.href, kind: "workspace" as const, icon: workspace.icon }));
     const remoteEntries = needle.length >= 2 && resultQuery === query.trim() ? remoteResults.map((result) => ({ key: `${result.kind}:${result.id}`, title: result.title, subtitle: result.subtitle, meta: result.meta, href: result.href, kind: result.kind })) : [];
     return [...remoteEntries, ...quickActions.slice(0, needle ? 6 : 4), ...workspaceEntries].slice(0, 45);
   }, [query, remoteResults, resultQuery, workspaces]);
@@ -133,14 +158,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center bg-[#101010]/30 px-3 pt-[10vh]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section ref={dialogRef} onKeyDown={(event) => {
-        if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); onClose(); }
-        if (event.key !== "Tab") return;
-        const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('input,button:not([tabindex="-1"]),[tabindex="0"]') ?? []);
-        const first = elements[0]; const last = elements.at(-1);
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-      }} className="app-command-dialog w-full max-w-[760px] overflow-hidden border border-[#101010] bg-[var(--admin-canvas)] shadow-[0_24px_72px_rgba(16,16,16,.18)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
+      <div ref={dialogRef} className="app-command-dialog w-full max-w-[760px] overflow-hidden border border-[#101010] bg-[var(--admin-canvas)] shadow-[0_24px_72px_rgba(16,16,16,.18)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
         <div className="flex items-center gap-3 border-b border-[#101010] px-4 py-4 sm:px-5">
           <Search size={16} className="shrink-0 text-[var(--admin-crimson)]"/>
           <input
@@ -181,7 +199,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
               onClick={() => go(entry.href)}
               className={`grid min-h-[48px] w-full grid-cols-[32px_minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-2 text-left transition-colors sm:px-5 ${index === selectedIndex ? "bg-[var(--admin-surface-muted)] shadow-[inset_2px_0_0_#DC143C]" : "hover:bg-[#F0F0EA]"}`}
             >
-              <span className={`${index === selectedIndex ? "text-[var(--admin-crimson)]" : "text-[var(--admin-muted)]"}`}>{resultIcon(entry.kind)}</span>
+              <span className={`${index === selectedIndex ? "text-[var(--admin-crimson)]" : "text-[var(--admin-muted)]"}`}>{resultIcon(entry)}</span>
               <span className="min-w-0"><span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"><strong className="truncate text-[12px] font-medium text-[var(--admin-ink)]">{entry.title}</strong><span className="shrink-0 border border-[var(--admin-line-strong)] px-1.5 py-0.5 text-[length:var(--app-label-size)] font-normal uppercase tracking-[.06em] text-[var(--admin-muted)]">{kindLabel(entry.kind)}</span></span><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{entry.subtitle}</span></span>
               {entry.meta ? <span className="hidden shrink-0 text-[length:var(--app-label-size)] text-[var(--admin-muted)] sm:block">{entry.meta.replaceAll("_", " ")}</span> : <span/>}
               <ArrowRight size={12} className="shrink-0 text-[var(--admin-muted)]"/>
@@ -190,7 +208,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#101010] bg-[var(--admin-surface-muted)] px-4 py-2.5 text-[length:var(--app-label-size)] font-normal uppercase tracking-[0.05em] text-[var(--admin-muted)] sm:px-5"><span>↑↓ move · Enter open · Esc close</span><span>⌘K / Ctrl+K · KCPL search</span></div>
-      </section>
+      </div>
     </div>
   );
 }
