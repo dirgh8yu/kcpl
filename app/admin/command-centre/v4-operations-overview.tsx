@@ -542,11 +542,11 @@ export function V4OperationsOverview({ data, overview, isManagement = false }: {
         </div>
       </OpsSurface>
 
-      <OpsSurface className="overview-workflows" eyebrow="Workflow health" title="Operational workstreams" description="Desk-level counters remain network-wide. Expand a workstream for context or open its workspace." flush>
-        {workflows.length ? <div className="overview-workflow-list">{workflows.map((item) => {
+      <OpsSurface className="overview-workstreams-surface" eyebrow="Workflow health" title="Operational workstreams" description="Desk-level counters remain network-wide. Expand a workstream for context or open its workspace." flush>
+        {workflows.length ? <div className="overview-workflow-list border-b-0">{workflows.map((item) => {
           const expanded = expandedWorkflow === item.label;
           return <div key={item.label} className="overview-workflow-entry" data-tone={item.tone}>
-            <button type="button" className="overview-workflow-row" data-tone={item.tone} aria-expanded={expanded} onClick={() => update({ workflow: expanded ? null : item.label })}>
+            <button type="button" className="overview-workflow-row shadow-none" data-tone={item.tone} aria-expanded={expanded} onClick={() => update({ workflow: expanded ? null : item.label })}>
               <span className="overview-workflow-name"><strong><span className="overview-status-dot" data-tone={item.tone}/>{item.label}</strong><small>{item.note}</small></span>
               <span className="overview-workflow-action"><strong>{item.action}</strong><small>{item.actionLabel}</small></span>
               <span className="overview-workflow-support">{item.supporting}</span>
@@ -566,7 +566,7 @@ export function V4OperationsOverview({ data, overview, isManagement = false }: {
               const percent = maxBranchPressure > 0 ? Math.max(8, Math.round((pressure / maxBranchPressure) * 100)) : 0;
               const blockers = item.overdue_tasks + item.customs_blockers + item.urgent_jobs;
               const selected = branchFilter === item.branch;
-              return <button key={item.branch} type="button" className="overview-branch-row" data-alert={blockers > 0 ? "true" : "false"} data-selected={selected || undefined} aria-pressed={selected} onClick={() => setBranch(item.branch)}>
+              return <button key={item.branch} type="button" className="overview-branch-row shadow-none" data-alert={blockers > 0 ? "true" : "false"} data-selected={selected || undefined} aria-pressed={selected} onClick={() => setBranch(item.branch)}>
                 <span className="overview-branch-name"><strong>{item.branch}</strong><small>{item.active_jobs} active shipment{item.active_jobs === 1 ? "" : "s"}</small><span className="overview-pressure-track" aria-hidden="true"><span style={{ width: `${percent}%` }}/></span></span>
                 <span><strong>{item.urgent_jobs}</strong><small>urgent</small></span><span><strong>{item.overdue_tasks}</strong><small>overdue</small></span><span><strong>{item.customs_blockers}</strong><small>customs</small></span><span><strong>{item.deliveries_today}</strong><small>due</small></span>
                 <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true"/>
@@ -579,7 +579,7 @@ export function V4OperationsOverview({ data, overview, isManagement = false }: {
             {staffLoad.length ? <div className="overview-staff-list">{staffLoad.map((item) => {
               const pressure = staffPressureScore(item);
               const percent = maxStaffPressure > 0 ? Math.max(8, Math.round((pressure / maxStaffPressure) * 100)) : 0;
-              return <Link key={item.key} href={`/admin/workload/${encodeURIComponent(item.key)}`} className="overview-staff-row" data-alert={item.overdue_tasks > 0 || item.urgent_jobs > 0 ? "true" : "false"}>
+              return <Link key={item.key} href={`/admin/workload/${encodeURIComponent(item.key)}`} className="overview-staff-row shadow-none" data-alert={item.overdue_tasks > 0 || item.urgent_jobs > 0 ? "true" : "false"}>
                 <span className="overview-staff-name"><strong>{item.name}</strong><small>{item.email || "KCPL staff"}</small><span className="overview-pressure-track" aria-hidden="true"><span style={{ width: `${percent}%` }}/></span></span>
                 <span><strong>{item.active_jobs}</strong><small>jobs</small></span><span><strong>{item.open_tasks}</strong><small>tasks</small></span><span><strong>{item.overdue_tasks}</strong><small>overdue</small></span><span><strong>{item.urgent_jobs}</strong><small>urgent</small></span>
                 <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true"/>
@@ -589,8 +589,8 @@ export function V4OperationsOverview({ data, overview, isManagement = false }: {
         </div>
       </OpsSurface>
 
-      <OpsSurface className="overview-activity" eyebrow="Live activity" title="Recent shipment activity" description="Latest Job File updates in the current branch and time view." action={<SectionAction href="/admin/shipments">All shipments</SectionAction>} flush>
-        {recent.length ? <div className="overview-activity-list">{recent.map((job) => <button key={job.reference} type="button" className="overview-activity-row" onClick={() => openInspector(job)}>
+      <OpsSurface className="overview-activity-surface" eyebrow="Live activity" title="Recent shipment activity" description="Latest Job File updates in the current branch and time view." action={<SectionAction href="/admin/shipments">All shipments</SectionAction>} flush>
+        {recent.length ? <div className="overview-activity-list border-b-0">{recent.map((job) => <button key={job.reference} type="button" className="overview-activity-row" onClick={() => openInspector(job)}>
           <span className="overview-activity-time">{timeOnly(job.updated_at)}</span>
           <span className="overview-activity-state"><span className="overview-status-dot" data-tone={job.status === "exception" ? "danger" : "info"}/>{shipmentStatusLabels[job.status]}</span>
           <span className="overview-activity-main"><strong>{job.reference}</strong><small>{job.customer_name || route(job)}</small></span>
