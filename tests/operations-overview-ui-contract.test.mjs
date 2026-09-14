@@ -7,6 +7,7 @@ const overviewPath = new URL("../app/admin/command-centre/v4-operations-overview
 const overviewCssPath = new URL("../app/admin/operations-overview-refinement.css", import.meta.url);
 const overviewResponsivePath = new URL("../app/admin/operations-overview-responsive.css", import.meta.url);
 const overviewInteractivePath = new URL("../app/admin/operations-overview-interactive.css", import.meta.url);
+const typographyPath = new URL("../app/admin/admin-typography.css", import.meta.url);
 
 const requiredOverviewLinks = [
   "/admin/shipments",
@@ -43,26 +44,30 @@ test("Operations Overview provides interactive dashboard controls", async () => 
   assert.match(overview, /Escape/);
 });
 
-test("Operations Overview refinement loads after the shared admin system", async () => {
+test("Operations Overview refinement and typography load in the intended order", async () => {
   const layout = await readFile(layoutPath, "utf8");
   const adminSystem = layout.indexOf('import "./admin/admin-design-system.css";');
   const overview = layout.indexOf('import "./admin/operations-overview-refinement.css";');
   const responsive = layout.indexOf('import "./admin/operations-overview-responsive.css";');
   const interactive = layout.indexOf('import "./admin/operations-overview-interactive.css";');
+  const typography = layout.indexOf('import "./admin/admin-typography.css";');
   assert.ok(adminSystem >= 0, "shared admin design system must be loaded");
   assert.ok(overview > adminSystem, "Overview refinement must load after the shared admin design system");
   assert.ok(responsive > overview, "Overview responsive placement must load after the main Overview refinement");
-  assert.ok(interactive > responsive, "interactive Overview safeguards must load last");
+  assert.ok(interactive > responsive, "interactive Overview safeguards must load after responsive placement");
+  assert.ok(typography > interactive, "staff typography contract must load after all Overview refinements");
 });
 
-test("Operations Overview UI keeps KCPL identity, semantic status colors and responsive safeguards", async () => {
+test("Operations Overview UI keeps KCPL identity, Inter UI typography, semantic status colors and responsive safeguards", async () => {
   const css = await readFile(overviewCssPath, "utf8");
   const responsive = await readFile(overviewResponsivePath, "utf8");
   const interactive = await readFile(overviewInteractivePath, "utf8");
+  const typography = await readFile(typographyPath, "utf8");
   assert.match(css, /#DC143C/i, "KCPL crimson token is required");
   assert.match(css, /#101010/i, "KCPL black token is required");
   assert.match(css, /#F6F6F3/i, "KCPL canvas token is required");
-  assert.match(css, /font-manrope/, "KCPL Overview must use the brand type system");
+  assert.match(typography, /font-inter/, "KCPL internal software must use Inter");
+  assert.match(typography, /--font-manrope: var\(--font-inter\)/, "legacy admin Manrope references must resolve to Inter");
   assert.match(css, /@media \(max-width: 760px\)/, "mobile Overview layout rules are required");
   assert.match(css, /prefers-reduced-motion: reduce/, "reduced-motion handling is required");
   assert.match(css, /min-height: 40px/, "primary Overview actions must preserve practical touch targets");

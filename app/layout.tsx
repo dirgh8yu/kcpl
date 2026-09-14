@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Instrument_Serif, Manrope, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, Instrument_Serif, Inter, Manrope, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
@@ -24,6 +24,7 @@ import "./admin/admin-design-system.css";
 import "./admin/operations-overview-refinement.css";
 import "./admin/operations-overview-responsive.css";
 import "./admin/operations-overview-interactive.css";
+import "./admin/admin-typography.css";
 
 const geist = Geist({
   variable: "--font-geist",
@@ -35,7 +36,12 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
-// Legacy public sections can still reference these variables; the KCPL staff product uses Manrope through its scoped design system.
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+// Public brand and marketing retain Manrope; the KCPL staff product uses Inter through its scoped typography contract.
 const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
 
@@ -91,7 +97,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${manrope.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
+      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
         <StructuredData data={organizationSchema}/>
         {children}
         <OperationsNavigationFallback/>
