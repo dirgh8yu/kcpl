@@ -13,35 +13,36 @@ const requiredOverviewLinks = [
   "/admin/shipments",
   "/admin/alerts",
   "/admin/customs",
-  "/admin/pickups",
-  "/admin/visibility",
-  "/admin/freight-documents",
   "/admin/delivery",
+  "/admin/enquiries",
 ];
 
-test("Operations Overview exposes operational control surfaces", async () => {
+test("Operations Overview matches the Figma-led operational register anatomy", async () => {
   const overview = await readFile(overviewPath, "utf8");
   for (const href of requiredOverviewLinks) {
     assert.ok(overview.includes(href), `missing Overview workflow route ${href}`);
   }
-  assert.match(overview, /Branch pressure/);
-  assert.match(overview, /Workload/);
-  assert.match(overview, /Operational workstreams/);
-  assert.match(overview, /Recent shipment activity/);
-  assert.match(overview, /Needs attention now/);
+  assert.match(overview, />Overview</);
+  assert.match(overview, /Operational snapshot/);
+  assert.match(overview, /Attention required/);
+  assert.match(overview, /Active shipments/);
+  assert.match(overview, /Critical alerts/);
+  assert.match(overview, /New enquiries/);
+  assert.doesNotMatch(overview, /Operational workstreams/);
+  assert.doesNotMatch(overview, /Branch pressure/);
 });
 
-test("Operations Overview provides interactive dashboard controls", async () => {
+test("Operations Overview keeps live-data actions and no prototype fixtures", async () => {
   const overview = await readFile(overviewPath, "utf8");
   assert.match(overview, /"use client"/);
-  assert.match(overview, /Focus window/);
-  assert.match(overview, /All branches/);
-  assert.match(overview, /aria-pressed/);
-  assert.match(overview, /aria-expanded/);
-  assert.match(overview, /overview-inspector/);
-  assert.match(overview, /Quick desk access/);
-  assert.match(overview, /setInspector/);
-  assert.match(overview, /Escape/);
+  assert.match(overview, /shipmentNeedsAttention/);
+  assert.match(overview, /compareShipmentPriority/);
+  assert.match(overview, /shipmentNextAction/);
+  assert.match(overview, /router\.refresh/);
+  assert.match(overview, /returnTo/);
+  assert.match(overview, /enquiries/);
+  assert.doesNotMatch(overview, /Design prototype/);
+  assert.doesNotMatch(overview, /fixture/i);
 });
 
 test("Operations Overview refinement and typography load in the intended order", async () => {
