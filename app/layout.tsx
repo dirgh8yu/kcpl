@@ -22,6 +22,7 @@ import "./admin/commercial-v4-compat.css";
 import "./admin/commercial-detail-refinement.css";
 import "./admin/operations-overview-refinement.css";
 import "./admin/operations-overview-responsive.css";
+import "./admin/admin-design-system.css";
 
 const geist = Geist({
   variable: "--font-geist",
@@ -33,7 +34,7 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
-// Legacy public sections can still reference these variables while the KCPL staff UI uses Geist.
+// Legacy public sections can still reference these variables; the KCPL staff product uses Manrope through its scoped design system.
 const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
 

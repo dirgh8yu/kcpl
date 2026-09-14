@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap, OpsToolbar } from "../operations-ui";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 
@@ -16,15 +17,6 @@ function statusTone(status: ShipmentStatus): StatusTone {
   if (status === "customs_clearance" || status === "out_for_delivery") return "warning";
   if (status === "in_transit" || status === "booking_confirmed") return "info";
   return "neutral";
-}
-
-function statusClasses(status: ShipmentStatus) {
-  const tone = statusTone(status);
-  if (tone === "success") return "border-[#A7CCB7] text-[#18794E]";
-  if (tone === "danger") return "border-[#E6A4B0] text-[#A80E2F]";
-  if (tone === "warning") return "border-[#D9C293] text-[#72500C]";
-  if (tone === "info") return "border-[#A8BDD0] text-[#315D83]";
-  return "border-[#D6D6D0] text-[#5B5B57]";
 }
 
 function shortDate(value: string | null) {
@@ -83,53 +75,79 @@ export function ShipmentsWorkspace({ data, roleLabel }: { data: CommandCentreDat
   const delivery = data.jobs.filter((job) => job.status === "out_for_delivery").length;
   const exceptions = data.jobs.filter((job) => job.status === "exception").length;
 
+  function resetFilters() {
+    setQuery("");
+    setStatus("active");
+    setBranch("all");
+    setMode("all");
+  }
+
   return (
-    <main className="min-h-[calc(100vh-64px)] bg-[#F6F6F3] px-4 pb-12 pt-8 text-[#101010] sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-[1320px]">
-        <header className="grid gap-6 border-b border-[#101010] pb-7 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <div>
-            <p className="text-[10px] font-normal uppercase tracking-[0.11em] text-[#DC143C]">Operations · Shipment register</p>
-            <h1 className="mt-3 text-[clamp(36px,4vw,52px)] font-normal leading-[1.04] tracking-[-0.04em]">Shipments</h1>
-            <p className="mt-3 max-w-2xl text-[14px] leading-6 text-[#5B5B57]">{active} active · {inTransit} in transit · {customs} customs · {delivery} delivery · {exceptions} exceptions</p>
-          </div>
-          <Link href="/admin/command-centre" className="inline-flex min-h-10 items-center border-b border-[#101010] pb-1 text-[12px] text-[#101010] transition-colors hover:border-[#DC143C] hover:text-[#DC143C]">Operations overview →</Link>
-        </header>
+    <OpsPage className="shipments-register">
+      <OpsPageHeader
+        eyebrow="Operations · Shipment register"
+        title="Shipments"
+        description="Live shipment ownership, movement state, customs readiness and delivery commitments in one operational register."
+        meta={<span>{roleLabel} · {filtered.length} shown</span>}
+        actions={<Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations overview</Link>}
+      >
+        <OpsStatStrip className="shipments-stat-strip">
+          <OpsStat label="Active" value={active} detail="Open movements"/>
+          <OpsStat label="In transit" value={inTransit} detail="Freight moving" tone="info"/>
+          <OpsStat label="Customs" value={customs} detail="Clearance activity" tone={customs ? "warning" : "neutral"}/>
+          <OpsStat label="Delivery" value={delivery} detail="Final mile" tone="info"/>
+          <OpsStat label="Exceptions" value={exceptions} detail="Requires review" tone={exceptions ? "danger" : "neutral"}/>
+        </OpsStatStrip>
+      </OpsPageHeader>
 
-        <div className="flex min-h-[72px] flex-wrap items-center gap-2 border-b border-[#D6D6D0] py-4">
-          <label className="flex h-10 min-w-[250px] flex-1 items-center border border-[#BDBDB6] bg-white px-3 md:max-w-[330px]"><span className="mr-2 text-[12px] text-[#777771]">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, AWB, customer…" className="min-w-0 flex-1 bg-transparent text-[12px] font-normal outline-none placeholder:text-[#777771]"/></label>
-          <select value={status} onChange={(event) => setStatus(event.target.value as "active" | "all" | ShipmentStatus)} className="h-10 border border-[#BDBDB6] bg-white px-3 text-[12px] font-normal outline-none"><option value="active">Active</option><option value="all">All states</option>{shipmentStatuses.map((item) => <option key={item} value={item}>{shipmentStatusLabels[item]}</option>)}</select>
-          <select value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)} className="h-10 border border-[#BDBDB6] bg-white px-3 text-[12px] font-normal outline-none"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select>
-          <select value={mode} onChange={(event) => setMode(event.target.value)} className="h-10 border border-[#BDBDB6] bg-white px-3 text-[12px] font-normal outline-none"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-          <button type="button" onClick={() => { setQuery(""); setStatus("active"); setBranch("all"); setMode("all"); }} className="h-10 border border-[#A5A5A0] bg-transparent px-3 text-[12px] font-normal transition-colors hover:border-[#101010] hover:bg-[#EEEEE8]">Reset</button>
-          <span className="ml-auto text-[11px] text-[#5B5B57]">{roleLabel} · {filtered.length} shown</span>
-        </div>
+      <div className="ops-content ops-content-wide shipments-register-content">
+        <OpsToolbar className="shipments-toolbar">
+          <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, quote, customer, route or carrier" aria-label="Search shipments"/>
+          <select aria-label="Filter by shipment state" value={status} onChange={(event) => setStatus(event.target.value as "active" | "all" | ShipmentStatus)} className="shipments-filter"><option value="active">Active</option><option value="all">All states</option>{shipmentStatuses.map((item) => <option key={item} value={item}>{shipmentStatusLabels[item]}</option>)}</select>
+          <select aria-label="Filter by branch" value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)} className="shipments-filter"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select>
+          <select aria-label="Filter by freight mode" value={mode} onChange={(event) => setMode(event.target.value)} className="shipments-filter"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+          <OpsButton type="button" variant="secondary" onClick={resetFilters}>Reset</OpsButton>
+          <span className="shipments-result-count" aria-live="polite">{filtered.length} shipment{filtered.length === 1 ? "" : "s"}</span>
+        </OpsToolbar>
 
-        <section className="grid min-h-[650px] lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-w-0 overflow-x-auto lg:border-r lg:border-[#D6D6D0]">
-            <table className="w-full min-w-[760px] table-fixed border-collapse text-left">
-              <thead><tr className="h-11 border-b border-[#101010] text-[10px] font-normal uppercase tracking-[0.06em] text-[#5B5B57]"><th className="w-[160px] px-3 font-normal">Shipment</th><th className="w-[130px] px-3 font-normal">Route</th><th className="w-[160px] px-3 font-normal">Customer</th><th className="w-[130px] px-3 font-normal">State</th><th className="w-[90px] px-3 font-normal">ETA</th><th className="w-[110px] px-3 font-normal">Owner</th></tr></thead>
+        <section className="shipments-register-grid" aria-label="Shipment register and selected shipment">
+          <OpsTableWrap className="shipments-table-wrap">
+            <table className="ops-table shipments-table" aria-label="Shipment register">
+              <thead><tr><th>Shipment</th><th>Route</th><th>Customer</th><th>State</th><th>ETA</th><th>Owner</th></tr></thead>
               <tbody>{filtered.length ? filtered.map((job) => {
                 const chosen = selected?.reference === job.reference;
                 return (
-                  <tr key={job.reference} onClick={() => setSelectedReference(job.reference)} onDoubleClick={() => window.location.assign(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className={`group relative h-[54px] cursor-pointer border-b border-[#D6D6D0] text-[12px] transition-colors hover:bg-[#EEEEE8] ${chosen ? "bg-[#EEEEE8]" : ""}`}>
-                    <td className="relative px-3 text-[13px] font-medium">{chosen ? <span className="absolute bottom-2 left-0 top-2 w-[2px] bg-[#DC143C]"/> : null}<span className="block truncate">{job.reference}</span></td>
-                    <td className="px-3 text-[12px] text-[#5B5B57]"><span className="block truncate">{job.origin || "—"} → {job.destination || "—"}</span></td>
-                    <td className="px-3 text-[12px] text-[#5B5B57]"><span className="block truncate">{job.customer_name}</span></td>
-                    <td className="px-3"><span className={`inline-flex border px-[7px] py-[3px] text-[10px] font-medium leading-[15px] ${statusClasses(job.status)}`}>{shipmentStatusLabels[job.status]}</span></td>
-                    <td className="px-3 text-[12px] text-[#5B5B57]">{shortDate(job.eta)}</td>
-                    <td className="px-3 text-[12px] text-[#5B5B57]"><span className="block truncate">{owner(job)}</span></td>
+                  <tr
+                    key={job.reference}
+                    data-selected={chosen || undefined}
+                    aria-selected={chosen}
+                    tabIndex={0}
+                    onClick={() => setSelectedReference(job.reference)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedReference(job.reference);
+                      }
+                    }}
+                  >
+                    <td><button type="button" className="shipment-select-button" onClick={(event) => { event.stopPropagation(); setSelectedReference(job.reference); }}>{job.reference}</button></td>
+                    <td><span className="shipment-cell-muted">{job.origin || "—"} → {job.destination || "—"}</span></td>
+                    <td><span className="shipment-cell-muted">{job.customer_name}</span></td>
+                    <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></td>
+                    <td><span className="shipment-cell-muted">{shortDate(job.eta)}</span></td>
+                    <td><span className="shipment-cell-muted">{owner(job)}</span></td>
                   </tr>
                 );
-              }) : <tr><td colSpan={6} className="h-48 px-6 text-center"><p className="text-[14px] font-medium">No shipments match this view</p><p className="mt-2 text-[12px] text-[#777771]">Change the filters or reset the workspace.</p></td></tr>}</tbody>
+              }) : <tr><td colSpan={6}><OpsEmptyState compact kind="search" title="No shipments match this view" description="Change the filters or reset the workspace." action={<OpsButton type="button" variant="secondary" onClick={resetFilters}>Reset filters</OpsButton>}/></td></tr>}</tbody>
             </table>
-          </div>
+          </OpsTableWrap>
 
-          <aside className="min-h-[650px] bg-[#EEEEE8] px-6 py-6">
-            {selected ? <ShipmentPeek job={selected}/> : <div className="grid h-full place-items-center text-center"><div><p className="text-[14px] font-medium">No shipment selected</p><p className="mt-2 text-[12px] text-[#777771]">Choose a row to inspect the movement.</p></div></div>}
+          <aside className="shipment-peek-panel" aria-label="Selected shipment summary">
+            {selected ? <ShipmentPeek job={selected}/> : <OpsEmptyState compact title="No shipment selected" description="Choose a shipment row to inspect its next action and readiness."/>}
           </aside>
         </section>
       </div>
-    </main>
+    </OpsPage>
   );
 }
 
@@ -138,16 +156,41 @@ function ShipmentPeek({ job }: { job: CommandCentreJob }) {
   const customs = job.required_customs_open > 0 ? `${job.required_customs_open} open` : "No blockers";
   const exception = job.status === "exception" ? "Open" : "None";
   return (
-    <div className="flex h-full flex-col">
-      <div className="min-h-[112px]"><p className="text-[10px] font-normal uppercase tracking-[0.07em] text-[#777771]">{job.reference}</p><h2 className="mt-2 text-[24px] font-normal leading-[1.15] tracking-[-0.035em]">{route(job)}</h2><p className="mt-2 truncate text-[12px] leading-[18px] text-[#5B5B57]">{job.customer_name} · {job.carrier || "Carrier not set"} · {job.mode || "Mode not set"}</p><span className={`mt-3 inline-flex border px-[7px] py-[3px] text-[10px] font-medium leading-[15px] ${statusClasses(job.status)}`}>{shipmentStatusLabels[job.status]}</span></div>
-      <div className="border-t border-[#BEBEB7] py-5"><p className="text-[10px] font-normal uppercase tracking-[0.07em] text-[#777771]">Next action</p><p className="mt-2 text-[13px] font-medium leading-[19px]">{action.title}</p><p className="mt-1 text-[12px] leading-[18px] text-[#5B5B57]">{action.detail}</p></div>
-      <div className="border-t border-[#BEBEB7] py-5"><p className="text-[10px] font-normal uppercase tracking-[0.07em] text-[#777771]">Route</p><p className="mt-2 text-[13px] font-medium leading-[19px]">{job.origin || "Origin"} → {job.current_location ? `${job.current_location} → ` : ""}{job.destination || "Destination"}</p>{job.current_location ? <p className="mt-1 text-[12px] leading-[18px] text-[#5B5B57]">Current · {job.current_location}</p> : null}<p className="mt-1 text-[12px] leading-[18px] text-[#5B5B57]">ETA · {shortDate(job.eta)}</p></div>
-      <div className="border-t border-[#BEBEB7] py-5"><p className="text-[10px] font-normal uppercase tracking-[0.07em] text-[#777771]">Readiness</p><PeekRow label="Open work" value={job.open_tasks ? `${job.open_tasks} tasks` : "Clear"}/><PeekRow label="Customs" value={customs} warning={job.required_customs_open > 0}/><PeekRow label="POD" value="See delivery control"/><PeekRow label="Exception" value={exception} warning={exception === "Open"}/><PeekRow label="Owner" value={owner(job)}/></div>
-      <div className="mt-auto border-t border-[#BEBEB7] pt-5"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex min-h-11 w-full items-center justify-center border border-[#DC143C] bg-[#DC143C] px-4 text-[12px] font-medium text-white transition-colors hover:border-[#B61032] hover:bg-[#B61032]">Open shipment →</Link><p className="mt-3 text-[10px] leading-[15px] text-[#777771]">Double-click a row to open directly</p></div>
+    <div className="shipment-peek">
+      <div className="shipment-peek-head">
+        <p className="shipment-peek-kicker">{job.reference}</p>
+        <h2>{route(job)}</h2>
+        <p>{job.customer_name} · {job.carrier || "Carrier not set"} · {job.mode || "Mode not set"}</p>
+        <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
+      </div>
+
+      <section className="shipment-peek-section" data-priority={job.status === "exception" || job.overdue_tasks > 0 ? "danger" : "normal"}>
+        <p className="shipment-peek-label">Next action</p>
+        <strong>{action.title}</strong>
+        <p>{action.detail}</p>
+      </section>
+
+      <section className="shipment-peek-section">
+        <p className="shipment-peek-label">Route</p>
+        <strong>{job.origin || "Origin"} → {job.current_location ? `${job.current_location} → ` : ""}{job.destination || "Destination"}</strong>
+        {job.current_location ? <p>Current · {job.current_location}</p> : null}
+        <p>ETA · {shortDate(job.eta)}</p>
+      </section>
+
+      <section className="shipment-peek-section">
+        <p className="shipment-peek-label">Readiness</p>
+        <PeekRow label="Open work" value={job.open_tasks ? `${job.open_tasks} tasks` : "Clear"}/>
+        <PeekRow label="Customs" value={customs} warning={job.required_customs_open > 0}/>
+        <PeekRow label="POD" value="See delivery control"/>
+        <PeekRow label="Exception" value={exception} warning={exception === "Open"}/>
+        <PeekRow label="Owner" value={owner(job)}/>
+      </section>
+
+      <div className="shipment-peek-actions"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="primary" data-size="md">Open shipment</Link><span>Select a row to inspect it; open the Job File when action is required.</span></div>
     </div>
   );
 }
 
 function PeekRow({ label, value, warning = false }: { label: string; value: string; warning?: boolean }) {
-  return <div className="mt-3 flex items-start gap-3 text-[12px] leading-[17px]"><span className="text-[#5B5B57]">{label}</span><span className={`ml-auto text-right font-medium ${warning ? "text-[#72500C]" : "text-[#101010]"}`}>{value}</span></div>;
+  return <div className="shipment-peek-row"><span>{label}</span><strong data-warning={warning || undefined}>{value}</strong></div>;
 }

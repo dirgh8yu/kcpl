@@ -10,6 +10,7 @@ import {
   activeWorkspace,
   visibleWorkspaces,
   type NavigationCapabilities,
+  type WorkflowWorkspace,
 } from "./workflow-navigation";
 
 type MacroNavItem = {
@@ -19,29 +20,24 @@ type MacroNavItem = {
   active: (pathname: string) => boolean;
 };
 
-const operationsWorkflow = [
-  { label: "Overview", href: "/admin/command-centre", prefixes: ["/admin/command-centre"] },
-  { label: "Shipments", href: "/admin/shipments", prefixes: ["/admin/shipments", "/admin/jobs/"] },
-  { label: "Pickup", href: "/admin/pickups", prefixes: ["/admin/pickups"] },
-  { label: "Visibility", href: "/admin/visibility", prefixes: ["/admin/visibility"] },
-  { label: "Customs", href: "/admin/customs", prefixes: ["/admin/customs"] },
-  { label: "Documents", href: "/admin/freight-documents", prefixes: ["/admin/freight-documents", "/admin/documents"] },
-  { label: "Delivery & POD", href: "/admin/delivery", prefixes: ["/admin/delivery"] },
-  { label: "Alerts", href: "/admin/alerts", prefixes: ["/admin/alerts"] },
-] as const;
-
-const commercialWorkflow = [
-  { label: "Enquiries", href: "/admin/enquiries", prefixes: ["/admin/enquiries"] },
-  { label: "Customers", href: "/admin/crm", prefixes: ["/admin/crm"] },
-  { label: "Orders & Rates", href: "/admin/rating", prefixes: ["/admin/rating"] },
-  { label: "Pricing", href: "/admin/pricing", prefixes: ["/admin/pricing"] },
-  { label: "Load Planner", href: "/admin/consolidation", prefixes: ["/admin/consolidation"] },
-  { label: "Tender & Booking", href: "/admin/tenders", prefixes: ["/admin/tenders"] },
-  { label: "Market Estimate", href: "/admin/market-estimate", prefixes: ["/admin/market-estimate"] },
-] as const;
-
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
+}
+
+function groupLabel(group?: WorkflowWorkspace["group"]) {
+  if (group === "Plan & Sell") return "Commercial";
+  if (group === "Finance") return "Finance";
+  if (group === "Network") return "Network";
+  if (group === "Organisation") return "Organisation";
+  return "Operations";
+}
+
+function groupSlug(group?: WorkflowWorkspace["group"]) {
+  if (group === "Plan & Sell") return "commercial";
+  if (group === "Finance") return "finance";
+  if (group === "Network") return "network";
+  if (group === "Organisation") return "organisation";
+  return "operate";
 }
 
 function breadcrumbFor(pathname: string, activeLabel?: string) {
@@ -89,8 +85,8 @@ function BrandLockup() {
     <span className="flex min-w-0 items-center gap-3">
       <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={28} height={28} className="h-7 w-7 shrink-0" priority />
       <span className="min-w-0 leading-none">
-        <span className="block text-[12px] font-medium uppercase tracking-[0.12em] text-[#101010]">Kapileshwor</span>
-        <span className="mt-[5px] block text-[8px] font-normal uppercase tracking-[0.22em] text-[#686862]">Cargo Pvt. Ltd.</span>
+        <span className="block text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#101010]">Kapileshwor</span>
+        <span className="mt-[5px] block text-[8px] font-semibold uppercase tracking-[0.22em] text-[#686862]">Cargo Pvt. Ltd.</span>
       </span>
     </span>
   );
@@ -135,8 +131,8 @@ export function OperationsShell({
   const breadcrumb = breadcrumbFor(pathname, activeItem?.label);
   const systemHref = capabilities.isManagement ? "/admin/management" : "/admin/notifications";
   const systemActive = ["/admin/management", "/admin/migration", "/admin/staff", "/admin/notifications"].some((prefix) => pathname.startsWith(prefix));
-  const operationsContext = capabilities.canManageJobFile && operationsWorkflow.some((item) => item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)));
-  const commercialContext = capabilities.canViewCommercial && commercialWorkflow.some((item) => item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)));
+  const operationsContext = activeItem?.group === "Operate";
+  const commercialContext = activeItem?.group === "Plan & Sell";
 
   const macroNav = useMemo<MacroNavItem[]>(() => [
     { label: "Overview", href: "/admin/command-centre", active: (path) => path.startsWith("/admin/command-centre") },
@@ -145,6 +141,11 @@ export function OperationsShell({
     { label: "Finance", href: "/admin/finance", visible: capabilities.canManageFinance, active: (path) => ["/admin/finance", "/admin/payables", "/admin/freight-audit", "/admin/partners/reconciliation"].some((prefix) => path.startsWith(prefix)) },
     { label: "Network", href: "/admin/partners", active: (path) => (path.startsWith("/admin/partners") && !path.startsWith("/admin/partners/reconciliation")) || ["/admin/carrier-integrations", "/admin/edi"].some((prefix) => path.startsWith(prefix)) },
   ], [capabilities]);
+
+  const secondaryWorkspaces = useMemo(() => {
+    if (!activeItem || activeItem.id === "notifications") return [];
+    return workspaces.filter((workspace) => workspace.group === activeItem.group && workspace.id !== "notifications");
+  }, [activeItem, workspaces]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -162,29 +163,35 @@ export function OperationsShell({
   }, []);
 
   const visibleMacroNav = macroNav.filter((item) => item.visible !== false);
-  const secondaryContext = operationsContext || commercialContext;
+  const secondaryContext = secondaryWorkspaces.length > 1;
+  const deskLabel = `${groupLabel(activeItem?.group)} desk`;
 
   return (
-    <div className="kcpl-admin-shell min-h-screen bg-[#F6F6F3] text-[#101010] [font-family:var(--font-geist),Arial,sans-serif]" data-operations-context={operationsContext || undefined} data-commercial-context={commercialContext || undefined}>
+    <div
+      className="kcpl-admin-shell min-h-screen bg-[#F6F6F3] text-[#101010]"
+      data-operations-context={operationsContext || undefined}
+      data-commercial-context={commercialContext || undefined}
+      data-workspace-group={groupSlug(activeItem?.group)}
+      data-workspace-id={activeItem?.id || "unscoped"}
+    >
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-[252px] flex-col border-r border-[#D6D6D0] bg-[#F6F6F3] lg:flex">
         <Link href="/admin/command-centre" className="flex h-[84px] items-center border-b border-[#D6D6D0] px-6" aria-label="KCPL Operations overview"><BrandLockup /></Link>
-        <div className="border-b border-[#D6D6D0] px-6 py-5"><p className="text-[10px] font-normal uppercase tracking-[0.11em] text-[#DC143C]">Operations desk</p><p className="mt-2 text-[13px] font-medium leading-5 text-[#101010]">{isManagement ? "All branches" : "Assigned branches"}</p><p className="mt-0.5 text-[11px] font-normal leading-4 text-[#6D6D67]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div>
-        <div className="px-3 py-5"><p className="px-3 pb-3 text-[10px] font-normal uppercase tracking-[0.11em] text-[#777771]">Workspaces</p><nav aria-label="KCPL workspaces">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex min-h-[44px] items-center border-l-2 px-[13px] text-[13px] transition-colors ${active ? "border-[#DC143C] bg-[#EEEEE8] font-medium text-[#101010]" : "border-transparent font-normal text-[#5B5B57] hover:bg-[#EEEEE8] hover:text-[#101010]"}`}>{item.label}</Link>; })}</nav></div>
+        <div className="border-b border-[#D6D6D0] px-6 py-5"><p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-[#DC143C]">{deskLabel}</p><p className="mt-2 text-[13px] font-semibold leading-5 text-[#101010]">{isManagement ? "All branches" : "Assigned branches"}</p><p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#6D6D67]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div>
+        <div className="px-3 py-5"><p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.11em] text-[#777771]">Workspaces</p><nav aria-label="KCPL workspaces">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex min-h-[44px] items-center border-l-2 px-[13px] text-[13px] transition-colors ${active ? "border-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-transparent font-semibold text-[#5B5B57] hover:bg-[#EEEEE8] hover:text-[#101010]"}`}>{item.label}</Link>; })}</nav></div>
         <div className="mt-auto border-t border-[#D6D6D0]">
-          <button type="button" onClick={() => setPaletteOpen(true)} className="flex min-h-[46px] w-full items-center border-b border-[#D6D6D0] px-6 text-[12px] font-normal text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Search KCPL"><Search size={13} className="mr-3"/><span>Search KCPL</span><span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button>
-          <Link href={systemHref} aria-current={systemActive ? "page" : undefined} className={`relative flex min-h-[46px] items-center border-b border-l-2 border-b-[#D6D6D0] px-[22px] text-[12px] transition-colors ${systemActive ? "border-l-[#DC143C] bg-[#EEEEE8] font-medium text-[#101010]" : "border-l-transparent font-normal text-[#5B5B57] hover:bg-[#EEEEE8] hover:text-[#101010]"}`}>System</Link>
-          <div className="flex min-h-[76px] items-center px-6 py-4"><div className="grid h-8 w-8 shrink-0 place-items-center border border-[#101010] text-[10px] font-medium text-[#101010]">{initials}</div><div className="ml-3 min-w-0 flex-1"><p className="truncate text-[12px] font-medium leading-[18px] text-[#101010]">{userName}</p><p className="text-[10px] font-normal leading-[14px] text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p></div><a href={signOutPath} className="grid h-8 w-8 place-items-center text-[#777771] transition-colors hover:text-[#DC143C]" aria-label="Sign out"><LogOut size={14}/></a></div>
+          <button type="button" onClick={() => setPaletteOpen(true)} className="flex min-h-[46px] w-full items-center border-b border-[#D6D6D0] px-6 text-[12px] font-semibold text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Search KCPL"><Search size={13} className="mr-3"/><span>Search KCPL</span><span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button>
+          <Link href={systemHref} aria-current={systemActive ? "page" : undefined} className={`relative flex min-h-[46px] items-center border-b border-l-2 border-b-[#D6D6D0] px-[22px] text-[12px] transition-colors ${systemActive ? "border-l-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-l-transparent font-semibold text-[#5B5B57] hover:bg-[#EEEEE8] hover:text-[#101010]"}`}>System</Link>
+          <div className="flex min-h-[76px] items-center px-6 py-4"><div className="grid h-8 w-8 shrink-0 place-items-center border border-[#101010] text-[10px] font-semibold text-[#101010]">{initials}</div><div className="ml-3 min-w-0 flex-1"><p className="truncate text-[12px] font-semibold leading-[18px] text-[#101010]">{userName}</p><p className="text-[10px] font-semibold leading-[14px] text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p></div><a href={signOutPath} className="grid h-8 w-8 place-items-center text-[#777771] transition-colors hover:text-[#DC143C]" aria-label="Sign out"><LogOut size={14}/></a></div>
         </div>
       </aside>
 
       <header className="fixed inset-x-0 top-0 z-40 h-[64px] border-b border-[#D6D6D0] bg-[#F6F6F3] lg:left-[252px]">
-        <div className="flex h-full items-center px-4 sm:px-5 lg:px-8"><button type="button" onClick={() => setMobileOpen((current) => !current)} className="mr-3 grid h-9 w-9 place-items-center border border-[#AFAFA8] bg-transparent text-[#101010] lg:hidden" aria-label="Toggle navigation">{mobileOpen ? <X size={16}/> : <Menu size={16}/>}</button><p className="min-w-0 flex-1 truncate text-[11px] font-normal uppercase tracking-[0.07em] text-[#5B5B57]">{breadcrumb}</p><button type="button" onClick={() => setPaletteOpen(true)} className="hidden h-10 w-[280px] items-center border border-[#BDBDB6] bg-white px-3 text-[12px] font-normal text-[#5B5B57] transition-colors hover:border-[#101010] hover:text-[#101010] md:flex" aria-label="Open command palette"><Search size={13} className="mr-2.5"/><span>Search KCPL</span><span className="ml-auto border-l border-[#D6D6D0] pl-2 text-[10px] text-[#777771]">⌘K</span></button><Link href="/admin/notifications" className="relative ml-3 grid h-10 w-10 place-items-center text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Open notifications"><Bell size={15}/><span className="absolute right-[10px] top-[9px] h-1.5 w-1.5 bg-[#DC143C]"/></Link><span className="ml-1 grid h-8 w-8 place-items-center bg-[#101010] text-[10px] font-medium text-[#F6F6F3]">{initials}</span></div>
+        <div className="flex h-full items-center px-4 sm:px-5 lg:px-8"><button type="button" onClick={() => setMobileOpen((current) => !current)} className="mr-3 grid h-9 w-9 place-items-center border border-[#AFAFA8] bg-transparent text-[#101010] lg:hidden" aria-label="Toggle navigation">{mobileOpen ? <X size={16}/> : <Menu size={16}/>}</button><p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.07em] text-[#5B5B57]">{breadcrumb}</p><button type="button" onClick={() => setPaletteOpen(true)} className="hidden h-10 w-[280px] items-center border border-[#BDBDB6] bg-white px-3 text-[12px] font-semibold text-[#5B5B57] transition-colors hover:border-[#101010] hover:text-[#101010] md:flex" aria-label="Open command palette"><Search size={13} className="mr-2.5"/><span>Search KCPL</span><span className="ml-auto border-l border-[#D6D6D0] pl-2 text-[10px] text-[#777771]">⌘K</span></button><Link href="/admin/notifications" className="relative ml-3 grid h-10 w-10 place-items-center text-[#5B5B57] transition-colors hover:bg-[#EEEEE8] hover:text-[#101010]" aria-label="Open notifications"><Bell size={15}/><span className="absolute right-[10px] top-[9px] h-1.5 w-1.5 bg-[#DC143C]"/></Link><span className="ml-1 grid h-8 w-8 place-items-center bg-[#101010] text-[10px] font-semibold text-[#F6F6F3]">{initials}</span></div>
       </header>
 
-      {operationsContext ? <nav className="fixed inset-x-0 top-[64px] z-30 flex h-[50px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0] bg-[#F6F6F3] px-4 sm:px-5 lg:left-[252px] lg:px-8" aria-label="Operations workflow navigation">{operationsWorkflow.map((item) => { const active = item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex h-full shrink-0 items-center text-[11px] transition-colors ${active ? "font-medium text-[#101010]" : "font-normal text-[#686862] hover:text-[#101010]"}`}>{item.label}{active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}</Link>; })}</nav> : null}
-      {commercialContext ? <nav className="commercial-workflow-nav fixed inset-x-0 top-[64px] z-30 flex h-[50px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0] bg-[#F6F6F3] px-4 sm:px-5 lg:left-[252px] lg:px-8" aria-label="Commercial workflow navigation">{commercialWorkflow.map((item) => { const active = item.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix)); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex h-full shrink-0 items-center text-[11px] transition-colors ${active ? "font-semibold text-[#101010]" : "font-medium text-[#686862] hover:text-[#101010]"}`}>{item.label}{active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}</Link>; })}</nav> : null}
+      {secondaryContext ? <nav className="workspace-secondary-nav fixed inset-x-0 top-[64px] z-30 flex h-[50px] items-center gap-7 overflow-x-auto border-b border-[#D6D6D0] bg-[#F6F6F3] px-4 sm:px-5 lg:left-[252px] lg:px-8" aria-label={`${groupLabel(activeItem?.group)} workflow navigation`}>{secondaryWorkspaces.map((workspace) => { const active = workspace.id === activeItem?.id; return <Link key={workspace.id} href={workspace.href} aria-current={active ? "page" : undefined} className={`relative flex h-full shrink-0 items-center text-[11px] transition-colors ${active ? "font-semibold text-[#101010]" : "font-semibold text-[#686862] hover:text-[#101010]"}`}>{workspace.label}{active ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#DC143C]"/> : null}</Link>; })}</nav> : null}
 
-      {mobileOpen ? <div className="fixed inset-x-0 bottom-0 top-[64px] z-50 overflow-y-auto bg-[#F6F6F3] lg:hidden"><div className="mx-auto max-w-xl"><div className="flex min-h-[82px] items-center border-b border-[#D6D6D0] px-5"><BrandLockup /></div><div className="border-b border-[#D6D6D0] px-5 py-4"><p className="text-[10px] uppercase tracking-[0.11em] text-[#DC143C]">Operations desk</p><p className="mt-1 text-[12px] text-[#5B5B57]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div><button type="button" onClick={() => { setMobileOpen(false); setPaletteOpen(true); }} className="flex min-h-[52px] w-full items-center border-b border-[#D6D6D0] px-5 text-[12px] text-[#5B5B57]"><Search size={14} className="mr-3"/>Search KCPL<span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button><nav aria-label="Mobile KCPL workspaces" className="px-3 py-4">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${active ? "border-[#DC143C] bg-[#EEEEE8] font-medium text-[#101010]" : "border-transparent text-[#5B5B57]"}`}>{item.label}</Link>; })}<Link href={systemHref} aria-current={systemActive ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${systemActive ? "border-[#DC143C] bg-[#EEEEE8] font-medium text-[#101010]" : "border-transparent text-[#5B5B57]"}`}>System</Link></nav><div className="border-t border-[#D6D6D0] px-5 py-5"><p className="text-[13px] font-medium text-[#101010]">{userName}</p><p className="mt-1 text-[11px] text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p><a href={signOutPath} className="mt-5 inline-flex items-center gap-2 border-b border-[#101010] pb-1 text-[12px] text-[#101010]"><LogOut size={13}/>Sign out</a></div></div></div> : null}
+      {mobileOpen ? <div className="fixed inset-x-0 bottom-0 top-[64px] z-50 overflow-y-auto bg-[#F6F6F3] lg:hidden"><div className="mx-auto max-w-xl"><div className="flex min-h-[82px] items-center border-b border-[#D6D6D0] px-5"><BrandLockup /></div><div className="border-b border-[#D6D6D0] px-5 py-4"><p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-[#DC143C]">{deskLabel}</p><p className="mt-1 text-[12px] font-semibold text-[#5B5B57]">{isManagement ? "Management · Global scope" : "Staff · Role scope"}</p></div><button type="button" onClick={() => { setMobileOpen(false); setPaletteOpen(true); }} className="flex min-h-[52px] w-full items-center border-b border-[#D6D6D0] px-5 text-[12px] font-semibold text-[#5B5B57]"><Search size={14} className="mr-3"/>Search KCPL<span className="ml-auto text-[10px] text-[#878780]">⌘K</span></button><nav aria-label="Mobile KCPL workspaces" className="px-3 py-4">{visibleMacroNav.map((item) => { const active = item.active(pathname); return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${active ? "border-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-transparent font-semibold text-[#5B5B57]"}`}>{item.label}</Link>; })}<Link href={systemHref} aria-current={systemActive ? "page" : undefined} onClick={() => setMobileOpen(false)} className={`flex min-h-[48px] items-center border-l-2 px-4 text-[13px] ${systemActive ? "border-[#DC143C] bg-[#EEEEE8] font-semibold text-[#101010]" : "border-transparent font-semibold text-[#5B5B57]"}`}>System</Link></nav>{secondaryContext ? <nav aria-label="Current workspace sections" className="border-t border-[#D6D6D0] px-3 py-4"><p className="px-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#777771]">{groupLabel(activeItem?.group)}</p>{secondaryWorkspaces.map((workspace) => <Link key={workspace.id} href={workspace.href} onClick={() => setMobileOpen(false)} aria-current={workspace.id === activeItem?.id ? "page" : undefined} className={`flex min-h-[44px] items-center px-4 text-[12px] ${workspace.id === activeItem?.id ? "bg-[#EEEEE8] font-semibold text-[#101010]" : "font-semibold text-[#5B5B57]"}`}>{workspace.label}</Link>)}</nav> : null}<div className="border-t border-[#D6D6D0] px-5 py-5"><p className="text-[13px] font-semibold text-[#101010]">{userName}</p><p className="mt-1 text-[11px] font-semibold text-[#777771]">{isManagement ? "Management" : "KCPL staff"}</p><a href={signOutPath} className="mt-5 inline-flex items-center gap-2 border-b border-[#101010] pb-1 text-[12px] font-semibold text-[#101010]"><LogOut size={13}/>Sign out</a></div></div></div> : null}
 
       <div className={`kcpl-admin-content min-w-0 lg:pl-[252px] ${secondaryContext ? "pt-[114px]" : "pt-[64px]"}`}>{children}</div>
       <OperationsCommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
