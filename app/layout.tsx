@@ -24,6 +24,7 @@ import "./admin/admin-design-system.css";
 import "./admin/operations-overview-refinement.css";
 import "./admin/operations-overview-responsive.css";
 import "./admin/operations-overview-interactive.css";
+import "./admin/shipment-detail-v2.css";
 import "./admin/admin-typography.css";
 
 const geist = Geist({
