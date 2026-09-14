@@ -1,11 +1,11 @@
 # KCPL repository instructions — every coding model and every chat
 
-Before changing this repository, read `docs/OPERATING_SYSTEM.md`, then the relevant source and server policy. These instructions apply to ChatGPT, Codex, Copilot, GPT-5.6 and any other coding agent. Read the current repository rather than relying on chat history.
+Before changing this repository, read `docs/UI_UX_DESIGN_GUIDE.md` and `docs/OPERATING_SYSTEM.md`, then the relevant source and server policy. These instructions apply to ChatGPT, Codex, Copilot, GPT-5.6 and any other coding agent. Read the current repository rather than relying on chat history. The design guide includes an executable task sequence, acceptance criteria and a copy-paste handoff for chat mode without automatic repository instruction loading.
 
 ## Staff software
 
 - `/admin` is an operational application: compact toolbar, grouped navigation, registers, contextual detail and explicit next actions. Never turn it into a marketing landing page or a decorative dashboard.
-- `app/admin/operations-system.css` is the authoritative product design contract. Use its tokens for colour, typography, spacing, radius and density. Inter is the staff UI font; Manrope is for the KCPL brand lockup and public marketing.
+- `docs/UI_UX_DESIGN_GUIDE.md` defines the visual and interaction target. `app/admin/operations-system.css` owns its runtime tokens and rules. Evolve shared tokens toward the guide rather than preserving cramped legacy defaults or adding local overrides. Use the KCPL palette, Inter for interface text and consistent Lucide outline icons. Preserve approved logo artwork and public marketing context.
 - Reuse `OperationsShell` and the primitives in `app/admin/operations-ui.tsx`. Add reusable behavior to those components, not a locally restyled copy. Default buttons are secondary and `type="button"`; form submissions MUST explicitly set `type="submit"`.
 - `workflow-navigation.ts` is the sole navigation registry. Do not duplicate workspace lists, keyboard-search listeners, notification bridges or application chrome. Permission flags default to false; the server remains authoritative.
 - Keep shared UI in the canonical stylesheet. Existing styles inside `@layer kcpl-legacy` are frozen migration support. Do not create another hotfix/refinement stylesheet, use `!important`, target Tailwind class strings in CSS, or add arbitrary literal colours/sizes/shadows to components.

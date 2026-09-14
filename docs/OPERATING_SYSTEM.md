@@ -1,6 +1,6 @@
 # KCPL operating system contract
 
-This is the implementation source of truth for `/admin`. It applies to every module and every coding model. The public website keeps its brand/marketing layout; staff work uses the application system below.
+This is the engineering and workflow contract for `/admin`. Read [UI_UX_DESIGN_GUIDE.md](UI_UX_DESIGN_GUIDE.md) for the required visual quality, typography, icons, interaction patterns and implementation sequence. It applies to every module and every coding model. The public website keeps its brand/marketing layout; staff work uses the application system below.
 
 ## Why the interface drifted
 
@@ -10,7 +10,7 @@ Compatibility rules now live in `@layer kcpl-legacy`. CSS order is `theme, base,
 
 ## Required page anatomy
 
-1. `OperationsShell`: 224px grouped navigation, 48px desktop toolbar, breadcrumb, one command palette, actual notifications and refresh. It derives all modules and access from `workflow-navigation.ts`.
+1. `OperationsShell`: grouped navigation, a restrained desktop toolbar, breadcrumb, one command palette, actual notifications and refresh. It derives all modules and access from `workflow-navigation.ts`. The current 224px sidebar and 48px toolbar are implementation defaults; refine dimensions centrally when applying the design guide.
 2. `OpsPage` and `OpsPageHeader`: compact title, concise description, optional scope metadata and a focused primary action.
 3. `OpsToolbar`: search, filters, sort and reset beside the register. Keep filters shareable and persistent with `useWorkspaceQuery`.
 4. `OpsSurface` / `OpsTableWrap`: the working records. Use a contextual inspector or a linked record for details. Do not substitute large decorative metric cards for the register.
@@ -28,10 +28,10 @@ Compatibility rules now live in `@layer kcpl-legacy`. CSS order is `theme, base,
 | Shipment priority / next action | `app/admin/shipments/shipment-queue-policy.ts` |
 | Colour | `--admin-crimson`, `--admin-ink`, `--admin-canvas`, `--admin-surface`, `--admin-muted`, `--admin-line`; semantic success/warning/danger/info |
 | Density | `--app-control-height`, `--app-row-height`, `--app-page-gap`, `--app-radius` |
-| Type | Inter, 22px title, 13px body, 11px labels; monospace for identifiers |
+| Type | Inter; target 24px page titles, 14px body/labels and 12px metadata per the design guide; tabular numerals for numeric comparisons and monospace only where character comparison helps |
 | Touch | 44px controls, 16px form inputs, responsive navigation and scrollable tables |
 
-Use token utilities when a primitive cannot express the layout, for example `text-[var(--admin-muted)]`, `bg-[var(--admin-surface)]`, `rounded-[var(--app-radius)]`. New shared rules belong in the canonical stylesheet under application or semantic component selectors. Do not add unrelated global element rules.
+Use token utilities when a primitive cannot express the layout, for example `text-[var(--admin-muted)]`, `bg-[var(--admin-surface)]`, `rounded-[var(--app-radius)]`. New shared rules belong in the canonical stylesheet under application or semantic component selectors. Do not add unrelated global element rules. Current density/type token values are migration starting points, not a requirement to keep small controls and labels; evolve them centrally toward the design guide during UI implementation.
 
 ## Actions and forms
 
@@ -55,6 +55,8 @@ The baseline records existing design debt. It is not a template for new code. Do
 
 For a new chat using any model, provide the repository and this instruction:
 
-> Work in dirgh8yu/kcpl. First read AGENTS.md and docs/OPERATING_SYSTEM.md from the current main branch. Implement using the shared OperationsShell, Ops primitives, design tokens, navigation registry and existing server workflow policies. Preserve register URL state. Do not invent a visual system, override stylesheet or duplicated business policy, and do not loosen the UI baseline. Follow the validation and merge instructions in my request.
+> Work in dirgh8yu/kcpl. First read AGENTS.md, docs/UI_UX_DESIGN_GUIDE.md and docs/OPERATING_SYSTEM.md from the current branch. Apply the guide's KCPL palette, Inter typography, Lucide icons and page/interaction patterns through the shared OperationsShell, Ops primitives and canonical tokens. Preserve the navigation registry, register URL state and existing server workflow policies. Do not invent a visual system, override stylesheet or duplicated business policy, and do not loosen the UI baseline. Follow the validation and merge instructions in my request.
+
+The design guide contains a fuller task prompt and a file-attachment workflow for chat mode without repository access. Instructions do not give a model repository access or prove that it has applied a patch.
 
 Repository instructions make the standard discoverable. The CI contract provides mechanical enforcement even when a chat does not automatically load agent instructions. Required-check enforcement still depends on the repository's branch protection configuration; this change does not alter it.

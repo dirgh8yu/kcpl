@@ -1,6 +1,6 @@
 # KCPL Brand System
 
-This document is the KCPL brand foundation for public visual work. For `/admin`, `docs/OPERATING_SYSTEM.md` and `app/admin/operations-system.css` take precedence for software typography, density, components and interaction. Staff UI uses Inter; Manrope remains the brand typeface.
+This document is the KCPL brand foundation for public visual work. Read `docs/UI_UX_DESIGN_GUIDE.md` for interface design. For `/admin`, that guide, `docs/OPERATING_SYSTEM.md` and `app/admin/operations-system.css` take precedence for software typography, density, components and interaction. Interface text uses Inter; Manrope remains the approved wordmark and public marketing display typeface.
 
 ## Source of truth
 
@@ -29,7 +29,7 @@ White may be used as a surface or reversed text colour. Neutral greys may be der
 
 ## Typography
 
-The KCPL brand typeface is **Manrope**.
+The KCPL brand display typeface is **Manrope**. The interface typeface is **Inter**: use it for software headings, navigation, tables, forms, buttons, dialogs and public-facing functional controls. The Manrope roles below apply to the approved brand lockup and public marketing display context, not staff interface styling.
 
 - **ExtraBold / 800** — wordmark, major display headings, important branded statements.
 - **SemiBold / 600** — navigation, buttons, labels, subheads, operational emphasis.
