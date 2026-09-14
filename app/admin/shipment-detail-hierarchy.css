@@ -1,0 +1,268 @@
+/* Shipment detail hierarchy refinement.
+   Keeps the record-led layout while giving primary work, next action, and lower workspaces distinct surface tiers. */
+
+.shipment-detail-v2 {
+  --shipment-surface-soft: #efefe9;
+  --shipment-surface-quiet: #fafaf7;
+  --shipment-surface-warm: #f8f4f3;
+  --shipment-shadow-soft: 0 12px 34px rgba(16, 16, 16, .055);
+}
+
+/* Separate the identity header from the working canvas. */
+.shipment-detail-v2 > .shipment-detail-summary:first-child {
+  border-bottom: 1px solid var(--shipment-line);
+  background: var(--shipment-white);
+}
+
+.shipment-detail-v2 > .shipment-detail-summary:first-child .shipment-detail-header {
+  border-bottom: 0;
+}
+
+.shipment-record-nav {
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 1px 0 rgba(16, 16, 16, .035);
+}
+
+.shipment-detail-v2 > .shipment-detail-summary:last-of-type {
+  padding: 26px 0 34px;
+  background: var(--shipment-canvas);
+}
+
+.shipment-overview-layout {
+  gap: 24px;
+}
+
+.shipment-overview-main {
+  padding-right: 0;
+}
+
+/* Give the live workflow first visual priority. */
+.shipment-flow-section {
+  margin: 0 0 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--shipment-line) !important;
+  border-left: 4px solid var(--shipment-crimson) !important;
+  background: var(--shipment-white);
+  box-shadow: var(--shipment-shadow-soft);
+}
+
+.shipment-flow-section .shipment-stage-line {
+  margin-top: 20px;
+}
+
+/* Secondary summary sections use quieter tiers instead of one continuous flat plane. */
+.shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section) {
+  margin-top: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--shipment-line);
+  background: var(--shipment-surface-quiet);
+}
+
+.shipment-overview-main > .shipment-summary-section:nth-child(3) {
+  border-color: var(--shipment-line-strong);
+  background: var(--shipment-white);
+}
+
+.shipment-overview-main > .shipment-financial-summary {
+  background: var(--shipment-surface-soft);
+}
+
+.shipment-financial-grid {
+  gap: 1px;
+  border: 1px solid var(--shipment-line);
+  background: var(--shipment-line);
+}
+
+.shipment-financial-grid > div,
+.shipment-financial-grid > div:first-child {
+  border: 0;
+  padding: 16px 18px;
+  background: var(--shipment-white);
+}
+
+/* The next-action rail is the page's decision surface, not another neutral panel. */
+.shipment-next-rail {
+  top: 166px;
+  border: 1px solid var(--shipment-ink);
+  border-left: 1px solid var(--shipment-ink);
+  padding: 24px;
+  background: var(--shipment-ink);
+  color: #fff;
+  box-shadow: var(--shipment-shadow-soft);
+}
+
+.shipment-next-rail .shipment-detail-eyebrow {
+  color: #ff6b86;
+}
+
+.shipment-next-rail h2,
+.shipment-next-rail dd {
+  color: #fff;
+}
+
+.shipment-next-detail {
+  color: rgba(255, 255, 255, .7);
+}
+
+.shipment-next-link {
+  width: 100%;
+  min-height: 44px;
+  justify-content: space-between;
+  margin-top: 18px;
+  border: 1px solid var(--shipment-crimson);
+  padding: 0 13px;
+  background: var(--shipment-crimson);
+  color: #fff;
+}
+
+.shipment-next-link:hover {
+  border-color: #b61032;
+  background: #b61032;
+  color: #fff;
+}
+
+.shipment-next-rail dl {
+  margin-top: 22px;
+}
+
+.shipment-next-rail dl > div {
+  border-top-color: rgba(255, 255, 255, .16);
+}
+
+.shipment-next-rail dt {
+  color: rgba(255, 255, 255, .5);
+}
+
+.shipment-next-rail dl > div[data-tone="success"] dd {
+  color: #7bd2a3;
+}
+
+.shipment-next-rail dl > div[data-tone="warning"] dd {
+  color: #f3c969;
+}
+
+.shipment-next-links {
+  border-top-color: rgba(255, 255, 255, .16);
+}
+
+.shipment-next-links a {
+  color: rgba(255, 255, 255, .72);
+}
+
+.shipment-next-links a:hover {
+  color: #fff;
+}
+
+/* Move the operational record onto a distinct work canvas. */
+.shipment-detail-record {
+  border-top: 1px solid var(--shipment-line-strong);
+  padding-top: 28px;
+  background: var(--shipment-surface-soft);
+}
+
+.shipment-job-file-embedded {
+  padding: 24px;
+  border: 1px solid var(--shipment-line);
+  background: var(--shipment-white);
+  box-shadow: var(--shipment-shadow-soft);
+}
+
+.shipment-job-file-embedded .ops-page-header {
+  border-bottom-color: var(--shipment-line-strong) !important;
+}
+
+.shipment-job-file-embedded .ops-surface {
+  border-top-color: var(--shipment-line-strong) !important;
+}
+
+/* Lower record areas deliberately alternate surface weight. */
+.shipment-detail-block {
+  padding: 24px;
+  border: 1px solid var(--shipment-line);
+  background: var(--shipment-white);
+}
+
+.shipment-detail-block + .shipment-detail-block {
+  margin-top: 18px;
+  border-top: 1px solid var(--shipment-line);
+}
+
+#shipment-exceptions {
+  background: var(--shipment-surface-quiet);
+}
+
+#shipment-delivery {
+  border-left: 3px solid var(--shipment-info);
+  background: var(--shipment-white);
+}
+
+#shipment-activity {
+  background: var(--shipment-surface-soft);
+}
+
+#shipment-exceptions article[data-exception-status] {
+  border-top-color: var(--shipment-line-strong) !important;
+}
+
+#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 {
+  background: var(--shipment-surface-quiet);
+}
+
+#shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-2 > div {
+  background: var(--shipment-white) !important;
+}
+
+.shipment-quiet-section {
+  padding: 20px 22px;
+  border: 1px solid var(--shipment-line);
+  background: var(--shipment-white);
+}
+
+@media (max-width: 1100px) {
+  .shipment-overview-layout {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .shipment-next-rail {
+    margin-top: 18px;
+    border: 1px solid var(--shipment-ink);
+    padding: 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  .shipment-detail-v2 > .shipment-detail-summary:last-of-type {
+    padding: 18px 0 24px;
+  }
+
+  .shipment-flow-section,
+  .shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section) {
+    padding: 18px;
+  }
+
+  .shipment-job-file-embedded,
+  .shipment-detail-block {
+    padding: 18px;
+  }
+
+  .shipment-detail-record {
+    padding-top: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .shipment-flow-section,
+  .shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section),
+  .shipment-job-file-embedded,
+  .shipment-detail-block {
+    margin-inline: -4px;
+    padding: 16px;
+  }
+
+  .shipment-next-rail {
+    margin-inline: -4px;
+    padding: 18px;
+  }
+}
