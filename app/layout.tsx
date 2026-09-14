@@ -26,6 +26,7 @@ import "./admin/operations-overview-responsive.css";
 import "./admin/operations-overview-interactive.css";
 import "./admin/shipment-detail-v2.css";
 import "./admin/admin-typography.css";
+import "./admin/shipment-detail-hierarchy.css";
 
 const geist = Geist({
   variable: "--font-geist",
