@@ -1,4 +1,4 @@
-> Coding agents: read [AGENTS.md](AGENTS.md) and the [operating system contract](docs/OPERATING_SYSTEM.md) before changing KCPL staff software.
+> Coding agents: read [AGENTS.md](AGENTS.md), the [UI/UX design guide](docs/UI_UX_DESIGN_GUIDE.md) and the [operating system contract](docs/OPERATING_SYSTEM.md) before changing KCPL. The design guide includes the shared visual standard and a copy-paste task prompt for ChatGPT chat mode.
 
 # Kapileshwor Cargo Pvt. Ltd. (KCPL)
 

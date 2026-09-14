@@ -4,7 +4,7 @@ Explain the operational problem, the change, and the resulting behavior.
 
 ## Shared contract
 
-Identify the shared primitives, tokens, navigation or workflow policy used. Describe any remaining limitation. Do not add another visual system or loosen the UI baseline.
+For interface changes, apply [the UI/UX design guide](https://github.com/dirgh8yu/kcpl/blob/main/docs/UI_UX_DESIGN_GUIDE.md): KCPL palette, Inter, consistent Lucide icons, readable hierarchy and complete interaction states. Identify the shared primitives, tokens, navigation or workflow policy used and the affected screens. Describe any remaining limitation. Do not add another visual system or loosen the UI baseline.
 
 ## Validation
 
