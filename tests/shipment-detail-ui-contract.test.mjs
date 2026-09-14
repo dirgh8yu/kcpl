@@ -18,7 +18,7 @@ test("shipment detail replaces duplicate lifecycle and document-intelligence sur
   }
 });
 
-test("shipment detail navigation only exposes destinations that work", async () => {
+test("shipment detail navigation only exposes destinations that work and persists beyond summary", async () => {
   const overview = await readFile(overviewPath, "utf8");
   for (const href of ["#shipment-overview", "#shipment-work", "#shipment-exceptions", "#shipment-delivery", "#shipment-activity"]) {
     assert.ok(overview.includes(href), `missing real shipment destination ${href}`);
@@ -26,11 +26,32 @@ test("shipment detail navigation only exposes destinations that work", async () 
   for (const dead of ["#commercial", "#routing", "#cargo", "#booking", "#finance", "#audit"]) {
     assert.ok(!overview.includes(dead), `dead shipment anchor must not return: ${dead}`);
   }
+  assert.match(overview, /<\/section>\s*<nav className="shipment-record-nav"/);
   assert.match(overview, /ShipmentWorkflowReadiness/);
+});
+
+test("shipment detail gives a truthful next action when an international customs checklist has not been configured", async () => {
+  const overview = await readFile(overviewPath, "utf8");
+  assert.match(overview, /customs_release_required && readiness\.customs_required === 0/);
+  assert.match(overview, /Set customs requirements/);
+  assert.match(overview, /Customs setup/);
   assert.match(overview, /Record customs release/);
   assert.match(overview, /Complete customs checklist/);
   assert.match(overview, /Verify required documents/);
   assert.match(overview, /Record proof of delivery/);
+  assert.match(overview, /Current gates/);
+  assert.doesNotMatch(overview, /close_blockers\.length \? `\$\{readiness\.close_blockers\.length\} open`/);
+});
+
+test("shipment detail keeps working controls accessible without returning to SaaS card layouts", async () => {
+  const css = await readFile(cssPath, "utf8");
+  assert.match(css, /\.shipment-job-file-embedded \.ops-page-header \{[\s\S]*display: block !important/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-page-heading \{ display: none !important; \}/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-page > \.ops-stat-strip \{ display: none !important; \}/);
+  assert.match(css, /\.shipment-job-file-embedded \.ops-grid-main \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important/);
+  assert.match(css, /#shipment-exceptions article\[data-exception-status\]/);
+  assert.match(css, /#shipment-delivery #delivery-pod \.ops-surface-body > \.grid\.gap-5 \{ display: block !important; \}/);
+  assert.match(css, /#shipment-activity \.ops-content-wide/);
 });
 
 test("shipment detail keeps the record quiet, responsive and on Inter", async () => {
@@ -40,9 +61,8 @@ test("shipment detail keeps the record quiet, responsive and on Inter", async ()
   assert.ok(shipmentCss >= 0, "shipment detail stylesheet must be loaded");
   assert.ok(typographyCss > shipmentCss, "Inter typography contract must remain final");
   assert.match(css, /\.shipment-record-nav/);
+  assert.match(css, /position: sticky/);
   assert.match(css, /scroll-margin-top/);
-  assert.match(css, /\.shipment-job-file-embedded \.ops-page-header/);
-  assert.match(css, /display: none !important/);
   assert.match(css, /font-family: var\(--font-inter\)/);
   assert.match(css, /#dc143c/i);
   assert.match(css, /#101010/i);

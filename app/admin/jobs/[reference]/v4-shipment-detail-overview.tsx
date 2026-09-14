@@ -39,8 +39,42 @@ function stageHref(stage: ShipmentWorkflowReadiness["stages"][number]["id"], ref
   return "#shipment-work";
 }
 
+function customsNeedsSetup(readiness: ShipmentWorkflowReadiness) {
+  return readiness.customs_release_required && readiness.customs_required === 0;
+}
+
 function nextAction(job: DigitalJobFile, readiness: ShipmentWorkflowReadiness) {
+  const shipment = encodeURIComponent(job.reference);
   const openTask = [...job.tasks.filter((task) => !task.completed)].sort((a, b) => taskTime(a) - taskTime(b))[0];
+
+  if (customsNeedsSetup(readiness)) {
+    return {
+      title: "Set customs requirements",
+      detail: "This international movement has no controlled customs checklist. Add only the clearance steps that apply before release.",
+      href: `/admin/customs?shipment=${shipment}`,
+    };
+  }
+  if (!readiness.customs_checklist_ready) {
+    return {
+      title: "Complete customs checklist",
+      detail: `${readiness.customs_completed} of ${readiness.customs_required} required steps complete.`,
+      href: `/admin/customs?shipment=${shipment}`,
+    };
+  }
+  if (readiness.customs_release_required && !readiness.customs_released) {
+    return {
+      title: "Record customs release",
+      detail: "The required checklist is complete; explicit customs release is still required.",
+      href: `/admin/customs?shipment=${shipment}`,
+    };
+  }
+  if (!readiness.document_pack_ready) {
+    return {
+      title: "Verify required documents",
+      detail: "Required shipment documents are missing, unverified or expired.",
+      href: `/admin/freight-documents?shipment=${shipment}`,
+    };
+  }
   if (openTask) {
     return {
       title: openTask.title,
@@ -48,17 +82,12 @@ function nextAction(job: DigitalJobFile, readiness: ShipmentWorkflowReadiness) {
       href: "#shipment-work",
     };
   }
-  if (readiness.customs_release_required && readiness.customs_checklist_ready && !readiness.customs_released) {
-    return { title: "Record customs release", detail: "The checklist is complete; release evidence is still required.", href: `/admin/customs?shipment=${encodeURIComponent(job.reference)}` };
-  }
-  if (!readiness.customs_checklist_ready) {
-    return { title: "Complete customs checklist", detail: `${readiness.customs_completed} of ${readiness.customs_required} required steps complete.`, href: `/admin/customs?shipment=${encodeURIComponent(job.reference)}` };
-  }
-  if (!readiness.document_pack_ready) {
-    return { title: "Verify required documents", detail: "Required shipment documents are missing, unverified or expired.", href: `/admin/freight-documents?shipment=${encodeURIComponent(job.reference)}` };
-  }
   if ((job.status === "out_for_delivery" || job.status === "delivered") && !readiness.proof_of_delivery_present) {
-    return { title: "Record proof of delivery", detail: "Delivery cannot be closed without verified POD evidence.", href: `/admin/delivery?shipment=${encodeURIComponent(job.reference)}` };
+    return {
+      title: "Record proof of delivery",
+      detail: "Delivery cannot be closed without verified POD evidence.",
+      href: `/admin/delivery?shipment=${shipment}`,
+    };
   }
   if (readiness.can_close && !readiness.job_closed) {
     return { title: "Close shipment", detail: "Operational close requirements are satisfied.", href: "#shipment-work" };
@@ -72,9 +101,22 @@ function nextAction(job: DigitalJobFile, readiness: ShipmentWorkflowReadiness) {
 
 function customsValue(readiness: ShipmentWorkflowReadiness) {
   if (!readiness.customs_release_required) return "Not required";
+  if (customsNeedsSetup(readiness)) return "Setup required";
   if (readiness.customs_released) return "Released";
   if (readiness.customs_checklist_ready) return "Release pending";
   return `${readiness.customs_completed}/${readiness.customs_required} complete`;
+}
+
+function currentStageCopy(readiness: ShipmentWorkflowReadiness) {
+  const stage = readiness.stages.find((item) => item.state === "current" || item.state === "blocked");
+  if (!stage) return null;
+  if (stage.id === "customs" && customsNeedsSetup(readiness)) {
+    return {
+      title: "Customs setup",
+      detail: "International lane: required customs steps have not been configured yet.",
+    };
+  }
+  return { title: stage.label, detail: stage.detail };
 }
 
 export function V4ShipmentDetailOverview({
@@ -89,7 +131,7 @@ export function V4ShipmentDetailOverview({
   const owner = job.assigned_to_name || job.assigned_to_email || "Unassigned";
   const requiredDocuments = readiness.documents.filter((document) => document.required);
   const verifiedDocuments = requiredDocuments.filter((document) => document.verified_count > 0).length;
-  const currentStage = readiness.stages.find((stage) => stage.state === "current" || stage.state === "blocked");
+  const currentStage = currentStageCopy(readiness);
   const next = nextAction(job, readiness);
   const currencies = [...new Set([...Object.keys(job.revenue_totals), ...Object.keys(job.cost_totals)])];
   const firstCurrency = currencies[0];
@@ -125,19 +167,21 @@ export function V4ShipmentDetailOverview({
           </div>
         </header>
       </div>
+    </section>
 
-      <nav className="shipment-record-nav" aria-label="Shipment record sections">
-        <div className="shipment-detail-inner shipment-record-nav-inner">
-          {navigation.map(([label, href]) => <a key={label} href={href}>{label}</a>)}
-        </div>
-      </nav>
+    <nav className="shipment-record-nav" aria-label="Shipment record sections">
+      <div className="shipment-detail-inner shipment-record-nav-inner">
+        {navigation.map(([label, href]) => <a key={label} href={href}>{label}</a>)}
+      </div>
+    </nav>
 
+    <section className="shipment-detail-summary">
       <div id="shipment-overview" className="shipment-detail-inner shipment-overview-layout shipment-detail-anchor">
         <div className="shipment-overview-main">
           <section className="shipment-summary-section shipment-flow-section">
             <div className="shipment-section-heading">
               <p>Shipment flow</p>
-              <h2>{currentStage ? currentStage.label : shipmentStatusLabels[job.status]}</h2>
+              <h2>{currentStage ? currentStage.title : shipmentStatusLabels[job.status]}</h2>
               {currentStage ? <span>{currentStage.detail}</span> : null}
             </div>
             <div className="shipment-stage-line" aria-label="Shipment workflow">
@@ -181,7 +225,7 @@ export function V4ShipmentDetailOverview({
           <dl>
             <RailItem label="Owner" value={owner}/>
             <RailItem label="ETA" value={shortDate(job.eta)}/>
-            <RailItem label="Blockers" value={readiness.close_blockers.length ? `${readiness.close_blockers.length} open` : "None"} tone={readiness.close_blockers.length ? "warning" : "success"}/>
+            <RailItem label="Current gates" value={readiness.blockers.length ? `${readiness.blockers.length} open` : "Clear"} tone={readiness.blockers.length ? "warning" : "success"}/>
             <RailItem label="Status" value={shipmentStatusLabels[job.status]}/>
           </dl>
           <div className="shipment-next-links">
