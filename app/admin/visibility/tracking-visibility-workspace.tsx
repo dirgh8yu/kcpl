@@ -12,6 +12,8 @@ import {
   OpsNotice,
   OpsPage,
   OpsPageHeader,
+  OpsStat,
+  OpsStatStrip,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
@@ -72,6 +74,14 @@ function shortDateTime(value: string | null) {
         hour12: false,
         timeZone: NEPAL_TIME_ZONE,
       }).format(date);
+}
+
+function nepalInputToIso(value: string) {
+  if (!value) return "";
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$/.exec(value);
+  if (!match) return "";
+  const date = new Date(`${match[1]}:00+05:45`);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
 function delayText(hours: number | null) {
@@ -150,6 +160,7 @@ export function TrackingVisibilityWorkspace({
     customs: rows.filter((row) => rowMatchesFocus(row, "customs")).length,
     delivery: rows.filter((row) => rowMatchesFocus(row, "delivery")).length,
   }), [rows]);
+  const attentionCount = focusCounts.delayed + focusCounts.stale - rows.filter((row) => rowMatchesFocus(row, "delayed") && row.stale).length;
 
   useEffect(() => {
     if (!selectedKey) return;
@@ -245,6 +256,14 @@ export function TrackingVisibilityWorkspace({
       <div className="px-4 pb-6 md:px-6">
         {notice ? <div className="mb-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
+        <OpsStatStrip className="visibility-stat-strip mb-4">
+          <OpsStat label="Active shipments" value={summary.active} detail={`${rows.length} visible in this snapshot`} icon={<Activity size={15} strokeWidth={1.75} aria-hidden="true"/>} tone="info" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }}/>
+          <OpsStat label="Needs attention" value={attentionCount} detail="Delayed or stale feeds" icon={<AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>} tone={attentionCount ? "danger" : "success"} active={focus === "delayed" || focus === "stale"} onClick={() => { setAllowInitialSelection(false); update({ view: attentionCount ? "delayed" : "stale", selected: null, shipment: null }); }}/>
+          <OpsStat label="Customs" value={summary.customs} detail="Current customs state" tone="warning" active={focus === "customs"} onClick={() => { setAllowInitialSelection(false); update({ view: "customs", selected: null, shipment: null }); }}/>
+          <OpsStat label="Out for delivery" value={summary.out_for_delivery} detail="Last-mile movements" tone="success" active={focus === "delivery"} onClick={() => { setAllowInitialSelection(false); update({ view: "delivery", selected: null, shipment: null }); }}/>
+          <OpsStat label="Delivered today" value={summary.delivered_today} detail="Latest normalized events" tone="neutral"/>
+        </OpsStatStrip>
+
         <OpsToolbar className="mb-4">
           <div className="min-w-[240px] flex-1 basis-[320px] max-w-[380px]">
             <OpsSearch
@@ -300,9 +319,9 @@ export function TrackingVisibilityWorkspace({
           </div>
         </OpsToolbar>
 
-        <OpsSurface flush>
+        <OpsSurface flush className="visibility-register">
           {filtered.length ? (
-            <OpsTableWrap>
+            <OpsTableWrap className="visibility-table-wrap">
               <table className="ops-table min-w-[1040px]" aria-label="Live shipment visibility">
                 <thead>
                   <tr>
@@ -452,8 +471,8 @@ function TrackingVisibilityPanel({
           rawStatus,
           milestone: milestone || null,
           location,
-          eta,
-          eventTime,
+          eta: nepalInputToIso(eta),
+          eventTime: nepalInputToIso(eventTime),
           provider,
           details,
         }),
@@ -481,7 +500,7 @@ function TrackingVisibilityPanel({
     <>
       <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close live visibility panel"/>
       <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[640px]" aria-label={`Live visibility for ${row.reference}`}>
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+        <header className="visibility-panel-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.carrier_reference ? ` · ${row.carrier_reference}` : ""}</p>
             <h2 className="mt-1 text-base font-semibold leading-6">Movement timeline</h2>
@@ -496,7 +515,7 @@ function TrackingVisibilityPanel({
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="border-b border-[var(--admin-line)] px-5 py-4">
+          <div className="visibility-panel-summary border-b border-[var(--admin-line)] px-5 py-4">
             {panelNotice ? <OpsNotice tone={panelNotice.tone} onDismiss={() => setPanelNotice(null)}>{panelNotice.text}</OpsNotice> : null}
             <div className={`${panelNotice ? "mt-3 " : ""}flex flex-wrap items-center gap-2`}>
               <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
@@ -552,10 +571,11 @@ function TrackingVisibilityPanel({
               <OpsField label="Milestone override"><select value={milestone} onChange={(event) => setMilestone(event.target.value as TrackingMilestone | "")}><option value="">Auto-detect</option>{trackingMilestones.filter((value) => value !== "unknown").map((value) => <option key={value} value={value}>{trackingMilestoneLabels[value]}</option>)}</select></OpsField>
               <OpsField label="Location"><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Port, airport, border, city…"/></OpsField>
               <OpsField label="Provider / counterpart"><input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Carrier, airline, overseas agent…"/></OpsField>
-              <OpsField label="Event time"><input type="datetime-local" value={eventTime} onChange={(event) => setEventTime(event.target.value)}/></OpsField>
-              <OpsField label="New ETA"><input type="datetime-local" value={eta} onChange={(event) => setEta(event.target.value)}/></OpsField>
+              <OpsField label="Event time"><input name="visibility-event-time" type="datetime-local" value={eventTime} onChange={(event) => setEventTime(event.target.value)} aria-describedby="visibility-timezone-note"/></OpsField>
+              <OpsField label="New ETA"><input name="visibility-new-eta" type="datetime-local" value={eta} onChange={(event) => setEta(event.target.value)} aria-describedby="visibility-timezone-note"/></OpsField>
               <OpsField label="Details" className="sm:col-span-2"><textarea rows={3} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Operational context, reason, vehicle, vessel or flight details…"/></OpsField>
             </div>
+            <p id="visibility-timezone-note" className="mt-3 text-xs text-[var(--admin-muted)]">Times are saved and displayed in Nepal time (NPT).</p>
           </PanelSection>
         </div>
 
