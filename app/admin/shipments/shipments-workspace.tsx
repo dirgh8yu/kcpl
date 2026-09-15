@@ -8,7 +8,7 @@ import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap } from "../operations-ui";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 type StatusTone = "neutral" | "info" | "warning" | "success" | "danger";
@@ -154,23 +154,33 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
     update({ q: null, status: null, branch: null, mode: null, attention: null, sort: null, page: null, selected: null });
   }
 
+  const activeJobs = data.jobs.filter((job) => job.status !== "delivered").length;
+  const attentionJobs = data.jobs.filter((job) => shipmentNeedsAttention(job)).length;
+  const customsOpen = data.jobs.filter((job) => job.required_customs_open > 0).length;
+  const unassignedJobs = data.jobs.filter((job) => owner(job) === "Unassigned").length;
+
   return (
-    <OpsPage className="shipments-reference-layout">
-      <div className="px-4 py-5 md:px-6 md:py-6">
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="m-0">Shipments</h1>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">Active movements and Digital Job Files · {data.jobs.length} total record{data.jobs.length === 1 ? "" : "s"}</p>
-          </div>
-          {canStartShipment ? (
-            <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Tender & Booking">
-              <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
-            </Link>
-          ) : null}
-        </header>
+    <OpsPage className="shipments-register">
+      <OpsPageHeader
+        title="Shipments"
+        description={`Active movements and Digital Job Files · ${data.jobs.length} total record${data.jobs.length === 1 ? "" : "s"}`}
+        actions={canStartShipment ? (
+          <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Tender & Booking">
+            <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
+          </Link>
+        ) : null}
+      >
+        <OpsStatStrip>
+          <OpsStat label="Active" value={activeJobs} detail="Current in-flight work" tone="info" />
+          <OpsStat label="Attention" value={attentionJobs} detail="Require action" tone="danger" />
+          <OpsStat label="Customs open" value={customsOpen} detail="Checklist needs review" tone="warning" />
+          <OpsStat label="Unassigned" value={unassignedJobs} detail="Ownership gaps" tone="neutral" />
+        </OpsStatStrip>
+      </OpsPageHeader>
 
-        {data.partial ? <div className="mb-4"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
+      {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
 
+      <div className="px-4 py-4 md:px-6">
         <div className="mb-4 flex flex-wrap items-center gap-2 border-y border-[var(--admin-line)] py-3">
           <div className="min-w-[240px] flex-1 basis-[300px] max-w-[360px]">
             <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ref, customer, route…" aria-label="Search shipments"/>
