@@ -5,11 +5,11 @@ import type { ShipmentWorkflowReadiness } from "../../workflow-guard";
 import { shipmentStatusLabels } from "../../../shipment-types";
 
 function statusClass(status: DigitalJobFile["status"]) {
-  if (status === "delivered") return "border-[#A7CCB7] text-[#18794E]";
-  if (status === "exception") return "border-[#E6A4B0] text-[#A80E2F]";
-  if (status === "customs_clearance" || status === "out_for_delivery") return "border-[#D9C293] text-[#72500C]";
-  if (status === "in_transit" || status === "booking_confirmed") return "border-[#A8BDD0] text-[#315D83]";
-  return "border-[var(--admin-line)] text-[var(--admin-muted)]";
+  if (status === "delivered") return "is-success";
+  if (status === "exception") return "is-danger";
+  if (status === "customs_clearance" || status === "out_for_delivery") return "is-warning";
+  if (status === "in_transit" || status === "booking_confirmed") return "is-info";
+  return "is-neutral";
 }
 
 function shortDate(value: string | null) {
@@ -189,27 +189,29 @@ export function V4ShipmentDetailOverview({
             </div>
           </section>
 
-          <section className="shipment-summary-section">
-            <div className="shipment-section-heading"><p>Key details</p><h2>Shipment</h2></div>
-            <div className="shipment-detail-register">
-              <DetailRow label="Mode" value={job.mode || "Not set"}/>
-              <DetailRow label="Current location" value={job.current_location || "Not updated"}/>
-              <DetailRow label="Carrier" value={job.carrier || "Not set"}/>
-              <DetailRow label="Carrier reference" value={job.carrier_reference || "Not set"}/>
-              <DetailRow label="Priority" value={job.priority}/>
-              <DetailRow label="Internal reference" value={job.internal_reference || "Not set"}/>
-            </div>
-          </section>
+          <div className="shipment-summary-grid">
+            <section className="shipment-summary-section">
+              <div className="shipment-section-heading"><p>Key details</p><h2>Shipment</h2></div>
+              <div className="shipment-detail-register">
+                <DetailRow label="Mode" value={job.mode || "Not set"}/>
+                <DetailRow label="Current location" value={job.current_location || "Not updated"}/>
+                <DetailRow label="Carrier" value={job.carrier || "Not set"}/>
+                <DetailRow label="Carrier reference" value={job.carrier_reference || "Not set"}/>
+                <DetailRow label="Priority" value={job.priority}/>
+                <DetailRow label="Internal reference" value={job.internal_reference || "Not set"}/>
+              </div>
+            </section>
 
-          <section className="shipment-summary-section">
-            <div className="shipment-section-heading"><p>Readiness</p><h2>Open work</h2></div>
-            <div className="shipment-detail-register">
-              <ControlRow label="Tasks" value={readiness.open_tasks ? `${readiness.open_tasks} open` : "Clear"} tone={readiness.open_tasks ? "warning" : "success"}/>
-              <ControlRow label="Customs" value={customsValue(readiness)} tone={readiness.customs_ready ? "success" : readiness.customs_release_required ? "warning" : "neutral"}/>
-              <ControlRow label="Documents" value={readiness.document_pack_ready ? "Ready" : `${verifiedDocuments}/${requiredDocuments.length} verified`} tone={readiness.document_pack_ready ? "success" : "warning"}/>
-              <ControlRow label="Delivery" value={readiness.proof_of_delivery_present ? "POD on file" : job.status === "delivered" ? "POD missing" : "Not reached"} tone={readiness.proof_of_delivery_present ? "success" : job.status === "delivered" ? "danger" : "neutral"}/>
-            </div>
-          </section>
+            <section className="shipment-summary-section">
+              <div className="shipment-section-heading"><p>Readiness</p><h2>Open work</h2></div>
+              <div className="shipment-detail-register">
+                <ControlRow label="Tasks" value={readiness.open_tasks ? `${readiness.open_tasks} open` : "Clear"} tone={readiness.open_tasks ? "warning" : "success"}/>
+                <ControlRow label="Customs" value={customsValue(readiness)} tone={readiness.customs_ready ? "success" : readiness.customs_release_required ? "warning" : "neutral"}/>
+                <ControlRow label="Documents" value={readiness.document_pack_ready ? "Ready" : `${verifiedDocuments}/${requiredDocuments.length} verified`} tone={readiness.document_pack_ready ? "success" : "warning"}/>
+                <ControlRow label="Delivery" value={readiness.proof_of_delivery_present ? "POD on file" : job.status === "delivered" ? "POD missing" : "Not reached"} tone={readiness.proof_of_delivery_present ? "success" : job.status === "delivered" ? "danger" : "neutral"}/>
+              </div>
+            </section>
+          </div>
 
           {job.can_view_costs ? <section className="shipment-summary-section shipment-financial-summary">
             <div className="shipment-section-heading"><p>Financial snapshot</p><h2>Job economics</h2></div>
