@@ -65,10 +65,8 @@ export function OverviewShell({
 
   function changeBranch(value: string) {
     const query = new URLSearchParams(searchParams.toString());
-    if (value === "all") query.delete("branch");
-    else query.set("branch", value);
-    const next = query.toString();
-    router.push(`/admin/command-centre${next ? `?${next}` : ""}`);
+    query.set("branch", value);
+    router.push(`/admin/command-centre?${query.toString()}`);
   }
 
   return (
@@ -104,7 +102,7 @@ export function OverviewShell({
               <div className={styles.profileMenu}>
                 <div className={styles.profileMenuHeader}><strong>{userName}</strong><span>{roleLabel}</span></div>
                 <Link href="/admin/notifications" onClick={() => setProfileOpen(false)}>Notification centre</Link>
-                <Link href="/admin/staff" onClick={() => setProfileOpen(false)}>People &amp; branches</Link>
+                {capabilities.canManageStaff ? <Link href="/admin/staff" onClick={() => setProfileOpen(false)}>People &amp; branches</Link> : null}
                 <a href={signOutPath}><LogOut size={14} strokeWidth={1.8} aria-hidden="true" /> Sign out</a>
               </div>
             ) : null}
