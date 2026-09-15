@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { loadCommandCentre } from "../command-centre/command-centre.server";
 import { getStaffContext } from "../staff-directory.server";
-import { kcplStaffRoleLabels } from "../staff-permissions";
 import { OperationsShell } from "../operations-shell";
 import { ShipmentsWorkspace } from "./shipments-workspace";
 
@@ -34,7 +33,7 @@ export default async function ShipmentsPage() {
 
   if (!data) return <OperationsShell {...shellProps}><Gate title="Shipment backend unavailable" detail="Firestore is not available for this deployment. Navigation and search remain available." embedded/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} canStartShipment={staff.permissions.canViewCommercial}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
