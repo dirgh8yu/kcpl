@@ -7,6 +7,7 @@ const overviewPath = new URL("../app/admin/command-centre/v4-operations-overview
 const shellPath = new URL("../app/admin/command-centre/overview-shell.tsx", import.meta.url);
 const pagePath = new URL("../app/admin/command-centre/page.tsx", import.meta.url);
 const cssPath = new URL("../app/admin/command-centre/overview-dashboard.module.css", import.meta.url);
+const sidebarCssPath = new URL("../app/admin/command-centre/overview-sidebar.module.css", import.meta.url);
 const workflowPath = new URL("../app/admin/command-centre/workflow-overview.server.ts", import.meta.url);
 const financePath = new URL("../app/admin/command-centre/overview-finance.server.ts", import.meta.url);
 const notesPath = new URL("../app/admin/command-centre/operational-notes.server.ts", import.meta.url);
@@ -61,15 +62,27 @@ test("Operations Overview matches the supplied freight control-tower capability"
   assert.match(overview, /Create transport order/);
 });
 
-test("Overview chrome provides search, branch context, notifications and staff identity", async () => {
+test("Overview chrome provides left navigation, search, branch context, notifications and staff identity", async () => {
   const shell = await readFile(shellPath, "utf8");
+  const sidebarCss = await readFile(sidebarCssPath, "utf8");
+
   assert.match(shell, /OperationsCommandPalette/);
   assert.match(shell, /OperationsNotificationCentre/);
+  assert.match(shell, /groupedWorkspaces/);
+  assert.match(shell, /WorkspaceIcon/);
+  assert.match(shell, /Application navigation/);
+  assert.match(shell, /KCPL workspaces/);
+  assert.match(shell, /Find anything/);
   assert.match(shell, /Search shipments, customers, containers, documents/);
   assert.match(shell, /Operational branch/);
   assert.match(shell, /All branches/);
   assert.match(shell, /roleLabel/);
   assert.match(shell, /⌘ K/);
+  assert.match(sidebarCss, /grid-template-columns:\s*220px minmax\(0, 1fr\)/);
+  assert.match(sidebarCss, /\.navButton[\s\S]*background:\s*var\(--overview-action\)/);
+  assert.match(sidebarCss, /\.searchButton[\s\S]*background:\s*var\(--overview-action\)/);
+  assert.match(sidebarCss, /\.signOutButton[\s\S]*background:\s*var\(--overview-action\)/);
+  assert.match(sidebarCss, /@media \(max-width:\s*1419px\)/);
 });
 
 test("Operations Overview preserves server authority, branch scope and return context", async () => {
