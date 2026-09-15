@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition, type ReactNode } from "react";
+import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowRight,
-  CalendarCheck2,
   CheckCircle2,
   ChevronRight,
   CircleAlert,
@@ -37,9 +36,11 @@ import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
 import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./workflow-overview.server";
 import styles from "./overview-dashboard.module.css";
+import extras from "./overview-dashboard-extras.module.css";
 
 const DAY_MS = 86_400_000;
-
+const creationModes = ["road", "ocean", "air", "rail"] as const;
+type CreationMode = typeof creationModes[number];
 type Tone = "danger" | "warning" | "success" | "info" | "neutral" | "violet";
 
 type DashboardProps = {
@@ -49,8 +50,15 @@ type DashboardProps = {
   note: OperationalNote | null;
   userName: string;
   selectedBranch: string;
+  branches: string[];
   canViewCommercial: boolean;
   canPostNotes: boolean;
+};
+
+type CreateOrderResponse = {
+  ok?: boolean;
+  error?: string;
+  order?: { id: string };
 };
 
 function owner(job: CommandCentreJob) {
@@ -191,11 +199,32 @@ function TodayItem({ href, label, value, icon, tone }: { href: string; label: st
 }
 
 function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentreJob[]; total: number; returnTo: string; generatedAt: string }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const allVisibleSelected = jobs.length > 0 && jobs.every((job) => selected.has(job.reference));
+
+  function toggle(reference: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(reference)) next.delete(reference);
+      else next.add(reference);
+      return next;
+    });
+  }
+
+  function toggleVisible() {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) jobs.forEach((job) => next.delete(job.reference));
+      else jobs.forEach((job) => next.add(job.reference));
+      return next;
+    });
+  }
+
   return (
     <section className={styles.card} aria-labelledby="attention-title">
       <div className={styles.cardHeader}>
         <div>
-          <div className={styles.cardTitleRow}><h2 id="attention-title">Attention required</h2><span className={styles.countBadge}>{total}</span></div>
+          <div className={styles.cardTitleRow}><h2 id="attention-title">Attention required</h2><span className={styles.countBadge}>{total}</span>{selected.size ? <span className={extras.selectionSummary}>{selected.size} selected</span> : null}</div>
           <p>Shipments that need action</p>
         </div>
         <Link className={styles.secondaryButton} href="/admin/shipments?attention=1">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
@@ -204,7 +233,7 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
         <div className={styles.tableWrap}>
           <table className={styles.table} aria-label="Shipments requiring attention">
             <thead><tr>
-              <th><input className={styles.checkbox} type="checkbox" aria-label="Select all visible shipments" /></th>
+              <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
               <th>Reference</th><th>Customer</th><th>Route</th><th>Status</th><th>Blocker / Next action</th><th>Owner</th><th>Age</th><th>ETA</th><th><span className={styles.srOnly}>Actions</span></th>
             </tr></thead>
             <tbody>
@@ -215,7 +244,7 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
                 const tone = statusTone(job.status);
                 return (
                   <tr key={job.reference}>
-                    <td><input className={styles.checkbox} type="checkbox" aria-label={`Select ${job.reference}`} /></td>
+                    <td><input className={styles.checkbox} type="checkbox" checked={selected.has(job.reference)} onChange={() => toggle(job.reference)} aria-label={`Select ${job.reference}`} /></td>
                     <td><Link className={styles.referenceLink} href={jobHref(job.reference, returnTo)}>{job.reference}</Link></td>
                     <td>{job.customer_name || "Customer not linked"}</td>
                     <td className={styles.routeCell}>{route(job)}</td>
@@ -317,13 +346,13 @@ function LiveMovement({ movements }: { movements: OverviewMovement[] }) {
       <div className={styles.mapBody}>
         <svg className={styles.mapSvg} viewBox="0 0 1000 400" role="img" aria-label="Active KCPL movement network by route">
           <path className={styles.mapLand} d="M66 119l74-39 76 17 39 46-22 45-63 5-39-23-53 13-40-29zM299 84l88-30 96 17 43 33 12 57-43 36-62-11-36 28-52-21-17-49zM522 91l104-23 123 15 81 37 77-2 48 31-31 49-79 8-37 56-73 26-58-37-61 9-37-29-52 5-25-41 31-50zM803 286l68-14 62 24 29 50-54 24-76-12-34-37z" />
-          <defs><marker id="overview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#667085" /></marker></defs>
+          <defs><marker id="overview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path className={extras.routeArrow} d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" /></marker></defs>
           {lanes.map((lane, index) => {
             const midX = (lane.from.x + lane.to.x) / 2;
             const midY = Math.min(lane.from.y, lane.to.y) - 45 - index * 4;
             return <path key={`${lane.origin}-${lane.destination}`} className={`${styles.routeLine} ${index === 0 ? styles.routeLineHot : ""}`} d={`M ${lane.from.x} ${lane.from.y} Q ${midX} ${midY} ${lane.to.x} ${lane.to.y}`} markerEnd="url(#overview-arrow)" />;
           })}
-          {nodes.map(({ point, count }) => <g key={point.code}><circle className={styles.routeNode} cx={point.x} cy={point.y} r="6"/><circle cx={point.x} cy={point.y} r="2.5" fill="#d92d20"/><text x={point.x + 10} y={point.y - 4} fontSize="11" fontWeight="700" fill="#344054">{point.code}</text><text x={point.x + 10} y={point.y + 10} fontSize="9" fill="#667085">{count} active</text></g>)}
+          {nodes.map(({ point, count }) => <g key={point.code}><circle className={styles.routeNode} cx={point.x} cy={point.y} r="6"/><circle className={extras.routeNodeCore} cx={point.x} cy={point.y} r="2.5" fill="currentColor"/><text className={extras.routeNodeLabel} x={point.x + 10} y={point.y - 4} fontSize="11" fontWeight="700" fill="currentColor">{point.code}</text><text className={extras.routeNodeMeta} x={point.x + 10} y={point.y + 10} fontSize="9" fill="currentColor">{count} active</text></g>)}
         </svg>
         <div className={styles.mapFoot}><span>{movements.length} active visibility records · {lanes.length} plotted lanes</span><MapPinned size={14} strokeWidth={1.7} /></div>
       </div>
@@ -369,6 +398,9 @@ function FinanceSnapshot({ finance }: { finance: OverviewFinanceSnapshot | null 
     { label: "Gross margin", value: money(selected.profit, selected.currency), change: changeLabel(selected.profit_change_percent) },
     { label: "Margin %", value: selected.margin_percent === null ? "—" : `${selected.margin_percent.toFixed(1)}%`, change: changeLabel(selected.margin_change_points, "pp") },
   ] : [];
+  const firstTrendDate = selected?.trend[0]?.date ?? finance?.generated_at.slice(0, 10) ?? "";
+  const lastTrendDate = selected?.trend.at(-1)?.date ?? firstTrendDate;
+  const trendMonth = firstTrendDate ? new Intl.DateTimeFormat("en-AU", { month: "short", timeZone: "UTC" }).format(new Date(`${firstTrendDate}T00:00:00Z`)) : "";
 
   return (
     <section className={styles.card} aria-labelledby="finance-title">
@@ -376,21 +408,19 @@ function FinanceSnapshot({ finance }: { finance: OverviewFinanceSnapshot | null 
         <div><h2 id="finance-title">Finance snapshot</h2></div>
         <div className={styles.financeControls}>
           {finance?.currencies.length && finance.currencies.length > 1 ? <select className={styles.financeSelect} value={selected?.currency ?? ""} onChange={(event) => setCurrency(event.target.value)} aria-label="Finance currency">{finance.currencies.map((item) => <option key={item.currency} value={item.currency}>{item.currency}</option>)}</select> : null}
-          <span className={styles.secondaryButton}>{finance?.period_label ?? "This month"}</span>
+          <select className={styles.financeSelect} value="current" aria-label="Finance period" onChange={() => undefined}><option value="current">{finance?.period_label ?? "This month"}</option></select>
         </div>
       </div>
       {selected ? <div className={styles.financeBody}>
         {rows.map((row) => <div key={row.label} className={styles.financeRow}><span>{row.label}</span><span className={styles.financeValue}><strong>{row.value}</strong><span className={`${styles.change} ${row.change.className}`}>{row.change.label}</span></span></div>)}
         <div className={styles.financeChart} aria-label={`${selected.currency} daily revenue this month`}>{selected.trend.map((point) => <span key={point.date} className={styles.financeBar} style={{ height: `${Math.max(8, (point.revenue / maxBar) * 100)}%` }} title={`${point.date}: ${money(point.revenue, selected.currency)}`} />)}</div>
-        <div className={styles.financeAxis}><span>1 {new Intl.DateTimeFormat("en-AU", { month: "short", timeZone: "UTC" }).format(new Date(`${selected.trend[0]?.date ?? dataFallbackDate()}T00:00:00Z`))}</span><span>{selected.trend.at(-1)?.date.slice(8, 10) ?? ""} {new Intl.DateTimeFormat("en-AU", { month: "short", timeZone: "UTC" }).format(new Date(`${selected.trend.at(-1)?.date ?? dataFallbackDate()}T00:00:00Z`))}</span></div>
+        <div className={styles.financeAxis}><span>1 {trendMonth}</span><span>{lastTrendDate.slice(8, 10)} {trendMonth}</span></div>
       </div> : <div className={styles.financeEmpty}>Finance values are available to authorised Accounts and Management users when the current month contains financial activity.</div>}
     </section>
   );
 }
 
-function dataFallbackDate() { return "2026-01-01"; }
-
-function OperationalNotes({ note, selectedBranch, canPostNotes }: { note: OperationalNote | null; selectedBranch: string; canPostNotes: boolean }) {
+function OperationalNotes({ note, selectedBranch, canPostNotes, generatedAt }: { note: OperationalNote | null; selectedBranch: string; canPostNotes: boolean; generatedAt: string }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState(note?.message ?? "");
@@ -421,14 +451,104 @@ function OperationalNotes({ note, selectedBranch, canPostNotes }: { note: Operat
     <section className={styles.notes} aria-label="Operational notes">
       <span className={styles.noteIcon}><FileText size={16} strokeWidth={1.8} /></span>
       <div><span className={styles.noteLabel}>Operational notes</span><span className={styles.noteText}> · {note?.message ?? "No operational note posted for this scope."}</span></div>
-      <span className={styles.noteMeta}>{note ? `Posted ${relativeAge(note.created_at, new Date().toISOString())} by ${note.created_by_name}` : selectedBranch === "all" ? "All branches" : selectedBranch}</span>
+      <span className={styles.noteMeta}>{note ? `Posted ${relativeAge(note.created_at, generatedAt)} by ${note.created_by_name}` : selectedBranch === "all" ? "All branches" : selectedBranch}</span>
       {canPostNotes ? <button type="button" className={styles.rowAction} onClick={() => setEditing((current) => !current)} aria-label="Edit operational note"><MoreHorizontal size={16} /></button> : <span />}
       {editing ? <div className={styles.noteEditor}><textarea value={message} maxLength={500} onChange={(event) => setMessage(event.target.value)} aria-label="Operational note" /> <div className={styles.noteEditorActions}><button type="button" className={styles.secondaryButton} onClick={() => setEditing(false)}>Cancel</button><button type="button" className={styles.blackButton} disabled={busy || message.trim().length < 3} onClick={() => void submit()}>{busy ? "Posting…" : "Post note"}</button></div>{error ? <span className={styles.ageDanger}>{error}</span> : null}</div> : null}
     </section>
   );
 }
 
-export function V4OperationsOverview({ data, workflow, finance, note, userName, selectedBranch, canViewCommercial, canPostNotes }: DashboardProps) {
+function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, onClose }: { canViewCommercial: boolean; selectedBranch: string; branches: string[]; onClose: () => void }) {
+  const router = useRouter();
+  const defaultBranch = selectedBranch !== "all" && branches.includes(selectedBranch)
+    ? selectedBranch
+    : branches.includes("Kathmandu")
+      ? "Kathmandu"
+      : branches[0] ?? "Kathmandu";
+  const [branch, setBranch] = useState(defaultBranch);
+  const [mode, setMode] = useState<CreationMode>("road");
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [pickupDate, setPickupDate] = useState("");
+  const [weightKg, setWeightKg] = useState("0");
+  const [volumeCbm, setVolumeCbm] = useState("0");
+  const [pieces, setPieces] = useState("0");
+  const [containerCount, setContainerCount] = useState("0");
+  const [equipment, setEquipment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/rating", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "create_order",
+          branch,
+          origin,
+          destination,
+          mode,
+          pickupDate,
+          weightKg: Number(weightKg),
+          volumeCbm: Number(volumeCbm),
+          pieces: Number(pieces),
+          containerCount: Number(containerCount),
+          equipment,
+        }),
+      });
+      const result = await response.json() as CreateOrderResponse;
+      if (!response.ok || !result.ok || !result.order?.id) throw new Error(result.error || "The shipment planning record could not be created.");
+      router.push(`/admin/rating/${encodeURIComponent(result.order.id)}`);
+      onClose();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "The shipment planning record could not be created.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={styles.launcherBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className={styles.launcher} role="dialog" aria-modal="true" aria-labelledby="new-shipment-title">
+        <div className={styles.launcherHeader}>
+          <div><h2 id="new-shipment-title">New shipment</h2><p>Start a new movement through KCPL’s controlled transport-order, tender and booking chain. The shipment record is still created only by the existing server-authoritative workflow.</p></div>
+          <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close new shipment"><X size={15} /></button>
+        </div>
+        {canViewCommercial ? (
+          <form className={extras.createForm} onSubmit={create}>
+            <div className={extras.createGrid}>
+              <div className={extras.createField}><label htmlFor="overview-new-branch">Branch</label><select id="overview-new-branch" value={branch} onChange={(event) => setBranch(event.target.value)}>{branches.map((value) => <option key={value} value={value}>{value}</option>)}</select></div>
+              <div className={extras.createField}><label htmlFor="overview-new-mode">Mode</label><select id="overview-new-mode" value={mode} onChange={(event) => setMode(event.target.value as CreationMode)}>{creationModes.map((value) => <option key={value} value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</option>)}</select></div>
+              <div className={extras.createField}><label htmlFor="overview-new-origin">Origin</label><input id="overview-new-origin" required value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kathmandu / KTM / Nepal" /></div>
+              <div className={extras.createField}><label htmlFor="overview-new-destination">Destination</label><input id="overview-new-destination" required value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Dubai / DXB / UAE" /></div>
+              <div className={extras.createField}><label htmlFor="overview-new-pickup">Pickup date</label><input id="overview-new-pickup" type="date" value={pickupDate} onChange={(event) => setPickupDate(event.target.value)} /></div>
+              <div className={extras.createField}><label htmlFor="overview-new-equipment">Equipment</label><input id="overview-new-equipment" value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="20GP, 40HC, reefer, truck…" /></div>
+            </div>
+            <div className={extras.createMetrics}>
+              <div className={extras.createField}><label htmlFor="overview-new-weight">Weight (kg)</label><input id="overview-new-weight" type="number" min="0" step="0.01" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} /></div>
+              <div className={extras.createField}><label htmlFor="overview-new-volume">Volume (CBM)</label><input id="overview-new-volume" type="number" min="0" step="0.001" value={volumeCbm} onChange={(event) => setVolumeCbm(event.target.value)} /></div>
+              <div className={extras.createField}><label htmlFor="overview-new-pieces">Pieces</label><input id="overview-new-pieces" type="number" min="0" step="1" value={pieces} onChange={(event) => setPieces(event.target.value)} /></div>
+              <div className={extras.createField}><label htmlFor="overview-new-containers">Containers</label><input id="overview-new-containers" type="number" min="0" step="1" value={containerCount} onChange={(event) => setContainerCount(event.target.value)} /></div>
+            </div>
+            {error ? <div className={extras.createError} role="alert">{error}</div> : null}
+            <div className={extras.createActions}><Link href="/admin/rating" className={styles.textButton}>Open rate desk</Link><button type="button" className={styles.secondaryButton} onClick={onClose}>Cancel</button><button type="submit" className={styles.blackButton} disabled={busy}>{busy ? "Creating…" : "Create planning record"}</button></div>
+          </form>
+        ) : (
+          <div className={styles.launcherBody}>
+            <Link href="/admin/enquiries" className={styles.launcherChoice}><span><strong>Open enquiries</strong><span>Your Operations role cannot originate a commercial transport order. Continue from an authorised enquiry or commercial handoff.</span></span><ArrowRight size={15} /></Link>
+            <Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its Digital Job File.</span></span><ArrowRight size={15} /></Link>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+export function V4OperationsOverview({ data, workflow, finance, note, userName, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -489,9 +609,9 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
         <FinanceSnapshot finance={finance} />
       </div>
 
-      <OperationalNotes note={note} selectedBranch={selectedBranch} canPostNotes={canPostNotes} />
+      <OperationalNotes note={note} selectedBranch={selectedBranch} canPostNotes={canPostNotes} generatedAt={data.generated_at} />
 
-      {launcherOpen ? <div className={styles.launcherBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLauncherOpen(false); }}><section className={styles.launcher} role="dialog" aria-modal="true" aria-labelledby="new-shipment-title"><div className={styles.launcherHeader}><div><h2 id="new-shipment-title">New shipment</h2><p>KCPL creates shipment records through the controlled planning, tender and booking chain. This launcher starts the authorised workflow instead of bypassing it.</p></div><button type="button" className={styles.iconButton} onClick={() => setLauncherOpen(false)} aria-label="Close new shipment launcher"><X size={15} /></button></div><div className={styles.launcherBody}>{canViewCommercial ? <Link href="/admin/rating?create=1" className={styles.launcherChoice}><span><strong>Create transport order</strong><span>Start planning, rating, tender and booking for a new movement.</span></span><ArrowRight size={15} /></Link> : <Link href="/admin/enquiries" className={styles.launcherChoice}><span><strong>Open enquiries</strong><span>Operations users can review an existing enquiry and follow its authorised commercial handoff.</span></span><ArrowRight size={15} /></Link>}<Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its Digital Job File.</span></span><ArrowRight size={15} /></Link></div></section></div> : null}
+      {launcherOpen ? <NewShipmentLauncher canViewCommercial={canViewCommercial} selectedBranch={selectedBranch} branches={branches} onClose={() => setLauncherOpen(false)} /> : null}
     </div>
   );
 }
