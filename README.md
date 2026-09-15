@@ -1,5 +1,3 @@
-> Coding agents: read [AGENTS.md](AGENTS.md), the [UI/UX design guide](docs/UI_UX_DESIGN_GUIDE.md) and the [operating system contract](docs/OPERATING_SYSTEM.md) before changing KCPL. The design guide includes the shared visual standard and a copy-paste task prompt for ChatGPT chat mode.
-
 # Kapileshwor Cargo Pvt. Ltd. (KCPL)
 
 KCPL's public website and private freight operations system. The application is a Next.js App Router project with Firebase-backed authentication, operational data and private document storage.
@@ -111,7 +109,7 @@ Core workspaces include:
 - Management analytics
 - Staff & branch access
 
-The UI is intentionally one light, warm operations system rather than separate dark dashboards. Record IDs, shipment references, AWBs/BL-style references and system keys use monospace treatment for fast scanning.
+Record IDs, shipment references, AWBs/BL-style references and system keys use monospace treatment for fast scanning.
 
 ## Security notes
 
