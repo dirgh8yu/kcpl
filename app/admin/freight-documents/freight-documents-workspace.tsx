@@ -11,6 +11,8 @@ import {
   OpsMono,
   OpsNotice,
   OpsPage,
+  OpsStat,
+  OpsStatStrip,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
@@ -238,7 +240,7 @@ export function FreightDocumentsWorkspace({
   const hasFilters = Boolean(query) || focus !== "all";
 
   return (
-    <OpsPage className="bg-[var(--admin-canvas)]">
+    <OpsPage className="freight-documents-register">
       <div className="min-h-[calc(100dvh-var(--app-toolbar-height))] bg-[var(--admin-canvas)] px-4 pb-8 pt-5 md:px-6">
         <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
@@ -250,6 +252,12 @@ export function FreightDocumentsWorkspace({
         </header>
 
         {message ? <div className="mb-4"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+        <OpsStatStrip className="freight-documents-stat-strip mb-4">
+          <OpsStat label="Missing primary" value={summary.missing_primary} detail="Produce the carriage draft" tone={summary.missing_primary ? "warning" : "success"} active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: "missing", selected: null, shipment: null }); }}/>
+          <OpsStat label="Awaiting review" value={summary.review_pending} detail="Verify generated revisions" tone={summary.review_pending ? "warning" : "success"} active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: "review", selected: null, shipment: null }); }}/>
+          <OpsStat label="Generated" value={summary.generated_current} detail="Current document revisions" tone="info" active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: "generated", selected: null, shipment: null }); }}/>
+          <OpsStat label="Eligible Job Files" value={summary.eligible} detail="Booked and active shipments" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }}/>
+        </OpsStatStrip>
         {summary.missing_primary > 0 || summary.review_pending > 0 ? (
           <div className="mb-4">
             <OpsNotice tone="warning">

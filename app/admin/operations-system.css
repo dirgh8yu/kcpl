@@ -784,6 +784,38 @@
     min-height: 82px;
   }
 }
+.kcpl-admin-content .freight-documents-register {
+  min-width: 0;
+}
+.kcpl-admin-content .freight-documents-stat-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.kcpl-admin-content .freight-documents-stat-strip .ops-stat {
+  min-height: 92px;
+}
+.kcpl-admin-content .freight-documents-register > div > header {
+  margin-bottom: 16px;
+}
+.kcpl-admin-content .freight-documents-register .ops-table-wrap {
+  border: 0;
+}
+.kcpl-admin-content .freight-documents-register .ops-table tbody tr:hover {
+  background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .freight-documents-register .ops-table tbody tr[data-selected="true"] {
+  box-shadow: inset 3px 0 0 var(--admin-crimson);
+}
+.kcpl-admin-content .freight-documents-register .ops-table td {
+  vertical-align: middle;
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .freight-documents-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kcpl-admin-content .freight-documents-stat-strip .ops-stat {
+    min-height: 82px;
+  }
+}
 
 /* Live visibility: surface operational signal before the detailed register. */
 .kcpl-admin-content .visibility-stat-strip {
