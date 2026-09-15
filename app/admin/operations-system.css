@@ -531,6 +531,111 @@
   box-shadow: inset 0 3px 0 var(--admin-crimson);
 }
 .kcpl-admin-content .kcpl-ops-overview .overview-metrics button.ops-stat:hover { background: var(--admin-canvas); }
+.kcpl-admin-content .kcpl-ops-overview .overview-status-board {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
+  background: var(--admin-surface);
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-board-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-kicker {
+  margin: 0 0 2px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-board-heading h2 {
+  margin: 0;
+  color: var(--admin-ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-board-heading p:last-child {
+  margin: 2px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  min-width: 0;
+  padding: 8px 0;
+  color: var(--admin-ink);
+  text-decoration: none;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item:hover .overview-status-item-label {
+  color: var(--admin-crimson);
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item strong {
+  color: var(--admin-ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item-track {
+  grid-column: 1;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--admin-crimson);
+  transition: width 160ms ease;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-item-percent {
+  grid-column: 2;
+  grid-row: 2;
+  color: var(--admin-faint);
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-board .overview-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.kcpl-admin-content .kcpl-ops-overview .overview-status-board .overview-section-link:hover {
+  color: var(--admin-crimson);
+}
 .kcpl-admin-content .kcpl-ops-overview .ops-surface {
   border-color: var(--admin-line);
   border-radius: 8px;
@@ -1270,6 +1375,10 @@
   .kcpl-admin-content .kcpl-ops-overview .overview-metrics,
   .kcpl-admin-content .overview-loading-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .kcpl-admin-content .kcpl-ops-overview .overview-metrics .ops-stat { min-height: 98px; padding: 14px; }
+  .kcpl-admin-content .kcpl-ops-overview .overview-status-board { margin-bottom: 16px; padding: 16px; }
+  .kcpl-admin-content .kcpl-ops-overview .overview-status-board-heading { flex-direction: column; gap: 8px; }
+  .kcpl-admin-content .kcpl-ops-overview .overview-status-board .overview-section-link { min-height: 40px; }
+  .kcpl-admin-content .kcpl-ops-overview .overview-status-list { grid-template-columns: 1fr; gap: 4px; }
   .kcpl-admin-content .kcpl-ops-overview .overview-pane-header { min-height: 0; padding: 16px; }
   .kcpl-admin-content .kcpl-ops-overview .overview-pane-header { flex-direction: column; gap: 6px; }
   .kcpl-admin-content .kcpl-ops-overview .overview-row {
