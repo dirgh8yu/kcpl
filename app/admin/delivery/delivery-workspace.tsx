@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Search, Truck, X } from "lucide-react";
-import { OpsBadge, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
 type Focus = "all" | "active" | "failed" | "pod_pending" | "verified";
@@ -121,11 +121,18 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   }, [focus, initialRows, query]);
 
   const selected = selectedReference ? initialRows.find((row) => row.reference === selectedReference) ?? null : null;
+  const filtersActive = Boolean(query.trim()) || focus !== "all";
+
+  function reset() {
+    setQuery("");
+    setFocus("all");
+  }
 
   return <OpsPage>
     <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Delivery & POD</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Last-mile execution queue · {initialRows.length} deliveries · POD evidence received ≠ POD verified</p></div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="sm">Shipments</Link></div>
       </header>
 
       {initialSummary.delivered_pod_pending > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></span></OpsNotice></div> : null}
@@ -133,7 +140,11 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}>
+              <Search size={14} style={{ color: "var(--admin-muted)" }}/>
+              <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/>
+              {query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear delivery search" style={{ width: 24, height: 24, display: "grid", placeItems: "center", border: 0, background: "transparent", color: "var(--admin-muted)", cursor: "pointer" }}><X size={12}/></button> : null}
+            </label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Delivery state filter">
               <button type="button" style={chipStyle(focus === "all")} onClick={() => setFocus("all")}>All</button>
               <button type="button" style={chipStyle(focus === "active")} onClick={() => setFocus("active")}>Delivery active</button>
@@ -141,6 +152,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
               <button type="button" style={chipStyle(focus === "pod_pending")} onClick={() => setFocus("pod_pending")}>POD pending</button>
               <button type="button" style={chipStyle(focus === "verified")} onClick={() => setFocus("verified")}>POD verified</button>
             </div>
+            {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{rows.length} entries</span>
           </div>
 
@@ -155,9 +167,9 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                 <td><div>{row.next_delivery_at ? dateTime(row.next_delivery_at) : row.last_attempt_at ? dateTime(row.last_attempt_at) : "Not scheduled"}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : `${row.attempt_count} attempt${row.attempt_count === 1 ? "" : "s"}`}</div></td>
                 <td><OpsBadge tone={stateTone(row)}>{stateLabel(row)}</OpsBadge></td>
                 <td><OpsBadge tone={podTone(row)}>{podLabel(row)}</OpsBadge><div style={{ marginTop: 3, fontSize: 12, color: "var(--admin-muted)" }}>{row.pod_evidence_count} item{row.pod_evidence_count === 1 ? "" : "s"}</div></td>
-                <td>{row.delivery_state === "pod_verified" ? <CheckCircle2 size={15} style={{ color: "var(--admin-success)" }} aria-label="Closeout evidence ready"/> : exception ? <AlertTriangle size={15} style={{ color: row.delivery_state === "delivery_failed" ? "var(--admin-danger)" : "var(--admin-warning)" }} aria-label="Closeout blocked"/> : <Truck size={15} style={{ color: "var(--admin-muted)" }} aria-label="Delivery in progress"/>}</td>
+                <td><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} aria-label={`Open Delivery and POD control for ${row.reference}`} onClick={(event) => event.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 24, minHeight: 24 }}>{row.delivery_state === "pod_verified" ? <CheckCircle2 size={15} style={{ color: "var(--admin-success)" }}/> : exception ? <AlertTriangle size={15} style={{ color: row.delivery_state === "delivery_failed" ? "var(--admin-danger)" : "var(--admin-warning)" }}/> : <Truck size={15} style={{ color: "var(--admin-muted)" }}/>}</Link></td>
               </tr>;
-            })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Truck size={18}/>} title={query || focus !== "all" ? "No results" : "No final-mile movements"} description={query || focus !== "all" ? "Try changing the filter or search terms." : "No accessible shipments are currently in the final-mile queue."}/>} 
+            })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Truck size={18}/>} title={filtersActive ? "No results" : "No final-mile movements"} description={filtersActive ? "Try changing or resetting the current filters." : "No accessible shipments are currently in the final-mile queue."} action={filtersActive ? <OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton> : undefined}/>} 
           </section>
         </div>
 
