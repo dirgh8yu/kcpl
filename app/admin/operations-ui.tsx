@@ -24,6 +24,7 @@ export function OpsPageHeader({
   meta,
   actions,
   children,
+  className,
 }: {
   eyebrow?: string;
   title: ReactNode;
@@ -31,9 +32,10 @@ export function OpsPageHeader({
   meta?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <header className="ops-page-header">
+    <header className={cx("ops-page-header", className)}>
       <div className="ops-page-header-main">
         <div className="ops-page-heading">
           {eyebrow ? <p className="ops-eyebrow">{eyebrow}</p> : null}
