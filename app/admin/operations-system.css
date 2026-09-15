@@ -198,10 +198,246 @@
 .kcpl-admin-content .ops-empty p { font-size: 13px; line-height: 20px; }
 .kcpl-admin-content .ops-empty-icon { background: transparent; }
 .kcpl-admin-content .shipments-register-content { padding-top: 0; }
+.kcpl-admin-content .shipments-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border-block: 1px solid var(--admin-line);
+  padding-block: 12px;
+}
+.kcpl-admin-content .shipments-toolbar-search {
+  min-width: min(280px, 100%);
+  max-width: 380px;
+  flex: 1 1 300px;
+}
+.kcpl-admin-content .shipments-status-filters {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.kcpl-admin-content .shipments-filter-tab {
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius);
+  background: transparent;
+  padding: 0 10px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.kcpl-admin-content .shipments-filter-tab:hover {
+  border-color: var(--admin-line);
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .shipments-filter-tab[data-active="true"] {
+  border-color: var(--admin-crimson);
+  background: var(--admin-crimson);
+  color: white;
+}
+.kcpl-admin-content .shipments-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.kcpl-admin-content .shipments-filter-trigger {
+  display: inline-flex;
+  min-height: var(--app-control-height);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius);
+  background: var(--admin-surface);
+  padding: 0 12px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+.kcpl-admin-content .shipments-filter-trigger::-webkit-details-marker { display: none; }
+.kcpl-admin-content .shipments-filter-trigger:hover,
+.kcpl-admin-content details[open] > .shipments-filter-trigger {
+  border-color: var(--admin-line-strong);
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .shipments-filter-count {
+  display: inline-grid;
+  min-width: 20px;
+  min-height: 20px;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--admin-crimson);
+  color: white;
+  font-size: 12px;
+  line-height: 16px;
+}
+.kcpl-admin-content .shipments-filter-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  width: min(300px, calc(100vw - 32px));
+  gap: 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
+  background: var(--admin-surface);
+  padding: 16px;
+  box-shadow: var(--app-surface-shadow);
+}
+.kcpl-admin-content .shipments-filter-menu label {
+  display: grid;
+  gap: 5px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.kcpl-admin-content .shipments-filter-menu select { width: 100%; }
+.kcpl-admin-content .shipments-attention-filter {
+  display: inline-flex;
+  min-height: var(--app-control-height);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius);
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.kcpl-admin-content .shipments-attention-filter[data-active="true"] {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+}
+.kcpl-admin-content .shipments-reset {
+  min-height: var(--app-control-height);
+  border: 0;
+  background: transparent;
+  padding: 0 4px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.kcpl-admin-content .shipments-reset:hover { color: var(--admin-ink); }
+.kcpl-admin-content .shipments-result-count {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.kcpl-admin-content .shipment-next-action-cell {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kcpl-admin-content .shipment-next-action-cell[data-tone="danger"] { color: var(--admin-danger); font-weight: 500; }
+.kcpl-admin-content .shipment-next-action-cell[data-tone="warning"] { color: var(--admin-warning); font-weight: 500; }
+.kcpl-admin-content .shipment-next-action-cell[data-tone="success"] { color: var(--admin-success); }
+.kcpl-admin-content .shipments-register-table { min-width: 1120px; }
 .kcpl-admin-content .shipments-register-grid { grid-template-columns: minmax(0,1fr) 320px; min-height: 400px; border: 1px solid var(--admin-line); border-top: 0; background: var(--admin-surface); }
 .kcpl-admin-content .shipments-table-wrap { max-height: calc(100dvh - 290px); min-height: 320px; }
 .kcpl-admin-content .shipments-table thead { position: sticky; top: 0; z-index: 1; }
 .kcpl-admin-content .shipment-peek-panel { padding: 18px; background: var(--admin-surface); }
+.kcpl-admin-content .tender-workspace-page {
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .tender-workspace-page :where(input,select,textarea):focus-visible {
+  border-color: var(--admin-crimson);
+  box-shadow: 0 0 0 3px rgb(220 20 60 / 12%);
+  outline: none;
+}
+.kcpl-admin-content .tender-workspace-page table tbody tr:focus-visible {
+  outline: 2px solid var(--admin-crimson);
+  outline-offset: -2px;
+}
+.kcpl-admin-content .tender-workspace-page .ops-button {
+  min-height: 36px;
+}
+.kcpl-admin-content .shipment-live-flow,
+.kcpl-admin-content .shipment-workflow-spine {
+  color: var(--admin-ink);
+  font-family: inherit;
+}
+.kcpl-admin-content .shipment-live-flow .ops-eyebrow,
+.kcpl-admin-content .shipment-workflow-spine .ops-eyebrow {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 16px;
+  text-transform: none;
+}
+.kcpl-admin-content .shipment-live-flow :where(.ops-button,.ops-badge),
+.kcpl-admin-content .shipment-workflow-spine :where(.ops-button,.ops-badge) {
+  font-family: inherit;
+}
+.kcpl-admin-content .shipment-live-flow .ops-button,
+.kcpl-admin-content .shipment-workflow-spine .ops-button {
+  min-height: 36px;
+}
+.kcpl-admin-content .shipment-live-flow .ops-button[data-size="sm"],
+.kcpl-admin-content .shipment-workflow-spine .ops-button[data-size="sm"] {
+  min-height: 36px;
+  font-size: 13px;
+}
+.kcpl-admin-content .shipment-workflow-spine > .ops-surface {
+  border-radius: var(--app-surface-radius);
+}
+.kcpl-admin-content .shipment-workflow-spine .ops-surface-header {
+  min-height: 64px;
+}
+.kcpl-admin-content .shipment-workflow-spine .ops-surface-header .ops-button {
+  min-height: 40px;
+}
+.kcpl-admin-content .shipment-inspector {
+  width: min(520px, 100vw);
+  border-left-color: var(--admin-line-strong);
+  box-shadow: -16px 0 40px rgb(16 16 16 / 10%);
+}
+.kcpl-admin-content .shipment-inspector-header {
+  min-height: 88px;
+  padding: 20px 24px 16px;
+}
+.kcpl-admin-content .shipment-inspector-close {
+  display: inline-grid;
+  width: var(--app-control-height-touch);
+  min-height: var(--app-control-height-touch);
+  flex: none;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius);
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+}
+.kcpl-admin-content .shipment-inspector-close:hover {
+  background: var(--admin-surface-muted);
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .shipment-inspector-footer {
+  padding: 16px 24px 20px;
+}
+.kcpl-admin-content .shipment-inspector-footer .ops-button {
+  min-height: var(--app-control-height-touch);
+}
 .kcpl-admin-content .shipment-peek-head h2 { font-size: 18px; font-weight: 600; line-height: 26px; }
 .kcpl-admin-content .shipment-peek-section { padding-block: 14px; }
 .kcpl-admin-content .shipment-peek-kicker, .kcpl-admin-content .shipment-peek-label { color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; }
@@ -2267,6 +2503,16 @@
     min-height: var(--app-control-height-touch);
   }
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kcpl-admin-content .shipments-toolbar { align-items: stretch; gap: 8px; }
+  .kcpl-admin-content .shipments-toolbar-search { max-width: none; flex-basis: 100%; }
+  .kcpl-admin-content .shipments-status-filters { order: 3; width: 100%; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+  .kcpl-admin-content .shipments-filter-tab { min-height: 40px; flex: none; }
+  .kcpl-admin-content .shipments-toolbar-actions { margin-left: 0; }
+  .kcpl-admin-content .shipments-filter-trigger,
+  .kcpl-admin-content .shipments-attention-filter,
+  .kcpl-admin-content .shipments-reset { min-height: var(--app-control-height-touch); }
+  .kcpl-admin-content .shipment-inspector-header { padding-inline: 16px; }
+  .kcpl-admin-content .shipment-inspector-footer { padding-inline: 16px; }
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi { min-height: 96px; padding: 13px 14px; }
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:nth-child(3n) { border-right: 1px solid var(--admin-line); }
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:nth-child(2n) { border-right: 0; }

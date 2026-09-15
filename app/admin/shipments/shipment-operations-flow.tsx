@@ -151,14 +151,14 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
   const openTasks = workflow?.open_tasks ?? fallbackJob.open_tasks;
 
   if (!workflow || !liveJob) {
-    return <section className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
+    return <section className="shipment-live-flow rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
       <div className="flex items-center justify-between gap-3"><div><p className="ops-eyebrow">Operations flow</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">{loading ? "Loading live readiness…" : "Live readiness unavailable"}</h3></div><OpsButton variant="ghost" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={11}/>{loading ? "Loading" : "Retry"}</OpsButton></div>
       <div className="mt-3 grid grid-cols-3 gap-2"><FallbackGate label="Tasks" value={`${fallbackJob.open_tasks} open`}/><FallbackGate label="Customs" value={`${fallbackJob.required_customs_open} open`}/><FallbackGate label="ETA" value={dateOnly(fallbackJob.eta)}/></div>
       {error ? <p className="mt-3 text-[length:var(--app-label-size)] leading-4 text-[#9d5150]">{error} Existing shipment data remains visible and unchanged.</p> : null}
     </section>;
   }
 
-  return <section className="rounded-[var(--app-radius)] border border-[#e5ddd6] bg-[var(--admin-surface)] p-4 shadow-[0_8px_28px_rgba(70,52,40,.035)]">
+  return <section className="shipment-live-flow rounded-[var(--app-radius)] border border-[#e5ddd6] bg-[var(--admin-surface)] p-4 shadow-[0_8px_28px_rgba(70,52,40,.035)]">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><p className="ops-eyebrow">Live operations flow</p><h3 className="mt-1 text-[13px] font-[740] text-[#49413b]">One shipment, one control strip</h3><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Movement, ownership, customs, smart documents, tasks and billing readiness share one live view.</p></div>
       <div className="flex flex-wrap items-center gap-2"><OpsBadge tone="info">{directionLabel(workflow.document_intelligence.direction)}</OpsBadge><OpsBadge tone={workflow.blockers.length || liveJob.status === "exception" ? "warning" : "success"}>{workflow.blockers.length || liveJob.status === "exception" ? "Action required" : "Operationally clear"}</OpsBadge><OpsButton variant="ghost" size="sm" onClick={() => void refresh()} disabled={loading}><RefreshCw size={11}/>{loading ? "Refreshing" : "Refresh"}</OpsButton></div>
