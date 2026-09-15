@@ -937,7 +937,7 @@
   }
 }
 
-/* Document Vault: make evidence review the primary queue, not a metadata wall. */
+/* Tasks & notifications: surface queue pressure before the detailed history. */
 .kcpl-admin-content .alerts-workspace-page,
 .kcpl-admin-content .notifications-workspace-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
