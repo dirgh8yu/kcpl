@@ -1,12 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { FilePlus2, FileText, RefreshCw, ShieldCheck } from "lucide-react";
-import { useMemo, useState } from "react";
-import { OpsBadge, OpsEmptyState, OpsNotice, OpsPage } from "../operations-ui";
-import { generatedFreightDocumentKinds, generatedFreightDocumentLabels, generatedReference, type FreightDocumentQueueRow, type GeneratedFreightDocumentKind } from "./freight-documents";
+import { AlertTriangle, CheckCircle2, FilePlus2, FileText, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  OpsBadge,
+  OpsButton,
+  OpsEmptyState,
+  OpsField,
+  OpsMono,
+  OpsNotice,
+  OpsPage,
+  OpsPageHeader,
+  OpsSearch,
+  OpsSurface,
+  OpsTableWrap,
+  OpsToolbar,
+} from "../operations-ui";
+import { useWorkspaceQuery } from "../use-workspace-query";
+import {
+  generatedFreightDocumentKinds,
+  generatedFreightDocumentLabels,
+  generatedReference,
+  type FreightDocumentQueueRow,
+  type GeneratedFreightDocumentKind,
+} from "./freight-documents";
 
 type Summary = { eligible: number; missing_primary: number; generated_current: number; review_pending: number };
+type Focus = "all" | "missing" | "generated" | "review";
 type FormState = {
   kind: GeneratedFreightDocumentKind;
   shipper: string;
@@ -25,57 +46,211 @@ type FormState = {
   customerSafe: boolean;
 };
 
-const emptyForm: FormState = { kind: "shipping_instruction", shipper: "", consignee: "", notifyParty: "", cargoDescription: "", marksAndNumbers: "", packageType: "", freightTerms: "", placeOfReceipt: "", placeOfDelivery: "", masterReference: "", houseReference: "", incoterm: "", specialInstructions: "", customerSafe: false };
+const emptyForm: FormState = {
+  kind: "shipping_instruction",
+  shipper: "",
+  consignee: "",
+  notifyParty: "",
+  cargoDescription: "",
+  marksAndNumbers: "",
+  packageType: "",
+  freightTerms: "",
+  placeOfReceipt: "",
+  placeOfDelivery: "",
+  masterReference: "",
+  houseReference: "",
+  incoterm: "",
+  specialInstructions: "",
+  customerSafe: false,
+};
+
+const FOCUS_OPTIONS: Array<{ value: Focus; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "missing", label: "Missing carriage doc" },
+  { value: "generated", label: "Generated" },
+  { value: "review", label: "Awaiting review" },
+];
 
 function formFor(row: FreightDocumentQueueRow): FormState {
   const kind = row.recommended_kinds[0] ?? "shipping_instruction";
-  return { ...emptyForm, kind, cargoDescription: row.cargo_description, packageType: row.pieces > 0 ? `${row.pieces} package(s)` : "", placeOfReceipt: row.origin, placeOfDelivery: row.destination, masterReference: row.booking_reference ?? "", houseReference: generatedReference(kind, row.reference) };
+  return {
+    ...emptyForm,
+    kind,
+    cargoDescription: row.cargo_description,
+    packageType: row.pieces > 0 ? `${row.pieces} package(s)` : "",
+    placeOfReceipt: row.origin,
+    placeOfDelivery: row.destination,
+    masterReference: row.booking_reference ?? "",
+    houseReference: generatedReference(kind, row.reference),
+  };
 }
 
-function Metric({ label, value, alert = false }: { label: string; value: number; alert?: boolean }) {
-  return <div className="min-h-[108px] border-b border-[var(--admin-line)] px-4 py-5 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-[length:var(--app-label-size)] uppercase tracking-[0.07em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-4 block text-[32px] font-normal leading-none tracking-[-0.045em] ${alert && value ? "text-[var(--admin-crimson)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>;
+function hasPendingReview(row: FreightDocumentQueueRow) {
+  return row.generated_documents.some((document) => !document.superseded && document.review_status !== "verified");
 }
 
-function Field({ label, children, wide = false }: { label: string; children: React.ReactNode; wide?: boolean }) {
-  return <label className={`grid gap-1.5 ${wide ? "md:col-span-2" : ""}`}><span className="text-[length:var(--app-label-size)] font-medium uppercase tracking-[0.05em] text-[#666660]">{label}</span>{children}</label>;
+function rowMatchesFocus(row: FreightDocumentQueueRow, focus: Focus) {
+  if (focus === "missing") return row.missing_primary_carriage_document;
+  if (focus === "generated") return row.current_generated_count > 0;
+  if (focus === "review") return hasPendingReview(row);
+  return true;
 }
 
-function Step({ number, title, detail, children }: { number: string; title: string; detail: string; children: React.ReactNode }) {
-  return <section className="border-t border-[var(--admin-line-strong)] py-5 first:border-t-0 first:pt-0"><div className="grid grid-cols-[42px_minmax(0,1fr)] gap-3"><span className="pt-0.5 text-[length:var(--app-label-size)] font-medium text-[var(--admin-crimson)]">{number}</span><div><h3 className="text-[15px] font-medium tracking-[-0.02em]">{title}</h3><p className="mt-1 max-w-2xl text-[11px] leading-5 text-[var(--admin-muted)]">{detail}</p></div></div><div className="mt-4">{children}</div></section>;
+function rowStatus(row: FreightDocumentQueueRow) {
+  if (row.missing_primary_carriage_document) return { label: "Missing carriage doc", tone: "warning" as const };
+  if (hasPendingReview(row)) return { label: "Awaiting review", tone: "warning" as const };
+  if (row.current_generated_count > 0) return { label: "Generated", tone: "success" as const };
+  return { label: "Ready", tone: "neutral" as const };
 }
 
-export function FreightDocumentsWorkspace({ initialRows, initialSummary, initialShipment }: { initialRows: FreightDocumentQueueRow[]; initialSummary: Summary; initialShipment?: string }) {
+function shortDate(value: string | null | undefined) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kathmandu" }).format(date);
+}
+
+export function FreightDocumentsWorkspace({
+  initialRows,
+  initialSummary,
+  initialShipment,
+}: {
+  initialRows: FreightDocumentQueueRow[];
+  initialSummary: Summary;
+  initialShipment?: string;
+}) {
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
-  const [selectedReference, setSelectedReference] = useState(initialShipment && initialRows.some((row) => row.reference === initialShipment) ? initialShipment : initialRows[0]?.reference ?? "");
+  const { params, search, update } = useWorkspaceQuery();
+  const query = params.get("q") ?? "";
+  const requestedFocus = params.get("view");
+  const focus: Focus = FOCUS_OPTIONS.some((option) => option.value === requestedFocus) ? requestedFocus as Focus : "all";
+  const [allowInitialSelection, setAllowInitialSelection] = useState(Boolean(initialShipment));
+  const selectedReference = (params.get("selected") ?? (allowInitialSelection ? initialShipment : "") ?? "").trim().toUpperCase();
   const selected = useMemo(() => rows.find((row) => row.reference === selectedReference) ?? null, [rows, selectedReference]);
-  const [form, setForm] = useState<FormState>(() => selected ? formFor(selected) : emptyForm);
+  const selectedKey = selected?.reference ?? null;
+  const initialSelected = initialShipment ? initialRows.find((row) => row.reference === initialShipment) ?? null : null;
+  const [draftReference, setDraftReference] = useState(initialSelected?.reference ?? "");
+  const [form, setForm] = useState<FormState>(() => initialSelected ? formFor(initialSelected) : emptyForm);
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "warning" | "danger">("success");
 
-  function choose(row: FreightDocumentQueueRow) { setSelectedReference(row.reference); setForm(formFor(row)); setMessage(""); }
-  function patch<K extends keyof FormState>(key: K, value: FormState[K]) { setForm((current) => ({ ...current, [key]: value })); }
-  function changeKind(kind: GeneratedFreightDocumentKind) { setForm((current) => ({ ...current, kind, houseReference: selected ? generatedReference(kind, selected.reference) : current.houseReference })); }
+  const filtered = useMemo(() => {
+    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    return rows.filter((row) => {
+      if (!rowMatchesFocus(row, focus)) return false;
+      if (!terms.length) return true;
+      const haystack = [
+        row.reference,
+        row.booking_reference ?? "",
+        row.customer_name,
+        row.origin,
+        row.destination,
+        row.mode,
+        row.carrier_name ?? "",
+        row.cargo_description,
+      ].join(" ").toLowerCase();
+      return terms.every((term) => haystack.includes(term));
+    });
+  }, [focus, query, rows]);
+
+  const focusCounts = useMemo(() => ({
+    all: rows.length,
+    missing: rows.filter((row) => row.missing_primary_carriage_document).length,
+    generated: rows.filter((row) => row.current_generated_count > 0).length,
+    review: rows.filter(hasPendingReview).length,
+  }), [rows]);
+
+  useEffect(() => {
+    if (!selected) {
+      if (draftReference) {
+        setDraftReference("");
+        setForm(emptyForm);
+      }
+      return;
+    }
+    if (draftReference !== selected.reference) {
+      setDraftReference(selected.reference);
+      setForm(formFor(selected));
+      setMessage("");
+    }
+  }, [draftReference, selected]);
+
+  useEffect(() => {
+    if (!selectedKey) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAllowInitialSelection(false);
+        update({ selected: null, shipment: null });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [selectedKey, update]);
+
+  function patch<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function changeKind(kind: GeneratedFreightDocumentKind) {
+    setForm((current) => ({
+      ...current,
+      kind,
+      houseReference: selected ? generatedReference(kind, selected.reference) : current.houseReference,
+    }));
+  }
+
+  function openEditor(row: FreightDocumentQueueRow) {
+    setAllowInitialSelection(false);
+    update({ selected: row.reference, shipment: null }, "push");
+  }
+
+  function closeEditor() {
+    setAllowInitialSelection(false);
+    update({ selected: null, shipment: null });
+  }
 
   async function refresh(showNotice = true) {
     const response = await fetch("/api/admin/freight-documents", { cache: "no-store" });
     const data = await response.json() as { ok?: boolean; rows?: FreightDocumentQueueRow[]; summary?: Summary; error?: string };
     if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Could not refresh freight documents.");
-    setRows(data.rows); setSummary(data.summary);
-    if (showNotice) { setMessageTone("success"); setMessage("Freight document workspace refreshed."); }
+    setRows(data.rows);
+    setSummary(data.summary);
+    if (selectedReference && !data.rows.some((row) => row.reference === selectedReference)) closeEditor();
+    if (showNotice) {
+      setMessageTone("success");
+      setMessage("Freight document workspace refreshed.");
+    }
   }
 
   async function generate() {
     if (!selected) return;
-    setBusy(true); setMessage("");
+    setBusy(true);
+    setMessage("");
     try {
-      const response = await fetch("/api/admin/freight-documents", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reference: selected.reference, ...form }) });
+      const response = await fetch("/api/admin/freight-documents", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reference: selected.reference, ...form }),
+      });
       const data = await response.json() as { ok?: boolean; error?: string; document?: { filename: string } };
       if (!response.ok || !data.ok) throw new Error(data.error || "Document generation failed.");
-      await refresh(false); setMessageTone("success"); setMessage(`${data.document?.filename ?? "Freight document"} generated and placed in Document Vault for review.`);
-    } catch (error) { setMessageTone("danger"); setMessage(error instanceof Error ? error.message : "Document generation failed."); }
-    finally { setBusy(false); }
+      await refresh(false);
+      setMessageTone("success");
+      setMessage(`${data.document?.filename ?? "Freight document"} generated and placed in Document Vault for review.`);
+    } catch (error) {
+      setMessageTone("danger");
+      setMessage(error instanceof Error ? error.message : "Document generation failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function openDocument(reference: string, documentId: string) {
@@ -85,29 +260,249 @@ export function FreightDocumentsWorkspace({ initialRows, initialSummary, initial
       const data = await response.json() as { ok?: boolean; url?: string; error?: string };
       if (!response.ok || !data.ok || !data.url) throw new Error(data.error || "Document could not be opened.");
       window.open(data.url, "_blank", "noopener,noreferrer");
-    } catch (error) { setMessageTone("danger"); setMessage(error instanceof Error ? error.message : "Document could not be opened."); }
+    } catch (error) {
+      setMessageTone("danger");
+      setMessage(error instanceof Error ? error.message : "Document could not be opened.");
+    }
   }
 
-  return <OpsPage><main className="min-h-[calc(100vh-64px)] bg-[var(--admin-canvas)] text-[var(--admin-ink)]"><div className="mx-auto w-full max-w-[1320px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-    <header className="grid gap-6 border-b border-[#101010] pb-7 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"><div><p className="text-[length:var(--app-label-size)] uppercase tracking-[0.11em] text-[var(--admin-crimson)]">Operations · Controlled documents</p><h1 className="mt-3 text-[clamp(36px,4vw,52px)] font-normal leading-[1.04] tracking-[-0.04em]">Freight Documents</h1><p className="mt-3 max-w-2xl text-[14px] leading-6 text-[var(--admin-muted)]">Produce controlled KCPL carriage and execution documents from the Digital Job File, then pass each revision into the evidence vault for review.</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => refresh().catch((error) => { setMessageTone("danger"); setMessage(error instanceof Error ? error.message : "Could not refresh freight documents."); })} className="inline-flex h-10 items-center gap-2 border border-[var(--admin-line-strong)] px-3 text-[12px] hover:border-[#101010] hover:bg-[var(--admin-surface-muted)]"><RefreshCw size={13}/>Refresh</button><Link href="/admin/documents" className="inline-flex h-10 items-center border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-4 text-[12px] font-medium text-white hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)]">Document Vault</Link></div></header>
+  const returnTo = `/admin/freight-documents${search}`;
+  const hasFilters = Boolean(query) || focus !== "all";
 
-    <section className="grid border-b border-[var(--admin-line)] sm:grid-cols-4"><Metric label="Eligible jobs" value={summary.eligible}/><Metric label="Missing carriage doc" value={summary.missing_primary} alert/><Metric label="Current generated" value={summary.generated_current}/><Metric label="Awaiting review" value={summary.review_pending} alert/></section>
-    {message ? <div className="mt-5"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+  return (
+    <OpsPage>
+      <OpsPageHeader
+        title="Freight Documents"
+        description="Controlled carriage and execution documents generated from Digital Job Files."
+        meta={`${summary.eligible} eligible Job File${summary.eligible === 1 ? "" : "s"} · ${summary.missing_primary} missing carriage doc · ${summary.generated_current} current generated · ${summary.review_pending} awaiting review`}
+        actions={
+          <Link href="/admin/documents" className="ops-button" data-variant="primary" data-size="md">
+            <FileText size={16} strokeWidth={1.75} aria-hidden="true"/> Document Vault
+          </Link>
+        }
+      />
 
-    <section className="mt-6 grid min-h-[760px] border-y border-[var(--admin-line)] xl:grid-cols-[330px_minmax(0,1fr)]">
-      <aside className="border-b border-[var(--admin-line)] xl:border-b-0 xl:border-r"><div className="border-b border-[#101010] py-4 pr-4"><p className="text-[length:var(--app-label-size)] uppercase tracking-[0.07em] text-[var(--admin-muted)]">Production queue</p><h2 className="mt-1 text-[20px] font-normal tracking-[-0.03em]">Eligible Job Files</h2></div><div className="max-h-[760px] overflow-y-auto">{rows.length ? rows.map((row) => { const active = row.reference === selectedReference; return <button key={row.reference} type="button" onClick={() => choose(row)} className={`relative w-full border-b border-[var(--admin-line)] px-4 py-4 text-left transition hover:bg-[var(--admin-surface-muted)] ${active ? "bg-[var(--admin-surface-muted)]" : ""}`}>{active ? <span className="absolute bottom-2 left-0 top-2 w-[2px] bg-[var(--admin-crimson)]"/> : null}<div className="flex items-start justify-between gap-3"><div className="min-w-0"><strong className="block truncate text-[12px] font-medium">{row.reference}</strong><p className="mt-1 truncate text-[11px] text-[var(--admin-muted)]">{row.customer_name}</p></div>{row.missing_primary_carriage_document ? <OpsBadge tone="warning">Missing</OpsBadge> : <OpsBadge tone="success">Generated</OpsBadge>}</div><p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.origin} → {row.destination}</p><p className="mt-1 text-[length:var(--app-label-size)] uppercase tracking-[0.05em] text-[var(--admin-muted)]">{row.mode} · {row.current_generated_count} current revision{row.current_generated_count === 1 ? "" : "s"}</p></button>; }) : <OpsEmptyState title="No eligible Job Files" description="Booked and active shipments will appear here when document generation is available."/>}</div></aside>
+      <div className="px-4 pb-6 md:px-6">
+        {message ? <div className="mb-4"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
 
-      <div className="min-w-0 px-5 py-6 sm:px-7">{selected ? <>
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--admin-line-strong)] pb-5"><div><p className="text-[length:var(--app-label-size)] uppercase tracking-[0.07em] text-[var(--admin-muted)]">{selected.reference}</p><h2 className="mt-2 text-[28px] font-normal tracking-[-0.035em]">Document production</h2><p className="mt-2 text-[12px] text-[var(--admin-muted)]">{selected.customer_name} · {selected.origin} → {selected.destination} · {selected.mode.toUpperCase()}</p></div><Link href={`/admin/jobs/${encodeURIComponent(selected.reference)}`} className="border-b border-[#101010] pb-0.5 text-[11px] hover:border-[var(--admin-crimson)] hover:text-[var(--admin-crimson)]">Open Job File</Link></div>
-        <div className="my-5 border-l-2 border-[var(--admin-crimson)] bg-[var(--admin-surface-muted)] px-4 py-3 text-[11px] leading-5 text-[var(--admin-muted)]"><div className="flex gap-2"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-[var(--admin-crimson)]"/><p>KCPL-generated PDFs are controlled internal/house drafts. They do not replace or impersonate carrier-issued master originals. Each generated file is privately stored, hashed, revisioned and sent to Document Vault for review.</p></div></div>
+        <OpsToolbar className="mb-4">
+          <div className="min-w-[240px] flex-1 basis-[320px] max-w-[380px]">
+            <OpsSearch
+              value={query}
+              onChange={(event) => update({ q: event.target.value || null })}
+              placeholder="Search ref, customer, route…"
+              aria-label="Search freight document jobs"
+            />
+          </div>
 
-        <Step number="01" title="Document" detail="Choose the controlled document type and establish the house/internal reference."><div className="grid gap-3 md:grid-cols-2"><Field label="Document type"><select className="ops-input" value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>{generatedFreightDocumentKinds.filter((kind) => selected.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}</select></Field><Field label="House / internal reference"><input className="ops-input" value={form.houseReference} onChange={(event) => patch("houseReference", event.target.value)}/></Field></div></Step>
-        <Step number="02" title="Parties & cargo" detail="Capture the legal parties and shipment description used in the controlled draft."><div className="grid gap-3 md:grid-cols-2"><Field label="Shipper"><textarea className="ops-input min-h-20" value={form.shipper} onChange={(event) => patch("shipper", event.target.value)} placeholder="Legal shipper/exporter name and address"/></Field><Field label="Consignee"><textarea className="ops-input min-h-20" value={form.consignee} onChange={(event) => patch("consignee", event.target.value)} placeholder="Legal consignee/importer name and address"/></Field><Field label="Notify party"><textarea className="ops-input min-h-16" value={form.notifyParty} onChange={(event) => patch("notifyParty", event.target.value)}/></Field><Field label="Cargo description"><textarea className="ops-input min-h-16" value={form.cargoDescription} onChange={(event) => patch("cargoDescription", event.target.value)}/></Field><Field label="Marks & numbers"><input className="ops-input" value={form.marksAndNumbers} onChange={(event) => patch("marksAndNumbers", event.target.value)}/></Field><Field label="Package type"><input className="ops-input" value={form.packageType} onChange={(event) => patch("packageType", event.target.value)}/></Field></div></Step>
-        <Step number="03" title="Carriage terms" detail="Set receipt/delivery places, references and commercial carriage instructions."><div className="grid gap-3 md:grid-cols-2"><Field label="Place of receipt"><input className="ops-input" value={form.placeOfReceipt} onChange={(event) => patch("placeOfReceipt", event.target.value)}/></Field><Field label="Place of delivery"><input className="ops-input" value={form.placeOfDelivery} onChange={(event) => patch("placeOfDelivery", event.target.value)}/></Field><Field label="Carrier / master reference"><input className="ops-input" value={form.masterReference} onChange={(event) => patch("masterReference", event.target.value)}/></Field><Field label="Freight terms"><input className="ops-input" value={form.freightTerms} onChange={(event) => patch("freightTerms", event.target.value)} placeholder="Prepaid / collect / as agreed"/></Field><Field label="Incoterm"><input className="ops-input" value={form.incoterm} onChange={(event) => patch("incoterm", event.target.value)} placeholder="e.g. FOB, CIF, DDP"/></Field><Field label="Special instructions"><textarea className="ops-input min-h-16" value={form.specialInstructions} onChange={(event) => patch("specialInstructions", event.target.value)}/></Field></div></Step>
-        <Step number="04" title="Generate & review" detail="Create the next controlled PDF revision and inspect the revision trail before customer-facing use."><label className="flex items-center gap-2 text-[11px] text-[var(--admin-muted)]"><input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/>Mark generated draft customer-safe after staff checks content</label><button type="button" disabled={busy} onClick={generate} className="mt-4 inline-flex h-11 items-center gap-2 border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-4 text-[12px] font-medium text-white hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)] disabled:opacity-50"><FilePlus2 size={14}/>{busy ? "Generating…" : "Generate PDF & register in Vault"}</button>
-          <div className="mt-6 border-t border-[#101010]"><div className="flex items-center gap-2 py-4"><FileText size={14}/><h3 className="text-[14px] font-medium">Revision history</h3></div>{selected.generated_documents.length ? <div>{selected.generated_documents.map((doc) => <div key={doc.document_id} className="grid gap-3 border-t border-[var(--admin-line)] py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[11px] font-medium">R{doc.revision} · {doc.label}</strong><OpsBadge tone={doc.superseded ? "neutral" : doc.review_status === "verified" ? "success" : "warning"}>{doc.superseded ? "Superseded" : doc.review_status.replaceAll("_", " ")}</OpsBadge></div><p className="mt-1 truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{doc.filename} · SHA {doc.sha256.slice(0, 12)}…</p></div><button type="button" className="border-b border-[#101010] pb-0.5 text-[11px] hover:border-[var(--admin-crimson)] hover:text-[var(--admin-crimson)]" onClick={() => openDocument(selected.reference, doc.document_id)}>Open PDF</button></div>)}</div> : <div className="border-t border-[var(--admin-line)] py-6 text-[12px] text-[var(--admin-muted)]">No generated revisions yet.</div>}</div>
-        </Step>
-      </> : <div className="grid min-h-[500px] place-items-center"><OpsEmptyState title="Choose a Job File" description="Select an eligible shipment from the production queue."/></div>}</div>
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Freight document filters">
+            {FOCUS_OPTIONS.map((option) => {
+              const active = focus === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => { setAllowInitialSelection(false); update({ view: option.value === "all" ? null : option.value, selected: null, shipment: null }); }}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors ${active ? "border-[var(--admin-crimson)] bg-[var(--admin-crimson)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)] hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)]"}`}
+                >
+                  {option.label} <span className="tabular-nums">{focusCounts[option.value]}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <OpsButton
+              size="sm"
+              disabled={refreshing}
+              onClick={() => {
+                setRefreshing(true);
+                refresh().catch((error) => {
+                  setMessageTone("danger");
+                  setMessage(error instanceof Error ? error.message : "Could not refresh freight documents.");
+                }).finally(() => setRefreshing(false));
+              }}
+            >
+              <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/> {refreshing ? "Refreshing…" : "Refresh"}
+            </OpsButton>
+            {hasFilters ? <OpsButton size="sm" variant="ghost" onClick={() => { setAllowInitialSelection(false); update({ q: null, view: null, selected: null, shipment: null }); }}>Reset</OpsButton> : null}
+            <span className="whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {rows.length}</span>
+          </div>
+        </OpsToolbar>
+
+        <OpsSurface flush>
+          {filtered.length ? (
+            <OpsTableWrap>
+              <table className="ops-table min-w-[920px]" aria-label="Freight document production queue">
+                <thead>
+                  <tr>
+                    <th>Job File</th>
+                    <th>Customer · route</th>
+                    <th>Mode</th>
+                    <th>Document state</th>
+                    <th>Current revisions</th>
+                    <th>Updated</th>
+                    <th><span className="sr-only">Action</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((row) => {
+                    const status = rowStatus(row);
+                    const chosen = selected?.reference === row.reference;
+                    return (
+                      <tr key={row.reference} data-selected={chosen || undefined}>
+                        <td>
+                          <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`}>
+                            <OpsMono className="text-xs font-medium text-[var(--admin-info)]">{row.reference}</OpsMono>
+                          </Link>
+                          {row.booking_reference ? <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">Booking {row.booking_reference}</span> : null}
+                        </td>
+                        <td>
+                          <strong className="block text-sm font-medium text-[var(--admin-ink)]">{row.customer_name || "Customer not linked"}</strong>
+                          <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin} → {row.destination}</span>
+                        </td>
+                        <td><span className="text-sm text-[var(--admin-muted)]">{row.mode || "—"}</span></td>
+                        <td>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
+                            {row.current_generated_count > 0 && row.missing_primary_carriage_document ? <OpsBadge tone="neutral">{row.current_generated_count} generated</OpsBadge> : null}
+                          </div>
+                        </td>
+                        <td><span className="text-sm tabular-nums text-[var(--admin-ink)]">{row.current_generated_count}</span></td>
+                        <td><span className="text-sm text-[var(--admin-muted)]">{shortDate(row.updated_at)}</span></td>
+                        <td className="text-right"><OpsButton size="sm" variant="secondary" onClick={() => openEditor(row)}>Produce</OpsButton></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          ) : (
+            <OpsEmptyState
+              compact
+              kind={hasFilters ? "search" : "neutral"}
+              title={hasFilters ? "No Job Files match this view" : "No eligible Job Files"}
+              description={hasFilters ? "Change the document filter or search terms." : "Booked and active shipments will appear here when document generation is available."}
+              action={hasFilters ? <OpsButton size="sm" onClick={() => update({ q: null, view: null })}>Clear filters</OpsButton> : undefined}
+            />
+          )}
+        </OpsSurface>
+      </div>
+
+      {selected ? (
+        <>
+          <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={closeEditor} aria-label="Close document production panel"/>
+          <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Freight documents for ${selected.reference}`}>
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+              <div className="min-w-0">
+                <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{selected.reference}</OpsMono>{selected.booking_reference ? ` · Booking ${selected.booking_reference}` : ""}</p>
+                <h2 className="mt-1 text-base font-semibold leading-6">Document production</h2>
+                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{selected.customer_name} · {selected.origin} → {selected.destination} · {selected.mode || "Mode not set"}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <OpsBadge tone={rowStatus(selected).tone}>{rowStatus(selected).label}</OpsBadge>
+                <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={closeEditor} aria-label="Close document production panel">
+                  <X size={16} strokeWidth={1.75} aria-hidden="true"/>
+                </button>
+              </div>
+            </header>
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="border-b border-[var(--admin-line)] px-5 py-4">
+                <OpsNotice>
+                  <span className="flex items-start gap-2"><ShieldCheck size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>KCPL-generated PDFs are controlled internal/house drafts. Carrier-issued master originals remain authoritative.</span>
+                </OpsNotice>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Link href={`/admin/jobs/${encodeURIComponent(selected.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
+                  <span className="text-xs text-[var(--admin-muted)]">{selected.current_generated_count} current revision{selected.current_generated_count === 1 ? "" : "s"}</span>
+                </div>
+              </div>
+
+              <PanelSection title="Document" description="Choose the controlled document type and internal reference.">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <OpsField label="Document type">
+                    <select value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>
+                      {generatedFreightDocumentKinds.filter((kind) => selected.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}
+                    </select>
+                  </OpsField>
+                  <OpsField label="House / internal reference"><input value={form.houseReference} onChange={(event) => patch("houseReference", event.target.value)}/></OpsField>
+                </div>
+              </PanelSection>
+
+              <PanelSection title="Parties & cargo" description="Capture the legal parties and shipment description used in the controlled draft.">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <OpsField label="Shipper"><textarea value={form.shipper} onChange={(event) => patch("shipper", event.target.value)} placeholder="Legal shipper/exporter name and address"/></OpsField>
+                  <OpsField label="Consignee"><textarea value={form.consignee} onChange={(event) => patch("consignee", event.target.value)} placeholder="Legal consignee/importer name and address"/></OpsField>
+                  <OpsField label="Notify party"><textarea value={form.notifyParty} onChange={(event) => patch("notifyParty", event.target.value)}/></OpsField>
+                  <OpsField label="Cargo description"><textarea value={form.cargoDescription} onChange={(event) => patch("cargoDescription", event.target.value)}/></OpsField>
+                  <OpsField label="Marks & numbers"><input value={form.marksAndNumbers} onChange={(event) => patch("marksAndNumbers", event.target.value)}/></OpsField>
+                  <OpsField label="Package type"><input value={form.packageType} onChange={(event) => patch("packageType", event.target.value)}/></OpsField>
+                </div>
+              </PanelSection>
+
+              <PanelSection title="Carriage terms" description="Set receipt and delivery places, references and commercial carriage instructions.">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <OpsField label="Place of receipt"><input value={form.placeOfReceipt} onChange={(event) => patch("placeOfReceipt", event.target.value)}/></OpsField>
+                  <OpsField label="Place of delivery"><input value={form.placeOfDelivery} onChange={(event) => patch("placeOfDelivery", event.target.value)}/></OpsField>
+                  <OpsField label="Carrier / master reference"><input value={form.masterReference} onChange={(event) => patch("masterReference", event.target.value)}/></OpsField>
+                  <OpsField label="Freight terms"><input value={form.freightTerms} onChange={(event) => patch("freightTerms", event.target.value)} placeholder="Prepaid / collect / as agreed"/></OpsField>
+                  <OpsField label="Incoterm"><input value={form.incoterm} onChange={(event) => patch("incoterm", event.target.value)} placeholder="e.g. FOB, CIF, DDP"/></OpsField>
+                  <OpsField label="Special instructions"><textarea value={form.specialInstructions} onChange={(event) => patch("specialInstructions", event.target.value)}/></OpsField>
+                </div>
+              </PanelSection>
+
+              <PanelSection title="Revision history" description="Current and superseded controlled revisions for this Job File.">
+                {selected.generated_documents.length ? (
+                  <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">
+                    {selected.generated_documents.map((document) => (
+                      <div key={document.document_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <strong className="text-sm font-medium">R{document.revision} · {document.label}</strong>
+                            <OpsBadge tone={document.superseded ? "neutral" : document.review_status === "verified" ? "success" : "warning"}>{document.superseded ? "Superseded" : document.review_status.replaceAll("_", " ")}</OpsBadge>
+                          </div>
+                          <p className="mt-1 truncate text-xs text-[var(--admin-muted)]">{document.filename} · SHA {document.sha256.slice(0, 12)}…</p>
+                        </div>
+                        <OpsButton size="sm" variant="ghost" onClick={() => openDocument(selected.reference, document.document_id)}>Open PDF</OpsButton>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
+                    <FileText size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/> No generated revisions yet.
+                  </div>
+                )}
+              </PanelSection>
+            </div>
+
+            <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
+              <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]">
+                <input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/>
+                <span>Mark this draft customer-safe after staff checks the content.</span>
+              </label>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">
+                  {selected.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document present</>}
+                </span>
+                <OpsButton variant="primary" disabled={busy} onClick={generate}>
+                  <FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/> {busy ? "Generating…" : "Generate PDF"}
+                </OpsButton>
+              </div>
+            </footer>
+          </aside>
+        </>
+      ) : null}
+    </OpsPage>
+  );
+}
+
+function PanelSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="border-b border-[var(--admin-line)] px-5 py-5 last:border-b-0">
+      <h3 className="text-base font-semibold">{title}</h3>
+      <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{description}</p>
+      <div className="mt-4">{children}</div>
     </section>
-  </div></main></OpsPage>;
+  );
 }
