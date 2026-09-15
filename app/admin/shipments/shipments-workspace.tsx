@@ -131,12 +131,13 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
   const selected = selectedReference ? filtered.find((job) => job.reference === selectedReference) ?? null : null;
+  const selectedKey = selected?.reference ?? null;
   const returnTo = `/admin/shipments${search}`;
   const advancedCount = Number(branch !== "all") + Number(mode !== "all") + Number(attention) + Number(sort !== "priority");
   const hasFilters = Boolean(query) || status !== "all" || advancedCount > 0;
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selectedKey) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
@@ -147,7 +148,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [selected?.reference, setSelectedReference]);
+  }, [selectedKey, setSelectedReference]);
 
   function resetFilters() {
     update({ q: null, status: null, branch: null, mode: null, attention: null, sort: null, page: null, selected: null });
@@ -292,7 +293,7 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
   return (
     <>
       <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close shipment panel"/>
-      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" role="complementary" aria-label={`Shipment ${job.reference}`}>
+      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
