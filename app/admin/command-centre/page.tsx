@@ -173,6 +173,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
           note={overview.note}
           userName={userName}
           selectedBranch={selectedBranch}
+          branches={accessibleBranches}
           canViewCommercial={staff.permissions.canViewCommercial}
           canPostNotes={staff.permissions.canManageJobFile}
         />
