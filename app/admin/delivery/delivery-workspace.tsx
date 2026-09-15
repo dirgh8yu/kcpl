@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, PackageCheck, Truck } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface, OpsTableWrap, OpsToolbar } from "../operations-ui";
+import { AlertTriangle, CheckCircle2, Search, Truck, X } from "lucide-react";
+import { OpsBadge, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
 type Focus = "all" | "active" | "failed" | "pod_pending" | "verified";
@@ -12,29 +12,100 @@ function dateTime(value: string | null) {
   if (!value) return "Not set";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(date) + " NPT";
+  return `${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(date)} NPT`;
 }
 
-function stateBadge(row: DeliveryQueueRow) {
-  if (row.delivery_state === "pod_verified") return <OpsBadge tone="success">POD verified</OpsBadge>;
-  if (row.delivery_state === "delivered_pod_pending") return <OpsBadge tone="warning">Delivered · POD pending</OpsBadge>;
-  if (row.delivery_state === "delivery_failed") return <OpsBadge tone="danger">Delivery exception</OpsBadge>;
-  if (row.delivery_state === "delivery_active") return <OpsBadge tone="info">Delivery active</OpsBadge>;
-  return <OpsBadge>Ready for delivery</OpsBadge>;
+function stateLabel(row: DeliveryQueueRow) {
+  if (row.delivery_state === "pod_verified") return "POD verified";
+  if (row.delivery_state === "delivered_pod_pending") return "POD pending";
+  if (row.delivery_state === "delivery_failed") return "Delivery exception";
+  if (row.delivery_state === "delivery_active") return "Delivery active";
+  return "Ready for delivery";
 }
 
-function focusName(focus: Focus) {
-  if (focus === "active") return "Delivery active";
-  if (focus === "failed") return "Failed / refused";
-  if (focus === "pod_pending") return "POD pending";
-  if (focus === "verified") return "POD verified";
-  return "All final-mile movements";
+function stateTone(row: DeliveryQueueRow): "success" | "warning" | "danger" | "info" | "neutral" {
+  if (row.delivery_state === "pod_verified") return "success";
+  if (row.delivery_state === "delivered_pod_pending") return "warning";
+  if (row.delivery_state === "delivery_failed") return "danger";
+  if (row.delivery_state === "delivery_active") return "info";
+  return "neutral";
+}
+
+function podLabel(row: DeliveryQueueRow) {
+  if (row.pod_status === "verified") return "Verified";
+  if (row.pod_status === "received") return "Evidence received";
+  if (row.pod_status === "rejected") return "Rejected";
+  return "Not received";
+}
+
+function podTone(row: DeliveryQueueRow): "success" | "warning" | "danger" | "neutral" {
+  if (row.pod_status === "verified") return "success";
+  if (row.pod_status === "received") return "warning";
+  if (row.pod_status === "rejected") return "danger";
+  return "neutral";
+}
+
+function chipStyle(active: boolean): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    height: "var(--app-control-height)",
+    padding: "0 12px",
+    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
+    borderRadius: "var(--app-radius)",
+    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
+    color: active ? "white" : "var(--admin-muted)",
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: "pointer",
+  };
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return <div><div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--admin-muted)" }}>{label}</div><div style={{ marginTop: 2, fontSize: 13 }}>{value}</div></div>;
+}
+
+function Inspector({ row, onClose }: { row: DeliveryQueueRow; onClose: () => void }) {
+  return <aside style={{ width: 390, flexShrink: 0, border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: 16, borderBottom: "1px solid var(--admin-line)" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ marginBottom: 3, fontSize: 12, color: "var(--admin-muted)" }}><OpsMono>{row.reference}</OpsMono></div>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>{row.customer_name}</div>
+        <div style={{ marginTop: 3, fontSize: 12.5, color: "var(--admin-muted)" }}>{row.origin} → {row.destination} · {row.mode}</div>
+      </div>
+      <button type="button" onClick={onClose} aria-label="Close delivery inspector" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: "var(--app-radius)", background: "transparent", color: "var(--admin-muted)", cursor: "pointer" }}><X size={16}/></button>
+    </div>
+
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8, padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", background: "var(--admin-surface-muted)" }}>
+      <div><div style={{ marginBottom: 4, fontSize: 11, fontWeight: 600, color: "var(--admin-muted)", textTransform: "uppercase", letterSpacing: ".07em" }}>Delivery state</div><OpsBadge tone={stateTone(row)}>{stateLabel(row)}</OpsBadge></div>
+      <div><div style={{ marginBottom: 4, fontSize: 11, fontWeight: 600, color: "var(--admin-muted)", textTransform: "uppercase", letterSpacing: ".07em" }}>POD evidence</div><OpsBadge tone={podTone(row)}>{podLabel(row)}</OpsBadge></div>
+    </div>
+
+    {row.delivery_state === "delivered_pod_pending" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-warning)", background: "var(--admin-warning-bg)" }}><div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><AlertTriangle size={15} style={{ color: "var(--admin-warning)", flexShrink: 0, marginTop: 2 }}/><div><div style={{ color: "var(--admin-warning)", fontSize: 13, fontWeight: 700 }}>Delivered ≠ POD verified</div><div style={{ marginTop: 3, fontSize: 12.5 }}>Delivery is recorded, but verified proof of delivery is still required before canonical closeout is satisfied.</div></div></div></div> : null}
+    {row.delivery_state === "delivery_failed" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-danger)", background: "var(--admin-danger-bg)" }}><div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><AlertTriangle size={15} style={{ color: "var(--admin-danger)", flexShrink: 0, marginTop: 2 }}/><div><div style={{ color: "var(--admin-danger)", fontSize: 13, fontWeight: 700 }}>Delivery exception</div><div style={{ marginTop: 3, fontSize: 12.5 }}>Review the failed or refused attempt before scheduling the next final-mile action.</div></div></div></div> : null}
+    {row.delivery_state === "pod_verified" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-success)", background: "var(--admin-success-bg)" }}><div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><CheckCircle2 size={15} style={{ color: "var(--admin-success)", flexShrink: 0, marginTop: 2 }}/><div><div style={{ color: "var(--admin-success)", fontSize: 13, fontWeight: 700 }}>POD verified</div><div style={{ marginTop: 3, fontSize: 12.5 }}>Final-mile evidence is verified, subject to remaining Digital Job File closeout policy checks.</div></div></div></div> : null}
+
+    <div style={{ display: "grid", gap: 11, padding: 16 }}>
+      <Detail label="Branch" value={row.primary_branch}/>
+      <Detail label="Current location" value={row.current_location || "Not recorded"}/>
+      <Detail label="Latest attempt" value={row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : "No attempt recorded"}/>
+      <Detail label="Attempt time" value={dateTime(row.last_attempt_at)}/>
+      <Detail label="Next delivery" value={dateTime(row.next_delivery_at)}/>
+      <Detail label="Recipient" value={row.recipient_name || "Not recorded"}/>
+      <Detail label="POD evidence" value={`${row.pod_evidence_count} item${row.pod_evidence_count === 1 ? "" : "s"} · ${podLabel(row)}`}/>
+    </div>
+
+    <div style={{ display: "grid", gap: 8, padding: "0 16px 16px" }}>
+      <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} className="ops-button" data-variant="primary">Open Delivery & POD control</Link>
+      <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="secondary">Open Job File</Link>
+    </div>
+  </aside>;
 }
 
 export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "" }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string }) {
   const [focus, setFocus] = useState<Focus>("all");
   const [query, setQuery] = useState(initialQuery);
-  const [selectedReference, setSelectedReference] = useState<string | null>(initialRows[0]?.reference ?? null);
+  const [selectedReference, setSelectedReference] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -49,79 +120,48 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     });
   }, [focus, initialRows, query]);
 
-  const selected = initialRows.find((row) => row.reference === selectedReference) ?? rows[0] ?? null;
-
-  function reset() {
-    setQuery("");
-    setFocus("all");
-  }
+  const selected = selectedReference ? initialRows.find((row) => row.reference === selectedReference) ?? null : null;
 
   return <OpsPage>
-    <OpsPageHeader
-      eyebrow="Operations · Final mile"
-      title="Delivery & POD"
-      description="Control final-mile attempts, delivery exceptions and proof-of-delivery closeout. A delivered movement is not the same authority as verified POD."
-      meta={<><span>{initialRows.length} accessible movements</span><span>{rows.length} shown</span></>}
-      actions={<><Link href="/admin/visibility" className="ops-button" data-variant="secondary">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="primary">Shipments</Link></>}
-    />
+    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
+      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+        <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Delivery & POD</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Last-mile execution queue · {initialRows.length} deliveries · POD evidence received ≠ POD verified</p></div>
+      </header>
 
-    <OpsStatStrip>
-      <OpsStat label="Ready" value={initialSummary.ready} icon={<PackageCheck size={13}/>} active={focus === "all"} onClick={() => setFocus("all")}/>
-      <OpsStat label="Delivery active" value={initialSummary.out_for_delivery} icon={<Truck size={13}/>} tone="info" active={focus === "active"} onClick={() => setFocus(focus === "active" ? "all" : "active")}/>
-      <OpsStat label="Failed / refused" value={initialSummary.failed_or_refused} icon={<AlertTriangle size={13}/>} tone={initialSummary.failed_or_refused ? "danger" : "neutral"} active={focus === "failed"} onClick={() => setFocus(focus === "failed" ? "all" : "failed")}/>
-      <OpsStat label="POD pending" value={initialSummary.delivered_pod_pending} icon={<Clock3 size={13}/>} tone={initialSummary.delivered_pod_pending ? "warning" : "neutral"} active={focus === "pod_pending"} onClick={() => setFocus(focus === "pod_pending" ? "all" : "pod_pending")}/>
-      <OpsStat label="POD verified" value={initialSummary.pod_verified} icon={<CheckCircle2 size={13}/>} tone="success" active={focus === "verified"} onClick={() => setFocus(focus === "verified" ? "all" : "verified")}/>
-    </OpsStatStrip>
+      {initialSummary.delivered_pod_pending > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></span></OpsNotice></div> : null}
 
-    <div className="ops-content-wide grid gap-4">
-      <OpsToolbar>
-        <OpsSearch className="flex-1" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch, route or recipient"/>
-        <span className="text-sm text-[var(--admin-muted)]">{focusName(focus)} · {rows.length} shown</span>
-        <OpsButton variant="secondary" onClick={reset}>Reset</OpsButton>
-      </OpsToolbar>
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Delivery state filter">
+              <button type="button" style={chipStyle(focus === "all")} onClick={() => setFocus("all")}>All</button>
+              <button type="button" style={chipStyle(focus === "active")} onClick={() => setFocus("active")}>Delivery active</button>
+              <button type="button" style={chipStyle(focus === "failed")} onClick={() => setFocus("failed")}>Failed / refused</button>
+              <button type="button" style={chipStyle(focus === "pod_pending")} onClick={() => setFocus("pod_pending")}>POD pending</button>
+              <button type="button" style={chipStyle(focus === "verified")} onClick={() => setFocus("verified")}>POD verified</button>
+            </div>
+            <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{rows.length} entries</span>
+          </div>
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-        <OpsSurface className="lg:col-span-2" title="Final-mile queue" description="Select a movement to inspect the authoritative delivery and POD state." flush>
-          {rows.length ? <OpsTableWrap>
-            <table className="ops-table">
-              <thead><tr><th>Shipment</th><th>Customer / route</th><th>Delivery state</th><th>Latest attempt</th><th>POD</th><th>Action</th></tr></thead>
-              <tbody>{rows.map((row) => {
-                const exception = row.delivery_state === "delivery_failed" || row.delivery_state === "delivered_pod_pending";
-                const isSelected = selected?.reference === row.reference;
-                return <tr key={row.reference} data-selected={isSelected ? "true" : undefined}>
-                  <td><button type="button" onClick={() => setSelectedReference(row.reference)} className="text-left font-semibold hover:text-[var(--admin-crimson)]">{row.reference}</button><span className="mt-1 block text-xs text-[var(--admin-faint)]">{row.primary_branch}</span></td>
-                  <td><strong className="block">{row.customer_name}</strong><span className="mt-1 block text-xs text-[var(--admin-faint)]">{row.origin} → {row.destination} · {row.mode}</span></td>
-                  <td>{stateBadge(row)}<span className="mt-1 block text-xs text-[var(--admin-faint)]">{row.current_location || "Location not recorded"}</span></td>
-                  <td><span className="block">{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : "No attempt yet"}</span><span className="mt-1 block text-xs text-[var(--admin-faint)]">{row.next_delivery_at ? `Next ${dateTime(row.next_delivery_at)}` : dateTime(row.last_attempt_at)}</span></td>
-                  <td><OpsBadge tone={row.pod_status === "verified" ? "success" : row.pod_status === "rejected" ? "danger" : row.pod_status === "received" ? "warning" : "neutral"}>{row.pod_status.replaceAll("_", " ")}</OpsBadge><span className="mt-1 block text-xs text-[var(--admin-faint)]">{row.pod_evidence_count} evidence item{row.pod_evidence_count === 1 ? "" : "s"}</span></td>
-                  <td><div className="flex justify-end gap-2"><OpsButton size="sm" variant={exception ? "primary" : "secondary"} onClick={() => setSelectedReference(row.reference)}>Inspect</OpsButton><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} className="ops-button" data-variant="ghost" data-size="sm">Open control</Link></div></td>
-                </tr>;
-              })}</tbody>
-            </table>
-          </OpsTableWrap> : <div className="p-5"><OpsEmptyState kind="search" title="No delivery movements match this view" description="Change the filter or search terms to see another final-mile queue." action={<OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton>}/></div>}
-        </OpsSurface>
+          <section style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
+            {rows.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Shipment</th><th>Consignee / route</th><th>Branch</th><th>Scheduled / attempt</th><th>Delivery state</th><th>POD evidence</th><th>Closeout</th></tr></thead><tbody>{rows.map((row) => {
+              const isSelected = selectedReference === row.reference;
+              const exception = row.delivery_state === "delivery_failed" || row.delivery_state === "delivered_pod_pending";
+              return <tr key={row.reference} data-selected={isSelected ? "true" : undefined} tabIndex={0} onClick={() => setSelectedReference(row.reference)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedReference(row.reference); }} style={{ cursor: "pointer" }}>
+                <td><div style={{ fontWeight: 500 }}><OpsMono>{row.reference}</OpsMono></div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.mode}</div></td>
+                <td><div style={{ fontWeight: 500 }}>{row.customer_name}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.origin} → {row.destination}</div></td>
+                <td>{row.primary_branch}</td>
+                <td><div>{row.next_delivery_at ? dateTime(row.next_delivery_at) : row.last_attempt_at ? dateTime(row.last_attempt_at) : "Not scheduled"}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : `${row.attempt_count} attempt${row.attempt_count === 1 ? "" : "s"}`}</div></td>
+                <td><OpsBadge tone={stateTone(row)}>{stateLabel(row)}</OpsBadge></td>
+                <td><OpsBadge tone={podTone(row)}>{podLabel(row)}</OpsBadge><div style={{ marginTop: 3, fontSize: 12, color: "var(--admin-muted)" }}>{row.pod_evidence_count} item{row.pod_evidence_count === 1 ? "" : "s"}</div></td>
+                <td>{row.delivery_state === "pod_verified" ? <CheckCircle2 size={15} style={{ color: "var(--admin-success)" }} aria-label="Closeout evidence ready"/> : exception ? <AlertTriangle size={15} style={{ color: row.delivery_state === "delivery_failed" ? "var(--admin-danger)" : "var(--admin-warning)" }} aria-label="Closeout blocked"/> : <Truck size={15} style={{ color: "var(--admin-muted)" }} aria-label="Delivery in progress"/>}</td>
+              </tr>;
+            })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Truck size={18}/>} title={query || focus !== "all" ? "No results" : "No final-mile movements"} description={query || focus !== "all" ? "Try changing the filter or search terms." : "No accessible shipments are currently in the final-mile queue."}/>} 
+          </section>
+        </div>
 
-        <OpsSurface
-          eyebrow="Selected movement"
-          title={selected ? selected.reference : "No movement selected"}
-          description={selected ? `${selected.customer_name} · ${selected.origin} → ${selected.destination}` : "Select a movement from the queue to inspect delivery evidence and closeout readiness."}
-          priority={selected?.delivery_state === "delivery_failed" ? "danger" : selected?.delivery_state === "delivered_pod_pending" ? "warning" : selected?.delivery_state === "pod_verified" ? "success" : "normal"}
-        >
-          {selected ? <div className="grid gap-4">
-            <div className="flex flex-wrap gap-2">{stateBadge(selected)}<OpsBadge>{selected.primary_branch}</OpsBadge></div>
-            <dl className="grid gap-3 text-sm">
-              <div><dt className="text-xs text-[var(--admin-faint)]">Current location</dt><dd className="mt-1 font-medium">{selected.current_location || "Not recorded"}</dd></div>
-              <div><dt className="text-xs text-[var(--admin-faint)]">Latest attempt</dt><dd className="mt-1 font-medium">{selected.last_attempt_status ? deliveryAttemptStatusLabels[selected.last_attempt_status] : "No attempt recorded"}</dd><dd className="text-xs text-[var(--admin-muted)]">{dateTime(selected.last_attempt_at)}</dd></div>
-              <div><dt className="text-xs text-[var(--admin-faint)]">Recipient</dt><dd className="mt-1 font-medium">{selected.recipient_name || "Not recorded"}</dd></div>
-              <div><dt className="text-xs text-[var(--admin-faint)]">POD evidence</dt><dd className="mt-1 font-medium">{selected.pod_evidence_count} item{selected.pod_evidence_count === 1 ? "" : "s"} · {selected.pod_status.replaceAll("_", " ")}</dd></div>
-              <div><dt className="text-xs text-[var(--admin-faint)]">Next delivery</dt><dd className="mt-1 font-medium">{dateTime(selected.next_delivery_at)}</dd></div>
-            </dl>
-            {selected.delivery_state === "delivered_pod_pending" ? <div className="ops-notice" data-tone="warning" role="status"><span>Delivered status is recorded, but verified POD is still required before canonical closeout can be satisfied.</span></div> : null}
-            {selected.delivery_state === "delivery_failed" ? <div className="ops-notice" data-tone="danger" role="alert"><span>A failed or refused delivery is an operational exception. Review the attempt before scheduling the next action.</span></div> : null}
-            {selected.delivery_state === "pod_verified" ? <div className="ops-notice" data-tone="success" role="status"><span>POD is verified. Delivery evidence satisfies the final-mile evidence requirement for closeout, subject to the remaining Job File policy checks.</span></div> : null}
-            <div className="grid gap-2"><Link href={`/admin/jobs/${encodeURIComponent(selected.reference)}#delivery-pod`} className="ops-button" data-variant="primary">Open Delivery & POD control</Link><Link href={`/admin/jobs/${encodeURIComponent(selected.reference)}`} className="ops-button" data-variant="secondary">Open Job File</Link></div>
-          </div> : <OpsEmptyState compact title="No movement selected" description="Choose a row from the final-mile queue."/>}
-        </OpsSurface>
+        {selected ? <Inspector row={selected} onClose={() => setSelectedReference(null)}/> : null}
       </div>
     </div>
   </OpsPage>;
