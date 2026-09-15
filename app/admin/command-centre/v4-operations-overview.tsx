@@ -107,6 +107,46 @@ function Kpi({ href, label, value, detail, tone = "neutral" }: { href: string; l
   );
 }
 
+function StatusMix({ data }: { data: CommandCentreData }) {
+  const statuses = useMemo(() => {
+    const counts = new Map<ShipmentStatus, number>();
+    for (const job of data.jobs) counts.set(job.status, (counts.get(job.status) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [data.jobs]);
+
+  const total = data.jobs.length;
+
+  return (
+    <section className="overview-status-board" aria-label="Shipment status mix">
+      <div className="overview-status-board-heading">
+        <div>
+          <p className="overview-status-kicker">Workload mix</p>
+          <h2>Where shipments are now</h2>
+          <p>Current snapshot across all shipment records.</p>
+        </div>
+        <Link href="/admin/shipments" className="overview-section-link">Open register <ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></Link>
+      </div>
+      {statuses.length ? (
+        <div className="overview-status-list">
+          {statuses.map(([status, count]) => {
+            const percentage = total ? Math.round((count / total) * 100) : 0;
+            return (
+              <Link key={status} href={`/admin/shipments?status=${encodeURIComponent(status)}`} className="overview-status-item">
+                <span className="overview-status-item-label">{shipmentStatusLabels[status]}</span>
+                <span className="overview-status-item-track" aria-hidden="true"><span style={{ width: `${percentage}%` }}/></span>
+                <strong>{count}</strong>
+                <span className="overview-status-item-percent">{percentage}%</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <EmptyLine>No shipment status data available</EmptyLine>
+      )}
+    </section>
+  );
+}
+
 export function V4OperationsOverview({
   data,
   enquiries = null,
@@ -144,7 +184,7 @@ export function V4OperationsOverview({
   const dueToday = data.jobs.filter((job) => job.status !== "delivered" && etaLabel(job, data.operational_date) === "Today").length;
 
   return (
-    <OpsPage className="overview-reference-layout">
+    <OpsPage className="kcpl-ops-overview overview-reference-layout">
       <div className="px-4 py-5 md:px-6 md:py-6">
         <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
@@ -176,6 +216,8 @@ export function V4OperationsOverview({
           <Kpi href="/admin/shipments?attention=1" label="Unassigned" value={unassigned} detail="no owner" tone={unassigned ? "warning" : "neutral"}/>
           <Kpi href="/admin/delivery" label="Due today" value={dueToday} detail="ETA commitments" tone={dueToday ? "info" : "neutral"}/>
         </section>
+
+        <StatusMix data={data}/>
 
         <div className="grid gap-4 xl:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 xl:col-span-2">
