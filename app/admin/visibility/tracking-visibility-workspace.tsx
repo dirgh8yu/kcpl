@@ -12,8 +12,6 @@ import {
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsStat,
-  OpsStatStrip,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
@@ -160,8 +158,6 @@ export function TrackingVisibilityWorkspace({
     customs: rows.filter((row) => rowMatchesFocus(row, "customs")).length,
     delivery: rows.filter((row) => rowMatchesFocus(row, "delivery")).length,
   }), [rows]);
-  const attentionCount = focusCounts.delayed + focusCounts.stale - rows.filter((row) => rowMatchesFocus(row, "delayed") && row.stale).length;
-
   useEffect(() => {
     if (!selectedKey) return;
     const previousOverflow = document.body.style.overflow;
@@ -255,14 +251,6 @@ export function TrackingVisibilityWorkspace({
 
       <div className="px-4 pb-6 md:px-6">
         {notice ? <div className="mb-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-
-        <OpsStatStrip className="visibility-stat-strip mb-4">
-          <OpsStat label="Active shipments" value={summary.active} detail={`${rows.length} visible in this snapshot`} tone="info" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }}/>
-          <OpsStat label="Needs attention" value={attentionCount} detail="Delayed or stale feeds" tone={attentionCount ? "danger" : "success"} active={focus === "delayed" || focus === "stale"} onClick={() => { setAllowInitialSelection(false); update({ view: attentionCount ? "delayed" : "stale", selected: null, shipment: null }); }}/>
-          <OpsStat label="Customs" value={summary.customs} detail="Current customs state" tone="warning" active={focus === "customs"} onClick={() => { setAllowInitialSelection(false); update({ view: "customs", selected: null, shipment: null }); }}/>
-          <OpsStat label="Out for delivery" value={summary.out_for_delivery} detail="Last-mile movements" tone="success" active={focus === "delivery"} onClick={() => { setAllowInitialSelection(false); update({ view: "delivery", selected: null, shipment: null }); }}/>
-          <OpsStat label="Delivered today" value={summary.delivered_today} detail="Latest normalized events" tone="neutral"/>
-        </OpsStatStrip>
 
         <OpsToolbar className="mb-4">
           <div className="min-w-[240px] flex-1 basis-[320px] max-w-[380px]">

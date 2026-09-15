@@ -751,47 +751,8 @@
     width: 100%;
   }
 }
-.kcpl-admin-content .pickup-stat-strip {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-.kcpl-admin-content .pickup-stat-strip .ops-stat {
-  min-height: 92px;
-}
-@media (max-width: 900px) {
-  .kcpl-admin-content .pickup-stat-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 640px) {
-  .kcpl-admin-content .pickup-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .kcpl-admin-content .pickup-stat-strip .ops-stat {
-    min-height: 82px;
-  }
-}
-.kcpl-admin-content .shipments-stat-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.kcpl-admin-content .shipments-stat-strip .ops-stat {
-  min-height: 92px;
-}
-@media (max-width: 760px) {
-  .kcpl-admin-content .shipments-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .kcpl-admin-content .shipments-stat-strip .ops-stat {
-    min-height: 82px;
-  }
-}
 .kcpl-admin-content .freight-documents-register {
   min-width: 0;
-}
-.kcpl-admin-content .freight-documents-stat-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.kcpl-admin-content .freight-documents-stat-strip .ops-stat {
-  min-height: 92px;
 }
 .kcpl-admin-content .freight-documents-register > div > header {
   margin-bottom: 16px;
@@ -808,15 +769,6 @@
 .kcpl-admin-content .freight-documents-register .ops-table td {
   vertical-align: middle;
 }
-@media (max-width: 760px) {
-  .kcpl-admin-content .freight-documents-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .kcpl-admin-content .freight-documents-stat-strip .ops-stat {
-    min-height: 82px;
-  }
-}
-
 /* Customs clearance: keep the queue and its decision panel readable at working density. */
 .kcpl-admin-content .customs-clearance-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
@@ -828,13 +780,6 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
-}
-.kcpl-admin-content .customs-clearance-stat-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 16px;
-}
-.kcpl-admin-content .customs-clearance-stat-strip .ops-stat {
-  min-height: 88px;
 }
 .kcpl-admin-content .customs-clearance-workspace {
   display: flex;
@@ -877,22 +822,12 @@
   .kcpl-admin-content .customs-clearance-header {
     flex-direction: column;
   }
-  .kcpl-admin-content .customs-clearance-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* Delivery & POD: keep recovery work visible while the evidence inspector stays usable. */
 .kcpl-admin-content .delivery-control-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
   padding: var(--app-page-gap);
-}
-.kcpl-admin-content .delivery-control-stat-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 16px;
-}
-.kcpl-admin-content .delivery-control-stat-strip .ops-stat {
-  min-height: 88px;
 }
 .kcpl-admin-content .delivery-control-workspace {
   display: flex;
@@ -943,15 +878,6 @@
   min-height: calc(100dvh - var(--app-toolbar-height));
   padding: var(--app-page-gap);
 }
-.kcpl-admin-content .alerts-stat-strip,
-.kcpl-admin-content .notifications-stat-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 16px;
-}
-.kcpl-admin-content .alerts-stat-strip .ops-stat,
-.kcpl-admin-content .notifications-stat-strip .ops-stat {
-  min-height: 88px;
-}
 .kcpl-admin-content .alerts-workspace-toolbar,
 .kcpl-admin-content .notifications-workspace-toolbar {
   display: flex;
@@ -970,10 +896,6 @@
   .kcpl-admin-content .notifications-workspace-page {
     padding: 16px;
   }
-  .kcpl-admin-content .alerts-stat-strip,
-  .kcpl-admin-content .notifications-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* Document Vault: make evidence review the primary queue, not a metadata wall. */
@@ -987,13 +909,6 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
-}
-.kcpl-admin-content .document-vault-stat-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 16px;
-}
-.kcpl-admin-content .document-vault-stat-strip .ops-stat {
-  min-height: 88px;
 }
 .kcpl-admin-content .document-vault-workspace {
   display: flex;
@@ -1056,22 +971,9 @@
   .kcpl-admin-content .document-vault-header {
     flex-direction: column;
   }
-  .kcpl-admin-content .document-vault-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* Live visibility: surface operational signal before the detailed register. */
-.kcpl-admin-content .visibility-stat-strip {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-.kcpl-admin-content .visibility-stat-strip .ops-stat {
-  min-height: 94px;
-}
-.kcpl-admin-content .visibility-stat-strip .ops-stat-top {
-  align-items: flex-start;
-}
-.kcpl-admin-content .visibility-stat-strip .ops-stat-label { gap: 0; }
 .kcpl-admin-content .visibility-register {
   overflow: hidden;
 }
@@ -1118,20 +1020,6 @@
 .kcpl-admin-content .visibility-panel-summary + section > p {
   max-width: 520px;
 }
-@media (max-width: 900px) {
-  .kcpl-admin-content .visibility-stat-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 640px) {
-  .kcpl-admin-content .visibility-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .kcpl-admin-content .visibility-stat-strip .ops-stat {
-    min-height: 82px;
-  }
-}
-
 /* Record navigation and command palette are part of the shared shell. */
 .app-record-return { padding: 10px var(--app-page-gap); border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); font-size: 12px; line-height: 16px; }
 .app-record-return a { color: var(--admin-muted); text-decoration: none; }

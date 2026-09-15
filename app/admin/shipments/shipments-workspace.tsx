@@ -8,7 +8,7 @@ import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsTableWrap } from "../operations-ui";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 type StatusTone = "neutral" | "info" | "warning" | "success" | "danger";
@@ -157,11 +157,6 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
     update({ q: null, status: null, branch: null, mode: null, owner: null, attention: null, sort: null, page: null, selected: null });
   }
 
-  const activeJobs = data.jobs.filter((job) => job.status !== "delivered").length;
-  const attentionJobs = data.jobs.filter((job) => shipmentNeedsAttention(job)).length;
-  const customsOpen = data.jobs.filter((job) => job.required_customs_open > 0).length;
-  const unassignedJobs = data.jobs.filter((job) => owner(job) === "Unassigned").length;
-
   return (
     <OpsPage className="shipments-register">
       <OpsPageHeader
@@ -173,12 +168,6 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
           </Link>
         ) : null}
       >
-        <OpsStatStrip className="shipments-stat-strip">
-          <OpsStat label="Active" value={activeJobs} detail="Current in-flight work" tone="info" active={status === "active"} onClick={() => setStatus("active")} />
-          <OpsStat label="Attention" value={attentionJobs} detail="Require action" tone="danger" active={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} />
-          <OpsStat label="Customs open" value={customsOpen} detail="Checklist needs review" tone="warning" active={status === "customs_clearance"} onClick={() => setStatus("customs_clearance")} />
-          <OpsStat label="Unassigned" value={unassignedJobs} detail="Ownership gaps" tone="neutral" active={ownerFilter === "unassigned"} onClick={() => setOwnerFilter(ownerFilter === "unassigned" ? "all" : "unassigned")} />
-        </OpsStatStrip>
       </OpsPageHeader>
 
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
