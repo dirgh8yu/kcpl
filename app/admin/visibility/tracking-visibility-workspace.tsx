@@ -1,11 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Activity, RefreshCw, RadioTower, Search, ShieldAlert } from "lucide-react";
-import { OpsBadge, OpsButton, OpsField, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { Activity, AlertTriangle, CheckCircle2, RefreshCw, RadioTower, ShieldAlert, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  OpsBadge,
+  OpsButton,
+  OpsEmptyState,
+  OpsField,
+  OpsMono,
+  OpsNotice,
+  OpsPage,
+  OpsPageHeader,
+  OpsSearch,
+  OpsSurface,
+  OpsTableWrap,
+  OpsToolbar,
+} from "../operations-ui";
+import { useWorkspaceQuery } from "../use-workspace-query";
 import { shipmentStatusLabels } from "../../shipment-types";
-import { trackingMilestoneLabels, trackingMilestones, type TrackingEvent, type TrackingMilestone, type VisibilityShipment, type VisibilitySummary } from "./tracking-visibility";
+import {
+  trackingMilestoneLabels,
+  trackingMilestones,
+  type TrackingEvent,
+  type TrackingMilestone,
+  type VisibilityShipment,
+  type VisibilitySummary,
+} from "./tracking-visibility";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 
@@ -22,16 +43,35 @@ type ApiResponse = {
 
 type Focus = "all" | "delayed" | "stale" | "customs" | "delivery";
 
+const FOCUS_OPTIONS: Array<{ value: Focus; label: string }> = [
+  { value: "all", label: "All feeds" },
+  { value: "delayed", label: "ETA delayed" },
+  { value: "stale", label: "Stale feeds" },
+  { value: "customs", label: "Customs" },
+  { value: "delivery", label: "Out for delivery" },
+];
+
 function dateTime(value: string | null) {
   if (!value) return "Not recorded";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : `${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: NEPAL_TIME_ZONE }).format(date)} NPT`;
+  return Number.isNaN(date.getTime())
+    ? value
+    : `${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: NEPAL_TIME_ZONE }).format(date)} NPT`;
 }
 
 function shortDateTime(value: string | null) {
   if (!value) return "—";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: NEPAL_TIME_ZONE }).format(date);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en-AU", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: NEPAL_TIME_ZONE,
+      }).format(date);
 }
 
 function delayText(hours: number | null) {
@@ -47,23 +87,312 @@ function statusTone(row: VisibilityShipment): "neutral" | "info" | "warning" | "
   return "info";
 }
 
-function focusLabel(focus: Focus) {
-  if (focus === "delayed") return "ETA delayed";
-  if (focus === "stale") return "Stale feeds";
-  if (focus === "customs") return "Customs";
-  if (focus === "delivery") return "Out for delivery";
-  return "All active feeds";
+function rowMatchesFocus(row: VisibilityShipment, focus: Focus) {
+  if (focus === "delayed") return (row.eta_delta_hours ?? 0) >= 24 && row.status !== "delivered";
+  if (focus === "stale") return row.stale && row.status !== "delivered";
+  if (focus === "customs") return row.status === "customs_clearance";
+  if (focus === "delivery") return row.status === "out_for_delivery";
+  return true;
 }
 
-export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSweep, initialQuery = "" }: { initialRows: VisibilityShipment[]; initialSummary: VisibilitySummary; canSweep: boolean; initialQuery?: string }) {
+export function TrackingVisibilityWorkspace({
+  initialRows,
+  initialSummary,
+  canSweep,
+  initialShipment = "",
+}: {
+  initialRows: VisibilityShipment[];
+  initialSummary: VisibilitySummary;
+  canSweep: boolean;
+  initialShipment?: string;
+}) {
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
-  const [query, setQuery] = useState(initialQuery);
-  const [focus, setFocus] = useState<Focus>("all");
-  const [selectedReference, setSelectedReference] = useState<string | null>(initialQuery && initialRows.some((row) => row.reference === initialQuery) ? initialQuery : null);
-  const [events, setEvents] = useState<TrackingEvent[]>([]);
-  const [busy, setBusy] = useState(false);
+  const { params, search, update } = useWorkspaceQuery();
+  const query = params.get("q") ?? "";
+  const requestedFocus = params.get("view");
+  const focus: Focus = FOCUS_OPTIONS.some((option) => option.value === requestedFocus) ? requestedFocus as Focus : "all";
+  const [allowInitialSelection, setAllowInitialSelection] = useState(Boolean(initialShipment));
+  const selectedReference = (params.get("selected") ?? (allowInitialSelection ? initialShipment : "") ?? "").trim().toUpperCase();
+  const selected = useMemo(() => rows.find((row) => row.reference === selectedReference) ?? null, [rows, selectedReference]);
+  const selectedKey = selected?.reference ?? null;
+  const [refreshing, setRefreshing] = useState(false);
+  const [sweeping, setSweeping] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
+
+  const filtered = useMemo(() => {
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return rows.filter((row) => {
+      if (!rowMatchesFocus(row, focus)) return false;
+      if (!terms.length) return true;
+      const haystack = [
+        row.reference,
+        row.customer_name,
+        row.origin,
+        row.destination,
+        row.mode,
+        row.primary_branch,
+        row.carrier ?? "",
+        row.carrier_reference ?? "",
+        row.current_location ?? "",
+        row.last_provider ?? "",
+        row.last_milestone ?? "",
+        shipmentStatusLabels[row.status],
+      ].join(" ").toLowerCase();
+      return terms.every((term) => haystack.includes(term));
+    });
+  }, [focus, query, rows]);
+
+  const focusCounts = useMemo(() => ({
+    all: rows.length,
+    delayed: rows.filter((row) => rowMatchesFocus(row, "delayed")).length,
+    stale: rows.filter((row) => rowMatchesFocus(row, "stale")).length,
+    customs: rows.filter((row) => rowMatchesFocus(row, "customs")).length,
+    delivery: rows.filter((row) => rowMatchesFocus(row, "delivery")).length,
+  }), [rows]);
+
+  useEffect(() => {
+    if (!selectedKey) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAllowInitialSelection(false);
+        update({ selected: null, shipment: null });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [selectedKey, update]);
+
+  function openInspector(row: VisibilityShipment) {
+    setAllowInitialSelection(false);
+    update({ selected: row.reference, shipment: null }, "push");
+  }
+
+  function closeInspector() {
+    setAllowInitialSelection(false);
+    update({ selected: null, shipment: null });
+  }
+
+  async function refresh(showNotice = true) {
+    setRefreshing(true);
+    try {
+      const response = await fetch("/api/admin/visibility", { cache: "no-store" });
+      const data = await response.json() as ApiResponse;
+      if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Visibility could not be refreshed.");
+      setRows(data.rows);
+      setSummary(data.summary);
+      if (selectedReference && !data.rows.some((row) => row.reference === selectedReference)) closeInspector();
+      if (showNotice) setNotice({ tone: "success", text: "Live visibility refreshed." });
+    } catch (error) {
+      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Visibility could not be refreshed." });
+      throw error;
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function sweep() {
+    setSweeping(true);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/admin/visibility", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "sweep" }),
+      });
+      const data = await response.json() as ApiResponse;
+      if (!response.ok || !data.ok) throw new Error(data.error || "Tracking health sweep failed.");
+      await refresh(false);
+      setNotice({
+        tone: (data.opened ?? 0) > 0 ? "warning" : "success",
+        text: `Checked ${data.checked ?? 0} active shipments. Opened ${data.opened ?? 0} stale-feed exceptions.`,
+      });
+    } catch (error) {
+      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tracking health sweep failed." });
+    } finally {
+      setSweeping(false);
+    }
+  }
+
+  const returnTo = `/admin/visibility${search}`;
+  const hasFilters = Boolean(query) || focus !== "all";
+
+  return (
+    <OpsPage>
+      <OpsPageHeader
+        title="Live Visibility"
+        description="Monitor shipment feeds, ETA movement and the latest carrier or counterpart events from one operational register."
+        meta={`${summary.active} active · ${summary.delayed} ETA delayed · ${summary.stale} stale feeds · ${summary.delivered_today} delivered today`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/edi" className="ops-button" data-variant="secondary" data-size="md">EDI 214 Gateway</Link>
+            <Link href="/admin/carrier-integrations" className="ops-button" data-variant="secondary" data-size="md">Carrier integrations</Link>
+            {canSweep ? (
+              <OpsButton variant="primary" disabled={sweeping || refreshing} onClick={sweep}>
+                <ShieldAlert size={16} strokeWidth={1.75} aria-hidden="true"/>
+                {sweeping ? "Sweeping…" : "Run health sweep"}
+              </OpsButton>
+            ) : null}
+          </div>
+        }
+      />
+
+      <div className="px-4 pb-6 md:px-6">
+        {notice ? <div className="mb-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
+
+        <OpsToolbar className="mb-4">
+          <div className="min-w-[240px] flex-1 basis-[320px] max-w-[380px]">
+            <OpsSearch
+              value={query}
+              onChange={(event) => update({ q: event.target.value || null, selected: null, shipment: null })}
+              placeholder="Search shipment, customer, route, carrier…"
+              aria-label="Search live visibility"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Visibility filters">
+            {FOCUS_OPTIONS.map((option) => {
+              const active = focus === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setAllowInitialSelection(false);
+                    update({ view: option.value === "all" ? null : option.value, selected: null, shipment: null });
+                  }}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors ${active ? "border-[var(--admin-crimson)] bg-[var(--admin-crimson)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)] hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)]"}`}
+                >
+                  {option.label} <span className="tabular-nums">{focusCounts[option.value]}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <OpsButton
+              size="sm"
+              disabled={refreshing || sweeping}
+              onClick={() => { void refresh(); }}
+            >
+              <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </OpsButton>
+            {hasFilters ? (
+              <OpsButton
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setAllowInitialSelection(false);
+                  update({ q: null, view: null, selected: null, shipment: null });
+                }}
+              >
+                Reset
+              </OpsButton>
+            ) : null}
+            <span className="whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {rows.length}</span>
+          </div>
+        </OpsToolbar>
+
+        <OpsSurface flush>
+          {filtered.length ? (
+            <OpsTableWrap>
+              <table className="ops-table min-w-[1040px]" aria-label="Live shipment visibility">
+                <thead>
+                  <tr>
+                    <th>Shipment</th>
+                    <th>Customer · route</th>
+                    <th>State</th>
+                    <th>Last signal</th>
+                    <th>ETA</th>
+                    <th>Movement</th>
+                    <th>Last event</th>
+                    <th><span className="sr-only">Action</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((row) => {
+                    const chosen = selected?.reference === row.reference;
+                    const delayed = (row.eta_delta_hours ?? 0) >= 24;
+                    return (
+                      <tr key={row.reference} data-selected={chosen || undefined}>
+                        <td>
+                          <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`}>
+                            <OpsMono className="text-xs font-medium text-[var(--admin-info)]">{row.reference}</OpsMono>
+                          </Link>
+                          <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.carrier || "Carrier not set"}</span>
+                        </td>
+                        <td>
+                          <strong className="block text-sm font-medium text-[var(--admin-ink)]">{row.customer_name}</strong>
+                          <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin} → {row.destination} · {row.mode || "Mode not set"}</span>
+                        </td>
+                        <td>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <OpsBadge tone={statusTone(row)}>{shipmentStatusLabels[row.status]}</OpsBadge>
+                            {row.stale ? <OpsBadge tone="danger">Stale feed</OpsBadge> : null}
+                          </div>
+                        </td>
+                        <td>
+                          <strong className="block text-sm font-medium text-[var(--admin-ink)]">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "No normalized feed"}</strong>
+                          <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.current_location || "Location unknown"}</span>
+                        </td>
+                        <td><span className="text-sm text-[var(--admin-muted)]">{shortDateTime(row.eta)}</span></td>
+                        <td><span className={`text-sm font-medium ${delayed ? "text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{delayText(row.eta_delta_hours)}</span></td>
+                        <td><span className="text-sm text-[var(--admin-muted)]">{shortDateTime(row.last_event_at)}</span></td>
+                        <td className="text-right"><OpsButton size="sm" variant="secondary" onClick={() => openInspector(row)}>Inspect</OpsButton></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          ) : (
+            <OpsEmptyState
+              compact
+              icon={<RadioTower size={20} strokeWidth={1.75} aria-hidden="true"/>}
+              kind={hasFilters ? "search" : "neutral"}
+              title={hasFilters ? "No shipment feeds match this view" : "No shipment feeds available"}
+              description={hasFilters ? "Change the visibility filter or search terms." : "Shipment feeds will appear here when tracking data becomes available."}
+              action={hasFilters ? <OpsButton size="sm" onClick={() => update({ q: null, view: null })}>Clear filters</OpsButton> : undefined}
+            />
+          )}
+        </OpsSurface>
+      </div>
+
+      {selected ? (
+        <TrackingVisibilityPanel
+          key={selected.reference}
+          row={selected}
+          returnTo={returnTo}
+          onClose={closeInspector}
+          onRefresh={() => refresh(false)}
+        />
+      ) : null}
+    </OpsPage>
+  );
+}
+
+function TrackingVisibilityPanel({
+  row,
+  returnTo,
+  onClose,
+  onRefresh,
+}: {
+  row: VisibilityShipment;
+  returnTo: string;
+  onClose: () => void;
+  onRefresh: () => Promise<void>;
+}) {
+  const [events, setEvents] = useState<TrackingEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [panelNotice, setPanelNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
   const [rawStatus, setRawStatus] = useState("");
   const [milestone, setMilestone] = useState<TrackingMilestone | "">("");
   const [location, setLocation] = useState("");
@@ -72,63 +401,62 @@ export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSw
   const [provider, setProvider] = useState("");
   const [details, setDetails] = useState("");
 
-  const selected = selectedReference ? rows.find((row) => row.reference === selectedReference) ?? null : null;
-  const filtered = useMemo(() => {
-    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return rows.filter((row) => {
-      if (focus === "delayed" && (row.eta_delta_hours ?? 0) < 24) return false;
-      if (focus === "stale" && !row.stale) return false;
-      if (focus === "customs" && row.status !== "customs_clearance") return false;
-      if (focus === "delivery" && row.status !== "out_for_delivery") return false;
-      if (!terms.length) return true;
-      const haystack = [row.reference, row.customer_name, row.origin, row.destination, row.mode, row.carrier ?? "", row.carrier_reference ?? "", row.current_location ?? "", row.last_provider ?? "", row.last_milestone ?? "", shipmentStatusLabels[row.status]].join(" ").toLowerCase();
-      return terms.every((term) => haystack.includes(term));
-    });
-  }, [focus, query, rows]);
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    fetch(`/api/admin/visibility?reference=${encodeURIComponent(row.reference)}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const data = await response.json() as ApiResponse;
+        if (!response.ok || !data.ok || !data.events) throw new Error(data.error || "Tracking history could not be loaded.");
+        return data.events;
+      })
+      .then((nextEvents) => {
+        if (!active) return;
+        setEvents(nextEvents);
+        setLoadingEvents(false);
+      })
+      .catch((error: unknown) => {
+        if (!active || (error instanceof DOMException && error.name === "AbortError")) return;
+        setPanelNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tracking history could not be loaded." });
+        setLoadingEvents(false);
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [row.reference]);
 
-  async function refresh() {
-    setBusy(true);
-    setNotice(null);
+  async function reloadEvents() {
+    setLoadingEvents(true);
     try {
-      const response = await fetch("/api/admin/visibility", { cache: "no-store" });
-      const data = await response.json() as ApiResponse;
-      if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Visibility could not be refreshed.");
-      setRows(data.rows);
-      setSummary(data.summary);
-      if (selectedReference && data.rows.some((row) => row.reference === selectedReference)) await loadEvents(selectedReference, false);
-      setNotice({ tone: "success", text: "Live visibility refreshed." });
-    } catch (error) {
-      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Visibility could not be refreshed." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function loadEvents(reference: string, updateSelection = true) {
-    if (updateSelection) setSelectedReference(reference);
-    setBusy(true);
-    setNotice(null);
-    try {
-      const response = await fetch(`/api/admin/visibility?reference=${encodeURIComponent(reference)}`, { cache: "no-store" });
+      const response = await fetch(`/api/admin/visibility?reference=${encodeURIComponent(row.reference)}`, { cache: "no-store" });
       const data = await response.json() as ApiResponse;
       if (!response.ok || !data.ok || !data.events) throw new Error(data.error || "Tracking history could not be loaded.");
       setEvents(data.events);
-    } catch (error) {
-      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tracking history could not be loaded." });
     } finally {
-      setBusy(false);
+      setLoadingEvents(false);
     }
   }
 
   async function recordEvent() {
-    if (!selected || !rawStatus.trim()) return;
+    if (!rawStatus.trim()) return;
     setBusy(true);
-    setNotice(null);
+    setPanelNotice(null);
     try {
       const response = await fetch("/api/admin/visibility", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "record", reference: selected.reference, rawStatus, milestone: milestone || null, location, eta, eventTime, provider, details }),
+        body: JSON.stringify({
+          action: "record",
+          reference: row.reference,
+          rawStatus,
+          milestone: milestone || null,
+          location,
+          eta,
+          eventTime,
+          provider,
+          details,
+        }),
       });
       const data = await response.json() as ApiResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || "Tracking event could not be recorded.");
@@ -139,129 +467,127 @@ export function TrackingVisibilityWorkspace({ initialRows, initialSummary, canSw
       setEventTime("");
       setProvider("");
       setDetails("");
-      await refresh();
-      await loadEvents(selected.reference, false);
+      await Promise.all([onRefresh(), reloadEvents()]);
       const exceptions = data.opened_exceptions?.length ? ` Automatic exceptions opened: ${data.opened_exceptions.join(", ")}.` : "";
-      setNotice({ tone: exceptions ? "warning" : "success", text: `Tracking event recorded.${exceptions}` });
+      setPanelNotice({ tone: exceptions ? "warning" : "success", text: `Tracking event recorded.${exceptions}` });
     } catch (error) {
-      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tracking event could not be recorded." });
+      setPanelNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tracking event could not be recorded." });
     } finally {
       setBusy(false);
     }
   }
 
-  async function sweep() {
-    setBusy(true);
-    setNotice(null);
-    try {
-      const response = await fetch("/api/admin/visibility", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "sweep" }) });
-      const data = await response.json() as ApiResponse;
-      if (!response.ok || !data.ok) throw new Error(data.error || "Tracking health sweep failed.");
-      await refresh();
-      setNotice({ tone: (data.opened ?? 0) > 0 ? "warning" : "success", text: `Checked ${data.checked ?? 0} active shipments. Opened ${data.opened ?? 0} stale-feed exceptions.` });
-    } catch (error) {
-      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tracking health sweep failed." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const metrics: Array<{ label: string; value: number; target?: Focus; alert?: boolean }> = [
-    { label: "Active", value: summary.active, target: "all" },
-    { label: "ETA delayed", value: summary.delayed, target: "delayed", alert: summary.delayed > 0 },
-    { label: "Stale feeds", value: summary.stale, target: "stale", alert: summary.stale > 0 },
-    { label: "Customs", value: summary.customs, target: "customs", alert: summary.customs > 0 },
-    { label: "Out for delivery", value: summary.out_for_delivery, target: "delivery" },
-    { label: "Delivered today", value: summary.delivered_today },
-  ];
-
-  return <OpsPage>
-    <main className="min-h-[calc(100vh-64px)] bg-[var(--admin-canvas)] text-[var(--admin-ink)]">
-      <div className="mx-auto w-full max-w-[1320px] px-4 pb-14 pt-8 sm:px-6 lg:px-8">
-        <header className="grid gap-6 border-b border-[#101010] pb-7 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <div>
-            <p className="text-[length:var(--app-label-size)] font-normal uppercase tracking-[0.11em] text-[var(--admin-crimson)]">Operations · Control tower</p>
-            <h1 className="mt-3 text-[clamp(36px,4vw,52px)] font-normal leading-[1.04] tracking-[-0.04em]">Live Visibility</h1>
-            <p className="mt-3 max-w-3xl text-[14px] leading-6 text-[var(--admin-muted)]">One operational movement timeline across carrier APIs, EDI, GPS, overseas counterparts and KCPL manual updates. Delay, stale-feed and exception signals stay visible instead of disappearing into inboxes.</p>
+  return (
+    <>
+      <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close live visibility panel"/>
+      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[640px]" aria-label={`Live visibility for ${row.reference}`}>
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+          <div className="min-w-0">
+            <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.carrier_reference ? ` · ${row.carrier_reference}` : ""}</p>
+            <h2 className="mt-1 text-base font-semibold leading-6">Movement timeline</h2>
+            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{row.customer_name} · {row.origin} → {row.destination}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" disabled={busy} onClick={refresh} className="inline-flex h-10 items-center gap-2 border border-[var(--admin-line-strong)] px-3 text-[12px] hover:border-[#101010] hover:bg-[var(--admin-surface-muted)] disabled:opacity-50"><RefreshCw size={13}/>Refresh</button>
-            {canSweep ? <button type="button" disabled={busy} onClick={sweep} className="inline-flex h-10 items-center gap-2 border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-4 text-[12px] font-medium text-white hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)] disabled:opacity-50"><ShieldAlert size={13}/>Run health sweep</button> : null}
+          <div className="flex shrink-0 items-center gap-2">
+            <OpsBadge tone={statusTone(row)}>{shipmentStatusLabels[row.status]}</OpsBadge>
+            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close live visibility panel">
+              <X size={16} strokeWidth={1.75} aria-hidden="true"/>
+            </button>
           </div>
         </header>
 
-        <section className="grid border-b border-[var(--admin-line)] sm:grid-cols-3 xl:grid-cols-6" aria-label="Visibility status summary">
-          {metrics.map((item, index) => {
-            const active = item.target ? focus === item.target : false;
-            return <button key={item.label} type="button" disabled={!item.target} onClick={() => item.target && setFocus(item.target)} className={`min-h-[106px] border-b border-[var(--admin-line)] px-4 py-5 text-left transition-colors sm:border-r sm:border-[var(--admin-line)] xl:border-b-0 ${index === metrics.length - 1 ? "xl:border-r-0" : ""} ${active ? "bg-[var(--admin-surface-muted)]" : item.target ? "hover:bg-[var(--admin-surface-muted)]" : "cursor-default"}`}>
-              <span className="flex items-center justify-between gap-2 text-[length:var(--app-label-size)] uppercase tracking-[0.07em] text-[var(--admin-muted)]"><span>{item.label}</span>{active ? <span className="h-2 w-2 bg-[var(--admin-crimson)]"/> : null}</span>
-              <strong className={`mt-4 block text-[31px] font-normal leading-none tracking-[-0.045em] ${item.alert ? "text-[var(--admin-crimson)]" : "text-[var(--admin-ink)]"}`}>{item.value}</strong>
-            </button>;
-          })}
-        </section>
-
-        {notice ? <div className="mt-5"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-
-        <section className="mt-6 grid min-h-[720px] border-y border-[var(--admin-line)] xl:grid-cols-[minmax(0,1fr)_430px]">
-          <div className="min-w-0 xl:border-r xl:border-[var(--admin-line)]">
-            <div className="flex flex-col gap-3 border-b border-[var(--admin-line)] py-4 pr-0 xl:pr-5 sm:flex-row sm:items-center">
-              <label className="flex h-10 min-w-0 flex-1 items-center border border-[var(--admin-line-strong)] bg-white px-3">
-                <Search size={13} className="mr-2 text-[var(--admin-muted)]"/>
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, route, carrier, location…" className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-[var(--admin-muted)]"/>
-              </label>
-              <button type="button" onClick={() => { setQuery(""); setFocus("all"); }} className="h-10 border border-[var(--admin-line-strong)] px-3 text-[12px] hover:border-[#101010] hover:bg-[var(--admin-surface-muted)]">Reset</button>
-              <span className="text-[11px] text-[var(--admin-muted)]">{focusLabel(focus)} · {filtered.length} shown</span>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="border-b border-[var(--admin-line)] px-5 py-4">
+            {panelNotice ? <OpsNotice tone={panelNotice.tone} onDismiss={() => setPanelNotice(null)}>{panelNotice.text}</OpsNotice> : null}
+            <div className={`${panelNotice ? "mt-3 " : ""}flex flex-wrap items-center gap-2`}>
+              <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
+              {row.stale ? <OpsBadge tone="danger">Stale feed</OpsBadge> : <OpsBadge tone="success">Feed current</OpsBadge>}
+              <span className="text-xs text-[var(--admin-muted)]">{row.last_source ? row.last_source.replaceAll("_", " ") : "No source recorded"}</span>
             </div>
-
-            {!filtered.length ? <div className="grid min-h-[420px] place-items-center px-8 text-center"><div><RadioTower size={20} className="mx-auto text-[var(--admin-muted)]"/><p className="mt-4 text-[15px] font-medium">No shipment feeds match this view</p><p className="mt-2 text-[12px] leading-5 text-[var(--admin-muted)]">Change the filter or search. Active shipment feeds will appear here.</p></div></div> : <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
-                <thead><tr className="h-11 border-b border-[#101010] text-[length:var(--app-label-size)] uppercase tracking-[0.06em] text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-normal">Shipment</th><th className="w-[185px] px-3 font-normal">Customer / route</th><th className="w-[130px] px-3 font-normal">State</th><th className="w-[145px] px-3 font-normal">Last milestone</th><th className="w-[120px] px-3 font-normal">ETA</th><th className="w-[95px] px-3 font-normal">Movement</th><th className="w-[125px] px-3 font-normal">Last event</th></tr></thead>
-                <tbody>{filtered.map((row) => {
-                  const chosen = selectedReference === row.reference;
-                  const delayed = (row.eta_delta_hours ?? 0) >= 24;
-                  return <tr key={row.reference} onClick={() => loadEvents(row.reference)} className={`h-[66px] cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition-colors hover:bg-[var(--admin-surface-muted)] ${chosen ? "bg-[var(--admin-surface-muted)]" : ""}`}>
-                    <td className="relative px-3">{chosen ? <span className="absolute bottom-2 left-0 top-2 w-[2px] bg-[var(--admin-crimson)]"/> : null}<OpsMono>{row.reference}</OpsMono><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.carrier || "Carrier not set"}</span></td>
-                    <td className="px-3"><span className="block truncate font-medium text-[var(--admin-ink)]">{row.customer_name}</span><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.origin} → {row.destination} · {row.mode || "Mode not set"}</span></td>
-                    <td className="px-3"><OpsBadge tone={statusTone(row)}>{shipmentStatusLabels[row.status]}</OpsBadge>{row.stale ? <span className="mt-1.5 block text-[length:var(--app-label-size)] font-medium uppercase tracking-[0.05em] text-[#A80E2F]">Stale feed</span> : null}</td>
-                    <td className="px-3"><span className="block truncate text-[11px] font-medium">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "No normalized feed"}</span><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.current_location || "Location unknown"}</span></td>
-                    <td className="px-3 text-[11px] text-[var(--admin-muted)]">{shortDateTime(row.eta)}</td>
-                    <td className={`px-3 text-[11px] font-medium ${delayed ? "text-[#A80E2F]" : "text-[var(--admin-muted)]"}`}>{delayText(row.eta_delta_hours)}</td>
-                    <td className="px-3 text-[11px] text-[var(--admin-muted)]">{shortDateTime(row.last_event_at)}</td>
-                  </tr>;
-                })}</tbody>
-              </table>
-            </div>}
           </div>
 
-          <aside className="bg-[var(--admin-surface-muted)] px-5 py-6 sm:px-6">
-            {!selected ? <div className="grid h-full min-h-[420px] place-items-center text-center"><div><RadioTower size={20} className="mx-auto text-[var(--admin-muted)]"/><p className="mt-4 text-[15px] font-medium">Choose a shipment</p><p className="mt-2 text-[12px] leading-5 text-[var(--admin-muted)]">Select a movement to inspect its normalized timeline or record a manual tracking update.</p></div></div> : <div className="flex h-full flex-col">
-              <div className="border-b border-[var(--admin-line-strong)] pb-5">
-                <div className="flex items-start justify-between gap-3"><div><p className="text-[length:var(--app-label-size)] uppercase tracking-[0.07em] text-[var(--admin-muted)]">Movement timeline</p><h2 className="mt-2 text-[26px] font-normal leading-[1.08] tracking-[-0.035em]">{selected.reference}</h2></div><OpsBadge tone={statusTone(selected)}>{shipmentStatusLabels[selected.status]}</OpsBadge></div>
-                <p className="mt-3 text-[12px] leading-5 text-[var(--admin-muted)]">{selected.customer_name}<br/>{selected.origin} → {selected.destination}</p>
-                <div className="mt-4 flex flex-wrap gap-3"><Link href={`/admin/jobs/${encodeURIComponent(selected.reference)}`} className="border-b border-[#101010] pb-0.5 text-[11px] hover:border-[var(--admin-crimson)] hover:text-[var(--admin-crimson)]">Open Job File</Link>{selected.carrier_reference ? <span className="text-[11px] text-[var(--admin-muted)]">Carrier ref · {selected.carrier_reference}</span> : null}</div>
+          <PanelSection title="Latest position" description="The newest normalized tracking state visible to KCPL operations.">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Detail label="Location" value={row.current_location || "Location unknown"}/>
+              <Detail label="Milestone" value={row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "No normalized milestone"}/>
+              <Detail label="Carrier" value={row.carrier || "Not set"}/>
+              <Detail label="Provider" value={row.last_provider || "Not recorded"}/>
+              <Detail label="Latest ETA" value={dateTime(row.eta)}/>
+              <Detail label="ETA movement" value={delayText(row.eta_delta_hours)} danger={(row.eta_delta_hours ?? 0) >= 24}/>
+            </div>
+            <div className="mt-4 flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
+              {row.stale ? <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--admin-danger)]" aria-hidden="true"/> : <CheckCircle2 size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--admin-success)]" aria-hidden="true"/>}
+              <span>{row.stale ? `No fresh tracking signal within the expected window. Last event: ${dateTime(row.last_event_at)}.` : `Latest tracking event: ${dateTime(row.last_event_at)}.`}</span>
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Event timeline" description="Normalized carrier, EDI, GPS, counterpart and manual updates.">
+            {loadingEvents ? (
+              <div className="flex items-center gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
+                <RadioTower size={16} strokeWidth={1.75} aria-hidden="true"/> Loading tracking history…
               </div>
+            ) : events.length ? (
+              <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">
+                {events.map((event) => (
+                  <div key={event.id} className="grid gap-2 py-3 sm:grid-cols-[110px_minmax(0,1fr)]">
+                    <span className="text-xs text-[var(--admin-muted)]">{shortDateTime(event.event_time)}</span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <OpsBadge tone={event.milestone === "delivery_refused" || event.milestone === "exception" ? "danger" : event.milestone === "delivered" ? "success" : "info"}>{trackingMilestoneLabels[event.milestone]}</OpsBadge>
+                        <strong className="text-sm font-medium">{event.title}</strong>
+                      </div>
+                      <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{event.location || "Location not supplied"}{event.details ? ` · ${event.details}` : ""}</p>
+                      <p className="mt-1 text-xs text-[var(--admin-muted)]">{event.provider || event.source.replaceAll("_", " ")}{event.eta ? ` · ETA ${dateTime(event.eta)}` : ""}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <OpsEmptyState compact title="No normalized tracking events yet" description="Carrier, counterpart or manual events will appear here when recorded."/>
+            )}
+          </PanelSection>
 
-              <section className="border-b border-[var(--admin-line-strong)] py-5">
-                <div className="grid grid-cols-[36px_minmax(0,1fr)] gap-3"><span className="pt-0.5 text-[length:var(--app-label-size)] font-medium text-[var(--admin-crimson)]">01</span><div><h3 className="text-[14px] font-medium">Latest position</h3><p className="mt-1 text-[11px] leading-5 text-[var(--admin-muted)]">{selected.current_location || "Location unknown"} · {selected.last_milestone ? trackingMilestoneLabels[selected.last_milestone] : "No normalized milestone"}</p></div></div>
-                <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 text-[11px]"><div><dt className="text-[var(--admin-muted)]">Carrier</dt><dd className="mt-1 font-medium">{selected.carrier || "Not set"}</dd></div><div><dt className="text-[var(--admin-muted)]">Latest ETA</dt><dd className="mt-1 font-medium">{dateTime(selected.eta)}</dd></div><div><dt className="text-[var(--admin-muted)]">ETA movement</dt><dd className={`mt-1 font-medium ${(selected.eta_delta_hours ?? 0) >= 24 ? "text-[#A80E2F]" : ""}`}>{delayText(selected.eta_delta_hours)}</dd></div><div><dt className="text-[var(--admin-muted)]">Last provider</dt><dd className="mt-1 font-medium">{selected.last_provider || "Not recorded"}</dd></div></dl>
-              </section>
+          <PanelSection title="Manual fallback" description="Record an operational update when the provider has no live integration.">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <OpsField label="Raw carrier status"><input value={rawStatus} onChange={(event) => setRawStatus(event.target.value)} placeholder="e.g. Vessel departed Singapore"/></OpsField>
+              <OpsField label="Milestone override"><select value={milestone} onChange={(event) => setMilestone(event.target.value as TrackingMilestone | "")}><option value="">Auto-detect</option>{trackingMilestones.filter((value) => value !== "unknown").map((value) => <option key={value} value={value}>{trackingMilestoneLabels[value]}</option>)}</select></OpsField>
+              <OpsField label="Location"><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Port, airport, border, city…"/></OpsField>
+              <OpsField label="Provider / counterpart"><input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Carrier, airline, overseas agent…"/></OpsField>
+              <OpsField label="Event time"><input type="datetime-local" value={eventTime} onChange={(event) => setEventTime(event.target.value)}/></OpsField>
+              <OpsField label="New ETA"><input type="datetime-local" value={eta} onChange={(event) => setEta(event.target.value)}/></OpsField>
+              <OpsField label="Details" className="sm:col-span-2"><textarea rows={3} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Operational context, reason, vehicle, vessel or flight details…"/></OpsField>
+            </div>
+          </PanelSection>
+        </div>
 
-              <section className="border-b border-[var(--admin-line-strong)] py-5">
-                <div className="grid grid-cols-[36px_minmax(0,1fr)] gap-3"><span className="pt-0.5 text-[length:var(--app-label-size)] font-medium text-[var(--admin-crimson)]">02</span><div><h3 className="text-[14px] font-medium">Event timeline</h3><p className="mt-1 text-[11px] leading-5 text-[var(--admin-muted)]">Normalized carrier and counterpart updates.</p></div></div>
-                <div className="mt-4 border-t border-[var(--admin-line-strong)]">
-                  {events.length ? events.map((event) => <div key={event.id} className="grid grid-cols-[82px_minmax(0,1fr)] gap-3 border-b border-[#CFCFC8] py-3"><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{shortDateTime(event.event_time)}</span><div><div className="flex flex-wrap items-center gap-2"><OpsBadge tone={event.milestone === "delivery_refused" || event.milestone === "exception" ? "danger" : event.milestone === "delivered" ? "success" : "info"}>{trackingMilestoneLabels[event.milestone]}</OpsBadge><strong className="text-[11px] font-medium">{event.title}</strong></div><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{event.location || "Location not supplied"}{event.details ? ` · ${event.details}` : ""}</p>{event.eta ? <p className="mt-1 text-[length:var(--app-label-size)] font-medium">ETA · {dateTime(event.eta)}</p> : null}</div></div>) : <div className="py-8 text-center text-[12px] leading-5 text-[var(--admin-muted)]">No normalized tracking events yet.</div>}
-                </div>
-              </section>
+        <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs text-[var(--admin-muted)]">Manual updates are added to the same normalized tracking timeline.</span>
+            <OpsButton variant="primary" disabled={busy || !rawStatus.trim()} onClick={recordEvent}>
+              <Activity size={16} strokeWidth={1.75} aria-hidden="true"/>
+              {busy ? "Recording…" : "Record tracking event"}
+            </OpsButton>
+          </div>
+        </footer>
+      </aside>
+    </>
+  );
+}
 
-              <section className="py-5">
-                <div className="grid grid-cols-[36px_minmax(0,1fr)] gap-3"><span className="pt-0.5 text-[length:var(--app-label-size)] font-medium text-[var(--admin-crimson)]">03</span><div><h3 className="text-[14px] font-medium">Manual fallback</h3><p className="mt-1 text-[11px] leading-5 text-[var(--admin-muted)]">Record an update when the provider has no live integration.</p></div></div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1"><OpsField label="Raw carrier status"><input value={rawStatus} onChange={(event) => setRawStatus(event.target.value)} placeholder="e.g. Vessel departed Singapore"/></OpsField><OpsField label="Milestone override"><select value={milestone} onChange={(event) => setMilestone(event.target.value as TrackingMilestone | "")}><option value="">Auto-detect</option>{trackingMilestones.filter((value) => value !== "unknown").map((value) => <option key={value} value={value}>{trackingMilestoneLabels[value]}</option>)}</select></OpsField><OpsField label="Location"><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Port, airport, border, city…"/></OpsField><OpsField label="Provider / counterpart"><input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Carrier, airline, overseas agent…"/></OpsField><OpsField label="Event time"><input type="datetime-local" value={eventTime} onChange={(event) => setEventTime(event.target.value)}/></OpsField><OpsField label="New ETA"><input type="datetime-local" value={eta} onChange={(event) => setEta(event.target.value)}/></OpsField><OpsField label="Details" className="sm:col-span-2 xl:col-span-1"><textarea rows={3} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Operational context, reason, vehicle/vessel/flight details…"/></OpsField></div>
-                <div className="mt-4"><OpsButton variant="primary" onClick={recordEvent} disabled={busy || !rawStatus.trim()}><Activity size={12}/>Record tracking event</OpsButton></div>
-              </section>
-            </div>}
-          </aside>
-        </section>
-      </div>
-    </main>
-  </OpsPage>;
+function PanelSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="border-b border-[var(--admin-line)] px-5 py-5 last:border-b-0">
+      <h3 className="text-base font-semibold">{title}</h3>
+      <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{description}</p>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function Detail({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) {
+  return (
+    <div className="rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 py-3">
+      <p className="m-0 text-xs font-medium text-[var(--admin-muted)]">{label}</p>
+      <p className={`mt-1 text-sm font-medium ${danger ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</p>
+    </div>
+  );
 }
