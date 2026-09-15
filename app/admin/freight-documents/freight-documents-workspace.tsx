@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, CheckCircle2, ExternalLink, FilePlus2, FileText, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ExternalLink, Eye, FilePlus2, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
@@ -32,6 +32,7 @@ import {
 
 type Summary = { eligible: number; missing_primary: number; generated_current: number; review_pending: number };
 type Focus = "all" | "missing" | "generated" | "review";
+type InspectorTab = "preview" | "details" | "revisions" | "generate";
 type FormState = {
   kind: GeneratedFreightDocumentKind;
   shipper: string;
@@ -74,6 +75,7 @@ const FOCUS_OPTIONS: Array<{ value: Focus; label: string }> = [
   { value: "review", label: "Awaiting review" },
   { value: "generated", label: "Generated" },
 ];
+const PAGE_SIZE = 10;
 
 function formFor(row: FreightDocumentQueueRow): FormState {
   const primary = primaryCarriageDocumentKind(row.mode);
@@ -183,6 +185,15 @@ export function FreightDocumentsWorkspace({
     generated: rows.filter((row) => row.current_generated_count > 0).length,
     review: rows.filter(hasPendingReview).length,
   }), [rows]);
+  const documentStats = useMemo(() => ({
+    current: rows.reduce((count, row) => count + row.current_generated_count, 0),
+    revisions: rows.reduce((count, row) => count + row.generated_documents.length, 0),
+    customerSafe: rows.reduce((count, row) => count + row.generated_documents.filter((document) => !document.superseded && document.customer_safe).length, 0),
+  }), [rows]);
+  const requestedPage = Number(params.get("page") ?? "1");
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(Math.floor(requestedPage), pageCount) : 1;
+  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   useEffect(() => {
     if (!selected) return;
@@ -252,9 +263,10 @@ export function FreightDocumentsWorkspace({
         />
 
         <OpsStatStrip className="freight-documents-summary">
-          <OpsStat label="Needs primary draft" value={summary.missing_primary} detail="mode-specific carriage document" tone="warning" active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "missing" ? null : "missing", selected: null, shipment: null }); }} />
-          <OpsStat label="Awaiting review" value={summary.review_pending} detail="generated revisions to check" tone="warning" active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "review" ? null : "review", selected: null, shipment: null }); }} />
-          <OpsStat label="Current drafts" value={summary.generated_current} detail="across eligible Job Files" tone="success" active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "generated" ? null : "generated", selected: null, shipment: null }); }} />
+          <OpsStat label="Needs primary draft" value={summary.missing_primary} detail="mode-specific carriage document" tone="warning" active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "missing" ? null : "missing", page: null, selected: null, shipment: null }); }} />
+          <OpsStat label="Awaiting review" value={summary.review_pending} detail="generated revisions to check" tone="warning" active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "review" ? null : "review", page: null, selected: null, shipment: null }); }} />
+          <OpsStat label="Current drafts" value={documentStats.current} detail={`${documentStats.customerSafe} customer-safe`} tone="success" active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "generated" ? null : "generated", page: null, selected: null, shipment: null }); }} />
+          <OpsStat label="Total revisions" value={documentStats.revisions} detail="current and superseded PDFs" tone="info" />
           <OpsStat label="Eligible Job Files" value={summary.eligible} detail="accessible, non-cancelled shipments" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} />
         </OpsStatStrip>
 
@@ -274,7 +286,7 @@ export function FreightDocumentsWorkspace({
           <div className="freight-documents-search">
             <OpsSearch
               value={query}
-              onChange={(event) => update({ q: event.target.value || null })}
+              onChange={(event) => update({ q: event.target.value || null, page: null })}
               placeholder="Search shipment, booking, customer, route, carrier or cargo…"
               aria-label="Search freight document jobs"
             />
@@ -287,7 +299,7 @@ export function FreightDocumentsWorkspace({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => { setAllowInitialSelection(false); update({ view: option.value === "all" ? null : option.value, selected: null, shipment: null }); }}
+                  onClick={() => { setAllowInitialSelection(false); update({ view: option.value === "all" ? null : option.value, page: null, selected: null, shipment: null }); }}
                   aria-pressed={active}
                   className="freight-documents-filter"
                   data-active={active || undefined}
@@ -312,8 +324,8 @@ export function FreightDocumentsWorkspace({
             >
               <RefreshCw size={14} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>{refreshing ? "Refreshing…" : "Refresh"}
             </OpsButton>
-            {hasFilters ? <OpsButton size="sm" variant="ghost" onClick={() => { setAllowInitialSelection(false); update({ q: null, view: null, selected: null, shipment: null }); }}>Reset</OpsButton> : null}
-            <span className="freight-documents-result-count">{filtered.length} of {rows.length} shown</span>
+            {hasFilters ? <OpsButton size="sm" variant="ghost" onClick={() => { setAllowInitialSelection(false); update({ q: null, view: null, page: null, selected: null, shipment: null }); }}>Reset</OpsButton> : null}
+            <span className="freight-documents-result-count">{filtered.length ? (page - 1) * PAGE_SIZE + 1 : 0}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} shown · {documentStats.revisions} revisions</span>
           </div>
         </OpsToolbar>
 
@@ -334,7 +346,7 @@ export function FreightDocumentsWorkspace({
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((row) => {
+                  {pageRows.map((row) => {
                     const latest = latestCurrentDocument(row);
                     const status = queueState(row);
                     const review = reviewState(latest);
@@ -378,10 +390,19 @@ export function FreightDocumentsWorkspace({
               kind={hasFilters ? "search" : "neutral"}
               title={hasFilters ? "No Job Files match this view" : "No eligible Job Files"}
               description={hasFilters ? "Change the document filter or search terms." : "Booked and active shipments will appear here when document generation is available."}
-              action={hasFilters ? <OpsButton size="sm" onClick={() => update({ q: null, view: null })}>Clear filters</OpsButton> : undefined}
+              action={hasFilters ? <OpsButton size="sm" onClick={() => update({ q: null, view: null, page: null })}>Clear filters</OpsButton> : undefined}
             />
           )}
         </OpsSurface>
+        {pageCount > 1 ? (
+          <nav className="freight-documents-pagination" aria-label="Freight document pages">
+            <span>Page {page} of {pageCount}</span>
+            <div>
+              <OpsButton size="sm" variant="secondary" disabled={page <= 1} onClick={() => update({ page: String(page - 1) })}>Previous</OpsButton>
+              <OpsButton size="sm" variant="secondary" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1) })}>Next</OpsButton>
+            </div>
+          </nav>
+        ) : null}
       </div>
 
       {selected ? (
@@ -416,6 +437,9 @@ function FreightDocumentPanel({
 }) {
   const [form, setForm] = useState<FormState>(() => formFor(row));
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<InspectorTab>("preview");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
   const latest = latestCurrentDocument(row);
   const status = queueState(row);
 
@@ -447,15 +471,30 @@ function FreightDocumentPanel({
     }
   }
 
+  async function loadPreview() {
+    if (!latest || previewUrl) return;
+    setPreviewBusy(true);
+    try {
+      const response = await fetch(`/api/admin/freight-documents?reference=${encodeURIComponent(row.reference)}&document=${encodeURIComponent(latest.document_id)}`, { cache: "no-store" });
+      const data = await response.json() as { ok?: boolean; url?: string; error?: string };
+      if (!response.ok || !data.ok || !data.url) throw new Error(data.error || "Preview could not be loaded.");
+      setPreviewUrl(data.url);
+    } catch (error) {
+      onMessage("danger", error instanceof Error ? error.message : "Preview could not be loaded.");
+    } finally {
+      setPreviewBusy(false);
+    }
+  }
+
   return (
     <>
       <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close document production panel"/>
-      <aside className="freight-document-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Freight documents for ${row.reference}`}>
+      <aside className="freight-document-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" role="dialog" aria-modal="true" aria-labelledby="freight-document-inspector-title" aria-describedby="freight-document-inspector-description">
         <header className="freight-document-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</p>
-            <h2 className="mt-1 text-base font-semibold leading-6">Document production</h2>
-            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{row.customer_name} · {row.origin} → {row.destination} · {row.mode || "Mode not set"}</p>
+            <h2 id="freight-document-inspector-title" className="mt-1 text-base font-semibold leading-6">Document production</h2>
+            <p id="freight-document-inspector-description" className="mt-0.5 text-sm text-[var(--admin-muted)]">{row.customer_name} · {row.origin} → {row.destination} · {row.mode || "Mode not set"}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
@@ -463,7 +502,28 @@ function FreightDocumentPanel({
           </div>
         </header>
 
+        <div className="freight-document-tabs" role="tablist" aria-label="Freight document inspector tabs">
+          {([
+            ["preview", "Preview", Eye],
+            ["details", "Details", FileText],
+            ["revisions", "Revisions", History],
+            ["generate", "Generate", FilePlus2],
+          ] as const).map(([value, label, Icon]) => (
+            <button key={value} type="button" role="tab" aria-selected={tab === value} className="freight-document-tab" data-active={tab === value || undefined} onClick={() => setTab(value)}>
+              <Icon size={15} strokeWidth={1.75} aria-hidden="true"/>{label}
+            </button>
+          ))}
+        </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {tab === "preview" ? (
+            <PanelSection title="PDF preview" description={latest ? `${latest.filename} · revision ${latest.revision}` : "Generate a controlled draft to preview it here."}>
+              {latest ? <div className="freight-document-preview">
+                {previewUrl ? <iframe title={`PDF preview for ${row.reference}`} src={previewUrl}/> : <div className="freight-document-preview-empty"><FileText size={24} strokeWidth={1.75} aria-hidden="true"/><p>Preview the current controlled PDF without leaving this Job File.</p><OpsButton type="button" variant="secondary" disabled={previewBusy} onClick={() => void loadPreview()}>{previewBusy ? "Loading preview…" : "Load PDF preview"}</OpsButton></div>}
+              </div> : <OpsEmptyState compact title="No PDF to preview" description="Use Generate to create the first controlled revision." action={<OpsButton type="button" size="sm" onClick={() => setTab("generate")}>Generate document</OpsButton>}/>}
+            </PanelSection>
+          ) : null}
+          {tab === "details" ? (
+          <>
           <div className="border-b border-[var(--admin-line)] px-5 py-4">
             <OpsNotice>
               <span className="flex items-start gap-2"><ShieldCheck size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>KCPL-generated PDFs are controlled internal/house drafts. Carrier-issued master originals remain authoritative.</span>
@@ -499,7 +559,10 @@ function FreightDocumentPanel({
               <Context label="Pieces / weight" value={`${row.pieces || 0} piece${row.pieces === 1 ? "" : "s"} · ${row.weight_kg || 0} kg`}/>
             </div>
           </PanelSection>
+          </>
+          ) : null}
 
+          {tab === "generate" ? <form id="freight-document-generation-form" onSubmit={(event) => { event.preventDefault(); void generate(); }}>
           <PanelSection title="Document" description="Choose the controlled document type and internal reference.">
             <div className="grid gap-3 md:grid-cols-2">
               <OpsField label="Document type"><select value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>{generatedFreightDocumentKinds.filter((kind) => row.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}</select></OpsField>
@@ -528,19 +591,22 @@ function FreightDocumentPanel({
               <OpsField label="Special instructions"><textarea value={form.specialInstructions} onChange={(event) => patch("specialInstructions", event.target.value)}/></OpsField>
             </div>
           </PanelSection>
+          </form> : null}
 
+          {tab === "revisions" ? (
           <PanelSection title="Revision history" description="Current and superseded controlled revisions for this Job File.">
             {row.generated_documents.length ? <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">{row.generated_documents.map((document) => <div key={document.document_id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm font-medium">R{document.revision} · {document.label}</strong><OpsBadge tone={document.superseded ? "neutral" : reviewState(document).tone}>{document.superseded ? "Superseded" : reviewState(document).label}</OpsBadge>{document.customer_safe ? <OpsBadge tone="info">Customer-safe</OpsBadge> : null}</div><p className="mt-1 truncate text-xs text-[var(--admin-muted)]">{document.filename} · SHA {document.sha256.slice(0, 12)}…</p></div><OpsButton size="sm" variant="ghost" onClick={() => void onOpenDocument(row.reference, document.document_id)}>Open PDF</OpsButton></div>)}</div> : <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]"><FileText size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>No generated revisions yet.</div>}
           </PanelSection>
+          ) : null}
         </div>
 
-        <footer className="freight-document-inspector-footer shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
-          <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]"><input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/><span>Mark this draft customer-safe after staff checks the content.</span></label>
+        {tab === "generate" ? <footer className="freight-document-inspector-footer shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
+          <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]"><input form="freight-document-generation-form" type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/><span>Mark this draft customer-safe after staff checks the content.</span></label>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">{row.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage draft missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage draft present</>}</span>
-            <OpsButton variant="primary" disabled={busy} onClick={generate}><FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Generating…" : "Generate PDF"}</OpsButton>
+            <OpsButton form="freight-document-generation-form" type="submit" variant="primary" disabled={busy}><FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Generating…" : "Generate PDF"}</OpsButton>
           </div>
-        </footer>
+        </footer> : null}
       </aside>
     </>
   );
