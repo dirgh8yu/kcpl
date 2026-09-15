@@ -1306,6 +1306,79 @@
 .kcpl-admin-content .freight-document-inspector-footer .ops-button {
   min-height: var(--app-control-height-touch);
 }
+.kcpl-admin-content .freight-documents-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+  margin: var(--app-space-3) var(--app-page-gap) 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.kcpl-admin-content .freight-documents-pagination > div {
+  display: flex;
+  gap: var(--app-space-2);
+}
+.kcpl-admin-content .freight-document-tabs {
+  display: flex;
+  gap: var(--app-space-1);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--admin-line);
+  padding: var(--app-space-2) var(--app-space-4) 0;
+  background: var(--admin-surface);
+}
+.kcpl-admin-content .freight-document-tab {
+  display: inline-flex;
+  min-height: var(--app-control-height-touch);
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0 var(--app-space-2);
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.kcpl-admin-content .freight-document-tab:hover,
+.kcpl-admin-content .freight-document-tab[data-active="true"] {
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .freight-document-tab[data-active="true"] {
+  border-bottom-color: var(--admin-crimson);
+}
+.kcpl-admin-content .freight-document-preview {
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius);
+  background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .freight-document-preview iframe {
+  display: block;
+  width: 100%;
+  height: 620px;
+  border: 0;
+  background: var(--admin-surface);
+}
+.kcpl-admin-content .freight-document-preview-empty {
+  display: grid;
+  min-height: 520px;
+  place-items: center;
+  align-content: center;
+  gap: var(--app-space-3);
+  padding: var(--app-space-5);
+  color: var(--admin-muted);
+  text-align: center;
+}
+.kcpl-admin-content .freight-document-preview-empty p {
+  max-width: 280px;
+  margin: 0;
+}
 @media (max-width: 760px) {
   .kcpl-admin-content .freight-documents-summary,
   .kcpl-admin-content .freight-documents-message,
@@ -1345,6 +1418,16 @@
   .kcpl-admin-content .freight-document-inspector-header,
   .kcpl-admin-content .freight-document-inspector-footer {
     padding-inline: 16px;
+  }
+  .kcpl-admin-content .freight-documents-pagination {
+    margin-inline: 16px;
+  }
+  .kcpl-admin-content .freight-document-preview,
+  .kcpl-admin-content .freight-document-preview-empty {
+    min-height: 420px;
+  }
+  .kcpl-admin-content .freight-document-preview iframe {
+    height: 500px;
   }
 }
 /* Customs clearance: keep the queue and its decision panel readable at working density. */
