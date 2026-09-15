@@ -79,10 +79,10 @@ function jobHref(job: CommandCentreJob, returnTo: string) {
 
 function Surface({ title, action, children }: { title: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)]">
-      <header className="flex min-h-14 items-center justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-3">
-        <div className="min-w-0 text-sm font-semibold text-[var(--admin-ink)]">{title}</div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+    <section className="overview-dashboard-surface">
+      <header className="overview-dashboard-surface-header">
+        <div className="overview-dashboard-surface-title">{title}</div>
+        {action ? <div className="overview-dashboard-surface-action">{action}</div> : null}
       </header>
       {children}
     </section>
@@ -98,12 +98,12 @@ function EmptyLine({ icon = false, children }: { icon?: boolean; children: React
 }
 
 function Kpi({ href, label, value, detail, tone = "neutral" }: { href: string; label: string; value: number; detail: string; tone?: "neutral" | "danger" | "warning" | "info" }) {
-  const valueClass = tone === "danger" ? "text-[var(--admin-danger)]" : tone === "warning" ? "text-[var(--admin-warning)]" : tone === "info" ? "text-[var(--admin-info)]" : "text-[var(--admin-ink)]";
+  const valueClass = tone === "danger" ? "is-danger" : tone === "warning" ? "is-warning" : tone === "info" ? "is-info" : "";
   return (
-    <Link href={href} className="min-w-0 bg-[var(--admin-surface)] px-4 py-3 no-underline transition-colors hover:bg-[var(--admin-surface-muted)]">
-      <span className="block text-xs font-medium uppercase tracking-wide text-[var(--admin-muted)]">{label}</span>
-      <strong className={`mt-1 block text-2xl font-semibold leading-none ${valueClass}`}>{value}</strong>
-      <span className="mt-1 block text-xs text-[var(--admin-muted)]">{detail}</span>
+    <Link href={href} className={`overview-dashboard-kpi ${valueClass}`} data-tone={tone}>
+      <span className="overview-dashboard-kpi-label">{label}</span>
+      <strong className="overview-dashboard-kpi-value">{value}</strong>
+      <span className="overview-dashboard-kpi-detail">{detail}</span>
     </Link>
   );
 }
@@ -222,7 +222,7 @@ export function V4OperationsOverview({
 
   return (
     <OpsPage className="kcpl-ops-overview overview-reference-layout">
-      <div className="px-4 py-5 md:px-6 md:py-6">
+      <div className="overview-dashboard-content px-4 py-5 md:px-6 md:py-6">
         <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="m-0">Overview</h1>
@@ -245,7 +245,7 @@ export function V4OperationsOverview({
 
         {data.partial ? <div className="mb-4"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm shipment readiness in the Job File.</OpsNotice></div> : null}
 
-        <section className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-line)] md:grid-cols-3 xl:grid-cols-6" aria-label="Operational KPIs">
+        <section className="overview-dashboard-kpis mb-5" aria-label="Operational KPIs">
           <Kpi href="/admin/shipments" label="Active" value={active} detail="shipments in progress"/>
           <Kpi href="/admin/alerts" label="Exceptions" value={exceptions} detail="require resolution" tone={exceptions ? "danger" : "neutral"}/>
           <Kpi href="/admin/shipments?attention=1" label="Overdue" value={overdue} detail="past due time" tone={overdue ? "danger" : "neutral"}/>
@@ -253,10 +253,6 @@ export function V4OperationsOverview({
           <Kpi href="/admin/shipments?attention=1" label="Unassigned" value={unassigned} detail="no owner" tone={unassigned ? "warning" : "neutral"}/>
           <Kpi href="/admin/delivery" label="Due today" value={dueToday} detail="ETA commitments" tone={dueToday ? "info" : "neutral"}/>
         </section>
-
-        <StatusMix data={data}/>
-
-        {finance?.currency_summaries.length ? <div className="mb-5"><FinanceSnapshot finance={finance}/></div> : null}
 
         <div className="grid gap-4 xl:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 xl:col-span-2">
@@ -338,6 +334,12 @@ export function V4OperationsOverview({
             </Surface>
           </aside>
         </div>
+
+        <div className="mt-5">
+          <StatusMix data={data}/>
+        </div>
+
+        {finance?.currency_summaries.length ? <div className="mt-5"><FinanceSnapshot finance={finance}/></div> : null}
       </div>
     </OpsPage>
   );
