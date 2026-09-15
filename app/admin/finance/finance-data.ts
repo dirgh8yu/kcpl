@@ -107,6 +107,20 @@ export type FinanceDashboard = {
   opening_balance_count: number;
 };
 
+export type FinanceOverviewCurrencySummary = {
+  currency: CrmCurrency;
+  invoiced: number;
+  collected: number;
+  outstanding: number;
+  overdue: number;
+  invoice_count: number;
+};
+
+export type FinanceOverviewSummary = {
+  generated_at: string;
+  currency_summaries: FinanceOverviewCurrencySummary[];
+};
+
 export type CreateFinanceInvoiceInput = {
   customerId: string;
   shipmentReference: string;

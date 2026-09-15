@@ -13,6 +13,8 @@ import {
   type FinanceInvoice,
   type FinanceInvoiceLine,
   type FinanceInvoiceStatus,
+  type FinanceOverviewSummary,
+  type FinanceOverviewCurrencySummary,
   type FinancePayment,
   type FinancePaymentMethod,
   type FinanceReceivableRecordType,
@@ -276,6 +278,7 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
       statusBatch.update(doc.ref, { status: invoice.status, updated_at: new Date().toISOString() });
       changedStatuses += 1;
     }
+
   }
   if (changedStatuses) await statusBatch.commit();
 
@@ -316,6 +319,37 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
     paid_count: invoices.filter((invoice) => invoice.status === "paid").length,
     draft_count: invoices.filter((invoice) => invoice.status === "draft").length,
     opening_balance_count: invoices.filter((invoice) => invoice.record_type === "opening_balance" && invoice.status !== "void").length,
+  };
+}
+
+export async function getFinanceOverviewSummary(context: KcplStaffContext): Promise<FinanceOverviewSummary | null> {
+  if (!firebaseRuntimeConfigured() || !canAccessFinance(context)) return null;
+  const snapshot = await firebaseAdminDb().collection("invoices").orderBy("updated_at", "desc").limit(3000).get();
+  const summaries = new Map<CrmCurrency, FinanceOverviewCurrencySummary>();
+
+  for (const doc of snapshot.docs) {
+    if (!canAccessInvoice(context, doc.get("branch"))) continue;
+    const invoice = await invoiceFromSnapshot(doc, false);
+    if (invoice.status === "draft" || invoice.status === "void" || invoice.record_type === "opening_balance") continue;
+    const summary = summaries.get(invoice.currency) ?? {
+      currency: invoice.currency,
+      invoiced: 0,
+      collected: 0,
+      outstanding: 0,
+      overdue: 0,
+      invoice_count: 0,
+    };
+    summary.invoiced += invoice.total;
+    summary.collected += invoice.amount_paid;
+    summary.outstanding += invoice.balance_due;
+    if (invoice.status === "overdue") summary.overdue += invoice.balance_due;
+    summary.invoice_count += 1;
+    summaries.set(invoice.currency, summary);
+  }
+
+  return {
+    generated_at: new Date().toISOString(),
+    currency_summaries: [...summaries.values()].sort((a, b) => b.outstanding - a.outstanding || a.currency.localeCompare(b.currency)),
   };
 }
 

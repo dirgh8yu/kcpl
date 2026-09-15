@@ -10,6 +10,8 @@ import { OpsPage } from "../operations-ui";
 import { loadCommandCentre } from "./command-centre.server";
 import type { CommandCentreData } from "./command-centre-data";
 import { V4OperationsOverview } from "./v4-operations-overview";
+import type { FinanceOverviewSummary } from "../finance/finance-data";
+import { getFinanceOverviewSummary } from "../finance/finance.server";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -32,7 +34,7 @@ type StaffState =
   | { kind: "error"; shell: ShellState };
 
 type OverviewState =
-  | { kind: "ready"; data: CommandCentreData; enquiries: QuoteSummary[] | null }
+  | { kind: "ready"; data: CommandCentreData; enquiries: QuoteSummary[] | null; finance: FinanceOverviewSummary | null }
   | { kind: "unavailable" }
   | { kind: "error" };
 
@@ -77,9 +79,13 @@ async function loadOverviewState(staff: KcplStaffContext): Promise<OverviewState
         console.error("Failed to load KCPL enquiry snapshot for Overview", error);
         return null;
       });
-    const [data, enquiries] = await Promise.all([dataPromise, enquiriesPromise]);
+    const financePromise = getFinanceOverviewSummary(staff).catch((error) => {
+      console.error("Failed to load KCPL finance snapshot for Overview", error);
+      return null;
+    });
+    const [data, enquiries, finance] = await Promise.all([dataPromise, enquiriesPromise, financePromise]);
     if (!data) return { kind: "unavailable" };
-    return { kind: "ready", data, enquiries };
+    return { kind: "ready", data, enquiries, finance };
   } catch (error) {
     console.error("Failed to load KCPL Overview data", error);
     return { kind: "error" };
@@ -90,7 +96,7 @@ async function OverviewData({ staff }: { staff: KcplStaffContext }) {
   const state = await loadOverviewState(staff);
   if (state.kind === "unavailable") return <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded />;
   if (state.kind === "error") return <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded />;
-  return <V4OperationsOverview data={state.data} enquiries={state.enquiries}/>;
+  return <V4OperationsOverview data={state.data} enquiries={state.enquiries} finance={state.finance}/>;
 }
 
 function OverviewLoading() {

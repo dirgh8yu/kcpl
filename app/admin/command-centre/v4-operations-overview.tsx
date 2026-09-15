@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowRight, CheckCircle2, RefreshCw } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
 import type { QuoteSummary } from "../admin-data";
+import type { FinanceOverviewSummary } from "../finance/finance-data";
 import { OpsBadge, OpsNotice, OpsPage } from "../operations-ui";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "../shipments/shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
@@ -147,12 +148,48 @@ function StatusMix({ data }: { data: CommandCentreData }) {
   );
 }
 
+function money(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString("en-AU")}`;
+  }
+}
+
+function FinanceSnapshot({ finance }: { finance: FinanceOverviewSummary }) {
+  return (
+    <Surface
+      title={<span className="flex items-center gap-2">Revenue snapshot <OpsBadge tone="info">Finance</OpsBadge></span>}
+      action={<TextAction href="/admin/finance">Open finance <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true"/></TextAction>}
+    >
+      <div className="overview-finance-grid">
+        {finance.currency_summaries.map((summary) => (
+          <div key={summary.currency} className="overview-finance-currency">
+            <div className="overview-finance-currency-head">
+              <strong>{summary.currency}</strong>
+              <span>{summary.invoice_count} invoice{summary.invoice_count === 1 ? "" : "s"}</span>
+            </div>
+            <div className="overview-finance-values">
+              <div><span>Invoiced</span><strong>{money(summary.invoiced, summary.currency)}</strong></div>
+              <div><span>Collected</span><strong>{money(summary.collected, summary.currency)}</strong></div>
+              <div><span>Outstanding</span><strong>{money(summary.outstanding, summary.currency)}</strong></div>
+              <div><span>Overdue</span><strong className={summary.overdue > 0 ? "overview-finance-danger" : undefined}>{money(summary.overdue, summary.currency)}</strong></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Surface>
+  );
+}
+
 export function V4OperationsOverview({
   data,
   enquiries = null,
+  finance = null,
 }: {
   data: CommandCentreData;
   enquiries?: QuoteSummary[] | null;
+  finance?: FinanceOverviewSummary | null;
   isManagement?: boolean;
 }) {
   const router = useRouter();
@@ -218,6 +255,8 @@ export function V4OperationsOverview({
         </section>
 
         <StatusMix data={data}/>
+
+        {finance?.currency_summaries.length ? <div className="mb-5"><FinanceSnapshot finance={finance}/></div> : null}
 
         <div className="grid gap-4 xl:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 xl:col-span-2">
