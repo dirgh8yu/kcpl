@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Truck, X } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
