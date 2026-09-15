@@ -243,7 +243,7 @@ export function FreightDocumentsWorkspace({
         <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="m-0 text-2xl font-semibold leading-8 tracking-[-0.02em] text-[var(--admin-ink)]">Freight Documents</h1>
-            <p className="mt-0.5 text-[13.5px] leading-5 text-[var(--admin-muted)]">Controlled production queue for KCPL-generated carriage and execution documents.</p>
+            <p className="mt-0.5 text-sm leading-5 text-[var(--admin-muted)]">Controlled production queue for KCPL-generated carriage and execution documents.</p>
             <p className="mt-1.5 text-xs text-[var(--admin-faint)]">{summary.eligible} eligible Job File{summary.eligible === 1 ? "" : "s"} · {summary.missing_primary} missing primary draft · {summary.generated_current} current generated · {summary.review_pending} awaiting review</p>
           </div>
           <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={15} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>
