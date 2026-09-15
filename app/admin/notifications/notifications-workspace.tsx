@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Bell, CheckCheck, FileText, Link2, RefreshCw, Search, UserRound, X } from "lucide-react";
+import { AlertTriangle, Bell, CheckCheck, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
-import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch, OpsStat, OpsStatStrip } from "../operations-ui";
+import { useWorkspaceQuery } from "../use-workspace-query";
 
 type NotificationResponse = { notifications: OperationsNotification[]; unread_count: number; preferences: NotificationPreferences; email_configured: boolean };
 type StateFilter = "all" | "unread" | "read" | "resolved";
@@ -59,10 +60,14 @@ function ageLabel(value: string) {
 export function NotificationsWorkspace() {
   const router = useRouter();
   const [data, setData] = useState<NotificationResponse | null>(null);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<"all" | NotificationCategory>("all");
-  const [state, setState] = useState<StateFilter>("all");
-  const [severity, setSeverity] = useState<SeverityFilter>("all");
+  const { params, update } = useWorkspaceQuery();
+  const query = params.get("q") ?? "";
+  const categoryValue = params.get("category");
+  const category: "all" | NotificationCategory = notificationCategories.includes(categoryValue as NotificationCategory) ? categoryValue as NotificationCategory : "all";
+  const stateValue = params.get("state");
+  const state: StateFilter = stateValue === "unread" || stateValue === "read" || stateValue === "resolved" ? stateValue : "all";
+  const severityValue = params.get("severity");
+  const severity: SeverityFilter = severityValue === "critical" || severityValue === "warning" || severityValue === "info" ? severityValue : "all";
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -132,16 +137,16 @@ export function NotificationsWorkspace() {
   }
 
   function reset() {
-    setQuery("");
-    setCategory("all");
-    setState("all");
-    setSeverity("all");
+    update({ q: null, category: null, state: null, severity: null });
   }
 
+  const setCategory = (value: "all" | NotificationCategory) => update({ category: value === "all" ? null : value });
+  const setState = (value: StateFilter) => update({ state: value === "all" ? null : value });
+  const setSeverity = (value: SeverityFilter) => update({ severity: value === "all" ? null : value });
   const filtersActive = Boolean(query.trim()) || category !== "all" || state !== "all" || severity !== "all";
 
   return <OpsPage>
-    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
+    <div className="notifications-workspace-page">
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Notifications</h1>
@@ -155,12 +160,15 @@ export function NotificationsWorkspace() {
 
       {error ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", width: 280, border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}>
-          <Search size={14} style={{ color: "var(--admin-muted)" }}/>
-          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notification, branch, reference…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/>
-          {query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear notification search" style={{ width: 24, height: 24, display: "grid", placeItems: "center", border: 0, background: "transparent", color: "var(--admin-muted)", cursor: "pointer" }}><X size={12}/></button> : null}
-        </label>
+      <OpsStatStrip className="notifications-stat-strip">
+        <OpsStat label="Unread" value={counts.unread} detail="Needs attention" tone={counts.unread ? "warning" : "success"} active={state === "unread"} onClick={() => setState("unread")} />
+        <OpsStat label="Critical" value={counts.critical} detail="Unread or unresolved" tone={counts.critical ? "danger" : "success"} active={severity === "critical"} onClick={() => setSeverity("critical")} />
+        <OpsStat label="Warnings" value={counts.warning} detail="Operational follow-up" tone={counts.warning ? "warning" : "neutral"} active={severity === "warning"} onClick={() => setSeverity("warning")} />
+        <OpsStat label="Resolved" value={counts.resolved} detail="Retained history" tone="neutral" active={state === "resolved"} onClick={() => setState("resolved")} />
+      </OpsStatStrip>
+
+      <div className="notifications-workspace-toolbar">
+        <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search notification, branch, reference…" aria-label="Search notifications"/>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Notification category filters">
           <button type="button" style={chipStyle(category === "all")} onClick={() => setCategory("all")}>All categories</button>
           {notificationCategories.map((item) => <button key={item} type="button" style={chipStyle(category === item)} onClick={() => setCategory(item)}>{notificationCategoryLabels[item]}</button>)}
