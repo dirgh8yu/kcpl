@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Download, FileCheck2, Folder, Search, Trash2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, FileCheck2, Folder, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shipment-document-policy";
-import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus } from "../../shipment-document-types";
+import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
+import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { KcplStaffRole } from "../staff-permissions";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents-data.server";
 
-type StatusFilter = "all" | "pending" | ShipmentDocumentEffectiveStatus;
+type StatusFilter = "active" | "all" | "pending" | ShipmentDocumentEffectiveStatus;
 type Notice = { tone: "success" | "danger" | "warning"; text: string } | null;
 
 function dateTime(value: string | null) {
@@ -23,6 +24,12 @@ function dateOnly(value: string | null) {
   if (!value) return "No expiry";
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "Asia/Kathmandu" }).format(date);
+}
+
+function bytes(value: number) {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function statusLabel(status: ShipmentDocumentEffectiveStatus) {
@@ -51,6 +58,17 @@ function chipStyle(active: boolean): React.CSSProperties {
     cursor: "pointer",
   };
 }
+
+const selectStyle: React.CSSProperties = {
+  minHeight: "var(--app-control-height)",
+  padding: "0 30px 0 10px",
+  border: "1px solid var(--admin-line)",
+  borderRadius: "var(--app-radius)",
+  background: "var(--admin-surface)",
+  color: "var(--admin-ink)",
+  font: "inherit",
+  fontSize: 13,
+};
 
 function Inspector({
   row,
@@ -81,20 +99,23 @@ function Inspector({
       <div style={{ minWidth: 0 }}>
         <div style={{ marginBottom: 2, fontSize: 12, color: "var(--admin-muted)" }}><OpsMono>{row.shipment_reference}</OpsMono></div>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{shipmentDocumentTypeLabels[row.document_type]}</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}><OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge>{inactive ? <OpsBadge>Tombstoned</OpsBadge> : null}{row.customer_safe ? <OpsBadge tone="info">Customer-safe</OpsBadge> : null}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}><OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge>{inactive ? <OpsBadge>{row.review_status === "deleted" ? "Tombstoned" : "Superseded"}</OpsBadge> : null}{row.customer_safe ? <OpsBadge tone="info">Customer-safe</OpsBadge> : null}</div>
       </div>
       <button type="button" onClick={onClose} aria-label="Close document inspector" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: "var(--app-radius)", background: "transparent", color: "var(--admin-muted)", cursor: "pointer" }}><X size={16}/></button>
     </div>
 
     {row.review_status === "deleted" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-line-strong)", background: "var(--admin-surface-muted)" }}><div style={{ fontWeight: 600, fontSize: 13 }}>Tombstoned · audit record only</div><div style={{ marginTop: 4, fontSize: 12.5, color: "var(--admin-muted)" }}>Removed {dateTime(row.deleted_at)} by {row.deleted_by || row.deleted_by_email || "recorded operator"}. It no longer counts toward readiness.</div></div> : null}
+    {row.review_status === "superseded" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-warning)", background: "var(--admin-warning-bg)" }}><div style={{ fontWeight: 600, fontSize: 13, color: "var(--admin-warning)" }}>Superseded evidence</div><div style={{ marginTop: 4, fontSize: 12.5 }}>This revision is retained for history but no longer counts as the current readiness evidence.</div></div> : null}
     {row.review_status === "received" || row.review_status === "under_review" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-warning)", background: "var(--admin-warning-bg)" }}><div style={{ fontWeight: 600, fontSize: 13, color: "var(--admin-warning)" }}>Upload ≠ verification</div><div style={{ marginTop: 4, fontSize: 12.5 }}>This file remains under evidence review until an authorised reviewer verifies or rejects it.</div></div> : null}
 
     <div style={{ display: "grid", gap: 10, padding: "12px 16px" }}>
       <Detail label="Document" value={row.filename}/>
       <Detail label="Customer" value={row.customer_name}/>
       <Detail label="Route" value={`${row.origin} → ${row.destination} · ${row.mode}`}/>
+      <Detail label="File size" value={bytes(row.size_bytes)}/>
       <Detail label="Uploaded" value={`${dateTime(row.uploaded_at)} · ${row.uploaded_by}`}/>
       <Detail label="Reviewed by" value={row.reviewed_by || row.reviewed_by_email || "Not reviewed"}/>
+      <Detail label="Review time" value={dateTime(row.reviewed_at)}/>
       <Detail label="Expires" value={dateOnly(row.expires_on)}/>
       <Detail label="Branch" value={row.branch || "Branch repair needed"}/>
     </div>
@@ -109,12 +130,13 @@ function Inspector({
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 16px 14px" }}>
       {row.review_status !== "deleted" ? <a href={`/api/admin/shipments/${encodeURIComponent(row.shipment_reference)}/documents/${row.id}`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={12}/>Download</a> : null}
       <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Job File</Link>
+      {row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-button" data-variant="ghost" data-size="sm">Customer 360</Link> : null}
       {canDelete ? <OpsButton variant="danger" size="sm" disabled={busyId === row.id} onClick={() => void onDelete(row)}><Trash2 size={12}/>{busyId === row.id ? "Deleting…" : "Delete"}</OpsButton> : null}
     </div>
 
     {canReview ? <form key={`${row.shipment_reference}:${row.id}:${row.review_status}`} onSubmit={(event) => void onSaveReview(event, row)} style={{ display: "grid", gap: 10, padding: "12px 16px 14px", borderTop: "1px solid var(--admin-line)" }}>
       <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, color: "var(--admin-muted)" }}><FileCheck2 size={14}/>Review evidence</div>
-      <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Review state<select name="status" defaultValue={row.review_status} style={{ minHeight: 38, border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)", padding: "0 10px", color: "var(--admin-ink)" }}><option value="received">Received</option><option value="under_review">Under review</option><option value="verified" disabled={!canSelfVerify}>Verified</option><option value="rejected">Rejected</option></select></label>
+      <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Review state<select name="status" defaultValue={row.review_status} style={selectStyle}><option value="received">Received</option><option value="under_review">Under review</option><option value="verified" disabled={!canSelfVerify}>Verified</option><option value="rejected">Rejected</option></select></label>
       {!canSelfVerify ? <div style={{ fontSize: 12, color: "var(--admin-muted)" }}>The uploader cannot verify their own document unless they hold management authority.</div> : null}
       <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Expiry date<input name="expiresOn" type="date" defaultValue={row.expires_on || ""} style={{ minHeight: 38, border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", padding: "0 10px" }}/></label>
       <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Review note<textarea name="reviewNote" defaultValue={row.review_note || ""} rows={2} style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", padding: "7px 8px", resize: "vertical", font: "inherit" }}/></label>
@@ -132,6 +154,8 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [type, setType] = useState<"all" | ShipmentDocumentType>("all");
+  const [branch, setBranch] = useState<"all" | KcplBranch>("all");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -141,13 +165,16 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const visible = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return dashboard.rows.filter((row) => {
+      if (status === "active" && ["deleted", "superseded"].includes(row.review_status)) return false;
       if (status === "pending" && row.review_status !== "received" && row.review_status !== "under_review") return false;
-      if (status !== "all" && status !== "pending" && row.effective_status !== status) return false;
+      if (status !== "active" && status !== "all" && status !== "pending" && row.effective_status !== status) return false;
+      if (type !== "all" && row.document_type !== type) return false;
+      if (branch !== "all" && !row.handling_branches.includes(branch)) return false;
       if (!terms.length) return true;
-      const haystack = [row.shipment_reference, row.customer_name, row.filename, shipmentDocumentTypeLabels[row.document_type], row.uploaded_by, row.origin, row.destination, row.sha256 ?? ""].join(" ").toLowerCase();
+      const haystack = [row.shipment_reference, row.customer_id ?? "", row.customer_name, row.filename, shipmentDocumentTypeLabels[row.document_type], row.uploaded_by, row.uploaded_by_email ?? "", row.reviewed_by ?? "", row.reviewed_by_email ?? "", row.verified_by ?? "", row.verified_by_email ?? "", row.review_note ?? "", row.origin, row.destination, row.mode, row.branch ?? "", statusLabel(row.effective_status), row.sha256 ?? ""].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
-  }, [dashboard.rows, query, status]);
+  }, [branch, dashboard.rows, query, status, type]);
   const selected = selectedKey ? dashboard.rows.find((row) => `${row.shipment_reference}:${row.id}` === selectedKey) ?? null : null;
 
   async function deleteDocument(row: DocumentVaultRow) {
@@ -177,28 +204,43 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
     finally { setReviewBusy(false); }
   }
 
+  function reset() {
+    setQuery("");
+    setStatus("all");
+    setType("all");
+    setBranch("all");
+  }
+
+  const filtersActive = Boolean(query.trim()) || status !== "all" || type !== "all" || branch !== "all";
+
   return <OpsPage>
     <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Document Vault</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Evidence-control workspace · upload ≠ verification · {dashboard.rows.length} documents · {pendingReview} awaiting review</p></div>
-        <div style={{ display: "flex", gap: 8 }}><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="sm">Freight Documents</Link></div>
+        <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Document Vault</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Evidence-control workspace · upload ≠ verification · {dashboard.rows.length} documents · {pendingReview} awaiting review · snapshot {dateTime(dashboard.generated_at)}</p></div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="sm">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="sm">Customs</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></div>
       </header>
 
       {pendingReview > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertCircle size={15}/><strong>{pendingReview} document{pendingReview === 1 ? "" : "s"} awaiting review.</strong> Upload alone does not constitute verification.</span></OpsNotice></div> : null}
+      {dashboard.cleanup_pending_count ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ref, shipment, customer, type…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, filename, reviewer…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Status filter">
               <button type="button" style={chipStyle(status === "all")} onClick={() => setStatus("all")}>All</button>
+              <button type="button" style={chipStyle(status === "active")} onClick={() => setStatus("active")}>Active</button>
               <button type="button" style={chipStyle(status === "pending")} onClick={() => setStatus("pending")}>Pending review</button>
-              <button type="button" style={chipStyle(status === "received")} onClick={() => setStatus("received")}>Received</button>
-              <button type="button" style={chipStyle(status === "under_review")} onClick={() => setStatus("under_review")}>Under review</button>
               <button type="button" style={chipStyle(status === "verified")} onClick={() => setStatus("verified")}>Verified</button>
               <button type="button" style={chipStyle(status === "rejected")} onClick={() => setStatus("rejected")}>Rejected</button>
+              <button type="button" style={chipStyle(status === "expired")} onClick={() => setStatus("expired")}>Expired</button>
+              <button type="button" style={chipStyle(status === "superseded")} onClick={() => setStatus("superseded")}>Superseded</button>
+              <button type="button" style={chipStyle(status === "deleted")} onClick={() => setStatus("deleted")}>Deleted</button>
             </div>
+            <select value={type} onChange={(event) => setType(event.target.value as "all" | ShipmentDocumentType)} aria-label="Filter by document type" style={selectStyle}><option value="all">All document types</option>{shipmentDocumentTypes.map((item) => <option key={item} value={item}>{shipmentDocumentTypeLabels[item]}</option>)}</select>
+            <select value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)} aria-label="Filter by branch" style={selectStyle}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+            {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{visible.length} documents</span>
           </div>
 
@@ -207,7 +249,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
               const key = `${row.shipment_reference}:${row.id}`;
               const inactive = row.review_status === "deleted" || row.review_status === "superseded";
               return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} tabIndex={0} onClick={() => setSelectedKey(key)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedKey(key); }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
-                <td><div style={{ fontWeight: 500 }}>{row.filename}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by}</div></td>
+                <td><div style={{ fontWeight: 500 }}>{row.filename}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by} · {bytes(row.size_bytes)}</div></td>
                 <td>{shipmentDocumentTypeLabels[row.document_type]}</td>
                 <td><OpsMono>{row.shipment_reference}</OpsMono><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.customer_name}</div></td>
                 <td style={{ color: "var(--admin-muted)", whiteSpace: "nowrap" }}>{dateTime(row.uploaded_at)}</td>
@@ -215,7 +257,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
                 <td>{row.customer_safe ? <CheckCircle2 size={14} style={{ color: "var(--admin-success)" }} aria-label="Customer-safe"/> : <span style={{ fontSize: 12, color: "var(--admin-muted)" }}>Internal</span>}</td>
                 <td><OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge></td>
               </tr>;
-            })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Folder size={18}/>} title={query || status !== "all" ? "No results" : "No documents"} description={query || status !== "all" ? "Try changing the filter or search term." : "No documents are available in the vault."}/>} 
+            })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Folder size={18}/>} title={filtersActive ? "No results" : "No documents"} description={filtersActive ? "Try changing or resetting the current filters." : "No documents are available in the vault."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>} 
           </section>
         </div>
 
