@@ -770,6 +770,20 @@
     min-height: 82px;
   }
 }
+.kcpl-admin-content .shipments-stat-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.kcpl-admin-content .shipments-stat-strip .ops-stat {
+  min-height: 92px;
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .shipments-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kcpl-admin-content .shipments-stat-strip .ops-stat {
+    min-height: 82px;
+  }
+}
 
 /* Live visibility: surface operational signal before the detailed register. */
 .kcpl-admin-content .visibility-stat-strip {
