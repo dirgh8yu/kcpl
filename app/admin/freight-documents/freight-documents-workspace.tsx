@@ -11,7 +11,10 @@ import {
   OpsMono,
   OpsNotice,
   OpsPage,
+  OpsPageHeader,
   OpsSearch,
+  OpsStat,
+  OpsStatStrip,
   OpsSurface,
   OpsTableWrap,
   OpsToolbar,
@@ -239,19 +242,25 @@ export function FreightDocumentsWorkspace({
 
   return (
     <OpsPage className="freight-documents-register">
-      <div className="freight-documents-page min-h-[calc(100dvh-var(--app-toolbar-height))] bg-[var(--admin-canvas)] px-4 pb-8 pt-5 md:px-6">
-        <header className="freight-documents-header mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="m-0 text-2xl font-semibold leading-8 tracking-[-0.02em] text-[var(--admin-ink)]">Freight Documents</h1>
-            <p className="mt-0.5 text-sm leading-5 text-[var(--admin-muted)]">Controlled production queue for KCPL-generated carriage and execution documents.</p>
-            <p className="mt-1.5 text-xs text-[var(--admin-muted)]">{summary.eligible} eligible Job File{summary.eligible === 1 ? "" : "s"} · {summary.missing_primary} missing primary draft · {summary.generated_current} current generated · {summary.review_pending} awaiting review</p>
-          </div>
-          <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={15} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>
-        </header>
+      <div className="freight-documents-page">
+        <OpsPageHeader
+          eyebrow="Job File control"
+          title="Freight Documents"
+          description="Produce, review and open controlled carriage documents without losing the shipment context."
+          meta={`${summary.eligible} eligible Job File${summary.eligible === 1 ? "" : "s"} · snapshot from accessible shipments`}
+          actions={<Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={15} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>}
+        />
 
-        {message ? <div className="mb-4"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+        <OpsStatStrip className="freight-documents-summary">
+          <OpsStat label="Needs primary draft" value={summary.missing_primary} detail="mode-specific carriage document" tone="warning" active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "missing" ? null : "missing", selected: null, shipment: null }); }} />
+          <OpsStat label="Awaiting review" value={summary.review_pending} detail="generated revisions to check" tone="warning" active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "review" ? null : "review", selected: null, shipment: null }); }} />
+          <OpsStat label="Current drafts" value={summary.generated_current} detail="across eligible Job Files" tone="success" active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "generated" ? null : "generated", selected: null, shipment: null }); }} />
+          <OpsStat label="Eligible Job Files" value={summary.eligible} detail="accessible, non-cancelled shipments" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} />
+        </OpsStatStrip>
+
+        {message ? <div className="freight-documents-message"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
         {summary.missing_primary > 0 || summary.review_pending > 0 ? (
-          <div className="mb-4">
+          <div className="freight-documents-alert">
             <OpsNotice tone="warning">
               <span className="flex items-start gap-2">
                 <AlertCircle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
@@ -261,8 +270,8 @@ export function FreightDocumentsWorkspace({
           </div>
         ) : null}
 
-        <OpsToolbar className="freight-documents-toolbar mb-4">
-          <div className="freight-documents-search min-w-[240px] flex-1 basis-[320px] max-w-[420px]">
+        <OpsToolbar className="freight-documents-toolbar">
+          <div className="freight-documents-search">
             <OpsSearch
               value={query}
               onChange={(event) => update({ q: event.target.value || null })}
@@ -271,7 +280,7 @@ export function FreightDocumentsWorkspace({
             />
           </div>
 
-          <div className="freight-documents-filters flex flex-wrap items-center gap-1.5" role="group" aria-label="Freight document filters">
+          <div className="freight-documents-filters" role="group" aria-label="Freight document filters">
             {FOCUS_OPTIONS.map((option) => {
               const active = focus === option.value;
               return (
@@ -289,7 +298,7 @@ export function FreightDocumentsWorkspace({
             })}
           </div>
 
-          <div className="freight-documents-toolbar-actions ml-auto flex items-center gap-2">
+          <div className="freight-documents-toolbar-actions">
             <OpsButton
               size="sm"
               disabled={refreshing}
@@ -304,7 +313,7 @@ export function FreightDocumentsWorkspace({
               <RefreshCw size={14} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>{refreshing ? "Refreshing…" : "Refresh"}
             </OpsButton>
             {hasFilters ? <OpsButton size="sm" variant="ghost" onClick={() => { setAllowInitialSelection(false); update({ q: null, view: null, selected: null, shipment: null }); }}>Reset</OpsButton> : null}
-            <span className="freight-documents-result-count whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {rows.length}</span>
+            <span className="freight-documents-result-count">{filtered.length} of {rows.length} shown</span>
           </div>
         </OpsToolbar>
 
@@ -335,7 +344,7 @@ export function FreightDocumentsWorkspace({
                     return (
                       <tr key={row.reference} data-selected={selectedRow || undefined} aria-selected={selectedRow} tabIndex={0} onClick={() => openEditor(row)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openEditor(row); } }}>
                         <td>
-                          <div className="font-medium"><OpsMono className="text-xs text-[var(--admin-info)]">{row.reference}</OpsMono></div>
+                          <div className="font-medium"><Link className="freight-document-job-link" href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} onClick={(event) => event.stopPropagation()}><OpsMono>{row.reference}</OpsMono></Link></div>
                           <div className="mt-0.5 text-xs text-[var(--admin-muted)]">{row.customer_name || "Customer not linked"}{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</div>
                         </td>
                         <td>
