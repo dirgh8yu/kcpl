@@ -206,7 +206,7 @@ Inspect current exports before using them. Existing primitives include `OpsPage`
 
 `OpsButton` defaults to a secondary action and `type="button"`. Use `variant="primary"` for the main task, `secondary` for supporting actions, `ghost` for low emphasis and `danger` for destruction. Form submissions must explicitly use `type="submit"`.
 
-Do not add new override stylesheets, `!important`, CSS selectors that target fragments of Tailwind class names, arbitrary component-level hex colours or repeated literal type/radius/shadow values. Keep frozen `@layer kcpl-legacy` styles untouched. Migrate a touched screen to semantic classes and shared tokens rather than adding another compatibility patch. Preserve the canonical stylesheet's existing import order.
+Do not add new override stylesheets, `!important`, CSS selectors that target fragments of Tailwind class names, arbitrary component-level hex colours or repeated literal type/radius/shadow values. Legacy compatibility styles may be modified or removed as part of an intentional route migration. Preserve behaviour, migrate consumers to the canonical system, validate the affected workflows, and do not create new compatibility layers. Preserve the canonical stylesheet's existing import order.
 
 For public-facing interface work, reuse the brand foundation and Inter control typography; do not mount staff chrome on the public website. Preserve the approved public marketing and logo context unless that is part of the requested change.
 

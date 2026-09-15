@@ -6,7 +6,7 @@ This is the engineering and workflow contract for the KCPL staff operating syste
 
 The original system loaded 18 overlapping admin stylesheets. Repeated editorial, compatibility and hotfix rules competed through specificity and `!important`. Headers reached 48px, operational labels fell to 8px, and the action hierarchy forced primary, secondary, ghost and destructive buttons to the same crimson fill. Separate navigation/search implementations owned different workspace lists. A DOM notification bridge targeted a bell that no longer existed, while the shell displayed a constant unread dot.
 
-Compatibility rules now live in `@layer kcpl-legacy`. CSS order is `theme, base, kcpl-legacy, components, utilities`, followed by the unlayered application contract. `operations-system.css` is the sole active shared design owner. Existing module structures remain available in the compatibility layer. `admin-typography.css` owns the Inter/Manrope/monospace mapping.
+Legacy compatibility styles may be modified or removed as part of an intentional route migration. Preserve behaviour, migrate consumers to the canonical system, validate the affected workflows, and do not create new compatibility layers. `operations-system.css` is the sole active shared design owner. `admin-typography.css` owns the Inter/Manrope/monospace mapping.
 
 ## Required page anatomy
 

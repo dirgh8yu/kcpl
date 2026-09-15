@@ -1,7 +1,13 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNode } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { Search } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
+export const OpsDialog = DialogPrimitive;
+export const OpsPopover = PopoverPrimitive;
+export const OpsTabs = TabsPrimitive;
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
