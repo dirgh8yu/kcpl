@@ -261,8 +261,9 @@
 }
 @media (max-width: 760px) {
   .kcpl-admin-route { --app-page-gap: 16px; --app-toolbar-height: 52px; --app-control-height: 44px; --app-row-height: 52px; --app-title-size: 22px;   }
+}
 
-  /* Shipment record detail — one operational hierarchy across summary and workflow sections. */
+/* Shipment record detail — one operational hierarchy across summary and workflow sections. */
   .kcpl-admin-content .shipment-detail-v2 {
     --shipment-ink: var(--admin-ink);
     --shipment-copy: var(--admin-muted);
@@ -557,6 +558,7 @@
     .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block { padding: 16px; }
     .kcpl-admin-content .app-record-return { padding-inline: 16px; }
   }
+@media (max-width: 760px) {
   .app-topbar { gap: 5px; padding-inline: 10px; }
   .app-breadcrumb > span:first-child, .app-breadcrumb > svg:first-of-type { display: none; }
   .app-global-search { width: 40px; height: 40px; padding: 0; justify-content: center; border: 0; background: transparent; }
