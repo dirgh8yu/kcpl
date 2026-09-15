@@ -5,7 +5,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Download, FileCheck2, Folder, Search, Trash2, X } from "lucide-react";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shipment-document-policy";
-import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
+import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus } from "../../shipment-document-types";
 import type { KcplStaffRole } from "../staff-permissions";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents-data.server";
