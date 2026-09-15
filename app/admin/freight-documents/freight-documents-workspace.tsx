@@ -129,10 +129,6 @@ export function FreightDocumentsWorkspace({
   const selectedReference = (params.get("selected") ?? (allowInitialSelection ? initialShipment : "") ?? "").trim().toUpperCase();
   const selected = useMemo(() => rows.find((row) => row.reference === selectedReference) ?? null, [rows, selectedReference]);
   const selectedKey = selected?.reference ?? null;
-  const initialSelected = initialShipment ? initialRows.find((row) => row.reference === initialShipment) ?? null : null;
-  const [draftReference, setDraftReference] = useState(initialSelected?.reference ?? "");
-  const [form, setForm] = useState<FormState>(() => initialSelected ? formFor(initialSelected) : emptyForm);
-  const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "warning" | "danger">("success");
@@ -164,21 +160,6 @@ export function FreightDocumentsWorkspace({
   }), [rows]);
 
   useEffect(() => {
-    if (!selected) {
-      if (draftReference) {
-        setDraftReference("");
-        setForm(emptyForm);
-      }
-      return;
-    }
-    if (draftReference !== selected.reference) {
-      setDraftReference(selected.reference);
-      setForm(formFor(selected));
-      setMessage("");
-    }
-  }, [draftReference, selected]);
-
-  useEffect(() => {
     if (!selectedKey) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -194,18 +175,6 @@ export function FreightDocumentsWorkspace({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [selectedKey, update]);
-
-  function patch<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
-  }
-
-  function changeKind(kind: GeneratedFreightDocumentKind) {
-    setForm((current) => ({
-      ...current,
-      kind,
-      houseReference: selected ? generatedReference(kind, selected.reference) : current.houseReference,
-    }));
-  }
 
   function openEditor(row: FreightDocumentQueueRow) {
     setAllowInitialSelection(false);
@@ -227,29 +196,6 @@ export function FreightDocumentsWorkspace({
     if (showNotice) {
       setMessageTone("success");
       setMessage("Freight document workspace refreshed.");
-    }
-  }
-
-  async function generate() {
-    if (!selected) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/admin/freight-documents", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ reference: selected.reference, ...form }),
-      });
-      const data = await response.json() as { ok?: boolean; error?: string; document?: { filename: string } };
-      if (!response.ok || !data.ok) throw new Error(data.error || "Document generation failed.");
-      await refresh(false);
-      setMessageTone("success");
-      setMessage(`${data.document?.filename ?? "Freight document"} generated and placed in Document Vault for review.`);
-    } catch (error) {
-      setMessageTone("danger");
-      setMessage(error instanceof Error ? error.message : "Document generation failed.");
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -391,109 +337,173 @@ export function FreightDocumentsWorkspace({
       </div>
 
       {selected ? (
-        <>
-          <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={closeEditor} aria-label="Close document production panel"/>
-          <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Freight documents for ${selected.reference}`}>
-            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-              <div className="min-w-0">
-                <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{selected.reference}</OpsMono>{selected.booking_reference ? ` · Booking ${selected.booking_reference}` : ""}</p>
-                <h2 className="mt-1 text-base font-semibold leading-6">Document production</h2>
-                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{selected.customer_name} · {selected.origin} → {selected.destination} · {selected.mode || "Mode not set"}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <OpsBadge tone={rowStatus(selected).tone}>{rowStatus(selected).label}</OpsBadge>
-                <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={closeEditor} aria-label="Close document production panel">
-                  <X size={16} strokeWidth={1.75} aria-hidden="true"/>
-                </button>
-              </div>
-            </header>
-
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <div className="border-b border-[var(--admin-line)] px-5 py-4">
-                <OpsNotice>
-                  <span className="flex items-start gap-2"><ShieldCheck size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>KCPL-generated PDFs are controlled internal/house drafts. Carrier-issued master originals remain authoritative.</span>
-                </OpsNotice>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Link href={`/admin/jobs/${encodeURIComponent(selected.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
-                  <span className="text-xs text-[var(--admin-muted)]">{selected.current_generated_count} current revision{selected.current_generated_count === 1 ? "" : "s"}</span>
-                </div>
-              </div>
-
-              <PanelSection title="Document" description="Choose the controlled document type and internal reference.">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <OpsField label="Document type">
-                    <select value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>
-                      {generatedFreightDocumentKinds.filter((kind) => selected.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}
-                    </select>
-                  </OpsField>
-                  <OpsField label="House / internal reference"><input value={form.houseReference} onChange={(event) => patch("houseReference", event.target.value)}/></OpsField>
-                </div>
-              </PanelSection>
-
-              <PanelSection title="Parties & cargo" description="Capture the legal parties and shipment description used in the controlled draft.">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <OpsField label="Shipper"><textarea value={form.shipper} onChange={(event) => patch("shipper", event.target.value)} placeholder="Legal shipper/exporter name and address"/></OpsField>
-                  <OpsField label="Consignee"><textarea value={form.consignee} onChange={(event) => patch("consignee", event.target.value)} placeholder="Legal consignee/importer name and address"/></OpsField>
-                  <OpsField label="Notify party"><textarea value={form.notifyParty} onChange={(event) => patch("notifyParty", event.target.value)}/></OpsField>
-                  <OpsField label="Cargo description"><textarea value={form.cargoDescription} onChange={(event) => patch("cargoDescription", event.target.value)}/></OpsField>
-                  <OpsField label="Marks & numbers"><input value={form.marksAndNumbers} onChange={(event) => patch("marksAndNumbers", event.target.value)}/></OpsField>
-                  <OpsField label="Package type"><input value={form.packageType} onChange={(event) => patch("packageType", event.target.value)}/></OpsField>
-                </div>
-              </PanelSection>
-
-              <PanelSection title="Carriage terms" description="Set receipt and delivery places, references and commercial carriage instructions.">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <OpsField label="Place of receipt"><input value={form.placeOfReceipt} onChange={(event) => patch("placeOfReceipt", event.target.value)}/></OpsField>
-                  <OpsField label="Place of delivery"><input value={form.placeOfDelivery} onChange={(event) => patch("placeOfDelivery", event.target.value)}/></OpsField>
-                  <OpsField label="Carrier / master reference"><input value={form.masterReference} onChange={(event) => patch("masterReference", event.target.value)}/></OpsField>
-                  <OpsField label="Freight terms"><input value={form.freightTerms} onChange={(event) => patch("freightTerms", event.target.value)} placeholder="Prepaid / collect / as agreed"/></OpsField>
-                  <OpsField label="Incoterm"><input value={form.incoterm} onChange={(event) => patch("incoterm", event.target.value)} placeholder="e.g. FOB, CIF, DDP"/></OpsField>
-                  <OpsField label="Special instructions"><textarea value={form.specialInstructions} onChange={(event) => patch("specialInstructions", event.target.value)}/></OpsField>
-                </div>
-              </PanelSection>
-
-              <PanelSection title="Revision history" description="Current and superseded controlled revisions for this Job File.">
-                {selected.generated_documents.length ? (
-                  <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">
-                    {selected.generated_documents.map((document) => (
-                      <div key={document.document_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <strong className="text-sm font-medium">R{document.revision} · {document.label}</strong>
-                            <OpsBadge tone={document.superseded ? "neutral" : document.review_status === "verified" ? "success" : "warning"}>{document.superseded ? "Superseded" : document.review_status.replaceAll("_", " ")}</OpsBadge>
-                          </div>
-                          <p className="mt-1 truncate text-xs text-[var(--admin-muted)]">{document.filename} · SHA {document.sha256.slice(0, 12)}…</p>
-                        </div>
-                        <OpsButton size="sm" variant="ghost" onClick={() => openDocument(selected.reference, document.document_id)}>Open PDF</OpsButton>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
-                    <FileText size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/> No generated revisions yet.
-                  </div>
-                )}
-              </PanelSection>
-            </div>
-
-            <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
-              <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]">
-                <input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/>
-                <span>Mark this draft customer-safe after staff checks the content.</span>
-              </label>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">
-                  {selected.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document present</>}
-                </span>
-                <OpsButton variant="primary" disabled={busy} onClick={generate}>
-                  <FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/> {busy ? "Generating…" : "Generate PDF"}
-                </OpsButton>
-              </div>
-            </footer>
-          </aside>
-        </>
+        <FreightDocumentPanel
+          key={selected.reference}
+          row={selected}
+          returnTo={returnTo}
+          onClose={closeEditor}
+          onRefresh={() => refresh(false)}
+          onOpenDocument={openDocument}
+          onMessage={(tone, text) => { setMessageTone(tone); setMessage(text); }}
+        />
       ) : null}
     </OpsPage>
+  );
+}
+
+function FreightDocumentPanel({
+  row,
+  returnTo,
+  onClose,
+  onRefresh,
+  onOpenDocument,
+  onMessage,
+}: {
+  row: FreightDocumentQueueRow;
+  returnTo: string;
+  onClose: () => void;
+  onRefresh: () => Promise<void>;
+  onOpenDocument: (reference: string, documentId: string) => Promise<void>;
+  onMessage: (tone: "success" | "warning" | "danger", text: string) => void;
+}) {
+  const [form, setForm] = useState<FormState>(() => formFor(row));
+  const [busy, setBusy] = useState(false);
+  const status = rowStatus(row);
+
+  function patch<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function changeKind(kind: GeneratedFreightDocumentKind) {
+    setForm((current) => ({
+      ...current,
+      kind,
+      houseReference: generatedReference(kind, row.reference),
+    }));
+  }
+
+  async function generate() {
+    setBusy(true);
+    onMessage("success", "");
+    try {
+      const response = await fetch("/api/admin/freight-documents", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reference: row.reference, ...form }),
+      });
+      const data = await response.json() as { ok?: boolean; error?: string; document?: { filename: string } };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Document generation failed.");
+      await onRefresh();
+      onMessage("success", `${data.document?.filename ?? "Freight document"} generated and placed in Document Vault for review.`);
+    } catch (error) {
+      onMessage("danger", error instanceof Error ? error.message : "Document generation failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close document production panel"/>
+      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Freight documents for ${row.reference}`}>
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+          <div className="min-w-0">
+            <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</p>
+            <h2 className="mt-1 text-base font-semibold leading-6">Document production</h2>
+            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{row.customer_name} · {row.origin} → {row.destination} · {row.mode || "Mode not set"}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
+            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close document production panel">
+              <X size={16} strokeWidth={1.75} aria-hidden="true"/>
+            </button>
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="border-b border-[var(--admin-line)] px-5 py-4">
+            <OpsNotice>
+              <span className="flex items-start gap-2"><ShieldCheck size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>KCPL-generated PDFs are controlled internal/house drafts. Carrier-issued master originals remain authoritative.</span>
+            </OpsNotice>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
+              <span className="text-xs text-[var(--admin-muted)]">{row.current_generated_count} current revision{row.current_generated_count === 1 ? "" : "s"}</span>
+            </div>
+          </div>
+
+          <PanelSection title="Document" description="Choose the controlled document type and internal reference.">
+            <div className="grid gap-3 md:grid-cols-2">
+              <OpsField label="Document type">
+                <select value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>
+                  {generatedFreightDocumentKinds.filter((kind) => row.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}
+                </select>
+              </OpsField>
+              <OpsField label="House / internal reference"><input value={form.houseReference} onChange={(event) => patch("houseReference", event.target.value)}/></OpsField>
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Parties & cargo" description="Capture the legal parties and shipment description used in the controlled draft.">
+            <div className="grid gap-3 md:grid-cols-2">
+              <OpsField label="Shipper"><textarea value={form.shipper} onChange={(event) => patch("shipper", event.target.value)} placeholder="Legal shipper/exporter name and address"/></OpsField>
+              <OpsField label="Consignee"><textarea value={form.consignee} onChange={(event) => patch("consignee", event.target.value)} placeholder="Legal consignee/importer name and address"/></OpsField>
+              <OpsField label="Notify party"><textarea value={form.notifyParty} onChange={(event) => patch("notifyParty", event.target.value)}/></OpsField>
+              <OpsField label="Cargo description"><textarea value={form.cargoDescription} onChange={(event) => patch("cargoDescription", event.target.value)}/></OpsField>
+              <OpsField label="Marks & numbers"><input value={form.marksAndNumbers} onChange={(event) => patch("marksAndNumbers", event.target.value)}/></OpsField>
+              <OpsField label="Package type"><input value={form.packageType} onChange={(event) => patch("packageType", event.target.value)}/></OpsField>
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Carriage terms" description="Set receipt and delivery places, references and commercial carriage instructions.">
+            <div className="grid gap-3 md:grid-cols-2">
+              <OpsField label="Place of receipt"><input value={form.placeOfReceipt} onChange={(event) => patch("placeOfReceipt", event.target.value)}/></OpsField>
+              <OpsField label="Place of delivery"><input value={form.placeOfDelivery} onChange={(event) => patch("placeOfDelivery", event.target.value)}/></OpsField>
+              <OpsField label="Carrier / master reference"><input value={form.masterReference} onChange={(event) => patch("masterReference", event.target.value)}/></OpsField>
+              <OpsField label="Freight terms"><input value={form.freightTerms} onChange={(event) => patch("freightTerms", event.target.value)} placeholder="Prepaid / collect / as agreed"/></OpsField>
+              <OpsField label="Incoterm"><input value={form.incoterm} onChange={(event) => patch("incoterm", event.target.value)} placeholder="e.g. FOB, CIF, DDP"/></OpsField>
+              <OpsField label="Special instructions"><textarea value={form.specialInstructions} onChange={(event) => patch("specialInstructions", event.target.value)}/></OpsField>
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Revision history" description="Current and superseded controlled revisions for this Job File.">
+            {row.generated_documents.length ? (
+              <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">
+                {row.generated_documents.map((document) => (
+                  <div key={document.document_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong className="text-sm font-medium">R{document.revision} · {document.label}</strong>
+                        <OpsBadge tone={document.superseded ? "neutral" : document.review_status === "verified" ? "success" : "warning"}>{document.superseded ? "Superseded" : document.review_status.replaceAll("_", " ")}</OpsBadge>
+                      </div>
+                      <p className="mt-1 truncate text-xs text-[var(--admin-muted)]">{document.filename} · SHA {document.sha256.slice(0, 12)}…</p>
+                    </div>
+                    <OpsButton size="sm" variant="ghost" onClick={() => onOpenDocument(row.reference, document.document_id)}>Open PDF</OpsButton>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
+                <FileText size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/> No generated revisions yet.
+              </div>
+            )}
+          </PanelSection>
+        </div>
+
+        <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
+          <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]">
+            <input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/>
+            <span>Mark this draft customer-safe after staff checks the content.</span>
+          </label>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">
+              {row.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document present</>}
+            </span>
+            <OpsButton variant="primary" disabled={busy} onClick={generate}>
+              <FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/> {busy ? "Generating…" : "Generate PDF"}
+            </OpsButton>
+          </div>
+        </footer>
+      </aside>
+    </>
   );
 }
 
