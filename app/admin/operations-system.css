@@ -260,7 +260,303 @@
   .app-skip-link { left: 10px; }
 }
 @media (max-width: 760px) {
-  .kcpl-admin-route { --app-page-gap: 16px; --app-toolbar-height: 52px; --app-control-height: 44px; --app-row-height: 52px; --app-title-size: 22px; }
+  .kcpl-admin-route { --app-page-gap: 16px; --app-toolbar-height: 52px; --app-control-height: 44px; --app-row-height: 52px; --app-title-size: 22px;   }
+
+  /* Shipment record detail — one operational hierarchy across summary and workflow sections. */
+  .kcpl-admin-content .shipment-detail-v2 {
+    --shipment-ink: var(--admin-ink);
+    --shipment-copy: var(--admin-muted);
+    --shipment-muted: var(--admin-faint);
+    --shipment-line: var(--admin-line);
+    --shipment-line-strong: var(--admin-line-strong);
+    --shipment-canvas: var(--admin-canvas);
+    --shipment-white: var(--admin-surface);
+    --shipment-crimson: var(--admin-crimson);
+    --shipment-success: var(--admin-success);
+    --shipment-warning: var(--admin-warning);
+    --shipment-danger: var(--admin-danger);
+    --shipment-info: var(--admin-info);
+    background: var(--admin-canvas);
+    color: var(--admin-ink);
+    font-family: inherit;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor {
+    width: min(1320px, calc(100% - 48px));
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header {
+    gap: 20px;
+    align-items: center;
+    padding: 24px 0 20px;
+    border-bottom-color: var(--admin-line);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-eyebrow,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > p,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section p {
+    color: var(--admin-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 16px;
+    text-transform: none;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row {
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 {
+    max-width: 760px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 32px;
+    letter-spacing: -.02em;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-status {
+    min-height: 24px;
+    border-radius: 4px;
+    padding-inline: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-subline {
+    margin-top: 6px;
+    color: var(--admin-muted);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-meta {
+    margin-top: 3px;
+    color: var(--admin-faint);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions {
+    gap: 8px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a {
+    min-height: var(--app-control-height);
+    border-color: var(--admin-line-strong);
+    border-radius: var(--app-radius);
+    background: var(--admin-surface);
+    color: var(--admin-ink);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a[data-primary] {
+    border-color: var(--admin-crimson);
+    background: var(--admin-crimson);
+    color: #fff;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav {
+    top: var(--app-toolbar-height);
+    border-bottom-color: var(--admin-line);
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 1px 0 rgb(16 16 16 / 4%);
+    backdrop-filter: blur(8px);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a {
+    min-height: 44px;
+    padding-inline: 14px;
+    color: var(--admin-muted);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:first-child { padding-left: 0; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:hover,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:focus-visible {
+    color: var(--admin-ink);
+    border-bottom-color: var(--admin-crimson);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-main { padding-right: 0; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-summary-section {
+    padding: 20px 0;
+    border-bottom-color: var(--admin-line);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-flow-section {
+    margin: 0 0 16px;
+    padding: 18px 20px;
+    border: 1px solid var(--admin-line);
+    border-left: 3px solid var(--admin-crimson);
+    border-radius: var(--app-surface-radius);
+    background: var(--admin-surface);
+    box-shadow: none;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
+    grid-template-columns: 120px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading h2 {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span {
+    color: var(--admin-muted);
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
+    margin-top: 14px;
+    border-top-color: var(--admin-line);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a {
+    min-height: 42px;
+    color: var(--admin-muted);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="complete"] { color: var(--admin-success); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="current"] { color: var(--admin-ink); box-shadow: inset 0 -2px 0 var(--admin-crimson); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="blocked"] { color: var(--admin-danger); box-shadow: inset 0 -2px 0 var(--admin-danger); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-register {
+    margin-top: 12px;
+    border-top-color: var(--admin-line-strong);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row {
+    min-height: 48px;
+    font-size: 14px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row > span { color: var(--admin-muted); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row > strong { font-weight: 500; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-summary {
+    margin-top: 16px;
+    padding: 18px 20px;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--app-surface-radius);
+    background: var(--admin-surface-muted);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid {
+    margin-top: 12px;
+    border-color: var(--admin-line);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div:first-child {
+    min-height: 76px;
+    padding: 14px 16px;
+    background: var(--admin-surface);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid span {
+    color: var(--admin-muted);
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid strong {
+    margin-top: 5px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
+    top: 106px;
+    border: 1px solid var(--admin-line);
+    border-left: 3px solid var(--admin-crimson);
+    border-radius: var(--app-surface-radius);
+    padding: 18px;
+    background: var(--admin-surface);
+    color: var(--admin-ink);
+    box-shadow: none;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail .shipment-detail-eyebrow { color: var(--admin-muted); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail h2,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dd { color: var(--admin-ink); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-detail { color: var(--admin-muted); font-size: 13px; line-height: 20px; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-link {
+    width: 100%;
+    min-height: var(--app-control-height);
+    justify-content: space-between;
+    margin-top: 14px;
+    border: 1px solid var(--admin-crimson);
+    border-radius: var(--app-radius);
+    padding-inline: 12px;
+    background: var(--admin-crimson);
+    color: #fff;
+    font-size: 14px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl { margin-top: 18px; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl > div { border-top-color: var(--admin-line); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dt { color: var(--admin-muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dd { font-size: 13px; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-links { border-top-color: var(--admin-line); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-next-links a { color: var(--admin-muted); font-size: 13px; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
+    border-top-color: var(--admin-line-strong);
+    padding-bottom: 48px;
+    background: var(--admin-canvas);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block {
+    padding: 20px;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--app-surface-radius);
+    background: var(--admin-surface);
+    box-shadow: none;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block + .shipment-detail-block { margin-top: 16px; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block > .ops-surface,
+  .kcpl-admin-content .shipment-detail-v2 #shipment-delivery #delivery-pod > .ops-surface,
+  .kcpl-admin-content .shipment-detail-v2 #shipment-activity .ops-content-wide > .ops-surface {
+    border-top-color: var(--admin-line);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-header,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-header {
+    padding: 14px 0 12px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-body,
+  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-body {
+    padding: 14px 0 2px;
+  }
+  .kcpl-admin-content .shipment-detail-v2 #shipment-exceptions { border-left: 3px solid var(--admin-danger); }
+  .kcpl-admin-content .shipment-detail-v2 #shipment-delivery { border-left: 3px solid var(--admin-info); }
+  .kcpl-admin-content .shipment-detail-v2 #shipment-activity { border-left: 3px solid var(--admin-line-strong); }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section {
+    padding: 18px 0;
+    border-block-color: var(--admin-line);
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section h2 {
+    margin-top: 4px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section span {
+    margin-top: 4px;
+    color: var(--admin-muted);
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .kcpl-admin-content .app-record-return {
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--admin-line);
+    background: var(--admin-surface);
+  }
+  .kcpl-admin-content .app-record-return a {
+    color: var(--admin-muted);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .kcpl-admin-content .app-record-return a:hover { color: var(--admin-crimson); }
+  @media (max-width: 900px) {
+    .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout { grid-template-columns: 1fr; }
+    .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail { position: static; margin-top: 16px; }
+  }
+  @media (max-width: 760px) {
+    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
+    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor { width: calc(100% - 32px); }
+    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header { padding: 18px 0 16px; }
+    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 { font-size: 22px; line-height: 30px; }
+    .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading { grid-template-columns: 1fr; gap: 4px; }
+    .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span { text-align: left; }
+    .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded,
+    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block { padding: 16px; }
+    .kcpl-admin-content .app-record-return { padding-inline: 16px; }
+  }
   .app-topbar { gap: 5px; padding-inline: 10px; }
   .app-breadcrumb > span:first-child, .app-breadcrumb > svg:first-of-type { display: none; }
   .app-global-search { width: 40px; height: 40px; padding: 0; justify-content: center; border: 0; background: transparent; }
