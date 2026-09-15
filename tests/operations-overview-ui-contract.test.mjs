@@ -4,7 +4,7 @@ import test from "node:test";
 
 const layoutPath = new URL("../app/layout.tsx", import.meta.url);
 const overviewPath = new URL("../app/admin/command-centre/v4-operations-overview.tsx", import.meta.url);
-const operationsUiPath = new URL("../app/admin/operations-ui.tsx", import.meta.url);
+const tremorUiPath = new URL("../app/admin/tremor/tremor-ui.tsx", import.meta.url);
 const systemCssPath = new URL("../app/admin/operations-system.css", import.meta.url);
 const typographyPath = new URL("../app/admin/admin-typography.css", import.meta.url);
 
@@ -50,17 +50,39 @@ test("Operations Overview preserves live policy and return context", async () =>
   assert.doesNotMatch(overview, /fixture/i);
 });
 
-test("Operations Overview uses shared Ops primitives and removes decorative header accent", async () => {
+test("Operations Overview uses the Tremor Raw UI stack instead of ad hoc Ops dashboard primitives", async () => {
   const overview = await readFile(overviewPath, "utf8");
-  const operationsUi = await readFile(operationsUiPath, "utf8");
+  const tremorUi = await readFile(tremorUiPath, "utf8");
   const layout = await readFile(layoutPath, "utf8");
-  assert.match(overview, /OpsPageHeader/);
-  assert.match(overview, /OpsSurface/);
-  assert.match(overview, /OpsTableWrap/);
-  assert.match(overview, /OpsProgress/);
-  assert.match(overview, /className="before:hidden"/);
-  assert.match(operationsUi, /className\?: string/);
-  assert.match(operationsUi, /cx\("ops-page-header", className\)/);
+
+  assert.match(overview, /from "\.\.\/tremor\/tremor-ui"/);
+  for (const primitive of [
+    "Workspace",
+    "WorkspaceHeader",
+    "MetricStrip",
+    "MetricLink",
+    "Panel",
+    "Badge",
+    "Button",
+    "LinkButton",
+    "Callout",
+    "BarList",
+    "TableRoot",
+    "TableHeaderCell",
+  ]) {
+    assert.match(overview, new RegExp(`\\b${primitive}\\b`), `missing Tremor primitive ${primitive}`);
+  }
+
+  assert.doesNotMatch(overview, /OpsPageHeader|OpsSurface|OpsTableWrap|OpsProgress|OpsBadge|OpsEmptyState/);
+  assert.doesNotMatch(overview, /before:hidden/);
+  assert.match(tremorUi, /KCPL-adapted Tremor Raw primitives/);
+  assert.match(tremorUi, /tremor-id="tremor-raw"/);
+  assert.match(tremorUi, /data-ui-stack="tremor-raw"/);
+  assert.match(tremorUi, /export const BarList/);
+  assert.match(tremorUi, /export const Table/);
+  assert.match(tremorUi, /export const Badge/);
+  assert.match(tremorUi, /export const Button/);
+
   assert.doesNotMatch(layout, /operations-overview-refinement\.css/);
   assert.doesNotMatch(layout, /operations-overview-responsive\.css/);
   assert.doesNotMatch(layout, /operations-overview-interactive\.css/);
