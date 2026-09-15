@@ -1,17 +1,16 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
-import type { QuoteSummary } from "../admin-data";
+import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { getStaffContext, type KcplStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail } from "../staff-permissions";
-import { OperationsShell } from "../operations-shell";
-import { OpsPage } from "../operations-ui";
 import { loadCommandCentre } from "./command-centre.server";
 import type { CommandCentreData } from "./command-centre-data";
+import { getLatestOperationalNote, type OperationalNote } from "./operational-notes.server";
+import { getOverviewFinanceSnapshot, type OverviewFinanceSnapshot } from "./overview-finance.server";
+import { OverviewShell } from "./overview-shell";
 import { V4OperationsOverview } from "./v4-operations-overview";
-import type { FinanceOverviewSummary } from "../finance/finance-data";
-import { getFinanceOverviewSummary } from "../finance/finance.server";
+import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview.server";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -34,9 +33,22 @@ type StaffState =
   | { kind: "error"; shell: ShellState };
 
 type OverviewState =
-  | { kind: "ready"; data: CommandCentreData; enquiries: QuoteSummary[] | null; finance: FinanceOverviewSummary | null }
+  | { kind: "ready"; data: CommandCentreData; workflow: WorkflowOverview; finance: OverviewFinanceSnapshot | null; note: OperationalNote | null }
   | { kind: "unavailable" }
   | { kind: "error" };
+
+const emptyWorkflow: WorkflowOverview = {
+  planning: null,
+  tendering: null,
+  pickup: null,
+  documents: null,
+  visibility: null,
+  delivery: null,
+  finance: null,
+  critical_blockers: null,
+  movements: [],
+  recent_activity: [],
+};
 
 function fallbackShellState(user: StaffUser): ShellState {
   const permissions = staffCapabilitiesForEmail(user.email);
@@ -70,75 +82,102 @@ async function loadStaffState(user: StaffUser): Promise<StaffState> {
   return { kind: "ready", staff, shell };
 }
 
+function scopedStaffContext(staff: KcplStaffContext, branch: "all" | KcplBranch) {
+  if (branch === "all") return staff;
+  return {
+    ...staff,
+    can_access_all_branches: false,
+    branches: [branch],
+    profile: {
+      ...staff.profile,
+      branch_scope: "selected" as const,
+      branches: [branch],
+    },
+  } satisfies KcplStaffContext;
+}
+
 async function loadOverviewState(staff: KcplStaffContext): Promise<OverviewState> {
   try {
-    const dataPromise = loadCommandCentre(staff);
-    const enquiriesPromise = import("../admin-data.server")
-      .then(({ listQuoteSummaries }) => listQuoteSummaries(staff))
-      .catch((error) => {
-        console.error("Failed to load KCPL enquiry snapshot for Overview", error);
-        return null;
-      });
-    const financePromise = getFinanceOverviewSummary(staff).catch((error) => {
+    const dataPromise = loadCommandCentre(staff, { includeDelivered: true });
+    const workflowPromise = loadWorkflowOverview(staff).catch((error) => {
+      console.error("Failed to load KCPL workflow snapshot for Overview", error);
+      return emptyWorkflow;
+    });
+    const financePromise = getOverviewFinanceSnapshot(staff).catch((error) => {
       console.error("Failed to load KCPL finance snapshot for Overview", error);
       return null;
     });
-    const [data, enquiries, finance] = await Promise.all([dataPromise, enquiriesPromise, financePromise]);
+    const notePromise = getLatestOperationalNote(staff).catch((error) => {
+      console.error("Failed to load KCPL operational note for Overview", error);
+      return null;
+    });
+    const [data, workflow, finance, note] = await Promise.all([dataPromise, workflowPromise, financePromise, notePromise]);
     if (!data) return { kind: "unavailable" };
-    return { kind: "ready", data, enquiries, finance };
+    return { kind: "ready", data, workflow, finance, note };
   } catch (error) {
     console.error("Failed to load KCPL Overview data", error);
     return { kind: "error" };
   }
 }
 
-async function OverviewData({ staff }: { staff: KcplStaffContext }) {
-  const state = await loadOverviewState(staff);
-  if (state.kind === "unavailable") return <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded />;
-  if (state.kind === "error") return <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded />;
-  return <V4OperationsOverview data={state.data} enquiries={state.enquiries} finance={state.finance}/>;
+function roleLabel(role: KcplStaffContext["permissions"]["role"]) {
+  return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function OverviewLoading() {
-  return (
-    <div className="overview-loading-region" aria-busy="true" aria-label="Loading Operations Overview">
-      <OpsPage className="overview-loading-page">
-        <div className="px-4 py-5 md:px-6 md:py-6" aria-hidden="true">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="min-w-0"><div className="h-8 w-32 rounded-md bg-[var(--admin-surface-muted)]"/><div className="mt-2 h-5 w-72 max-w-full rounded-md bg-[var(--admin-surface-muted)]"/></div>
-            <div className="flex gap-2"><span className="h-10 w-10 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)]"/><span className="h-10 w-36 rounded-md bg-[var(--admin-crimson)] opacity-20"/></div>
-          </div>
-          <div className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-line)] md:grid-cols-3 xl:grid-cols-6">{Array.from({ length: 6 }, (_, index) => <span key={index} className="h-24 bg-[var(--admin-surface)]"/>)}</div>
-          <div className="grid gap-4 xl:grid-cols-3"><div className="h-80 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] xl:col-span-2"/><div className="h-80 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)]"/></div>
-        </div>
-      </OpsPage>
-    </div>
-  );
-}
-
-export default async function CommandCentrePage() {
+export default async function CommandCentrePage({ searchParams }: { searchParams: Promise<{ branch?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Overview is available only to authorised KCPL staff." />;
 
-  const state = await loadStaffState(access.user);
-  const shellProps = {
-    userName: access.user.displayName,
-    canManageStaff: state.shell.canManageStaff,
-    canManageFinance: state.shell.canManageFinance,
-    canViewCommercial: state.shell.canViewCommercial,
-    canManageJobFile: state.shell.canManageJobFile,
-    isManagement: state.shell.isManagement,
+  const staffState = await loadStaffState(access.user);
+  if (staffState.kind === "restricted") return <Gate title="Overview is restricted" detail="Your current staff role does not include operational Job File access." />;
+  if (staffState.kind === "error") return <Gate title="Overview could not be loaded" detail="KCPL staff permissions are temporarily unavailable." />;
+
+  const query = await searchParams;
+  const staff = staffState.staff;
+  const accessibleBranches = staff.can_access_all_branches ? [...kcplBranches] : staff.branches;
+  const requestedBranch = (query.branch ?? "").trim();
+  const selectedBranch: "all" | KcplBranch = requestedBranch === "all" && staff.can_access_all_branches
+    ? "all"
+    : accessibleBranches.includes(requestedBranch as KcplBranch)
+      ? requestedBranch as KcplBranch
+      : accessibleBranches.includes("Kathmandu")
+        ? "Kathmandu"
+        : accessibleBranches[0] ?? "Kathmandu";
+  const scopedStaff = scopedStaffContext(staff, selectedBranch);
+  const overview = await loadOverviewState(scopedStaff);
+  const userName = staff.profile.display_name || access.user.displayName || access.user.email;
+  const capabilities = {
+    canManageStaff: staffState.shell.canManageStaff,
+    canManageFinance: staffState.shell.canManageFinance,
+    canViewCommercial: staffState.shell.canViewCommercial,
+    canManageJobFile: staffState.shell.canManageJobFile,
+    isManagement: staffState.shell.isManagement,
   };
 
-  if (state.kind === "restricted") return <OperationsShell {...shellProps}><Gate title="Overview is restricted" detail="Your current staff role does not include operational Job File access." embedded /></OperationsShell>;
-  if (state.kind === "error") return <OperationsShell {...shellProps}><Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded /></OperationsShell>;
-
   return (
-    <OperationsShell {...shellProps}>
-      <Suspense fallback={<OverviewLoading/>}>
-        <OverviewData staff={state.staff}/>
-      </Suspense>
-    </OperationsShell>
+    <OverviewShell
+      userName={userName}
+      roleLabel={roleLabel(staff.permissions.role)}
+      branches={accessibleBranches}
+      selectedBranch={selectedBranch}
+      canAccessAllBranches={staff.can_access_all_branches}
+      capabilities={capabilities}
+    >
+      {overview.kind === "unavailable" ? <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /> : null}
+      {overview.kind === "error" ? <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Search and notifications remain available while the data service recovers." embedded /> : null}
+      {overview.kind === "ready" ? (
+        <V4OperationsOverview
+          data={overview.data}
+          workflow={overview.workflow}
+          finance={overview.finance}
+          note={overview.note}
+          userName={userName}
+          selectedBranch={selectedBranch}
+          canViewCommercial={staff.permissions.canViewCommercial}
+          canPostNotes={staff.permissions.canManageJobFile}
+        />
+      ) : null}
+    </OverviewShell>
   );
 }
 
