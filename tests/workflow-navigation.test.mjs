@@ -116,8 +116,8 @@ test("command palette only advertises quick actions with real destinations", () 
   assert.doesNotMatch(source, /title: "New transport order"/);
 });
 
-test("Overview does not advertise transport-order creation when it only opens the Rate Desk", () => {
+test("Overview does not advertise transport-order creation", () => {
   const source = readFileSync(repoFile("app/admin/command-centre/v4-operations-overview.tsx"), "utf8");
-  assert.equal(source.includes("Open Rate Desk"), true);
   assert.equal(source.includes("New transport order"), false);
+  assert.equal(source.includes("Open Rate Desk"), false);
 });

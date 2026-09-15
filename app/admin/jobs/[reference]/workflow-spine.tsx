@@ -255,7 +255,7 @@ export function WorkflowSpine({ initialWorkflow, initialJob, canOverride }: { in
     return { kind: "review" };
   }, [workflow]);
 
-  return <div className="ops-content-wide pt-5">
+  return <div className="shipment-workflow-spine ops-content-wide pt-5">
     <OpsSurface
       eyebrow="Controlled lifecycle"
       title="One shipment, one continuous operation"

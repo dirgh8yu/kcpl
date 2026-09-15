@@ -253,11 +253,11 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
     }
   }
 
-  return <main className="min-h-[calc(100vh-54px)] bg-[var(--admin-canvas)] px-4 pb-10 pt-6 text-[var(--admin-ink)] sm:px-6 lg:px-7">
+  return <main className="tender-workspace-page min-h-[calc(100vh-54px)] bg-[var(--admin-canvas)] px-4 pb-10 pt-6 text-[var(--admin-ink)] sm:px-6 lg:px-7">
     <div className="mx-auto w-full max-w-[1152px]">
       <header className="flex min-h-[60px] flex-wrap items-center justify-between gap-4">
         <div><h1 className="text-[22px] font-semibold leading-[30px]">Tender Workspace</h1><p className="mt-[3px] text-[13px] leading-[19px] text-[var(--admin-muted)]">{awaiting} awaiting response · {accepted} accepted / countered · {expired} expired · {booked} booked</p></div>
-        <div className="flex gap-2"><button type="button" onClick={refresh} disabled={busy} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold disabled:opacity-50">Refresh</button>{canManage ? <button type="button" onClick={() => setShowCreate((value) => !value)} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-white">Create tender</button> : null}</div>
+        <div className="flex gap-2"><button type="button" onClick={refresh} disabled={busy} className="ops-button" data-variant="secondary" data-size="sm">Refresh</button>{canManage ? <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="sm">Create tender</button> : null}</div>
       </header>
 
       <nav className="flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">{tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}</nav>

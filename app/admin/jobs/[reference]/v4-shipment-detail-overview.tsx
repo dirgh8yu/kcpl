@@ -162,8 +162,8 @@ export function V4ShipmentDetailOverview({
             <p className="shipment-detail-meta">ETA {shortDate(job.eta)} · Owner {owner} · {job.primary_branch}</p>
           </div>
           <div className="shipment-detail-actions">
-            <Link href={`/admin/delivery?shipment=${encodeURIComponent(job.reference)}`}>Delivery & POD</Link>
-            <Link data-primary href={`/admin/notifications?shipment=${encodeURIComponent(job.reference)}`}>Customer update</Link>
+            <Link className="ops-button" data-variant="secondary" data-size="sm" href={`/admin/delivery?shipment=${encodeURIComponent(job.reference)}`}>Delivery & POD</Link>
+            <Link className="ops-button" data-variant="primary" data-size="sm" data-primary href={`/admin/notifications?shipment=${encodeURIComponent(job.reference)}`}>Customer update</Link>
           </div>
         </header>
       </div>
@@ -223,7 +223,7 @@ export function V4ShipmentDetailOverview({
           <p className="shipment-detail-eyebrow">Next</p>
           <h2>{next.title}</h2>
           <p className="shipment-next-detail">{next.detail}</p>
-          <a className="shipment-next-link" href={next.href}>Open action →</a>
+          <a className="shipment-next-link ops-button" data-variant="primary" href={next.href}>Open action</a>
           <dl>
             <RailItem label="Owner" value={owner}/>
             <RailItem label="ETA" value={shortDate(job.eta)}/>

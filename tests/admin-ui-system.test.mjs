@@ -60,10 +60,13 @@ test("shipment register uses shared primitives and keyboard-accessible selection
   const shipments = await readFile(shipmentsPath, "utf8");
   assert.match(shipments, /<OpsPage className="shipments-register">/);
   assert.match(shipments, /<OpsPageHeader/);
-  assert.match(shipments, /<OpsStatStrip/);
+  assert.match(shipments, /className="shipments-toolbar/);
+  assert.match(shipments, /className="shipments-filter-tab"/);
   assert.match(shipments, /<OpsSearch/);
   assert.match(shipments, /<OpsTableWrap/);
   assert.match(shipments, /<OpsBadge tone=\{statusTone\(job\.status\)\}/);
+  assert.match(shipments, /shipmentNextAction\(job\)/);
+  assert.match(shipments, /shipment-next-action-cell/);
   assert.match(shipments, /event\.key === "Enter" \|\| event\.key === " "/);
   assert.doesNotMatch(shipments, /onDoubleClick=/);
 });

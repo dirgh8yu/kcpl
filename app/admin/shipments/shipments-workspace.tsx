@@ -173,12 +173,12 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
 
       <div className="px-4 py-4 md:px-6">
-        <div className="mb-4 flex flex-wrap items-center gap-2 border-y border-[var(--admin-line)] py-3">
-          <div className="min-w-[240px] flex-1 basis-[300px] max-w-[360px]">
+        <div className="shipments-toolbar mb-4">
+          <div className="shipments-toolbar-search">
             <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ref, customer, route…" aria-label="Search shipments"/>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Shipment status filters">
+          <div className="shipments-status-filters" role="group" aria-label="Shipment status filters">
             {STATUS_FILTERS.map((item) => {
               const active = status === item.value;
               return (
@@ -187,7 +187,8 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
                   type="button"
                   onClick={() => setStatus(item.value)}
                   aria-pressed={active}
-                  className={`inline-flex min-h-9 items-center rounded-md border px-3 text-xs font-medium transition-colors ${active ? "border-[var(--admin-crimson)] bg-[var(--admin-crimson)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)] hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)]"}`}
+                  className="shipments-filter-tab"
+                  data-active={active || undefined}
                 >
                   {item.label}
                 </button>
@@ -195,30 +196,30 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
             })}
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="shipments-toolbar-actions">
             <details className="relative">
-              <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-xs font-medium text-[var(--admin-muted)] hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)] [&::-webkit-details-marker]:hidden">
+              <summary className="shipments-filter-trigger">
                 <SlidersHorizontal size={14} strokeWidth={1.75} aria-hidden="true"/>
-                Filters{advancedCount ? <span className="rounded-md bg-[var(--admin-crimson)] px-1.5 text-xs leading-5 text-white">{advancedCount}</span> : null}
+                <span>Filters</span>{advancedCount ? <span className="shipments-filter-count">{advancedCount}</span> : null}
               </summary>
-              <div className="absolute right-0 top-11 z-30 w-[280px] rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3 shadow-lg">
-                <label className="block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Branch<select value={branch} onChange={(event) => setBranch(event.target.value)} className="mt-1 w-full"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Mode<select value={mode} onChange={(event) => setMode(event.target.value)} className="mt-1 w-full"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Owner<select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)} className="mt-1 w-full"><option value="all">All owners</option><option value="unassigned">Unassigned</option></select></label>
-                <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} className="mt-1 w-full"><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
-                <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className={`mt-3 flex min-h-9 w-full items-center justify-center gap-2 rounded-md border px-3 text-xs font-medium ${attention ? "border-[var(--admin-crimson)] bg-[var(--admin-danger-bg)] text-[var(--admin-crimson)]" : "border-[var(--admin-line)] text-[var(--admin-muted)]"}`}>
+              <div className="shipments-filter-menu">
+                <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                <label>Mode<select value={mode} onChange={(event) => setMode(event.target.value)}><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                <label>Owner<select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}><option value="all">All owners</option><option value="unassigned">Unassigned</option></select></label>
+                <label>Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} ><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
+                <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className="shipments-attention-filter" data-active={attention || undefined}>
                   <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/> Needs attention
                 </button>
               </div>
             </details>
-            {hasFilters ? <button type="button" className="min-h-9 px-2 text-xs font-medium text-[var(--admin-muted)] hover:text-[var(--admin-ink)]" onClick={resetFilters}>Reset</button> : null}
-            <span className="whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {data.jobs.length}</span>
+            {hasFilters ? <button type="button" className="shipments-reset" onClick={resetFilters}>Reset</button> : null}
+            <span className="shipments-result-count">{filtered.length} of {data.jobs.length}</span>
           </div>
         </div>
 
         <section className="ops-surface overflow-hidden" aria-label="Shipment register">
           <OpsTableWrap>
-            <table className="ops-table min-w-[900px]" aria-label="Shipments register">
+            <table className="ops-table shipments-register-table" aria-label="Shipments register">
               <thead>
                 <tr>
                   <th>Ref</th>
@@ -229,12 +230,14 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
                   <th>Owner</th>
                   <th>ETA</th>
                   <th>Updated</th>
+                  <th>Next action</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length ? pageRows.map((job) => {
                   const chosen = selected?.reference === job.reference;
                   const jobOwner = owner(job);
+                  const nextAction = shipmentNextAction(job);
                   return (
                     <tr
                       key={job.reference}
@@ -258,10 +261,11 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
                       <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
                       <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
                       <td><span className="text-sm text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>
+                      <td><span className="shipment-next-action-cell" data-tone={nextAction.tone}>{nextAction.title}</span></td>
                     </tr>
                   );
                 }) : (
-                  <tr><td colSpan={8}><OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/></td></tr>
+                  <tr><td colSpan={9}><OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/></td></tr>
                 )}
               </tbody>
             </table>
@@ -296,8 +300,8 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
   return (
     <>
       <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close shipment panel"/>
-      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+      <aside className="shipment-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
+        <header className="shipment-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
             <h2 className="mt-1 text-base font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
@@ -305,7 +309,7 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
-            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close shipment panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+            <button type="button" className="shipment-inspector-close" onClick={onClose} aria-label="Close shipment panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
           </div>
         </header>
 
@@ -352,7 +356,7 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
           </PanelSection>
         </div>
 
-        <footer className="flex shrink-0 flex-wrap gap-2 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-3">
+        <footer className="shipment-inspector-footer flex shrink-0 flex-wrap gap-2 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-3">
           <Link href={withReturn(action.href)} className="ops-button flex-1" data-variant="primary" data-size="md">{action.title}</Link>
           <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open shipment</Link>
         </footer>
