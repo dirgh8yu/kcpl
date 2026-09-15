@@ -172,24 +172,25 @@ function uniqueValues(values: Array<string | null | undefined>) {
 
 export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initialReference = "" }: { initialRows: PickupQueueRow[]; initialSummary: PickupSummary; initialReference?: string }) {
   const workspace = useWorkspaceQuery();
+  const initialSelected = initialRows.find((row) => row.shipment_reference === initialReference) ?? initialRows[0] ?? null;
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
-  const [selectedReference, setSelectedReference] = useState(initialReference || initialRows[0]?.shipment_reference || "");
+  const [selectedReferenceState, setSelectedReferenceState] = useState(initialSelected?.shipment_reference ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [editor, setEditor] = useState<EditorPanel>("details");
-  const [windowStart, setWindowStart] = useState("");
-  const [windowEnd, setWindowEnd] = useState("");
-  const [pickupLocation, setPickupLocation] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [channel, setChannel] = useState<PickupChannel>("manual");
-  const [providerReference, setProviderReference] = useState("");
-  const [driverName, setDriverName] = useState("");
-  const [driverPhone, setDriverPhone] = useState("");
-  const [vehicleReference, setVehicleReference] = useState("");
-  const [notes, setNotes] = useState("");
+  const [windowStart, setWindowStart] = useState(toLocalInput(initialSelected?.confirmed_window_start ?? initialSelected?.requested_window_start ?? null));
+  const [windowEnd, setWindowEnd] = useState(toLocalInput(initialSelected?.confirmed_window_end ?? initialSelected?.requested_window_end ?? null));
+  const [pickupLocation, setPickupLocation] = useState(initialSelected?.pickup_location ?? initialSelected?.origin ?? "");
+  const [contactName, setContactName] = useState(initialSelected?.contact_name ?? "");
+  const [contactPhone, setContactPhone] = useState(initialSelected?.contact_phone ?? "");
+  const [channel, setChannel] = useState<PickupChannel>(initialSelected?.channel ?? "manual");
+  const [providerReference, setProviderReference] = useState(initialSelected?.provider_reference ?? "");
+  const [driverName, setDriverName] = useState(initialSelected?.driver_name ?? "");
+  const [driverPhone, setDriverPhone] = useState(initialSelected?.driver_phone ?? "");
+  const [vehicleReference, setVehicleReference] = useState(initialSelected?.vehicle_reference ?? "");
+  const [notes, setNotes] = useState(initialSelected?.notes ?? "");
   const [missedReason, setMissedReason] = useState("");
 
   const params = workspace.params;
@@ -205,6 +206,8 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const requestedPage = Math.max(1, Number.parseInt(params.get("page") ?? "1", 10) || 1);
   const requestedPageSize = Number.parseInt(params.get("pageSize") ?? "10", 10);
   const pageSize = [10, 20, 50].includes(requestedPageSize) ? requestedPageSize : 10;
+  const shipmentParam = (params.get("shipment") ?? "").trim().toUpperCase();
+  const selectedReference = shipmentParam && rows.some((row) => row.shipment_reference === shipmentParam) ? shipmentParam : selectedReferenceState;
   const nowIso = new Date().toISOString();
   const todayKey = kathmanduDateKey(nowIso);
 
@@ -259,44 +262,45 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const activeFilterCount = [originFilter, partnerFilter, branchFilter, dateFilter, statusFilter, driverFilter].filter((value) => value !== "all").length;
 
   useEffect(() => {
-    const fromUrl = new URLSearchParams(workspace.search).get("shipment")?.trim().toUpperCase() ?? "";
-    if (fromUrl && rows.some((row) => row.shipment_reference === fromUrl) && fromUrl !== selectedReference) setSelectedReference(fromUrl);
-    if (!fromUrl && initialReference === "" && selectedReference && !rows.some((row) => row.shipment_reference === selectedReference)) setSelectedReference("");
-  }, [initialReference, rows, selectedReference, workspace.search]);
-
-  useEffect(() => {
-    if (!selected) return;
-    setWindowStart(toLocalInput(selected.confirmed_window_start ?? selected.requested_window_start));
-    setWindowEnd(toLocalInput(selected.confirmed_window_end ?? selected.requested_window_end));
-    setPickupLocation(selected.pickup_location ?? selected.origin);
-    setContactName(selected.contact_name ?? "");
-    setContactPhone(selected.contact_phone ?? "");
-    setChannel(selected.channel);
-    setProviderReference(selected.provider_reference ?? "");
-    setDriverName(selected.driver_name ?? "");
-    setDriverPhone(selected.driver_phone ?? "");
-    setVehicleReference(selected.vehicle_reference ?? "");
-    setNotes(selected.notes ?? "");
-    setMissedReason("");
-  }, [selected]);
-
-  useEffect(() => {
     if (requestedPage > pageCount) workspace.update({ page: pageCount === 1 ? null : String(pageCount) });
   }, [pageCount, requestedPage, workspace]);
+
+  function loadSelectedFields(row: PickupQueueRow) {
+    setWindowStart(toLocalInput(row.confirmed_window_start ?? row.requested_window_start));
+    setWindowEnd(toLocalInput(row.confirmed_window_end ?? row.requested_window_end));
+    setPickupLocation(row.pickup_location ?? row.origin);
+    setContactName(row.contact_name ?? "");
+    setContactPhone(row.contact_phone ?? "");
+    setChannel(row.channel);
+    setProviderReference(row.provider_reference ?? "");
+    setDriverName(row.driver_name ?? "");
+    setDriverPhone(row.driver_phone ?? "");
+    setVehicleReference(row.vehicle_reference ?? "");
+    setNotes(row.notes ?? "");
+    setMissedReason("");
+  }
 
   function updateFilters(values: Record<string, string | null>) {
     workspace.update({ ...values, page: null });
   }
 
   function choose(row: PickupQueueRow, nextEditor: EditorPanel = "details") {
-    setSelectedReference(row.shipment_reference);
+    setSelectedReferenceState(row.shipment_reference);
+    loadSelectedFields(row);
     setEditor(nextEditor);
     setNotice(null);
     workspace.update({ shipment: row.shipment_reference });
   }
 
+  function openEditor(nextEditor: EditorPanel) {
+    if (!selected) return;
+    loadSelectedFields(selected);
+    setEditor(nextEditor);
+    setNotice(null);
+  }
+
   function closeInspector() {
-    setSelectedReference("");
+    setSelectedReferenceState("");
     setEditor("details");
     workspace.update({ shipment: null });
   }
@@ -543,13 +547,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
               <div className="max-h-[calc(100dvh-150px)] overflow-y-auto">
                 {selected.status !== "picked_up" && selected.status !== "cancelled" ? (
                   <div className="grid grid-cols-2 gap-2 border-b border-[var(--admin-line)] p-4">
-                    <OpsButton type="button" variant="secondary" onClick={() => setEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
+                    <OpsButton type="button" variant="secondary" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
                     {selected.status === "confirmed" || selected.status === "requested" ? (
-                      <BlackButton type="button" onClick={() => setEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</BlackButton>
+                      <BlackButton type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</BlackButton>
                     ) : selected.status === "driver_assigned" ? (
-                      <BlackButton type="button" onClick={() => setEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</BlackButton>
+                      <BlackButton type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</BlackButton>
                     ) : (
-                      <BlackButton type="button" onClick={() => setEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</BlackButton>
+                      <BlackButton type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</BlackButton>
                     )}
                   </div>
                 ) : null}
@@ -577,7 +581,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 <section className="border-b border-[var(--admin-line)] px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold text-[var(--admin-ink)]">Pickup details</h3>
-                    <button type="button" className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-[var(--admin-line)] px-2.5 text-xs font-medium text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]" onClick={() => setEditor("appointment")}><Pencil size={13} strokeWidth={1.75} aria-hidden="true"/>Edit</button>
+                    <button type="button" className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-[var(--admin-line)] px-2.5 text-xs font-medium text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]" onClick={() => openEditor("appointment")}><Pencil size={13} strokeWidth={1.75} aria-hidden="true"/>Edit</button>
                   </div>
                   <dl className="mt-3 grid grid-cols-[110px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
                     <DetailRow label="Customer">{selected.customer_name}</DetailRow>
@@ -653,7 +657,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
               <footer className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 p-4">
                 <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[var(--admin-line)] px-3 text-sm font-medium text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]"><ExternalLink size={15} strokeWidth={1.75} aria-hidden="true"/>View shipment</Link>
-                <button type="button" className={iconButtonClass} onClick={() => setEditor(editor === "outcome" ? "details" : "outcome")} aria-label="More pickup actions"><MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true"/></button>
+                <button type="button" className={iconButtonClass} onClick={() => editor === "outcome" ? setEditor("details") : openEditor("outcome")} aria-label="More pickup actions"><MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true"/></button>
               </footer>
             </aside>
           ) : null}
