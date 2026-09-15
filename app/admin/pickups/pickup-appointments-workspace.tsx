@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -663,7 +663,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   );
 }
 
-function BlackButton({ children, className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function BlackButton({ children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button {...props} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[var(--admin-ink)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-focus)] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}>{children}</button>;
 }
 
