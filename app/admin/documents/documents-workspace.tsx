@@ -262,7 +262,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
           {visible.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Document</th><th>Type</th><th>Shipment</th><th>Uploaded</th><th>Expiry</th><th>Customer-safe</th><th>Review status</th><th>Next action</th></tr></thead><tbody>{visible.map((row) => {
               const key = `${row.shipment_reference}:${row.id}`;
               const inactive = row.review_status === "deleted" || row.review_status === "superseded";
-              return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} tabIndex={0} onClick={() => update({ selected: key }, "push")} onKeyDown={(event) => { if (event.key === "Enter") update({ selected: key }, "push"); }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
+              return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} aria-selected={selectedKey === key} tabIndex={0} onClick={() => update({ selected: key }, "push")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); update({ selected: key }, "push"); } }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
                 <td><div style={{ fontWeight: 500 }}>{row.filename}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by} · {bytes(row.size_bytes)}</div></td>
                 <td>{shipmentDocumentTypeLabels[row.document_type]}</td>
                 <td><OpsMono>{row.shipment_reference}</OpsMono><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.customer_name}</div></td>

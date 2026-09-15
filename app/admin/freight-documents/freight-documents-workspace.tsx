@@ -239,12 +239,12 @@ export function FreightDocumentsWorkspace({
 
   return (
     <OpsPage className="freight-documents-register">
-      <div className="min-h-[calc(100dvh-var(--app-toolbar-height))] bg-[var(--admin-canvas)] px-4 pb-8 pt-5 md:px-6">
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="freight-documents-page min-h-[calc(100dvh-var(--app-toolbar-height))] bg-[var(--admin-canvas)] px-4 pb-8 pt-5 md:px-6">
+        <header className="freight-documents-header mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="m-0 text-2xl font-semibold leading-8 tracking-[-0.02em] text-[var(--admin-ink)]">Freight Documents</h1>
             <p className="mt-0.5 text-sm leading-5 text-[var(--admin-muted)]">Controlled production queue for KCPL-generated carriage and execution documents.</p>
-            <p className="mt-1.5 text-xs text-[var(--admin-faint)]">{summary.eligible} eligible Job File{summary.eligible === 1 ? "" : "s"} · {summary.missing_primary} missing primary draft · {summary.generated_current} current generated · {summary.review_pending} awaiting review</p>
+            <p className="mt-1.5 text-xs text-[var(--admin-muted)]">{summary.eligible} eligible Job File{summary.eligible === 1 ? "" : "s"} · {summary.missing_primary} missing primary draft · {summary.generated_current} current generated · {summary.review_pending} awaiting review</p>
           </div>
           <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={15} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>
         </header>
@@ -261,8 +261,8 @@ export function FreightDocumentsWorkspace({
           </div>
         ) : null}
 
-        <OpsToolbar className="mb-4">
-          <div className="min-w-[240px] flex-1 basis-[320px] max-w-[420px]">
+        <OpsToolbar className="freight-documents-toolbar mb-4">
+          <div className="freight-documents-search min-w-[240px] flex-1 basis-[320px] max-w-[420px]">
             <OpsSearch
               value={query}
               onChange={(event) => update({ q: event.target.value || null })}
@@ -271,7 +271,7 @@ export function FreightDocumentsWorkspace({
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Freight document filters">
+          <div className="freight-documents-filters flex flex-wrap items-center gap-1.5" role="group" aria-label="Freight document filters">
             {FOCUS_OPTIONS.map((option) => {
               const active = focus === option.value;
               return (
@@ -280,7 +280,8 @@ export function FreightDocumentsWorkspace({
                   type="button"
                   onClick={() => { setAllowInitialSelection(false); update({ view: option.value === "all" ? null : option.value, selected: null, shipment: null }); }}
                   aria-pressed={active}
-                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors ${active ? "border-[var(--admin-crimson)] bg-[var(--admin-crimson)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)] hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)]"}`}
+                  className="freight-documents-filter"
+                  data-active={active || undefined}
                 >
                   {option.label} <span className="tabular-nums">{focusCounts[option.value]}</span>
                 </button>
@@ -288,7 +289,7 @@ export function FreightDocumentsWorkspace({
             })}
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="freight-documents-toolbar-actions ml-auto flex items-center gap-2">
             <OpsButton
               size="sm"
               disabled={refreshing}
@@ -303,11 +304,11 @@ export function FreightDocumentsWorkspace({
               <RefreshCw size={14} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>{refreshing ? "Refreshing…" : "Refresh"}
             </OpsButton>
             {hasFilters ? <OpsButton size="sm" variant="ghost" onClick={() => { setAllowInitialSelection(false); update({ q: null, view: null, selected: null, shipment: null }); }}>Reset</OpsButton> : null}
-            <span className="whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {rows.length}</span>
+            <span className="freight-documents-result-count whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {rows.length}</span>
           </div>
         </OpsToolbar>
 
-        <OpsSurface flush>
+        <OpsSurface flush className="freight-documents-surface">
           {filtered.length ? (
             <OpsTableWrap>
               <table className="ops-table min-w-[1160px]" aria-label="Freight document production queue">
@@ -332,7 +333,7 @@ export function FreightDocumentsWorkspace({
                     const primaryKind = primaryCarriageDocumentKind(row.mode);
                     const primaryLabel = primaryKind ? generatedFreightDocumentLabels[primaryKind] : "Primary carriage draft";
                     return (
-                      <tr key={row.reference} data-selected={selectedRow || undefined} tabIndex={0} onClick={() => openEditor(row)} onKeyDown={(event) => { if (event.key === "Enter") openEditor(row); }} style={{ cursor: "pointer" }}>
+                      <tr key={row.reference} data-selected={selectedRow || undefined} aria-selected={selectedRow} tabIndex={0} onClick={() => openEditor(row)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openEditor(row); } }}>
                         <td>
                           <div className="font-medium"><OpsMono className="text-xs text-[var(--admin-info)]">{row.reference}</OpsMono></div>
                           <div className="mt-0.5 text-xs text-[var(--admin-muted)]">{row.customer_name || "Customer not linked"}{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</div>
@@ -440,8 +441,8 @@ function FreightDocumentPanel({
   return (
     <>
       <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close document production panel"/>
-      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Freight documents for ${row.reference}`}>
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+      <aside className="freight-document-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Freight documents for ${row.reference}`}>
+        <header className="freight-document-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</p>
             <h2 className="mt-1 text-base font-semibold leading-6">Document production</h2>
@@ -449,7 +450,7 @@ function FreightDocumentPanel({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
-            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close document production panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+            <button type="button" className="freight-document-inspector-close" onClick={onClose} aria-label="Close document production panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
           </div>
         </header>
 
@@ -468,7 +469,7 @@ function FreightDocumentPanel({
                   {latest ? <div className="mt-0.5 text-xs text-[var(--admin-muted)]">R{latest.revision} · {latest.filename} · {reviewState(latest).label}</div> : null}
                 </div>
                 {latest ? <div className="flex flex-wrap justify-end gap-2">
-                  {hasPendingReview(row) ? <Link href="/admin/documents" className="ops-button" data-variant="ghost" data-size="sm">Review in Document Vault</Link> : null}
+                  {hasPendingReview(row) ? <Link href={`/admin/documents?q=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="sm">Review in Document Vault</Link> : null}
                   <OpsButton size="sm" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>Open PDF</OpsButton>
                 </div> : null}
               </div>
@@ -476,7 +477,7 @@ function FreightDocumentPanel({
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
-              <Link href="/admin/documents" className="ops-button" data-variant="ghost" data-size="sm">Document Vault</Link>
+              <Link href={`/admin/documents?q=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="sm">Document Vault</Link>
               <span className="text-xs text-[var(--admin-muted)]">{row.current_generated_count} current draft{row.current_generated_count === 1 ? "" : "s"}</span>
             </div>
           </div>
@@ -524,7 +525,7 @@ function FreightDocumentPanel({
           </PanelSection>
         </div>
 
-        <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
+        <footer className="freight-document-inspector-footer shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
           <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]"><input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/><span>Mark this draft customer-safe after staff checks the content.</span></label>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">{row.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage draft missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage draft present</>}</span>
