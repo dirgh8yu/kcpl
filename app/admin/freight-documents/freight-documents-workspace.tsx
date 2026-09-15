@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, FilePlus2, FileText, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ExternalLink, FilePlus2, FileText, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
@@ -11,7 +11,6 @@ import {
   OpsMono,
   OpsNotice,
   OpsPage,
-  OpsPageHeader,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
@@ -22,8 +21,10 @@ import {
   generatedFreightDocumentKinds,
   generatedFreightDocumentLabels,
   generatedReference,
+  primaryCarriageDocumentKind,
   type FreightDocumentQueueRow,
   type GeneratedFreightDocumentKind,
+  type GeneratedFreightDocumentRow,
 } from "./freight-documents";
 
 type Summary = { eligible: number; missing_primary: number; generated_current: number; review_pending: number };
@@ -66,13 +67,14 @@ const emptyForm: FormState = {
 
 const FOCUS_OPTIONS: Array<{ value: Focus; label: string }> = [
   { value: "all", label: "All" },
-  { value: "missing", label: "Missing carriage doc" },
-  { value: "generated", label: "Generated" },
+  { value: "missing", label: "Missing primary" },
   { value: "review", label: "Awaiting review" },
+  { value: "generated", label: "Generated" },
 ];
 
 function formFor(row: FreightDocumentQueueRow): FormState {
-  const kind = row.recommended_kinds[0] ?? "shipping_instruction";
+  const primary = primaryCarriageDocumentKind(row.mode);
+  const kind = primary && row.recommended_kinds.includes(primary) ? primary : row.recommended_kinds[0] ?? "shipping_instruction";
   return {
     ...emptyForm,
     kind,
@@ -85,8 +87,18 @@ function formFor(row: FreightDocumentQueueRow): FormState {
   };
 }
 
+function currentDocuments(row: FreightDocumentQueueRow) {
+  return row.generated_documents
+    .filter((document) => !document.superseded)
+    .sort((a, b) => b.revision - a.revision || b.generated_at.localeCompare(a.generated_at));
+}
+
+function latestCurrentDocument(row: FreightDocumentQueueRow) {
+  return currentDocuments(row)[0] ?? null;
+}
+
 function hasPendingReview(row: FreightDocumentQueueRow) {
-  return row.generated_documents.some((document) => !document.superseded && document.review_status !== "verified");
+  return currentDocuments(row).some((document) => ["received", "under_review"].includes(document.review_status));
 }
 
 function rowMatchesFocus(row: FreightDocumentQueueRow, focus: Focus) {
@@ -96,11 +108,20 @@ function rowMatchesFocus(row: FreightDocumentQueueRow, focus: Focus) {
   return true;
 }
 
-function rowStatus(row: FreightDocumentQueueRow) {
-  if (row.missing_primary_carriage_document) return { label: "Missing carriage doc", tone: "warning" as const };
+function queueState(row: FreightDocumentQueueRow) {
   if (hasPendingReview(row)) return { label: "Awaiting review", tone: "warning" as const };
+  if (row.missing_primary_carriage_document) return { label: "Primary draft missing", tone: "warning" as const };
   if (row.current_generated_count > 0) return { label: "Generated", tone: "success" as const };
   return { label: "Ready", tone: "neutral" as const };
+}
+
+function reviewState(document: GeneratedFreightDocumentRow | null) {
+  if (!document) return { label: "Not generated", tone: "neutral" as const };
+  const label = document.review_status.replaceAll("_", " ");
+  if (document.review_status === "verified") return { label: "Verified", tone: "success" as const };
+  if (document.review_status === "rejected") return { label: "Rejected", tone: "danger" as const };
+  if (document.review_status === "received" || document.review_status === "under_review") return { label, tone: "warning" as const };
+  return { label, tone: "neutral" as const };
 }
 
 function shortDate(value: string | null | undefined) {
@@ -128,7 +149,6 @@ export function FreightDocumentsWorkspace({
   const [allowInitialSelection, setAllowInitialSelection] = useState(Boolean(initialShipment));
   const selectedReference = (params.get("selected") ?? (allowInitialSelection ? initialShipment : "") ?? "").trim().toUpperCase();
   const selected = useMemo(() => rows.find((row) => row.reference === selectedReference) ?? null, [rows, selectedReference]);
-  const selectedKey = selected?.reference ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "warning" | "danger">("success");
@@ -138,6 +158,7 @@ export function FreightDocumentsWorkspace({
     return rows.filter((row) => {
       if (!rowMatchesFocus(row, focus)) return false;
       if (!terms.length) return true;
+      const generatedContext = row.generated_documents.flatMap((document) => [document.label, document.filename, document.review_status]).join(" ");
       const haystack = [
         row.reference,
         row.booking_reference ?? "",
@@ -147,6 +168,7 @@ export function FreightDocumentsWorkspace({
         row.mode,
         row.carrier_name ?? "",
         row.cargo_description,
+        generatedContext,
       ].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
@@ -160,7 +182,7 @@ export function FreightDocumentsWorkspace({
   }), [rows]);
 
   useEffect(() => {
-    if (!selectedKey) return;
+    if (!selected) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
@@ -174,7 +196,7 @@ export function FreightDocumentsWorkspace({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [selectedKey, update]);
+  }, [selected, update]);
 
   function openEditor(row: FreightDocumentQueueRow) {
     setAllowInitialSelection(false);
@@ -216,27 +238,35 @@ export function FreightDocumentsWorkspace({
   const hasFilters = Boolean(query) || focus !== "all";
 
   return (
-    <OpsPage>
-      <OpsPageHeader
-        title="Freight Documents"
-        description="Controlled carriage and execution documents generated from Digital Job Files."
-        meta={`${summary.eligible} eligible Job File${summary.eligible === 1 ? "" : "s"} · ${summary.missing_primary} missing carriage doc · ${summary.generated_current} current generated · ${summary.review_pending} awaiting review`}
-        actions={
-          <Link href="/admin/documents" className="ops-button" data-variant="primary" data-size="md">
-            <FileText size={16} strokeWidth={1.75} aria-hidden="true"/> Document Vault
-          </Link>
-        }
-      />
+    <OpsPage className="bg-[var(--admin-canvas)]">
+      <div className="min-h-[calc(100dvh-var(--app-toolbar-height))] bg-[var(--admin-canvas)] px-4 pb-8 pt-5 md:px-6">
+        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="m-0 text-2xl font-semibold leading-8 tracking-[-0.02em] text-[var(--admin-ink)]">Freight Documents</h1>
+            <p className="mt-0.5 text-sm leading-5 text-[var(--admin-muted)]">Controlled production queue for KCPL-generated carriage and execution documents.</p>
+            <p className="mt-1.5 text-xs text-[var(--admin-faint)]">{summary.eligible} eligible Job File{summary.eligible === 1 ? "" : "s"} · {summary.missing_primary} missing primary draft · {summary.generated_current} current generated · {summary.review_pending} awaiting review</p>
+          </div>
+          <Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={15} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>
+        </header>
 
-      <div className="px-4 pb-6 md:px-6">
         {message ? <div className="mb-4"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+        {summary.missing_primary > 0 || summary.review_pending > 0 ? (
+          <div className="mb-4">
+            <OpsNotice tone="warning">
+              <span className="flex items-start gap-2">
+                <AlertCircle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
+                <span>{summary.missing_primary > 0 ? <><strong>{summary.missing_primary} Job File{summary.missing_primary === 1 ? "" : "s"} missing the primary KCPL carriage draft.</strong> </> : null}{summary.review_pending > 0 ? <><strong>{summary.review_pending} generated revision{summary.review_pending === 1 ? "" : "s"} awaiting review.</strong></> : null}</span>
+              </span>
+            </OpsNotice>
+          </div>
+        ) : null}
 
         <OpsToolbar className="mb-4">
-          <div className="min-w-[240px] flex-1 basis-[320px] max-w-[380px]">
+          <div className="min-w-[240px] flex-1 basis-[320px] max-w-[420px]">
             <OpsSearch
               value={query}
               onChange={(event) => update({ q: event.target.value || null })}
-              placeholder="Search ref, customer, route…"
+              placeholder="Search shipment, booking, customer, route, carrier or cargo…"
               aria-label="Search freight document jobs"
             />
           </div>
@@ -270,7 +300,7 @@ export function FreightDocumentsWorkspace({
                 }).finally(() => setRefreshing(false));
               }}
             >
-              <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/> {refreshing ? "Refreshing…" : "Refresh"}
+              <RefreshCw size={14} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>{refreshing ? "Refreshing…" : "Refresh"}
             </OpsButton>
             {hasFilters ? <OpsButton size="sm" variant="ghost" onClick={() => { setAllowInitialSelection(false); update({ q: null, view: null, selected: null, shipment: null }); }}>Reset</OpsButton> : null}
             <span className="whitespace-nowrap text-xs text-[var(--admin-muted)]">{filtered.length} of {rows.length}</span>
@@ -280,44 +310,52 @@ export function FreightDocumentsWorkspace({
         <OpsSurface flush>
           {filtered.length ? (
             <OpsTableWrap>
-              <table className="ops-table min-w-[920px]" aria-label="Freight document production queue">
+              <table className="ops-table min-w-[1160px]" aria-label="Freight document production queue">
                 <thead>
                   <tr>
-                    <th>Job File</th>
-                    <th>Customer · route</th>
-                    <th>Mode</th>
-                    <th>Document state</th>
-                    <th>Current revisions</th>
-                    <th>Updated</th>
-                    <th><span className="sr-only">Action</span></th>
+                    <th>Job file</th>
+                    <th>Route</th>
+                    <th>Current document</th>
+                    <th>Filename / revision</th>
+                    <th>Customer-safe</th>
+                    <th>Review</th>
+                    <th>Queue status</th>
+                    <th><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((row) => {
-                    const status = rowStatus(row);
-                    const chosen = selected?.reference === row.reference;
+                    const latest = latestCurrentDocument(row);
+                    const status = queueState(row);
+                    const review = reviewState(latest);
+                    const selectedRow = selected?.reference === row.reference;
+                    const primaryKind = primaryCarriageDocumentKind(row.mode);
+                    const primaryLabel = primaryKind ? generatedFreightDocumentLabels[primaryKind] : "Primary carriage draft";
                     return (
-                      <tr key={row.reference} data-selected={chosen || undefined}>
+                      <tr key={row.reference} data-selected={selectedRow || undefined} tabIndex={0} onClick={() => openEditor(row)} onKeyDown={(event) => { if (event.key === "Enter") openEditor(row); }} style={{ cursor: "pointer" }}>
                         <td>
-                          <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`}>
-                            <OpsMono className="text-xs font-medium text-[var(--admin-info)]">{row.reference}</OpsMono>
-                          </Link>
-                          {row.booking_reference ? <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">Booking {row.booking_reference}</span> : null}
+                          <div className="font-medium"><OpsMono className="text-xs text-[var(--admin-info)]">{row.reference}</OpsMono></div>
+                          <div className="mt-0.5 text-xs text-[var(--admin-muted)]">{row.customer_name || "Customer not linked"}{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</div>
                         </td>
                         <td>
-                          <strong className="block text-sm font-medium text-[var(--admin-ink)]">{row.customer_name || "Customer not linked"}</strong>
-                          <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin} → {row.destination}</span>
+                          <div className="text-sm text-[var(--admin-ink)]">{row.origin} → {row.destination}</div>
+                          <div className="mt-0.5 text-xs text-[var(--admin-muted)]">{row.mode || "Mode not set"}{row.carrier_name ? ` · ${row.carrier_name}` : ""}</div>
                         </td>
-                        <td><span className="text-sm text-[var(--admin-muted)]">{row.mode || "—"}</span></td>
                         <td>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
-                            {row.current_generated_count > 0 && row.missing_primary_carriage_document ? <OpsBadge tone="neutral">{row.current_generated_count} generated</OpsBadge> : null}
+                          {latest ? <div><span className="text-sm font-medium">{latest.label}</span>{row.missing_primary_carriage_document ? <div className="mt-0.5 text-xs text-[var(--admin-warning)]">{primaryLabel} still required</div> : null}</div> : <span className="text-sm text-[var(--admin-muted)]">Not generated</span>}
+                        </td>
+                        <td>
+                          {latest ? <div><span className="block max-w-[240px] truncate text-sm text-[var(--admin-ink)]">{latest.filename}</span><span className="mt-0.5 block text-xs text-[var(--admin-muted)]">R{latest.revision} · {shortDate(latest.generated_at)}{row.current_generated_count > 1 ? ` · ${row.current_generated_count} current drafts` : ""}</span></div> : <span className="text-sm text-[var(--admin-muted)]">—</span>}
+                        </td>
+                        <td>{latest?.customer_safe ? <span className="inline-flex items-center gap-1.5 text-xs text-[var(--admin-success)]"><CheckCircle2 size={14} aria-hidden="true"/>Customer-safe</span> : <span className="text-xs text-[var(--admin-muted)]">Internal</span>}</td>
+                        <td><OpsBadge tone={review.tone}>{review.label}</OpsBadge></td>
+                        <td><OpsBadge tone={status.tone}>{status.label}</OpsBadge></td>
+                        <td className="text-right">
+                          <div className="flex justify-end gap-1.5">
+                            {latest ? <OpsButton size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); void openDocument(row.reference, latest.document_id); }}><ExternalLink size={13} aria-hidden="true"/>PDF</OpsButton> : null}
+                            <OpsButton size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); openEditor(row); }}>{row.missing_primary_carriage_document ? "Produce primary" : hasPendingReview(row) ? "Continue" : "Manage"}</OpsButton>
                           </div>
                         </td>
-                        <td><span className="text-sm tabular-nums text-[var(--admin-ink)]">{row.current_generated_count}</span></td>
-                        <td><span className="text-sm text-[var(--admin-muted)]">{shortDate(row.updated_at)}</span></td>
-                        <td className="text-right"><OpsButton size="sm" variant="secondary" onClick={() => openEditor(row)}>Produce</OpsButton></td>
                       </tr>
                     );
                   })}
@@ -368,18 +406,15 @@ function FreightDocumentPanel({
 }) {
   const [form, setForm] = useState<FormState>(() => formFor(row));
   const [busy, setBusy] = useState(false);
-  const status = rowStatus(row);
+  const latest = latestCurrentDocument(row);
+  const status = queueState(row);
 
   function patch<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
   function changeKind(kind: GeneratedFreightDocumentKind) {
-    setForm((current) => ({
-      ...current,
-      kind,
-      houseReference: generatedReference(kind, row.reference),
-    }));
+    setForm((current) => ({ ...current, kind, houseReference: generatedReference(kind, row.reference) }));
   }
 
   async function generate() {
@@ -414,9 +449,7 @@ function FreightDocumentPanel({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
-            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close document production panel">
-              <X size={16} strokeWidth={1.75} aria-hidden="true"/>
-            </button>
+            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close document production panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
           </div>
         </header>
 
@@ -425,19 +458,38 @@ function FreightDocumentPanel({
             <OpsNotice>
               <span className="flex items-start gap-2"><ShieldCheck size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>KCPL-generated PDFs are controlled internal/house drafts. Carrier-issued master originals remain authoritative.</span>
             </OpsNotice>
+            {row.missing_primary_carriage_document && row.current_generated_count > 0 ? <div className="mt-3"><OpsNotice tone="warning"><span className="flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true"/>Other KCPL drafts exist for this Job File, but the mode-specific primary carriage draft is still missing.</span></OpsNotice></div> : null}
+
+            <div className="mt-3 grid gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <div className="text-xs font-medium text-[var(--admin-muted)]">Current controlled draft</div>
+                  <div className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{latest ? latest.label : "No generated revision yet"}</div>
+                  {latest ? <div className="mt-0.5 text-xs text-[var(--admin-muted)]">R{latest.revision} · {latest.filename} · {reviewState(latest).label}</div> : null}
+                </div>
+                {latest ? <OpsButton size="sm" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>Open PDF</OpsButton> : null}
+              </div>
+            </div>
+
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
-              <span className="text-xs text-[var(--admin-muted)]">{row.current_generated_count} current revision{row.current_generated_count === 1 ? "" : "s"}</span>
+              <Link href="/admin/documents" className="ops-button" data-variant="ghost" data-size="sm">Document Vault</Link>
+              <span className="text-xs text-[var(--admin-muted)]">{row.current_generated_count} current draft{row.current_generated_count === 1 ? "" : "s"}</span>
             </div>
           </div>
 
+          <PanelSection title="Source context" description="Operational context inherited from the Digital Job File.">
+            <div className="grid gap-3 text-sm md:grid-cols-2">
+              <Context label="Carrier" value={row.carrier_name || "Not assigned"}/>
+              <Context label="Booking reference" value={row.booking_reference || "Not recorded"}/>
+              <Context label="Cargo" value={row.cargo_description || "Not recorded"}/>
+              <Context label="Pieces / weight" value={`${row.pieces || 0} piece${row.pieces === 1 ? "" : "s"} · ${row.weight_kg || 0} kg`}/>
+            </div>
+          </PanelSection>
+
           <PanelSection title="Document" description="Choose the controlled document type and internal reference.">
             <div className="grid gap-3 md:grid-cols-2">
-              <OpsField label="Document type">
-                <select value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>
-                  {generatedFreightDocumentKinds.filter((kind) => row.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}
-                </select>
-              </OpsField>
+              <OpsField label="Document type"><select value={form.kind} onChange={(event) => changeKind(event.target.value as GeneratedFreightDocumentKind)}>{generatedFreightDocumentKinds.filter((kind) => row.recommended_kinds.includes(kind)).map((kind) => <option key={kind} value={kind}>{generatedFreightDocumentLabels[kind]}</option>)}</select></OpsField>
               <OpsField label="House / internal reference"><input value={form.houseReference} onChange={(event) => patch("houseReference", event.target.value)}/></OpsField>
             </div>
           </PanelSection>
@@ -465,41 +517,15 @@ function FreightDocumentPanel({
           </PanelSection>
 
           <PanelSection title="Revision history" description="Current and superseded controlled revisions for this Job File.">
-            {row.generated_documents.length ? (
-              <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">
-                {row.generated_documents.map((document) => (
-                  <div key={document.document_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <strong className="text-sm font-medium">R{document.revision} · {document.label}</strong>
-                        <OpsBadge tone={document.superseded ? "neutral" : document.review_status === "verified" ? "success" : "warning"}>{document.superseded ? "Superseded" : document.review_status.replaceAll("_", " ")}</OpsBadge>
-                      </div>
-                      <p className="mt-1 truncate text-xs text-[var(--admin-muted)]">{document.filename} · SHA {document.sha256.slice(0, 12)}…</p>
-                    </div>
-                    <OpsButton size="sm" variant="ghost" onClick={() => onOpenDocument(row.reference, document.document_id)}>Open PDF</OpsButton>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
-                <FileText size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/> No generated revisions yet.
-              </div>
-            )}
+            {row.generated_documents.length ? <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">{row.generated_documents.map((document) => <div key={document.document_id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm font-medium">R{document.revision} · {document.label}</strong><OpsBadge tone={document.superseded ? "neutral" : reviewState(document).tone}>{document.superseded ? "Superseded" : reviewState(document).label}</OpsBadge>{document.customer_safe ? <OpsBadge tone="info">Customer-safe</OpsBadge> : null}</div><p className="mt-1 truncate text-xs text-[var(--admin-muted)]">{document.filename} · SHA {document.sha256.slice(0, 12)}…</p></div><OpsButton size="sm" variant="ghost" onClick={() => void onOpenDocument(row.reference, document.document_id)}>Open PDF</OpsButton></div>)}</div> : <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]"><FileText size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>No generated revisions yet.</div>}
           </PanelSection>
         </div>
 
         <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
-          <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]">
-            <input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/>
-            <span>Mark this draft customer-safe after staff checks the content.</span>
-          </label>
+          <label className="flex items-start gap-2 text-sm text-[var(--admin-muted)]"><input type="checkbox" checked={form.customerSafe} onChange={(event) => patch("customerSafe", event.target.checked)}/><span>Mark this draft customer-safe after staff checks the content.</span></label>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">
-              {row.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage document present</>}
-            </span>
-            <OpsButton variant="primary" disabled={busy} onClick={generate}>
-              <FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/> {busy ? "Generating…" : "Generate PDF"}
-            </OpsButton>
+            <span className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">{row.missing_primary_carriage_document ? <><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage draft missing</> : <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Primary carriage draft present</>}</span>
+            <OpsButton variant="primary" disabled={busy} onClick={generate}><FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Generating…" : "Generate PDF"}</OpsButton>
           </div>
         </footer>
       </aside>
@@ -508,11 +534,9 @@ function FreightDocumentPanel({
 }
 
 function PanelSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  return (
-    <section className="border-b border-[var(--admin-line)] px-5 py-5 last:border-b-0">
-      <h3 className="text-base font-semibold">{title}</h3>
-      <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{description}</p>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
+  return <section className="border-b border-[var(--admin-line)] px-5 py-5 last:border-b-0"><h3 className="text-base font-semibold">{title}</h3><p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{description}</p><div className="mt-4">{children}</div></section>;
+}
+
+function Context({ label, value }: { label: string; value: string }) {
+  return <div><div className="text-xs font-medium text-[var(--admin-muted)]">{label}</div><div className="mt-1 text-sm text-[var(--admin-ink)]">{value}</div></div>;
 }
