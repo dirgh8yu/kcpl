@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Bell, CheckCheck, FileText, Link2, RefreshCw, Settings, UserRound } from "lucide-react";
+import { AlertTriangle, Bell, CheckCheck, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
 import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
@@ -28,10 +28,9 @@ function chipStyle(active: boolean): React.CSSProperties {
 
 function TypeIcon({ category, severity }: TypeIconProps) {
   const color = severity === "critical" ? "var(--admin-danger)" : severity === "warning" ? "var(--admin-warning)" : "var(--admin-info)";
-  if (category === "document") return <FileText size={14} style={{ color }}/>;
-  if (category === "assignment") return <UserRound size={14} style={{ color }}/>;
-  if (category === "system") return <Settings size={14} style={{ color: "var(--admin-muted)" }}/>;
-  if (category === "integration") return <Link2 size={14} style={{ color }}/>;
+  if (category === "documents") return <FileText size={14} style={{ color }}/>;
+  if (category === "assignments") return <UserRound size={14} style={{ color }}/>;
+  if (category === "quotes") return <Link2 size={14} style={{ color }}/>;
   return <AlertTriangle size={14} style={{ color }}/>;
 }
 
@@ -109,7 +108,7 @@ export function NotificationsWorkspace() {
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Notifications</h1>
-          <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Activity log — {unreadCount} unread of {notifications.length} total</p>
+          <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Activity log · {unreadCount} unread of {notifications.length} total</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <OpsButton variant="secondary" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={13} className={loading ? "app-refreshing" : ""}/>Refresh</OpsButton>
