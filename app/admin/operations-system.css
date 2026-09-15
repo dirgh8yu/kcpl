@@ -762,9 +762,7 @@
 .kcpl-admin-content .visibility-stat-strip .ops-stat-top {
   align-items: flex-start;
 }
-.kcpl-admin-content .visibility-stat-strip .ops-stat-label {
-  gap: 6px;
-}
+.kcpl-admin-content .visibility-stat-strip .ops-stat-label { gap: 0; }
 .kcpl-admin-content .visibility-register {
   overflow: hidden;
 }
