@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
@@ -23,15 +22,16 @@ export default async function VisibilityPage({ searchParams }: { searchParams: P
   };
   if (!staff.permissions.canManageJobFile) return <OperationsShell {...shell}><Gate title="Visibility access restricted" detail="Your role does not include Digital Job File access." embedded/></OperationsShell>;
   let result;
-  try { result = await listTrackingVisibility(staff); }
-  catch (error) {
+  try {
+    result = await listTrackingVisibility(staff);
+  } catch (error) {
     console.error("Failed to load KCPL tracking visibility", error);
     return <OperationsShell {...shell}><Gate title="Visibility temporarily unavailable" detail="KCPL tracking data could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
   }
   if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Visibility backend unavailable" detail="Tracking storage is not available for this deployment." embedded/></OperationsShell>;
   const { shipment } = await searchParams;
-  const initialQuery = shipment?.trim().toUpperCase() ?? "";
-  return <OperationsShell {...shell}><div className="ops-content-wide pt-4"><div className="flex flex-wrap justify-end gap-2"><Link href="/admin/edi" className="ops-button" data-variant="secondary" data-size="sm">EDI 214 Gateway →</Link><Link href="/admin/carrier-integrations" className="ops-button" data-variant="secondary" data-size="sm">Carrier integrations →</Link></div></div><TrackingVisibilityWorkspace initialRows={result.rows} initialSummary={result.summary} canSweep={staff.permissions.role === "management"} initialQuery={initialQuery}/></OperationsShell>;
+  const initialShipment = shipment?.trim().toUpperCase() ?? "";
+  return <OperationsShell {...shell}><TrackingVisibilityWorkspace initialRows={result.rows} initialSummary={result.summary} canSweep={staff.permissions.role === "management"} initialShipment={initialShipment}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
