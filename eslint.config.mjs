@@ -40,6 +40,7 @@ const eslintConfig = defineConfig([
     files: ["app/admin/tremor/**/*.tsx"],
     rules: {
       "react/no-unknown-property": ["error", { ignore: ["tremor-id"] }],
+      "react/prop-types": "off",
     },
   },
   {
