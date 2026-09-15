@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   quality:
@@ -38,27 +37,7 @@ jobs:
         run: npm run check:ui
 
       - name: Lint
-        id: lint
-        shell: bash
-        run: |
-          set +e
-          npm run lint 2>&1 | tee lint-output.txt
-          status=${PIPESTATUS[0]}
-          exit "$status"
-
-      - name: Report lint failure
-        if: failure() && steps.lint.outcome == 'failure' && github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          {
-            echo '<!-- kcpl-lint-diagnostic -->'
-            echo '```text'
-            tail -n 120 lint-output.txt
-            echo '```'
-          } > lint-comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file lint-comment.md
+        run: npm run lint
 
       - name: Type check
         run: npx tsc --noEmit
