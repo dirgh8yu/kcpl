@@ -882,6 +882,61 @@
   }
 }
 
+/* Delivery & POD: keep recovery work visible while the evidence inspector stays usable. */
+.kcpl-admin-content .delivery-control-page {
+  min-height: calc(100dvh - var(--app-toolbar-height));
+  padding: var(--app-page-gap);
+}
+.kcpl-admin-content .delivery-control-stat-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+.kcpl-admin-content .delivery-control-stat-strip .ops-stat {
+  min-height: 88px;
+}
+.kcpl-admin-content .delivery-control-workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.kcpl-admin-content .delivery-control-queue {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.kcpl-admin-content .delivery-control-workspace > aside {
+  position: sticky;
+  top: calc(var(--app-toolbar-height) + 16px);
+  width: 420px;
+  max-height: calc(100dvh - var(--app-toolbar-height) - 32px);
+  overflow: auto;
+}
+.kcpl-admin-content .delivery-control-queue .ops-table tbody tr:hover {
+  background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .delivery-control-queue .ops-table tbody tr[data-selected="true"] {
+  box-shadow: inset 3px 0 0 var(--admin-crimson);
+}
+@media (max-width: 1040px) {
+  .kcpl-admin-content .delivery-control-workspace {
+    display: block;
+  }
+  .kcpl-admin-content .delivery-control-workspace > aside {
+    position: relative;
+    top: auto;
+    width: 100%;
+    max-height: none;
+    margin-top: 16px;
+  }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .delivery-control-page {
+    padding: 16px;
+  }
+  .kcpl-admin-content .delivery-control-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Document Vault: make evidence review the primary queue, not a metadata wall. */
 .kcpl-admin-content .document-vault-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
