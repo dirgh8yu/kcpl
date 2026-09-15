@@ -2,20 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Info, RefreshCw, Search } from "lucide-react";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity, type AutomationAlertStatus } from "./alert-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface, OpsTableWrap, OpsToolbar } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 
 type StatusFilter = "active" | "all" | AutomationAlertStatus;
 type NoticeTone = "success" | "danger" | "warning";
 type EvaluationResult = { active?: number; created?: number; updated?: number; resolved?: number; payable_alerts?: number; credit_holds?: number; credit_holds_authorized?: boolean };
-
-function dateTime(value: string | null) {
-  if (!value) return "Not recorded";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${new Intl.DateTimeFormat("en-AU", { timeZone: "Asia/Kathmandu", dateStyle: "medium", timeStyle: "short" }).format(date)} NPT`;
-}
 
 function severityTone(value: AutomationAlertSeverity): "info" | "warning" | "danger" {
   return value === "critical" ? "danger" : value === "warning" ? "warning" : "info";
@@ -23,6 +16,38 @@ function severityTone(value: AutomationAlertSeverity): "info" | "warning" | "dan
 
 function statusTone(value: AutomationAlertStatus): "info" | "success" | "neutral" {
   return value === "open" ? "info" : value === "acknowledged" ? "success" : "neutral";
+}
+
+function chipStyle(active: boolean): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    height: "var(--app-control-height)",
+    padding: "0 12px",
+    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
+    borderRadius: "var(--app-radius)",
+    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
+    color: active ? "white" : "var(--admin-muted)",
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: "pointer",
+  };
+}
+
+function ageLabel(value: string) {
+  const stamp = Date.parse(value);
+  if (!Number.isFinite(stamp)) return value;
+  const minutes = Math.max(0, Math.floor((Date.now() - stamp) / 60000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function SeverityIcon({ severity }: { severity: AutomationAlertSeverity }) {
+  if (severity === "critical") return <AlertTriangle size={15} style={{ color: "var(--admin-danger)", flexShrink: 0 }}/>;
+  if (severity === "warning") return <AlertTriangle size={15} style={{ color: "var(--admin-warning)", flexShrink: 0 }}/>;
+  return <Info size={15} style={{ color: "var(--admin-info)", flexShrink: 0 }}/>;
 }
 
 export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: AutomationAlert[]; roleLabel: string }) {
@@ -37,40 +62,22 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
 
   const counts = useMemo(() => ({
     active: alerts.filter((alert) => alert.status !== "resolved").length,
-    open: alerts.filter((alert) => alert.status === "open").length,
     critical: alerts.filter((alert) => alert.severity === "critical" && alert.status !== "resolved").length,
     warning: alerts.filter((alert) => alert.severity === "warning" && alert.status !== "resolved").length,
-    acknowledged: alerts.filter((alert) => alert.status === "acknowledged").length,
     resolved: alerts.filter((alert) => alert.status === "resolved").length,
   }), [alerts]);
 
   const visible = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const severityOrder = { critical: 3, warning: 2, info: 1 } as const;
-    const stateOrder = { open: 2, acknowledged: 1, resolved: 0 } as const;
     return alerts.filter((alert) => {
       if (severity !== "all" && alert.severity !== severity) return false;
       if (status === "active" && alert.status === "resolved") return false;
       if (status !== "active" && status !== "all" && alert.status !== status) return false;
       if (!terms.length) return true;
-      const haystack = [
-        alert.title,
-        alert.detail,
-        alert.entity_id,
-        alert.parent_reference ?? "",
-        alert.branch ?? "",
-        alert.assigned_to_name ?? "",
-        alert.assigned_to_email ?? "",
-        alert.acknowledged_by_name ?? "",
-        alert.acknowledged_by_email ?? "",
-        alert.resolved_by_name ?? "",
-        alert.resolved_by_email ?? "",
-        alert.status,
-        alert.severity,
-        automationAlertTypeLabels[alert.type],
-      ].join(" ").toLowerCase();
+      const haystack = [alert.title, alert.detail, alert.entity_id, alert.parent_reference ?? "", alert.branch ?? "", alert.assigned_to_name ?? "", alert.assigned_to_email ?? "", automationAlertTypeLabels[alert.type]].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
-    }).sort((a, b) => Number(b.status !== "resolved") - Number(a.status !== "resolved") || severityOrder[b.severity] - severityOrder[a.severity] || stateOrder[b.status] - stateOrder[a.status] || b.last_triggered_at.localeCompare(a.last_triggered_at));
+    }).sort((a, b) => Number(b.status !== "resolved") - Number(a.status !== "resolved") || severityOrder[b.severity] - severityOrder[a.severity] || b.last_triggered_at.localeCompare(a.last_triggered_at));
   }, [alerts, query, severity, status]);
 
   async function reload() {
@@ -84,24 +91,16 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     if (actionName === "evaluate") setEvaluating(true); else setBusyId(alertId ?? null);
     setNotice("");
     try {
-      const response = await fetch("/api/admin/alerts", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: actionName, alertId }),
-      });
+      const response = await fetch("/api/admin/alerts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: actionName, alertId }) });
       const data = await response.json() as { ok?: boolean; error?: string; result?: EvaluationResult };
       if (!response.ok) throw new Error(data.error || "Alert action failed.");
       await reload();
       setNoticeTone("success");
       if (actionName === "evaluate") {
         const activeConditions = (data.result?.active ?? 0) + (data.result?.payable_alerts ?? 0);
-        const holds = data.result?.credit_holds ?? 0;
-        setNotice(`Checks complete. ${activeConditions} active automated condition${activeConditions === 1 ? "" : "s"}${holds ? `; ${holds} authorised credit hold${holds === 1 ? "" : "s"} applied` : ""}.`);
-      } else if (actionName === "acknowledge") {
-        setNotice("Alert acknowledged. This records review, not ownership; the condition remains active until it is resolved.");
-      } else {
-        setNotice("Alert marked resolved. If the underlying condition still exists, the next automation check will reopen it.");
-      }
+        setNotice(`Checks complete. ${activeConditions} active automated condition${activeConditions === 1 ? "" : "s"}.`);
+      } else if (actionName === "acknowledge") setNotice("Alert acknowledged. The condition remains active until it is resolved.");
+      else setNotice("Alert resolved. If the underlying condition persists, automation can reopen it.");
     } catch (error) {
       setNoticeTone("danger");
       setNotice(error instanceof Error ? error.message : "Alert action failed.");
@@ -111,73 +110,65 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     }
   }
 
-  function reset() {
-    setQuery("");
-    setSeverity("all");
-    setStatus("active");
-  }
-
-  const noFilters = !query.trim() && severity === "all";
-  const emptyState = counts.active === 0 && status === "active" && noFilters
-    ? <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={18}/>} title="No active alerts" description="The operational queue is clear. Resolved history remains available without cluttering active work." action={counts.resolved ? <OpsButton variant="secondary" size="sm" onClick={() => setStatus("resolved")}>View resolved history</OpsButton> : <OpsButton variant="secondary" size="sm" onClick={() => action("evaluate")} disabled={evaluating}>{evaluating ? "Checking…" : "Check now"}</OpsButton>}/>
-    : <OpsEmptyState kind="search" icon={<History size={18}/>} title={status === "resolved" ? "No resolved history yet" : "No alerts match this view"} description={status === "resolved" ? "Resolved and automatically cleared alerts will appear here as the system is used." : "Nothing matches the current search and filters."} action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset view</OpsButton>}/>;
+  function reset() { setQuery(""); setSeverity("all"); setStatus("active"); }
 
   return <OpsPage>
-    <OpsPageHeader
-      eyebrow="Operations · Attention desk"
-      title="Tasks & Alerts"
-      description="Triage overdue work, shipment risk, Customs blockers and finance escalation. Acknowledge records review; resolve only after the underlying condition is handled."
-      meta={<><span>{roleLabel}</span><span>Nepal time</span><span>{visible.length} shown</span></>}
-      actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary">Overview</Link><OpsButton variant="primary" onClick={() => action("evaluate")} disabled={evaluating}><RefreshCw size={14} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
-    />
-
-    <OpsStatStrip>
-      <OpsStat label="Active" value={counts.active} active={status === "active" && severity === "all"} onClick={() => { setStatus("active"); setSeverity("all"); }}/>
-      <OpsStat label="Critical" value={counts.critical} tone={counts.critical ? "danger" : "neutral"} active={status === "active" && severity === "critical"} onClick={() => { setStatus("active"); setSeverity(severity === "critical" ? "all" : "critical"); }}/>
-      <OpsStat label="Warnings" value={counts.warning} tone={counts.warning ? "warning" : "neutral"} active={status === "active" && severity === "warning"} onClick={() => { setStatus("active"); setSeverity(severity === "warning" ? "all" : "warning"); }}/>
-      <OpsStat label="Acknowledged" value={counts.acknowledged} active={status === "acknowledged"} onClick={() => { setStatus(status === "acknowledged" ? "active" : "acknowledged"); setSeverity("all"); }}/>
-      <OpsStat label="Resolved" value={counts.resolved} active={status === "resolved"} onClick={() => { setStatus(status === "resolved" ? "active" : "resolved"); setSeverity("all"); }}/>
-    </OpsStatStrip>
-
-    <div className="ops-content-wide grid gap-4">
-      {notice ? <OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
-
-      <OpsSurface title="Attention queue" description="Highest-severity active conditions remain first. Search and filters never change the underlying alert state." flush>
-        <div className="px-4 sm:px-5">
-          <OpsToolbar>
-            <OpsSearch className="flex-1" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, owner, branch or exception"/>
-            <select className="ops-select" value={severity} onChange={(event) => setSeverity(event.target.value as "all" | AutomationAlertSeverity)} aria-label="Filter by severity">
-              <option value="all">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="info">Info</option>
-            </select>
-            <select className="ops-select" value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} aria-label="Filter by alert state">
-              <option value="active">Active alerts</option><option value="open">Open</option><option value="acknowledged">Acknowledged</option><option value="resolved">Resolved</option><option value="all">All history</option>
-            </select>
-            <OpsButton variant="secondary" onClick={reset}>Reset</OpsButton>
-          </OpsToolbar>
+    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
+      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Tasks & Alerts</h1>
+          <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Operational exceptions — ordered by severity · {counts.active} active · {roleLabel}</p>
         </div>
+        <div style={{ display: "flex", gap: 8 }}><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></div>
+      </header>
 
-        {visible.length ? <OpsTableWrap>
-          <table className="ops-table">
-            <thead><tr><th>Severity</th><th>Alert</th><th>State</th><th>Ownership</th><th>Last triggered</th><th>Actions</th></tr></thead>
-            <tbody>{visible.map((alert) => {
-              const busy = busyId === alert.id;
-              const resolved = alert.status === "resolved";
-              return <tr key={alert.id} data-selected={!resolved && alert.severity === "critical" ? "true" : undefined}>
-                <td><div className="flex flex-wrap gap-1"><OpsBadge tone={severityTone(alert.severity)} dot>{alert.severity}</OpsBadge>{alert.escalated_at ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}</div></td>
-                <td><div className="max-w-xl"><strong className="block">{alert.title}</strong><span className="mt-1 block text-sm text-[var(--admin-muted)]">{alert.detail}</span><span className="mt-1 block text-xs text-[var(--admin-faint)]">{automationAlertTypeLabels[alert.type]} · <OpsMono>{alert.entity_id}</OpsMono>{alert.parent_reference ? <> · Parent <OpsMono>{alert.parent_reference}</OpsMono></> : null}</span></div></td>
-                <td><OpsBadge tone={statusTone(alert.status)}>{alert.status}</OpsBadge></td>
-                <td><div className="text-sm"><span className="block">{alert.assigned_to_name || alert.assigned_to_email || "No assigned owner"}</span><span className="block text-xs text-[var(--admin-faint)]">{alert.branch || "Branch not attached"}</span></div></td>
-                <td><div className="text-xs text-[var(--admin-muted)]"><span className="block">{dateTime(alert.last_triggered_at)}</span>{alert.acknowledged_at ? <span className="block">Acknowledged {dateTime(alert.acknowledged_at)}</span> : null}{alert.resolved_at ? <span className="block">Resolved {dateTime(alert.resolved_at)}</span> : null}</div></td>
-                <td><div className="flex flex-wrap justify-end gap-2"><Link href={alert.action_path} className="ops-button" data-variant={resolved ? "secondary" : "primary"} data-size="sm">Open record</Link>{alert.status === "open" ? <OpsButton variant="secondary" size="sm" disabled={busy} onClick={() => action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}{!resolved ? <OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => action("resolve", alert.id)}><CheckCircle2 size={13}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}</div></td>
-              </tr>;
-            })}</tbody>
-          </table>
-        </OpsTableWrap> : <div className="p-4 sm:p-5">{emptyState}</div>}
-      </OpsSurface>
+      {counts.critical > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{counts.critical} critical exception{counts.critical === 1 ? "" : "s"} require immediate review.</strong></span></OpsNotice></div> : null}
+      {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
-      <OpsSurface title={<span className="inline-flex items-center gap-2"><ShieldAlert size={16}/>Control rule</span>} priority="info">
-        <p className="text-sm text-[var(--admin-muted)]">Acknowledging an alert records review but does not transfer ownership. Resolving closes the current alert; if the condition persists, the next automation evaluation can reopen it.</p>
-      </OpsSurface>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", width: 280, border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search alert, shipment, owner…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Severity filter">
+          <button type="button" style={chipStyle(severity === "all")} onClick={() => setSeverity("all")}>All</button>
+          <button type="button" style={chipStyle(severity === "critical")} onClick={() => setSeverity("critical")}>Critical</button>
+          <button type="button" style={chipStyle(severity === "warning")} onClick={() => setSeverity("warning")}>Warning</button>
+          <button type="button" style={chipStyle(severity === "info")} onClick={() => setSeverity("info")}>Info</button>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Status filter">
+          <button type="button" style={chipStyle(status === "active")} onClick={() => setStatus("active")}>Active</button>
+          <button type="button" style={chipStyle(status === "open")} onClick={() => setStatus("open")}>Open</button>
+          <button type="button" style={chipStyle(status === "acknowledged")} onClick={() => setStatus("acknowledged")}>Acknowledged</button>
+          <button type="button" style={chipStyle(status === "resolved")} onClick={() => setStatus("resolved")}>Resolved</button>
+        </div>
+        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{visible.length} showing</span>
+      </div>
+
+      <section style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
+        {visible.length ? visible.map((alert, index) => {
+          const busy = busyId === alert.id;
+          const resolved = alert.status === "resolved";
+          return <div key={alert.id} style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "14px 16px", borderBottom: index < visible.length - 1 ? "1px solid var(--admin-line)" : "none", background: !resolved && alert.severity === "critical" ? "var(--admin-danger-bg)" : "transparent", opacity: resolved ? .7 : 1 }}>
+            <div style={{ marginTop: 1 }}><SeverityIcon severity={alert.severity}/></div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                <OpsBadge tone={severityTone(alert.severity)}>{alert.severity}</OpsBadge>
+                <OpsBadge>{automationAlertTypeLabels[alert.type]}</OpsBadge>
+                <OpsBadge tone={statusTone(alert.status)}>{alert.status}</OpsBadge>
+                <OpsMono>{alert.entity_id}</OpsMono>
+                {alert.assigned_to_name || alert.assigned_to_email ? <span style={{ fontSize: 12, color: "var(--admin-muted)" }}>· {alert.assigned_to_name || alert.assigned_to_email}</span> : null}
+                <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--admin-muted)" }}><Clock3 size={11}/>{ageLabel(alert.last_triggered_at)}</span>
+              </div>
+              <div style={{ fontSize: 13.5, color: "var(--admin-ink)" }}>{alert.title}</div>
+              <div style={{ marginTop: 4, fontSize: 12.5, color: "var(--admin-muted)" }}>{alert.detail}</div>
+              <div style={{ marginTop: 5, fontSize: 11.5, color: "var(--admin-faint)" }}>{alert.branch || "No branch"}{alert.parent_reference ? ` · Parent ${alert.parent_reference}` : ""}</div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+              <Link href={alert.action_path} className="ops-button" data-variant="secondary" data-size="sm">Open record</Link>
+              {alert.status === "open" ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => void action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}
+              {!resolved ? <OpsButton size="sm" variant="ghost" disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}
+            </div>
+          </div>;
+        }) : <OpsEmptyState kind={counts.active === 0 && status === "active" ? "healthy" : "search"} icon={<CheckCircle2 size={18}/>} title={counts.active === 0 && status === "active" ? "No active alerts" : "No alerts match this view"} description={counts.active === 0 && status === "active" ? "The operational exception queue is clear." : "Change the search or filters to widen the view."} action={<OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton>}/>} 
+      </section>
     </div>
   </OpsPage>;
 }
