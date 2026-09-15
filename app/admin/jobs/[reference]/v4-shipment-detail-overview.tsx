@@ -142,9 +142,13 @@ export function V4ShipmentDetailOverview({
 
   const navigation = [
     ["Summary", "#shipment-overview"],
-    ["Work & file", "#shipment-work"],
+    ["Movement", "#shipment-movement"],
+    ["Tasks", "#shipment-tasks"],
+    ["Customs", "#shipment-customs"],
+    ["Documents", "#shipment-documents"],
     ["Exceptions", "#shipment-exceptions"],
     ["Delivery", "#shipment-delivery"],
+    ["Commercial", "#shipment-commercial"],
     ["Activity", "#shipment-activity"],
   ] as const;
 
@@ -160,12 +164,32 @@ export function V4ShipmentDetailOverview({
             </div>
             <p className="shipment-detail-subline">{job.customer_name || "Customer not linked"} · {job.carrier || "Carrier not set"} · {job.mode || "Mode not set"}{job.carrier_reference ? ` · ${job.carrier_reference}` : ""}</p>
             <p className="shipment-detail-meta">ETA {shortDate(job.eta)} · Owner {owner} · {job.primary_branch}</p>
+            <div className="shipment-header-facts" aria-label="Shipment summary facts">
+              <span><strong>{job.current_location || "Location pending"}</strong><small>Current location</small></span>
+              <span><strong>{job.priority}</strong><small>Priority</small></span>
+              <span><strong>{readiness.open_tasks} open</strong><small>Operational work</small></span>
+            </div>
           </div>
           <div className="shipment-detail-actions">
             <Link className="ops-button" data-variant="secondary" data-size="sm" href={`/admin/delivery?shipment=${encodeURIComponent(job.reference)}`}>Delivery & POD</Link>
             <Link className="ops-button" data-variant="primary" data-size="sm" data-primary href={`/admin/notifications?shipment=${encodeURIComponent(job.reference)}`}>Customer update</Link>
           </div>
         </header>
+      </div>
+    </section>
+
+    <section className="shipment-record-context" aria-label="Shipment route context">
+      <div className="shipment-detail-inner">
+        <div className="shipment-route-line">
+          <span className="shipment-route-node"><small>Origin</small><strong>{job.origin || "Not set"}</strong></span>
+          <span className="shipment-route-connector" aria-hidden="true"/>
+          <span className="shipment-route-node"><small>Destination</small><strong>{job.destination || "Not set"}</strong></span>
+        </div>
+        <div className="shipment-context-facts">
+          <span><small>Carrier</small><strong>{job.carrier || "Not assigned"}</strong></span>
+          <span><small>Mode</small><strong>{job.mode || "Not set"}</strong></span>
+          <span><small>Reference</small><strong className="shipment-context-mono">{job.carrier_reference || job.internal_reference || "Not set"}</strong></span>
+        </div>
       </div>
     </section>
 

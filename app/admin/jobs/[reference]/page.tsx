@@ -61,6 +61,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
       <div id="shipment-work" className="shipment-detail-anchor shipment-job-file-embedded">
         <JobFileWorkspace
           initialJob={result.job}
+          returnTo={returnTo}
           role={staff.permissions.role}
           canManageBranches={staff.permissions.role === "management"}
           currentUserName={access.user.displayName}

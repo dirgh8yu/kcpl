@@ -49,6 +49,7 @@ export function OpsPageHeader({
 }
 
 export function OpsSurface({
+  id,
   title,
   eyebrow,
   description,
@@ -59,6 +60,7 @@ export function OpsSurface({
   flush = false,
   priority = "normal",
 }: {
+  id?: string;
   title?: ReactNode;
   eyebrow?: string;
   description?: ReactNode;
@@ -70,7 +72,7 @@ export function OpsSurface({
   priority?: "normal" | "info" | "success" | "warning" | "danger";
 }) {
   return (
-    <section className={cx("ops-surface", flush && "ops-surface-flush", className)} data-priority={priority}>
+    <section id={id} className={cx("ops-surface", flush && "ops-surface-flush", className)} data-priority={priority}>
       {title || eyebrow || description || action ? (
         <div className="ops-surface-header">
           <div className="min-w-0">
