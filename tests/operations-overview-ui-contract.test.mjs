@@ -4,6 +4,7 @@ import test from "node:test";
 
 const layoutPath = new URL("../app/layout.tsx", import.meta.url);
 const overviewPath = new URL("../app/admin/command-centre/v4-operations-overview.tsx", import.meta.url);
+const operationsUiPath = new URL("../app/admin/operations-ui.tsx", import.meta.url);
 const systemCssPath = new URL("../app/admin/operations-system.css", import.meta.url);
 const typographyPath = new URL("../app/admin/admin-typography.css", import.meta.url);
 
@@ -25,6 +26,8 @@ test("Operations Overview is an operational control tower", async () => {
   assert.match(overview, />Overview</);
   assert.match(overview, /Operational pulse/);
   assert.match(overview, /Attention required/);
+  assert.match(overview, /Operations clear/);
+  assert.match(overview, /No immediate blockers/);
   assert.match(overview, /Shipment workload/);
   assert.match(overview, /Recent operational activity/);
   assert.match(overview, /Finance snapshot/);
@@ -47,14 +50,17 @@ test("Operations Overview preserves live policy and return context", async () =>
   assert.doesNotMatch(overview, /fixture/i);
 });
 
-test("Operations Overview uses shared Ops primitives and canonical styling", async () => {
+test("Operations Overview uses shared Ops primitives and removes decorative header accent", async () => {
   const overview = await readFile(overviewPath, "utf8");
+  const operationsUi = await readFile(operationsUiPath, "utf8");
   const layout = await readFile(layoutPath, "utf8");
   assert.match(overview, /OpsPageHeader/);
   assert.match(overview, /OpsSurface/);
   assert.match(overview, /OpsTableWrap/);
   assert.match(overview, /OpsProgress/);
-  assert.match(overview, /OpsEmptyState/);
+  assert.match(overview, /className="before:hidden"/);
+  assert.match(operationsUi, /className\?: string/);
+  assert.match(operationsUi, /cx\("ops-page-header", className\)/);
   assert.doesNotMatch(layout, /operations-overview-refinement\.css/);
   assert.doesNotMatch(layout, /operations-overview-responsive\.css/);
   assert.doesNotMatch(layout, /operations-overview-interactive\.css/);
