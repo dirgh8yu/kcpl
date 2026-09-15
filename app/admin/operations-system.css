@@ -934,6 +934,12 @@
 .kcpl-admin-content .document-vault-next-action.is-complete {
   color: var(--admin-success);
 }
+.kcpl-admin-content .document-vault-table {
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
+  background: var(--admin-surface);
+}
 .kcpl-admin-content .document-vault-register .ops-table tbody tr:hover {
   background: var(--admin-surface-muted);
 }
