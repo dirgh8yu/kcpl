@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CalendarClock, CheckCircle2, Clock, MapPin, Package, RefreshCw, Truck, User, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsSearch, OpsStat, OpsStatStrip } from "../operations-ui";
 import { pickupAppointmentStatusLabels, pickupChannels, pickupNeedsAttention, type PickupChannel, type PickupQueueRow, type PickupSummary } from "./pickup-appointments";
 
 type ApiResponse = { ok?: boolean; error?: string; rows?: PickupQueueRow[]; summary?: PickupSummary };
@@ -215,6 +215,49 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
         </header>
 
         {notice && !selected ? <div className="mb-4"><OpsNotice tone={notice.tone}>{notice.text}</OpsNotice></div> : null}
+
+        <OpsStatStrip className="pickup-stat-strip mb-4">
+          <OpsStat
+            label="Awaiting appointment"
+            value={pendingCount}
+            detail="Unscheduled or requested"
+            tone={pendingCount ? "warning" : "neutral"}
+            active={focus === "pending"}
+            onClick={() => setFocus("pending")}
+          />
+          <OpsStat
+            label="Confirmed"
+            value={summary.confirmed}
+            detail="Window confirmed"
+            tone="info"
+            active={focus === "confirmed"}
+            onClick={() => setFocus("confirmed")}
+          />
+          <OpsStat
+            label="Driver assigned"
+            value={summary.driver_assigned}
+            detail="Ready for collection"
+            tone="success"
+            active={focus === "in_progress"}
+            onClick={() => setFocus("in_progress")}
+          />
+          <OpsStat
+            label="Attention required"
+            value={summary.missed}
+            detail="Missed or overdue"
+            tone={summary.missed ? "danger" : "success"}
+            active={focus === "failed"}
+            onClick={() => setFocus("failed")}
+          />
+          <OpsStat
+            label="Picked up today"
+            value={summary.picked_up_today}
+            detail="Completed collections"
+            tone="neutral"
+            active={focus === "completed"}
+            onClick={() => setFocus("completed")}
+          />
+        </OpsStatStrip>
 
         <div className="mb-4 flex flex-wrap items-center gap-2 border-y border-[var(--admin-line)] py-3">
           <div className="min-w-60 flex-1 basis-72 max-w-sm">

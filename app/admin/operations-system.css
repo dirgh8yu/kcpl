@@ -751,6 +751,25 @@
     width: 100%;
   }
 }
+.kcpl-admin-content .pickup-stat-strip {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.kcpl-admin-content .pickup-stat-strip .ops-stat {
+  min-height: 92px;
+}
+@media (max-width: 900px) {
+  .kcpl-admin-content .pickup-stat-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .kcpl-admin-content .pickup-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kcpl-admin-content .pickup-stat-strip .ops-stat {
+    min-height: 82px;
+  }
+}
 
 /* Live visibility: surface operational signal before the detailed register. */
 .kcpl-admin-content .visibility-stat-strip {
