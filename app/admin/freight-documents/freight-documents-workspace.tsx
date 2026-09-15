@@ -475,7 +475,10 @@ function FreightDocumentPanel({
                   <div className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{latest ? latest.label : "No generated revision yet"}</div>
                   {latest ? <div className="mt-0.5 text-xs text-[var(--admin-muted)]">R{latest.revision} · {latest.filename} · {reviewState(latest).label}</div> : null}
                 </div>
-                {latest ? <OpsButton size="sm" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>Open PDF</OpsButton> : null}
+                {latest ? <div className="flex flex-wrap justify-end gap-2">
+                  {hasPendingReview(row) ? <Link href="/admin/documents" className="ops-button" data-variant="ghost" data-size="sm">Review in Document Vault</Link> : null}
+                  <OpsButton size="sm" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>Open PDF</OpsButton>
+                </div> : null}
               </div>
             </div>
 
