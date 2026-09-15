@@ -30,7 +30,13 @@ function dateTime(value: string | null) {
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(date) + " NPT";
 }
-function toIso(value: string) { if (!value) return ""; const date = new Date(value); return Number.isNaN(date.getTime()) ? "" : date.toISOString(); }
+function nepalInputToIso(value: string) {
+  if (!value) return "";
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$/.exec(value);
+  if (!match) return "";
+  const parsed = new Date(`${match[1]}:00+05:45`);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
+}
 function statusTone(status: DeliveryAttemptStatus): "neutral" | "info" | "warning" | "success" | "danger" {
   if (status === "delivered") return "success";
   if (status === "failed" || status === "refused") return "danger";
@@ -113,7 +119,7 @@ export function DeliveryPodControl({
   async function scheduleAttempt(event: FormEvent) {
     event.preventDefault(); setBusy(true); setNotice(null);
     try {
-      const data = await post({ action: "schedule", ...schedule, scheduledFor: toIso(schedule.scheduledFor) });
+      const data = await post({ action: "schedule", ...schedule, scheduledFor: nepalInputToIso(schedule.scheduledFor) });
       await refresh();
       if (data.attempt) setSelectedAttemptId(data.attempt.id);
       setSchedule({ scheduledFor: "", location: "", driverName: "", driverPhone: "", vehicleReference: "", notes: "" });
@@ -138,7 +144,7 @@ export function DeliveryPodControl({
     if (!selectedAttempt) return;
     setBusy(true); setNotice(null);
     try {
-      const data = await post({ action: "update_attempt", attemptId: selectedAttempt.id, status, ...outcome, eventTime: toIso(outcome.eventTime) });
+      const data = await post({ action: "update_attempt", attemptId: selectedAttempt.id, status, ...outcome, eventTime: nepalInputToIso(outcome.eventTime) });
       await refresh();
       if (status === "delivered") {
         const completed = data.completionStatus === "complete" || data.completionStatus === "already_complete";

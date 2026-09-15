@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Search, Truck, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { useMemo } from "react";
+import { AlertTriangle, CheckCircle2, Truck, X } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip, OpsSearch } from "../operations-ui";
+import { useWorkspaceQuery } from "../use-workspace-query";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
 type Focus = "all" | "active" | "failed" | "pod_pending" | "verified";
@@ -103,9 +104,11 @@ function Inspector({ row, onClose }: { row: DeliveryQueueRow; onClose: () => voi
 }
 
 export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "" }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string }) {
-  const [focus, setFocus] = useState<Focus>("all");
-  const [query, setQuery] = useState(initialQuery);
-  const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const { params, update } = useWorkspaceQuery();
+  const requestedFocus = params.get("view");
+  const focus: Focus = requestedFocus === "active" || requestedFocus === "failed" || requestedFocus === "pod_pending" || requestedFocus === "verified" ? requestedFocus : "all";
+  const query = params.get("q") ?? initialQuery;
+  const selectedReference = params.get("selected");
 
   const rows = useMemo(() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -120,16 +123,16 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     });
   }, [focus, initialRows, query]);
 
-  const selected = selectedReference ? initialRows.find((row) => row.reference === selectedReference) ?? null : null;
   const filtersActive = Boolean(query.trim()) || focus !== "all";
 
   function reset() {
-    setQuery("");
-    setFocus("all");
+    update({ q: null, view: null, selected: null });
   }
 
+  const setFocus = (next: Focus) => update({ view: next === "all" ? null : next, selected: null });
+  const selected = selectedReference ? initialRows.find((row) => row.reference === selectedReference) ?? null : null;
   return <OpsPage>
-    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
+    <div className="delivery-control-page">
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Delivery & POD</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Last-mile execution queue · {initialRows.length} deliveries · POD evidence received ≠ POD verified</p></div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="sm">Shipments</Link></div>
@@ -137,14 +140,17 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
 
       {initialSummary.delivered_pod_pending > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></span></OpsNotice></div> : null}
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <OpsStatStrip className="delivery-control-stat-strip">
+        <OpsStat label="Failed / refused" value={initialSummary.failed_or_refused} detail="Needs a recovery action" tone={initialSummary.failed_or_refused ? "danger" : "neutral"} active={focus === "failed"} onClick={() => setFocus("failed")} />
+        <OpsStat label="POD pending" value={initialSummary.delivered_pod_pending} detail="Physical delivery recorded" tone={initialSummary.delivered_pod_pending ? "warning" : "success"} active={focus === "pod_pending"} onClick={() => setFocus("pod_pending")} />
+        <OpsStat label="Delivery active" value={initialSummary.out_for_delivery} detail="Scheduled or dispatched" tone="info" active={focus === "active"} onClick={() => setFocus("active")} />
+        <OpsStat label="POD verified" value={initialSummary.pod_verified} detail="Evidence sealed and verified" tone="success" active={focus === "verified"} onClick={() => setFocus("verified")} />
+      </OpsStatStrip>
+
+      <div className="delivery-control-workspace">
+        <div className="delivery-control-queue">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}>
-              <Search size={14} style={{ color: "var(--admin-muted)" }}/>
-              <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, branch…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/>
-              {query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear delivery search" style={{ width: 24, height: 24, display: "grid", placeItems: "center", border: 0, background: "transparent", color: "var(--admin-muted)", cursor: "pointer" }}><X size={12}/></button> : null}
-            </label>
+            <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, branch…" aria-label="Search delivery and POD queue"/>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Delivery state filter">
               <button type="button" style={chipStyle(focus === "all")} onClick={() => setFocus("all")}>All</button>
               <button type="button" style={chipStyle(focus === "active")} onClick={() => setFocus("active")}>Delivery active</button>
@@ -160,7 +166,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
             {rows.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Shipment</th><th>Consignee / route</th><th>Branch</th><th>Scheduled / attempt</th><th>Delivery state</th><th>POD evidence</th><th>Closeout</th></tr></thead><tbody>{rows.map((row) => {
               const isSelected = selectedReference === row.reference;
               const exception = row.delivery_state === "delivery_failed" || row.delivery_state === "delivered_pod_pending";
-              return <tr key={row.reference} data-selected={isSelected ? "true" : undefined} tabIndex={0} onClick={() => setSelectedReference(row.reference)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedReference(row.reference); }} style={{ cursor: "pointer" }}>
+              return <tr key={row.reference} data-selected={isSelected ? "true" : undefined} tabIndex={0} onClick={() => update({ selected: row.reference }, "push")} onKeyDown={(event) => { if (event.key === "Enter") update({ selected: row.reference }, "push"); }} style={{ cursor: "pointer" }}>
                 <td><div style={{ fontWeight: 500 }}><OpsMono>{row.reference}</OpsMono></div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.mode}</div></td>
                 <td><div style={{ fontWeight: 500 }}>{row.customer_name}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.origin} → {row.destination}</div></td>
                 <td>{row.primary_branch}</td>
@@ -173,7 +179,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
           </section>
         </div>
 
-        {selected ? <Inspector row={selected} onClose={() => setSelectedReference(null)}/> : null}
+        {selected ? <Inspector row={selected} onClose={() => update({ selected: null })}/> : null}
       </div>
     </div>
   </OpsPage>;
