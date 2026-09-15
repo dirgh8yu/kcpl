@@ -817,6 +817,71 @@
   }
 }
 
+/* Customs clearance: keep the queue and its decision panel readable at working density. */
+.kcpl-admin-content .customs-clearance-page {
+  min-height: calc(100dvh - var(--app-toolbar-height));
+  padding: var(--app-page-gap);
+}
+.kcpl-admin-content .customs-clearance-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.kcpl-admin-content .customs-clearance-stat-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+.kcpl-admin-content .customs-clearance-stat-strip .ops-stat {
+  min-height: 88px;
+}
+.kcpl-admin-content .customs-clearance-workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.kcpl-admin-content .customs-clearance-queue {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.kcpl-admin-content .customs-clearance-inspector {
+  position: sticky;
+  top: calc(var(--app-toolbar-height) + 16px);
+  width: 420px;
+  max-height: calc(100dvh - var(--app-toolbar-height) - 32px);
+  overflow: auto;
+}
+.kcpl-admin-content .customs-clearance-register .ops-table tbody tr[data-selected="true"] {
+  box-shadow: inset 3px 0 0 var(--admin-crimson);
+}
+.kcpl-admin-content .customs-clearance-register .ops-table tbody tr:hover {
+  background: var(--admin-surface-muted);
+}
+@media (max-width: 1040px) {
+  .kcpl-admin-content .customs-clearance-workspace {
+    display: block;
+  }
+  .kcpl-admin-content .customs-clearance-inspector {
+    position: relative;
+    top: auto;
+    width: 100%;
+    max-height: none;
+    margin-top: 16px;
+  }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .customs-clearance-page {
+    padding: 16px;
+  }
+  .kcpl-admin-content .customs-clearance-header {
+    flex-direction: column;
+  }
+  .kcpl-admin-content .customs-clearance-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Live visibility: surface operational signal before the detailed register. */
 .kcpl-admin-content .visibility-stat-strip {
   grid-template-columns: repeat(5, minmax(0, 1fr));
