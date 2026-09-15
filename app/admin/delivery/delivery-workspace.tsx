@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Truck, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip, OpsSearch } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
@@ -139,13 +139,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
       </header>
 
       {initialSummary.delivered_pod_pending > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></span></OpsNotice></div> : null}
-
-      <OpsStatStrip className="delivery-control-stat-strip">
-        <OpsStat label="Failed / refused" value={initialSummary.failed_or_refused} detail="Needs a recovery action" tone={initialSummary.failed_or_refused ? "danger" : "neutral"} active={focus === "failed"} onClick={() => setFocus("failed")} />
-        <OpsStat label="POD pending" value={initialSummary.delivered_pod_pending} detail="Physical delivery recorded" tone={initialSummary.delivered_pod_pending ? "warning" : "success"} active={focus === "pod_pending"} onClick={() => setFocus("pod_pending")} />
-        <OpsStat label="Delivery active" value={initialSummary.out_for_delivery} detail="Scheduled or dispatched" tone="info" active={focus === "active"} onClick={() => setFocus("active")} />
-        <OpsStat label="POD verified" value={initialSummary.pod_verified} detail="Evidence sealed and verified" tone="success" active={focus === "verified"} onClick={() => setFocus("verified")} />
-      </OpsStatStrip>
 
       <div className="delivery-control-workspace">
         <div className="delivery-control-queue">

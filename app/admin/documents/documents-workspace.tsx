@@ -8,7 +8,7 @@ import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shi
 import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { KcplStaffRole } from "../staff-permissions";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents-data.server";
 
@@ -237,13 +237,6 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
       {pendingReview > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertCircle size={15}/><strong>{pendingReview} document{pendingReview === 1 ? "" : "s"} awaiting review.</strong> Upload alone does not constitute verification.</span></OpsNotice></div> : null}
       {dashboard.cleanup_pending_count ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-
-      <OpsStatStrip className="document-vault-stat-strip">
-        <OpsStat label="Awaiting review" value={dashboard.review_count} detail="Uploaded, not yet verified" tone={dashboard.review_count ? "warning" : "success"} active={status === "pending"} onClick={() => setStatusFilter("pending")} />
-        <OpsStat label="Verified" value={dashboard.verified_count} detail="Current readiness evidence" tone="success" active={status === "verified"} onClick={() => setStatusFilter("verified")} />
-        <OpsStat label="Rejected" value={dashboard.rejected_count} detail="Needs replacement or correction" tone={dashboard.rejected_count ? "danger" : "neutral"} active={status === "rejected"} onClick={() => setStatusFilter("rejected")} />
-        <OpsStat label="Expired" value={dashboard.expired_count} detail="No longer current evidence" tone={dashboard.expired_count ? "warning" : "neutral"} active={status === "expired"} onClick={() => setStatusFilter("expired")} />
-      </OpsStatStrip>
 
       <div className="document-vault-workspace">
         <div className="document-vault-queue">

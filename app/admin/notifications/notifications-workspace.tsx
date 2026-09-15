@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Bell, CheckCheck, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
-import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch, OpsStat, OpsStatStrip } from "../operations-ui";
+import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 
 type NotificationResponse = { notifications: OperationsNotification[]; unread_count: number; preferences: NotificationPreferences; email_configured: boolean };
@@ -159,13 +159,6 @@ export function NotificationsWorkspace() {
       </header>
 
       {error ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
-
-      <OpsStatStrip className="notifications-stat-strip">
-        <OpsStat label="Unread" value={counts.unread} detail="Needs attention" tone={counts.unread ? "warning" : "success"} active={state === "unread"} onClick={() => setState("unread")} />
-        <OpsStat label="Critical" value={counts.critical} detail="Unread or unresolved" tone={counts.critical ? "danger" : "success"} active={severity === "critical"} onClick={() => setSeverity("critical")} />
-        <OpsStat label="Warnings" value={counts.warning} detail="Operational follow-up" tone={counts.warning ? "warning" : "neutral"} active={severity === "warning"} onClick={() => setSeverity("warning")} />
-        <OpsStat label="Resolved" value={counts.resolved} detail="Retained history" tone="neutral" active={state === "resolved"} onClick={() => setState("resolved")} />
-      </OpsStatStrip>
 
       <div className="notifications-workspace-toolbar">
         <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search notification, branch, reference…" aria-label="Search notifications"/>

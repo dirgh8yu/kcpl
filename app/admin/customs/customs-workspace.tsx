@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Circle, RefreshCw, Search, ShieldAlert, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
 import type { CustomsAgentOption } from "./customs-clearance";
 import { CustomsClearanceEditor } from "./customs-clearance-editor";
 import type { CustomsDeskRow } from "./customs-data.server";
@@ -183,9 +183,6 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
 
   const blockedCount = useMemo(() => rows.filter((row) => row.state === "blocked").length, [rows]);
   const heldCount = useMemo(() => rows.filter((row) => row.clearance.status === "held").length, [rows]);
-  const awaitingReleaseCount = useMemo(() => rows.filter((row) => row.state === "awaiting_release").length, [rows]);
-  const readyCount = useMemo(() => rows.filter((row) => row.state === "ready").length, [rows]);
-  const releasedCount = useMemo(() => rows.filter((row) => row.state === "released").length, [rows]);
   const branches = useMemo(() => kcplBranches.filter((item) => rows.some((row) => row.handling_branches.includes(item))), [rows]);
 
   const visible = useMemo(() => {
@@ -251,13 +248,6 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
 
       {blockedCount > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><AlertTriangle size={15}/><strong>{blockedCount} shipment{blockedCount === 1 ? "" : "s"} blocked</strong> · resolve missing documents, checklist dependencies or authority holds.</span></OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-
-      <OpsStatStrip className="customs-clearance-stat-strip">
-        <OpsStat label="Blocked" value={blockedCount} detail="Documents, integrity or holds" tone="danger" active={state === "blocked"} onClick={() => setStateFilter("blocked")} />
-        <OpsStat label="Awaiting release" value={awaitingReleaseCount} detail="Checklist complete, authority pending" tone="warning" active={state === "awaiting_release"} onClick={() => setStateFilter("awaiting_release")} />
-        <OpsStat label="Checklist ready" value={readyCount} detail="No release required" tone="info" active={state === "ready"} onClick={() => setStateFilter("ready")} />
-        <OpsStat label="Released" value={releasedCount} detail="Authority confirmed" tone="success" active={state === "released"} onClick={() => setStateFilter("released")} />
-      </OpsStatStrip>
 
       <div className="customs-clearance-workspace">
         <div className="customs-clearance-queue">

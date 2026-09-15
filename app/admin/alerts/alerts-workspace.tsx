@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Info, RefreshCw } from "lucide-react";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity, type AutomationAlertStatus } from "./alert-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch, OpsStat, OpsStatStrip } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 
 type StatusFilter = "active" | "all" | AutomationAlertStatus;
@@ -164,13 +164,6 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
 
       {counts.critical > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{counts.critical} critical exception{counts.critical === 1 ? "" : "s"} require immediate review.</strong></span></OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
-
-      <OpsStatStrip className="alerts-stat-strip">
-        <OpsStat label="Active" value={counts.active} detail="Needs an operational outcome" tone={counts.active ? "warning" : "success"} active={status === "active"} onClick={() => setStatus("active")} />
-        <OpsStat label="Critical" value={counts.critical} detail="Immediate review" tone={counts.critical ? "danger" : "success"} active={severity === "critical"} onClick={() => setSeverity("critical")} />
-        <OpsStat label="Acknowledged" value={counts.acknowledged} detail="Reviewed, not resolved" tone="info" active={status === "acknowledged"} onClick={() => setStatus("acknowledged")} />
-        <OpsStat label="Resolved" value={counts.resolved} detail="Retained history" tone="neutral" active={status === "resolved"} onClick={() => setStatus("resolved")} />
-      </OpsStatStrip>
 
       <div className="alerts-workspace-toolbar">
         <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search alert, shipment, owner…" aria-label="Search tasks and alerts"/>
