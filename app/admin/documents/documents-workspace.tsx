@@ -8,7 +8,8 @@ import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shi
 import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { KcplStaffRole } from "../staff-permissions";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip } from "../operations-ui";
+import { useWorkspaceQuery } from "../use-workspace-query";
 import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents-data.server";
 
 type StatusFilter = "active" | "all" | "pending" | ShipmentDocumentEffectiveStatus;
@@ -41,6 +42,15 @@ function statusTone(status: ShipmentDocumentEffectiveStatus): "neutral" | "info"
   if (status === "received" || status === "under_review") return "warning";
   if (status === "rejected" || status === "expired") return "danger";
   return "neutral";
+}
+
+function nextAction(row: DocumentVaultRow) {
+  if (row.review_status === "received" || row.review_status === "under_review") return "Review evidence";
+  if (row.effective_status === "rejected") return "Replace evidence";
+  if (row.effective_status === "expired") return "Renew evidence";
+  if (row.effective_status === "verified") return "Verified";
+  if (row.review_status === "deleted" || row.review_status === "superseded") return "Audit only";
+  return "Open record";
 }
 
 function chipStyle(active: boolean): React.CSSProperties {
@@ -152,16 +162,23 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dashboard: DocumentVaultDashboard; role: KcplStaffRole; currentUserEmail: string }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [type, setType] = useState<"all" | ShipmentDocumentType>("all");
-  const [branch, setBranch] = useState<"all" | KcplBranch>("all");
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const { params, update } = useWorkspaceQuery();
+  const query = params.get("q") ?? "";
+  const statusValue = params.get("status");
+  const status: StatusFilter = statusValue === "active" || statusValue === "pending" || statusValue === "verified" || statusValue === "rejected" || statusValue === "expired" || statusValue === "superseded" || statusValue === "deleted" ? statusValue : "all";
+  const typeValue = params.get("type");
+  const type: "all" | ShipmentDocumentType = shipmentDocumentTypes.includes(typeValue as ShipmentDocumentType) ? typeValue as ShipmentDocumentType : "all";
+  const branchValue = params.get("branch");
+  const branch: "all" | KcplBranch = kcplBranches.includes(branchValue as KcplBranch) ? branchValue as KcplBranch : "all";
+  const selectedKey = params.get("selected");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
 
   const pendingReview = dashboard.rows.filter((row) => row.review_status === "received" || row.review_status === "under_review").length;
+  const setStatusFilter = (nextStatus: StatusFilter) => {
+    update({ status: nextStatus === "all" ? null : nextStatus, selected: null });
+  };
   const visible = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return dashboard.rows.filter((row) => {
@@ -185,7 +202,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
       const data = await response.json() as { error?: string; warning?: string | null };
       if (!response.ok) throw new Error(data.error || "Could not delete the document.");
       setNotice({ tone: data.warning ? "warning" : "success", text: data.warning || `${row.filename} was tombstoned and removed from active readiness.` });
-      setSelectedKey(null); router.refresh();
+      update({ selected: null }); router.refresh();
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Could not delete the document." }); }
     finally { setBusyId(null); }
   }
@@ -205,17 +222,14 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   }
 
   function reset() {
-    setQuery("");
-    setStatus("all");
-    setType("all");
-    setBranch("all");
+    update({ q: null, status: null, type: null, branch: null, selected: null });
   }
 
   const filtersActive = Boolean(query.trim()) || status !== "all" || type !== "all" || branch !== "all";
 
-  return <OpsPage>
-    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+  return <OpsPage className="document-vault-register">
+    <div className="document-vault-page">
+      <header className="document-vault-header">
         <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Document Vault</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Evidence-control workspace · upload ≠ verification · {dashboard.rows.length} documents · {pendingReview} awaiting review · snapshot {dateTime(dashboard.generated_at)}</p></div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="sm">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="sm">Customs</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></div>
       </header>
@@ -224,31 +238,38 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
       {dashboard.cleanup_pending_count ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <OpsStatStrip className="document-vault-stat-strip">
+        <OpsStat label="Awaiting review" value={dashboard.review_count} detail="Uploaded, not yet verified" tone={dashboard.review_count ? "warning" : "success"} active={status === "pending"} onClick={() => setStatusFilter("pending")} />
+        <OpsStat label="Verified" value={dashboard.verified_count} detail="Current readiness evidence" tone="success" active={status === "verified"} onClick={() => setStatusFilter("verified")} />
+        <OpsStat label="Rejected" value={dashboard.rejected_count} detail="Needs replacement or correction" tone={dashboard.rejected_count ? "danger" : "neutral"} active={status === "rejected"} onClick={() => setStatusFilter("rejected")} />
+        <OpsStat label="Expired" value={dashboard.expired_count} detail="No longer current evidence" tone={dashboard.expired_count ? "warning" : "neutral"} active={status === "expired"} onClick={() => setStatusFilter("expired")} />
+      </OpsStatStrip>
+
+      <div className="document-vault-workspace">
+        <div className="document-vault-queue">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, filename, reviewer…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, filename, reviewer…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Status filter">
-              <button type="button" style={chipStyle(status === "all")} onClick={() => setStatus("all")}>All</button>
-              <button type="button" style={chipStyle(status === "active")} onClick={() => setStatus("active")}>Active</button>
-              <button type="button" style={chipStyle(status === "pending")} onClick={() => setStatus("pending")}>Pending review</button>
-              <button type="button" style={chipStyle(status === "verified")} onClick={() => setStatus("verified")}>Verified</button>
-              <button type="button" style={chipStyle(status === "rejected")} onClick={() => setStatus("rejected")}>Rejected</button>
-              <button type="button" style={chipStyle(status === "expired")} onClick={() => setStatus("expired")}>Expired</button>
-              <button type="button" style={chipStyle(status === "superseded")} onClick={() => setStatus("superseded")}>Superseded</button>
-              <button type="button" style={chipStyle(status === "deleted")} onClick={() => setStatus("deleted")}>Deleted</button>
+              <button type="button" style={chipStyle(status === "all")} onClick={() => setStatusFilter("all")}>All</button>
+              <button type="button" style={chipStyle(status === "active")} onClick={() => setStatusFilter("active")}>Active</button>
+              <button type="button" style={chipStyle(status === "pending")} onClick={() => setStatusFilter("pending")}>Pending review</button>
+              <button type="button" style={chipStyle(status === "verified")} onClick={() => setStatusFilter("verified")}>Verified</button>
+              <button type="button" style={chipStyle(status === "rejected")} onClick={() => setStatusFilter("rejected")}>Rejected</button>
+              <button type="button" style={chipStyle(status === "expired")} onClick={() => setStatusFilter("expired")}>Expired</button>
+              <button type="button" style={chipStyle(status === "superseded")} onClick={() => setStatusFilter("superseded")}>Superseded</button>
+              <button type="button" style={chipStyle(status === "deleted")} onClick={() => setStatusFilter("deleted")}>Deleted</button>
             </div>
-            <select value={type} onChange={(event) => setType(event.target.value as "all" | ShipmentDocumentType)} aria-label="Filter by document type" style={selectStyle}><option value="all">All document types</option>{shipmentDocumentTypes.map((item) => <option key={item} value={item}>{shipmentDocumentTypeLabels[item]}</option>)}</select>
-            <select value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)} aria-label="Filter by branch" style={selectStyle}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+            <select value={type} onChange={(event) => update({ type: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by document type" style={selectStyle}><option value="all">All document types</option>{shipmentDocumentTypes.map((item) => <option key={item} value={item}>{shipmentDocumentTypeLabels[item]}</option>)}</select>
+            <select value={branch} onChange={(event) => update({ branch: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by branch" style={selectStyle}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
             {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{visible.length} documents</span>
           </div>
 
-          <section style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
-            {visible.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 920 }}><thead><tr><th>Document</th><th>Type</th><th>Shipment</th><th>Uploaded</th><th>Expiry</th><th>Customer-safe</th><th>Review status</th></tr></thead><tbody>{visible.map((row) => {
+          <section className="document-vault-table">
+          {visible.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Document</th><th>Type</th><th>Shipment</th><th>Uploaded</th><th>Expiry</th><th>Customer-safe</th><th>Review status</th><th>Next action</th></tr></thead><tbody>{visible.map((row) => {
               const key = `${row.shipment_reference}:${row.id}`;
               const inactive = row.review_status === "deleted" || row.review_status === "superseded";
-              return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} tabIndex={0} onClick={() => setSelectedKey(key)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedKey(key); }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
+              return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} tabIndex={0} onClick={() => update({ selected: key }, "push")} onKeyDown={(event) => { if (event.key === "Enter") update({ selected: key }, "push"); }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
                 <td><div style={{ fontWeight: 500 }}>{row.filename}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by} · {bytes(row.size_bytes)}</div></td>
                 <td>{shipmentDocumentTypeLabels[row.document_type]}</td>
                 <td><OpsMono>{row.shipment_reference}</OpsMono><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.customer_name}</div></td>
@@ -256,12 +277,13 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
                 <td style={{ color: row.expires_on ? "var(--admin-warning)" : "var(--admin-muted)" }}>{row.expires_on ? dateOnly(row.expires_on) : "—"}</td>
                 <td>{row.customer_safe ? <CheckCircle2 size={14} style={{ color: "var(--admin-success)" }} aria-label="Customer-safe"/> : <span style={{ fontSize: 12, color: "var(--admin-muted)" }}>Internal</span>}</td>
                 <td><OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge></td>
+                <td><span className={`document-vault-next-action${row.effective_status === "verified" ? " is-complete" : row.effective_status === "rejected" || row.effective_status === "expired" ? " is-attention" : ""}`}>{nextAction(row)}</span></td>
               </tr>;
             })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Folder size={18}/>} title={filtersActive ? "No results" : "No documents"} description={filtersActive ? "Try changing or resetting the current filters." : "No documents are available in the vault."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>} 
           </section>
         </div>
 
-        {selected ? <Inspector row={selected} role={role} currentUserEmail={currentUserEmail} busyId={busyId} reviewBusy={reviewBusy} onClose={() => setSelectedKey(null)} onDelete={deleteDocument} onSaveReview={saveReview}/> : null}
+        {selected ? <Inspector row={selected} role={role} currentUserEmail={currentUserEmail} busyId={busyId} reviewBusy={reviewBusy} onClose={() => update({ selected: null })} onDelete={deleteDocument} onSaveReview={saveReview}/> : null}
       </div>
     </div>
   </OpsPage>;

@@ -11,6 +11,8 @@ import {
   OpsMono,
   OpsNotice,
   OpsPage,
+  OpsStat,
+  OpsStatStrip,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
@@ -238,7 +240,7 @@ export function FreightDocumentsWorkspace({
   const hasFilters = Boolean(query) || focus !== "all";
 
   return (
-    <OpsPage className="bg-[var(--admin-canvas)]">
+    <OpsPage className="freight-documents-register">
       <div className="min-h-[calc(100dvh-var(--app-toolbar-height))] bg-[var(--admin-canvas)] px-4 pb-8 pt-5 md:px-6">
         <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
@@ -250,6 +252,12 @@ export function FreightDocumentsWorkspace({
         </header>
 
         {message ? <div className="mb-4"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+        <OpsStatStrip className="freight-documents-stat-strip mb-4">
+          <OpsStat label="Missing primary" value={summary.missing_primary} detail="Produce the carriage draft" tone={summary.missing_primary ? "warning" : "success"} active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: "missing", selected: null, shipment: null }); }}/>
+          <OpsStat label="Awaiting review" value={summary.review_pending} detail="Verify generated revisions" tone={summary.review_pending ? "warning" : "success"} active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: "review", selected: null, shipment: null }); }}/>
+          <OpsStat label="Generated" value={summary.generated_current} detail="Current document revisions" tone="info" active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: "generated", selected: null, shipment: null }); }}/>
+          <OpsStat label="Eligible Job Files" value={summary.eligible} detail="Booked and active shipments" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }}/>
+        </OpsStatStrip>
         {summary.missing_primary > 0 || summary.review_pending > 0 ? (
           <div className="mb-4">
             <OpsNotice tone="warning">
@@ -453,7 +461,7 @@ function FreightDocumentPanel({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="border-b border-[var(--admin-line)] px-5 py-4">
             <OpsNotice>
               <span className="flex items-start gap-2"><ShieldCheck size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>KCPL-generated PDFs are controlled internal/house drafts. Carrier-issued master originals remain authoritative.</span>
@@ -467,7 +475,10 @@ function FreightDocumentPanel({
                   <div className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{latest ? latest.label : "No generated revision yet"}</div>
                   {latest ? <div className="mt-0.5 text-xs text-[var(--admin-muted)]">R{latest.revision} · {latest.filename} · {reviewState(latest).label}</div> : null}
                 </div>
-                {latest ? <OpsButton size="sm" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>Open PDF</OpsButton> : null}
+                {latest ? <div className="flex flex-wrap justify-end gap-2">
+                  {hasPendingReview(row) ? <Link href="/admin/documents" className="ops-button" data-variant="ghost" data-size="sm">Review in Document Vault</Link> : null}
+                  <OpsButton size="sm" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>Open PDF</OpsButton>
+                </div> : null}
               </div>
             </div>
 

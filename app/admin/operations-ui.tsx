@@ -1,6 +1,8 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { Search } from "lucide-react";
 
+export { OpsNotice } from "./ops-notice";
+
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
@@ -154,10 +156,6 @@ export function OpsSearch({ className, ...props }: InputHTMLAttributes<HTMLInput
 
 export function OpsField({ label, hint, children, className }: { label: ReactNode; hint?: ReactNode; children: ReactNode; className?: string }) {
   return <label className={cx("ops-field", className)}><span className="ops-field-label">{label}</span>{children}{hint ? <small>{hint}</small> : null}</label>;
-}
-
-export function OpsNotice({ children, tone = "neutral", onDismiss }: { children: ReactNode; tone?: "neutral" | "success" | "warning" | "danger"; onDismiss?: () => void }) {
-  return <div className="ops-notice" data-tone={tone} role={tone === "danger" ? "alert" : "status"}><span>{children}</span>{onDismiss ? <button type="button" onClick={onDismiss}>Dismiss</button> : null}</div>;
 }
 
 export function OpsEmptyState({

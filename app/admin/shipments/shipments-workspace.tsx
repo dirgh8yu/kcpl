@@ -87,6 +87,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const requestedMode = params.get("mode") ?? "all";
   const mode = data.jobs.some((job) => job.mode === requestedMode) ? requestedMode : "all";
   const attention = params.get("attention") === "1";
+  const ownerFilter = params.get("owner") === "unassigned" ? "unassigned" : "all";
   const sort = params.get("sort") === "updated" ? "updated" : "priority";
   const selectedReference = params.get("selected");
   const pageSize = 50;
@@ -97,6 +98,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const setStatus = (value: StatusFilter) => setFilters({ status: value === "all" ? null : value });
   const setBranch = (value: string) => setFilters({ branch: value === "all" ? null : value });
   const setMode = (value: string) => setFilters({ mode: value === "all" ? null : value });
+  const setOwnerFilter = (value: string) => setFilters({ owner: value === "all" ? null : value });
   const setSelectedReference = useCallback((value: string | null) => update({ selected: value }), [update]);
 
   const modes = useMemo(() => modeOptions(data.jobs), [data.jobs]);
@@ -107,6 +109,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
       if (status !== "all" && status !== "active" && job.status !== status) return false;
       if (branch !== "all" && job.primary_branch !== branch && !job.handling_branches.includes(branch as KcplBranch)) return false;
       if (attention && !shipmentNeedsAttention(job)) return false;
+      if (ownerFilter === "unassigned" && owner(job) !== "Unassigned") return false;
       if (mode !== "all" && job.mode !== mode) return false;
       if (!terms.length) return true;
       const haystack = [
@@ -125,7 +128,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
     }).sort(sort === "priority"
       ? compareShipmentPriority
       : (a, b) => (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0) || a.reference.localeCompare(b.reference));
-  }, [attention, branch, data.jobs, mode, query, sort, status]);
+  }, [attention, branch, data.jobs, mode, ownerFilter, query, sort, status]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
@@ -133,7 +136,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const selected = selectedReference ? filtered.find((job) => job.reference === selectedReference) ?? null : null;
   const selectedKey = selected?.reference ?? null;
   const returnTo = `/admin/shipments${search}`;
-  const advancedCount = Number(branch !== "all") + Number(mode !== "all") + Number(attention) + Number(sort !== "priority");
+  const advancedCount = Number(branch !== "all") + Number(mode !== "all") + Number(ownerFilter !== "all") + Number(attention) + Number(sort !== "priority");
   const hasFilters = Boolean(query) || status !== "all" || advancedCount > 0;
 
   useEffect(() => {
@@ -151,7 +154,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   }, [selectedKey, setSelectedReference]);
 
   function resetFilters() {
-    update({ q: null, status: null, branch: null, mode: null, attention: null, sort: null, page: null, selected: null });
+    update({ q: null, status: null, branch: null, mode: null, owner: null, attention: null, sort: null, page: null, selected: null });
   }
 
   const activeJobs = data.jobs.filter((job) => job.status !== "delivered").length;
@@ -170,11 +173,11 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
           </Link>
         ) : null}
       >
-        <OpsStatStrip>
-          <OpsStat label="Active" value={activeJobs} detail="Current in-flight work" tone="info" />
-          <OpsStat label="Attention" value={attentionJobs} detail="Require action" tone="danger" />
-          <OpsStat label="Customs open" value={customsOpen} detail="Checklist needs review" tone="warning" />
-          <OpsStat label="Unassigned" value={unassignedJobs} detail="Ownership gaps" tone="neutral" />
+        <OpsStatStrip className="shipments-stat-strip">
+          <OpsStat label="Active" value={activeJobs} detail="Current in-flight work" tone="info" active={status === "active"} onClick={() => setStatus("active")} />
+          <OpsStat label="Attention" value={attentionJobs} detail="Require action" tone="danger" active={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} />
+          <OpsStat label="Customs open" value={customsOpen} detail="Checklist needs review" tone="warning" active={status === "customs_clearance"} onClick={() => setStatus("customs_clearance")} />
+          <OpsStat label="Unassigned" value={unassignedJobs} detail="Ownership gaps" tone="neutral" active={ownerFilter === "unassigned"} onClick={() => setOwnerFilter(ownerFilter === "unassigned" ? "all" : "unassigned")} />
         </OpsStatStrip>
       </OpsPageHeader>
 
@@ -212,6 +215,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
               <div className="absolute right-0 top-11 z-30 w-[280px] rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3 shadow-lg">
                 <label className="block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Branch<select value={branch} onChange={(event) => setBranch(event.target.value)} className="mt-1 w-full"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
                 <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Mode<select value={mode} onChange={(event) => setMode(event.target.value)} className="mt-1 w-full"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Owner<select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)} className="mt-1 w-full"><option value="all">All owners</option><option value="unassigned">Unassigned</option></select></label>
                 <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} className="mt-1 w-full"><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
                 <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className={`mt-3 flex min-h-9 w-full items-center justify-center gap-2 rounded-md border px-3 text-xs font-medium ${attention ? "border-[var(--admin-crimson)] bg-[var(--admin-danger-bg)] text-[var(--admin-crimson)]" : "border-[var(--admin-line)] text-[var(--admin-muted)]"}`}>
                   <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/> Needs attention

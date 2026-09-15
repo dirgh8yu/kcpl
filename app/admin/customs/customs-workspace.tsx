@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Circle, RefreshCw, Search, ShieldAlert, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsStat, OpsStatStrip } from "../operations-ui";
 import type { CustomsAgentOption } from "./customs-clearance";
 import { CustomsClearanceEditor } from "./customs-clearance-editor";
 import type { CustomsDeskRow } from "./customs-data.server";
@@ -101,7 +101,7 @@ function Inspector({
   const released = row.state === "released";
   const held = row.clearance.status === "held";
 
-  return <aside style={{ width: 420, flexShrink: 0, border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
+  return <aside className="customs-clearance-inspector" style={{ flexShrink: 0, border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)" }}>
     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: 16, borderBottom: "1px solid var(--admin-line)" }}>
       <div style={{ minWidth: 0 }}>
         <OpsMono>{row.reference}</OpsMono>
@@ -183,6 +183,9 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
 
   const blockedCount = useMemo(() => rows.filter((row) => row.state === "blocked").length, [rows]);
   const heldCount = useMemo(() => rows.filter((row) => row.clearance.status === "held").length, [rows]);
+  const awaitingReleaseCount = useMemo(() => rows.filter((row) => row.state === "awaiting_release").length, [rows]);
+  const readyCount = useMemo(() => rows.filter((row) => row.state === "ready").length, [rows]);
+  const releasedCount = useMemo(() => rows.filter((row) => row.state === "released").length, [rows]);
   const branches = useMemo(() => kcplBranches.filter((item) => rows.some((row) => row.handling_branches.includes(item))), [rows]);
 
   const visible = useMemo(() => {
@@ -226,11 +229,16 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
     setState("all");
   }
 
+  function setStateFilter(nextState: StateFilter) {
+    setState(nextState);
+    setSelectedReference(null);
+  }
+
   const filtersActive = Boolean(query.trim()) || branch !== "all" || risk !== "all" || state !== "all";
 
-  return <OpsPage>
-    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+  return <OpsPage className="customs-clearance-register">
+    <div className="customs-clearance-page">
+      <header className="customs-clearance-header">
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Customs Clearance</h1>
           <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Branch-aware clearance desk — {rows.length} shipments · {blockedCount} blocked · {heldCount} held</p>
@@ -244,8 +252,15 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
       {blockedCount > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><AlertTriangle size={15}/><strong>{blockedCount} shipment{blockedCount === 1 ? "" : "s"} blocked</strong> · resolve missing documents, checklist dependencies or authority holds.</span></OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <OpsStatStrip className="customs-clearance-stat-strip">
+        <OpsStat label="Blocked" value={blockedCount} detail="Documents, integrity or holds" tone="danger" active={state === "blocked"} onClick={() => setStateFilter("blocked")} />
+        <OpsStat label="Awaiting release" value={awaitingReleaseCount} detail="Checklist complete, authority pending" tone="warning" active={state === "awaiting_release"} onClick={() => setStateFilter("awaiting_release")} />
+        <OpsStat label="Checklist ready" value={readyCount} detail="No release required" tone="info" active={state === "ready"} onClick={() => setStateFilter("ready")} />
+        <OpsStat label="Released" value={releasedCount} detail="Authority confirmed" tone="success" active={state === "released"} onClick={() => setStateFilter("released")} />
+      </OpsStatStrip>
+
+      <div className="customs-clearance-workspace">
+        <div className="customs-clearance-queue">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}>
               <Search size={14} style={{ color: "var(--admin-muted)" }}/>
@@ -257,7 +272,7 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
               {branches.map((item) => <button key={item} type="button" style={chipStyle(branch === item)} aria-pressed={branch === item} onClick={() => setBranch(item)}>{item}</button>)}
             </div>
             <select value={risk} onChange={(event) => setRisk(event.target.value as RiskFilter)} aria-label="Filter by Customs risk" style={selectStyle}><option value="all">All risk</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="normal">Normal</option></select>
-            <select value={state} onChange={(event) => setState(event.target.value as StateFilter)} aria-label="Filter by Customs state" style={selectStyle}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="awaiting_release">Awaiting release</option><option value="ready">Checklist ready</option><option value="released">Customs released</option></select>
+            <select value={state} onChange={(event) => setStateFilter(event.target.value as StateFilter)} aria-label="Filter by Customs state" style={selectStyle}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="awaiting_release">Awaiting release</option><option value="ready">Checklist ready</option><option value="released">Customs released</option></select>
             {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)", whiteSpace: "nowrap" }}>{visible.length} entries</span>
           </div>
