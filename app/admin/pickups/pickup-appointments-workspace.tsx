@@ -34,8 +34,27 @@ function toLocalInput(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kathmandu",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date).reduce<Record<string, string>>((result, part) => {
+    if (part.type !== "literal") result[part.type] = part.value;
+    return result;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+function nepalInputToIso(value: string) {
+  if (!value) return "";
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$/.exec(value);
+  if (!match) return "";
+  const parsed = new Date(`${match[1]}:00+05:45`);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
 }
 
 function statusTone(row: PickupQueueRow): "neutral" | "info" | "warning" | "success" | "danger" {
@@ -88,6 +107,8 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
   const selected = rows.find((row) => row.shipment_reference === selectedReference) ?? null;
   const pendingCount = summary.unscheduled + summary.requested;
+  const selectedWindowStart = selected?.confirmed_window_start ?? selected?.requested_window_start;
+  const selectedWindowEnd = selected?.confirmed_window_end ?? selected?.requested_window_end;
   const filtered = useMemo(() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     return rows.filter((row) => {
@@ -157,6 +178,21 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     } finally {
       setBusy(false);
     }
+
+  }
+
+  function schedulePayload(confirmed: boolean) {
+    return {
+      windowStart: nepalInputToIso(windowStart),
+      windowEnd: nepalInputToIso(windowEnd),
+      pickupLocation,
+      contactName,
+      contactPhone,
+      channel,
+      providerReference,
+      notes,
+      confirmed,
+    };
   }
 
   function handleRefresh() {
@@ -170,7 +206,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
         <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="m-0">Pickups</h1>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">Scheduled collection queue · {rows.length} pickup{rows.length === 1 ? "" : "s"} · {pendingCount} awaiting confirmation</p>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">Collection control · {rows.length} active shipment{rows.length === 1 ? "" : "s"} · {pendingCount} awaiting appointment</p>
           </div>
           <div className="flex items-center gap-2">
             <OpsButton type="button" size="sm" variant="ghost" disabled={busy} onClick={handleRefresh}><RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
@@ -210,7 +246,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
             const windowEndValue = row.confirmed_window_end ?? row.requested_window_end;
             return (
               <article key={row.shipment_reference} className="ops-surface overflow-hidden">
-                <div className="p-4">
+                <div className="pickup-queue-row p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -275,13 +311,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 </section>
               ) : null}
 
-              <section className="border-b border-[var(--admin-line)] px-5 py-5">
+              <section className="pickup-panel-summary border-b border-[var(--admin-line)] px-5 py-5">
                 <h3 className="text-sm font-semibold">Pickup details</h3>
                 <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <Detail label="Pickup location">{selected.pickup_location || selected.origin}</Detail>
                   <Detail label="Channel">{selected.channel.replaceAll("_", " ")}</Detail>
-                  <Detail label="Window start">{shortDateTime(selected.confirmed_window_start ?? selected.requested_window_start)}</Detail>
-                  <Detail label="Window end">{shortDateTime(selected.confirmed_window_end ?? selected.requested_window_end)}</Detail>
+                  <Detail label="Window start">{shortDateTime(selectedWindowStart ?? null)}</Detail>
+                  <Detail label="Window end">{shortDateTime(selectedWindowEnd ?? null)}</Detail>
                   <Detail label="Driver">{selected.driver_name || "Not assigned"}</Detail>
                   <Detail label="Vehicle">{selected.vehicle_reference || "Not assigned"}</Detail>
                 </div>
@@ -293,11 +329,11 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
               {selected.status !== "picked_up" && selected.status !== "cancelled" ? (
                 <>
-                  <section className="border-b border-[var(--admin-line)] px-5 py-5">
+                  <section className="pickup-panel-step border-b border-[var(--admin-line)] px-5 py-5">
                     <StepNumber number="01" title="Appointment" detail="Request or confirm the collection window."/>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <OpsField label="Pickup window start"><input type="datetime-local" value={windowStart} onChange={(event) => setWindowStart(event.target.value)}/></OpsField>
-                      <OpsField label="Pickup window end"><input type="datetime-local" value={windowEnd} onChange={(event) => setWindowEnd(event.target.value)}/></OpsField>
+                      <OpsField label="Pickup window start"><input name="pickup-window-start" type="datetime-local" value={windowStart} onChange={(event) => setWindowStart(event.target.value)} aria-describedby="pickup-timezone-note"/></OpsField>
+                      <OpsField label="Pickup window end"><input name="pickup-window-end" type="datetime-local" value={windowEnd} onChange={(event) => setWindowEnd(event.target.value)} aria-describedby="pickup-timezone-note"/></OpsField>
                       <OpsField label="Pickup location"><input value={pickupLocation} onChange={(event) => setPickupLocation(event.target.value)} placeholder="Warehouse, factory, terminal…"/></OpsField>
                       <OpsField label="Request channel"><select value={channel} onChange={(event) => setChannel(event.target.value as PickupChannel)}>{pickupChannels.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></OpsField>
                       <OpsField label="Contact name"><input value={contactName} onChange={(event) => setContactName(event.target.value)}/></OpsField>
@@ -305,13 +341,14 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       <OpsField label="Carrier/vendor reference"><input value={providerReference} onChange={(event) => setProviderReference(event.target.value)} placeholder="Appointment / pickup reference"/></OpsField>
                       <OpsField label="Operational note"><input value={notes} onChange={(event) => setNotes(event.target.value)}/></OpsField>
                     </div>
+                    <p id="pickup-timezone-note" className="mt-3 text-xs text-[var(--admin-muted)]">Times are saved and displayed in Nepal time (NPT).</p>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <OpsButton variant="secondary" disabled={busy || !windowStart || !windowEnd} onClick={() => act("schedule", { windowStart, windowEnd, pickupLocation, contactName, contactPhone, channel, providerReference, notes, confirmed: false })}><CalendarClock size={13} strokeWidth={1.75} aria-hidden="true"/>Request pickup</OpsButton>
-                      <OpsButton variant="primary" disabled={busy || !windowStart || !windowEnd} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? { windowStart, windowEnd, pickupLocation, contactName, contactPhone, channel, providerReference, notes, confirmed: true } : { windowStart, windowEnd, providerReference, notes })}><CheckCircle2 size={13} strokeWidth={1.75} aria-hidden="true"/>Confirm appointment</OpsButton>
+                      <OpsButton variant="secondary" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act("schedule", schedulePayload(false))}><CalendarClock size={13} strokeWidth={1.75} aria-hidden="true"/>Request pickup</OpsButton>
+                      <OpsButton variant="primary" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}><CheckCircle2 size={13} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</OpsButton>
                     </div>
                   </section>
 
-                  <section className="border-b border-[var(--admin-line)] px-5 py-5">
+                  <section className="pickup-panel-step border-b border-[var(--admin-line)] px-5 py-5">
                     <StepNumber number="02" title="Vehicle & driver" detail="Assign the collection resource once the appointment is ready."/>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <OpsField label="Driver name"><input value={driverName} onChange={(event) => setDriverName(event.target.value)}/></OpsField>

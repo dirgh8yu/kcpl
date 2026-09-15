@@ -708,6 +708,50 @@
   .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions { justify-content: flex-start; }
 }
 
+/* Pickup control: keep the queue scannable and make the selected appointment task-oriented. */
+.kcpl-admin-content .pickup-reference-layout {
+  min-width: 0;
+}
+.kcpl-admin-content .pickup-reference-layout .pickup-queue-row {
+  min-height: 132px;
+}
+.kcpl-admin-content .pickup-reference-layout .pickup-queue-row:hover {
+  background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .pickup-reference-layout [role="group"] button {
+  min-height: 40px;
+  border-radius: var(--app-radius);
+}
+.kcpl-admin-content .pickup-reference-layout aside {
+  overscroll-behavior: contain;
+}
+.kcpl-admin-content .pickup-reference-layout aside > header {
+  min-height: 76px;
+}
+.kcpl-admin-content .pickup-reference-layout .pickup-panel-summary {
+  background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .pickup-reference-layout .pickup-panel-step {
+  scroll-margin-top: 16px;
+}
+.kcpl-admin-content .pickup-reference-layout .pickup-panel-step h3 {
+  font-size: 14px;
+  line-height: 20px;
+}
+.kcpl-admin-content .pickup-reference-layout .pickup-panel-step input,
+.kcpl-admin-content .pickup-reference-layout .pickup-panel-step select,
+.kcpl-admin-content .pickup-reference-layout .pickup-panel-step textarea {
+  min-height: var(--app-control-height);
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .pickup-reference-layout .pickup-queue-row {
+    min-height: 0;
+  }
+  .kcpl-admin-content .pickup-reference-layout aside {
+    width: 100%;
+  }
+}
+
 /* Record navigation and command palette are part of the shared shell. */
 .app-record-return { padding: 10px var(--app-page-gap); border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); font-size: 12px; line-height: 16px; }
 .app-record-return a { color: var(--admin-muted); text-decoration: none; }
