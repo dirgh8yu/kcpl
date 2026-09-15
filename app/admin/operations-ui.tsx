@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { Search } from "lucide-react";
+import { useEffect, useState } from "react";
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -157,6 +158,18 @@ export function OpsField({ label, hint, children, className }: { label: ReactNod
 }
 
 export function OpsNotice({ children, tone = "neutral", onDismiss }: { children: ReactNode; tone?: "neutral" | "success" | "warning" | "danger"; onDismiss?: () => void }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (tone !== "success") return;
+    const timeout = window.setTimeout(() => {
+      setVisible(false);
+      onDismiss?.();
+    }, 4000);
+    return () => window.clearTimeout(timeout);
+  }, [children, onDismiss, tone]);
+
+  if (!visible) return null;
   return <div className="ops-notice" data-tone={tone} role={tone === "danger" ? "alert" : "status"}><span>{children}</span>{onDismiss ? <button type="button" onClick={onDismiss}>Dismiss</button> : null}</div>;
 }
 
