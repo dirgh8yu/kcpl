@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Download, FileCheck2, Folder, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, FileCheck2, Folder, RefreshCw, Trash2, X } from "lucide-react";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shipment-document-policy";
 import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { KcplStaffRole } from "../staff-permissions";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFilterChip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsToolbar } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents-data.server";
 
@@ -51,22 +51,6 @@ function nextAction(row: DocumentVaultRow) {
   if (row.effective_status === "verified") return "Verified";
   if (row.review_status === "deleted" || row.review_status === "superseded") return "Audit only";
   return "Open record";
-}
-
-function chipStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    height: "var(--app-control-height)",
-    padding: "0 12px",
-    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
-    borderRadius: "var(--app-radius)",
-    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
-    color: active ? "white" : "var(--admin-muted)",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-  };
 }
 
 const selectStyle: React.CSSProperties = {
@@ -229,10 +213,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
 
   return <OpsPage className="document-vault-register">
     <div className="document-vault-page">
-      <header className="document-vault-header">
-        <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Document Vault</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Evidence-control workspace · upload ≠ verification · {dashboard.rows.length} documents · {pendingReview} awaiting review · snapshot {dateTime(dashboard.generated_at)}</p></div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="sm">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="sm">Customs</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></div>
-      </header>
+      <OpsPageHeader eyebrow="Evidence control" title="Document Vault" description={`Evidence-control workspace · upload ≠ verification · ${dashboard.rows.length} documents · ${pendingReview} awaiting review · snapshot ${dateTime(dashboard.generated_at)}`} actions={<><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="sm">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="sm">Customs</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></>}/>
 
       {pendingReview > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertCircle size={15}/><strong>{pendingReview} document{pendingReview === 1 ? "" : "s"} awaiting review.</strong> Upload alone does not constitute verification.</span></OpsNotice></div> : null}
       {dashboard.cleanup_pending_count ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsNotice></div> : null}
@@ -240,23 +221,23 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
 
       <div className="document-vault-workspace">
         <div className="document-vault-queue">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", maxWidth: 300, flex: "1 1 260px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, filename, reviewer…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+          <OpsToolbar className="document-vault-toolbar">
+            <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, filename, reviewer…" aria-label="Search document vault"/>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Status filter">
-              <button type="button" style={chipStyle(status === "all")} onClick={() => setStatusFilter("all")}>All</button>
-              <button type="button" style={chipStyle(status === "active")} onClick={() => setStatusFilter("active")}>Active</button>
-              <button type="button" style={chipStyle(status === "pending")} onClick={() => setStatusFilter("pending")}>Pending review</button>
-              <button type="button" style={chipStyle(status === "verified")} onClick={() => setStatusFilter("verified")}>Verified</button>
-              <button type="button" style={chipStyle(status === "rejected")} onClick={() => setStatusFilter("rejected")}>Rejected</button>
-              <button type="button" style={chipStyle(status === "expired")} onClick={() => setStatusFilter("expired")}>Expired</button>
-              <button type="button" style={chipStyle(status === "superseded")} onClick={() => setStatusFilter("superseded")}>Superseded</button>
-              <button type="button" style={chipStyle(status === "deleted")} onClick={() => setStatusFilter("deleted")}>Deleted</button>
+              <OpsFilterChip active={status === "all"} onClick={() => setStatusFilter("all")}>All</OpsFilterChip>
+              <OpsFilterChip active={status === "active"} onClick={() => setStatusFilter("active")}>Active</OpsFilterChip>
+              <OpsFilterChip active={status === "pending"} onClick={() => setStatusFilter("pending")}>Pending review</OpsFilterChip>
+              <OpsFilterChip active={status === "verified"} onClick={() => setStatusFilter("verified")}>Verified</OpsFilterChip>
+              <OpsFilterChip active={status === "rejected"} onClick={() => setStatusFilter("rejected")}>Rejected</OpsFilterChip>
+              <OpsFilterChip active={status === "expired"} onClick={() => setStatusFilter("expired")}>Expired</OpsFilterChip>
+              <OpsFilterChip active={status === "superseded"} onClick={() => setStatusFilter("superseded")}>Superseded</OpsFilterChip>
+              <OpsFilterChip active={status === "deleted"} onClick={() => setStatusFilter("deleted")}>Deleted</OpsFilterChip>
             </div>
             <select value={type} onChange={(event) => update({ type: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by document type" style={selectStyle}><option value="all">All document types</option>{shipmentDocumentTypes.map((item) => <option key={item} value={item}>{shipmentDocumentTypeLabels[item]}</option>)}</select>
             <select value={branch} onChange={(event) => update({ branch: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by branch" style={selectStyle}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
             {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{visible.length} documents</span>
-          </div>
+          </OpsToolbar>
 
           <section className="document-vault-table">
           {visible.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Document</th><th>Type</th><th>Shipment</th><th>Uploaded</th><th>Expiry</th><th>Customer-safe</th><th>Review status</th><th>Next action</th></tr></thead><tbody>{visible.map((row) => {

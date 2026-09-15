@@ -88,6 +88,20 @@ export function OpsToolbar({ children, className }: { children: ReactNode; class
   return <div className={cx("ops-toolbar", className)}>{children}</div>;
 }
 
+export function OpsFilterChip({
+  children,
+  active = false,
+  onClick,
+  className,
+}: {
+  children: ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return <button type="button" className={cx("ops-filter-chip", className)} data-active={active || undefined} aria-pressed={active} onClick={onClick}>{children}</button>;
+}
+
 export function OpsTableWrap({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx("ops-table-wrap", className)}>{children}</div>;
 }

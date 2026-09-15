@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Info, RefreshCw } from "lucide-react";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity, type AutomationAlertStatus } from "./alert-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFilterChip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsToolbar } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 
 type StatusFilter = "active" | "all" | AutomationAlertStatus;
@@ -24,22 +24,6 @@ function severityTone(value: AutomationAlertSeverity): "info" | "warning" | "dan
 
 function statusTone(value: AutomationAlertStatus): "info" | "success" | "neutral" {
   return value === "open" ? "info" : value === "acknowledged" ? "success" : "neutral";
-}
-
-function chipStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    height: "var(--app-control-height)",
-    padding: "0 12px",
-    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
-    borderRadius: "var(--app-radius)",
-    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
-    color: active ? "white" : "var(--admin-muted)",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-  };
 }
 
 function ageLabel(value: string) {
@@ -151,38 +135,29 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
 
   return <OpsPage>
     <div className="alerts-workspace-page">
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Tasks & Alerts</h1>
-          <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Operational exceptions — ordered by severity · {counts.active} active · {roleLabel}</p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="sm">Overview</Link>
-          <OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton>
-        </div>
-      </header>
+      <OpsPageHeader eyebrow="Operational control" title="Tasks & Alerts" description={`Operational exceptions ordered by severity · ${counts.active} active · ${roleLabel}`} actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="sm">Overview</Link><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}/>
 
       {counts.critical > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{counts.critical} critical exception{counts.critical === 1 ? "" : "s"} require immediate review.</strong></span></OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
-      <div className="alerts-workspace-toolbar">
+      <OpsToolbar className="alerts-workspace-toolbar">
         <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search alert, shipment, owner…" aria-label="Search tasks and alerts"/>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Severity filter">
-          <button type="button" style={chipStyle(severity === "all")} onClick={() => setSeverity("all")}>All severities</button>
-          <button type="button" style={chipStyle(severity === "critical")} onClick={() => setSeverity("critical")}>Critical {counts.critical}</button>
-          <button type="button" style={chipStyle(severity === "warning")} onClick={() => setSeverity("warning")}>Warning {counts.warning}</button>
-          <button type="button" style={chipStyle(severity === "info")} onClick={() => setSeverity("info")}>Info</button>
+          <OpsFilterChip active={severity === "all"} onClick={() => setSeverity("all")}>All severities</OpsFilterChip>
+          <OpsFilterChip active={severity === "critical"} onClick={() => setSeverity("critical")}>Critical {counts.critical}</OpsFilterChip>
+          <OpsFilterChip active={severity === "warning"} onClick={() => setSeverity("warning")}>Warning {counts.warning}</OpsFilterChip>
+          <OpsFilterChip active={severity === "info"} onClick={() => setSeverity("info")}>Info</OpsFilterChip>
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Status filter">
-          <button type="button" style={chipStyle(status === "active")} onClick={() => setStatus("active")}>Active {counts.active}</button>
-          <button type="button" style={chipStyle(status === "open")} onClick={() => setStatus("open")}>Open {counts.open}</button>
-          <button type="button" style={chipStyle(status === "acknowledged")} onClick={() => setStatus("acknowledged")}>Acknowledged {counts.acknowledged}</button>
-          <button type="button" style={chipStyle(status === "resolved")} onClick={() => setStatus("resolved")}>Resolved {counts.resolved}</button>
-          <button type="button" style={chipStyle(status === "all")} onClick={() => setStatus("all")}>All history</button>
+          <OpsFilterChip active={status === "active"} onClick={() => setStatus("active")}>Active {counts.active}</OpsFilterChip>
+          <OpsFilterChip active={status === "open"} onClick={() => setStatus("open")}>Open {counts.open}</OpsFilterChip>
+          <OpsFilterChip active={status === "acknowledged"} onClick={() => setStatus("acknowledged")}>Acknowledged {counts.acknowledged}</OpsFilterChip>
+          <OpsFilterChip active={status === "resolved"} onClick={() => setStatus("resolved")}>Resolved {counts.resolved}</OpsFilterChip>
+          <OpsFilterChip active={status === "all"} onClick={() => setStatus("all")}>All history</OpsFilterChip>
         </div>
         {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
         <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{visible.length} showing</span>
-      </div>
+      </OpsToolbar>
 
       <section style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
         {visible.length ? visible.map((alert, index) => {

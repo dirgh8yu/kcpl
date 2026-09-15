@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Truck, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFilterChip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsToolbar } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
@@ -44,22 +44,6 @@ function podTone(row: DeliveryQueueRow): "success" | "warning" | "danger" | "neu
   if (row.pod_status === "received") return "warning";
   if (row.pod_status === "rejected") return "danger";
   return "neutral";
-}
-
-function chipStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    height: "var(--app-control-height)",
-    padding: "0 12px",
-    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
-    borderRadius: "var(--app-radius)",
-    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
-    color: active ? "white" : "var(--admin-muted)",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-  };
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
@@ -133,27 +117,24 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   const selected = selectedReference ? initialRows.find((row) => row.reference === selectedReference) ?? null : null;
   return <OpsPage>
     <div className="delivery-control-page">
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Delivery & POD</h1><p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Last-mile execution queue · {initialRows.length} deliveries · POD evidence received ≠ POD verified</p></div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="sm">Shipments</Link></div>
-      </header>
+      <OpsPageHeader eyebrow="Shipment execution" title="Delivery & POD" description={`Last-mile execution queue · ${initialRows.length} deliveries · POD evidence received ≠ POD verified`} actions={<><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="sm">Shipments</Link></>}/>
 
       {initialSummary.delivered_pod_pending > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></span></OpsNotice></div> : null}
 
       <div className="delivery-control-workspace">
         <div className="delivery-control-queue">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          <OpsToolbar className="delivery-control-toolbar">
             <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, branch…" aria-label="Search delivery and POD queue"/>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Delivery state filter">
-              <button type="button" style={chipStyle(focus === "all")} onClick={() => setFocus("all")}>All</button>
-              <button type="button" style={chipStyle(focus === "active")} onClick={() => setFocus("active")}>Delivery active</button>
-              <button type="button" style={chipStyle(focus === "failed")} onClick={() => setFocus("failed")}>Failed / refused</button>
-              <button type="button" style={chipStyle(focus === "pod_pending")} onClick={() => setFocus("pod_pending")}>POD pending</button>
-              <button type="button" style={chipStyle(focus === "verified")} onClick={() => setFocus("verified")}>POD verified</button>
+              <OpsFilterChip active={focus === "all"} onClick={() => setFocus("all")}>All</OpsFilterChip>
+              <OpsFilterChip active={focus === "active"} onClick={() => setFocus("active")}>Delivery active</OpsFilterChip>
+              <OpsFilterChip active={focus === "failed"} onClick={() => setFocus("failed")}>Failed / refused</OpsFilterChip>
+              <OpsFilterChip active={focus === "pod_pending"} onClick={() => setFocus("pod_pending")}>POD pending</OpsFilterChip>
+              <OpsFilterChip active={focus === "verified"} onClick={() => setFocus("verified")}>POD verified</OpsFilterChip>
             </div>
             {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{rows.length} entries</span>
-          </div>
+          </OpsToolbar>
 
           <section style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
             {rows.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Shipment</th><th>Consignee / route</th><th>Branch</th><th>Scheduled / attempt</th><th>Delivery state</th><th>POD evidence</th><th>Closeout</th></tr></thead><tbody>{rows.map((row) => {
