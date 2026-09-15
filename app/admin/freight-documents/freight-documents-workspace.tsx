@@ -351,9 +351,9 @@ export function FreightDocumentsWorkspace({
                         <td><OpsBadge tone={review.tone}>{review.label}</OpsBadge></td>
                         <td><OpsBadge tone={status.tone}>{status.label}</OpsBadge></td>
                         <td className="text-right">
-                          <div className="flex justify-end gap-1.5" onClick={(event) => event.stopPropagation()}>
-                            {latest ? <OpsButton size="sm" variant="ghost" onClick={() => void openDocument(row.reference, latest.document_id)}><ExternalLink size={13} aria-hidden="true"/>PDF</OpsButton> : null}
-                            <OpsButton size="sm" variant="secondary" onClick={() => openEditor(row)}>{row.missing_primary_carriage_document ? "Produce primary" : hasPendingReview(row) ? "Continue" : "Manage"}</OpsButton>
+                          <div className="flex justify-end gap-1.5">
+                            {latest ? <OpsButton size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); void openDocument(row.reference, latest.document_id); }}><ExternalLink size={13} aria-hidden="true"/>PDF</OpsButton> : null}
+                            <OpsButton size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); openEditor(row); }}>{row.missing_primary_carriage_document ? "Produce primary" : hasPendingReview(row) ? "Continue" : "Manage"}</OpsButton>
                           </div>
                         </td>
                       </tr>
