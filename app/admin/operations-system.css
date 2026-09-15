@@ -938,6 +938,45 @@
 }
 
 /* Document Vault: make evidence review the primary queue, not a metadata wall. */
+.kcpl-admin-content .alerts-workspace-page,
+.kcpl-admin-content .notifications-workspace-page {
+  min-height: calc(100dvh - var(--app-toolbar-height));
+  padding: var(--app-page-gap);
+}
+.kcpl-admin-content .alerts-stat-strip,
+.kcpl-admin-content .notifications-stat-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+.kcpl-admin-content .alerts-stat-strip .ops-stat,
+.kcpl-admin-content .notifications-stat-strip .ops-stat {
+  min-height: 88px;
+}
+.kcpl-admin-content .alerts-workspace-toolbar,
+.kcpl-admin-content .notifications-workspace-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.kcpl-admin-content .alerts-workspace-toolbar > .ops-search,
+.kcpl-admin-content .notifications-workspace-toolbar > .ops-search {
+  flex: 1 1 280px;
+  max-width: 340px;
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .alerts-workspace-page,
+  .kcpl-admin-content .notifications-workspace-page {
+    padding: 16px;
+  }
+  .kcpl-admin-content .alerts-stat-strip,
+  .kcpl-admin-content .notifications-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Document Vault: make evidence review the primary queue, not a metadata wall. */
 .kcpl-admin-content .document-vault-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
   padding: var(--app-page-gap);

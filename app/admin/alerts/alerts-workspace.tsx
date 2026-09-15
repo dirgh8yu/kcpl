@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, Info, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Info, RefreshCw } from "lucide-react";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity, type AutomationAlertStatus } from "./alert-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch, OpsStat, OpsStatStrip } from "../operations-ui";
+import { useWorkspaceQuery } from "../use-workspace-query";
 
 type StatusFilter = "active" | "all" | AutomationAlertStatus;
 type NoticeTone = "success" | "danger" | "warning";
@@ -59,9 +60,12 @@ function SeverityIcon({ severity }: { severity: AutomationAlertSeverity }) {
 
 export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: AutomationAlert[]; roleLabel: string }) {
   const [alerts, setAlerts] = useState(initialAlerts);
-  const [query, setQuery] = useState("");
-  const [severity, setSeverity] = useState<"all" | AutomationAlertSeverity>("all");
-  const [status, setStatus] = useState<StatusFilter>("active");
+  const { params, update } = useWorkspaceQuery();
+  const query = params.get("q") ?? "";
+  const severityValue = params.get("severity");
+  const severity: "all" | AutomationAlertSeverity = severityValue === "critical" || severityValue === "warning" || severityValue === "info" ? severityValue : "all";
+  const statusValue = params.get("status");
+  const status: StatusFilter = statusValue === "all" || statusValue === "open" || statusValue === "acknowledged" || statusValue === "resolved" ? statusValue : "active";
   const [busyId, setBusyId] = useState<string | null>(null);
   const [evaluating, setEvaluating] = useState(false);
   const [notice, setNotice] = useState("");
@@ -139,12 +143,14 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
     }
   }
 
-  function reset() { setQuery(""); setSeverity("all"); setStatus("active"); }
+  function reset() { update({ q: null, severity: null, status: null }); }
+  const setSeverity = (value: "all" | AutomationAlertSeverity) => update({ severity: value === "all" ? null : value });
+  const setStatus = (value: StatusFilter) => update({ status: value === "active" ? null : value });
 
   const filtersActive = Boolean(query.trim()) || severity !== "all" || status !== "active";
 
   return <OpsPage>
-    <div style={{ padding: "var(--app-page-gap)", minHeight: "calc(100dvh - var(--app-toolbar-height))" }}>
+    <div className="alerts-workspace-page">
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Tasks & Alerts</h1>
@@ -159,8 +165,15 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
       {counts.critical > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{counts.critical} critical exception{counts.critical === 1 ? "" : "s"} require immediate review.</strong></span></OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, height: "var(--app-control-height)", padding: "0 12px", width: 280, border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface)" }}><Search size={14} style={{ color: "var(--admin-muted)" }}/><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search alert, shipment, owner…" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13.5 }}/></label>
+      <OpsStatStrip className="alerts-stat-strip">
+        <OpsStat label="Active" value={counts.active} detail="Needs an operational outcome" tone={counts.active ? "warning" : "success"} active={status === "active"} onClick={() => setStatus("active")} />
+        <OpsStat label="Critical" value={counts.critical} detail="Immediate review" tone={counts.critical ? "danger" : "success"} active={severity === "critical"} onClick={() => setSeverity("critical")} />
+        <OpsStat label="Acknowledged" value={counts.acknowledged} detail="Reviewed, not resolved" tone="info" active={status === "acknowledged"} onClick={() => setStatus("acknowledged")} />
+        <OpsStat label="Resolved" value={counts.resolved} detail="Retained history" tone="neutral" active={status === "resolved"} onClick={() => setStatus("resolved")} />
+      </OpsStatStrip>
+
+      <div className="alerts-workspace-toolbar">
+        <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search alert, shipment, owner…" aria-label="Search tasks and alerts"/>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Severity filter">
           <button type="button" style={chipStyle(severity === "all")} onClick={() => setSeverity("all")}>All severities</button>
           <button type="button" style={chipStyle(severity === "critical")} onClick={() => setSeverity("critical")}>Critical {counts.critical}</button>
