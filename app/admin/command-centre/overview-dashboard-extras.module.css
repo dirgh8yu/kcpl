@@ -1,0 +1,114 @@
+.routeArrow {
+  color: #667085;
+}
+
+.routeNodeCore {
+  color: #d92d20;
+}
+
+.routeNodeLabel {
+  color: #344054;
+}
+
+.routeNodeMeta {
+  color: #667085;
+}
+
+.createForm {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.createGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.createField {
+  display: grid;
+  gap: 5px;
+}
+
+.createFieldWide {
+  grid-column: 1 / -1;
+}
+
+.createField label {
+  color: #475467;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.createField input,
+.createField select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #e4e7ec;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #101114;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 11px;
+  outline: none;
+}
+
+.createField input:focus,
+.createField select:focus {
+  border-color: #101114;
+  box-shadow: 0 0 0 2px rgba(16, 17, 20, 0.06);
+}
+
+.createField input::placeholder {
+  color: #98a2b3;
+}
+
+.createMetrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.createActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #e4e7ec;
+  padding-top: 12px;
+}
+
+.createError {
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff1f0;
+  padding: 8px 10px;
+  color: #d92d20;
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.selectionSummary {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border-radius: 6px;
+  background: #f2f4f7;
+  padding: 0 9px;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+@media (max-width: 640px) {
+  .createGrid,
+  .createMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .createFieldWide {
+    grid-column: auto;
+  }
+}
