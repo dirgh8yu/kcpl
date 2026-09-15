@@ -1,7 +1,7 @@
-/* Frozen compatibility rules. New UI belongs in operations-system.css. */
-@layer kcpl-legacy {
 /* KCPL shipment detail — quiet operational record.
-   One persistent local nav, one shipment flow, restrained working controls. */
+   One persistent local nav, one shipment flow, restrained working controls.
+   This legacy compatibility layer is now part of the canonical product system.
+*/
 
 .shipment-detail-v2 {
   --shipment-ink: #101010;
@@ -534,6 +534,4 @@
     animation-duration: .01ms;
     animation-iteration-count: 1;
   }
-}
-
 }

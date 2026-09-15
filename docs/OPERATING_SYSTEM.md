@@ -1,20 +1,21 @@
 # KCPL operating system contract
 
-This is the engineering and workflow contract for `/admin`. Read [UI_UX_DESIGN_GUIDE.md](UI_UX_DESIGN_GUIDE.md) for the required visual quality, typography, icons, interaction patterns and implementation sequence. It applies to every module and every coding model. The public website keeps its brand/marketing layout; staff work uses the application system below.
+This is the engineering and workflow contract for the KCPL staff operating system as a whole, not just one page or one `/admin` route. Read [UI_UX_DESIGN_GUIDE.md](UI_UX_DESIGN_GUIDE.md) for the required visual quality, typography, icons, interaction patterns and implementation sequence. It applies to every module and every coding model. The public website keeps its brand/marketing layout; staff work uses the application system below.
 
 ## Why the interface drifted
 
 The original system loaded 18 overlapping admin stylesheets. Repeated editorial, compatibility and hotfix rules competed through specificity and `!important`. Headers reached 48px, operational labels fell to 8px, and the action hierarchy forced primary, secondary, ghost and destructive buttons to the same crimson fill. Separate navigation/search implementations owned different workspace lists. A DOM notification bridge targeted a bell that no longer existed, while the shell displayed a constant unread dot.
 
-Compatibility rules now live in `@layer kcpl-legacy`. CSS order is `theme, base, kcpl-legacy, components, utilities`, followed by the unlayered application contract. `operations-system.css` is the sole active shared design owner. Existing module structures remain available in the compatibility layer. `admin-typography.css` owns the Inter/Manrope/monospace mapping.
+Legacy compatibility styles may be modified or removed as part of an intentional route migration. Preserve behaviour, migrate consumers to the canonical system, validate the affected workflows, and do not create new compatibility layers. `operations-system.css` is the sole active shared design owner. `admin-typography.css` owns the Inter/Manrope/monospace mapping.
 
 ## Required page anatomy
 
 1. `OperationsShell`: grouped navigation, a restrained desktop toolbar, breadcrumb, one command palette, actual notifications and refresh. It derives all modules and access from `workflow-navigation.ts`. The current 224px sidebar and 48px toolbar are implementation defaults; refine dimensions centrally when applying the design guide.
-2. `OpsPage` and `OpsPageHeader`: compact title, concise description, optional scope metadata and a focused primary action.
+2. `OpsPage` and `OpsPageHeader`: compact title, concise description, optional scope metadata and a focused primary action. Use them consistently across the KCPL product so the system feels coherent instead of one-off page designs.
 3. `OpsToolbar`: search, filters, sort and reset beside the register. Keep filters shareable and persistent with `useWorkspaceQuery`.
 4. `OpsSurface` / `OpsTableWrap`: the working records. Use a contextual inspector or a linked record for details. Do not substitute large decorative metric cards for the register.
 5. Pending, failed, empty and incomplete states must describe the actual data available. Do not hide failures behind zeros.
+6. Every route in the operational system should use the same hierarchy, density and interaction model; a route that breaks the pattern should be treated as a shared-system bug, not as an acceptable local exception.
 
 ## Shared components and tokens
 

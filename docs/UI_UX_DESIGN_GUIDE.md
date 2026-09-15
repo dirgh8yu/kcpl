@@ -4,17 +4,18 @@
 
 ## 1. What we are building
 
-KCPL is working software for cargo operations. The interface should make a shipment, its current state, its blocker and its next permitted action immediately understandable. Aim for the clarity, restraint and interaction quality associated with Uber, Notion and ChatGPT: readable typography, considered spacing, quiet surfaces, predictable navigation and polished controls. These are quality references, not instructions to copy their branding or reproduce their layouts.
+KCPL is working software for cargo operations. The interface should make a shipment, its current state, its blocker and its next permitted action immediately understandable. The target is a whole-product operational system, not a single polished screen or a dashboard skin. Aim for the clarity, restraint and interaction quality associated with Linear, Stripe, Flexport, project44 and Ramp: readable typography, considered spacing, quiet surfaces, predictable navigation, polished controls and unmistakably operational hierarchy. These are quality references, not instructions to copy their branding or reproduce their layouts.
 
-“Compact” does not mean tiny, cramped or unfinished. “Clean” does not mean removing useful information or making every surface look identical. Changing the font and rounding existing boxes is not a complete redesign. Fix hierarchy, grouping, alignment, content and behavior together.
+“Compact” does not mean tiny, cramped or unfinished. “Clean” does not mean removing useful information or making every surface look identical. Changing the font and rounding existing boxes is not a complete redesign. Fix hierarchy, grouping, alignment, content and behavior together across the whole product.
 
 ### Authority and scope
 
 1. Follow the user's current task, scope and delivery instructions.
 2. Read [AGENTS.md](../AGENTS.md), this guide and [OPERATING_SYSTEM.md](OPERATING_SYSTEM.md). This guide defines the design target; the operating system contract defines implementation ownership and workflow constraints.
-3. Read the relevant current components, styles, routes and server policies before writing code. Existing code is evidence of behavior, not proof of good design.
+3. Read the relevant current components, styles, routes and server policies before writing code. Existing code is evidence of behavior, not proof of good design. Treat the full product as the design unit: inventory the whole user-facing system, not just the current route.
 4. Preserve the KCPL identity in [BRAND_SYSTEM.md](BRAND_SYSTEM.md). Use Inter for interface text. Preserve approved logo artwork and its wordmark.
 5. If an old density or typography value conflicts with this guide, evolve the shared tokens and primitives. Do not work around them with local overrides.
+6. A valid redesign must improve the shared system and the consumers of that system; a token-only or one-page polish is not the target.
 
 **This document defines the target, not a claim that every current screen already meets it.** The sizes below must be implemented in the canonical stylesheet during an authorized UI task; adding this document alone does not change runtime styling. For a scoped task, improve its shared components and affected screens without rewriting unrelated workflows.
 
@@ -205,7 +206,7 @@ Inspect current exports before using them. Existing primitives include `OpsPage`
 
 `OpsButton` defaults to a secondary action and `type="button"`. Use `variant="primary"` for the main task, `secondary` for supporting actions, `ghost` for low emphasis and `danger` for destruction. Form submissions must explicitly use `type="submit"`.
 
-Do not add new override stylesheets, `!important`, CSS selectors that target fragments of Tailwind class names, arbitrary component-level hex colours or repeated literal type/radius/shadow values. Keep frozen `@layer kcpl-legacy` styles untouched. Migrate a touched screen to semantic classes and shared tokens rather than adding another compatibility patch. Preserve the canonical stylesheet's existing import order.
+Do not add new override stylesheets, `!important`, CSS selectors that target fragments of Tailwind class names, arbitrary component-level hex colours or repeated literal type/radius/shadow values. Legacy compatibility styles may be modified or removed as part of an intentional route migration. Preserve behaviour, migrate consumers to the canonical system, validate the affected workflows, and do not create new compatibility layers. Preserve the canonical stylesheet's existing import order.
 
 For public-facing interface work, reuse the brand foundation and Inter control typography; do not mount staff chrome on the public website. Preserve the approved public marketing and logo context unless that is part of the requested change.
 

@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { AlertTriangle, Plus, SlidersHorizontal, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, OpsTabs } from "../operations-ui";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 type StatusTone = "neutral" | "info" | "warning" | "success" | "danger";
@@ -134,24 +134,9 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
   const selected = selectedReference ? filtered.find((job) => job.reference === selectedReference) ?? null : null;
-  const selectedKey = selected?.reference ?? null;
   const returnTo = `/admin/shipments${search}`;
   const advancedCount = Number(branch !== "all") + Number(mode !== "all") + Number(ownerFilter !== "all") + Number(attention) + Number(sort !== "priority");
   const hasFilters = Boolean(query) || status !== "all" || advancedCount > 0;
-
-  useEffect(() => {
-    if (!selectedKey) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedReference(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [selectedKey, setSelectedReference]);
 
   function resetFilters() {
     update({ q: null, status: null, branch: null, mode: null, owner: null, attention: null, sort: null, page: null, selected: null });
@@ -173,49 +158,54 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
 
       <div className="px-4 py-4 md:px-6">
-        <div className="shipments-toolbar mb-4">
-          <div className="shipments-toolbar-search">
-            <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ref, customer, route…" aria-label="Search shipments"/>
-          </div>
+        <OpsTabs.Root value={status === "all" ? "all" : status} onValueChange={(value) => setStatus((value as StatusFilter) || "all")}>
+          <div className="shipments-toolbar mb-4">
+            <div className="shipments-toolbar-search">
+              <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ref, customer, route…" aria-label="Search shipments"/>
+            </div>
 
-          <div className="shipments-status-filters" role="group" aria-label="Shipment status filters">
-            {STATUS_FILTERS.map((item) => {
-              const active = status === item.value;
-              return (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setStatus(item.value)}
-                  aria-pressed={active}
-                  className="shipments-filter-tab"
-                  data-active={active || undefined}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
+            <OpsTabs.List className="shipments-status-filters" aria-label="Shipment status filters">
+              {STATUS_FILTERS.map((item) => {
+                const active = status === item.value;
+                return (
+                  <OpsTabs.Trigger
+                    key={item.value}
+                    value={item.value}
+                    className="shipments-filter-tab"
+                    data-active={active || undefined}
+                    aria-label={item.label}
+                  >
+                    {item.label}
+                  </OpsTabs.Trigger>
+                );
+              })}
+            </OpsTabs.List>
 
-          <div className="shipments-toolbar-actions">
-            <details className="relative">
-              <summary className="shipments-filter-trigger">
-                <SlidersHorizontal size={14} strokeWidth={1.75} aria-hidden="true"/>
-                <span>Filters</span>{advancedCount ? <span className="shipments-filter-count">{advancedCount}</span> : null}
-              </summary>
-              <div className="shipments-filter-menu">
-                <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label>Mode<select value={mode} onChange={(event) => setMode(event.target.value)}><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label>Owner<select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}><option value="all">All owners</option><option value="unassigned">Unassigned</option></select></label>
-                <label>Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} ><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
-                <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className="shipments-attention-filter" data-active={attention || undefined}>
-                  <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/> Needs attention
-                </button>
-              </div>
-            </details>
-            {hasFilters ? <button type="button" className="shipments-reset" onClick={resetFilters}>Reset</button> : null}
-            <span className="shipments-result-count">{filtered.length} of {data.jobs.length}</span>
+            <div className="shipments-toolbar-actions">
+              <OpsPopover.Root>
+                <OpsPopover.Trigger asChild>
+                  <button type="button" className="shipments-filter-trigger" aria-label="Open shipment filters">
+                    <SlidersHorizontal size={14} strokeWidth={1.75} aria-hidden="true"/>
+                    <span>Filters</span>{advancedCount ? <span className="shipments-filter-count">{advancedCount}</span> : null}
+                  </button>
+                </OpsPopover.Trigger>
+                <OpsPopover.Portal>
+                  <OpsPopover.Content sideOffset={8} align="end" className="shipments-filter-menu" collisionPadding={12}>
+                    <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                    <label>Mode<select value={mode} onChange={(event) => setMode(event.target.value)}><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                    <label>Owner<select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}><option value="all">All owners</option><option value="unassigned">Unassigned</option></select></label>
+                    <label>Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} ><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
+                    <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className="shipments-attention-filter" data-active={attention || undefined}>
+                      <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/> Needs attention
+                    </button>
+                  </OpsPopover.Content>
+                </OpsPopover.Portal>
+              </OpsPopover.Root>
+              {hasFilters ? <button type="button" className="shipments-reset" onClick={resetFilters}>Reset</button> : null}
+              <span className="shipments-result-count">{filtered.length} of {data.jobs.length}</span>
+            </div>
           </div>
-        </div>
+        </OpsTabs.Root>
 
         <section className="ops-surface overflow-hidden" aria-label="Shipment register">
           <OpsTableWrap>
@@ -298,70 +288,76 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
   }
 
   return (
-    <>
-      <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close shipment panel"/>
-      <aside className="shipment-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
-        <header className="shipment-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-          <div className="min-w-0">
-            <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
-            <h2 className="mt-1 text-base font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
-            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
-            <button type="button" className="shipment-inspector-close" onClick={onClose} aria-label="Close shipment panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
-          </div>
-        </header>
+    <OpsDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <OpsDialog.Portal>
+        <OpsDialog.Overlay className="fixed inset-0 z-[70] cursor-default bg-black/15" />
+        <OpsDialog.Content className="shipment-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
+          <OpsDialog.Title className="sr-only">{job.reference} shipment details</OpsDialog.Title>
+          <OpsDialog.Description className="sr-only">Review shipment status, readiness, route and the next permitted action.</OpsDialog.Description>
+          <header className="shipment-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
+            <div className="min-w-0">
+              <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
+              <h2 className="mt-1 text-base font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
+              <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
+              <OpsDialog.Close asChild>
+                <button type="button" className="shipment-inspector-close" aria-label="Close shipment panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+              </OpsDialog.Close>
+            </div>
+          </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {hasBlockingWork ? (
-            <section className="border-b border-[var(--admin-line)] px-5 py-4">
-              <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-danger-bg)] px-3 py-2.5 text-[var(--admin-danger)]">
-                <AlertTriangle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
-                <div><strong className="block text-sm">Attention required</strong><span className="mt-0.5 block text-xs">{action.detail}</span></div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {hasBlockingWork ? (
+              <section className="border-b border-[var(--admin-line)] px-5 py-4">
+                <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-danger-bg)] px-3 py-2.5 text-[var(--admin-danger)]">
+                  <AlertTriangle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
+                  <div><strong className="block text-sm">Attention required</strong><span className="mt-0.5 block text-xs">{action.detail}</span></div>
+                </div>
+              </section>
+            ) : null}
+
+            <PanelSection title="Job status">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Detail label="Workflow status"><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></Detail>
+                <Detail label="Priority"><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></Detail>
+                <Detail label="Assigned to" warning={jobOwner === "Unassigned"}>{jobOwner}</Detail>
+                <Detail label="Branch">{job.primary_branch}</Detail>
               </div>
-            </section>
-          ) : null}
+            </PanelSection>
 
-          <PanelSection title="Job status">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <Detail label="Workflow status"><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></Detail>
-              <Detail label="Priority"><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></Detail>
-              <Detail label="Assigned to" warning={jobOwner === "Unassigned"}>{jobOwner}</Detail>
-              <Detail label="Branch">{job.primary_branch}</Detail>
-            </div>
-          </PanelSection>
+            <PanelSection title="Next action">
+              <strong className="block text-sm font-semibold text-[var(--admin-ink)]">{action.title}</strong>
+              <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{action.detail}</p>
+            </PanelSection>
 
-          <PanelSection title="Next action">
-            <strong className="block text-sm font-semibold text-[var(--admin-ink)]">{action.title}</strong>
-            <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{action.detail}</p>
-          </PanelSection>
+            <PanelSection title="Route">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Detail label="Origin">{job.origin || "—"}</Detail>
+                <Detail label="Destination">{job.destination || "—"}</Detail>
+                <Detail label="Current location">{job.current_location || "—"}</Detail>
+                <Detail label="Mode">{job.mode || "—"}</Detail>
+                <Detail label="ETA">{shortDate(job.eta)}</Detail>
+                <Detail label="Carrier" warning={!job.carrier}>{job.carrier || "Not assigned"}</Detail>
+              </div>
+            </PanelSection>
 
-          <PanelSection title="Route">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <Detail label="Origin">{job.origin || "—"}</Detail>
-              <Detail label="Destination">{job.destination || "—"}</Detail>
-              <Detail label="Current location">{job.current_location || "—"}</Detail>
-              <Detail label="Mode">{job.mode || "—"}</Detail>
-              <Detail label="ETA">{shortDate(job.eta)}</Detail>
-              <Detail label="Carrier" warning={!job.carrier}>{job.carrier || "Not assigned"}</Detail>
-            </div>
-          </PanelSection>
+            <PanelSection title="Readiness">
+              <ReadinessRow label="Open work" value={job.open_tasks ? `${job.open_tasks} task${job.open_tasks === 1 ? "" : "s"}` : "Clear"} warning={job.overdue_tasks > 0}/>
+              <ReadinessRow label="Customs" value={job.required_customs_open ? `${job.required_customs_open} open` : "Clear"} warning={job.required_customs_open > 0}/>
+              <ReadinessRow label="Exception" value={openException ? "Open" : "None"} warning={openException}/>
+              <ReadinessRow label="Owner" value={jobOwner} warning={jobOwner === "Unassigned"}/>
+            </PanelSection>
+          </div>
 
-          <PanelSection title="Readiness">
-            <ReadinessRow label="Open work" value={job.open_tasks ? `${job.open_tasks} task${job.open_tasks === 1 ? "" : "s"}` : "Clear"} warning={job.overdue_tasks > 0}/>
-            <ReadinessRow label="Customs" value={job.required_customs_open ? `${job.required_customs_open} open` : "Clear"} warning={job.required_customs_open > 0}/>
-            <ReadinessRow label="Exception" value={openException ? "Open" : "None"} warning={openException}/>
-            <ReadinessRow label="Owner" value={jobOwner} warning={jobOwner === "Unassigned"}/>
-          </PanelSection>
-        </div>
-
-        <footer className="shipment-inspector-footer flex shrink-0 flex-wrap gap-2 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-3">
-          <Link href={withReturn(action.href)} className="ops-button flex-1" data-variant="primary" data-size="md">{action.title}</Link>
-          <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open shipment</Link>
-        </footer>
-      </aside>
-    </>
+          <footer className="shipment-inspector-footer flex shrink-0 flex-wrap gap-2 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-3">
+            <Link href={withReturn(action.href)} className="ops-button flex-1" data-variant="primary" data-size="md">{action.title}</Link>
+            <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open shipment</Link>
+          </footer>
+        </OpsDialog.Content>
+      </OpsDialog.Portal>
+    </OpsDialog.Root>
   );
 }
 

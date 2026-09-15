@@ -1,6 +1,7 @@
 /* KCPL operating system — authoritative application contract.
- * Legacy styles live in @layer kcpl-legacy. This unlayered, scoped sheet owns
- * application chrome and shared primitives; do not add another override sheet.
+ * Legacy compatibility layers may be revised or retired during route migrations,
+ * but behaviour and workflow invariants must remain intact. This canonical sheet
+ * owns application chrome, shared primitives and product-level tokens.
  * Read docs/OPERATING_SYSTEM.md before changing these components or tokens.
  */
 .kcpl-admin-route {
@@ -10,6 +11,7 @@
   --admin-ink: #101010;
   --admin-canvas: #F6F6F3;
   --admin-surface: #FFFFFF;
+  --admin-surface-soft: #F3F3F1;
   --admin-surface-muted: #EEEEE8;
   --admin-line: #D6D6D0;
   --admin-line-strong: #AFAFA8;
@@ -24,19 +26,19 @@
   --admin-danger-bg: #FEECEC;
   --admin-info-bg: #EBF2FA;
   --app-sidebar-width: 240px;
-  --app-toolbar-height: 56px;
+  --app-toolbar-height: 58px;
   --app-control-height: 40px;
   --app-control-height-touch: 44px;
   --app-radius: 8px;
-  --app-surface-radius: 10px;
-  --app-dialog-radius: 12px;
+  --app-surface-radius: 12px;
+  --app-dialog-radius: 14px;
   --app-space-1: 4px;
   --app-space-2: 8px;
   --app-space-3: 12px;
   --app-space-4: 16px;
   --app-space-5: 24px;
   --app-space-6: 32px;
-  --app-surface-shadow: 0 8px 24px rgb(16 16 16 / 5%);
+  --app-surface-shadow: 0 12px 30px rgb(16 16 16 / 8%);
   --app-page-gap: 24px;
   --app-row-height: 48px;
   --app-focus: #315D83;
@@ -94,24 +96,24 @@
 .app-nav-item-main > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
 .app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
-.app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-muted); color: var(--admin-ink); }
+.app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); color: var(--admin-ink); }
 .app-nav-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
 .app-account { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--app-radius); }
 .app-avatar { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--admin-crimson); color: white; font-size: 11px; font-weight: 600; }
 .app-account-name { min-width: 0; flex: 1; overflow: hidden; color: var(--admin-ink); text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 500; }
 .app-account-name small { display: block; color: var(--admin-muted); font-size: 11px; font-weight: 400; }
 .app-account a { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--app-radius); color: var(--admin-muted); }
-.app-account a:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
-.app-topbar { position: fixed; inset: 0 0 auto var(--app-sidebar-width); z-index: 50; display: flex; align-items: center; gap: 12px; height: var(--app-toolbar-height); border-bottom: 1px solid var(--admin-line); background: rgb(255 255 255 / 94%); padding: 0 24px; backdrop-filter: blur(12px); }
+.app-account a:hover { background: var(--admin-surface-soft); color: var(--admin-ink); }
+.app-topbar { position: fixed; inset: 0 0 auto var(--app-sidebar-width); z-index: 50; display: flex; align-items: center; gap: 12px; height: var(--app-toolbar-height); border-bottom: 1px solid var(--admin-line); background: rgb(255 255 255 / 95%); padding: 0 24px; backdrop-filter: blur(12px); box-shadow: inset 0 -1px 0 rgb(16 16 16 / 02%); }
 .app-breadcrumb { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; color: var(--admin-muted); font-size: 13px; white-space: nowrap; }
 .app-breadcrumb > :last-child { overflow: hidden; text-overflow: ellipsis; }
 .app-breadcrumb svg { flex-shrink: 0; opacity: .45; }
 .app-breadcrumb a { color: var(--admin-ink); font-weight: 500; text-decoration: none; }
-.app-global-search { display: flex; align-items: center; gap: 8px; height: 34px; width: 280px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; cursor: pointer; transition: border-color 120ms ease; }
+.app-global-search { display: flex; align-items: center; gap: 8px; height: 34px; width: 280px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12.5px; cursor: pointer; transition: border-color 120ms ease; }
 .app-global-search:hover { border-color: var(--admin-line-strong); }
 .app-global-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
 .app-icon-button { display: inline-grid; place-items: center; width: var(--app-control-height); min-height: var(--app-control-height); border: 1px solid transparent; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
-.app-icon-button:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.app-icon-button:hover { background: var(--admin-surface-soft); color: var(--admin-ink); }
 .app-icon-button:disabled { opacity: .5; }
 .app-menu-toggle { display: none; }
 .app-refreshing { animation: app-spin 1s linear infinite; }
@@ -123,7 +125,22 @@
 .kcpl-admin-content :where(h1) { font-family: inherit; font-size: var(--app-title-size); font-weight: 600; line-height: 32px; letter-spacing: -.02em; }
 .kcpl-admin-content :where(h2) { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; }
 .kcpl-admin-content :where(h3) { font-family: inherit; font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: normal; }
-.kcpl-admin-content .ops-page-header { padding: 28px var(--app-page-gap) 0; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); backdrop-filter: none; }
+.kcpl-admin-content .ops-page-header {
+  position: relative;
+  padding: 28px var(--app-page-gap) 0;
+  border-bottom: 1px solid var(--admin-line);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+  backdrop-filter: none;
+}
+.kcpl-admin-content .ops-page-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 24px;
+  width: 2px;
+  height: 52px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--admin-crimson), transparent);
+}
 .kcpl-admin-content .ops-page-header-main { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; width: 100%; max-width: none; margin: 0; padding: 0 0 18px; }
 .kcpl-admin-content .ops-page-heading { min-width: 0; max-width: 900px; }
 .kcpl-admin-content .ops-page-heading h1 { margin: 0; font-size: var(--app-title-size); font-weight: 600; line-height: 32px; letter-spacing: -.02em; }
@@ -133,8 +150,20 @@
 .kcpl-admin-content .ops-page-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .kcpl-admin-content :where(.ops-content,.ops-content-wide) { width: 100%; max-width: none; margin: 0; padding: 20px var(--app-page-gap) 40px; }
 .kcpl-admin-content :where(.ops-stack,.ops-grid-2,.ops-grid-main) { gap: 16px; }
-.kcpl-admin-content .ops-surface { border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: 0 2px 10px rgb(16 16 16 / 3%); overflow: clip; }
-.kcpl-admin-content .ops-surface-header { display: flex; align-items: flex-start; justify-content: space-between; flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); }
+.kcpl-admin-content .ops-surface {
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
+  background: var(--admin-surface);
+  box-shadow: 0 8px 22px rgb(16 16 16 / 3%);
+  overflow: clip;
+}
+.kcpl-admin-content .ops-surface[data-priority="info"] { border-color: #C9D9E7; }
+.kcpl-admin-content .ops-surface[data-priority="success"] { border-color: #BCD9CA; }
+.kcpl-admin-content .ops-surface[data-priority="warning"] { border-color: #DFD0AE; }
+.kcpl-admin-content .ops-surface[data-priority="danger"] { border-color: #E8BEC7; }
+.kcpl-admin-content .ops-surface-header {
+  display: flex; align-items: flex-start; justify-content: space-between; flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--admin-line); background: linear-gradient(180deg, rgba(246,246,243,0.25), rgba(255,255,255,0.92));
+}
 .kcpl-admin-content .ops-surface-header h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; }
 .kcpl-admin-content .ops-surface-description { margin-top: 2px; color: var(--admin-muted); font-size: 13px; font-weight: 400; line-height: 20px; }
 .kcpl-admin-content .ops-surface-body { padding: 18px; }
@@ -205,12 +234,26 @@
 .kcpl-admin-content :where(table td) { height: var(--app-row-height); padding: 10px 12px; border-bottom: 1px solid var(--admin-line); color: var(--admin-ink); font-size: 13px; font-weight: 400; line-height: 20px; vertical-align: middle; }
 .kcpl-admin-content :where(table tbody tr:hover) { background: var(--admin-canvas); }
 .kcpl-admin-content :where(table tbody tr[data-selected="true"]) { background: var(--admin-surface-muted); box-shadow: inset 2px 0 0 var(--admin-crimson); }
+.kcpl-admin-content :where(table tbody tr:focus-visible) { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kcpl-admin-shell :where(a,button,input,select,textarea):focus-visible { outline: 2px solid var(--app-focus); outline-offset: 2px; }
 .kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 7px; border: 1px solid var(--admin-line); border-radius: 4px; background: var(--admin-canvas); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
+.kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-ink); border-color: var(--admin-line); background: var(--admin-surface-muted); }
 .kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); border-color: #BCD9CA; background: var(--admin-success-bg); }
 .kcpl-admin-content .ops-badge[data-tone="danger"], .kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-danger); border-color: #E8BEC7; background: var(--admin-danger-bg); }
 .kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); border-color: #DFD0AE; background: var(--admin-warning-bg); }
 .kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); border-color: #BED0DE; background: var(--admin-info-bg); }
 .kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: #E8BEC7; background: #FFF3F5; }
+.kcpl-admin-content .ops-search:focus-within,
+.kcpl-admin-content .ops-filter-chip:focus-visible,
+.kcpl-admin-content .ops-stat:focus-visible,
+.kcpl-admin-content .app-nav-group a:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -2px;
+}
+.kcpl-admin-content .ops-search:focus-within {
+  border-color: var(--admin-crimson);
+  box-shadow: 0 0 0 3px rgb(220 20 60 / 10%);
+}
 .kcpl-admin-content .ops-notice, .kcpl-admin-content .ops-error-state { border-radius: var(--app-surface-radius); padding: 12px 14px; font-size: 13px; font-weight: 400; line-height: 20px; }
 .kcpl-admin-content .ops-empty { min-height: 176px; padding: 28px 24px; }
 .kcpl-admin-content .ops-empty[data-compact="true"] { min-height: 132px; padding: 22px; }
@@ -429,6 +472,7 @@
 }
 .kcpl-admin-content .shipment-inspector {
   width: min(520px, 100vw);
+  overscroll-behavior: contain;
   border-left-color: var(--admin-line-strong);
   box-shadow: -16px 0 40px rgb(16 16 16 / 10%);
 }
