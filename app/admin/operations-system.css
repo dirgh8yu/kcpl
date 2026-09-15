@@ -1112,6 +1112,89 @@
 .kcpl-admin-content .freight-documents-register .ops-table td {
   vertical-align: middle;
 }
+.kcpl-admin-content .freight-documents-page {
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .freight-documents-header h1 {
+  text-wrap: balance;
+}
+.kcpl-admin-content .freight-documents-toolbar {
+  align-items: center;
+}
+.kcpl-admin-content .freight-documents-filter {
+  display: inline-flex;
+  min-height: var(--app-control-height);
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius);
+  background: var(--admin-surface);
+  padding-inline: 12px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  touch-action: manipulation;
+}
+.kcpl-admin-content .freight-documents-filter:hover {
+  border-color: var(--admin-line-strong);
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .freight-documents-filter[data-active="true"] {
+  border-color: var(--admin-crimson);
+  background: var(--admin-crimson);
+  color: white;
+}
+.kcpl-admin-content .freight-documents-filter:focus-visible,
+.kcpl-admin-content .freight-document-inspector-close:focus-visible,
+.kcpl-admin-content .freight-documents-page tr:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+.kcpl-admin-content .freight-documents-result-count {
+  font-variant-numeric: tabular-nums;
+}
+.kcpl-admin-content .freight-documents-surface .ops-table tbody tr {
+  min-height: var(--app-row-height);
+  cursor: pointer;
+}
+.kcpl-admin-content .freight-documents-surface .ops-table tbody tr[data-selected="true"] {
+  box-shadow: inset 3px 0 0 var(--admin-crimson);
+}
+.kcpl-admin-content .freight-document-inspector {
+  width: min(640px, 100vw);
+  border-left-color: var(--admin-line-strong);
+  box-shadow: -16px 0 40px rgb(16 16 16 / 10%);
+  overscroll-behavior: contain;
+}
+.kcpl-admin-content .freight-document-inspector-header {
+  min-height: 88px;
+  padding: 20px 24px 16px;
+}
+.kcpl-admin-content .freight-document-inspector-close {
+  display: inline-grid;
+  width: var(--app-control-height-touch);
+  min-height: var(--app-control-height-touch);
+  flex: none;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius);
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+}
+.kcpl-admin-content .freight-document-inspector-close:hover {
+  background: var(--admin-surface-muted);
+  color: var(--admin-ink);
+}
+.kcpl-admin-content .freight-document-inspector-footer {
+  padding: 16px 24px 20px;
+}
+.kcpl-admin-content .freight-document-inspector-footer .ops-button {
+  min-height: var(--app-control-height-touch);
+}
 /* Customs clearance: keep the queue and its decision panel readable at working density. */
 .kcpl-admin-content .customs-clearance-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
@@ -1294,6 +1377,21 @@
 }
 .kcpl-admin-content .document-vault-register .ops-table tbody tr:hover {
   background: var(--admin-surface-muted);
+}
+.kcpl-admin-content .document-vault-register .ops-table tbody tr[data-selected="true"] {
+  box-shadow: inset 3px 0 0 var(--admin-crimson);
+}
+.kcpl-admin-content .document-vault-register .ops-table tbody tr:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -2px;
+}
+.kcpl-admin-content .document-vault-page .ops-button {
+  min-height: 36px;
+}
+.kcpl-admin-content .document-vault-page :where(input,select,textarea):focus-visible {
+  border-color: var(--admin-crimson);
+  box-shadow: 0 0 0 3px rgb(220 20 60 / 12%);
+  outline: none;
 }
 @media (max-width: 1040px) {
   .kcpl-admin-content .document-vault-workspace {
