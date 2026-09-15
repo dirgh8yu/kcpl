@@ -196,13 +196,13 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
             <details className="relative">
               <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-xs font-medium text-[var(--admin-muted)] hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)] [&::-webkit-details-marker]:hidden">
                 <SlidersHorizontal size={14} strokeWidth={1.75} aria-hidden="true"/>
-                Filters{advancedCount ? <span className="rounded-full bg-[var(--admin-crimson)] px-1.5 text-[10px] leading-5 text-white">{advancedCount}</span> : null}
+                Filters{advancedCount ? <span className="rounded-md bg-[var(--admin-crimson)] px-1.5 text-xs leading-5 text-white">{advancedCount}</span> : null}
               </summary>
-              <div className="absolute right-0 top-11 z-30 w-[280px] rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3 shadow-[0_12px_32px_rgba(16,16,16,.12)]">
-                <label className="block text-[11px] font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Branch<select value={branch} onChange={(event) => setBranch(event.target.value)} className="mt-1 w-full"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label className="mt-3 block text-[11px] font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Mode<select value={mode} onChange={(event) => setMode(event.target.value)} className="mt-1 w-full"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label className="mt-3 block text-[11px] font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} className="mt-1 w-full"><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
-                <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className={`mt-3 flex min-h-9 w-full items-center justify-center gap-2 rounded-md border px-3 text-xs font-medium ${attention ? "border-[var(--admin-crimson)] bg-[#FEE7EB] text-[var(--admin-crimson)]" : "border-[var(--admin-line)] text-[var(--admin-muted)]"}`}>
+              <div className="absolute right-0 top-11 z-30 w-[280px] rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3 shadow-lg">
+                <label className="block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Branch<select value={branch} onChange={(event) => setBranch(event.target.value)} className="mt-1 w-full"><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Mode<select value={mode} onChange={(event) => setMode(event.target.value)} className="mt-1 w-full"><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+                <label className="mt-3 block text-xs font-medium uppercase tracking-[.06em] text-[var(--admin-faint)]">Sort<select value={sort} onChange={(event) => setFilters({ sort: event.target.value === "priority" ? null : event.target.value })} className="mt-1 w-full"><option value="priority">Priority first</option><option value="updated">Recently updated</option></select></label>
+                <button type="button" aria-pressed={attention} onClick={() => setFilters({ attention: attention ? null : "1" })} className={`mt-3 flex min-h-9 w-full items-center justify-center gap-2 rounded-md border px-3 text-xs font-medium ${attention ? "border-[var(--admin-crimson)] bg-[var(--admin-danger-bg)] text-[var(--admin-crimson)]" : "border-[var(--admin-line)] text-[var(--admin-muted)]"}`}>
                   <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/> Needs attention
                 </button>
               </div>
@@ -247,13 +247,13 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
                       aria-label={`Open ${job.reference}, ${job.customer_name}, ${shipmentStatusLabels[job.status]}`}
                     >
                       <td><span className="ops-mono text-xs font-medium text-[var(--admin-info)]">{job.reference}</span></td>
-                      <td><strong className="block text-[13.5px] font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{route(job)}</span></td>
-                      <td><span className="text-[13px] text-[var(--admin-muted)]">{job.mode || "—"}</span></td>
+                      <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{route(job)}</span></td>
+                      <td><span className="text-sm text-[var(--admin-muted)]">{job.mode || "—"}</span></td>
                       <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></td>
                       <td><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></td>
-                      <td><span className={`text-[13px] ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
-                      <td><span className="text-[13px] text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
-                      <td><span className="text-[13px] text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>
+                      <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
+                      <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
+                      <td><span className="text-sm text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>
                     </tr>
                   );
                 }) : (
@@ -292,12 +292,12 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
   return (
     <>
       <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close shipment panel"/>
-      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-[-12px_0_36px_rgba(16,16,16,.08)] md:w-[480px]" role="complementary" aria-label={`Shipment ${job.reference}`}>
+      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" role="complementary" aria-label={`Shipment ${job.reference}`}>
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
-            <p className="ops-mono m-0 text-[11px] text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
+            <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
             <h2 className="mt-1 text-base font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
-            <p className="mt-0.5 text-[13px] text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
+            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
@@ -308,9 +308,9 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
         <div className="min-h-0 flex-1 overflow-y-auto">
           {hasBlockingWork ? (
             <section className="border-b border-[var(--admin-line)] px-5 py-4">
-              <div className="flex items-start gap-2 rounded-md border border-[#F9C0C8] bg-[var(--admin-danger-bg)] px-3 py-2.5 text-[var(--admin-danger)]">
+              <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-danger-bg)] px-3 py-2.5 text-[var(--admin-danger)]">
                 <AlertTriangle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
-                <div><strong className="block text-[13px]">Attention required</strong><span className="mt-0.5 block text-[12.5px]">{action.detail}</span></div>
+                <div><strong className="block text-sm">Attention required</strong><span className="mt-0.5 block text-xs">{action.detail}</span></div>
               </div>
             </section>
           ) : null}
@@ -325,8 +325,8 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
           </PanelSection>
 
           <PanelSection title="Next action">
-            <strong className="block text-[13.5px] font-semibold text-[var(--admin-ink)]">{action.title}</strong>
-            <p className="mt-1 text-[13px] leading-5 text-[var(--admin-muted)]">{action.detail}</p>
+            <strong className="block text-sm font-semibold text-[var(--admin-ink)]">{action.title}</strong>
+            <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{action.detail}</p>
           </PanelSection>
 
           <PanelSection title="Route">
@@ -358,13 +358,13 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
 }
 
 function PanelSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="border-b border-[var(--admin-line)] px-5 py-4"><h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[.06em] text-[var(--admin-line-strong)]">{title}</h3>{children}</section>;
+  return <section className="border-b border-[var(--admin-line)] px-5 py-4"><h3 className="mb-3 text-xs font-semibold uppercase tracking-[.06em] text-[var(--admin-line-strong)]">{title}</h3>{children}</section>;
 }
 
 function Detail({ label, children, warning = false }: { label: string; children: React.ReactNode; warning?: boolean }) {
-  return <div><p className="m-0 text-[11.5px] font-medium text-[var(--admin-muted)]">{label}</p><div className={`mt-0.5 text-[13.5px] ${warning ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{children}</div></div>;
+  return <div><p className="m-0 text-xs font-medium text-[var(--admin-muted)]">{label}</p><div className={`mt-0.5 text-sm ${warning ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{children}</div></div>;
 }
 
 function ReadinessRow({ label, value, warning = false }: { label: string; value: string; warning?: boolean }) {
-  return <div className="flex items-center justify-between gap-4 border-b border-[var(--admin-line)] py-2.5 last:border-b-0"><span className="text-[12.5px] text-[var(--admin-muted)]">{label}</span><strong className={`text-right text-[12.5px] font-semibold ${warning ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>;
+  return <div className="flex items-center justify-between gap-4 border-b border-[var(--admin-line)] py-2.5 last:border-b-0"><span className="text-xs text-[var(--admin-muted)]">{label}</span><strong className={`text-right text-xs font-semibold ${warning ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>;
 }
