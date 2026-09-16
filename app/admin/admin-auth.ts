@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { adminSecurityConfigurationValid } from "./admin-security-config";
-import { canBootstrapEmptyStaffDirectory, staffProfileByEmail, staffProfileByUid } from "./staff-directory.server";
+import { qaAuthBypassEnabled, qaAuthBypassIdentity } from "./qa-auth-bypass";
+import { canBootstrapEmptyStaffDirectory, staffProfileByUid } from "./staff-directory.server";
 
 export const ADMIN_SESSION_COOKIE = "kcpl_admin_session";
 export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -26,38 +27,9 @@ function allowedAdminEmails() {
   );
 }
 
-function previewQaBypassEnabled() {
-  if (process.env.KCPL_QA_AUTH_BYPASS !== "true") return false;
-
-  const vercelEnv = process.env.VERCEL_ENV;
-  if (vercelEnv) return vercelEnv === "preview" || vercelEnv === "development";
-
-  // v0 VM previews commonly run the repository as a development server rather
-  // than as a published Vercel Preview deployment. Keep production fail-closed.
-  return process.env.NODE_ENV === "development";
-}
-
-async function previewQaAccess(): Promise<AdminAccess | null> {
-  if (!previewQaBypassEnabled()) return null;
-
-  const email = process.env.KCPL_QA_EMAIL?.trim().toLowerCase() ?? "";
-  if (!email || !firebaseRuntimeConfigured()) return null;
-
-  try {
-    const profile = await staffProfileByEmail(email);
-    if (!profile?.active) return null;
-
-    return {
-      kind: "authorized",
-      user: {
-        uid: profile.uid,
-        email: profile.email,
-        displayName: profile.display_name || profile.email.split("@")[0] || "KCPL QA",
-      },
-    };
-  } catch {
-    return null;
-  }
+function previewQaAccess(): AdminAccess | null {
+  if (!qaAuthBypassEnabled()) return null;
+  return { kind: "authorized", user: qaAuthBypassIdentity() };
 }
 
 export function firebaseAdminConfigured() {
@@ -86,7 +58,7 @@ export async function isAuthorizedAdminUser(uid: string, email: string | undefin
 }
 
 export async function getAdminAccess(): Promise<AdminAccess> {
-  const previewAccess = await previewQaAccess();
+  const previewAccess = previewQaAccess();
   if (previewAccess) return previewAccess;
 
   if (!firebaseAdminConfigured()) return { kind: "unconfigured" };
