@@ -1,6 +1,7 @@
 import { firebaseAdminAuth, firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { resolveStaffAuthority, type StaffDirectoryState } from "./staff-authority-policy";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
+import { isQaAuthBypassUser, qaAuthBypassIdentity } from "./qa-auth-bypass";
 import {
   kcplStaffRoles,
   staffCapabilitiesForRole,
@@ -96,6 +97,31 @@ function configuredAdminEmails() {
 
 function isConfiguredAdmin(email: string) {
   return configuredAdminEmails().has(email.trim().toLowerCase());
+}
+
+function qaStaffContext(user: StaffUser): KcplStaffContext | null {
+  if (!isQaAuthBypassUser(user)) return null;
+  const identity = qaAuthBypassIdentity();
+  const branches = [...kcplBranches];
+  return {
+    profile: {
+      uid: identity.uid,
+      email: identity.email,
+      display_name: identity.displayName,
+      job_title: "QA Preview",
+      phone: null,
+      role: "management",
+      branch_scope: "all",
+      branches,
+      active: true,
+      created_at: "",
+      updated_at: "",
+      updated_by: null,
+    },
+    permissions: staffCapabilitiesForRole("management"),
+    can_access_all_branches: true,
+    branches,
+  };
 }
 
 async function staffDirectoryState(): Promise<StaffDirectoryState> {
@@ -197,6 +223,9 @@ export async function isActiveStaffProfile(uid: string, email: string) {
 }
 
 export async function getStaffContext(user: StaffUser): Promise<KcplStaffContext> {
+  const qaContext = qaStaffContext(user);
+  if (qaContext) return qaContext;
+
   if (!firebaseRuntimeConfigured()) throw new Error("Staff directory is unavailable");
   const uid = user.uid.trim();
   if (!uid) throw new Error("Staff profile is required");
