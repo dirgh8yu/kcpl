@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { adminSecurityConfigurationValid } from "./admin-security-config";
-import { canBootstrapEmptyStaffDirectory, staffProfileByUid } from "./staff-directory.server";
+import { canBootstrapEmptyStaffDirectory, staffProfileByEmail, staffProfileByUid } from "./staff-directory.server";
 
 export const ADMIN_SESSION_COOKIE = "kcpl_admin_session";
 export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -24,6 +24,33 @@ function allowedAdminEmails() {
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean),
   );
+}
+
+function previewQaBypassEnabled() {
+  return process.env.VERCEL_ENV === "preview" && process.env.KCPL_QA_AUTH_BYPASS === "true";
+}
+
+async function previewQaAccess(): Promise<AdminAccess | null> {
+  if (!previewQaBypassEnabled()) return null;
+
+  const email = process.env.KCPL_QA_EMAIL?.trim().toLowerCase() ?? "";
+  if (!email || !firebaseRuntimeConfigured()) return null;
+
+  try {
+    const profile = await staffProfileByEmail(email);
+    if (!profile?.active) return null;
+
+    return {
+      kind: "authorized",
+      user: {
+        uid: profile.uid,
+        email: profile.email,
+        displayName: profile.display_name || profile.email.split("@")[0] || "KCPL QA",
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function firebaseAdminConfigured() {
@@ -52,6 +79,9 @@ export async function isAuthorizedAdminUser(uid: string, email: string | undefin
 }
 
 export async function getAdminAccess(): Promise<AdminAccess> {
+  const previewAccess = await previewQaAccess();
+  if (previewAccess) return previewAccess;
+
   if (!firebaseAdminConfigured()) return { kind: "unconfigured" };
 
   const cookieStore = await cookies();
