@@ -2,17 +2,29 @@
 
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
-import { AlertTriangle, Plus, SlidersHorizontal, X } from "lucide-react";
+import { AlertTriangle, Download, FileText, LayoutGrid, Map as MapIcon, Navigation, Package, Plus, SlidersHorizontal, Table as TableIcon, Truck, Upload, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, OpsTabs } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap, OpsTabs } from "../operations-ui";
+import {
+  ModeIcon,
+  ShipmentCards,
+  ShipmentMap,
+  ShipRoute,
+  exportShipmentsCsv,
+  ownerLabel as owner,
+  priorityTone,
+  relativeAge,
+  routeText as route,
+  shortDate,
+  statusTone,
+} from "./shipments-views";
 
-const NEPAL_TIME_ZONE = "Asia/Kathmandu";
-type StatusTone = "neutral" | "info" | "warning" | "success" | "danger";
 type StatusFilter = "all" | "active" | ShipmentStatus;
+type RegisterView = "table" | "cards" | "map";
 
 const STATUS_FILTERS: Array<{ label: string; value: StatusFilter }> = [
   { label: "All", value: "all" },
@@ -26,50 +38,11 @@ const STATUS_FILTERS: Array<{ label: string; value: StatusFilter }> = [
   { label: "Delivered", value: "delivered" },
 ];
 
-function statusTone(status: ShipmentStatus): StatusTone {
-  if (status === "exception") return "danger";
-  if (status === "customs_clearance") return "warning";
-  if (status === "out_for_delivery") return "info";
-  if (status === "in_transit") return "success";
-  return "neutral";
-}
-
-function priorityTone(priority: CommandCentreJob["priority"]): StatusTone {
-  if (priority === "urgent") return "danger";
-  if (priority === "high") return "warning";
-  return "neutral";
-}
-
-function shortDate(value: string | null) {
-  if (!value) return "—";
-  const date = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    timeZone: value.length === 10 ? "UTC" : NEPAL_TIME_ZONE,
-  }).format(date);
-}
-
-function relativeAge(value: string, anchor: string) {
-  const time = Date.parse(value);
-  const anchorTime = Date.parse(anchor);
-  if (!Number.isFinite(time) || !Number.isFinite(anchorTime)) return "Updated";
-  const minutes = Math.max(0, Math.round((anchorTime - time) / 60_000));
-  if (minutes < 1) return "Now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
-
-function owner(job: CommandCentreJob) {
-  return job.assigned_to_name || job.assigned_to_email || (job.assigned_to_uid ? "Assigned staff" : "Unassigned");
-}
-
-function route(job: CommandCentreJob) {
-  return `${job.origin || "Origin"} → ${job.destination || "Destination"}`;
-}
+const VIEW_OPTIONS: Array<{ value: RegisterView; label: string; icon: typeof TableIcon }> = [
+  { value: "table", label: "Table", icon: TableIcon },
+  { value: "cards", label: "Cards", icon: LayoutGrid },
+  { value: "map", label: "Map", icon: MapIcon },
+];
 
 function modeOptions(jobs: CommandCentreJob[]) {
   return [...new Set(jobs.map((job) => job.mode.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -89,6 +62,8 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const attention = params.get("attention") === "1";
   const ownerFilter = params.get("owner") === "unassigned" ? "unassigned" : "all";
   const sort = params.get("sort") === "updated" ? "updated" : "priority";
+  const requestedView = params.get("view");
+  const view: RegisterView = requestedView === "cards" || requestedView === "map" ? requestedView : "table";
   const selectedReference = params.get("selected");
   const pageSize = 50;
   const requestedPage = Number(params.get("page") || "1");
@@ -99,9 +74,23 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
   const setBranch = (value: string) => setFilters({ branch: value === "all" ? null : value });
   const setMode = (value: string) => setFilters({ mode: value === "all" ? null : value });
   const setOwnerFilter = (value: string) => setFilters({ owner: value === "all" ? null : value });
+  const setView = (value: RegisterView) => update({ view: value === "table" ? null : value });
   const setSelectedReference = useCallback((value: string | null) => update({ selected: value }), [update]);
 
   const modes = useMemo(() => modeOptions(data.jobs), [data.jobs]);
+  const overview = useMemo(() => {
+    let inTransit = 0;
+    let outForDelivery = 0;
+    let customs = 0;
+    let attentionCount = 0;
+    for (const job of data.jobs) {
+      if (job.status === "in_transit") inTransit += 1;
+      else if (job.status === "out_for_delivery") outForDelivery += 1;
+      else if (job.status === "customs_clearance") customs += 1;
+      if (shipmentNeedsAttention(job)) attentionCount += 1;
+    }
+    return { total: data.jobs.length, inTransit, outForDelivery, customs, attention: attentionCount };
+  }, [data.jobs]);
   const filtered = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return data.jobs.filter((job) => {
@@ -142,18 +131,75 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
     update({ q: null, status: null, branch: null, mode: null, owner: null, attention: null, sort: null, page: null, selected: null });
   }
 
+  const handleExport = useCallback(() => exportShipmentsCsv(filtered), [filtered]);
+
   return (
     <OpsPage className="shipments-register">
       <OpsPageHeader
         title="Shipments"
         description={`Active movements and Digital Job Files · ${data.jobs.length} total record${data.jobs.length === 1 ? "" : "s"}`}
-        actions={canStartShipment ? (
-          <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Tender & Booking">
-            <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
-          </Link>
-        ) : null}
+        actions={(
+          <div className="shipments-actions">
+            <OpsButton variant="secondary" onClick={handleExport} disabled={!filtered.length} title="Download the current view as CSV">
+              <Download size={16} strokeWidth={1.75} aria-hidden="true"/> Export
+            </OpsButton>
+            <OpsButton variant="secondary" disabled aria-disabled="true" title="Bulk import is coming soon">
+              <Upload size={16} strokeWidth={1.75} aria-hidden="true"/> Import
+            </OpsButton>
+            {canStartShipment ? (
+              <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Tender & Booking">
+                <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
+              </Link>
+            ) : null}
+          </div>
+        )}
       >
       </OpsPageHeader>
+
+      <div className="px-4 pt-4 md:px-6">
+        <OpsStatStrip className="shipments-stats">
+          <OpsStat
+            icon={<Package size={15} strokeWidth={1.75} aria-hidden="true"/>}
+            label="Total shipments"
+            value={overview.total}
+            tone="accent"
+            active={status === "all" && !attention}
+            onClick={() => setFilters({ status: null, attention: null })}
+          />
+          <OpsStat
+            icon={<Navigation size={15} strokeWidth={1.75} aria-hidden="true"/>}
+            label="In transit"
+            value={overview.inTransit}
+            tone="info"
+            active={status === "in_transit" && !attention}
+            onClick={() => setFilters({ status: "in_transit", attention: null })}
+          />
+          <OpsStat
+            icon={<Truck size={15} strokeWidth={1.75} aria-hidden="true"/>}
+            label="Out for delivery"
+            value={overview.outForDelivery}
+            tone="success"
+            active={status === "out_for_delivery" && !attention}
+            onClick={() => setFilters({ status: "out_for_delivery", attention: null })}
+          />
+          <OpsStat
+            icon={<FileText size={15} strokeWidth={1.75} aria-hidden="true"/>}
+            label="Customs clearance"
+            value={overview.customs}
+            tone="warning"
+            active={status === "customs_clearance" && !attention}
+            onClick={() => setFilters({ status: "customs_clearance", attention: null })}
+          />
+          <OpsStat
+            icon={<AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>}
+            label="Requires attention"
+            value={overview.attention}
+            tone="danger"
+            active={attention}
+            onClick={() => setFilters({ status: null, attention: "1" })}
+          />
+        </OpsStatStrip>
+      </div>
 
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
 
@@ -182,6 +228,20 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
             </OpsTabs.List>
 
             <div className="shipments-toolbar-actions">
+              <div className="shipments-view-toggle" role="group" aria-label="Register view">
+                {VIEW_OPTIONS.map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    data-active={view === value || undefined}
+                    aria-pressed={view === value}
+                    onClick={() => setView(value)}
+                  >
+                    <Icon size={14} strokeWidth={1.75} aria-hidden="true"/>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
               <OpsPopover.Root>
                 <OpsPopover.Trigger asChild>
                   <button type="button" className="shipments-filter-trigger" aria-label="Open shipment filters">
@@ -207,61 +267,69 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
           </div>
         </OpsTabs.Root>
 
-        <section className="ops-surface overflow-hidden" aria-label="Shipment register">
-          <OpsTableWrap>
-            <table className="ops-table shipments-register-table" aria-label="Shipments register">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Customer · Route</th>
-                  <th>Mode</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th>Owner</th>
-                  <th>ETA</th>
-                  <th>Updated</th>
-                  <th>Next action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length ? pageRows.map((job) => {
-                  const chosen = selected?.reference === job.reference;
-                  const jobOwner = owner(job);
-                  const nextAction = shipmentNextAction(job);
-                  return (
-                    <tr
-                      key={job.reference}
-                      data-selected={chosen || undefined}
-                      tabIndex={0}
-                      onClick={() => setSelectedReference(job.reference)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          setSelectedReference(job.reference);
-                        }
-                      }}
-                      className="cursor-pointer"
-                      aria-label={`Open ${job.reference}, ${job.customer_name}, ${shipmentStatusLabels[job.status]}`}
-                    >
-                      <td><span className="ops-mono text-xs font-medium text-[var(--admin-info)]">{job.reference}</span></td>
-                      <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{route(job)}</span></td>
-                      <td><span className="text-sm text-[var(--admin-muted)]">{job.mode || "—"}</span></td>
-                      <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></td>
-                      <td><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></td>
-                      <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
-                      <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
-                      <td><span className="text-sm text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>
-                      <td><span className="shipment-next-action-cell" data-tone={nextAction.tone}>{nextAction.title}</span></td>
-                    </tr>
-                  );
-                }) : (
-                  <tr><td colSpan={9}><OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/></td></tr>
-                )}
-              </tbody>
-            </table>
-          </OpsTableWrap>
-          {filtered.length ? <div className="border-t border-[var(--admin-line)] px-4 py-2.5 text-xs text-[var(--admin-muted)]">{filtered.length} shipment{filtered.length === 1 ? "" : "s"} in this view</div> : null}
-        </section>
+        {!filtered.length ? (
+          <section className="ops-surface p-4" aria-label="Shipment register">
+            <OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
+          </section>
+        ) : view === "cards" ? (
+          <ShipmentCards jobs={pageRows} selectedReference={selected?.reference ?? null} onSelect={setSelectedReference}/>
+        ) : view === "map" ? (
+          <ShipmentMap jobs={pageRows} selectedReference={selected?.reference ?? null} onSelect={setSelectedReference}/>
+        ) : (
+          <section className="ops-surface overflow-hidden" aria-label="Shipment register">
+            <OpsTableWrap>
+              <table className="ops-table shipments-register-table" aria-label="Shipments register">
+                <thead>
+                  <tr>
+                    <th>Ref</th>
+                    <th>Customer · Route</th>
+                    <th>Mode</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Owner</th>
+                    <th>ETA</th>
+                    <th>Updated</th>
+                    <th>Next action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((job) => {
+                    const chosen = selected?.reference === job.reference;
+                    const jobOwner = owner(job);
+                    const nextAction = shipmentNextAction(job);
+                    return (
+                      <tr
+                        key={job.reference}
+                        data-selected={chosen || undefined}
+                        tabIndex={0}
+                        onClick={() => setSelectedReference(job.reference)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedReference(job.reference);
+                          }
+                        }}
+                        className="cursor-pointer"
+                        aria-label={`Open ${job.reference}, ${job.customer_name}, ${shipmentStatusLabels[job.status]}`}
+                      >
+                        <td><span className="ops-mono text-xs font-medium text-[var(--admin-info)]">{job.reference}</span></td>
+                        <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-1 block"><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
+                        <td><span className="inline-flex items-center gap-1.5 text-sm text-[var(--admin-muted)]"><ModeIcon mode={job.mode} size={14}/>{job.mode || "—"}</span></td>
+                        <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></td>
+                        <td><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></td>
+                        <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
+                        <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
+                        <td><span className="text-sm text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>
+                        <td><span className="shipment-next-action-cell" data-tone={nextAction.tone}>{nextAction.title}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+            <div className="border-t border-[var(--admin-line)] px-4 py-2.5 text-xs text-[var(--admin-muted)]">{filtered.length} shipment{filtered.length === 1 ? "" : "s"} in this view</div>
+          </section>
+        )}
 
         {filtered.length > pageSize ? (
           <div className="ops-pagination mt-3" aria-label="Shipment pages">
