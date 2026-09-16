@@ -243,3 +243,111 @@ export function OpsProgress({ value, max = 100, tone = "accent", label }: { valu
   const ratio = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return <div className="ops-progress" data-tone={tone} aria-label={label} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}><span style={{ width: `${ratio}%` }}/></div>;
 }
+
+export type OpsTimelineEntry = {
+  id: string;
+  title: ReactNode;
+  meta?: ReactNode;
+  body?: ReactNode;
+  tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
+  icon?: ReactNode;
+};
+
+export function OpsTimeline({ entries, empty }: { entries: OpsTimelineEntry[]; empty?: ReactNode }) {
+  if (entries.length === 0) {
+    return empty ? <>{empty}</> : null;
+  }
+  return (
+    <ol className="ops-timeline">
+      {entries.map((entry) => (
+        <li key={entry.id} className="ops-timeline-item" data-tone={entry.tone ?? "neutral"}>
+          <span className="ops-timeline-marker" aria-hidden="true">{entry.icon}</span>
+          <div className="ops-timeline-content">
+            <div className="ops-timeline-head">
+              <span className="ops-timeline-title">{entry.title}</span>
+              {entry.meta ? <span className="ops-timeline-meta">{entry.meta}</span> : null}
+            </div>
+            {entry.body ? <div className="ops-timeline-body">{entry.body}</div> : null}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+export function OpsDetailSection({
+  title,
+  description,
+  action,
+  children,
+  columns = 2,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+  columns?: number;
+}) {
+  return (
+    <div className="ops-detail-section">
+      <div className="ops-detail-section-head">
+        <div className="min-w-0">
+          <h3>{title}</h3>
+          {description ? <p className="ops-detail-section-description">{description}</p> : null}
+        </div>
+        {action ? <div className="ops-detail-section-action">{action}</div> : null}
+      </div>
+      <OpsDetailGrid columns={columns}>{children}</OpsDetailGrid>
+    </div>
+  );
+}
+
+export function OpsDetailGrid({ children, columns = 2 }: { children: ReactNode; columns?: number }) {
+  return <dl className="ops-detail-grid" style={{ "--ops-detail-columns": Math.max(1, Math.min(4, columns)) } as CSSProperties}>{children}</dl>;
+}
+
+export function OpsDetailItem({ label, children, wide = false }: { label: ReactNode; children: ReactNode; wide?: boolean }) {
+  return (
+    <div className="ops-detail-item" data-wide={wide || undefined}>
+      <dt>{label}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+export function OpsActionMenu({
+  label = "Actions",
+  align = "end",
+  children,
+}: {
+  label?: ReactNode;
+  align?: "start" | "end";
+  children: ReactNode;
+}) {
+  return (
+    <PopoverPrimitive.Root>
+      <PopoverPrimitive.Trigger asChild>
+        <button type="button" className="ops-button" data-variant="secondary" data-size="sm" aria-haspopup="menu">{label}</button>
+      </PopoverPrimitive.Trigger>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content align={align} sideOffset={6} className="ops-action-menu" role="menu">
+          {children}
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
+  );
+}
+
+export function OpsActionMenuItem({ children, onSelect, tone = "neutral" }: { children: ReactNode; onSelect?: () => void; tone?: "neutral" | "danger" }) {
+  return <button type="button" role="menuitem" className="ops-action-menu-item" data-tone={tone} onClick={onSelect}>{children}</button>;
+}
+
+export function OpsSkeleton({ lines = 3, className }: { lines?: number; className?: string }) {
+  return (
+    <div className={cx("ops-skeleton", className)} aria-hidden="true">
+      {Array.from({ length: Math.max(1, lines) }).map((_, index) => (
+        <span key={index} className="ops-skeleton-line"/>
+      ))}
+    </div>
+  );
+}
