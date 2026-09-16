@@ -25,7 +25,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
   pickupAppointmentStatuses,
@@ -406,13 +406,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
       />
 
       <div className="px-4 pt-4 md:px-6">
-        <OpsStatStrip className="ops-stats-toned">
-          <OpsStat icon={<CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>} label="To schedule" value={tabCounts.pending} tone="info" active={focus === "pending"} onClick={() => updateFilters({ view: "pending", date: null })}/>
-          <OpsStat icon={<Clock3 size={15} strokeWidth={1.75} aria-hidden="true"/>} label="Scheduled today" value={scheduledToday} tone="warning" active={focus === "scheduled" && dateFilter === "today"} onClick={() => updateFilters({ view: "scheduled", date: "today" })}/>
-          <OpsStat icon={<Users size={15} strokeWidth={1.75} aria-hidden="true"/>} label="Driver assigned" value={summary.driver_assigned} tone="accent" active={focus === "assigned"} onClick={() => updateFilters({ view: "assigned", date: null })}/>
-          <OpsStat icon={<PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>} label="Picked up" value={tabCounts.completed} tone="success" active={focus === "completed"} onClick={() => updateFilters({ view: "completed", date: null })}/>
-          <OpsStat icon={<AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>} label="Needs attention" value={tabCounts.attention} tone="danger" active={focus === "attention"} onClick={() => updateFilters({ view: "attention", date: null })}/>
-        </OpsStatStrip>
+        <OpsKpiStrip>
+          <OpsKpiCard icon={<CalendarClock size={18} strokeWidth={1.9} aria-hidden="true"/>} label="To schedule" value={tabCounts.pending} tone="info" active={focus === "pending"} onClick={() => updateFilters({ view: "pending", date: null })}/>
+          <OpsKpiCard icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Scheduled today" value={scheduledToday} tone="warning" active={focus === "scheduled" && dateFilter === "today"} onClick={() => updateFilters({ view: "scheduled", date: "today" })}/>
+          <OpsKpiCard icon={<Users size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Driver assigned" value={summary.driver_assigned} tone="accent" active={focus === "assigned"} onClick={() => updateFilters({ view: "assigned", date: null })}/>
+          <OpsKpiCard icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Picked up" value={tabCounts.completed} tone="success" active={focus === "completed"} onClick={() => updateFilters({ view: "completed", date: null })}/>
+          <OpsKpiCard icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Needs attention" value={tabCounts.attention} tone="danger" active={focus === "attention"} onClick={() => updateFilters({ view: "attention", date: null })}/>
+        </OpsKpiStrip>
       </div>
 
       <div className="px-4 py-4 md:px-6">

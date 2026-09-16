@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNod
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
 export const OpsDialog = DialogPrimitive;
@@ -147,6 +147,39 @@ export function OpsStat({
     return <button type="button" onClick={onClick} className="ops-stat" aria-pressed={active} data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{content}</button>;
   }
   return <div className="ops-stat" data-tone={tone} data-zero={zero || undefined}>{content}</div>;
+}
+
+export function OpsKpiStrip({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cx("ops-kpi-strip", className)}>{children}</div>;
+}
+
+export function OpsKpiCard({
+  label,
+  value,
+  icon,
+  tone = "neutral",
+  active = false,
+  onClick,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  icon?: ReactNode;
+  tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const zero = typeof value === "number" && value === 0;
+  const body = (
+    <>
+      <span className="ops-kpi-icon">{icon}</span>
+      <span className="ops-kpi-copy"><strong>{value}</strong><span>{label}</span></span>
+      <ChevronRight size={16} strokeWidth={1.75} className="ops-kpi-chevron" aria-hidden="true" />
+    </>
+  );
+  if (onClick) {
+    return <button type="button" onClick={onClick} className="ops-kpi" aria-pressed={active} data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
+  }
+  return <div className="ops-kpi" data-tone={tone} data-zero={zero || undefined}>{body}</div>;
 }
 
 export function OpsBadge({
