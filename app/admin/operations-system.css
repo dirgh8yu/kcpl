@@ -5,43 +5,52 @@
  * Read docs/OPERATING_SYSTEM.md before changing these components or tokens.
  */
 .kcpl-admin-route {
+  /* KCPL brand anchors — crimson accent and ink are contract-pinned. */
   --admin-crimson: #DC143C;
   --admin-crimson-dark: #B61032;
   --admin-crimson-deep: #9C0D2A;
   --admin-ink: #101010;
-  --admin-canvas: #F6F6F3;
+  /* Neutral foundation — one cool, precise gray scale shared with the command centre. */
+  --admin-canvas: #F7F8FA;
   --admin-surface: #FFFFFF;
-  --admin-surface-soft: #F3F3F1;
-  --admin-surface-muted: #EEEEE8;
-  --admin-line: #D6D6D0;
-  --admin-line-strong: #AFAFA8;
-  --admin-muted: #5B5B57;
-  --admin-faint: #70706B;
-  --admin-danger: #A80E2F;
-  --admin-warning: #72500C;
-  --admin-success: #18794E;
-  --admin-info: #315D83;
-  --admin-success-bg: #EDF6F0;
-  --admin-warning-bg: #FEF5E4;
-  --admin-danger-bg: #FEECEC;
-  --admin-info-bg: #EBF2FA;
+  --admin-surface-soft: #F2F4F7;
+  --admin-surface-muted: #EAECF0;
+  --admin-line: #E4E7EC;
+  --admin-line-strong: #D0D5DD;
+  --admin-muted: #667085;
+  --admin-faint: #98A2B3;
+  /* Semantic ink — Untitled-grade 700 shades that hold AA contrast on light chips. */
+  --admin-danger: #B42318;
+  --admin-warning: #B54708;
+  --admin-success: #067647;
+  --admin-info: #175CD3;
+  --admin-success-bg: #ECFDF3;
+  --admin-warning-bg: #FFFAEB;
+  --admin-danger-bg: #FEF3F2;
+  --admin-info-bg: #EFF8FF;
+  --admin-success-line: #ABEFC6;
+  --admin-warning-line: #FEDF89;
+  --admin-danger-line: #FECDCA;
+  --admin-info-line: #B2DDFF;
+  --admin-accent-bg: #FFF1F3;
+  --admin-accent-line: #FECDD6;
   --app-sidebar-width: 240px;
   --app-toolbar-height: 58px;
   --app-control-height: 40px;
   --app-control-height-touch: 44px;
   --app-radius: 8px;
-  --app-surface-radius: 12px;
-  --app-dialog-radius: 14px;
+  --app-surface-radius: 10px;
+  --app-dialog-radius: 12px;
   --app-space-1: 4px;
   --app-space-2: 8px;
   --app-space-3: 12px;
   --app-space-4: 16px;
   --app-space-5: 24px;
   --app-space-6: 32px;
-  --app-surface-shadow: 0 12px 30px rgb(16 16 16 / 8%);
+  --app-surface-shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 12px rgb(16 24 40 / 4%);
   --app-page-gap: 24px;
   --app-row-height: 48px;
-  --app-focus: #315D83;
+  --app-focus: #2E90FA;
   --app-font-size: 14px;
   --app-label-size: 12px;
   --app-title-size: 24px;
@@ -154,15 +163,15 @@
   border: 1px solid var(--admin-line);
   border-radius: var(--app-surface-radius);
   background: var(--admin-surface);
-  box-shadow: 0 8px 22px rgb(16 16 16 / 3%);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 5%);
   overflow: clip;
 }
-.kcpl-admin-content .ops-surface[data-priority="info"] { border-color: #C9D9E7; }
-.kcpl-admin-content .ops-surface[data-priority="success"] { border-color: #BCD9CA; }
-.kcpl-admin-content .ops-surface[data-priority="warning"] { border-color: #DFD0AE; }
-.kcpl-admin-content .ops-surface[data-priority="danger"] { border-color: #E8BEC7; }
+.kcpl-admin-content .ops-surface[data-priority="info"] { border-color: var(--admin-info-line); }
+.kcpl-admin-content .ops-surface[data-priority="success"] { border-color: var(--admin-success-line); }
+.kcpl-admin-content .ops-surface[data-priority="warning"] { border-color: var(--admin-warning-line); }
+.kcpl-admin-content .ops-surface[data-priority="danger"] { border-color: var(--admin-danger-line); }
 .kcpl-admin-content .ops-surface-header {
-  display: flex; align-items: flex-start; justify-content: space-between; flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--admin-line); background: linear-gradient(180deg, rgba(246,246,243,0.25), rgba(255,255,255,0.92));
+  display: flex; align-items: flex-start; justify-content: space-between; flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface);
 }
 .kcpl-admin-content .ops-surface-header h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; }
 .kcpl-admin-content .ops-surface-description { margin-top: 2px; color: var(--admin-muted); font-size: 13px; font-weight: 400; line-height: 20px; }
@@ -236,13 +245,13 @@
 .kcpl-admin-content :where(table tbody tr[data-selected="true"]) { background: var(--admin-surface-muted); box-shadow: inset 2px 0 0 var(--admin-crimson); }
 .kcpl-admin-content :where(table tbody tr:focus-visible) { outline: 2px solid var(--app-focus); outline-offset: -2px; }
 .kcpl-admin-shell :where(a,button,input,select,textarea):focus-visible { outline: 2px solid var(--app-focus); outline-offset: 2px; }
-.kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 7px; border: 1px solid var(--admin-line); border-radius: 4px; background: var(--admin-canvas); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
+.kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 8px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
 .kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-ink); border-color: var(--admin-line); background: var(--admin-surface-muted); }
-.kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); border-color: #BCD9CA; background: var(--admin-success-bg); }
-.kcpl-admin-content .ops-badge[data-tone="danger"], .kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-danger); border-color: #E8BEC7; background: var(--admin-danger-bg); }
-.kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); border-color: #DFD0AE; background: var(--admin-warning-bg); }
-.kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); border-color: #BED0DE; background: var(--admin-info-bg); }
-.kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: #E8BEC7; background: #FFF3F5; }
+.kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); border-color: var(--admin-success-line); background: var(--admin-success-bg); }
+.kcpl-admin-content .ops-badge[data-tone="danger"], .kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-danger); border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); border-color: var(--admin-warning-line); background: var(--admin-warning-bg); }
+.kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); border-color: var(--admin-info-line); background: var(--admin-info-bg); }
+.kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
 .kcpl-admin-content .ops-search:focus-within,
 .kcpl-admin-content .ops-filter-chip:focus-visible,
 .kcpl-admin-content .ops-stat:focus-visible,
