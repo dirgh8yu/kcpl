@@ -39,3 +39,9 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+
+# agent skill tooling (local dev only, not part of the app)
+/.agents/
+/.claude/
+/agent/
+/skills-lock.json
