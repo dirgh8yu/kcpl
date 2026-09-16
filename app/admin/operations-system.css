@@ -435,17 +435,39 @@
 .kcpl-admin-content .shipment-peek-panel { padding: 18px; background: var(--admin-surface); }
 
 /* Header action cluster (Export / Import / New shipment). */
-.kcpl-admin-content .shipments-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kcpl-admin-content .shipments-actions,
+.kcpl-admin-content .pickups-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 /* KPI stat strip: colour the leading icon by tone and keep it inline with the label. */
-.kcpl-admin-content .shipments-stats .ops-stat-label { display: inline-flex; align-items: center; gap: 7px; }
-.kcpl-admin-content .shipments-stats .ops-stat-label svg { color: var(--admin-faint); }
-.kcpl-admin-content .shipments-stats .ops-stat[data-tone="accent"] .ops-stat-label svg { color: var(--admin-crimson); }
-.kcpl-admin-content .shipments-stats .ops-stat[data-tone="info"] .ops-stat-label svg { color: var(--admin-info); }
-.kcpl-admin-content .shipments-stats .ops-stat[data-tone="success"] .ops-stat-label svg { color: var(--admin-success); }
-.kcpl-admin-content .shipments-stats .ops-stat[data-tone="warning"] .ops-stat-label svg { color: var(--admin-warning); }
-.kcpl-admin-content .shipments-stats .ops-stat[data-tone="danger"] .ops-stat-label svg { color: var(--admin-danger); }
-.kcpl-admin-content .shipments-stats .ops-stat[data-zero="true"] .ops-stat-value { color: var(--admin-faint); }
+.kcpl-admin-content .ops-stats-toned .ops-stat-label { display: inline-flex; align-items: center; gap: 7px; }
+.kcpl-admin-content .ops-stats-toned .ops-stat-label svg { color: var(--admin-faint); }
+.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="accent"] .ops-stat-label svg { color: var(--admin-crimson); }
+.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="info"] .ops-stat-label svg { color: var(--admin-info); }
+.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="success"] .ops-stat-label svg { color: var(--admin-success); }
+.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="warning"] .ops-stat-label svg { color: var(--admin-warning); }
+.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="danger"] .ops-stat-label svg { color: var(--admin-danger); }
+.kcpl-admin-content .ops-stats-toned .ops-stat[data-zero="true"] .ops-stat-value { color: var(--admin-faint); }
+
+/* KPI metric cards — shared with the command-centre dashboard: toned icon chip, value, label and chevron. */
+.kcpl-admin-content .ops-kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
+.kcpl-admin-content button.ops-kpi { cursor: pointer; }
+.kcpl-admin-content button.ops-kpi:hover { border-color: var(--admin-line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / 7%); transform: translateY(-1px); }
+.kcpl-admin-content .ops-kpi[data-active="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
+.kcpl-admin-content .ops-kpi-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: var(--admin-surface-soft); color: var(--admin-muted); }
+.kcpl-admin-content .ops-kpi-copy strong { display: block; color: var(--admin-ink); font-size: 26px; font-weight: 700; line-height: 28px; letter-spacing: -.025em; }
+.kcpl-admin-content .ops-kpi-copy span { display: block; margin-top: 5px; color: var(--admin-muted); font-size: 12.5px; line-height: 16px; }
+.kcpl-admin-content .ops-kpi-chevron { color: var(--admin-faint); }
+.kcpl-admin-content .ops-kpi[data-tone="accent"] .ops-kpi-icon { background: var(--admin-accent-bg); color: var(--admin-crimson); }
+.kcpl-admin-content .ops-kpi[data-tone="info"] .ops-kpi-icon { background: var(--admin-info-bg); color: var(--admin-info); }
+.kcpl-admin-content .ops-kpi[data-tone="success"] .ops-kpi-icon { background: var(--admin-success-bg); color: var(--admin-success); }
+.kcpl-admin-content .ops-kpi[data-tone="warning"] .ops-kpi-icon { background: var(--admin-warning-bg); color: var(--admin-warning); }
+.kcpl-admin-content .ops-kpi[data-tone="danger"] .ops-kpi-icon { background: var(--admin-danger-bg); color: var(--admin-danger); }
+.kcpl-admin-content .ops-kpi[data-zero="true"] .ops-kpi-copy strong { color: var(--admin-faint); }
+@media (max-width: 640px) {
+  .kcpl-admin-content .ops-kpi { min-height: 72px; padding: 12px; }
+  .kcpl-admin-content .ops-kpi-copy strong { font-size: 22px; line-height: 26px; }
+}
 
 /* Table/Cards/Map segmented toggle. */
 .kcpl-admin-content .shipments-view-toggle { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); }

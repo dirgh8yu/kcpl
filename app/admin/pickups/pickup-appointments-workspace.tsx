@@ -22,9 +22,10 @@ import {
   SlidersHorizontal,
   Truck,
   UserRound,
+  Users,
   X,
 } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
   pickupAppointmentStatuses,
@@ -121,6 +122,27 @@ function kathmanduDateKey(value: string | null) {
   return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Kathmandu" }).format(date);
 }
 
+function relativeAge(value: string | null, nowIso: string) {
+  if (!value) return "—";
+  const time = Date.parse(value);
+  const now = Date.parse(nowIso);
+  if (!Number.isFinite(time) || !Number.isFinite(now)) return "—";
+  const minutes = Math.max(0, Math.round((now - time) / 60_000));
+  if (minutes < 1) return "Now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+function windowDayLabel(value: string | null, todayKey: string, tomorrowKey: string) {
+  if (!value) return "Not scheduled";
+  const key = kathmanduDateKey(value);
+  if (key === todayKey) return "Today";
+  if (key === tomorrowKey) return "Tomorrow";
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone: "Asia/Kathmandu" }).format(new Date(value));
+}
+
 function statusTone(row: PickupQueueRow): "neutral" | "info" | "warning" | "success" | "danger" | "violet" {
   if (row.status === "picked_up") return "success";
   if (row.status === "missed") return "danger";
@@ -210,6 +232,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const selectedReference = shipmentParam && rows.some((row) => row.shipment_reference === shipmentParam) ? shipmentParam : selectedReferenceState;
   const nowIso = new Date().toISOString();
   const todayKey = kathmanduDateKey(nowIso);
+  const tomorrowKey = kathmanduDateKey(new Date(Date.parse(nowIso) + 86_400_000).toISOString());
 
   const selected = rows.find((row) => row.shipment_reference === selectedReference) ?? null;
   const selectedWindowStart = selected ? rowWindowStart(selected) : null;
@@ -227,6 +250,9 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     attention: summary.missed,
     cancelled: rows.filter((row) => row.status === "cancelled").length,
   };
+
+  const scheduledToday = rows.filter((row) => row.status === "confirmed" && kathmanduDateKey(rowWindowStart(row)) === todayKey).length;
+  const hasSchedulable = rows.some((row) => row.status === "unscheduled" || row.status === "requested");
 
   const filtered = useMemo(() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -363,23 +389,33 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   }
 
   return (
-    <OpsPage>
-      <div className="px-4 py-5 md:px-6 md:py-6">
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="m-0">Pickup scheduling</h1>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">Plan and manage cargo pickups from origin to keep shipments moving.</p>
+    <OpsPage className="pickups-workspace">
+      <OpsPageHeader
+        title="Pickup scheduling"
+        description="Plan and manage cargo pickups from origin to keep shipments moving."
+        actions={(
+          <div className="pickups-actions">
+            <OpsButton variant="secondary" onClick={handleRefresh} disabled={busy}>
+              <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/> Refresh
+            </OpsButton>
+            <PrimaryButton type="button" disabled={!hasSchedulable || busy} onClick={scheduleNext}>
+              <Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Schedule pickup
+            </PrimaryButton>
           </div>
-          <div className="flex items-center gap-2">
-            <button type="button" className={iconButtonClass} onClick={handleRefresh} disabled={busy} aria-label="Refresh pickup scheduling">
-              <RefreshCw size={17} strokeWidth={1.75} aria-hidden="true"/>
-            </button>
-            <BlackButton type="button" disabled={!rows.some((row) => row.status === "unscheduled" || row.status === "requested") || busy} onClick={scheduleNext}>
-              <Plus size={17} strokeWidth={1.75} aria-hidden="true"/>Schedule pickup
-            </BlackButton>
-          </div>
-        </header>
+        )}
+      />
 
+      <div className="px-4 pt-4 md:px-6">
+        <OpsKpiStrip>
+          <OpsKpiCard icon={<CalendarClock size={18} strokeWidth={1.9} aria-hidden="true"/>} label="To schedule" value={tabCounts.pending} tone="info" active={focus === "pending"} onClick={() => updateFilters({ view: "pending", date: null })}/>
+          <OpsKpiCard icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Scheduled today" value={scheduledToday} tone="warning" active={focus === "scheduled" && dateFilter === "today"} onClick={() => updateFilters({ view: "scheduled", date: "today" })}/>
+          <OpsKpiCard icon={<Users size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Driver assigned" value={summary.driver_assigned} tone="accent" active={focus === "assigned"} onClick={() => updateFilters({ view: "assigned", date: null })}/>
+          <OpsKpiCard icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Picked up" value={tabCounts.completed} tone="success" active={focus === "completed"} onClick={() => updateFilters({ view: "completed", date: null })}/>
+          <OpsKpiCard icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Needs attention" value={tabCounts.attention} tone="danger" active={focus === "attention"} onClick={() => updateFilters({ view: "attention", date: null })}/>
+        </OpsKpiStrip>
+      </div>
+
+      <div className="px-4 py-4 md:px-6">
         {notice ? <div className="mb-4"><OpsNotice tone={notice.tone}>{notice.text}</OpsNotice></div> : null}
 
         <div className={`grid min-h-0 gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_minmax(330px,390px)]" : "grid-cols-1"}`}>
@@ -455,18 +491,20 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 <table className="w-full border-collapse text-left text-sm">
                   <thead className="bg-[var(--admin-surface-muted)] text-xs font-medium text-[var(--admin-muted)]">
                     <tr>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup ref</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Shipment ref</th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup / Reference</th>
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Customer</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup location</th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup address</th>
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">
-                        <button type="button" className="inline-flex items-center gap-1 text-inherit" onClick={() => updateFilters({ sort: sortDirection === "asc" ? "desc" : "asc" })} aria-label={`Sort pickup date ${sortDirection === "asc" ? "descending" : "ascending"}`}>
-                          Date &amp; time{sortDirection === "asc" ? <ArrowUp size={13} strokeWidth={1.75} aria-hidden="true"/> : <ArrowDown size={13} strokeWidth={1.75} aria-hidden="true"/>}
+                        <button type="button" className="inline-flex items-center gap-1 text-inherit" onClick={() => updateFilters({ sort: sortDirection === "asc" ? "desc" : "asc" })} aria-label={`Sort pickup window ${sortDirection === "asc" ? "descending" : "ascending"}`}>
+                          Pickup window{sortDirection === "asc" ? <ArrowUp size={13} strokeWidth={1.75} aria-hidden="true"/> : <ArrowDown size={13} strokeWidth={1.75} aria-hidden="true"/>}
                         </button>
                       </th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Carrier</th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Driver</th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Linked shipment</th>
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Status</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Driver / vehicle</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3 text-right">Actions</th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Updated</th>
+                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3 text-right"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -476,18 +514,24 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       const attention = row.status !== "cancelled" && row.status !== "picked_up" && pickupNeedsAttention(row, nowIso);
                       const rowSelected = row.shipment_reference === selectedReference;
                       return (
-                        <tr key={row.id} className={`border-b border-[var(--admin-line)] transition-colors last:border-b-0 ${rowSelected ? "bg-[var(--admin-surface-muted)]" : "hover:bg-[var(--admin-canvas)]"}`} aria-selected={rowSelected || undefined}>
+                        <tr key={row.id} className={`cursor-pointer border-b border-[var(--admin-line)] transition-colors last:border-b-0 ${rowSelected ? "bg-[var(--admin-surface-muted)]" : "hover:bg-[var(--admin-canvas)]"}`} aria-selected={rowSelected || undefined} onClick={() => choose(row)}>
                           <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <button type="button" className="font-medium text-[var(--admin-ink)] hover:underline" onClick={() => choose(row)}>{row.id}</button>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="font-medium text-[var(--admin-ink)] hover:underline">{row.shipment_reference}</Link>
+                            <span className="block font-medium text-[var(--admin-ink)]">{row.id}</span>
+                            <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.booking_reference || row.provider_reference || "—"}</span>
                           </td>
                           <td className="px-4 py-3 align-top text-[var(--admin-ink)]">{row.customer_name}</td>
-                          <td className="px-4 py-3 align-top text-[var(--admin-muted)]">{row.pickup_location || row.origin}</td>
+                          <td className="px-4 py-3 align-top">
+                            <span className="block text-[var(--admin-ink)]">{row.pickup_location || row.origin}</span>
+                            {row.pickup_location && row.origin && row.pickup_location !== row.origin ? <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin}</span> : null}
+                          </td>
                           <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <span className="block text-[var(--admin-ink)]">{dateLabel(start)}</span>
+                            <span className="block text-[var(--admin-ink)]">{windowDayLabel(start, todayKey, tomorrowKey)}</span>
                             <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{start ? `${timeLabel(start)}${end ? ` – ${timeLabel(end)}` : ""}` : "Awaiting appointment"}</span>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{row.partner_name || "—"}</td>
+                          <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-ink)]">{row.driver_name || "—"}</td>
+                          <td className="whitespace-nowrap px-4 py-3 align-top">
+                            <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="font-medium text-[var(--admin-info)] hover:underline" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link>
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 align-top">
                             <div className="flex items-center gap-2">
@@ -495,12 +539,9 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                               {attention ? <span title="Needs attention"><AlertTriangle size={15} strokeWidth={1.75} className="text-[var(--admin-danger)]" aria-label="Needs attention"/></span> : null}
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <span className="block text-[var(--admin-ink)]">{row.driver_name || "—"}</span>
-                            <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.vehicle_reference || "Not assigned"}</span>
-                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{relativeAge(row.updated_at, nowIso)}</td>
                           <td className="px-4 py-3 text-right align-top">
-                            <button type="button" className="inline-grid min-h-9 min-w-9 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={() => choose(row)} aria-label={`Open pickup ${row.id}`}>
+                            <button type="button" className="inline-grid min-h-9 min-w-9 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={(event) => { event.stopPropagation(); choose(row); }} aria-label={`Open pickup ${row.id}`}>
                               <MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true"/>
                             </button>
                           </td>
@@ -519,7 +560,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
               <div className="flex items-center gap-2">
                 <button type="button" className={iconButtonClass} disabled={page <= 1} onClick={() => workspace.update({ page: page - 1 <= 1 ? null : String(page - 1) })} aria-label="Previous page"><ChevronLeft size={15} strokeWidth={1.75} aria-hidden="true"/></button>
                 {Array.from({ length: Math.min(pageCount, 3) }, (_, index) => index + 1).map((pageNumber) => (
-                  <button key={pageNumber} type="button" className={`min-h-10 min-w-10 rounded-md border px-3 text-sm font-medium ${pageNumber === page ? "border-[var(--admin-ink)] bg-[var(--admin-ink)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]"}`} onClick={() => workspace.update({ page: pageNumber === 1 ? null : String(pageNumber) })} aria-current={pageNumber === page ? "page" : undefined}>{pageNumber}</button>
+                  <button key={pageNumber} type="button" className={`min-h-10 min-w-10 rounded-md border px-3 text-sm font-medium ${pageNumber === page ? "border-[var(--admin-crimson)] bg-[var(--admin-crimson)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]"}`} onClick={() => workspace.update({ page: pageNumber === 1 ? null : String(pageNumber) })} aria-current={pageNumber === page ? "page" : undefined}>{pageNumber}</button>
                 ))}
                 <button type="button" className={iconButtonClass} disabled={page >= pageCount} onClick={() => workspace.update({ page: String(page + 1) })} aria-label="Next page"><ChevronRight size={15} strokeWidth={1.75} aria-hidden="true"/></button>
                 <FilterSelect value={String(pageSize)} ariaLabel="Rows per page" onChange={(value) => workspace.update({ pageSize: value === "10" ? null : value, page: null })}>
@@ -549,11 +590,11 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                   <div className="grid grid-cols-2 gap-2 border-b border-[var(--admin-line)] p-4">
                     <OpsButton type="button" variant="secondary" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
                     {selected.status === "confirmed" || selected.status === "requested" ? (
-                      <BlackButton type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</BlackButton>
+                      <PrimaryButton type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</PrimaryButton>
                     ) : selected.status === "driver_assigned" ? (
-                      <BlackButton type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</BlackButton>
+                      <PrimaryButton type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</PrimaryButton>
                     ) : (
-                      <BlackButton type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</BlackButton>
+                      <PrimaryButton type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</PrimaryButton>
                     )}
                   </div>
                 ) : null}
@@ -611,7 +652,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                     <p className="mt-3 text-xs text-[var(--admin-muted)]">Times are saved and displayed in Nepal time (NPT).</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <OpsButton type="button" variant="secondary" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act("schedule", schedulePayload(false))}>Request pickup</OpsButton>
-                      <BlackButton type="button" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</BlackButton>
+                      <PrimaryButton type="button" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</PrimaryButton>
                     </div>
                   </section>
                 ) : null}
@@ -624,7 +665,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       <OpsField label="Driver phone"><input value={driverPhone} onChange={(event) => setDriverPhone(event.target.value)}/></OpsField>
                       <OpsField label="Vehicle reference"><input value={vehicleReference} onChange={(event) => setVehicleReference(event.target.value)} placeholder="Truck / plate / vehicle"/></OpsField>
                     </div>
-                    <div className="mt-4"><BlackButton type="button" disabled={busy || driverName.trim().length < 2 || selected.status === "unscheduled"} onClick={() => act("assign_driver", { driverName, driverPhone, vehicleReference, notes })}><Truck size={15} strokeWidth={1.75} aria-hidden="true"/>Save driver assignment</BlackButton></div>
+                    <div className="mt-4"><PrimaryButton type="button" disabled={busy || driverName.trim().length < 2 || selected.status === "unscheduled"} onClick={() => act("assign_driver", { driverName, driverPhone, vehicleReference, notes })}><Truck size={15} strokeWidth={1.75} aria-hidden="true"/>Save driver assignment</PrimaryButton></div>
                   </section>
                 ) : null}
 
@@ -632,7 +673,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                   <section className="border-b border-[var(--admin-line)] bg-[var(--admin-canvas)] px-4 py-4">
                     <EditorHeading title="Pickup outcome" detail="Complete the collection or record the operational exception." onClose={() => setEditor("details")}/>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <BlackButton type="button" disabled={busy || selected.status === "unscheduled"} onClick={() => act("picked_up", { eventTime: new Date().toISOString(), location: pickupLocation })}><Check size={15} strokeWidth={1.75} aria-hidden="true"/>Cargo picked up</BlackButton>
+                      <PrimaryButton type="button" disabled={busy || selected.status === "unscheduled"} onClick={() => act("picked_up", { eventTime: new Date().toISOString(), location: pickupLocation })}><Check size={15} strokeWidth={1.75} aria-hidden="true"/>Cargo picked up</PrimaryButton>
                       <OpsButton type="button" variant="danger" disabled={busy || selected.status === "unscheduled" || missedReason.trim().length < 6} onClick={() => act("missed", { reason: missedReason })}><AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>Mark missed</OpsButton>
                       <OpsButton type="button" variant="ghost" disabled={busy || selected.status === "unscheduled"} onClick={() => act("cancel", { note: notes })}>Cancel pickup</OpsButton>
                     </div>
@@ -667,8 +708,8 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   );
 }
 
-function BlackButton({ children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[var(--admin-ink)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-focus)] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}>{children}</button>;
+function PrimaryButton({ children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button {...props} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[var(--admin-crimson)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-focus)] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}>{children}</button>;
 }
 
 function FilterSelect({ value, ariaLabel, onChange, children }: { value: string; ariaLabel: string; onChange: (value: string) => void; children: ReactNode }) {

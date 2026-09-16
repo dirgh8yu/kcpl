@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Download, FileText, LayoutGrid, Map as MapIcon, Navigation, Package, Plus, SlidersHorizontal, Table as TableIcon, Truck, Upload, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsStat, OpsStatStrip, OpsTableWrap, OpsTabs } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, OpsTabs } from "../operations-ui";
 import {
   ModeIcon,
   ShipmentCards,
@@ -48,8 +48,21 @@ function modeOptions(jobs: CommandCentreJob[]) {
   return [...new Set(jobs.map((job) => job.mode.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
+// Radix portals default to document.body, which is outside `.kcpl-admin-route`
+// where the `--admin-*` design tokens are scoped. Portaling into the admin
+// content root keeps those tokens (and legacy `.kcpl-admin-content` styles) in
+// scope so overlays render with the correct surface, borders and text colours.
+function useAdminPortalContainer() {
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setContainer(document.getElementById("workspace-content"));
+  }, []);
+  return container;
+}
+
 export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: CommandCentreData; canStartShipment?: boolean }) {
   const { params, search, update } = useWorkspaceQuery();
+  const portalContainer = useAdminPortalContainer();
   const query = params.get("q") ?? "";
   const requestedStatus = params.get("status") ?? "all";
   const status: StatusFilter = requestedStatus === "all" || requestedStatus === "active" || shipmentStatuses.includes(requestedStatus as ShipmentStatus)
@@ -157,48 +170,48 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
       </OpsPageHeader>
 
       <div className="px-4 pt-4 md:px-6">
-        <OpsStatStrip className="shipments-stats">
-          <OpsStat
-            icon={<Package size={15} strokeWidth={1.75} aria-hidden="true"/>}
+        <OpsKpiStrip>
+          <OpsKpiCard
+            icon={<Package size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Total shipments"
             value={overview.total}
             tone="accent"
             active={status === "all" && !attention}
             onClick={() => setFilters({ status: null, attention: null })}
           />
-          <OpsStat
-            icon={<Navigation size={15} strokeWidth={1.75} aria-hidden="true"/>}
+          <OpsKpiCard
+            icon={<Navigation size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="In transit"
             value={overview.inTransit}
             tone="info"
             active={status === "in_transit" && !attention}
             onClick={() => setFilters({ status: "in_transit", attention: null })}
           />
-          <OpsStat
-            icon={<Truck size={15} strokeWidth={1.75} aria-hidden="true"/>}
+          <OpsKpiCard
+            icon={<Truck size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Out for delivery"
             value={overview.outForDelivery}
             tone="success"
             active={status === "out_for_delivery" && !attention}
             onClick={() => setFilters({ status: "out_for_delivery", attention: null })}
           />
-          <OpsStat
-            icon={<FileText size={15} strokeWidth={1.75} aria-hidden="true"/>}
+          <OpsKpiCard
+            icon={<FileText size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Customs clearance"
             value={overview.customs}
             tone="warning"
             active={status === "customs_clearance" && !attention}
             onClick={() => setFilters({ status: "customs_clearance", attention: null })}
           />
-          <OpsStat
-            icon={<AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>}
+          <OpsKpiCard
+            icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Requires attention"
             value={overview.attention}
             tone="danger"
             active={attention}
             onClick={() => setFilters({ status: null, attention: "1" })}
           />
-        </OpsStatStrip>
+        </OpsKpiStrip>
       </div>
 
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
@@ -249,7 +262,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
                     <span>Filters</span>{advancedCount ? <span className="shipments-filter-count">{advancedCount}</span> : null}
                   </button>
                 </OpsPopover.Trigger>
-                <OpsPopover.Portal>
+                <OpsPopover.Portal container={portalContainer ?? undefined}>
                   <OpsPopover.Content sideOffset={8} align="end" className="shipments-filter-menu" collisionPadding={12}>
                     <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{data.accessible_branches.filter((item) => kcplBranches.includes(item)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
                     <label>Mode<select value={mode} onChange={(event) => setMode(event.target.value)}><option value="all">All modes</option>{modes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
@@ -339,12 +352,12 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
         ) : null}
       </div>
 
-      {selected ? <ShipmentPanel job={selected} returnTo={returnTo} onClose={() => setSelectedReference(null)}/> : null}
+      {selected ? <ShipmentPanel job={selected} returnTo={returnTo} container={portalContainer} onClose={() => setSelectedReference(null)}/> : null}
     </OpsPage>
   );
 }
 
-function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; returnTo: string; onClose: () => void }) {
+function ShipmentPanel({ job, returnTo, container, onClose }: { job: CommandCentreJob; returnTo: string; container: HTMLElement | null; onClose: () => void }) {
   const action = shipmentNextAction(job);
   const jobOwner = owner(job);
   const openException = job.status === "exception";
@@ -357,7 +370,7 @@ function ShipmentPanel({ job, returnTo, onClose }: { job: CommandCentreJob; retu
 
   return (
     <OpsDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <OpsDialog.Portal>
+      <OpsDialog.Portal container={container ?? undefined}>
         <OpsDialog.Overlay className="fixed inset-0 z-[70] cursor-default bg-black/15" />
         <OpsDialog.Content className="shipment-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
           <OpsDialog.Title className="sr-only">{job.reference} shipment details</OpsDialog.Title>
