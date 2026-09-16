@@ -433,6 +433,69 @@
 .kcpl-admin-content .shipments-table-wrap { max-height: calc(100dvh - 290px); min-height: 320px; }
 .kcpl-admin-content .shipments-table thead { position: sticky; top: 0; z-index: 1; }
 .kcpl-admin-content .shipment-peek-panel { padding: 18px; background: var(--admin-surface); }
+
+/* Header action cluster (Export / Import / New shipment). */
+.kcpl-admin-content .shipments-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* KPI stat strip: colour the leading icon by tone and keep it inline with the label. */
+.kcpl-admin-content .shipments-stats .ops-stat-label { display: inline-flex; align-items: center; gap: 7px; }
+.kcpl-admin-content .shipments-stats .ops-stat-label svg { color: var(--admin-faint); }
+.kcpl-admin-content .shipments-stats .ops-stat[data-tone="accent"] .ops-stat-label svg { color: var(--admin-crimson); }
+.kcpl-admin-content .shipments-stats .ops-stat[data-tone="info"] .ops-stat-label svg { color: var(--admin-info); }
+.kcpl-admin-content .shipments-stats .ops-stat[data-tone="success"] .ops-stat-label svg { color: var(--admin-success); }
+.kcpl-admin-content .shipments-stats .ops-stat[data-tone="warning"] .ops-stat-label svg { color: var(--admin-warning); }
+.kcpl-admin-content .shipments-stats .ops-stat[data-tone="danger"] .ops-stat-label svg { color: var(--admin-danger); }
+.kcpl-admin-content .shipments-stats .ops-stat[data-zero="true"] .ops-stat-value { color: var(--admin-faint); }
+
+/* Table/Cards/Map segmented toggle. */
+.kcpl-admin-content .shipments-view-toggle { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); }
+.kcpl-admin-content .shipments-view-toggle button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 0; border-radius: calc(var(--app-radius) - 2px); background: transparent; color: var(--admin-muted); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
+.kcpl-admin-content .shipments-view-toggle button:hover { color: var(--admin-ink); }
+.kcpl-admin-content .shipments-view-toggle button[data-active="true"] { background: var(--admin-surface); color: var(--admin-ink); box-shadow: var(--app-surface-shadow); }
+
+/* Country flag chip (falls back to the ISO code when the flag glyph is unavailable). */
+.kcpl-admin-content .ship-flag { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 21px; height: 15px; border-radius: 3px; overflow: hidden; background: var(--admin-surface-muted); box-shadow: inset 0 0 0 1px var(--admin-line); font-size: 13px; line-height: 1; }
+.kcpl-admin-content .ship-flag[data-code] { font-size: 13px; }
+
+/* Inline origin -> destination route with flags. */
+.kcpl-admin-content .ship-route { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.kcpl-admin-content .ship-route-end { display: inline-flex; align-items: center; gap: 5px; min-width: 0; color: var(--admin-muted); font-size: 12px; line-height: 16px; }
+.kcpl-admin-content .ship-route-end .loc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ship-route-arrow { flex: 0 0 auto; color: var(--admin-faint); }
+
+/* Cards view. */
+.kcpl-admin-content .shipments-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(288px, 1fr)); gap: 12px; }
+.kcpl-admin-content .ship-card { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); padding: 14px 16px; text-align: left; cursor: pointer; transition: border-color 120ms ease, box-shadow 120ms ease; }
+.kcpl-admin-content .ship-card:hover { border-color: var(--admin-line-strong); box-shadow: var(--app-surface-shadow); }
+.kcpl-admin-content .ship-card[data-selected="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
+.kcpl-admin-content .ship-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kcpl-admin-content .ship-card-ref { font-size: 12px; font-weight: 500; color: var(--admin-info); }
+.kcpl-admin-content .ship-card-customer { font-size: 14px; font-weight: 600; color: var(--admin-ink); line-height: 18px; }
+.kcpl-admin-content .ship-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; color: var(--admin-muted); font-size: 12px; line-height: 16px; }
+.kcpl-admin-content .ship-card-mode { display: inline-flex; align-items: center; gap: 5px; }
+.kcpl-admin-content .ship-card-warn { color: var(--admin-danger); font-weight: 500; }
+.kcpl-admin-content .ship-card .shipment-next-action-cell { max-width: none; }
+
+/* Map view: illustrative route lanes on a dotted canvas. */
+.kcpl-admin-content .shipments-map { display: grid; gap: 10px; }
+.kcpl-admin-content .shipments-map-note { margin: 0; color: var(--admin-muted); font-size: 12px; line-height: 16px; }
+.kcpl-admin-content .shipments-map-canvas { display: grid; gap: 10px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background-color: var(--admin-surface); background-image: radial-gradient(color-mix(in srgb, var(--admin-line) 65%, transparent) 1px, transparent 1px); background-size: 18px 18px; padding: 14px; }
+.kcpl-admin-content .ship-lane { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 16px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); padding: 12px 16px; text-align: left; cursor: pointer; transition: border-color 120ms ease, box-shadow 120ms ease; }
+.kcpl-admin-content .ship-lane:hover { border-color: var(--admin-line-strong); box-shadow: var(--app-surface-shadow); }
+.kcpl-admin-content .ship-lane[data-selected="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
+.kcpl-admin-content .ship-lane-ref { font-size: 12px; font-weight: 500; color: var(--admin-info); }
+.kcpl-admin-content .ship-lane-track { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.kcpl-admin-content .ship-lane-end { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--admin-ink); font-size: 13px; font-weight: 500; }
+.kcpl-admin-content .ship-lane-end .loc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ship-lane-end-dest { justify-content: flex-end; text-align: right; }
+.kcpl-admin-content .ship-lane-line { position: relative; flex: 1 1 auto; min-width: 40px; height: 2px; background-image: repeating-linear-gradient(90deg, var(--admin-line-strong) 0 6px, transparent 6px 12px); }
+.kcpl-admin-content .ship-lane-mode { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--admin-line); background: var(--admin-surface); color: var(--admin-muted); }
+.kcpl-admin-content .ship-lane-status { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.kcpl-admin-content .ship-lane-eta { color: var(--admin-muted); font-size: 12px; line-height: 16px; }
+@media (max-width: 640px) {
+  .kcpl-admin-content .ship-lane { grid-template-columns: 1fr; gap: 10px; }
+  .kcpl-admin-content .ship-lane-status { flex-direction: row; align-items: center; justify-content: space-between; }
+}
 .kcpl-admin-content .tender-workspace-page {
   color: var(--admin-ink);
 }
