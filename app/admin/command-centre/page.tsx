@@ -8,7 +8,7 @@ import { loadCommandCentre } from "./command-centre.server";
 import type { CommandCentreData } from "./command-centre-data";
 import { getLatestOperationalNote, type OperationalNote } from "./operational-notes.server";
 import { getOverviewFinanceSnapshot, type OverviewFinanceSnapshot } from "./overview-finance.server";
-import { OverviewShell } from "./overview-shell";
+import { OperationsShell } from "../operations-shell";
 import { V4OperationsOverview } from "./v4-operations-overview";
 import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview.server";
 
@@ -120,10 +120,6 @@ async function loadOverviewState(staff: KcplStaffContext): Promise<OverviewState
   }
 }
 
-function roleLabel(role: KcplStaffContext["permissions"]["role"]) {
-  return role.charAt(0).toUpperCase() + role.slice(1);
-}
-
 export default async function CommandCentrePage({ searchParams }: { searchParams: Promise<{ branch?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Overview is available only to authorised KCPL staff." />;
@@ -155,13 +151,16 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
   };
 
   return (
-    <OverviewShell
+    <OperationsShell
       userName={userName}
-      roleLabel={roleLabel(staff.permissions.role)}
+      canManageStaff={capabilities.canManageStaff}
+      canManageFinance={capabilities.canManageFinance}
+      canViewCommercial={capabilities.canViewCommercial}
+      canManageJobFile={capabilities.canManageJobFile}
+      isManagement={capabilities.isManagement}
       branches={accessibleBranches}
       selectedBranch={selectedBranch}
       canAccessAllBranches={staff.can_access_all_branches}
-      capabilities={capabilities}
     >
       {overview.kind === "unavailable" ? <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /> : null}
       {overview.kind === "error" ? <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Search and notifications remain available while the data service recovers." embedded /> : null}
@@ -178,7 +177,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
           canPostNotes={staff.permissions.canManageJobFile}
         />
       ) : null}
-    </OverviewShell>
+    </OperationsShell>
   );
 }
 

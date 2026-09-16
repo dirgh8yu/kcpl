@@ -7,7 +7,7 @@ import test from "node:test";
 // server data with preserved authority and branch scope.
 
 const overviewPath = new URL("../app/admin/command-centre/v4-operations-overview.tsx", import.meta.url);
-const shellPath = new URL("../app/admin/command-centre/overview-shell.tsx", import.meta.url);
+const shellPath = new URL("../app/admin/operations-shell.tsx", import.meta.url);
 const pagePath = new URL("../app/admin/command-centre/page.tsx", import.meta.url);
 const workflowPath = new URL("../app/admin/command-centre/workflow-overview.server.ts", import.meta.url);
 const financePath = new URL("../app/admin/command-centre/overview-finance.server.ts", import.meta.url);
@@ -50,13 +50,18 @@ test("Overview answers the core operational control-tower questions", async () =
   assert.match(overview, /Gross margin/);
 });
 
-test("Overview chrome derives from the shared registry with search, notifications and identity", async () => {
+test("Overview reuses the shared operations shell with search, notifications and branch scope", async () => {
   const shell = await readFile(shellPath, "utf8");
+  const page = await readFile(pagePath, "utf8");
   assert.match(shell, /OperationsCommandPalette/);
   assert.match(shell, /OperationsNotificationCentre/);
   assert.match(shell, /groupedWorkspaces/);
+  assert.match(shell, /visibleWorkspaces/);
   assert.match(shell, /WorkspaceIcon/);
-  assert.match(shell, /roleLabel/);
+  // Branch scoping is preserved by the shared shell, not a bespoke command-centre shell.
+  assert.match(shell, /selectedBranch/);
+  assert.match(page, /OperationsShell/);
+  assert.match(page, /branches=\{accessibleBranches\}/);
 });
 
 test("Overview preserves server authority, branch scope and return context with no invented data", async () => {

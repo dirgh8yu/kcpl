@@ -6,8 +6,8 @@
   --overview-faint: #98a2b3;
   --overview-line: #e4e7ec;
   --overview-line-strong: #d0d5dd;
-  --overview-action: #000000;
-  --overview-action-hover: #171717;
+  --overview-action: #dc143c;
+  --overview-action-hover: #b01030;
   --overview-danger: #d92d20;
   --overview-danger-soft: #fff1f0;
   --overview-warning: #f79009;
@@ -108,7 +108,31 @@
 .shellContent { outline: none; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-.dashboard { max-width: 1600px; margin: 0 auto; padding: 18px 28px 28px; }
+.dashboard {
+  --overview-canvas: #f7f8fa;
+  --overview-surface: #ffffff;
+  --overview-ink: #101114;
+  --overview-muted: #667085;
+  --overview-faint: #98a2b3;
+  --overview-line: #e4e7ec;
+  --overview-line-strong: #d0d5dd;
+  --overview-action: #dc143c;
+  --overview-action-hover: #b01030;
+  --overview-danger: #d92d20;
+  --overview-danger-soft: #fff1f0;
+  --overview-warning: #f79009;
+  --overview-warning-soft: #fff8eb;
+  --overview-success: #12a05c;
+  --overview-success-soft: #ecfdf3;
+  --overview-info: #2f80ed;
+  --overview-info-soft: #eff6ff;
+  --overview-violet: #7c3aed;
+  --overview-violet-soft: #f5f3ff;
+  --overview-brand-crimson: #dc143c;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 18px 28px 28px;
+}
 .hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
 .heroCopy h1 { margin: 0; color: var(--overview-ink); font-size: clamp(26px, 2.4vw, 34px); font-weight: 740; letter-spacing: -0.035em; line-height: 1.08; }
 .heroCopy p { margin: 6px 0 0; color: var(--overview-muted); font-size: 14px; }
