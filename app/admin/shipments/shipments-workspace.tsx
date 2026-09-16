@@ -157,7 +157,7 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
       </OpsPageHeader>
 
       <div className="px-4 pt-4 md:px-6">
-        <OpsStatStrip className="shipments-stats">
+        <OpsStatStrip className="ops-stats-toned">
           <OpsStat
             icon={<Package size={15} strokeWidth={1.75} aria-hidden="true"/>}
             label="Total shipments"
