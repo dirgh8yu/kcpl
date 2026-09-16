@@ -27,7 +27,14 @@ function allowedAdminEmails() {
 }
 
 function previewQaBypassEnabled() {
-  return process.env.VERCEL_ENV === "preview" && process.env.KCPL_QA_AUTH_BYPASS === "true";
+  if (process.env.KCPL_QA_AUTH_BYPASS !== "true") return false;
+
+  const vercelEnv = process.env.VERCEL_ENV;
+  if (vercelEnv) return vercelEnv === "preview" || vercelEnv === "development";
+
+  // v0 VM previews commonly run the repository as a development server rather
+  // than as a published Vercel Preview deployment. Keep production fail-closed.
+  return process.env.NODE_ENV === "development";
 }
 
 async function previewQaAccess(): Promise<AdminAccess | null> {
