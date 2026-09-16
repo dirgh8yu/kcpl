@@ -121,6 +121,11 @@
 .app-global-search { display: flex; align-items: center; gap: 8px; height: 34px; width: 280px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12.5px; cursor: pointer; transition: border-color 120ms ease; }
 .app-global-search:hover { border-color: var(--admin-line-strong); }
 .app-global-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
+.app-branch { position: relative; display: inline-flex; align-items: center; gap: 8px; height: var(--app-control-height); padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-soft); color: var(--admin-ink); transition: border-color 120ms ease; }
+.app-branch:hover { border-color: var(--admin-line-strong); }
+.app-branch select { appearance: none; min-width: 96px; padding: 0 16px 0 0; border: 0; background: transparent; color: var(--admin-ink); font: inherit; font-size: 12.5px; font-weight: 550; outline: none; cursor: pointer; }
+.app-branch > svg { position: absolute; right: 8px; pointer-events: none; opacity: .5; }
+.app-branch-mark { color: var(--admin-muted); font-size: 13px; line-height: 1; }
 .app-icon-button { display: inline-grid; place-items: center; width: var(--app-control-height); min-height: var(--app-control-height); border: 1px solid transparent; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
 .app-icon-button:hover { background: var(--admin-surface-soft); color: var(--admin-ink); }
 .app-icon-button:disabled { opacity: .5; }

@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { KcplBranch } from "./crm/crm-data";
 import { OperationsCommandPalette } from "./operations-command-palette";
 import { OperationsNotificationCentre } from "./operations-notification-centre";
 import {
@@ -26,6 +27,7 @@ function decodeSegment(value: string) {
 export function OperationsShell({
   children, userName, canManageStaff = false, canManageFinance = false,
   isManagement = false, canViewCommercial = false, canManageJobFile = false,
+  branches, selectedBranch, canAccessAllBranches = false,
   signOutPath = "/api/admin/session?logout=1",
 }: {
   children: React.ReactNode;
@@ -35,10 +37,14 @@ export function OperationsShell({
   isManagement?: boolean;
   canViewCommercial?: boolean;
   canManageJobFile?: boolean;
+  branches?: KcplBranch[];
+  selectedBranch?: "all" | KcplBranch;
+  canAccessAllBranches?: boolean;
   signOutPath?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -96,6 +102,11 @@ export function OperationsShell({
   }, [mobileOpen]);
 
   function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
+  function changeBranch(value: string) {
+    const query = new URLSearchParams(searchParams?.toString() ?? "");
+    query.set("branch", value);
+    router.push(`${pathname}?${query.toString()}`);
+  }
   function toggleGroup(group: string) {
     setCollapsedGroups((current) => {
       const next = new Set(current);
@@ -129,6 +140,17 @@ export function OperationsShell({
       <header className="app-topbar">
         <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={18} strokeWidth={1.75}/> : <Menu size={18} strokeWidth={1.75}/>}</button>
         <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
+        {branches && branches.length ? (
+          <label className="app-branch">
+            <span className="app-branch-mark" aria-hidden="true">▥</span>
+            <span className="sr-only">Operational branch</span>
+            <select value={selectedBranch} onChange={(event) => changeBranch(event.target.value)} aria-label="Operational branch">
+              {canAccessAllBranches ? <option value="all">All branches</option> : null}
+              {branches.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
+            </select>
+            <ChevronDown size={14} strokeWidth={1.75} aria-hidden="true"/>
+          </label>
+        ) : null}
         <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : undefined}/></button>
         <OperationsNotificationCentre/>
       </header>
