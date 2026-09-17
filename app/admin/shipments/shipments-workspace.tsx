@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { AlertTriangle, Download, FileText, LayoutGrid, Map as MapIcon, Navigation, Package, Plus, SlidersHorizontal, Table as TableIcon, Truck, Upload, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
 import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, OpsTabs } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, OpsTabs, useAdminPortalContainer } from "../operations-ui";
 import {
   ModeIcon,
   ShipmentCards,
@@ -46,21 +46,6 @@ const VIEW_OPTIONS: Array<{ value: RegisterView; label: string; icon: typeof Tab
 
 function modeOptions(jobs: CommandCentreJob[]) {
   return [...new Set(jobs.map((job) => job.mode.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-}
-
-// Radix portals default to document.body, which is outside `.kcpl-admin-route`
-// where the `--admin-*` design tokens are scoped. Portaling into the admin
-// content root keeps those tokens (and legacy `.kcpl-admin-content` styles) in
-// scope so overlays render with the correct surface, borders and text colours.
-function useAdminPortalContainer() {
-  const [container, setContainer] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    // Deliberate: the portal target only exists in the DOM post-mount, and is
-    // unavailable during SSR, so it can't be read in a lazy useState initializer.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setContainer(document.getElementById("workspace-content"));
-  }, []);
-  return container;
 }
 
 export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: CommandCentreData; canStartShipment?: boolean }) {

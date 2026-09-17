@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
   OpsButton,
+  OpsDialog,
   OpsEmptyState,
   OpsField,
   OpsKpiCard,
@@ -18,6 +19,7 @@ import {
   OpsSurface,
   OpsTableWrap,
   OpsToolbar,
+  useAdminPortalContainer,
 } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
@@ -147,6 +149,7 @@ export function FreightDocumentsWorkspace({
 }) {
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
+  const portalContainer = useAdminPortalContainer();
   const { params, search, update } = useWorkspaceQuery();
   const query = params.get("q") ?? "";
   const requestedFocus = params.get("view");
@@ -410,6 +413,7 @@ export function FreightDocumentsWorkspace({
           key={selected.reference}
           row={selected}
           returnTo={returnTo}
+          container={portalContainer}
           onClose={closeEditor}
           onRefresh={() => refresh(false)}
           onOpenDocument={openDocument}
@@ -423,6 +427,7 @@ export function FreightDocumentsWorkspace({
 function FreightDocumentPanel({
   row,
   returnTo,
+  container,
   onClose,
   onRefresh,
   onOpenDocument,
@@ -430,6 +435,7 @@ function FreightDocumentPanel({
 }: {
   row: FreightDocumentQueueRow;
   returnTo: string;
+  container: HTMLElement | null;
   onClose: () => void;
   onRefresh: () => Promise<void>;
   onOpenDocument: (reference: string, documentId: string) => Promise<void>;
@@ -487,18 +493,23 @@ function FreightDocumentPanel({
   }
 
   return (
-    <>
-      <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close document production panel"/>
-      <aside className="freight-document-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" role="dialog" aria-modal="true" aria-labelledby="freight-document-inspector-title" aria-describedby="freight-document-inspector-description">
+    <OpsDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <OpsDialog.Portal container={container ?? undefined}>
+        <OpsDialog.Overlay className="ops-dialog-overlay fixed inset-0 z-[70] cursor-default bg-black/15" />
+        <OpsDialog.Content className="freight-document-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[620px]" aria-label={`Document production for ${row.reference}`}>
+          <OpsDialog.Title className="sr-only">{row.reference} document production</OpsDialog.Title>
+          <OpsDialog.Description className="sr-only">Generate, review and open controlled carriage documents for this shipment.</OpsDialog.Description>
         <header className="freight-document-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}</p>
-            <h2 id="freight-document-inspector-title" className="mt-1 text-base font-semibold leading-6">Document production</h2>
-            <p id="freight-document-inspector-description" className="mt-0.5 text-sm text-[var(--admin-muted)]">{row.customer_name} · {row.origin} → {row.destination} · {row.mode || "Mode not set"}</p>
+            <h2 className="mt-1 text-base font-semibold leading-6">Document production</h2>
+            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{row.customer_name} · {row.origin} → {row.destination} · {row.mode || "Mode not set"}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={status.tone}>{status.label}</OpsBadge>
-            <button type="button" className="freight-document-inspector-close" onClick={onClose} aria-label="Close document production panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+            <OpsDialog.Close asChild>
+              <button type="button" className="freight-document-inspector-close" aria-label="Close document production panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+            </OpsDialog.Close>
           </div>
         </header>
 
@@ -607,8 +618,9 @@ function FreightDocumentPanel({
             <OpsButton form="freight-document-generation-form" type="submit" variant="primary" disabled={busy}><FilePlus2 size={16} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Generating…" : "Generate PDF"}</OpsButton>
           </div>
         </footer> : null}
-      </aside>
-    </>
+        </OpsDialog.Content>
+      </OpsDialog.Portal>
+    </OpsDialog.Root>
   );
 }
 
