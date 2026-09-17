@@ -19,7 +19,7 @@ export function CrmCustomerJump({ customers }: { customers: CrmCustomerSummary[]
           onChange={(event) => {
             if (event.target.value) router.push(`/admin/crm/${encodeURIComponent(event.target.value)}`);
           }}
-          className="h-8 min-w-[240px] rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-medium text-[var(--admin-ink)] outline-none focus:border-[#9a9a9a] focus:ring-2 focus:ring-black/[.06]"
+          className="h-8 min-w-[240px] rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-medium text-[var(--admin-ink)] outline-none focus:border-[var(--admin-line-strong)] focus:ring-2 focus:ring-black/[.06]"
           aria-label="Open a Customer 360 workspace"
         >
           <option value="">Choose customer…</option>
