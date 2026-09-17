@@ -86,8 +86,8 @@ export default async function MarketEstimatePage() {
 function IntegrationCard({ icon, title, detail, state }: { icon: React.ReactNode; title: string; detail: string; state: "available" | "setup" }) {
   return <div className="min-h-[92px] border-b border-r border-[var(--admin-line)] bg-white p-3 last:border-r-0">
     <div className="flex items-start justify-between gap-3">
-      <span className={state === "available" ? "text-[#18794e]" : "text-[#945b00]"}>{icon}</span>
-      <span className={`inline-flex items-center gap-1 text-[length:var(--app-label-size)] font-medium ${state === "available" ? "text-[#18794e]" : "text-[#945b00]"}`}>
+      <span className={state === "available" ? "text-[var(--admin-success)]" : "text-[var(--admin-warning)]"}>{icon}</span>
+      <span className={`inline-flex items-center gap-1 text-[length:var(--app-label-size)] font-medium ${state === "available" ? "text-[var(--admin-success)]" : "text-[var(--admin-warning)]"}`}>
         {state === "available" ? <CheckCircle2 size={11}/> : <CircleAlert size={11}/>}
         {state === "available" ? "Available" : "Check setup"}
       </span>
