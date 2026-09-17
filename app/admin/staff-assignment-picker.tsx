@@ -132,16 +132,16 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
 
       {(selected || value.name || value.email || value.phone) ? (
         <div className={`rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] ${compact ? "px-2.5 py-2" : "px-3 py-2.5"}`}>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[length:var(--app-label-size)] text-[#6f6760]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">
             {selected ? (
-              <Link href={`/admin/workload/${encodeURIComponent(selected.uid)}`} className="flex items-center gap-1.5 font-semibold text-[#514a44] hover:text-[#a45747] hover:underline">
+              <Link href={`/admin/workload/${encodeURIComponent(selected.uid)}`} className="flex items-center gap-1.5 font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-crimson)] hover:underline">
                 <UserRound size={11}/>{selected.display_name}
               </Link>
-            ) : <span className="flex items-center gap-1.5 font-semibold text-[#514a44]"><UserRound size={11}/>{value.name || "Staff member"}</span>}
-            {(selected?.email || value.email) ? <a href={`mailto:${selected?.email || value.email}`} className="flex items-center gap-1.5 hover:text-[#a45747] hover:underline"><Mail size={10}/>{selected?.email || value.email}</a> : null}
-            {(selected?.phone || value.phone) ? <a href={`tel:${selected?.phone || value.phone}`} className="flex items-center gap-1.5 hover:text-[#a45747] hover:underline"><Phone size={10}/>{selected?.phone || value.phone}</a> : <span className="text-[#9a918a]">No phone saved</span>}
+            ) : <span className="flex items-center gap-1.5 font-semibold text-[var(--admin-ink)]"><UserRound size={11}/>{value.name || "Staff member"}</span>}
+            {(selected?.email || value.email) ? <a href={`mailto:${selected?.email || value.email}`} className="flex items-center gap-1.5 hover:text-[var(--admin-crimson)] hover:underline"><Mail size={10}/>{selected?.email || value.email}</a> : null}
+            {(selected?.phone || value.phone) ? <a href={`tel:${selected?.phone || value.phone}`} className="flex items-center gap-1.5 hover:text-[var(--admin-crimson)] hover:underline"><Phone size={10}/>{selected?.phone || value.phone}</a> : <span className="text-[var(--admin-faint)]">No phone saved</span>}
           </div>
-          {selected ? <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[length:var(--app-label-size)] text-[#958c85]"><span>{selected.job_title || "KCPL staff"}</span><span>·</span>{selected.branch_scope === "all" ? <span>All branches</span> : selected.branches.length ? selected.branches.map((staffBranch, index) => <span key={staffBranch} className="inline-flex items-center gap-1">{index ? <span>·</span> : null}<Link href={`/admin/branches/${encodeURIComponent(staffBranch)}`} className="hover:text-[#a45747] hover:underline">{staffBranch}</Link></span>) : <span>No branch recorded</span>}</div> : null}
+          {selected ? <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[length:var(--app-label-size)] text-[var(--admin-faint)]"><span>{selected.job_title || "KCPL staff"}</span><span>·</span>{selected.branch_scope === "all" ? <span>All branches</span> : selected.branches.length ? selected.branches.map((staffBranch, index) => <span key={staffBranch} className="inline-flex items-center gap-1">{index ? <span>·</span> : null}<Link href={`/admin/branches/${encodeURIComponent(staffBranch)}`} className="hover:text-[var(--admin-crimson)] hover:underline">{staffBranch}</Link></span>) : <span>No branch recorded</span>}</div> : null}
         </div>
       ) : null}
     </div>
