@@ -1174,6 +1174,28 @@
   .app-nav-backdrop[data-open="true"] { opacity: 1; }
 }
 
+/* The blanket `.kcpl-admin-shell *` reduced-motion reset above is a single class
+ * + universal selector (0-1-0), so any of the more specific rules in this Motion v2
+ * block (two classes, or a class + attribute selector) beats it on specificity and
+ * would still animate under prefers-reduced-motion. Same reason the pre-existing
+ * .ops-skeleton-line rule needed its own carve-out below — match that pattern here
+ * for every selector this block added. */
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-shell .ops-button,
+  .kcpl-admin-content .ops-stat,
+  .kcpl-admin-content .ops-kpi { transition: none; }
+  .kcpl-admin-shell .ops-button:active:not(:disabled) { transform: none; }
+  .kcpl-admin-content .ops-empty { animation: none; opacity: 1; transform: none; }
+  .kcpl-admin-content .ops-action-menu[data-state="open"],
+  .kcpl-admin-content .ops-action-menu[data-state="closed"],
+  .kcpl-admin-content .ops-drawer[data-state="open"],
+  .kcpl-admin-content .ops-drawer[data-state="closed"] { animation: none; }
+  .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
+}
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+  .app-sidebar, .app-sidebar[data-open="true"], .app-nav-backdrop, .app-nav-backdrop[data-open="true"] { transition: none; }
+}
+
 @media print {
   .app-sidebar, .app-topbar, .app-skip-link { display: none; }
   .kcpl-admin-route .kcpl-admin-content { padding: 0; overflow: visible; }
