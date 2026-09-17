@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "./shipments-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { loadCommandCentre } from "../command-centre/command-centre.server";
 import { getStaffContext } from "../staff-directory.server";
