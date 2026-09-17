@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "./job-file-premium.css";
 import { getAdminAccess } from "../../admin-auth";
 import { getDeliveryControl } from "../../delivery/delivery-control.server";
 import { getDigitalJobFile } from "../../job-file.server";
