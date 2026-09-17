@@ -28,9 +28,9 @@ const statusLabels: Record<TmsOrderStatus, string> = {
 };
 
 function statusClasses(status: TmsOrderStatus) {
-  if (status === "booked") return "bg-[#edf8f2] text-[#18794e]";
-  if (status === "tendering" || status === "rated") return "bg-[#eef5ff] text-[#2563a6]";
-  if (status === "selected") return "bg-[#fff7e6] text-[#945b00]";
+  if (status === "booked") return "bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
+  if (status === "tendering" || status === "rated") return "bg-[var(--admin-info-bg)] text-[var(--admin-info)]";
+  if (status === "selected") return "bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
   if (status === "cancelled") return "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
   return "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
 }
@@ -156,8 +156,8 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
           <p className="mt-[3px] text-[13px] leading-[19px] text-[var(--admin-muted)]">{active} active · {ready} rate selected · {tendering} tendering · {booked} booked</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/admin/rating?view=rate-desk" className="inline-flex h-8 items-center justify-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[#fbfbf9]">Rate Desk</Link>
-          <button type="button" onClick={() => setShowCreate((value) => !value)} className="inline-flex h-8 items-center justify-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-white hover:bg-[#c81035]">Create Transport Order</button>
+          <Link href="/admin/rating?view=rate-desk" className="inline-flex h-8 items-center justify-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-surface-soft)]">Rate Desk</Link>
+          <button type="button" onClick={() => setShowCreate((value) => !value)} className="inline-flex h-8 items-center justify-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-white hover:bg-[var(--admin-crimson-dark)]">Create Transport Order</button>
         </div>
       </header>
 
@@ -165,11 +165,11 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
         {tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium leading-[19px] ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}
       </nav>
 
-      {notice ? <div className={`mt-4 flex min-h-10 items-center justify-between gap-3 border px-3 py-2 text-[12px] font-medium ${notice.tone === "success" ? "border-[#cfe8da] bg-[#f2faf6] text-[#18794e]" : "border-[#f0cccc] bg-[#fff6f6] text-[#a83232]"}`}><span>{notice.text}</span><button type="button" onClick={() => setNotice(null)} className="text-[11px] font-semibold">Dismiss</button></div> : null}
+      {notice ? <div className={`mt-4 flex min-h-10 items-center justify-between gap-3 border px-3 py-2 text-[12px] font-medium ${notice.tone === "success" ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]"}`}><span>{notice.text}</span><button type="button" onClick={() => setNotice(null)} className="text-[11px] font-semibold">Dismiss</button></div> : null}
 
       {createdOrderId ? <section className="mt-4 border-y border-[var(--admin-line)] bg-white px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[#18794e]">Order Created</p><p className="mt-1 text-[14px] font-semibold">{createdOrderId}</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">The planning record is ready for rating and procurement.</p></div>
+          <div><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-success)]">Order Created</p><p className="mt-1 text-[14px] font-semibold">{createdOrderId}</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">The planning record is ready for rating and procurement.</p></div>
           <div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Open order</Link><Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Continue to rating</Link><button type="button" onClick={() => setCreatedOrderId(null)} className="inline-flex h-8 items-center rounded-[var(--app-radius)] px-3 text-[12px] font-semibold text-[var(--admin-muted)]">Return to list</button></div>
         </div>
       </section> : null}
@@ -206,7 +206,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
             <thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">ORDER</th><th className="w-[170px] px-3 font-medium">ROUTE</th><th className="w-[150px] px-3 font-medium">CUSTOMER</th><th className="w-[90px] px-3 font-medium">MODE</th><th className="w-[120px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">PICKUP</th><th className="w-[120px] px-3 text-right font-medium">PROCUREMENT</th></tr></thead>
             <tbody>{filtered.length ? filtered.map((order) => {
               const chosen = selected?.id === order.id;
-              return <tr key={order.id} onClick={() => setSelectedOrderId(order.id)} onDoubleClick={() => window.location.assign(`/admin/rating/${encodeURIComponent(order.id)}`)} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[#fbfbf9] ${chosen ? "bg-[#fbfbf9]" : ""}`}>
+              return <tr key={order.id} onClick={() => setSelectedOrderId(order.id)} onDoubleClick={() => window.location.assign(`/admin/rating/${encodeURIComponent(order.id)}`)} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}>
                 <td className="relative px-3 text-[13px] font-semibold">{chosen ? <span className="absolute inset-y-0 left-0 w-0.5 bg-[var(--admin-crimson)]"/> : null}<span className="block truncate">{order.id}</span></td>
                 <td className="px-3 text-[13px] text-[var(--admin-muted)]"><span className="block truncate">{order.origin} → {order.destination}</span></td>
                 <td className="px-3 text-[13px] text-[var(--admin-muted)]"><span className="block truncate">{order.customer_name || "Not linked"}</span></td>
