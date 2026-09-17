@@ -167,20 +167,10 @@
 .kcpl-admin-content :where(h3) { font-family: inherit; font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: normal; }
 .kcpl-admin-content .ops-page-header {
   --ops-page-header-pad-top: 28px;
-  position: relative;
   padding: var(--ops-page-header-pad-top) var(--app-page-gap) 0;
   border-bottom: 1px solid var(--admin-line);
   background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
   backdrop-filter: none;
-}
-.kcpl-admin-content .ops-page-header::before {
-  content: "";
-  position: absolute;
-  inset: var(--ops-page-header-pad-top) auto auto 24px;
-  width: 2px;
-  height: 52px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--admin-crimson), transparent);
 }
 .kcpl-admin-content .ops-page-header-main { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; width: 100%; max-width: none; margin: 0; padding: 0 0 18px; }
 .kcpl-admin-content .ops-page-heading { min-width: 0; max-width: 900px; }
@@ -1909,7 +1899,6 @@
 @media (max-width: 760px) { .ops-saved-view button { min-height: 44px; } }
 /* Embedded job tools must not repeat the parent record's heading or metrics. */
 .kcpl-admin-content .shipment-job-file-embedded .ops-page-header { padding: 0; border: 0; background: transparent; }
-.kcpl-admin-content .shipment-job-file-embedded .ops-page-header::before { display: none; }
 .kcpl-admin-content .shipment-job-file-embedded .ops-page-heading,
 .kcpl-admin-content .shipment-job-file-embedded .ops-page > .ops-kpi-strip { display: none; }
 .kcpl-admin-content .shipment-job-file-embedded .ops-grid-main { grid-template-columns: minmax(0,1fr); }

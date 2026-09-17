@@ -7,7 +7,7 @@
 }
 
 .routeNodeLabel {
-  color: #344054;
+  color: var(--admin-ink);
 }
 
 .routeNodeMeta {
@@ -36,7 +36,7 @@
 }
 
 .createField label {
-  color: #475467;
+  color: var(--admin-muted);
   font-size: 10px;
   font-weight: 650;
 }
@@ -47,7 +47,7 @@
   min-height: 36px;
   border: 1px solid var(--admin-line);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--admin-surface);
   color: var(--admin-ink);
   padding: 0 10px;
   font: inherit;
@@ -97,7 +97,7 @@
   border-radius: 6px;
   background: var(--admin-surface-soft);
   padding: 0 9px;
-  color: #475467;
+  color: var(--admin-muted);
   font-size: 10px;
   font-weight: 650;
 }
