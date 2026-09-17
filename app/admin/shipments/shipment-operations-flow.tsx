@@ -49,14 +49,14 @@ function dateOnly(value: string | null) {
 }
 
 function stageClass(state: WorkflowStageState) {
-  if (state === "complete") return "border-[#b9cfbd] bg-[#eef6ef] text-[#5e7763]";
-  if (state === "current") return "border-[#e0aa96] bg-[#fff4ee] text-[#ad604b]";
-  if (state === "blocked") return "border-[#e4ada9] bg-[#fff1ef] text-[#ad4d50]";
-  return "border-[#dfd8d2] bg-white text-[#9a9088]";
+  if (state === "complete") return "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
+  if (state === "current") return "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
+  if (state === "blocked") return "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]";
+  return "border-[var(--admin-line)] bg-white text-[var(--admin-faint)]";
 }
 
 function stageLineClass(state: WorkflowStageState) {
-  return state === "complete" ? "bg-[#a9c7b2]" : "bg-[#ddd7d1]";
+  return state === "complete" ? "bg-[var(--admin-success)]" : "bg-[var(--admin-line)]";
 }
 
 function stageIcon(state: WorkflowStageState) {
@@ -86,15 +86,15 @@ function nextAction(workflow: ShipmentWorkflowReadiness, job: DigitalJobFile): N
 }
 
 function actionToneClass(tone: ActionTone) {
-  if (tone === "danger") return "border-[#efcbc8] bg-[#fff4f2] text-[#9f4d4f]";
-  if (tone === "warning") return "border-[#ead7b7] bg-[#fff9ef] text-[#7c6032]";
-  if (tone === "info") return "border-[#cddce7] bg-[#f3f8fb] text-[#4f7187]";
-  return "border-[#ceddce] bg-[#f3f8f3] text-[#5c7460]";
+  if (tone === "danger") return "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]";
+  if (tone === "warning") return "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
+  if (tone === "info") return "border-[var(--admin-info-line)] bg-[var(--admin-info-bg)] text-[var(--admin-info)]";
+  return "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
 }
 
 function gateTone(ok: boolean, danger = false) {
-  if (ok) return "border-[#d2dfd3] bg-[#f5f9f5]";
-  return danger ? "border-[#efcfcc] bg-[#fff6f4]" : "border-[#eadcc8] bg-[#fffaf2]";
+  if (ok) return "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)]";
+  return danger ? "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)]" : "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)]";
 }
 
 function directionLabel(value: ShipmentWorkflowReadiness["document_intelligence"]["direction"]) {
@@ -154,13 +154,13 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
     return <section className="shipment-live-flow rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
       <div className="flex items-center justify-between gap-3"><div><p className="ops-eyebrow">Operations flow</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">{loading ? "Loading live readiness…" : "Live readiness unavailable"}</h3></div><OpsButton variant="ghost" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={11}/>{loading ? "Loading" : "Retry"}</OpsButton></div>
       <div className="mt-3 grid grid-cols-3 gap-2"><FallbackGate label="Tasks" value={`${fallbackJob.open_tasks} open`}/><FallbackGate label="Customs" value={`${fallbackJob.required_customs_open} open`}/><FallbackGate label="ETA" value={dateOnly(fallbackJob.eta)}/></div>
-      {error ? <p className="mt-3 text-[length:var(--app-label-size)] leading-4 text-[#9d5150]">{error} Existing shipment data remains visible and unchanged.</p> : null}
+      {error ? <p className="mt-3 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{error} Existing shipment data remains visible and unchanged.</p> : null}
     </section>;
   }
 
-  return <section className="shipment-live-flow rounded-[var(--app-radius)] border border-[#e5ddd6] bg-[var(--admin-surface)] p-4 shadow-[0_8px_28px_rgba(70,52,40,.035)]">
+  return <section className="shipment-live-flow rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4 shadow-[0_8px_28px_rgba(70,52,40,.035)]">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="ops-eyebrow">Live operations flow</p><h3 className="mt-1 text-[13px] font-[740] text-[#49413b]">One shipment, one control strip</h3><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Movement, ownership, customs, smart documents, tasks and billing readiness share one live view.</p></div>
+      <div><p className="ops-eyebrow">Live operations flow</p><h3 className="mt-1 text-[13px] font-[740] text-[var(--admin-ink)]">One shipment, one control strip</h3><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Movement, ownership, customs, smart documents, tasks and billing readiness share one live view.</p></div>
       <div className="flex flex-wrap items-center gap-2"><OpsBadge tone="info">{directionLabel(workflow.document_intelligence.direction)}</OpsBadge><OpsBadge tone={workflow.blockers.length || liveJob.status === "exception" ? "warning" : "success"}>{workflow.blockers.length || liveJob.status === "exception" ? "Action required" : "Operationally clear"}</OpsBadge><OpsButton variant="ghost" size="sm" onClick={() => void refresh()} disabled={loading}><RefreshCw size={11}/>{loading ? "Refreshing" : "Refresh"}</OpsButton></div>
     </div>
 
@@ -168,7 +168,7 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
       <div className="flex min-w-[670px] items-start">
         {workflow.stages.map((stage, index) => <div key={stage.id} className="relative min-w-0 flex-1 px-1">
           {index < workflow.stages.length - 1 ? <span className={`absolute left-[calc(50%+12px)] right-[calc(-50%+12px)] top-[12px] h-px ${stageLineClass(stage.state)}`} aria-hidden="true"/> : null}
-          <div className="relative z-10 flex flex-col items-center text-center"><span className={`grid h-6 w-6 place-items-center rounded-full border ${stageClass(stage.state)}`}>{stageIcon(stage.state)}</span><span className={`mt-1.5 text-[length:var(--app-label-size)] font-bold ${stage.state === "current" || stage.state === "blocked" ? "text-[#5d514a]" : "text-[var(--admin-muted)]"}`}>{stage.label}</span></div>
+          <div className="relative z-10 flex flex-col items-center text-center"><span className={`grid h-6 w-6 place-items-center rounded-full border ${stageClass(stage.state)}`}>{stageIcon(stage.state)}</span><span className={`mt-1.5 text-[length:var(--app-label-size)] font-bold ${stage.state === "current" || stage.state === "blocked" ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}>{stage.label}</span></div>
         </div>)}
       </div>
     </div>
@@ -184,10 +184,10 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
       <Gate icon={<WalletCards size={11}/>} label="Billing" value={workflow.billing_ready ? `${workflow.issued_invoice_count} issued` : `${workflow.invoice_count} invoice${workflow.invoice_count === 1 ? "" : "s"}`} ok={workflow.billing_ready}/>
     </div>
 
-    <div className="mt-4 rounded-[var(--app-radius)] border border-[#e9e1da] bg-[var(--admin-surface-muted)] p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[#9a7065]">Document intelligence</p><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[#827870]">Rules recalculate from mode, route, cargo text and shipment instructions. Advisory items do not block the movement unless promoted to a required rule.</p></div><OpsBadge>{workflow.document_intelligence.rules_applied.length} rules</OpsBadge></div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">{workflow.documents.filter((item) => item.required || item.advisory).map((item) => <div key={item.document_type} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-2.5"><div className="flex items-center justify-between gap-2"><strong className="text-[length:var(--app-label-size)] text-[#554c46]">{item.label}</strong><OpsBadge tone={item.present ? "success" : item.required ? "warning" : "neutral"}>{item.present ? "Present" : item.required ? "Required" : "Review"}</OpsBadge></div><p className="mt-1.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{item.reason}</p></div>)}</div>
-      {workflow.document_intelligence.advisories.length ? <div className="mt-3 space-y-1">{workflow.document_intelligence.advisories.map((advisory) => <p key={advisory} className="flex items-start gap-1.5 text-[length:var(--app-label-size)] leading-4 text-[#8a6738]"><AlertTriangle size={9} className="mt-0.5 shrink-0"/>{advisory}</p>)}</div> : null}
+    <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">Document intelligence</p><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Rules recalculate from mode, route, cargo text and shipment instructions. Advisory items do not block the movement unless promoted to a required rule.</p></div><OpsBadge>{workflow.document_intelligence.rules_applied.length} rules</OpsBadge></div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">{workflow.documents.filter((item) => item.required || item.advisory).map((item) => <div key={item.document_type} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-2.5"><div className="flex items-center justify-between gap-2"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{item.label}</strong><OpsBadge tone={item.present ? "success" : item.required ? "warning" : "neutral"}>{item.present ? "Present" : item.required ? "Required" : "Review"}</OpsBadge></div><p className="mt-1.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{item.reason}</p></div>)}</div>
+      {workflow.document_intelligence.advisories.length ? <div className="mt-3 space-y-1">{workflow.document_intelligence.advisories.map((advisory) => <p key={advisory} className="flex items-start gap-1.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-warning)]"><AlertTriangle size={9} className="mt-0.5 shrink-0"/>{advisory}</p>)}</div> : null}
     </div>
 
     <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-[var(--admin-line)] pt-4">
@@ -197,7 +197,7 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
       <FlowFact label="Reference" value={liveJob.reference} mono/>
     </div>
 
-    {workflow.close_blockers.length && liveJob.status === "delivered" ? <div className="mt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[#9a7065]">Closeout blockers</p><div className="mt-2 space-y-1.5">{workflow.close_blockers.slice(0, 3).map((blocker) => <p key={blocker} className="flex items-start gap-1.5 text-[length:var(--app-label-size)] leading-4 text-[#8f5b55]"><AlertTriangle size={9} className="mt-0.5 shrink-0"/>{blocker}</p>)}</div></div> : null}
+    {workflow.close_blockers.length && liveJob.status === "delivered" ? <div className="mt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">Closeout blockers</p><div className="mt-2 space-y-1.5">{workflow.close_blockers.slice(0, 3).map((blocker) => <p key={blocker} className="flex items-start gap-1.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]"><AlertTriangle size={9} className="mt-0.5 shrink-0"/>{blocker}</p>)}</div></div> : null}
 
     <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--admin-line)] pt-4">
       <Link href={`/admin/jobs/${encodeURIComponent(liveJob.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Resolve in Job File <ArrowRight size={11}/></Link>
@@ -209,13 +209,13 @@ export function ShipmentOperationsFlow({ job: fallbackJob, operationalDate }: { 
 }
 
 function Gate({ icon, label, value, ok, danger = false }: { icon: React.ReactNode; label: string; value: string; ok: boolean; danger?: boolean }) {
-  return <div className={`rounded-[var(--app-radius)] border p-2.5 ${gateTone(ok, danger)}`}><p className="flex items-center gap-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{icon}{label}</p><p className={`mt-1.5 line-clamp-2 text-[length:var(--app-label-size)] font-bold ${ok ? "text-[#526b57]" : danger ? "text-[#a34f4f]" : "text-[#806334]"}`}>{value}</p></div>;
+  return <div className={`rounded-[var(--app-radius)] border p-2.5 ${gateTone(ok, danger)}`}><p className="flex items-center gap-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{icon}{label}</p><p className={`mt-1.5 line-clamp-2 text-[length:var(--app-label-size)] font-bold ${ok ? "text-[var(--admin-success)]" : danger ? "text-[var(--admin-danger)]" : "text-[var(--admin-warning)]"}`}>{value}</p></div>;
 }
 
 function FallbackGate({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-2.5"><p className="text-[length:var(--app-label-size)] font-semibold text-[#938981]">{label}</p><p className="mt-1 text-[length:var(--app-label-size)] font-bold text-[#5c534d]">{value}</p></div>;
+  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-2.5"><p className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{label}</p><p className="mt-1 text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">{value}</p></div>;
 }
 
 function FlowFact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: string; mono?: boolean }) {
-  return <div><p className="flex items-center gap-1.5 text-[length:var(--app-label-size)] font-semibold text-[#938981]">{icon}{label}</p><p className="mt-1 break-words text-[length:var(--app-label-size)] font-bold text-[#5c534d]">{mono ? <OpsMono>{value}</OpsMono> : value}</p></div>;
+  return <div><p className="flex items-center gap-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{icon}{label}</p><p className="mt-1 break-words text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">{mono ? <OpsMono>{value}</OpsMono> : value}</p></div>;
 }
