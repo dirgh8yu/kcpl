@@ -2,7 +2,7 @@
 
 import { Clock3, Gauge, Navigation, Route } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { OpsButton, OpsErrorState, OpsMetric, OpsMetricStrip, OpsPanel, OpsStatusBadge } from "../operations-ui";
+import { OpsButton, OpsErrorState, OpsMetric, OpsMetricStrip, OpsSurface, OpsBadge } from "../operations-ui";
 import { GooglePlaceInput } from "./google-place-input";
 
 type Estimate = {
@@ -97,11 +97,11 @@ export function GoogleRoadRoutePanel({ initialOrigin = "", initialDestination = 
   }
 
   return (
-    <OpsPanel
+    <OpsSurface
       title="Road distance & ETA"
       eyebrow="Google Routes reference"
       description="Calculate indicative truck-road distance and transit time. Start typing to use Google Maps location suggestions."
-      action={<OpsStatusBadge tone={trafficAware ? "accent" : "success"}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</OpsStatusBadge>}
+      action={<OpsBadge tone={trafficAware ? "accent" : "success"}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</OpsBadge>}
     >
       <form onSubmit={calculate} className={`grid gap-3 p-3.5 ${compact ? "xl:grid-cols-[1fr_1fr_1fr_auto]" : "xl:grid-cols-[1fr_1fr_1fr_220px]"}`}>
         <GooglePlaceInput label="Origin" value={origin} onChange={setOrigin} placeholder="Kolkata, India" required />
@@ -121,6 +121,6 @@ export function GoogleRoadRoutePanel({ initialOrigin = "", initialDestination = 
         </OpsMetricStrip>
         <div className="grid gap-2 px-3.5 py-3 text-[length:var(--app-label-size)] leading-5 text-[#7d858d] lg:grid-cols-[minmax(0,1fr)_auto]"><div><p><strong className="font-medium text-[#4b535b]">{estimate.origin}</strong>{estimate.waypoints.map((item) => <span key={item}> → <strong className="font-medium text-[#4b535b]">{item}</strong></span>)} → <strong className="font-medium text-[#4b535b]">{estimate.destination}</strong></p>{estimate.route_description ? <p className="mt-0.5">Route: {estimate.route_description}</p> : null}{estimate.warnings.length ? <p className="mt-0.5 text-[#8b6938]">{estimate.warnings.join(" · ")}</p> : null}{disclaimer ? <p className="mt-0.5 text-[#9299a0]">{disclaimer}</p> : null}</div><div className="text-right text-[#939aa1]"><p>{pricingNote}</p><p className="mt-0.5">Requested {requestedText(estimate.requested_at)}</p></div></div>
       </div> : null}
-    </OpsPanel>
+    </OpsSurface>
   );
 }

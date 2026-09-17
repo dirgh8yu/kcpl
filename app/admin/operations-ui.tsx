@@ -88,10 +88,6 @@ export function OpsSurface({
   );
 }
 
-export function OpsPanel(props: Parameters<typeof OpsSurface>[0]) {
-  return <OpsSurface {...props}/>;
-}
-
 export function OpsToolbar({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx("ops-toolbar", className)}>{children}</div>;
 }
@@ -194,10 +190,6 @@ export function OpsBadge({
   className?: string;
 }) {
   return <span className={cx("ops-badge", className)} data-tone={tone}>{dot ? <i aria-hidden="true"/> : null}{children}</span>;
-}
-
-export function OpsStatusBadge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info" | "violet" }) {
-  return <OpsBadge tone={tone}>{children}</OpsBadge>;
 }
 
 export function OpsSearch({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
