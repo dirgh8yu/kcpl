@@ -54,6 +54,32 @@
   --app-font-size: 14px;
   --app-label-size: 12px;
   --app-title-size: 24px;
+  /* Typography scale v2 — new UI should reach for these instead of raw px. */
+  --app-text-xs: 11px;
+  --app-text-sm: 12px;
+  --app-text-base: 13px;
+  --app-text-md: 14px;
+  --app-text-lg: 16px;
+  --app-text-xl: 20px;
+  --app-text-2xl: 24px;
+  --app-text-3xl: 28px;
+  /* Radius scale v2 */
+  --app-radius-sm: 6px;
+  --app-radius-md: var(--app-radius);
+  --app-radius-lg: var(--app-surface-radius);
+  --app-radius-xl: var(--app-dialog-radius);
+  /* Shadow scale v2 */
+  --app-shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
+  --app-shadow-md: var(--app-surface-shadow);
+  --app-shadow-lg: 0 12px 32px rgb(16 24 40 / 12%), 0 4px 10px rgb(16 24 40 / 6%);
+  /* Motion tokens — see docs/OPERATING_SYSTEM.md. All UI motion is transform/opacity
+   * only, sub-300ms, and disabled wholesale by the prefers-reduced-motion rule below. */
+  --app-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --app-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --app-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --app-duration-fast: 120ms;
+  --app-duration-base: 180ms;
+  --app-duration-slow: 240ms;
 }
 .kcpl-admin-route .kcpl-admin-shell {
   min-height: 100dvh;
@@ -253,7 +279,8 @@
 .kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 8px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
 .kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-ink); border-color: var(--admin-line); background: var(--admin-surface-muted); }
 .kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); border-color: var(--admin-success-line); background: var(--admin-success-bg); }
-.kcpl-admin-content .ops-badge[data-tone="danger"], .kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-danger); border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-badge[data-tone="danger"] { color: var(--admin-danger); border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-crimson); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
 .kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); border-color: var(--admin-warning-line); background: var(--admin-warning-bg); }
 .kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); border-color: var(--admin-info-line); background: var(--admin-info-bg); }
 .kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
@@ -917,6 +944,7 @@
     color: var(--admin-muted);
     font-size: 13px;
     font-weight: 500;
+    transition: color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out);
   }
   .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="complete"] { color: var(--admin-success); }
   .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="current"] { color: var(--admin-ink); box-shadow: inset 0 -2px 0 var(--admin-crimson); }
@@ -1091,6 +1119,85 @@
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-shell *, .kcpl-admin-shell *::before, .kcpl-admin-shell *::after { animation: none; transition: none; scroll-behavior: auto; }
 }
+
+/* Motion v2 — shell overlays and primitive feedback.
+ * Sourced from plans/admin-motion-audit.md. Everything here is transform/opacity
+ * (or a fast color transition) only, sub-300ms, and disabled wholesale by the
+ * prefers-reduced-motion rule above because it all lives inside .kcpl-admin-shell.
+ */
+.kcpl-admin-shell .ops-button { transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-shell .ops-button:active:not(:disabled) { transform: scale(.98); box-shadow: none; }
+
+.kcpl-admin-content .ops-stat { transition: background-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-kpi { transition: border-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
+
+.kcpl-admin-content .ops-empty { opacity: 0; transform: translateY(4px); animation: ops-fade-in var(--app-duration-slow) var(--app-ease-out) forwards; }
+@keyframes ops-fade-in { to { opacity: 1; transform: none; } }
+
+/* Radix Popover/Dialog content: real symmetric enter/exit, keyed off the
+ * data-state Radix already sets (Radix defers unmount for CSS animations,
+ * so both directions play in full — no component changes needed). */
+.kcpl-admin-content .ops-action-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
+.kcpl-admin-content .ops-action-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
+.kcpl-admin-content .ops-drawer[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content .ops-drawer[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+@keyframes ops-pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes ops-pop-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.98); } }
+@keyframes ops-drawer-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ops-drawer-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(24px); } }
+
+/* Command palette: entrance only via @starting-style (it unmounts on close, so
+ * there's no exit to animate; an instant close reads as snappy, matching a
+ * keyboard-triggered overlay — see plans/admin-motion-audit.md #1). */
+.app-command-backdrop { transition: opacity var(--app-duration-base) var(--app-ease-out); }
+.app-command-backdrop, .app-command-dialog { opacity: 1; }
+@starting-style {
+  .app-command-backdrop { opacity: 0; }
+}
+.app-command-dialog { transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); transform: translateY(0) scale(1); }
+@starting-style {
+  .app-command-dialog { opacity: 0; transform: translateY(-8px) scale(.98); }
+}
+
+/* Notification panel: same entrance-only treatment, anchored to its trigger. */
+.app-notification-panel { transform-origin: top right; opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); }
+@starting-style {
+  .app-notification-panel { opacity: 0; transform: scale(.96); }
+}
+
+/* Mobile nav: real slide, not a display:none/flex snap. Visibility keeps the
+ * closed drawer out of layout and out of the tab order without touching the
+ * component's focus-trap logic. */
+@media (max-width: 1023px) {
+  .app-sidebar { display: flex; visibility: hidden; transform: translateX(-100%); transition: transform var(--app-duration-slow) var(--app-ease-drawer), visibility 0s linear var(--app-duration-slow); }
+  .app-sidebar[data-open="true"] { visibility: visible; transform: translateX(0); transition: transform var(--app-duration-slow) var(--app-ease-drawer); }
+  .app-nav-backdrop { opacity: 0; transition: opacity var(--app-duration-base) var(--app-ease-out); }
+  .app-nav-backdrop[data-open="true"] { opacity: 1; }
+}
+
+/* The blanket `.kcpl-admin-shell *` reduced-motion reset above is a single class
+ * + universal selector (0-1-0), so any of the more specific rules in this Motion v2
+ * block (two classes, or a class + attribute selector) beats it on specificity and
+ * would still animate under prefers-reduced-motion. Same reason the pre-existing
+ * .ops-skeleton-line rule needed its own carve-out below — match that pattern here
+ * for every selector this block added. */
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-shell .ops-button,
+  .kcpl-admin-content .ops-stat,
+  .kcpl-admin-content .ops-kpi { transition: none; }
+  .kcpl-admin-shell .ops-button:active:not(:disabled) { transform: none; }
+  .kcpl-admin-content .ops-empty { animation: none; opacity: 1; transform: none; }
+  .kcpl-admin-content .ops-action-menu[data-state="open"],
+  .kcpl-admin-content .ops-action-menu[data-state="closed"],
+  .kcpl-admin-content .ops-drawer[data-state="open"],
+  .kcpl-admin-content .ops-drawer[data-state="closed"] { animation: none; }
+  .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
+  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a { transition: none; }
+}
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+  .app-sidebar, .app-sidebar[data-open="true"], .app-nav-backdrop, .app-nav-backdrop[data-open="true"] { transition: none; }
+}
+
 @media print {
   .app-sidebar, .app-topbar, .app-skip-link { display: none; }
   .kcpl-admin-route .kcpl-admin-content { padding: 0; overflow: visible; }

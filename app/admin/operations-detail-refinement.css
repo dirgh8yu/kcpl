@@ -1,5 +1,6 @@
-/* Frozen compatibility rules. New UI belongs in operations-system.css. */
-@layer kcpl-legacy {
+/* Promoted from @layer kcpl-legacy — see plans/admin-css-consolidation.md.
+ * No attribute-substring overrides here; safe to run unlayered like operations-system.css.
+ * operations-system.css still loads last and wins any overlapping selector. */
 /* KCPL Shipment Detail — operational editorial refinement
    Deliberately flat, dense and functional. No generated-dashboard card stacks. */
 
@@ -532,4 +533,3 @@
   }
 }
 
-}

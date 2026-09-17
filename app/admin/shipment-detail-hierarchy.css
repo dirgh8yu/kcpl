@@ -1,5 +1,6 @@
-/* Frozen compatibility rules. New UI belongs in operations-system.css. */
-@layer kcpl-legacy {
+/* Promoted from @layer kcpl-legacy — see plans/admin-css-consolidation.md.
+ * No attribute-substring overrides here; safe to run unlayered like operations-system.css.
+ * operations-system.css still loads last and wins any overlapping selector. */
 /* Shipment detail hierarchy refinement.
    Keeps the record-led layout while giving primary work, next action, and lower workspaces distinct surface tiers. */
 
@@ -269,4 +270,3 @@
   }
 }
 
-}

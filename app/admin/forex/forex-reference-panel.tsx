@@ -3,7 +3,7 @@
 import { ArrowRightLeft, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
-import { OpsButton, OpsErrorState, OpsPanel, OpsStatusBadge } from "../operations-ui";
+import { OpsButton, OpsErrorState, OpsSurface, OpsBadge } from "../operations-ui";
 
 type Rate = {
   currency: string;
@@ -170,11 +170,11 @@ export function ForexReferencePanel({ compact = false }: { compact?: boolean }) 
   const featured = featuredCurrencies.map((code) => snapshot?.rates.find((item) => item.currency === code)).filter((item): item is Rate => Boolean(item));
 
   return (
-    <OpsPanel
+    <OpsSurface
       title="Nepal Rastra Bank reference rates"
       eyebrow="Forex reference"
       description="Official reference rates normalised to NPR per one foreign-currency unit. These rates are informational and never overwrite historical transaction rates."
-      action={<div className="flex items-center gap-2">{snapshot ? <OpsStatusBadge tone="info">Rate date {snapshot.date}</OpsStatusBadge> : null}<OpsButton tone="ghost" onClick={() => void refresh()} disabled={loading}><RefreshCw size={12} className={loading ? "animate-spin" : ""}/><span className={compact ? "sr-only" : ""}>Refresh</span></OpsButton></div>}
+      action={<div className="flex items-center gap-2">{snapshot ? <OpsBadge tone="info">Rate date {snapshot.date}</OpsBadge> : null}<OpsButton tone="ghost" onClick={() => void refresh()} disabled={loading}><RefreshCw size={12} className={loading ? "animate-spin" : ""}/><span className={compact ? "sr-only" : ""}>Refresh</span></OpsButton></div>}
     >
       {error ? <OpsErrorState tone="warning" title="Reference rates are temporarily unavailable" detail="Existing KCPL data is unaffected. Retry when the Nepal Rastra Bank service is available." action={<OpsButton onClick={() => void refresh()} disabled={loading}>Retry</OpsButton>}/> : null}
 
@@ -190,6 +190,6 @@ export function ForexReferencePanel({ compact = false }: { compact?: boolean }) 
           <div className="text-[length:var(--app-label-size)] leading-4 text-[#8b9299]"><p><strong className="font-medium text-[#626b74]">Source:</strong> {snapshot.provider} · {snapshot.source}</p><p className="mt-1"><strong className="font-medium text-[#626b74]">Fetched:</strong> {fetchedLabel(snapshot.fetched_at)}</p>{disclaimer ? <p className="mt-1">{disclaimer}</p> : null}</div>
         </div>
       </> : null}
-    </OpsPanel>
+    </OpsSurface>
   );
 }
