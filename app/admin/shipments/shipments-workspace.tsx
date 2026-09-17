@@ -374,7 +374,7 @@ function ShipmentPanel({ job, returnTo, container, onClose }: { job: CommandCent
   return (
     <OpsDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
       <OpsDialog.Portal container={container ?? undefined}>
-        <OpsDialog.Overlay className="fixed inset-0 z-[70] cursor-default bg-black/15" />
+        <OpsDialog.Overlay className="ops-dialog-overlay fixed inset-0 z-[70] cursor-default bg-black/15" />
         <OpsDialog.Content className="shipment-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
           <OpsDialog.Title className="sr-only">{job.reference} shipment details</OpsDialog.Title>
           <OpsDialog.Description className="sr-only">Review shipment status, readiness, route and the next permitted action.</OpsDialog.Description>

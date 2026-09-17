@@ -257,6 +257,7 @@
 .kcpl-admin-content :where(table thead) { background: var(--admin-surface-muted); border-bottom: 1px solid var(--admin-line); }
 .kcpl-admin-content :where(table th) { height: 38px; padding: 8px 12px; color: var(--admin-muted); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: normal; text-transform: none; white-space: nowrap; }
 .kcpl-admin-content :where(table td) { height: var(--app-row-height); padding: 10px 12px; border-bottom: 1px solid var(--admin-line); color: var(--admin-ink); font-size: 13px; font-weight: 400; line-height: 20px; vertical-align: middle; }
+.kcpl-admin-content :where(table tbody tr) { transition: background-color 120ms ease; }
 .kcpl-admin-content :where(table tbody tr:hover) { background: var(--admin-canvas); }
 .kcpl-admin-content :where(table tbody tr[data-selected="true"]) { background: var(--admin-surface-muted); box-shadow: inset 2px 0 0 var(--admin-crimson); }
 .kcpl-admin-content :where(table tbody tr:focus-visible) { outline: 2px solid var(--app-focus); outline-offset: -2px; }
@@ -280,6 +281,14 @@
   box-shadow: 0 0 0 3px rgb(220 20 60 / 10%);
 }
 .kcpl-admin-content .ops-notice, .kcpl-admin-content .ops-error-state { border-radius: var(--app-surface-radius); padding: 12px 14px; font-size: 13px; font-weight: 400; line-height: 20px; }
+.kcpl-admin-content .ops-notice {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out);
+}
+@starting-style {
+  .kcpl-admin-content .ops-notice { opacity: 0; transform: translateY(-4px); }
+}
 .kcpl-admin-content .ops-empty { min-height: 176px; padding: 28px 24px; }
 .kcpl-admin-content .ops-empty[data-compact="true"] { min-height: 132px; padding: 22px; }
 .kcpl-admin-content .ops-empty h3 { font-size: 14px; line-height: 20px; }
@@ -454,6 +463,7 @@
 .kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
 .kcpl-admin-content button.ops-kpi { cursor: pointer; }
 .kcpl-admin-content button.ops-kpi:hover { border-color: var(--admin-line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / 7%); transform: translateY(-1px); }
+.kcpl-admin-content button.ops-kpi:active { transform: scale(.98); box-shadow: 0 1px 2px rgb(16 24 40 / 4%); }
 .kcpl-admin-content .ops-kpi[data-active="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
 .kcpl-admin-content .ops-kpi-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: var(--admin-surface-soft); color: var(--admin-muted); }
 .kcpl-admin-content .ops-kpi-copy strong { display: block; color: var(--admin-ink); font-size: 26px; font-weight: 700; line-height: 28px; letter-spacing: -.025em; }
@@ -1116,12 +1126,18 @@
  * so both directions play in full — no component changes needed). */
 .kcpl-admin-content .ops-action-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
 .kcpl-admin-content .ops-action-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
-.kcpl-admin-content .ops-drawer[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
-.kcpl-admin-content .ops-drawer[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+.kcpl-admin-content .shipments-filter-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
+.kcpl-admin-content .shipments-filter-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
+.kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+.kcpl-admin-content .ops-dialog-overlay[data-state="open"] { animation: ops-fade-in-overlay var(--app-duration-base) var(--app-ease-out); }
+.kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: ops-fade-out-overlay var(--app-duration-fast) var(--app-ease-out); }
 @keyframes ops-pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes ops-pop-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.98); } }
 @keyframes ops-drawer-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes ops-drawer-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(24px); } }
+@keyframes ops-fade-in-overlay { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ops-fade-out-overlay { from { opacity: 1; } to { opacity: 0; } }
 
 /* Command palette: entrance only via @starting-style (it unmounts on close, so
  * there's no exit to animate; an instant close reads as snappy, matching a
@@ -1162,15 +1178,22 @@
   .kcpl-admin-shell .ops-button,
   .kcpl-admin-content .ops-kpi { transition: none; }
   .kcpl-admin-shell .ops-button:active:not(:disabled) { transform: none; }
+  .kcpl-admin-content button.ops-kpi:active { transform: none; }
   .kcpl-admin-content .ops-empty { animation: none; opacity: 1; transform: none; }
   .kcpl-admin-content .ops-action-menu[data-state="open"],
   .kcpl-admin-content .ops-action-menu[data-state="closed"],
-  .kcpl-admin-content .ops-drawer[data-state="open"],
-  .kcpl-admin-content .ops-drawer[data-state="closed"] { animation: none; }
+  .kcpl-admin-content .shipments-filter-menu[data-state="open"],
+  .kcpl-admin-content .shipments-filter-menu[data-state="closed"],
+  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="open"],
+  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="closed"],
+  .kcpl-admin-content .ops-dialog-overlay[data-state="open"],
+  .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: none; }
   .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
   .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a { transition: none; }
   .kcpl-admin-content .ops-filter-chip:active { transform: none; transition: none; }
   .kcpl-admin-content .ops-action-menu-item { transition: none; }
+  .kcpl-admin-content .ops-notice { transition: none; }
+  .kcpl-admin-content :where(table tbody tr) { transition: none; }
 }
 @media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
   .app-sidebar, .app-sidebar[data-open="true"], .app-nav-backdrop, .app-nav-backdrop[data-open="true"] { transition: none; }
