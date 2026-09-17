@@ -7,7 +7,7 @@ export function AdminLoginPage() {
   return (
     <main className="kcpl-admin-shell min-h-screen bg-[var(--admin-canvas)] text-[var(--admin-ink)]">
       <div className="grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
-        <section className="relative hidden overflow-hidden border-r border-black/10 bg-[#101010] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
+        <section className="relative hidden overflow-hidden border-r border-black/10 bg-[var(--admin-ink)] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
           <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,.09)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.09)_1px,transparent_1px)] [background-size:44px_44px]" />
           <div className="absolute -right-24 top-20 h-72 w-72 rounded-full bg-[var(--admin-crimson)]/25 blur-3xl" />
           <div className="absolute -bottom-20 left-16 h-72 w-72 rounded-full bg-[var(--admin-crimson)]/10 blur-3xl" />
@@ -46,13 +46,13 @@ export function AdminLoginPage() {
               </div>
               <div>
                 <p className="text-[14px] font-semibold tracking-[-0.02em]">KAPILESHWOR</p>
-                <p className="mt-0.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.22em] text-[#72726D]">Cargo Pvt. Ltd.</p>
+                <p className="mt-0.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.22em] text-[var(--admin-muted)]">Cargo Pvt. Ltd.</p>
               </div>
             </div>
 
             <div className="rounded-[var(--app-radius)] border border-black/[0.08] bg-white p-6 shadow-[0_24px_70px_rgba(16,16,16,0.08)] sm:p-8 xl:p-10">
               <div className="flex items-center justify-between gap-6">
-                <span className="inline-flex items-center gap-2 rounded-full bg-[var(--admin-canvas)] px-3 py-1.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.12em] text-[#5C5C57]">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[var(--admin-canvas)] px-3 py-1.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                   <LockKeyhole size={12} /> Private access
                 </span>
                 <span className="h-2 w-2 rounded-full bg-[var(--admin-crimson)] shadow-[0_0_0_5px_rgba(220,20,60,0.08)]" aria-hidden="true" />
@@ -60,7 +60,7 @@ export function AdminLoginPage() {
 
               <div className="mt-7">
                 <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.04em] sm:text-[34px]">Sign in to Operations</h2>
-                <p className="mt-3 max-w-[410px] text-[13px] font-medium leading-6 text-[#666661]">
+                <p className="mt-3 max-w-[410px] text-[13px] font-medium leading-6 text-[var(--admin-muted)]">
                   Use your authorised KCPL staff account. Your session is created securely after Firebase verifies your credentials.
                 </p>
               </div>
@@ -68,11 +68,11 @@ export function AdminLoginPage() {
               <AdminLogin />
 
               <div className="mt-8 border-t border-black/[0.08] pt-5">
-                <div className="flex flex-col gap-3 text-[11px] font-medium text-[#777772] sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 text-[11px] font-medium text-[var(--admin-muted)] sm:flex-row sm:items-center sm:justify-between">
                   <span className="inline-flex items-center gap-2">
                     <ShieldCheck size={14} /> Firebase-authenticated access
                   </span>
-                  <Link href="/" className="font-semibold text-[var(--admin-ink)] underline decoration-black/20 underline-offset-4 transition hover:text-[var(--admin-crimson)] hover:decoration-[#DC143C]/40">
+                  <Link href="/" className="font-semibold text-[var(--admin-ink)] underline decoration-black/20 underline-offset-4 transition hover:text-[var(--admin-crimson)] hover:decoration-[var(--admin-crimson)]/40">
                     Return to public website
                   </Link>
                 </div>
