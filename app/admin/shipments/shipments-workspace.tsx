@@ -55,6 +55,9 @@ function modeOptions(jobs: CommandCentreJob[]) {
 function useAdminPortalContainer() {
   const [container, setContainer] = useState<HTMLElement | null>(null);
   useEffect(() => {
+    // Deliberate: the portal target only exists in the DOM post-mount, and is
+    // unavailable during SSR, so it can't be read in a lazy useState initializer.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setContainer(document.getElementById("workspace-content"));
   }, []);
   return container;
