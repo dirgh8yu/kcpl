@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
   OpsButton,
+  OpsDialog,
   OpsEmptyState,
   OpsField,
   OpsMono,
@@ -16,6 +17,7 @@ import {
   OpsSurface,
   OpsTableWrap,
   OpsToolbar,
+  useAdminPortalContainer,
 } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { shipmentStatusLabels } from "../../shipment-types";
@@ -116,6 +118,7 @@ export function TrackingVisibilityWorkspace({
 }) {
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
+  const portalContainer = useAdminPortalContainer();
   const { params, search, update } = useWorkspaceQuery();
   const query = params.get("q") ?? "";
   const requestedFocus = params.get("view");
@@ -377,6 +380,7 @@ export function TrackingVisibilityWorkspace({
           key={selected.reference}
           row={selected}
           returnTo={returnTo}
+          container={portalContainer}
           onClose={closeInspector}
           onRefresh={() => refresh(false)}
         />
@@ -388,11 +392,13 @@ export function TrackingVisibilityWorkspace({
 function TrackingVisibilityPanel({
   row,
   returnTo,
+  container,
   onClose,
   onRefresh,
 }: {
   row: VisibilityShipment;
   returnTo: string;
+  container: HTMLElement | null;
   onClose: () => void;
   onRefresh: () => Promise<void>;
 }) {
@@ -485,9 +491,12 @@ function TrackingVisibilityPanel({
   }
 
   return (
-    <>
-      <button type="button" className="fixed inset-0 z-[70] cursor-default bg-black/15" onClick={onClose} aria-label="Close live visibility panel"/>
-      <aside className="fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[640px]" aria-label={`Live visibility for ${row.reference}`}>
+    <OpsDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <OpsDialog.Portal container={container ?? undefined}>
+        <OpsDialog.Overlay className="ops-dialog-overlay fixed inset-0 z-[70] cursor-default bg-black/15" />
+        <OpsDialog.Content className="visibility-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[640px]" aria-label={`Live visibility for ${row.reference}`}>
+          <OpsDialog.Title className="sr-only">{row.reference} live visibility</OpsDialog.Title>
+          <OpsDialog.Description className="sr-only">Movement timeline, tracking events and manual event recording for this shipment.</OpsDialog.Description>
         <header className="visibility-panel-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
           <div className="min-w-0">
             <p className="m-0 text-xs text-[var(--admin-muted)]"><OpsMono>{row.reference}</OpsMono>{row.carrier_reference ? ` · ${row.carrier_reference}` : ""}</p>
@@ -496,9 +505,11 @@ function TrackingVisibilityPanel({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OpsBadge tone={statusTone(row)}>{shipmentStatusLabels[row.status]}</OpsBadge>
-            <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label="Close live visibility panel">
-              <X size={16} strokeWidth={1.75} aria-hidden="true"/>
-            </button>
+            <OpsDialog.Close asChild>
+              <button type="button" className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" aria-label="Close live visibility panel">
+                <X size={16} strokeWidth={1.75} aria-hidden="true"/>
+              </button>
+            </OpsDialog.Close>
           </div>
         </header>
 
@@ -576,8 +587,9 @@ function TrackingVisibilityPanel({
             </OpsButton>
           </div>
         </footer>
-      </aside>
-    </>
+        </OpsDialog.Content>
+      </OpsDialog.Portal>
+    </OpsDialog.Root>
   );
 }
 

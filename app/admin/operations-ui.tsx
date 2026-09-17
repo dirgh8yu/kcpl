@@ -5,6 +5,7 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { ChevronRight, Search } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
+export { useAdminPortalContainer } from "./use-admin-portal-container";
 export const OpsDialog = DialogPrimitive;
 export const OpsPopover = PopoverPrimitive;
 export const OpsTabs = TabsPrimitive;

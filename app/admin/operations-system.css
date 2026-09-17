@@ -1128,8 +1128,8 @@
 .kcpl-admin-content .ops-action-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
 .kcpl-admin-content .shipments-filter-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
 .kcpl-admin-content .shipments-filter-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
-.kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
-.kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+.kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
 .kcpl-admin-content .ops-dialog-overlay[data-state="open"] { animation: ops-fade-in-overlay var(--app-duration-base) var(--app-ease-out); }
 .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: ops-fade-out-overlay var(--app-duration-fast) var(--app-ease-out); }
 @keyframes ops-pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
@@ -1184,8 +1184,8 @@
   .kcpl-admin-content .ops-action-menu[data-state="closed"],
   .kcpl-admin-content .shipments-filter-menu[data-state="open"],
   .kcpl-admin-content .shipments-filter-menu[data-state="closed"],
-  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="open"],
-  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector)[data-state="closed"],
+  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="open"],
+  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="closed"],
   .kcpl-admin-content .ops-dialog-overlay[data-state="open"],
   .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: none; }
   .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
