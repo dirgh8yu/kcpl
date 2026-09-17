@@ -254,7 +254,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const scheduledToday = rows.filter((row) => row.status === "confirmed" && kathmanduDateKey(rowWindowStart(row)) === todayKey).length;
   const hasSchedulable = rows.some((row) => row.status === "unscheduled" || row.status === "requested");
 
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     return rows.filter((row) => {
       if (!matchesFocus(row, focus, nowIso)) return false;
@@ -279,7 +279,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
       const bValue = Number.isFinite(bTime) ? bTime : sortDirection === "asc" ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
       return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
     });
-  }, [branchFilter, dateFilter, driverFilter, focus, nowIso, originFilter, partnerFilter, query, rows, sortDirection, statusFilter, todayKey]);
+  })();
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(requestedPage, pageCount);

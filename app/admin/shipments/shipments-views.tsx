@@ -168,28 +168,28 @@ export function ShipmentCards({ jobs, selectedReference, onSelect }: ViewProps) 
         const action = shipmentNextAction(job);
         const owner = ownerLabel(job);
         return (
-          <button
-            key={job.reference}
-            type="button"
-            role="listitem"
-            className="ship-card"
-            data-selected={selectedReference === job.reference || undefined}
-            onClick={() => onSelect(job.reference)}
-            aria-label={`Open ${job.reference}, ${job.customer_name || "unlinked customer"}, ${shipmentStatusLabels[job.status]}`}
-          >
-            <span className="ship-card-head">
-              <span className="ops-mono ship-card-ref">{job.reference}</span>
-              <span className="ops-badge" data-tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</span>
-            </span>
-            <strong className="ship-card-customer">{job.customer_name || "Customer not linked"}</strong>
-            <ShipRoute origin={job.origin} destination={job.destination} />
-            <span className="ship-card-meta">
-              <span className="ship-card-mode"><ModeIcon mode={job.mode} size={14} />{job.mode || "—"}</span>
-              <span>ETA {shortDate(job.eta)}</span>
-              <span className={owner === "Unassigned" ? "ship-card-warn" : undefined}>{owner}</span>
-            </span>
-            <span className="shipment-next-action-cell" data-tone={action.tone}>{action.title}</span>
-          </button>
+          <div key={job.reference} role="listitem" style={{ display: "contents" }}>
+            <button
+              type="button"
+              className="ship-card"
+              data-selected={selectedReference === job.reference || undefined}
+              onClick={() => onSelect(job.reference)}
+              aria-label={`Open ${job.reference}, ${job.customer_name || "unlinked customer"}, ${shipmentStatusLabels[job.status]}`}
+            >
+              <span className="ship-card-head">
+                <span className="ops-mono ship-card-ref">{job.reference}</span>
+                <span className="ops-badge" data-tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</span>
+              </span>
+              <strong className="ship-card-customer">{job.customer_name || "Customer not linked"}</strong>
+              <ShipRoute origin={job.origin} destination={job.destination} />
+              <span className="ship-card-meta">
+                <span className="ship-card-mode"><ModeIcon mode={job.mode} size={14} />{job.mode || "—"}</span>
+                <span>ETA {shortDate(job.eta)}</span>
+                <span className={owner === "Unassigned" ? "ship-card-warn" : undefined}>{owner}</span>
+              </span>
+              <span className="shipment-next-action-cell" data-tone={action.tone}>{action.title}</span>
+            </button>
+          </div>
         );
       })}
     </div>
@@ -205,34 +205,34 @@ export function ShipmentMap({ jobs, selectedReference, onSelect }: ViewProps) {
       </p>
       <div className="shipments-map-canvas" role="list" aria-label="Shipment routes">
         {jobs.map((job) => (
-          <button
-            key={job.reference}
-            type="button"
-            role="listitem"
-            className="ship-lane"
-            data-selected={selectedReference === job.reference || undefined}
-            onClick={() => onSelect(job.reference)}
-            aria-label={`Open ${job.reference}, ${job.origin || "origin"} to ${job.destination || "destination"}, ${shipmentStatusLabels[job.status]}`}
-          >
-            <span className="ops-mono ship-lane-ref">{job.reference}</span>
-            <span className="ship-lane-track">
-              <span className="ship-lane-end">
-                <CountryFlag location={job.origin} />
-                <span className="loc">{job.origin || "Origin"}</span>
+          <div key={job.reference} role="listitem" style={{ display: "contents" }}>
+            <button
+              type="button"
+              className="ship-lane"
+              data-selected={selectedReference === job.reference || undefined}
+              onClick={() => onSelect(job.reference)}
+              aria-label={`Open ${job.reference}, ${job.origin || "origin"} to ${job.destination || "destination"}, ${shipmentStatusLabels[job.status]}`}
+            >
+              <span className="ops-mono ship-lane-ref">{job.reference}</span>
+              <span className="ship-lane-track">
+                <span className="ship-lane-end">
+                  <CountryFlag location={job.origin} />
+                  <span className="loc">{job.origin || "Origin"}</span>
+                </span>
+                <span className="ship-lane-line">
+                  <span className="ship-lane-mode"><ModeIcon mode={job.mode} size={13} /></span>
+                </span>
+                <span className="ship-lane-end ship-lane-end-dest">
+                  <CountryFlag location={job.destination} />
+                  <span className="loc">{job.destination || "Destination"}</span>
+                </span>
               </span>
-              <span className="ship-lane-line">
-                <span className="ship-lane-mode"><ModeIcon mode={job.mode} size={13} /></span>
+              <span className="ship-lane-status">
+                <span className="ops-badge" data-tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</span>
+                <span className="ship-lane-eta">ETA {shortDate(job.eta)}</span>
               </span>
-              <span className="ship-lane-end ship-lane-end-dest">
-                <CountryFlag location={job.destination} />
-                <span className="loc">{job.destination || "Destination"}</span>
-              </span>
-            </span>
-            <span className="ship-lane-status">
-              <span className="ops-badge" data-tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</span>
-              <span className="ship-lane-eta">ETA {shortDate(job.eta)}</span>
-            </span>
-          </button>
+            </button>
+          </div>
         ))}
       </div>
     </div>

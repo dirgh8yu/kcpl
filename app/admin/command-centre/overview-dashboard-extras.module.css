@@ -1,9 +1,9 @@
 .routeArrow {
-  color: #667085;
+  color: var(--admin-muted);
 }
 
 .routeNodeCore {
-  color: #d92d20;
+  color: var(--admin-danger);
 }
 
 .routeNodeLabel {
@@ -11,7 +11,7 @@
 }
 
 .routeNodeMeta {
-  color: #667085;
+  color: var(--admin-muted);
 }
 
 .createForm {
@@ -45,10 +45,10 @@
 .createField select {
   width: 100%;
   min-height: 36px;
-  border: 1px solid #e4e7ec;
+  border: 1px solid var(--admin-line);
   border-radius: 6px;
   background: #ffffff;
-  color: #101114;
+  color: var(--admin-ink);
   padding: 0 10px;
   font: inherit;
   font-size: 11px;
@@ -57,12 +57,12 @@
 
 .createField input:focus,
 .createField select:focus {
-  border-color: #101114;
+  border-color: var(--admin-ink);
   box-shadow: 0 0 0 2px rgba(16, 17, 20, 0.06);
 }
 
 .createField input::placeholder {
-  color: #98a2b3;
+  color: var(--admin-faint);
 }
 
 .createMetrics {
@@ -76,16 +76,16 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #e4e7ec;
+  border-top: 1px solid var(--admin-line);
   padding-top: 12px;
 }
 
 .createError {
-  border: 1px solid #fecaca;
+  border: 1px solid var(--admin-danger-line);
   border-radius: 6px;
-  background: #fff1f0;
+  background: var(--admin-danger-bg);
   padding: 8px 10px;
-  color: #d92d20;
+  color: var(--admin-danger);
   font-size: 10px;
   line-height: 15px;
 }
@@ -95,7 +95,7 @@
   min-height: 28px;
   align-items: center;
   border-radius: 6px;
-  background: #f2f4f7;
+  background: var(--admin-surface-soft);
   padding: 0 9px;
   color: #475467;
   font-size: 10px;

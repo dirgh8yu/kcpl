@@ -1,134 +1,30 @@
-.shell {
-  --overview-canvas: #f7f8fa;
-  --overview-surface: #ffffff;
-  --overview-ink: #101114;
-  --overview-muted: #667085;
-  --overview-faint: #98a2b3;
-  --overview-line: #e4e7ec;
-  --overview-line-strong: #d0d5dd;
-  --overview-action: #dc143c;
-  --overview-action-hover: #b01030;
-  --overview-danger: #d92d20;
-  --overview-danger-soft: #fff1f0;
-  --overview-warning: #f79009;
-  --overview-warning-soft: #fff8eb;
-  --overview-success: #12a05c;
-  --overview-success-soft: #ecfdf3;
-  --overview-info: #2f80ed;
-  --overview-info-soft: #eff6ff;
-  --overview-violet: #7c3aed;
-  --overview-violet-soft: #f5f3ff;
-  --overview-brand-crimson: #dc143c;
-  min-height: 100vh;
-  background: var(--overview-canvas);
-  color: var(--overview-ink);
-}
-
-.skipLink {
-  position: fixed;
-  left: 16px;
-  top: -80px;
-  z-index: 120;
-  border-radius: 6px;
-  background: var(--overview-action);
-  color: #ffffff;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.skipLink:focus { top: 10px; }
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 60;
-  display: flex;
-  min-height: 68px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  border-bottom: 1px solid var(--overview-line);
-  background: rgba(255, 255, 255, 0.96);
-  padding: 12px 28px;
-  backdrop-filter: blur(10px);
-}
-
-.searchTrigger {
-  display: flex;
-  min-height: 40px;
-  width: min(560px, 52vw);
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--overview-line);
-  border-radius: 7px;
-  background: var(--overview-surface);
-  color: var(--overview-muted);
-  padding: 0 12px;
-  text-align: left;
-  box-shadow: 0 1px 2px rgba(16, 17, 20, 0.03);
-  cursor: pointer;
-}
-
-.searchTrigger:hover { border-color: var(--overview-line-strong); color: var(--overview-ink); }
-.searchTrigger span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.searchTrigger kbd { border: 1px solid var(--overview-line); border-radius: 4px; background: #f9fafb; padding: 2px 6px; color: var(--overview-faint); font: inherit; font-size: 11px; }
-
-.topbarActions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
-.branchControl { position: relative; display: flex; height: 40px; align-items: center; gap: 8px; border: 1px solid var(--overview-line); border-radius: 7px; background: var(--overview-surface); padding: 0 10px; box-shadow: 0 1px 2px rgba(16, 17, 20, 0.03); }
-.branchControl select { appearance: none; min-width: 112px; border: 0; background: transparent; color: var(--overview-ink); padding: 0 18px 0 0; font: inherit; font-size: 12px; font-weight: 650; outline: none; cursor: pointer; }
-.branchControl > svg { position: absolute; right: 9px; pointer-events: none; color: var(--overview-muted); }
-.branchMarker { color: var(--overview-muted); font-size: 14px; }
-
-.topbar :global(.app-notification-toggle) {
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--overview-ink);
-}
-.topbar :global(.app-notification-toggle:hover) { background: #f2f4f7; }
-.topbar :global(.app-notification-count) { background: var(--overview-danger); color: #ffffff; }
-
-.profileRoot { position: relative; }
-.profileTrigger { display: flex; min-height: 44px; align-items: center; gap: 9px; border: 0; border-radius: 7px; background: transparent; padding: 4px 6px; color: var(--overview-ink); cursor: pointer; }
-.profileTrigger:hover { background: #f2f4f7; }
-.avatar { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; background: #e9eaec; color: var(--overview-ink); font-size: 11px; font-weight: 750; }
-.profileCopy { display: grid; min-width: 104px; gap: 1px; text-align: left; }
-.profileCopy strong { font-size: 12px; font-weight: 700; line-height: 16px; }
-.profileCopy small { color: var(--overview-muted); font-size: 11px; line-height: 15px; }
-.profileMenu { position: absolute; right: 0; top: calc(100% + 8px); width: 220px; overflow: hidden; border: 1px solid var(--overview-line); border-radius: 8px; background: #ffffff; box-shadow: 0 12px 30px rgba(16, 24, 40, 0.12); }
-.profileMenuHeader { display: grid; gap: 2px; border-bottom: 1px solid var(--overview-line); padding: 12px 14px; }
-.profileMenuHeader strong { font-size: 12px; }
-.profileMenuHeader span { color: var(--overview-muted); font-size: 11px; }
-.profileMenu a { display: flex; align-items: center; gap: 8px; padding: 10px 14px; color: var(--overview-ink); font-size: 12px; font-weight: 550; text-decoration: none; }
-.profileMenu a:hover { background: #f9fafb; }
-.shellContent { outline: none; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
+/* Aliased to the shared --admin-* tokens (operations-system.css) so this page
+ * can't drift from the rest of /admin. Brand crimson/ink stay pinned there;
+ * --overview-violet has no --admin-* equivalent (a distinct 5th status hue
+ * used only by the workload chart) so it keeps its own literal value. */
 .dashboard {
-  --overview-canvas: #f7f8fa;
-  --overview-surface: #ffffff;
-  --overview-ink: #101114;
-  --overview-muted: #667085;
-  --overview-faint: #98a2b3;
-  --overview-line: #e4e7ec;
-  --overview-line-strong: #d0d5dd;
-  --overview-action: #dc143c;
-  --overview-action-hover: #b01030;
-  --overview-danger: #d92d20;
-  --overview-danger-soft: #fff1f0;
-  --overview-warning: #f79009;
-  --overview-warning-soft: #fff8eb;
-  --overview-success: #12a05c;
-  --overview-success-soft: #ecfdf3;
-  --overview-info: #2f80ed;
-  --overview-info-soft: #eff6ff;
+  --overview-canvas: var(--admin-canvas);
+  --overview-surface: var(--admin-surface);
+  --overview-ink: var(--admin-ink);
+  --overview-muted: var(--admin-muted);
+  --overview-faint: var(--admin-faint);
+  --overview-line: var(--admin-line);
+  --overview-line-strong: var(--admin-line-strong);
+  --overview-action: var(--admin-crimson);
+  --overview-action-hover: var(--admin-crimson-dark);
+  --overview-danger: var(--admin-danger);
+  --overview-danger-soft: var(--admin-danger-bg);
+  --overview-warning: var(--admin-warning);
+  --overview-warning-soft: var(--admin-warning-bg);
+  --overview-success: var(--admin-success);
+  --overview-success-soft: var(--admin-success-bg);
+  --overview-info: var(--admin-info);
+  --overview-info-soft: var(--admin-info-bg);
   --overview-violet: #7c3aed;
   --overview-violet-soft: #f5f3ff;
-  --overview-brand-crimson: #dc143c;
+  --overview-brand-crimson: var(--admin-crimson);
   max-width: 1600px;
   margin: 0 auto;
   padding: 18px 28px 28px;
@@ -235,9 +131,6 @@
 .routeLine { fill: none; stroke: #667085; stroke-width: 1.1; stroke-dasharray: 4 4; opacity: 0.58; }
 .routeLineHot { stroke: var(--overview-danger); opacity: 0.72; }
 .routeNode { fill: #ffffff; stroke: var(--overview-danger); stroke-width: 1.6; }
-.mapMarker { position: absolute; transform: translate(-50%, -50%); border: 1px solid var(--overview-line); border-radius: 6px; background: rgba(255, 255, 255, 0.95); padding: 5px 7px; box-shadow: 0 3px 8px rgba(16, 24, 40, 0.08); pointer-events: none; }
-.mapMarker strong { display: block; font-size: 9px; line-height: 11px; }
-.mapMarker span { display: block; margin-top: 1px; color: var(--overview-muted); font-size: 8px; }
 .mapFoot { position: absolute; right: 10px; bottom: 9px; left: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--overview-faint); font-size: 11px; }
 
 .activityBody { padding: 4px 16px 14px; }
@@ -295,10 +188,6 @@
 }
 
 @media (max-width: 900px) {
-  .topbar { flex-wrap: wrap; padding: 10px 16px; }
-  .searchTrigger { width: 100%; order: 2; }
-  .topbarActions { width: 100%; justify-content: space-between; }
-  .profileCopy { display: none; }
   .dashboard { padding: 16px; }
   .hero { align-items: flex-start; }
   .heroActions { align-items: flex-end; flex-direction: column; gap: 8px; }
@@ -307,7 +196,6 @@
 }
 
 @media (max-width: 640px) {
-  .branchControl select { min-width: 84px; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric { min-height: 72px; padding: 10px; }
   .hero { flex-direction: column; }
