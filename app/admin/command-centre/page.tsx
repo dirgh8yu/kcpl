@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
-import "./command-centre-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { getStaffContext, type KcplStaffContext } from "../staff-directory.server";
@@ -166,19 +165,17 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
       {overview.kind === "unavailable" ? <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /> : null}
       {overview.kind === "error" ? <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Search and notifications remain available while the data service recovers." embedded /> : null}
       {overview.kind === "ready" ? (
-        <div className="kcpl-command-centre-premium">
-          <V4OperationsOverview
-            data={overview.data}
-            workflow={overview.workflow}
-            finance={overview.finance}
-            note={overview.note}
-            userName={userName}
-            selectedBranch={selectedBranch}
-            branches={accessibleBranches}
-            canViewCommercial={staff.permissions.canViewCommercial}
-            canPostNotes={staff.permissions.canManageJobFile}
-          />
-        </div>
+        <V4OperationsOverview
+          data={overview.data}
+          workflow={overview.workflow}
+          finance={overview.finance}
+          note={overview.note}
+          userName={userName}
+          selectedBranch={selectedBranch}
+          branches={accessibleBranches}
+          canViewCommercial={staff.permissions.canViewCommercial}
+          canPostNotes={staff.permissions.canManageJobFile}
+        />
       ) : null}
     </OperationsShell>
   );
