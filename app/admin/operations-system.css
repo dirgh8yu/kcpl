@@ -279,7 +279,8 @@
 .kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 8px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
 .kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-ink); border-color: var(--admin-line); background: var(--admin-surface-muted); }
 .kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); border-color: var(--admin-success-line); background: var(--admin-success-bg); }
-.kcpl-admin-content .ops-badge[data-tone="danger"], .kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-danger); border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-badge[data-tone="danger"] { color: var(--admin-danger); border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-crimson); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
 .kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); border-color: var(--admin-warning-line); background: var(--admin-warning-bg); }
 .kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); border-color: var(--admin-info-line); background: var(--admin-info-bg); }
 .kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
