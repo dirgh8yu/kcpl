@@ -1,5 +1,6 @@
-/* Frozen compatibility rules. New UI belongs in operations-system.css. */
-@layer kcpl-legacy {
+/* Promoted from @layer kcpl-legacy — see plans/admin-css-consolidation.md.
+ * No attribute-substring overrides here; safe to run unlayered like operations-system.css.
+ * operations-system.css still loads last and wins any overlapping selector. */
 /* KCPL staff product design system
    Brand source: Figma identity specifications (Crimson #DC143C, Black #101010,
    Neutral canvas #F6F6F3, Manrope ExtraBold + SemiBold).
@@ -626,4 +627,3 @@ button.ops-button {
   }
 }
 
-}

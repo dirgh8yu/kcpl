@@ -1,5 +1,6 @@
-/* Frozen compatibility rules. New UI belongs in operations-system.css. */
-@layer kcpl-legacy {
+/* Promoted from @layer kcpl-legacy — see plans/admin-css-consolidation.md.
+ * No attribute-substring overrides here; safe to run unlayered like operations-system.css.
+ * operations-system.css still loads last and wins any overlapping selector. */
 /* KCPL Operations V4 shared refinement layer.
  * This file intentionally targets only the admin `ops-*` primitives. Public-site
  * components do not use these class names. Business state remains owned by the
@@ -549,4 +550,3 @@ details { border-radius: 6px; }
   }
 }
 
-}
