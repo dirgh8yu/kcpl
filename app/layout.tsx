@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Instrument_Serif, Inter, Manrope, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { company } from "./company-data";
@@ -55,6 +55,12 @@ export const metadata: Metadata = {
   icons: { icon: "/images/brand/kcpl-gateway-k.svg", shortcut: "/images/brand/kcpl-gateway-k.svg", apple: "/images/brand/kcpl-gateway-k.svg" },
   openGraph: { type: "website", siteName, title: defaultTitle, description: defaultDescription, url: siteUrl, images: [socialImage] },
   twitter: { card: "summary_large_image", title: defaultTitle, description: defaultDescription, images: [socialImage.url] },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const organizationSchema = {

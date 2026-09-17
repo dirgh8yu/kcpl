@@ -227,6 +227,7 @@
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 .kcpl-admin-content .ops-filter-chip:hover { border-color: var(--admin-line-strong); color: var(--admin-ink); }
+.kcpl-admin-content .ops-filter-chip:active { transform: scale(.97); transition: transform var(--app-duration-fast) var(--app-ease-out); }
 .kcpl-admin-content .ops-filter-chip:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 2px; }
 .kcpl-admin-content .ops-filter-chip[data-active="true"] { border-color: var(--admin-crimson); background: var(--admin-crimson); color: var(--admin-surface); }
 
@@ -787,13 +788,16 @@
   .kcpl-admin-route .kcpl-admin-content { padding-left: 0; }
   .app-sidebar { display: none; width: min(300px,calc(100vw - 48px)); }
   .app-sidebar[data-open="true"] { display: flex; }
-  .app-nav-backdrop { position: fixed; inset: 0; z-index: 59; background: rgb(16 16 16 / 30%); border: 0; }
+  .app-nav-backdrop { position: fixed; inset: 0; z-index: 59; background: rgb(16 16 16 / 30%); backdrop-filter: blur(2px); border: 0; }
   .app-topbar { left: 0; }
   .app-menu-toggle { display: inline-grid; }
   .app-skip-link { left: 10px; }
 }
 @media (max-width: 760px) {
   .kcpl-admin-route { --app-page-gap: 16px; --app-toolbar-height: 52px; --app-control-height: 44px; --app-row-height: 52px; --app-title-size: 22px;   }
+  /* iOS zooms the page on focus of any input under 16px — never let a mobile
+   * form control's font drop below that, regardless of --app-font-size. */
+  .kcpl-admin-shell :where(input,textarea,select) { font-size: max(16px, var(--app-font-size)); }
 }
 
 /* Shipment record detail — one operational hierarchy across summary and workflow sections. */
@@ -1193,6 +1197,8 @@
   .kcpl-admin-content .ops-drawer[data-state="closed"] { animation: none; }
   .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
   .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a { transition: none; }
+  .kcpl-admin-content .ops-filter-chip:active { transform: none; transition: none; }
+  .kcpl-admin-content .ops-action-menu-item { transition: none; }
 }
 @media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
   .app-sidebar, .app-sidebar[data-open="true"], .app-nav-backdrop, .app-nav-backdrop[data-open="true"] { transition: none; }
@@ -3328,8 +3334,9 @@
 .kcpl-admin-content .ops-detail-item dd { margin: 0; font-size: 14px; color: var(--admin-ink); }
 
 .kcpl-admin-content .ops-action-menu { min-width: 190px; padding: 6px; background: var(--admin-surface); border: 1px solid var(--admin-line); border-radius: var(--app-radius); box-shadow: var(--app-surface-shadow); display: flex; flex-direction: column; gap: 2px; z-index: 60; }
-.kcpl-admin-content .ops-action-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--admin-ink); font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; }
+.kcpl-admin-content .ops-action-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--admin-ink); font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
 .kcpl-admin-content .ops-action-menu-item:hover { background: var(--admin-surface-soft); }
+.kcpl-admin-content .ops-action-menu-item:active { background: var(--admin-surface-muted); }
 .kcpl-admin-content .ops-action-menu-item[data-tone="danger"] { color: var(--admin-danger); }
 .kcpl-admin-content .ops-action-menu-item[data-tone="danger"]:hover { background: var(--admin-danger-bg); }
 
