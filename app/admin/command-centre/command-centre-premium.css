@@ -1,0 +1,329 @@
+/* Apple UI Design System – Verified: 8pt Grid, SF Pro Typography, Material-Depth, Natural Spring Motion
+   KCPL identity override: the staff product intentionally retains Inter and KCPL crimson/black/neutral branding.
+   Route-scoped presentation only. Data loading, permissions, queue policy and workflow contracts remain unchanged. */
+
+.kcpl-command-centre-premium {
+  --cc-glass: rgba(255, 255, 255, 0.78);
+  --cc-glass-strong: rgba(255, 255, 255, 0.92);
+  --cc-glass-soft: rgba(248, 248, 246, 0.76);
+  --cc-line: rgba(16, 16, 16, 0.10);
+  --cc-line-strong: rgba(16, 16, 16, 0.16);
+  --cc-shadow: 0 16px 48px rgba(16, 16, 16, 0.08);
+  --cc-shadow-soft: 0 8px 24px rgba(16, 16, 16, 0.06);
+  --cc-focus: 0 0 0 3px rgba(220, 20, 60, 0.20);
+  --cc-motion: 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  min-width: 0;
+  background:
+    radial-gradient(circle at 86% 0%, rgba(220, 20, 60, 0.05), transparent 32%),
+    linear-gradient(180deg, #f8f8f6 0%, #f2f2ef 100%);
+  color: var(--admin-ink);
+  font-family: var(--font-inter), sans-serif;
+}
+
+.kcpl-command-centre-premium *,
+.kcpl-command-centre-premium *::before,
+.kcpl-command-centre-premium *::after {
+  box-sizing: border-box;
+}
+
+/* Override the dashboard's local tokens without touching its operational component. */
+.kcpl-command-centre-premium > div {
+  --overview-canvas: transparent;
+  --overview-surface: rgba(255, 255, 255, 0.78);
+  --overview-ink: #101010;
+  --overview-muted: #5f6368;
+  --overview-faint: #85888d;
+  --overview-line: rgba(16, 16, 16, 0.10);
+  --overview-line-strong: rgba(16, 16, 16, 0.16);
+  --overview-action: #101010;
+  --overview-action-hover: #000000;
+  --overview-brand-crimson: #dc143c;
+  max-width: 1600px;
+  margin-inline: auto;
+  padding: 24px 32px 40px;
+  background: transparent;
+}
+
+/* Greeting / orientation surface. */
+.kcpl-command-centre-premium > div > section:first-of-type {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 32px;
+  align-items: center;
+  margin-bottom: 24px;
+  border: 0.5px solid var(--cc-line);
+  border-radius: 20px;
+  padding: 32px;
+  background: var(--cc-glass);
+  box-shadow: var(--cc-shadow);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.kcpl-command-centre-premium h1 {
+  margin: 0;
+  color: #101010;
+  font-size: clamp(32px, 3vw, 44px);
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+}
+
+.kcpl-command-centre-premium h1 + p {
+  margin-top: 8px;
+  color: #5f6368;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Operational pulse: make the six KPIs feel like one coherent instrument panel. */
+.kcpl-command-centre-premium section[aria-label="Operational pulse"] {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kcpl-command-centre-premium section[aria-label="Operational pulse"] > a {
+  min-height: 112px;
+  border: 0.5px solid var(--cc-line);
+  border-radius: 20px;
+  padding: 24px;
+  background: var(--cc-glass);
+  box-shadow: var(--cc-shadow-soft);
+  backdrop-filter: blur(20px) saturate(180%);
+  transition:
+    transform var(--cc-motion),
+    border-color var(--cc-motion),
+    background-color var(--cc-motion),
+    box-shadow var(--cc-motion);
+}
+
+.kcpl-command-centre-premium section[aria-label="Operational pulse"] > a:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: var(--cc-line-strong);
+  background: var(--cc-glass-strong);
+  box-shadow: var(--cc-shadow);
+}
+
+.kcpl-command-centre-premium section[aria-label="Operational pulse"] > a:active {
+  transform: scale(0.96);
+}
+
+.kcpl-command-centre-premium section[aria-label="Operational pulse"] > a:focus-visible {
+  outline: none;
+  box-shadow: var(--cc-focus), var(--cc-shadow-soft);
+}
+
+.kcpl-command-centre-premium section[aria-label="Operational pulse"] > a strong {
+  color: #101010;
+  font-weight: 680;
+  letter-spacing: -0.022em;
+}
+
+/* Every labelled operational block becomes a calm material card. */
+.kcpl-command-centre-premium section[aria-labelledby] {
+  min-width: 0;
+  overflow: hidden;
+  border: 0.5px solid var(--cc-line);
+  border-radius: 20px;
+  background: var(--cc-glass);
+  box-shadow: var(--cc-shadow-soft);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.kcpl-command-centre-premium section[aria-labelledby] > div:first-child {
+  min-height: 72px;
+  padding: 24px;
+}
+
+.kcpl-command-centre-premium section[aria-labelledby] h2 {
+  color: #101010;
+  font-size: 17px;
+  font-weight: 680;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+}
+
+.kcpl-command-centre-premium section[aria-labelledby] h2 + p {
+  margin-top: 8px;
+  color: #666a70;
+  line-height: 1.5;
+}
+
+/* Table treatment keeps density while improving scanning and focus. */
+.kcpl-command-centre-premium table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.kcpl-command-centre-premium thead th {
+  min-height: 44px;
+  border-bottom: 0.5px solid var(--cc-line);
+  background: rgba(16, 16, 16, 0.035);
+  color: #74777c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.kcpl-command-centre-premium tbody td {
+  min-height: 56px;
+  border-bottom: 0.5px solid var(--cc-line);
+  color: #36383b;
+  line-height: 1.5;
+  transition: background-color var(--cc-motion);
+}
+
+.kcpl-command-centre-premium tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.kcpl-command-centre-premium tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Controls follow the same interaction language used in Shipments and Job File. */
+.kcpl-command-centre-premium button,
+.kcpl-command-centre-premium select,
+.kcpl-command-centre-premium a[role="button"] {
+  min-height: 44px;
+  border-radius: 12px;
+  transition:
+    transform var(--cc-motion),
+    border-color var(--cc-motion),
+    background-color var(--cc-motion),
+    color var(--cc-motion),
+    box-shadow var(--cc-motion);
+}
+
+.kcpl-command-centre-premium button:hover,
+.kcpl-command-centre-premium a[role="button"]:hover {
+  transform: scale(1.02);
+}
+
+.kcpl-command-centre-premium button:active,
+.kcpl-command-centre-premium a[role="button"]:active {
+  transform: scale(0.96);
+}
+
+.kcpl-command-centre-premium :is(a, button, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: var(--cc-focus);
+}
+
+.kcpl-command-centre-premium input:not([type="checkbox"]):not([type="radio"]),
+.kcpl-command-centre-premium select,
+.kcpl-command-centre-premium textarea {
+  border: 0.5px solid var(--cc-line-strong);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #101010;
+  backdrop-filter: blur(20px) saturate(180%);
+  transition:
+    border-color var(--cc-motion),
+    background-color var(--cc-motion),
+    box-shadow var(--cc-motion);
+}
+
+.kcpl-command-centre-premium input:not([type="checkbox"]):not([type="radio"]),
+.kcpl-command-centre-premium select {
+  min-height: 44px;
+}
+
+.kcpl-command-centre-premium textarea {
+  min-height: 112px;
+}
+
+.kcpl-command-centre-premium input::placeholder,
+.kcpl-command-centre-premium textarea::placeholder {
+  color: #70747a;
+  opacity: 1;
+}
+
+/* Modals / popovers retain context through material depth instead of hard panels. */
+.kcpl-command-centre-premium [role="dialog"] {
+  border: 0.5px solid var(--cc-line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 64px rgba(16, 16, 16, 0.16);
+  backdrop-filter: blur(20px) saturate(180%);
+  animation: cc-spring-in 300ms cubic-bezier(0.4, 0, 0.2, 1.4);
+}
+
+@keyframes cc-spring-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Status colors remain semantic; KCPL crimson stays an identity/accent color. */
+.kcpl-command-centre-premium [data-tone="danger"] { color: #a61b29; }
+.kcpl-command-centre-premium [data-tone="warning"] { color: #805900; }
+.kcpl-command-centre-premium [data-tone="success"] { color: #166b47; }
+
+/* Responsive hierarchy: preserve the same information, change its geometry. */
+@media (max-width: 1280px) {
+  .kcpl-command-centre-premium section[aria-label="Operational pulse"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .kcpl-command-centre-premium > div {
+    padding: 24px;
+  }
+
+  .kcpl-command-centre-premium > div > section:first-of-type {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  .kcpl-command-centre-premium > div {
+    padding: 16px;
+  }
+
+  .kcpl-command-centre-premium > div > section:first-of-type {
+    margin-bottom: 16px;
+    padding: 24px;
+  }
+
+  .kcpl-command-centre-premium section[aria-label="Operational pulse"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .kcpl-command-centre-premium section[aria-label="Operational pulse"] > a {
+    min-height: 104px;
+    padding: 16px;
+  }
+
+  .kcpl-command-centre-premium section[aria-labelledby] > div:first-child {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kcpl-command-centre-premium section[aria-label="Operational pulse"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kcpl-command-centre-premium h1 {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-command-centre-premium *,
+  .kcpl-command-centre-premium *::before,
+  .kcpl-command-centre-premium *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}
