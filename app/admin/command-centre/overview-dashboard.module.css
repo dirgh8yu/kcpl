@@ -169,7 +169,8 @@
 
 .primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr); gap: 16px; align-items: stretch; }
 .lowerGrid { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.45fr) minmax(260px, 0.9fr) minmax(280px, 1fr); gap: 16px; margin-top: 16px; }
-.card { min-width: 0; overflow: hidden; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
+.card { min-width: 0; overflow: hidden; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); opacity: 0; transform: translateY(6px); animation: overview-card-in var(--app-duration-slow, 240ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)) forwards; }
+@keyframes overview-card-in { to { opacity: 1; transform: none; } }
 .cardHeader { display: flex; min-height: 62px; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px 18px 12px; }
 .cardHeader h2 { margin: 0; font-size: 16px; font-weight: 720; letter-spacing: -0.02em; }
 .cardHeader p { margin: 4px 0 0; color: var(--overview-muted); font-size: 12.5px; line-height: 17px; }
@@ -275,8 +276,10 @@
 .noteEditor textarea:focus { border-color: var(--overview-ink); box-shadow: 0 0 0 2px rgba(16, 17, 20, 0.06); }
 .noteEditorActions { display: flex; align-items: end; gap: 6px; }
 
-.launcherBackdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(16, 17, 20, 0.36); padding: 20px; }
-.launcher { width: min(520px, 100%); border: 1px solid var(--overview-line); border-radius: 9px; background: #ffffff; box-shadow: 0 20px 50px rgba(16, 24, 40, 0.18); }
+.launcherBackdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(16, 17, 20, 0.36); padding: 20px; opacity: 1; transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+@starting-style { .launcherBackdrop { opacity: 0; } }
+.launcher { width: min(520px, 100%); border: 1px solid var(--overview-line); border-radius: 9px; background: #ffffff; box-shadow: 0 20px 50px rgba(16, 24, 40, 0.18); opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+@starting-style { .launcher { opacity: 0; transform: scale(.98) translateY(-8px); } }
 .launcherHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--overview-line); padding: 16px; }
 .launcherHeader h2 { margin: 0; font-size: 17px; font-weight: 730; }
 .launcherHeader p { margin: 6px 0 0; color: var(--overview-muted); font-size: 12.5px; line-height: 18px; }
@@ -320,4 +323,6 @@
 @media (prefers-reduced-motion: reduce) {
   .metric { transition: none; }
   .metric:hover { transform: none; }
+  .card { animation: none; opacity: 1; transform: none; }
+  .launcherBackdrop, .launcher { transition: none; }
 }
