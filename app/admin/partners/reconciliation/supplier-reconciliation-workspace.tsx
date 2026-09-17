@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, TriangleAlert } from "lucide-react";
+import { Fingerprint, Link2, TriangleAlert, UserSearch } from "lucide-react";
 import { payableStatusLabels } from "../../payables/payables-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsSurface } from "../../operations-ui";
 import type { SupplierReconciliationBill, SupplierReconciliationSnapshot } from "./supplier-reconciliation";
 
 function money(amount: number, currency: string) {
@@ -88,12 +88,12 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
       actions={<><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Accounts Payable</Link></>}
     />
 
-    <OpsStatStrip>
-      <OpsStat label="Unresolved bills" value={snapshot.unresolved_count} icon={<TriangleAlert size={13}/>} tone={snapshot.unresolved_count ? "warning" : "success"}/>
-      <OpsStat label="Exact-name suggestions" value={snapshot.exact_match_count} icon={<Link2 size={13}/>} tone="info" active={filter === "suggested"} onClick={() => setFilter(filter === "suggested" ? "all" : "suggested")}/>
-      <OpsStat label="Legacy Customer IDs" value={snapshot.customer_reference_count} tone={snapshot.customer_reference_count ? "warning" : "neutral"} active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
-      <OpsStat label="Needs manual match" value={snapshot.no_suggestion_count} active={filter === "manual"} onClick={() => setFilter(filter === "manual" ? "all" : "manual")}/>
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Unresolved bills" value={snapshot.unresolved_count} icon={<TriangleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={snapshot.unresolved_count ? "warning" : "success"}/>
+      <OpsKpiCard label="Exact-name suggestions" value={snapshot.exact_match_count} icon={<Link2 size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info" active={filter === "suggested"} onClick={() => setFilter(filter === "suggested" ? "all" : "suggested")}/>
+      <OpsKpiCard label="Legacy Customer IDs" value={snapshot.customer_reference_count} icon={<Fingerprint size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={snapshot.customer_reference_count ? "warning" : "neutral"} active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
+      <OpsKpiCard label="Needs manual match" value={snapshot.no_suggestion_count} icon={<UserSearch size={18} strokeWidth={1.9} aria-hidden="true"/>} active={filter === "manual"} onClick={() => setFilter(filter === "manual" ? "all" : "manual")}/>
+    </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}

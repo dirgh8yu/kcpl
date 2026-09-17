@@ -1,11 +1,11 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Check, CheckCircle2, ShieldCheck, UserCog, UsersRound } from "lucide-react";
+import { Building2, Check, CheckCircle2, ShieldCheck, UserCog, UserX, UsersRound } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { kcplStaffRoleLabels, kcplStaffRoles, type KcplStaffRole } from "../staff-permissions";
 import type { KcplStaffProfile } from "../staff-directory";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsSurface } from "../operations-ui";
 
 type Draft = {
   email: string;
@@ -64,7 +64,7 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
 
   return <OpsPage>
     <OpsPageHeader eyebrow="Administration" title="People & branches" description="Manage who can operate KCPL and where. Firebase Authentication owns credentials; this directory controls the role and branch scope applied after sign-in." meta={<><span>{profiles.length} staff profiles</span><span>{activeCount} active</span></>} />
-    <OpsStatStrip><OpsStat label="Active staff" value={activeCount} icon={<CheckCircle2 size={13}/>} tone="success"/><OpsStat label="Suspended" value={suspended} tone={suspended ? "danger" : "neutral"}/><OpsStat label="All-branch access" value={allBranchCount} icon={<ShieldCheck size={13}/>} /><OpsStat label="Branches" value={kcplBranches.length}/></OpsStatStrip>
+    <OpsKpiStrip><OpsKpiCard label="Active staff" value={activeCount} icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/><OpsKpiCard label="Suspended" value={suspended} icon={<UserX size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={suspended ? "danger" : "neutral"}/><OpsKpiCard label="All-branch access" value={allBranchCount} icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} /><OpsKpiCard label="Branches" value={kcplBranches.length} icon={<Building2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/></OpsKpiStrip>
 
     <div className="ops-content-wide grid gap-4 xl:grid-cols-[minmax(320px,.72fr)_minmax(0,1.28fr)] xl:items-start">
       <OpsSurface eyebrow="Access profile" title={draft.email ? `Edit ${draft.displayName || draft.email}` : "Add or update staff"} description="The Firebase email must already exist in Authentication. Access changes here do not change the person’s password.">

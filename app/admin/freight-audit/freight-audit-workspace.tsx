@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, BadgeCheck, CircleDollarSign, RefreshCw, ShieldAlert } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { AlertTriangle, BadgeCheck, Ban, CircleDollarSign, ClipboardCheck, RefreshCw, ShieldAlert } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsSurface } from "../operations-ui";
 import { freightAuditStatusLabels, type FreightAuditQueueRow, type FreightAuditStatus, type FreightAuditSummary } from "./freight-audit";
 
 type ApiResponse = { ok: boolean; error?: string; rows?: FreightAuditQueueRow[]; summary?: FreightAuditSummary };
@@ -54,13 +54,13 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
 
   return <div className="ops-content ops-stack">
     <OpsSurface eyebrow="Finance control" title="Freight Audit & Match-Pay" description="Compare supplier invoices against the locked TMS procurement booking before Accounts releases payment. Taxes remain visible but are excluded from the freight-rate comparison, and currencies are never silently converted." action={<OpsButton variant="secondary" size="sm" onClick={() => { setBusy(true); refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false)); }} disabled={busy}><RefreshCw size={12}/>Refresh</OpsButton>}>
-      <OpsStatStrip>
-        <OpsStat label="Bills audited" value={String(summary.total)} detail="Current payable queue"/>
-        <OpsStat label="Matched" value={String(summary.matched)} detail="Within tolerance"/>
-        <OpsStat label="Review" value={String(summary.review_required)} detail="Blocking discrepancy"/>
-        <OpsStat label="Disputed" value={String(summary.disputed)} detail="Supplier resolution pending"/>
-        <OpsStat label="Payment blocked" value={String(summary.blocked_from_payment)} detail="Cannot pass Match-Pay"/>
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Bills audited" value={String(summary.total)} detail="Current payable queue" icon={<CircleDollarSign size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Matched" value={String(summary.matched)} detail="Within tolerance" tone="success" icon={<BadgeCheck size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Review" value={String(summary.review_required)} detail="Blocking discrepancy" tone="warning" icon={<ClipboardCheck size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Disputed" value={String(summary.disputed)} detail="Supplier resolution pending" tone="danger" icon={<ShieldAlert size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Payment blocked" value={String(summary.blocked_from_payment)} detail="Cannot pass Match-Pay" tone="danger" icon={<Ban size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      </OpsKpiStrip>
       {notice ? <OpsNotice tone={notice.tone}>{notice.text}</OpsNotice> : null}
     </OpsSurface>
 

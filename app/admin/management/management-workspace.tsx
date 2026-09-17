@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, Boxes, Download, Landmark, PackageCheck, Scale, Target, UsersRound } from "lucide-react";
 import type { CrmCurrency } from "../crm/crm-data";
 import type { ManagementAnalytics, ManagementRangeKey, TrendPoint } from "./management-data";
-import { OpsBadge, OpsMono, OpsPage, OpsPageHeader, OpsProgress, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsMono, OpsPage, OpsPageHeader, OpsProgress, OpsKpiCard, OpsKpiStrip, OpsSurface } from "../operations-ui";
 
 function money(amount: number, currency: string) { try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); } catch { return `${currency} ${amount.toLocaleString("en-AU")}`; } }
 function number(value: number) { return new Intl.NumberFormat("en-AU", { maximumFractionDigits: 0 }).format(value); }
@@ -28,14 +28,14 @@ export function ManagementWorkspace({ analytics }: { analytics: ManagementAnalyt
       <div className="mt-5 flex flex-wrap items-end gap-2"><div className="ops-segmented">{ranges.map((item) => <Link key={item.key} href={`/admin/management?range=${item.key}`} data-active={analytics.range.key === item.key || undefined}>{item.label}</Link>)}</div><form method="get" className="flex flex-wrap items-end gap-2"><input type="hidden" name="range" value="custom"/><label className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">From<input name="from" type="date" defaultValue={analytics.range.key === "custom" ? analytics.range.from ?? "" : ""} className="ops-input mt-1 block w-[145px]"/></label><label className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">To<input name="to" type="date" defaultValue={analytics.range.key === "custom" ? analytics.range.to ?? "" : ""} className="ops-input mt-1 block w-[145px]"/></label><button className="ops-button" data-variant="secondary" data-size="sm">Apply</button></form></div>
     </OpsPageHeader>
 
-    <OpsStatStrip>
-      <OpsStat label="Active shipments" value={number(analytics.active_shipments)} icon={<Boxes size={13}/>} />
-      <OpsStat label="Delivered" value={number(analytics.delivered_in_period)} icon={<PackageCheck size={13}/>} tone="success"/>
-      <OpsStat label="Quote win rate" value={`${analytics.quote_conversion_percent.toFixed(1)}%`} icon={<Target size={13}/>} />
-      <OpsStat label="Urgent / exception" value={`${analytics.urgent_shipments} / ${analytics.exception_shipments}`} icon={<AlertTriangle size={13}/>} tone={analytics.urgent_shipments + analytics.exception_shipments ? "danger" : "neutral"}/>
-      <OpsStat label="Customs blocked" value={number(analytics.customs_blocked_shipments)} icon={<Scale size={13}/>} tone={analytics.customs_blocked_shipments ? "warning" : "neutral"}/>
-      <OpsStat label="Unassigned" value={number(analytics.unassigned_shipments)} icon={<UsersRound size={13}/>} tone={analytics.unassigned_shipments ? "warning" : "neutral"}/>
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Active shipments" value={number(analytics.active_shipments)} icon={<Boxes size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Delivered" value={number(analytics.delivered_in_period)} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Quote win rate" value={`${analytics.quote_conversion_percent.toFixed(1)}%`} icon={<Target size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Urgent / exception" value={`${analytics.urgent_shipments} / ${analytics.exception_shipments}`} icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={analytics.urgent_shipments + analytics.exception_shipments ? "danger" : "neutral"}/>
+      <OpsKpiCard label="Customs blocked" value={number(analytics.customs_blocked_shipments)} icon={<Scale size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={analytics.customs_blocked_shipments ? "warning" : "neutral"}/>
+      <OpsKpiCard label="Unassigned" value={number(analytics.unassigned_shipments)} icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={analytics.unassigned_shipments ? "warning" : "neutral"}/>
+    </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
       {dataQualityCount ? <div className="ops-notice" data-tone="warning"><span><strong>Reporting integrity:</strong> {dataQualityCount} tracked records need cleanup. {quality.excluded_currency_records} unsupported-currency, {quality.unassigned_branch_financial_records} unassigned financial, {quality.active_unassigned_branch_shipments} unassigned shipments, {quality.unlinked_invoice_records} unlinked invoices, {quality.orphaned_job_cost_records} orphaned costs.</span></div> : null}

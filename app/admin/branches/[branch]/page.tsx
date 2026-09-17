@@ -19,11 +19,11 @@ import { OperationsShell } from "../../operations-shell";
 import {
   OpsBadge,
   OpsEmptyState,
+  OpsKpiCard,
+  OpsKpiStrip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
-  OpsStat,
-  OpsStatStrip,
   OpsSurface,
 } from "../../operations-ui";
 import { getStaffContext } from "../../staff-directory.server";
@@ -136,14 +136,14 @@ export default async function BranchOperationsPage({ params }: { params: Promise
           meta={<><span>{kcplStaffRoleLabels[staff.permissions.role]}</span><span>Operational date {dateOnly(data.operational_date)}</span><span>Snapshot {dateTimeNepal(data.generated_at)} NPT</span></>}
           actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Operations home</Link><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="primary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
         >
-          <OpsStatStrip>
-            <OpsStat label="Active shipments" value={jobs.length} detail={jobs.length === 1 ? "movement at this branch" : "movements at this branch"} icon={<PackageCheck size={13}/>} tone="info"/>
-            <OpsStat label="Unassigned" value={unassigned} detail={unassigned ? "owner required" : "all movements owned"} icon={<UserRound size={13}/>} tone={unassigned ? "warning" : "success"}/>
-            <OpsStat label="Open tasks" value={openTasks} detail={overdueTasks ? `${overdueTasks} overdue` : "no overdue work"} icon={<ListTodo size={13}/>} tone={overdueTasks ? "danger" : openTasks ? "info" : "success"}/>
-            <OpsStat label="Customs work" value={customsOpen} detail={customsOpen ? "required steps open" : "no customs blockers"} icon={<ShieldCheck size={13}/>} tone={customsOpen ? "warning" : "success"}/>
-            <OpsStat label="Exceptions" value={exceptions} detail={exceptions ? "shipment exception state" : "no critical exceptions"} icon={<CircleAlert size={13}/>} tone={exceptions ? "danger" : "success"}/>
-            <OpsStat label="Due today" value={branchLoad?.deliveries_today ?? 0} detail={(branchLoad?.deliveries_today ?? 0) ? "ETA falls today" : "nothing due today"} icon={<CalendarDays size={13}/>} tone="neutral"/>
-          </OpsStatStrip>
+          <OpsKpiStrip>
+            <OpsKpiCard label="Active shipments" value={jobs.length} detail={jobs.length === 1 ? "movement at this branch" : "movements at this branch"} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info"/>
+            <OpsKpiCard label="Unassigned" value={unassigned} detail={unassigned ? "owner required" : "all movements owned"} icon={<UserRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={unassigned ? "warning" : "success"}/>
+            <OpsKpiCard label="Open tasks" value={openTasks} detail={overdueTasks ? `${overdueTasks} overdue` : "no overdue work"} icon={<ListTodo size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks ? "danger" : openTasks ? "info" : "success"}/>
+            <OpsKpiCard label="Customs work" value={customsOpen} detail={customsOpen ? "required steps open" : "no customs blockers"} icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={customsOpen ? "warning" : "success"}/>
+            <OpsKpiCard label="Exceptions" value={exceptions} detail={exceptions ? "shipment exception state" : "no critical exceptions"} icon={<CircleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={exceptions ? "danger" : "success"}/>
+            <OpsKpiCard label="Due today" value={branchLoad?.deliveries_today ?? 0} detail={(branchLoad?.deliveries_today ?? 0) ? "ETA falls today" : "nothing due today"} icon={<CalendarDays size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="neutral"/>
+          </OpsKpiStrip>
         </OpsPageHeader>
 
         <div className="ops-content ops-stack">

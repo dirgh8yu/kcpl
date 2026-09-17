@@ -39,7 +39,7 @@ import { kcplStaffRoleLabels, type KcplStaffRole } from "../../staff-permissions
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsSurface } from "../../operations-ui";
 
 function dateLabel(value: string | null) {
   if (!value) return "Not set";
@@ -272,14 +272,14 @@ export function JobFileWorkspace({
         actions={<><Link href={returnTo} className="ops-button" data-variant="secondary" data-size="md">Back to shipments</Link><OpsButton variant="secondary" onClick={() => setSetupOpen((current) => !current)}><BriefcaseBusiness size={13}/>{setupOpen ? "Close setup" : "Edit handling"}</OpsButton><OpsButton variant="primary" onClick={() => refresh().catch((error) => setNotice(error instanceof Error ? error.message : "Refresh failed."))}><RefreshCw size={13}/>Refresh</OpsButton></>}
       />
 
-      <OpsStatStrip>
-        <OpsStat label="Primary branch" value={job.primary_branch} icon={<Landmark size={13}/>} />
-        <OpsStat label="Open tasks" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<ClipboardCheck size={13}/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
-        <OpsStat label="Customs" value={`${completedCustoms}/${requiredCustoms.length}`} detail="required steps complete" icon={<ShieldCheck size={13}/>} tone={requiredCustoms.length && completedCustoms < requiredCustoms.length ? "warning" : "success"}/>
-        <OpsStat label="Documents" value={documents.length} icon={<FileText size={13}/>} />
-        <OpsStat label="ETA" value={dateLabel(job.eta)} icon={<CalendarDays size={13}/>} />
-        <OpsStat label="Priority" value={jobPriorityLabels[job.priority]} icon={<BriefcaseBusiness size={13}/>} tone={job.priority === "urgent" ? "danger" : job.priority === "high" ? "warning" : "neutral"}/>
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Primary branch" value={job.primary_branch} icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+        <OpsKpiCard label="Open tasks" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<ClipboardCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
+        <OpsKpiCard label="Customs" value={`${completedCustoms}/${requiredCustoms.length}`} detail="required steps complete" icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={requiredCustoms.length && completedCustoms < requiredCustoms.length ? "warning" : "success"}/>
+        <OpsKpiCard label="Documents" value={documents.length} icon={<FileText size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+        <OpsKpiCard label="ETA" value={dateLabel(job.eta)} icon={<CalendarDays size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+        <OpsKpiCard label="Priority" value={jobPriorityLabels[job.priority]} icon={<BriefcaseBusiness size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={job.priority === "urgent" ? "danger" : job.priority === "high" ? "warning" : "neutral"}/>
+      </OpsKpiStrip>
 
       <div className="ops-content-wide ops-stack">
         {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("failed") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}

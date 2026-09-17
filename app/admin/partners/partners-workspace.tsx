@@ -18,7 +18,7 @@ import {
   type PartnerStatus,
   type PartnerType,
 } from "./partners-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsSurface } from "../operations-ui";
 
 type PartnerForm = {
   id: string; displayName: string; legalName: string; types: PartnerType[]; modes: PartnerMode[]; status: PartnerStatus; preferred: boolean;
@@ -122,13 +122,13 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
 
   return <OpsPage>
     <OpsPageHeader eyebrow="Network" title="Partners & vendors" description="Counterparts, carriers, agents, transporters, warehouses and suppliers in one operational register. Finance exposure is shown only to authorised Accounts and Management roles." meta={<><span>{dashboard.partners.length} records</span><span>{dashboard.country_count} countries</span></>} actions={canCreate ? <OpsButton variant="primary" onClick={startCreate}><Plus size={13}/>New partner</OpsButton> : <OpsBadge>Read-only access</OpsBadge>}/>
-    {dashboard.partners.length ? <OpsStatStrip>
-      <OpsStat label="Active network" value={dashboard.active_count} icon={<Handshake size={13}/>} tone="success"/>
-      <OpsStat label="Preferred" value={dashboard.preferred_count} icon={<BadgeCheck size={13}/>} tone="accent"/>
-      <OpsStat label="Countries" value={dashboard.country_count} icon={<Globe2 size={13}/>} />
-      {financialVisible ? <OpsStat label="Unlinked supplier bills" value={dashboard.unlinked_supplier_bills} icon={<TriangleAlert size={13}/>} tone={dashboard.unlinked_supplier_bills ? "warning" : "neutral"}/> : null}
-      {financialVisible && dashboard.legacy_name_linked_bill_count ? <OpsStat label="Legacy name links" value={dashboard.legacy_name_linked_bill_count} icon={<TriangleAlert size={13}/>} tone="warning"/> : <OpsStat label="Partner records" value={dashboard.partners.length} icon={<Building2 size={13}/>} />}
-    </OpsStatStrip> : null}
+    {dashboard.partners.length ? <OpsKpiStrip>
+      <OpsKpiCard label="Active network" value={dashboard.active_count} icon={<Handshake size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Preferred" value={dashboard.preferred_count} icon={<BadgeCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="accent"/>
+      <OpsKpiCard label="Countries" value={dashboard.country_count} icon={<Globe2 size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      {financialVisible ? <OpsKpiCard label="Unlinked supplier bills" value={dashboard.unlinked_supplier_bills} icon={<TriangleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={dashboard.unlinked_supplier_bills ? "warning" : "neutral"}/> : null}
+      {financialVisible && dashboard.legacy_name_linked_bill_count ? <OpsKpiCard label="Legacy name links" value={dashboard.legacy_name_linked_bill_count} icon={<TriangleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="warning"/> : <OpsKpiCard label="Partner records" value={dashboard.partners.length} icon={<Building2 size={18} strokeWidth={1.9} aria-hidden="true"/>} />}
+    </OpsKpiStrip> : null}
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={noticeTone(notice)} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}

@@ -23,11 +23,11 @@ import { OperationsShell } from "../../operations-shell";
 import {
   OpsBadge,
   OpsEmptyState,
+  OpsKpiCard,
+  OpsKpiStrip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
-  OpsStat,
-  OpsStatStrip,
   OpsSurface,
 } from "../../operations-ui";
 import { getStaffContext, listStaffProfiles } from "../../staff-directory.server";
@@ -178,14 +178,14 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
           </>}
           actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Operations home</Link>{staff.permissions.canManageStaff && profile ? <Link href="/admin/staff" className="ops-button" data-variant="secondary" data-size="md">Staff directory<ArrowUpRight size={12}/></Link> : null}</div>}
         >
-          <OpsStatStrip>
-            <OpsStat label="Assigned shipments" value={assignedJobs.length} detail={assignedJobs.length === 1 ? "active movement" : "active movements"} icon={<PackageCheck size={13}/>} tone="info"/>
-            <OpsStat label="Open tasks" value={tasks.length} detail={overdueTasks ? `${overdueTasks} overdue` : "no overdue work"} icon={<ListTodo size={13}/>} tone={overdueTasks ? "danger" : tasks.length ? "info" : "success"}/>
-            <OpsStat label="Urgent jobs" value={urgentJobs} detail={urgentJobs ? "priority or exception work" : "no urgent movement"} icon={<CircleAlert size={13}/>} tone={urgentJobs ? "warning" : "success"}/>
-            <OpsStat label="Customs work" value={customsOpen} detail={customsOpen ? "required steps open" : "no customs blockers"} icon={<ShieldCheck size={13}/>} tone={customsOpen ? "warning" : "success"}/>
-            <OpsStat label="Exceptions" value={exceptionJobs} detail={exceptionJobs ? "shipment exception state" : "no critical exceptions"} icon={<CircleAlert size={13}/>} tone={exceptionJobs ? "danger" : "success"}/>
-            <OpsStat label="Due today" value={dueToday} detail={dueToday ? "ETA falls today" : "nothing due today"} icon={<CalendarDays size={13}/>} tone="neutral"/>
-          </OpsStatStrip>
+          <OpsKpiStrip>
+            <OpsKpiCard label="Assigned shipments" value={assignedJobs.length} detail={assignedJobs.length === 1 ? "active movement" : "active movements"} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info"/>
+            <OpsKpiCard label="Open tasks" value={tasks.length} detail={overdueTasks ? `${overdueTasks} overdue` : "no overdue work"} icon={<ListTodo size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks ? "danger" : tasks.length ? "info" : "success"}/>
+            <OpsKpiCard label="Urgent jobs" value={urgentJobs} detail={urgentJobs ? "priority or exception work" : "no urgent movement"} icon={<CircleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={urgentJobs ? "warning" : "success"}/>
+            <OpsKpiCard label="Customs work" value={customsOpen} detail={customsOpen ? "required steps open" : "no customs blockers"} icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={customsOpen ? "warning" : "success"}/>
+            <OpsKpiCard label="Exceptions" value={exceptionJobs} detail={exceptionJobs ? "shipment exception state" : "no critical exceptions"} icon={<CircleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={exceptionJobs ? "danger" : "success"}/>
+            <OpsKpiCard label="Due today" value={dueToday} detail={dueToday ? "ETA falls today" : "nothing due today"} icon={<CalendarDays size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="neutral"/>
+          </OpsKpiStrip>
         </OpsPageHeader>
 
         <div className="ops-content ops-stack">

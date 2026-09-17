@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { ArrowRight, Calculator, CheckCircle2, PackagePlus, Plus, RefreshCw, Route, Tags } from "lucide-react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import {
   tmsModes,
   tmsRateUnitLabels,
@@ -146,12 +146,12 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
     <OpsPage>
       <OpsPageHeader eyebrow="Transportation management" title="Rate Desk" description="Create transport orders, maintain Partner buy rates, compare compatible multimodal costs and lock the selected procurement rate before quotation or booking." actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={13}/> Refresh</OpsButton><OpsButton size="sm" variant="primary" onClick={() => setShowOrder((value) => !value)}><PackagePlus size={13}/> New order</OpsButton>{canManageRateCards ? <OpsButton size="sm" onClick={() => setShowRate((value) => !value)}><Plus size={13}/> Partner buy rate</OpsButton> : null}</div>} />
 
-      <OpsStatStrip>
-        <OpsStat label="Orders" value={orders.length} icon={<Route size={13}/>}/>
-        <OpsStat label="Selected rates" value={selectedOrders} tone="success" icon={<CheckCircle2 size={13}/>}/>
-        <OpsStat label="Active buy rates" value={activeRateCards} tone="info" icon={<Tags size={13}/>}/>
-        <OpsStat label="Partners priced" value={new Set(rateCards.filter((card) => card.active).map((card) => card.partner_id)).size} icon={<Calculator size={13}/>}/>
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Orders" value={orders.length} icon={<Route size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Selected rates" value={selectedOrders} tone="success" icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Active buy rates" value={activeRateCards} tone="info" icon={<Tags size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Partners priced" value={new Set(rateCards.filter((card) => card.active).map((card) => card.partner_id)).size} icon={<Calculator size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      </OpsKpiStrip>
 
       {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 

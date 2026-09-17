@@ -27,7 +27,7 @@ import {
   type CrmTaskPriority,
 } from "../crm-data";
 import type { CrmCustomerFinanceSnapshot } from "../crm-customer-finance";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsKpiCard, OpsKpiStrip, OpsSurface } from "../../operations-ui";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 
 function formatDate(value: string | null) {
@@ -141,14 +141,14 @@ export function Customer360Workspace({ initialCustomer, initialFinanceSnapshot, 
         actions={<><Link href="/admin/crm" className="ops-button" data-variant="secondary" data-size="md">Back to customers</Link><OpsButton variant="primary" onClick={() => refresh().catch((error) => setNotice(error instanceof Error ? error.message : "Refresh failed."))}><RefreshCw size={13}/>Refresh</OpsButton></>}
       />
 
-      <OpsStatStrip>
-        <OpsStat label="Contacts" value={customer.contacts.length} icon={<UsersRound size={13}/>} />
-        <OpsStat label="Addresses" value={customer.addresses.length} icon={<MapPin size={13}/>} />
-        <OpsStat label="Open follow-ups" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<CalendarClock size={13}/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
-        <OpsStat label="Quotes" value={customer.quote_count} icon={<MessageSquareText size={13}/>} />
-        <OpsStat label="Active shipments" value={customer.active_shipment_count} />
-        <OpsStat label="Completed jobs" value={customer.completed_shipment_count} tone="success" />
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Contacts" value={customer.contacts.length} icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+        <OpsKpiCard label="Addresses" value={customer.addresses.length} icon={<MapPin size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+        <OpsKpiCard label="Open follow-ups" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<CalendarClock size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
+        <OpsKpiCard label="Quotes" value={customer.quote_count} icon={<MessageSquareText size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+        <OpsKpiCard label="Active shipments" value={customer.active_shipment_count} />
+        <OpsKpiCard label="Completed jobs" value={customer.completed_shipment_count} tone="success" />
+      </OpsKpiStrip>
 
       <div className="ops-content-wide ops-stack">
         {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("failed") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
