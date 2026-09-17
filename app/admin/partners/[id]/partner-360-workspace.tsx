@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { payableStatusLabels } from "../../payables/payables-data";
 import { shipmentStatusLabels } from "../../../shipment-types";
-import { OpsBadge, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsKpiCard, OpsKpiStrip, OpsSurface } from "../../operations-ui";
 import { partnerModeLabels, partnerStatusLabels, partnerTypeLabels } from "../partners-data";
 import type { Partner360Snapshot, PartnerFinanceSummary } from "../partner-360";
 
@@ -97,14 +97,14 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
       </>}
     />
 
-    <OpsStatStrip>
-      <OpsStat label="Linked jobs" value={snapshot.jobs.length} icon={<Ship size={13}/>} />
-      <OpsStat label="Services" value={partner.modes.length} icon={<BadgeCheck size={13}/>} />
-      <OpsStat label="Countries" value={countryCount} icon={<Globe2 size={13}/>} />
-      <OpsStat label="Cities" value={partner.cities_served.length} icon={<MapPin size={13}/>} />
-      {financialVisible ? <OpsStat label="Open bills" value={openBills} icon={<WalletCards size={13}/>} tone={openBills ? "warning" : "neutral"}/> : null}
-      {financialVisible ? <OpsStat label="Overdue bills" value={overdueBills} icon={<TriangleAlert size={13}/>} tone={overdueBills ? "danger" : "neutral"}/> : null}
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Linked jobs" value={snapshot.jobs.length} icon={<Ship size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Services" value={partner.modes.length} icon={<BadgeCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Countries" value={countryCount} icon={<Globe2 size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Cities" value={partner.cities_served.length} icon={<MapPin size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      {financialVisible ? <OpsKpiCard label="Open bills" value={openBills} icon={<WalletCards size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={openBills ? "warning" : "neutral"}/> : null}
+      {financialVisible ? <OpsKpiCard label="Overdue bills" value={overdueBills} icon={<TriangleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueBills ? "danger" : "neutral"}/> : null}
+    </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
       {financialVisible && snapshot.legacy_name_linked_bill_count > 0 ? <div className="rounded-[var(--app-radius)] border border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] px-4 py-3"><div className="flex items-start gap-3"><TriangleAlert size={15} className="mt-0.5 shrink-0 text-[var(--admin-warning)]"/><div><strong className="text-[11px] text-[var(--admin-warning)]">Legacy supplier links need reconciliation</strong><p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{snapshot.legacy_name_linked_bill_count} non-void bill{snapshot.legacy_name_linked_bill_count === 1 ? "" : "s"} match this partner by name but do not carry its Partner ID. They remain visible to Accounts, but they are not treated as confirmed operational job links.</p></div></div></div> : null}

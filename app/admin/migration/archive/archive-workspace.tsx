@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { Archive, Download, FileCheck2, FileText, LoaderCircle, RefreshCw, Search, ShieldCheck, Upload } from "lucide-react";
+import { Archive, Building2, Download, FileCheck2, FileText, LoaderCircle, RefreshCw, Search, ShieldCheck, Upload } from "lucide-react";
 import { kcplBranches } from "../../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../operations-ui";
 import {
   archiveCategories,
   archiveCategoryLabels,
@@ -131,13 +131,13 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
       actions={<><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link><OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === "refresh" ? <LoaderCircle size={12} className="animate-spin"/> : <RefreshCw size={12}/>}Refresh</OpsButton></>}
     />
 
-    <OpsStatStrip>
-      <OpsStat label="Archived files" value={String(records.length)} detail="Historical evidence retained" icon={<Archive size={13}/>} tone="success"/>
-      <OpsStat label="Linked records" value={String(linkedCount)} detail="Connected to KCPL entities" icon={<FileCheck2 size={13}/>} tone="success"/>
-      <OpsStat label="Recovery preserved" value={String(recoveredCount)} detail="Re-linked by Stage 4C" icon={<ShieldCheck size={13}/>} tone="success"/>
-      <OpsStat label="Branches represented" value={String(branchCount)} detail="Based on archive metadata" />
-      <OpsStat label="Storage" value={dashboard?.storage_available ? "Ready" : "Unavailable"} detail="Firebase Storage" icon={<ShieldCheck size={13}/>} tone={dashboard?.storage_available ? "success" : "danger"}/>
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Archived files" value={String(records.length)} detail="Historical evidence retained" icon={<Archive size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Linked records" value={String(linkedCount)} detail="Connected to KCPL entities" icon={<FileCheck2 size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Recovery preserved" value={String(recoveredCount)} detail="Re-linked by Stage 4C" icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Branches represented" value={String(branchCount)} detail="Based on archive metadata" icon={<Building2 size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Storage" value={dashboard?.storage_available ? "Ready" : "Unavailable"} detail="Firebase Storage" icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={dashboard?.storage_available ? "success" : "danger"}/>
+    </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}

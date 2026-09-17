@@ -8,7 +8,7 @@ import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-dat
 import { jobCostCategories, jobCostCategoryLabels, type JobCostCategory } from "../job-file";
 import type { PartnerOption } from "../partners/partners-data";
 import { payableStatusLabels, payableStatuses, type PayablesDashboard, type PayableStatus } from "./payables-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsSearch, OpsKpiCard, OpsKpiStrip, OpsSurface } from "../operations-ui";
 
 function money(amount: number, currency: string) {
   try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
@@ -154,13 +154,13 @@ export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", 
 
   return <OpsPage>
     <OpsPageHeader eyebrow="Finance" title="Accounts Payable" description="Supplier bills, opening payables, payment aging and job-linked costs. Real supplier bills can feed shipment cost; migration opening balances stay ledger-only so historical debt does not become fictional job spend." meta={<><span>{roleLabel}</span><span>{dashboard.bills.length} payable records</span></>} actions={<><Link href="/admin/finance" className="ops-button" data-variant="secondary" data-size="md">Receivables</Link><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New supplier bill"}</OpsButton></>}/>
-    <OpsStatStrip>
-      <OpsStat label="Overdue" value={dashboard.overdue_count} icon={<TriangleAlert size={13}/>} tone={dashboard.overdue_count ? "danger" : "neutral"} active={status === "overdue"} onClick={() => setStatus(status === "overdue" ? "all" : "overdue")}/>
-      <OpsStat label="Open payables" value={dashboard.unpaid_count} icon={<Clock3 size={13}/>} />
-      <OpsStat label="Opening balances" value={dashboard.opening_balance_count} icon={<Landmark size={13}/>} />
-      <OpsStat label="Paid" value={dashboard.paid_count} icon={<Banknote size={13}/>} tone="success" active={status === "paid"} onClick={() => setStatus(status === "paid" ? "all" : "paid")}/>
-      <OpsStat label="Drafts" value={dashboard.draft_count} icon={<WalletCards size={13}/>} active={status === "draft"} onClick={() => setStatus(status === "draft" ? "all" : "draft")}/>
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Overdue" value={dashboard.overdue_count} icon={<TriangleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={dashboard.overdue_count ? "danger" : "neutral"} active={status === "overdue"} onClick={() => setStatus(status === "overdue" ? "all" : "overdue")}/>
+      <OpsKpiCard label="Open payables" value={dashboard.unpaid_count} icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Opening balances" value={dashboard.opening_balance_count} icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+      <OpsKpiCard label="Paid" value={dashboard.paid_count} icon={<Banknote size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success" active={status === "paid"} onClick={() => setStatus(status === "paid" ? "all" : "paid")}/>
+      <OpsKpiCard label="Drafts" value={dashboard.draft_count} icon={<WalletCards size={18} strokeWidth={1.9} aria-hidden="true"/>} active={status === "draft"} onClick={() => setStatus(status === "draft" ? "all" : "draft")}/>
+    </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}

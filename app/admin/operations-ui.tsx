@@ -110,11 +110,11 @@ export function OpsTableWrap({ children, className }: { children: ReactNode; cla
   return <div className={cx("ops-table-wrap", className)}>{children}</div>;
 }
 
-export function OpsStatStrip({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("ops-stat-strip", className)}>{children}</div>;
+export function OpsKpiStrip({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cx("ops-kpi-strip", className)}>{children}</div>;
 }
 
-export function OpsStat({
+export function OpsKpiCard({
   label,
   value,
   detail,
@@ -132,44 +132,15 @@ export function OpsStat({
   onClick?: () => void;
 }) {
   const zero = typeof value === "number" && value === 0;
-  const content = (
-    <>
-      <span className="ops-stat-top"><span className="ops-stat-label">{icon}{label}</span>{active ? <i aria-hidden="true"/> : null}</span>
-      <strong className="ops-stat-value">{value}</strong>
-      {detail ? <span className="ops-stat-detail">{detail}</span> : null}
-    </>
-  );
-  if (onClick) {
-    return <button type="button" onClick={onClick} className="ops-stat" aria-pressed={active} data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{content}</button>;
-  }
-  return <div className="ops-stat" data-tone={tone} data-zero={zero || undefined}>{content}</div>;
-}
-
-export function OpsKpiStrip({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("ops-kpi-strip", className)}>{children}</div>;
-}
-
-export function OpsKpiCard({
-  label,
-  value,
-  icon,
-  tone = "neutral",
-  active = false,
-  onClick,
-}: {
-  label: ReactNode;
-  value: ReactNode;
-  icon?: ReactNode;
-  tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const zero = typeof value === "number" && value === 0;
   const body = (
     <>
-      <span className="ops-kpi-icon">{icon}</span>
-      <span className="ops-kpi-copy"><strong>{value}</strong><span>{label}</span></span>
-      <ChevronRight size={16} strokeWidth={1.75} className="ops-kpi-chevron" aria-hidden="true" />
+      {icon ? <span className="ops-kpi-icon">{icon}</span> : null}
+      <span className="ops-kpi-copy">
+        <strong>{value}</strong>
+        <span>{label}</span>
+        {detail ? <em>{detail}</em> : null}
+      </span>
+      {onClick ? <ChevronRight size={16} strokeWidth={1.75} className="ops-kpi-chevron" aria-hidden="true" /> : null}
     </>
   );
   if (onClick) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, Clock3, Mail, RefreshCw, Send, Ship, UserRoundCheck, XCircle } from "lucide-react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import type { TmsOrder } from "../rating/tms-rating";
 import {
   tenderCanBook,
@@ -196,12 +196,12 @@ export function TmsTenderWorkspace({ initialOrders, initialTenders, customers, c
         actions={<div className="flex gap-2"><Link href="/admin/rating" className="ops-button" data-variant="secondary" data-size="sm">Rate Desk <ArrowRight size={12}/></Link><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={13}/> Refresh</OpsButton></div>}
       />
 
-      <OpsStatStrip>
-        <OpsStat label="Awaiting response" value={pendingResponse} tone={pendingResponse ? "warning" : "neutral"} icon={<Clock3 size={13}/>}/>
-        <OpsStat label="Active tenders" value={activeCount} tone={activeCount ? "info" : "neutral"} icon={<Send size={13}/>}/>
-        <OpsStat label="Accepted / countered" value={acceptedCount} tone={acceptedCount ? "success" : "neutral"} icon={<CheckCircle2 size={13}/>}/>
-        <OpsStat label="Booked" value={bookedCount} tone="success" icon={<Ship size={13}/>}/>
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Awaiting response" value={pendingResponse} tone={pendingResponse ? "warning" : "neutral"} icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Active tenders" value={activeCount} tone={activeCount ? "info" : "neutral"} icon={<Send size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Accepted / countered" value={acceptedCount} tone={acceptedCount ? "success" : "neutral"} icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Booked" value={bookedCount} tone="success" icon={<Ship size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      </OpsKpiStrip>
 
       {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 

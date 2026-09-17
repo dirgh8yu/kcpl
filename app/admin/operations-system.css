@@ -166,8 +166,9 @@
 .kcpl-admin-content :where(h2) { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; }
 .kcpl-admin-content :where(h3) { font-family: inherit; font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: normal; }
 .kcpl-admin-content .ops-page-header {
+  --ops-page-header-pad-top: 28px;
   position: relative;
-  padding: 28px var(--app-page-gap) 0;
+  padding: var(--ops-page-header-pad-top) var(--app-page-gap) 0;
   border-bottom: 1px solid var(--admin-line);
   background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
   backdrop-filter: none;
@@ -175,7 +176,7 @@
 .kcpl-admin-content .ops-page-header::before {
   content: "";
   position: absolute;
-  inset: 0 auto auto 24px;
+  inset: var(--ops-page-header-pad-top) auto auto 24px;
   width: 2px;
   height: 52px;
   border-radius: 999px;
@@ -256,13 +257,6 @@
 .kcpl-admin-content :where(.ops-field input,.ops-field select,.ops-field textarea,.shipments-filter):focus { outline: 2px solid var(--app-focus); outline-offset: 1px; box-shadow: none; }
 
 /* Registers, metrics, and decision support. */
-.kcpl-admin-content .ops-stat-strip { display: grid; grid-auto-flow: row; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 1px; width: 100%; max-width: none; border-top: 1px solid var(--admin-line); border-bottom: 0; background: var(--admin-line); backdrop-filter: none; }
-.kcpl-admin-content .ops-stat { display: block; min-width: 0; min-height: 88px; padding: 14px 16px; border: 0; border-radius: 0; background: var(--admin-surface); text-align: left; }
-.kcpl-admin-content .ops-stat-label { color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; text-transform: none; }
-.kcpl-admin-content .ops-stat-value { display: block; margin-top: 7px; font-size: 26px; font-weight: 600; line-height: 30px; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
-.kcpl-admin-content .ops-stat-detail { margin-top: 3px; color: var(--admin-faint); font-size: 12px; font-weight: 400; line-height: 16px; }
-.kcpl-admin-content .ops-stat[data-active="true"] { background: var(--admin-canvas); box-shadow: inset 0 -2px 0 var(--admin-crimson); }
-.kcpl-admin-content button.ops-stat:hover { background: var(--admin-canvas); }
 .kcpl-admin-content .ops-metric-strip { display: grid; grid-template-columns: repeat(var(--ops-metric-columns,4),minmax(0,1fr)); }
 .kcpl-admin-content .ops-metric { padding: 14px 16px; }
 .kcpl-admin-content .ops-metric-label { font-size: 12px; line-height: 16px; text-transform: none; letter-spacing: normal; }
@@ -287,7 +281,6 @@
 .kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
 .kcpl-admin-content .ops-search:focus-within,
 .kcpl-admin-content .ops-filter-chip:focus-visible,
-.kcpl-admin-content .ops-stat:focus-visible,
 .kcpl-admin-content .app-nav-group a:focus-visible {
   outline: 2px solid var(--app-focus);
   outline-offset: -2px;
@@ -466,16 +459,6 @@
 .kcpl-admin-content .shipments-actions,
 .kcpl-admin-content .pickups-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
-/* KPI stat strip: colour the leading icon by tone and keep it inline with the label. */
-.kcpl-admin-content .ops-stats-toned .ops-stat-label { display: inline-flex; align-items: center; gap: 7px; }
-.kcpl-admin-content .ops-stats-toned .ops-stat-label svg { color: var(--admin-faint); }
-.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="accent"] .ops-stat-label svg { color: var(--admin-crimson); }
-.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="info"] .ops-stat-label svg { color: var(--admin-info); }
-.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="success"] .ops-stat-label svg { color: var(--admin-success); }
-.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="warning"] .ops-stat-label svg { color: var(--admin-warning); }
-.kcpl-admin-content .ops-stats-toned .ops-stat[data-tone="danger"] .ops-stat-label svg { color: var(--admin-danger); }
-.kcpl-admin-content .ops-stats-toned .ops-stat[data-zero="true"] .ops-stat-value { color: var(--admin-faint); }
-
 /* KPI metric cards — shared with the command-centre dashboard: toned icon chip, value, label and chevron. */
 .kcpl-admin-content .ops-kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
 .kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
@@ -485,7 +468,9 @@
 .kcpl-admin-content .ops-kpi-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: var(--admin-surface-soft); color: var(--admin-muted); }
 .kcpl-admin-content .ops-kpi-copy strong { display: block; color: var(--admin-ink); font-size: 26px; font-weight: 700; line-height: 28px; letter-spacing: -.025em; }
 .kcpl-admin-content .ops-kpi-copy span { display: block; margin-top: 5px; color: var(--admin-muted); font-size: 12.5px; line-height: 16px; }
+.kcpl-admin-content .ops-kpi-copy em { display: block; margin-top: 2px; color: var(--admin-faint); font-size: 11.5px; font-style: normal; line-height: 15px; }
 .kcpl-admin-content .ops-kpi-chevron { color: var(--admin-faint); }
+.kcpl-admin-content .ops-kpi:has(> .ops-kpi-copy:first-child) { grid-template-columns: minmax(0, 1fr) auto; }
 .kcpl-admin-content .ops-kpi[data-tone="accent"] .ops-kpi-icon { background: var(--admin-accent-bg); color: var(--admin-crimson); }
 .kcpl-admin-content .ops-kpi[data-tone="info"] .ops-kpi-icon { background: var(--admin-info-bg); color: var(--admin-info); }
 .kcpl-admin-content .ops-kpi[data-tone="success"] .ops-kpi-icon { background: var(--admin-success-bg); color: var(--admin-success); }
@@ -1104,10 +1089,9 @@
   .app-icon-button { min-height: 44px; width: 40px; }
   .app-nav-group a, .app-nav-group summary { min-height: 44px; }
   .app-nav-search { min-height: 44px; }
-  .kcpl-admin-content .ops-page-header { padding-top: 18px; }
+  .kcpl-admin-content .ops-page-header { --ops-page-header-pad-top: 18px; }
   .kcpl-admin-content .ops-page-actions { justify-content: flex-start; width: 100%; display: flex; }
   .kcpl-admin-shell .ops-button, .kcpl-admin-shell .ops-button[data-size="sm"] { min-height: 44px; }
-  .kcpl-admin-content .ops-stat-strip { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .kcpl-admin-content .ops-metric-strip { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .kcpl-admin-content .ops-toolbar > :where(.ops-search,select) { flex: 1 1 180px; width: auto; max-width: none; }
   .kcpl-admin-content .ops-toolbar > .ops-button { flex: 0 0 auto; width: auto; }
@@ -1132,7 +1116,6 @@
 .kcpl-admin-shell .ops-button { transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
 .kcpl-admin-shell .ops-button:active:not(:disabled) { transform: scale(.98); box-shadow: none; }
 
-.kcpl-admin-content .ops-stat { transition: background-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out); }
 .kcpl-admin-content .ops-kpi { transition: border-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
 
 .kcpl-admin-content .ops-empty { opacity: 0; transform: translateY(4px); animation: ops-fade-in var(--app-duration-slow) var(--app-ease-out) forwards; }
@@ -1187,7 +1170,6 @@
  * for every selector this block added. */
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-shell .ops-button,
-  .kcpl-admin-content .ops-stat,
   .kcpl-admin-content .ops-kpi { transition: none; }
   .kcpl-admin-shell .ops-button:active:not(:disabled) { transform: none; }
   .kcpl-admin-content .ops-empty { animation: none; opacity: 1; transform: none; }
@@ -1380,7 +1362,7 @@
 .kcpl-admin-content .freight-documents-summary {
   margin: 24px var(--app-page-gap) 16px;
 }
-.kcpl-admin-content .freight-documents-summary .ops-stat {
+.kcpl-admin-content .freight-documents-summary .ops-kpi {
   min-height: 96px;
 }
 .kcpl-admin-content .freight-documents-message,
@@ -1927,8 +1909,9 @@
 @media (max-width: 760px) { .ops-saved-view button { min-height: 44px; } }
 /* Embedded job tools must not repeat the parent record's heading or metrics. */
 .kcpl-admin-content .shipment-job-file-embedded .ops-page-header { padding: 0; border: 0; background: transparent; }
+.kcpl-admin-content .shipment-job-file-embedded .ops-page-header::before { display: none; }
 .kcpl-admin-content .shipment-job-file-embedded .ops-page-heading,
-.kcpl-admin-content .shipment-job-file-embedded .ops-page > .ops-stat-strip { display: none; }
+.kcpl-admin-content .shipment-job-file-embedded .ops-page > .ops-kpi-strip { display: none; }
 .kcpl-admin-content .shipment-job-file-embedded .ops-grid-main { grid-template-columns: minmax(0,1fr); }
 .kcpl-admin-content .shipment-job-file-embedded .ops-content { padding: 0; }
 .kcpl-admin-content #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 { display: block; }
@@ -2122,6 +2105,7 @@
   font-family: inherit;
 }
 .kcpl-admin-content .kcpl-ops-overview > .ops-page-header {
+  --ops-page-header-pad-top: 24px;
   padding: 24px 24px 18px;
   border-bottom: 1px solid var(--admin-line);
   background: var(--admin-surface);
@@ -3247,7 +3231,7 @@
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:nth-child(2),
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:nth-child(3),
   .kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:nth-child(4) { border-bottom: 1px solid var(--admin-line); }
-  .kcpl-admin-content .kcpl-ops-overview > .ops-page-header { padding: 18px 16px 16px; }
+  .kcpl-admin-content .kcpl-ops-overview > .ops-page-header { --ops-page-header-pad-top: 18px; padding: 18px 16px 16px; }
   .kcpl-admin-content .kcpl-ops-overview > .ops-page-header .ops-page-header-main { align-items: flex-start; gap: 16px; }
   .kcpl-admin-content .kcpl-ops-overview > .ops-page-header h1 { font-size: 22px; line-height: 30px; }
   .kcpl-admin-content .kcpl-ops-overview > .ops-page-header .ops-page-actions { width: 100%; }

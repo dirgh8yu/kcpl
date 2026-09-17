@@ -17,7 +17,7 @@ import {
   type ShipmentExceptionStatus,
   type ShipmentExceptionSummary,
 } from "../../shipment-exceptions";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsStat, OpsStatStrip, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsSurface } from "../../operations-ui";
 
 type ApiResponse = {
   ok: boolean;
@@ -178,12 +178,12 @@ export function ShipmentExceptionControl({
       action={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={13}/> Refresh</OpsButton><OpsButton size="sm" variant="primary" onClick={() => setShowForm((value) => !value)}><Plus size={13}/> Open exception</OpsButton></div>}
     >
       <div className="space-y-4">
-        <OpsStatStrip>
-          <OpsStat label="Open" value={summary.open} tone={summary.open ? "warning" : "neutral"} icon={<AlertTriangle size={13}/>}/>
-          <OpsStat label="Critical" value={summary.critical_open} tone={summary.critical_open ? "danger" : "neutral"} icon={<ShieldAlert size={13}/>}/>
-          <OpsStat label="Overdue SLA" value={summary.overdue_open} tone={summary.overdue_open ? "danger" : "neutral"} icon={<Clock3 size={13}/>}/>
-          <OpsStat label="Resolved" value={summary.resolved} tone="success" icon={<CheckCircle2 size={13}/>}/>
-        </OpsStatStrip>
+        <OpsKpiStrip>
+          <OpsKpiCard label="Open" value={summary.open} tone={summary.open ? "warning" : "neutral"} icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+          <OpsKpiCard label="Critical" value={summary.critical_open} tone={summary.critical_open ? "danger" : "neutral"} icon={<ShieldAlert size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+          <OpsKpiCard label="Overdue SLA" value={summary.overdue_open} tone={summary.overdue_open ? "danger" : "neutral"} icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+          <OpsKpiCard label="Resolved" value={summary.resolved} tone="success" icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        </OpsKpiStrip>
 
         {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 

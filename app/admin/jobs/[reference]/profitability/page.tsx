@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { FileText, Landmark, WalletCards } from "lucide-react";
+import { Building2, CircleDollarSign, FileText, Landmark, WalletCards } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
 import { getDigitalJobFile } from "../../../job-file.server";
 import { jobCostCategoryLabels } from "../../../job-file";
 import { OperationsShell } from "../../../operations-shell";
-import { OpsBadge, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../../../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 import { listPayablesDashboard } from "../../../payables/payables.server";
 import { payableStatusLabels } from "../../../payables/payables-data";
 import { getStaffContext } from "../../../staff-directory.server";
@@ -33,7 +33,7 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
   return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
     <OpsPage>
       <OpsPageHeader eyebrow="Commercial control" title="Job profitability" description={<span><OpsMono>{job.reference}</OpsMono> · {job.origin || "Origin"} → {job.destination || "Destination"}</span>} meta={<><span>{job.customer_name || "Customer not linked"}</span><span>{job.primary_branch}</span><span>No automatic FX conversion</span></>} actions={<><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="md">Digital Job File</Link>{staff.permissions.canManageFinance ? <Link href={`/admin/payables?shipment=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="primary" data-size="md">Add supplier bill</Link> : null}</>}/>
-      <OpsStatStrip><OpsStat label="Customer" value={job.customer_name || "Not linked"}/><OpsStat label="Branch" value={job.primary_branch} icon={<Landmark size={13}/>} /><OpsStat label="Revenue currencies" value={Object.keys(job.revenue_totals).length}/><OpsStat label="Recognised costs" value={job.costs.length} icon={<WalletCards size={13}/>} /></OpsStatStrip>
+      <OpsKpiStrip><OpsKpiCard label="Customer" value={job.customer_name || "Not linked"} icon={<Building2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/><OpsKpiCard label="Branch" value={job.primary_branch} icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} /><OpsKpiCard label="Revenue currencies" value={Object.keys(job.revenue_totals).length} icon={<CircleDollarSign size={18} strokeWidth={1.9} aria-hidden="true"/>}/><OpsKpiCard label="Recognised costs" value={job.costs.length} icon={<WalletCards size={18} strokeWidth={1.9} aria-hidden="true"/>} /></OpsKpiStrip>
 
       <div className="ops-content-wide ops-stack">
         <OpsSurface eyebrow="Commercial result" title="Revenue → cost → gross profit" description="Each currency remains independent. KCPL does not manufacture a consolidated margin by silently applying an FX rate.">

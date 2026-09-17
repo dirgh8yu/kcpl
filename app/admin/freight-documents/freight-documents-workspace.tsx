@@ -1,20 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, CheckCircle2, ExternalLink, Eye, FilePlus2, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ExternalLink, Eye, FileCheck2, FileClock, FilePlus2, Files, FileStack, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
   OpsButton,
   OpsEmptyState,
   OpsField,
+  OpsKpiCard,
+  OpsKpiStrip,
   OpsMono,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
   OpsSearch,
-  OpsStat,
-  OpsStatStrip,
   OpsSurface,
   OpsTableWrap,
   OpsToolbar,
@@ -262,13 +262,13 @@ export function FreightDocumentsWorkspace({
           actions={<Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={15} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>}
         />
 
-        <OpsStatStrip className="freight-documents-summary">
-          <OpsStat label="Needs primary draft" value={summary.missing_primary} detail="mode-specific carriage document" tone="warning" active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "missing" ? null : "missing", page: null, selected: null, shipment: null }); }} />
-          <OpsStat label="Awaiting review" value={summary.review_pending} detail="generated revisions to check" tone="warning" active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "review" ? null : "review", page: null, selected: null, shipment: null }); }} />
-          <OpsStat label="Current drafts" value={documentStats.current} detail={`${documentStats.customerSafe} customer-safe`} tone="success" active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "generated" ? null : "generated", page: null, selected: null, shipment: null }); }} />
-          <OpsStat label="Total revisions" value={documentStats.revisions} detail="current and superseded PDFs" tone="info" />
-          <OpsStat label="Eligible Job Files" value={summary.eligible} detail="accessible, non-cancelled shipments" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} />
-        </OpsStatStrip>
+        <OpsKpiStrip className="freight-documents-summary">
+          <OpsKpiCard label="Needs primary draft" value={summary.missing_primary} detail="mode-specific carriage document" tone="warning" icon={<FileClock size={18} strokeWidth={1.9} aria-hidden="true"/>} active={focus === "missing"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "missing" ? null : "missing", page: null, selected: null, shipment: null }); }} />
+          <OpsKpiCard label="Awaiting review" value={summary.review_pending} detail="generated revisions to check" tone="warning" icon={<Eye size={18} strokeWidth={1.9} aria-hidden="true"/>} active={focus === "review"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "review" ? null : "review", page: null, selected: null, shipment: null }); }} />
+          <OpsKpiCard label="Current drafts" value={documentStats.current} detail={`${documentStats.customerSafe} customer-safe`} tone="success" icon={<FileCheck2 size={18} strokeWidth={1.9} aria-hidden="true"/>} active={focus === "generated"} onClick={() => { setAllowInitialSelection(false); update({ view: focus === "generated" ? null : "generated", page: null, selected: null, shipment: null }); }} />
+          <OpsKpiCard label="Total revisions" value={documentStats.revisions} detail="current and superseded PDFs" tone="info" icon={<FileStack size={18} strokeWidth={1.9} aria-hidden="true"/>} />
+          <OpsKpiCard label="Eligible Job Files" value={summary.eligible} detail="accessible, non-cancelled shipments" icon={<Files size={18} strokeWidth={1.9} aria-hidden="true"/>} active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} />
+        </OpsKpiStrip>
 
         {message ? <div className="freight-documents-message"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
         {summary.missing_primary > 0 || summary.review_pending > 0 ? (

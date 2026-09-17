@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, History, Landmark, LoaderCircle, PackageCheck, ReceiptText, Upload, UsersRound } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { AlertTriangle, Archive, CheckCircle2, Download, FileSpreadsheet, History, Landmark, LoaderCircle, PackageCheck, ReceiptText, RotateCcw, Upload, UsersRound } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import type { CustomerImportPreview, CustomerImportResult, CustomerImportStatus } from "./customer-import";
 import { MigrationBatchHistory } from "./migration-batch-history";
 import type { MigrationBatchDashboard } from "./migration-batches";
@@ -76,15 +76,15 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
       actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Shipment template</a><a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Receivables template</a><a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Payables template</a></>}
     />
 
-    <OpsStatStrip>
-      <OpsStat label="Stage 1" value="Customers" detail="Complete · still available" icon={<UsersRound size={13}/>} tone="success"/>
-      <OpsStat label="Stage 2" value="Shipments" detail="Complete · still available" icon={<PackageCheck size={13}/>} tone="success"/>
-      <OpsStat label="Stage 3A" value="Receivables" detail="Complete · still available" icon={<Landmark size={13}/>} tone="success"/>
-      <OpsStat label="Stage 3B" value="Payables" detail="Complete · still available" icon={<ReceiptText size={13}/>} tone="success"/>
-      <OpsStat label="Stage 4A" value="Batch history" detail="Complete · evidence ledger" icon={<History size={13}/>} tone="success"/>
-      <OpsStat label="Stage 4B" value="Paper archive" detail="Complete · evidence preserved" tone="success"/>
-      <OpsStat label="Stage 4C" value="Recovery" detail="Active · dry run first" tone="success"/>
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Stage 1" value="Customers" detail="Complete · still available" icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 2" value="Shipments" detail="Complete · still available" icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 3A" value="Receivables" detail="Complete · still available" icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 3B" value="Payables" detail="Complete · still available" icon={<ReceiptText size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 4A" value="Batch history" detail="Complete · evidence ledger" icon={<History size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 4B" value="Paper archive" detail="Complete · evidence preserved" icon={<Archive size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 4C" value="Recovery" detail="Active · dry run first" icon={<RotateCcw size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+    </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
       <OpsSurface eyebrow="Stage plan" title="A complete migration safety chain" description="The stages now work as one chain: import carefully, retain an authoritative batch inventory, preserve source evidence, then permit rollback only when the live records still prove they are safe to reverse.">

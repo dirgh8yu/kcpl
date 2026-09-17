@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { BadgeDollarSign, CheckCircle2, CircleAlert, FilePlus2, RefreshCw, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import {
   deriveNrbMidpointFxRate,
@@ -179,12 +179,12 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
   return <OpsPage>
     <OpsPageHeader eyebrow="Commercial pricing" title="Pricing Desk" description="Turn selected partner buy costs into governed customer sell prices using customer markups, lane rules, margin floors, NRB FX references and Management approval thresholds." actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={12}/> Refresh</OpsButton>{canManageRules ? <OpsButton size="sm" onClick={() => setShowRuleForm((value) => !value)}><SlidersHorizontal size={12}/> Pricing rules</OpsButton> : null}<Link href="/admin/rating" className="ops-button" data-size="sm" data-variant="secondary">Rate Desk</Link></div>}/>
 
-    <OpsStatStrip>
-      <OpsStat label="Priceable orders" value={orders.length} icon={<BadgeDollarSign size={13}/>}/>
-      <OpsStat label="Priced" value={pricedCount} tone="success" icon={<CheckCircle2 size={13}/>}/>
-      <OpsStat label="Approval queue" value={approvalCount} tone="warning" icon={<ShieldCheck size={13}/>}/>
-      <OpsStat label="Quotes released" value={quotedCount} tone="info" icon={<FilePlus2 size={13}/>}/>
-    </OpsStatStrip>
+    <OpsKpiStrip>
+      <OpsKpiCard label="Priceable orders" value={orders.length} icon={<BadgeDollarSign size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      <OpsKpiCard label="Priced" value={pricedCount} tone="success" icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      <OpsKpiCard label="Approval queue" value={approvalCount} tone="warning" icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      <OpsKpiCard label="Quotes released" value={quotedCount} tone="info" icon={<FilePlus2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+    </OpsKpiStrip>
 
     {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
     {showRuleForm && canManageRules ? <div className="mt-4"><PricingRuleForm customers={customers} rules={rules} onCreated={async () => { await refresh(); setShowRuleForm(false); }} /></div> : null}

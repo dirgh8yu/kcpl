@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { ArrowRight, BadgeDollarSign, Building2, Clock3, Globe2, Plus, Sparkles, UserRound, UsersRound, X } from "lucide-react";
+import { ArrowRight, BadgeDollarSign, Building2, Clock3, Globe2, Moon, Pause, Plus, Sparkles, UserRound, UsersRound, X } from "lucide-react";
 import {
   crmAccountStatusLabels,
   crmAccountStatuses,
@@ -19,7 +19,7 @@ import {
   type CrmDashboardStats,
   type CrmDuplicateMatch,
 } from "./crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 
@@ -116,14 +116,14 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-end justify-between gap-5"><div><p className="ops-eyebrow">Relationships</p><h1 className="mt-2 text-[31px] font-[730] tracking-[-.045em] text-[var(--admin-ink)]">Customers</h1><p className="mt-2 max-w-2xl text-[11px] leading-5 text-[var(--admin-muted)]">Customer accounts that buy KCPL freight and logistics services. Carriers, agents, transporters, suppliers and overseas counterparts live in Partners.</p></div><div className="flex items-center gap-2"><span className="hidden text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)] sm:inline">Working as {userName}</span><OpsButton variant="primary" onClick={openNew}><Plus size={13}/>New record</OpsButton></div></div>
       </section>
 
-      <OpsStatStrip>
-        <OpsStat label="Records" value={stats.total} />
-        <OpsStat label="Prospects" value={stats.prospects} tone="info" active={statusFilter === "prospect"} onClick={() => setStatusFilter(statusFilter === "prospect" ? "all" : "prospect")}/>
-        <OpsStat label="Active" value={stats.active} tone="success" active={statusFilter === "active"} onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")}/>
-        <OpsStat label="Dormant" value={stats.dormant} active={statusFilter === "dormant"} onClick={() => setStatusFilter(statusFilter === "dormant" ? "all" : "dormant")}/>
-        <OpsStat label="On hold" value={stats.onHold} tone="warning" active={statusFilter === "on_hold"} onClick={() => setStatusFilter(statusFilter === "on_hold" ? "all" : "on_hold")}/>
-        <OpsStat label="Follow-ups" value={stats.followUpsDue} tone={stats.followUpsDue ? "warning" : "neutral"}/>
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Records" value={stats.total} icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Prospects" value={stats.prospects} tone="info" icon={<Sparkles size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "prospect"} onClick={() => setStatusFilter(statusFilter === "prospect" ? "all" : "prospect")}/>
+        <OpsKpiCard label="Active" value={stats.active} tone="success" icon={<UserRound size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "active"} onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")}/>
+        <OpsKpiCard label="Dormant" value={stats.dormant} icon={<Moon size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "dormant"} onClick={() => setStatusFilter(statusFilter === "dormant" ? "all" : "dormant")}/>
+        <OpsKpiCard label="On hold" value={stats.onHold} tone="warning" icon={<Pause size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "on_hold"} onClick={() => setStatusFilter(statusFilter === "on_hold" ? "all" : "on_hold")}/>
+        <OpsKpiCard label="Follow-ups" value={stats.followUpsDue} tone={stats.followUpsDue ? "warning" : "neutral"} icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      </OpsKpiStrip>
 
       <div className="grid min-h-[calc(100vh-214px)] xl:grid-cols-[350px_minmax(0,1fr)]">
         <aside className="min-h-0 border-r border-[var(--admin-line)] bg-[var(--admin-surface)]/72">

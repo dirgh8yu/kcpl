@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { ArrowDown, ArrowRight, ArrowUp, Boxes, CheckCircle2, PackagePlus, RefreshCw, Route, Trash2, Truck } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsStat, OpsStatStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import {
   consolidationSavings,
@@ -196,12 +196,12 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
     <OpsPage>
       <OpsPageHeader eyebrow="Transportation management" title="Load Planner" description="Combine compatible transport orders into master movements, sequence multi-stop pickup/delivery plans, enforce capacity, then procure the consolidated load while retaining separate house shipments and Digital Job Files." actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={13}/> Refresh</OpsButton>{canManage ? <OpsButton size="sm" variant="primary" onClick={() => setShowCreate((value) => !value)}><PackagePlus size={13}/> New load</OpsButton> : null}<Link href="/admin/rating" className="ops-button" data-size="sm" data-variant="secondary">Rate Desk <ArrowRight size={12}/></Link><Link href="/admin/tenders" className="ops-button" data-size="sm" data-variant="secondary">Tender Desk <ArrowRight size={12}/></Link></div>} />
 
-      <OpsStatStrip>
-        <OpsStat label="Loads" value={loads.length} icon={<Boxes size={13}/>}/>
-        <OpsStat label="Draft planning" value={draftLoads} tone="warning" icon={<Route size={13}/>}/>
-        <OpsStat label="Booked masters" value={bookedLoads} tone="success" icon={<CheckCircle2 size={13}/>}/>
-        <OpsStat label="Unassigned orders" value={eligibleOrders.length} tone="info" icon={<Truck size={13}/>}/>
-      </OpsStatStrip>
+      <OpsKpiStrip>
+        <OpsKpiCard label="Loads" value={loads.length} icon={<Boxes size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Draft planning" value={draftLoads} tone="warning" icon={<Route size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Booked masters" value={bookedLoads} tone="success" icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+        <OpsKpiCard label="Unassigned orders" value={eligibleOrders.length} tone="info" icon={<Truck size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
+      </OpsKpiStrip>
 
       {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
