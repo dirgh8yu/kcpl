@@ -188,7 +188,7 @@ export function ShipmentExceptionControl({
         {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 
         {showForm ? (
-          <form onSubmit={createException} className="rounded-[var(--app-radius)] border border-[#eadfd5] bg-[#fffaf5] p-4">
+          <form onSubmit={createException} className="rounded-[var(--app-radius)] border border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] p-4">
             <div className="grid gap-3 md:grid-cols-3">
               <OpsField label="Category"><select value={category} onChange={(event) => setCategory(event.target.value as ShipmentExceptionCategory)}>{shipmentExceptionCategories.map((value) => <option key={value} value={value}>{shipmentExceptionCategoryLabels[value]}</option>)}</select></OpsField>
               <OpsField label="Severity" hint={severity === "critical" ? "2-hour SLA" : severity === "high" ? "6-hour SLA" : severity === "medium" ? "24-hour SLA" : "72-hour SLA"}><select value={severity} onChange={(event) => setSeverity(event.target.value as ShipmentExceptionSeverity)}>{shipmentExceptionSeverities.map((value) => <option key={value} value={value}>{shipmentExceptionSeverityLabels[value]}</option>)}</select></OpsField>
@@ -218,18 +218,18 @@ export function ShipmentExceptionControl({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2"><OpsBadge tone={severityTone(item.severity)} dot>{shipmentExceptionSeverityLabels[item.severity]}</OpsBadge><OpsBadge tone={statusTone(item.status)}>{shipmentExceptionStatusLabels[item.status]}</OpsBadge><OpsBadge tone={overdue ? "danger" : "neutral"}>{overdue ? "SLA overdue" : `SLA ${dateTime(item.sla_due_at)}`}</OpsBadge></div>
-                      <h3 className="mt-2 text-[14px] font-[720] tracking-[-.02em] text-[#3d3631]">{item.title}</h3>
-                      <p className="mt-1 text-[11px] leading-5 text-[#746b64]">{item.detail}</p>
-                      {item.operational_impact ? <p className="mt-2 rounded-[var(--app-radius)] bg-[#faf7f3] px-3 py-2 text-[length:var(--app-label-size)] leading-5 text-[#6d625a]"><strong>Impact:</strong> {item.operational_impact}</p> : null}
+                      <h3 className="mt-2 text-[14px] font-[720] tracking-[-.02em] text-[var(--admin-ink)]">{item.title}</h3>
+                      <p className="mt-1 text-[11px] leading-5 text-[var(--admin-muted)]">{item.detail}</p>
+                      {item.operational_impact ? <p className="mt-2 rounded-[var(--app-radius)] bg-[var(--admin-surface-soft)] px-3 py-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]"><strong>Impact:</strong> {item.operational_impact}</p> : null}
                     </div>
                     <div className="text-right text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]"><OpsMono>{item.id.slice(0, 8).toUpperCase()}</OpsMono><div>{shipmentExceptionCategoryLabels[item.category]} · {item.branch}</div><div>Opened {dateTime(item.opened_at)}</div></div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--admin-line)] pt-3">
-                    <div className="text-[length:var(--app-label-size)] text-[#7d736c]">Owner: <strong className="text-[#514841]">{item.assigned_to_name || item.assigned_to_email || "Unassigned"}</strong>{item.resolved_at ? ` · Resolved ${dateTime(item.resolved_at)}` : ""}</div>
+                    <div className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Owner: <strong className="text-[var(--admin-ink)]">{item.assigned_to_name || item.assigned_to_email || "Unassigned"}</strong>{item.resolved_at ? ` · Resolved ${dateTime(item.resolved_at)}` : ""}</div>
                     {item.status !== "resolved" ? <div className="flex flex-wrap gap-2">{item.status === "open" ? <OpsButton size="sm" onClick={() => updateException(item, "monitoring")} disabled={busy}>Monitor</OpsButton> : <OpsButton size="sm" onClick={() => updateException(item, "open")} disabled={busy}>Return to open</OpsButton>}<OpsButton size="sm" variant="primary" onClick={() => { setResolutionFor(item.id); setResolution(""); }} disabled={busy}>Resolve</OpsButton></div> : null}
                   </div>
-                  {item.resolution ? <div className="mt-3 rounded-[var(--app-radius)] border border-[#dfeadd] bg-[#f7fbf5] px-3 py-2 text-[length:var(--app-label-size)] leading-5 text-[#4f684c]"><strong>Resolution:</strong> {item.resolution}</div> : null}
-                  {resolutionFor === item.id ? <div className="mt-3 rounded-[var(--app-radius)] border border-[#e6ddd5] bg-[#fffcf9] p-3"><OpsField label="Resolution outcome" hint="At least 12 characters. This is written to the immutable Job File activity trail."><textarea value={resolution} onChange={(event) => setResolution(event.target.value)} rows={3} maxLength={5000} placeholder="What was done, what changed, and what is the confirmed outcome?"/></OpsField><div className="mt-2 flex justify-end gap-2"><OpsButton size="sm" onClick={() => setResolutionFor(null)}>Cancel</OpsButton><OpsButton size="sm" variant="primary" disabled={busy || resolution.trim().length < 12} onClick={() => updateException(item, "resolved", resolution)}>Confirm resolution</OpsButton></div></div> : null}
+                  {item.resolution ? <div className="mt-3 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] px-3 py-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-success)]"><strong>Resolution:</strong> {item.resolution}</div> : null}
+                  {resolutionFor === item.id ? <div className="mt-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-3"><OpsField label="Resolution outcome" hint="At least 12 characters. This is written to the immutable Job File activity trail."><textarea value={resolution} onChange={(event) => setResolution(event.target.value)} rows={3} maxLength={5000} placeholder="What was done, what changed, and what is the confirmed outcome?"/></OpsField><div className="mt-2 flex justify-end gap-2"><OpsButton size="sm" onClick={() => setResolutionFor(null)}>Cancel</OpsButton><OpsButton size="sm" variant="primary" disabled={busy || resolution.trim().length < 12} onClick={() => updateException(item, "resolved", resolution)}>Confirm resolution</OpsButton></div></div> : null}
                 </article>
               );
             })}
