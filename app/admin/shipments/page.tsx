@@ -40,13 +40,13 @@ export default async function ShipmentsPage() {
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return (
     <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}>
-      <section className="w-full max-w-xl border-y border-[#101010] py-8">
+      <section className="w-full max-w-xl border-y border-[var(--admin-ink)] py-8">
         <p className="text-[length:var(--app-label-size)] uppercase tracking-[0.11em] text-[var(--admin-crimson)]">KCPL Shipments</p>
         <h1 className="mt-3 text-[32px] font-normal tracking-[-.04em]">{title}</h1>
         <p className="mt-4 text-[14px] leading-6 text-[var(--admin-muted)]">{detail}</p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link href="/admin" className="inline-flex min-h-11 items-center border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-5 text-[12px] font-medium text-white hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)]">Operations</Link>
-          <Link href="/" className="inline-flex min-h-11 items-center border border-[var(--admin-line-strong)] px-5 text-[12px] font-medium text-[var(--admin-ink)] hover:border-[#101010] hover:bg-[var(--admin-surface-muted)]">KCPL website</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center border border-[var(--admin-line-strong)] px-5 text-[12px] font-medium text-[var(--admin-ink)] hover:border-[var(--admin-ink)] hover:bg-[var(--admin-surface-muted)]">KCPL website</Link>
         </div>
       </section>
     </main>

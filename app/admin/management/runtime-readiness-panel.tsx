@@ -81,7 +81,7 @@ export function RuntimeReadinessPanel() {
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {readiness.checks.map((item) => <div key={item.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3.5">
               <div className="flex items-start justify-between gap-3">
-                <strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><span className={item.status === "ready" ? "text-[#66806b]" : item.status === "warning" ? "text-[#9a682f]" : "text-[#b65355]"}><StatusIcon status={item.status}/></span>{item.label}</strong>
+                <strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><span className={item.status === "ready" ? "text-[var(--admin-success)]" : item.status === "warning" ? "text-[var(--admin-warning)]" : "text-[var(--admin-danger)]"}><StatusIcon status={item.status}/></span>{item.label}</strong>
                 <OpsBadge tone={tone(item.status)}>{item.status}</OpsBadge>
               </div>
               <p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{item.detail}</p>
