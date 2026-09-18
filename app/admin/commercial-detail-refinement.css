@@ -455,13 +455,6 @@
 }
 
 @media (max-width: 760px) {
-  .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
-    scroll-padding-inline: 16px;
-  }
-
-  .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav > a {
-    min-height: 48px;
-  }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-header-main {
     gap: 14px;
@@ -591,9 +584,6 @@
     grid-template-columns: 1fr;
   }
 
-  .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

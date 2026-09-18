@@ -8,13 +8,19 @@ import test from "node:test";
 // app/, in a `className` template pattern, or in a rendered-token snapshot, so a
 // rule is only called dead when no path can put that class in the DOM.
 //
-// This gate pins the *ceiling*, not the exact number. The baseline is what
-// remains after the 2026-09 consolidation pass, most of it in one contiguous
-// retired block that is too large for the editing path used there; deleting
-// more is fine, adding new unreachable rules is not.
+// This gate pins the *ceiling*, not the exact number. The ceiling is now zero:
+// the 2026-09 consolidation pass retired every unreachable rule across all
+// twenty sheets (552 rules / 1680 lines), the last 1,066-line block removed by
+// `npm run audit:dead-css -- --prune --write` because it sat past the reach of
+// the workspace's file-editing path. Deleting is still free; adding a rule that
+// nothing can render now fails here.
+//
+// The audit scans every non-module sheet under app/, so this gate covers the
+// whole corpus. It used to scan three, which is how the other eleven sheets
+// accumulated dead rules unnoticed.
 
-const MAX_DEAD_RULES = 275;
-const MAX_DEAD_LINES = 1224;
+const MAX_DEAD_RULES = 0;
+const MAX_DEAD_LINES = 0;
 
 const runAudit = () => {
   const output = execFileSync("node", ["scripts/dead-css-audit.mjs", "--json"], {
@@ -25,10 +31,16 @@ const runAudit = () => {
   return JSON.parse(output);
 };
 
-test("admin stylesheets do not grow unreachable rules", () => {
+test("stylesheets do not grow unreachable rules", () => {
   const report = runAudit();
 
   assert.ok(report.totals.rules > 0, "the audit parsed no rules at all");
+  // Discovery, not a hardcoded list — a sheet that stops being found would
+  // otherwise shrink the gate silently. Twenty sheets is the 2026-09 corpus.
+  assert.ok(
+    report.sheets.length >= 20,
+    `the audit found only ${report.sheets.length} sheets; expected the whole corpus`,
+  );
 
   for (const sheet of report.sheets) {
     assert.ok(
@@ -40,8 +52,9 @@ test("admin stylesheets do not grow unreachable rules", () => {
   assert.ok(
     report.totals.dead <= MAX_DEAD_RULES,
     `unreachable rules grew: ${report.totals.dead} > ${MAX_DEAD_RULES}. ` +
-      `Run \`npm run audit:dead-css -- --list\` and either delete the rules or ` +
-      `explain them in plans/admin-css-consolidation.md.`,
+      `Run \`npm run audit:dead-css -- --list\` for the rules and ` +
+      `\`npm run audit:dead-css -- --prune\` for what could be removed, then ` +
+      `either delete them or explain them in plans/admin-css-consolidation.md.`,
   );
 
   assert.ok(

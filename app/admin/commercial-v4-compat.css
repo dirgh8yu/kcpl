@@ -29,19 +29,6 @@
   background: var(--commercial-canvas);
 }
 
-.kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-}
-
-.kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav > a {
-  scroll-snap-align: start;
-}
 
 /* Page hierarchy */
 .kcpl-admin-shell[data-commercial-context] .ops-page,
@@ -152,50 +139,6 @@
   padding: 0;
 }
 
-/* Commercial metrics read like a ledger. */
-.kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-  width: 100%;
-  border-top: 0;
-  border-bottom: 1px solid var(--commercial-line);
-  background: var(--commercial-white);
-  box-shadow: none;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-stat {
-  min-height: 82px;
-  padding: 13px 16px;
-  border-color: var(--commercial-line);
-  background: var(--commercial-white);
-  box-shadow: none;
-}
-
-.kcpl-admin-shell[data-commercial-context] button.ops-stat:hover {
-  background: var(--commercial-canvas);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-stat[data-active] {
-  box-shadow: inset 0 -2px 0 var(--commercial-crimson);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-stat-label {
-  color: var(--commercial-muted);
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-stat-value {
-  margin-top: 6px;
-  color: var(--commercial-ink);
-  font-family: var(--font-manrope), sans-serif;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-stat-detail {
-  color: var(--commercial-muted-2);
-}
 
 /* Buttons follow the KCPL crimson interaction language. */
 .kcpl-admin-shell[data-commercial-context] .ops-button,
@@ -616,10 +559,6 @@
 }
 
 @media (max-width: 760px) {
-  .kcpl-admin-shell[data-commercial-context] .commercial-workflow-nav {
-    gap: 22px;
-    padding-inline: 16px;
-  }
 
   .kcpl-admin-shell[data-commercial-context] .ops-page-header {
     padding: 20px 16px 16px;
@@ -669,22 +608,6 @@
     margin-top: 10px;
   }
 
-  .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-    display: grid;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: visible;
-  }
-
-  .kcpl-admin-shell[data-commercial-context] .ops-stat {
-    min-width: 0;
-    min-height: 72px;
-    padding: 11px 12px;
-  }
-
-  .kcpl-admin-shell[data-commercial-context] .ops-stat-value {
-    font-size: 21px;
-  }
 
   .kcpl-admin-shell[data-commercial-context] .ops-split {
     display: block;
@@ -734,9 +657,6 @@
     grid-template-columns: 1fr;
   }
 
-  .kcpl-admin-shell[data-commercial-context] .ops-stat-strip {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 }

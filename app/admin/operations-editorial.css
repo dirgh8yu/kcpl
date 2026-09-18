@@ -129,35 +129,6 @@
 .kcpl-admin-content .ops-surface-description { color: var(--kcpl-muted); font-size: 12px; }
 .kcpl-admin-content .ops-surface-body { padding: 20px; }
 
-.kcpl-admin-content .ops-stat-strip {
-  border-color: var(--kcpl-line);
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.kcpl-admin-content .ops-stat {
-  min-height: 92px;
-  padding: 18px 20px;
-  border-color: var(--kcpl-line);
-}
-
-.kcpl-admin-content .ops-stat-label {
-  color: var(--kcpl-muted);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-}
-
-.kcpl-admin-content .ops-stat-value {
-  margin-top: 8px;
-  color: var(--kcpl-ink);
-  font-size: 28px;
-  font-weight: 400;
-  letter-spacing: -.04em;
-}
-
-.kcpl-admin-content .ops-stat-top i { border-radius: 0; background: var(--kcpl-crimson); box-shadow: none; }
 
 .kcpl-admin-content .ops-badge {
   min-height: 24px;
@@ -234,72 +205,6 @@
 .kcpl-admin-content tbody tr { border-bottom-color: var(--kcpl-line); }
 .kcpl-admin-content tbody tr:hover { background: #F0F0EA; }
 
-/* Brand-specific Operations overview */
-.kcpl-ops-overview { min-height: calc(100vh - 56px); background: var(--kcpl-canvas); }
-.kcpl-ops-overview-inner { width: min(1320px, calc(100% - 48px)); margin: 0 auto; padding: 44px 0 72px; }
-.kcpl-ops-overview .overview-intro { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(260px,.75fr); gap: 64px; align-items: end; padding-bottom: 32px; }
-.kcpl-ops-overview .overview-kicker { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; color: var(--kcpl-crimson); font-size: 11px; font-weight: 500; letter-spacing: .11em; text-transform: uppercase; }
-.kcpl-ops-overview .overview-kicker span { color: var(--kcpl-muted); }
-.kcpl-ops-overview h1 { margin: 0; font-size: clamp(42px, 5vw, 68px); font-weight: 400; line-height: 1.02; letter-spacing: -.045em; }
-.kcpl-ops-overview .overview-lede { max-width: 620px; margin-top: 20px; color: var(--kcpl-muted); font-size: 16px; line-height: 1.65; }
-.kcpl-ops-overview .overview-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
-.kcpl-ops-overview .overview-date { color: var(--kcpl-muted); font-size: 13px; }
-.kcpl-ops-overview .overview-primary-action { display: inline-flex; min-height: 52px; align-items: center; justify-content: space-between; gap: 28px; border: 1px solid var(--kcpl-crimson); border-radius: 2px; background: var(--kcpl-crimson); padding: 0 20px; color: #fff; font-size: 14px; font-weight: 500; transition: background .18s, border-color .18s; }
-.kcpl-ops-overview .overview-primary-action:hover { background: #B61032; border-color: #B61032; }
-
-.kcpl-ops-overview .overview-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--kcpl-ink); border-bottom: 1px solid var(--kcpl-line); }
-.kcpl-ops-overview .overview-metric { min-height: 132px; padding: 22px 24px; border-right: 1px solid var(--kcpl-line); transition: background .18s; }
-.kcpl-ops-overview .overview-metric:last-child { border-right: 0; }
-.kcpl-ops-overview .overview-metric:hover { background: #EEEEE8; }
-.kcpl-ops-overview .overview-metric-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--kcpl-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
-.kcpl-ops-overview .overview-metric-value { margin-top: 24px; font-size: 40px; line-height: 1; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
-.kcpl-ops-overview .overview-metric-detail { margin-top: 9px; color: var(--kcpl-muted); font-size: 12px; }
-.kcpl-ops-overview .overview-metric[data-alert="true"] .overview-metric-value { color: var(--kcpl-crimson); }
-
-.kcpl-ops-overview .overview-workgrid { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(300px,.65fr); border-bottom: 1px solid var(--kcpl-line); }
-.kcpl-ops-overview .overview-panel { min-width: 0; padding: 40px 0; }
-.kcpl-ops-overview .overview-panel + .overview-panel { border-left: 1px solid var(--kcpl-line); padding-left: 36px; margin-left: 36px; }
-.kcpl-ops-overview .overview-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--kcpl-ink); }
-.kcpl-ops-overview .overview-section-head h2 { font-size: 26px; font-weight: 400; line-height: 1.1; letter-spacing: -.035em; }
-.kcpl-ops-overview .overview-section-head p { margin-top: 7px; color: var(--kcpl-muted); font-size: 12px; }
-.kcpl-ops-overview .overview-section-link { color: var(--kcpl-muted); font-size: 12px; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
-.kcpl-ops-overview .overview-section-link:hover { color: var(--kcpl-crimson); }
-.kcpl-ops-overview .overview-count { min-width: 24px; height: 24px; display: inline-grid; place-items: center; margin-left: 8px; background: var(--kcpl-crimson); color: #fff; font-size: 11px; }
-
-.kcpl-ops-overview .overview-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: center; min-height: 82px; padding: 16px 0; border-bottom: 1px solid var(--kcpl-line); transition: background .16s; }
-.kcpl-ops-overview .overview-row:hover { background: #EEEEE8; }
-.kcpl-ops-overview .overview-row-main { min-width: 0; }
-.kcpl-ops-overview .overview-row-meta { display: flex; flex-wrap: wrap; gap: 9px 14px; color: var(--kcpl-muted); font-size: 11px; }
-.kcpl-ops-overview .overview-row-title { margin-top: 6px; color: var(--kcpl-ink); font-size: 14px; font-weight: 500; }
-.kcpl-ops-overview .overview-row-subtitle { margin-top: 4px; color: var(--kcpl-muted); font-size: 12px; }
-.kcpl-ops-overview .overview-tag { display: inline-flex; min-height: 22px; align-items: center; border: 1px solid var(--kcpl-line); border-radius: 2px; padding: 2px 6px; background: transparent; color: var(--kcpl-muted); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
-.kcpl-ops-overview .overview-tag[data-tone="danger"] { border-color: #E6A4B0; color: #A80E2F; }
-.kcpl-ops-overview .overview-tag[data-tone="warning"] { border-color: #D9C293; color: #72500C; }
-.kcpl-ops-overview .overview-row-side { min-width: 112px; text-align: right; color: var(--kcpl-muted); font-size: 11px; }
-
-.kcpl-ops-overview .overview-today-row { display: grid; grid-template-columns: 54px minmax(0,1fr) auto; align-items: center; gap: 14px; min-height: 70px; border-bottom: 1px solid var(--kcpl-line); }
-.kcpl-ops-overview .overview-time { font-size: 13px; font-variant-numeric: tabular-nums; }
-.kcpl-ops-overview .overview-today-title { font-size: 13px; font-weight: 500; }
-.kcpl-ops-overview .overview-today-subtitle { margin-top: 3px; color: var(--kcpl-muted); font-size: 11px; }
-
-.kcpl-ops-overview .overview-empty { min-height: 220px; display: grid; place-items: center; padding: 32px; text-align: center; color: var(--kcpl-muted); }
-.kcpl-ops-overview .overview-empty strong { display: block; color: var(--kcpl-ink); font-size: 15px; font-weight: 500; }
-.kcpl-ops-overview .overview-empty span { display: block; max-width: 380px; margin-top: 8px; font-size: 12px; line-height: 1.55; }
-
-.kcpl-ops-overview .overview-flow { padding: 48px 0; border-bottom: 1px solid var(--kcpl-line); }
-.kcpl-ops-overview .overview-flow-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); margin-top: 26px; border-top: 1px solid var(--kcpl-ink); }
-.kcpl-ops-overview .overview-flow-item { min-height: 150px; padding: 20px 28px 18px 0; border-right: 1px solid var(--kcpl-line); }
-.kcpl-ops-overview .overview-flow-item + .overview-flow-item { padding-left: 28px; }
-.kcpl-ops-overview .overview-flow-item:last-child { border-right: 0; }
-.kcpl-ops-overview .overview-flow-number { color: var(--kcpl-crimson); font-size: 11px; }
-.kcpl-ops-overview .overview-flow-label { margin-top: 30px; font-size: 18px; font-weight: 400; }
-.kcpl-ops-overview .overview-flow-value { margin-top: 8px; font-size: 34px; letter-spacing: -.045em; }
-.kcpl-ops-overview .overview-flow-detail { margin-top: 7px; color: var(--kcpl-muted); font-size: 11px; line-height: 1.45; }
-
-.kcpl-ops-overview .overview-activity { padding-top: 48px; }
-.kcpl-ops-overview .overview-activity-row { display: grid; grid-template-columns: 72px 180px minmax(0,1fr) 160px 20px; align-items: center; gap: 18px; min-height: 58px; border-bottom: 1px solid var(--kcpl-line); color: var(--kcpl-muted); font-size: 12px; }
-.kcpl-ops-overview .overview-activity-row:hover { background: #EEEEE8; }
-.kcpl-ops-overview .overview-activity-row strong { color: var(--kcpl-ink); font-weight: 500; }
 
 /* Shared operations register/table treatment, including Shipments. */
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] { background: var(--kcpl-canvas); }
@@ -315,26 +220,9 @@
 .kcpl-admin-content main[class*="bg-[#f6f6f3]"] button { border-radius: 3px; }
 
 @media (max-width: 1024px) {
-  .kcpl-ops-overview-inner { width: min(100% - 40px, 1320px); padding-top: 34px; }
-  .kcpl-ops-overview .overview-intro { grid-template-columns: 1fr; gap: 24px; }
-  .kcpl-ops-overview .overview-meta { flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .kcpl-ops-overview .overview-workgrid { grid-template-columns: 1fr; }
-  .kcpl-ops-overview .overview-panel + .overview-panel { border-left: 0; border-top: 1px solid var(--kcpl-line); padding-left: 0; margin-left: 0; }
 }
 
 @media (max-width: 760px) {
-  .kcpl-ops-overview-inner { width: min(100% - 32px, 1320px); padding: 28px 0 52px; }
-  .kcpl-ops-overview h1 { font-size: clamp(38px, 12vw, 52px); }
-  .kcpl-ops-overview .overview-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .kcpl-ops-overview .overview-metric:nth-child(2) { border-right: 0; }
-  .kcpl-ops-overview .overview-metric:nth-child(-n+2) { border-bottom: 1px solid var(--kcpl-line); }
-  .kcpl-ops-overview .overview-flow-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .kcpl-ops-overview .overview-flow-item:nth-child(2) { border-right: 0; }
-  .kcpl-ops-overview .overview-flow-item:nth-child(-n+2) { border-bottom: 1px solid var(--kcpl-line); }
-  .kcpl-ops-overview .overview-flow-item:nth-child(3) { padding-left: 0; }
-  .kcpl-ops-overview .overview-activity-row { grid-template-columns: 56px minmax(0,1fr) 20px; }
-  .kcpl-ops-overview .overview-activity-row > :nth-child(3),
-  .kcpl-ops-overview .overview-activity-row > :nth-child(4) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
