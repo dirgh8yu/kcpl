@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+
+import { requestChallengeToken, turnstileSiteKey } from "./turnstile-challenge";
 import { ArrowUpRight, CheckCircle2, Mail, MapPin, Ruler, Scale } from "lucide-react";
 import { company } from "../company-data";
 import { trackAnalyticsEvent } from "./analytics";
@@ -99,10 +101,15 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
     setSubmitState({ status: "submitting" });
 
     try {
+      // Only when a site key is configured; otherwise this is a no-op and the
+      // page never contacts the challenge provider.
+      const siteKey = turnstileSiteKey();
+      const challengeToken = siteKey ? await requestChallengeToken(siteKey) : "";
+
       const response = await fetch("/api/quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, challengeToken }),
       });
       const result = await response.json() as { ok?: boolean; reference?: string; error?: string };
       if (!response.ok || !result.ok || !result.reference) {
