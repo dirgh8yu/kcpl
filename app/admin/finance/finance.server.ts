@@ -1,3 +1,4 @@
+import { mockFinanceDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
@@ -260,6 +261,7 @@ export async function getFinanceInvoice(reference: string, context: KcplStaffCon
 }
 
 export async function listFinanceDashboard(context: KcplStaffContext): Promise<FinanceDashboard | null> {
+  if (qaMockDataEnabled()) return canAccessFinance(context) ? mockFinanceDashboard(context) : null;
   if (!firebaseRuntimeConfigured() || !canAccessFinance(context)) return null;
   const db = firebaseAdminDb();
   const snapshot = await db.collection("invoices").orderBy("updated_at", "desc").limit(3000).get();

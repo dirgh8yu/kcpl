@@ -1,3 +1,4 @@
+import { mockStaffProfiles, qaMockDataEnabled } from "./qa-fixtures";
 import { firebaseAdminAuth, firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { resolveStaffAuthority, type StaffDirectoryState } from "./staff-authority-policy";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
@@ -305,6 +306,7 @@ export function staffCanAccessBranch(context: KcplStaffContext, branch: string |
 }
 
 export async function listStaffProfiles() {
+  if (qaMockDataEnabled()) return mockStaffProfiles();
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("staff_profiles").orderBy("display_name", "asc").limit(500).get();
   return snapshot.docs

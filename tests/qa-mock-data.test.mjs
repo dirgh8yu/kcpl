@@ -6,12 +6,15 @@ import { fileURLToPath } from "node:url";
 import {
   mockAutomationAlerts,
   mockCommandCentre,
+  mockCrmCustomers,
   mockCustomsDeskRows,
   mockDeliveryWorkspace,
   mockDocumentVault,
+  mockFinanceDashboard,
   mockFinanceSnapshot,
   mockFreightAuditQueue,
   mockFreightDocumentWorkspace,
+  mockPartnerDashboard,
   mockPickupWorkspace,
   mockQuoteSummaries,
   mockVisibilityWorkspace,
@@ -86,6 +89,10 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/customs/customs-data.server.ts",
     "app/admin/documents/documents-data.server.ts",
     "app/admin/admin-data.server.ts",
+    "app/admin/crm/crm-data.server.ts",
+    "app/admin/partners/partners.server.ts",
+    "app/admin/finance/finance.server.ts",
+    "app/admin/staff-directory.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
@@ -289,4 +296,37 @@ test("the vault counts are tallied from its rows, and the pipeline spans its sta
   for (const job of mockCommandCentre(staff, now).jobs) {
     assert.ok(quoteRefs.has(job.quote_reference), `no enquiry for ${job.reference}`);
   }
+});
+
+test("the commercial and finance fixtures are tallied from their own rows", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+  const jobs = mockCommandCentre(staff, now).jobs;
+
+  // Every company that ships must exist as an account, or the CRM and the
+  // shipment register would name different customers.
+  const accounts = new Set(mockCrmCustomers(staff, now).map((row) => row.display_name));
+  for (const job of jobs) {
+    assert.ok(accounts.has(job.customer_name), `no CRM account for ${job.customer_name}`);
+  }
+  const stages = new Set(mockCrmCustomers(staff, now).map((row) => row.lead_stage));
+  assert.ok(stages.size > 1, "the lead pipeline must span more than one stage");
+
+  // Same for carriers and the partner directory.
+  const partners = mockPartnerDashboard(staff, now);
+  const names = new Set(partners.partners.map((row) => row.display_name));
+  for (const job of jobs) {
+    if (job.carrier) assert.ok(names.has(job.carrier), `no partner record for ${job.carrier}`);
+  }
+  assert.equal(partners.active_count, partners.partners.filter((row) => row.status === "active").length);
+
+  const finance = mockFinanceDashboard(staff, now);
+  const [summary] = finance.currency_summaries;
+  assert.equal(summary.invoiced, finance.invoices.reduce((sum, row) => sum + row.total, 0));
+  assert.equal(summary.collected, finance.invoices.reduce((sum, row) => sum + row.amount_paid, 0));
+  assert.equal(summary.outstanding, finance.invoices.reduce((sum, row) => sum + row.balance_due, 0));
+  assert.equal(summary.invoice_count, finance.invoices.length);
+  assert.ok(finance.overdue_count > 0, "an overdue receivable must appear");
+  // Ageing buckets are what the screen is for; an all-zero ledger hides them.
+  assert.ok(summary.aging_31_60 + summary.aging_61_90 + summary.aging_90_plus > 0, "an aged balance must appear");
 });

@@ -1,3 +1,4 @@
+import { mockPartnerDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue } from "../branch-access-policy";
@@ -251,6 +252,7 @@ async function writePartnerActivity(partnerId: string, title: string, detail: st
 }
 
 export async function listPartnerDashboard(context: KcplStaffContext): Promise<PartnerDashboard | null> {
+  if (qaMockDataEnabled()) return mockPartnerDashboard(context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const financeVisible = canViewPartnerFinance(context.permissions);

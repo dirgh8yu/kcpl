@@ -924,3 +924,287 @@ export function mockQuoteSummaries(staff: KcplStaffContext, now = Date.now()): Q
   }));
   return [...open, ...converted];
 }
+
+import type { CrmAccountStatus, CrmCustomerSummary, CrmLeadStage } from "./crm/crm-data.ts";
+import type { PartnerDashboard, PartnerMode, PartnerRecord, PartnerType } from "./partners/partners-data.ts";
+
+/* Customers come out of the shipments: each distinct customer_name in the job
+ * book becomes an account, with its shipment counts tallied from those jobs.
+ * Six prospects are appended so the lead pipeline is not uniformly "won". */
+export function mockCrmCustomers(staff: KcplStaffContext, now = Date.now()): CrmCustomerSummary[] {
+  const jobs = mockCommandCentre(staff, now).jobs;
+  const names = [...new Set(jobs.map((job) => job.customer_name))];
+  const accounts: CrmCustomerSummary[] = names.map((name, index) => {
+    const mine = jobs.filter((job) => job.customer_name === name);
+    const active = mine.filter((job) => job.status !== "delivered").length;
+    const revenue = 1_250_000 + index * 340_000;
+    const cost = Math.round(revenue * 0.81);
+    return {
+      id: mine[0].customer_id ?? `cust-${index + 1}`,
+      entity_kind: "company",
+      display_name: name,
+      legal_name: `${name} Pvt. Ltd.`,
+      relationship_types: ["customer"],
+      account_status: "active",
+      lead_stage: "won",
+      lead_source: index % 2 === 0 ? "referral" : "existing_customer",
+      primary_email: `accounts@${name.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+      primary_phone: "+977 1 4000000",
+      country: "Nepal",
+      primary_branch: mine[0].primary_branch,
+      account_manager_uid: mine[0].assigned_to_uid,
+      account_manager_name: mine[0].assigned_to_name,
+      account_manager_email: mine[0].assigned_to_email,
+      account_manager_phone: mine[0].assigned_to_phone,
+      account_manager_job_title: "Operations executive",
+      account_manager_branches: [mine[0].primary_branch],
+      tags: index % 3 === 0 ? ["key account"] : [],
+      quote_count: mine.length,
+      active_shipment_count: active,
+      completed_shipment_count: mine.length - active,
+      follow_up_count: index % 3,
+      revenue_total: revenue,
+      cost_total: cost,
+      profit_total: revenue - cost,
+      preferred_currency: "NPR",
+      archived: false,
+      created_at: iso(now, -(index + 40) * DAY),
+      updated_at: mine[0].updated_at,
+    };
+  });
+
+  const stages: CrmLeadStage[] = ["new_lead", "contacted", "qualified", "quote_sent", "negotiating", "lost"];
+  const statuses: CrmAccountStatus[] = ["prospect", "prospect", "prospect", "active", "prospect", "dormant"];
+  const prospects: CrmCustomerSummary[] = ["Nepal Cold Storage", "Kathmandu Valley Traders", "Pokhara Handicrafts", "Janakpur Agro", "Butwal Steel", "Dharan Timber"].map((name, index) => ({
+    id: `prospect-${index + 1}`,
+    entity_kind: "company",
+    display_name: name,
+    legal_name: null,
+    relationship_types: ["customer"],
+    account_status: statuses[index],
+    lead_stage: stages[index],
+    lead_source: "website",
+    primary_email: `hello@${name.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+    primary_phone: "+977 1 4000000",
+    country: "Nepal",
+    primary_branch: "Kathmandu",
+    account_manager_uid: index % 2 === 0 ? "uid-meera.karki" : null,
+    account_manager_name: index % 2 === 0 ? "Meera Karki" : null,
+    account_manager_email: index % 2 === 0 ? "meera.karki@kcpl.com.np" : null,
+    account_manager_phone: index % 2 === 0 ? "+977 1 4000000" : null,
+    account_manager_job_title: index % 2 === 0 ? "Commercial executive" : null,
+    account_manager_branches: index % 2 === 0 ? ["Kathmandu"] : [],
+    tags: [],
+    quote_count: 1 + (index % 3),
+    active_shipment_count: 0,
+    completed_shipment_count: 0,
+    follow_up_count: index % 2,
+    revenue_total: 0,
+    cost_total: 0,
+    profit_total: 0,
+    preferred_currency: "NPR",
+    archived: false,
+    created_at: iso(now, -(index + 2) * DAY),
+    updated_at: iso(now, -(index + 1) * HOUR),
+  }));
+  return [...accounts, ...prospects];
+}
+
+const PARTNER_TYPE: Record<string, PartnerType> = {
+  ocean: "shipping_line",
+  air: "airline",
+  road: "transporter",
+  rail: "transporter",
+};
+
+/* Partners are the carriers already moving the shipments, so the partner
+ * directory and the shipment register name the same companies. */
+export function mockPartnerDashboard(staff: KcplStaffContext, now = Date.now()): PartnerDashboard {
+  const jobs = mockCommandCentre(staff, now).jobs;
+  const carriers = [...new Set(jobs.map((job) => job.carrier).filter((name): name is string => Boolean(name)))];
+  const partners: PartnerRecord[] = carriers.map((name, index) => {
+    const mine = jobs.filter((job) => job.carrier === name);
+    const mode = mine[0].mode;
+    const openAmount = 180_000 + index * 42_000;
+    return {
+      id: `partner-${index + 1}`,
+      display_name: name,
+      legal_name: null,
+      normalized_name: name.toLowerCase().replace(/\s+/g, " "),
+      types: [PARTNER_TYPE[mode] ?? "other"],
+      modes: [(mode === "ocean" ? "sea" : mode === "rail" ? "rail" : mode === "air" ? "air" : "road") as PartnerMode],
+      status: index % 7 === 0 ? "on_hold" : "active",
+      preferred: index % 3 === 0,
+      country: ["China", "India", "Singapore", "Germany", "Nepal", "Denmark"][index % 6],
+      owner_branch: mine[0].primary_branch,
+      cities_served: [...new Set(mine.map((job) => job.origin))].slice(0, 3),
+      countries_served: ["Nepal", "India"],
+      ports_served: mode === "ocean" ? ["Kolkata", "Haldia"] : [],
+      primary_contact_name: "Partner desk",
+      primary_email: `ops@${name.toLowerCase().replace(/[^a-z]+/g, "")}.com`,
+      primary_phone: "+977 1 4000000",
+      whatsapp: null,
+      website: null,
+      preferred_currency: "USD",
+      payment_terms_days: 30,
+      service_rating: 3 + (index % 3),
+      registration_number: null,
+      tax_id: null,
+      contract_reference: index % 2 === 0 ? `CT-${2600 + index}` : null,
+      contract_expiry_date: index % 2 === 0 ? nepalDay(now, 120) : null,
+      document_url: null,
+      commercial_terms: null,
+      internal_notes: null,
+      tags: index % 3 === 0 ? ["preferred"] : [],
+      created_at: iso(now, -(index + 60) * DAY),
+      created_by_name: "KCPL Operations",
+      created_by_email: "ops@kcpl.com.np",
+      updated_at: mine[0].updated_at,
+      updated_by_name: "KCPL Operations",
+      updated_by_email: "ops@kcpl.com.np",
+      payable_open: [{ currency: "USD", amount: openAmount }],
+      payable_spend: [{ currency: "USD", amount: openAmount * 4 }],
+      bill_count: mine.length,
+      overdue_bill_count: index % 4 === 0 ? 1 : 0,
+      shipment_count: mine.length,
+      last_activity_at: mine[0].updated_at,
+    };
+  });
+  // Tallied from the rows, mirroring the production derivation.
+  return {
+    generated_at: iso(now, 0),
+    partners,
+    active_count: partners.filter((partner) => partner.status === "active").length,
+    preferred_count: partners.filter((partner) => partner.preferred && partner.status === "active").length,
+    country_count: new Set(partners.filter((partner) => partner.status !== "inactive").map((partner) => partner.country.trim()).filter(Boolean)).size,
+    unlinked_supplier_bills: 2,
+    legacy_name_linked_bill_count: 1,
+    open_payables: [{ currency: "USD", amount: partners.reduce((sum, partner) => sum + (partner.payable_open[0]?.amount ?? 0), 0) }],
+  };
+}
+
+import type { KcplStaffProfile } from "./staff-directory.ts";
+import type { CrmCurrency } from "./crm/crm-data.ts";
+import type {
+  FinanceCurrencySummary,
+  FinanceDashboard,
+  FinanceInvoice,
+  FinanceInvoiceStatus,
+} from "./finance/finance-data.ts";
+
+/* The five names the shipments are already assigned to, so the staff directory
+ * and every owner column agree. */
+export function mockStaffProfiles(now = Date.now()): KcplStaffProfile[] {
+  const roles = ["operations", "operations", "commercial", "accounts", "management"] as const;
+  return STAFF_SEEDS.map((person, index) => ({
+    uid: `uid-${person.email.split("@")[0]}`,
+    email: person.email,
+    display_name: person.name,
+    job_title: ["Operations executive", "Operations executive", "Commercial executive", "Accounts executive", "Operations manager"][index],
+    phone: "+977 1 4000000",
+    role: roles[index],
+    branch_scope: index === 4 ? "all" : "selected",
+    branches: index === 4 ? [] : [(["Kathmandu", "Birgunj", "Kathmandu", "Kolkata", "Kathmandu"] as KcplBranch[])[index]],
+    active: true,
+    created_at: iso(now, -(index + 200) * DAY),
+    updated_at: iso(now, -(index + 1) * DAY),
+    updated_by: "ops@kcpl.com.np",
+  }));
+}
+
+const INVOICE_STATUS: FinanceInvoiceStatus[] = ["paid", "issued", "overdue", "partially_paid", "draft", "paid"];
+
+/* One receivable per shipment. Statuses rotate so the ageing buckets are not
+ * all empty, and every currency summary is tallied from the invoices rather
+ * than stated -- the header cannot disagree with the ledger below it. */
+export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()): FinanceDashboard {
+  const invoices: FinanceInvoice[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
+    const status = INVOICE_STATUS[index % INVOICE_STATUS.length];
+    const subtotal = 240_000 + index * 38_500;
+    const tax = Math.round(subtotal * 0.13);
+    const total = subtotal + tax;
+    const paid = status === "paid" ? total : status === "partially_paid" ? Math.round(total * 0.4) : 0;
+    const dueDays = status === "overdue" ? -(12 + (index % 40)) : 14 - (index % 10);
+    return {
+      reference: `INV-${job.reference.slice(5)}`,
+      record_type: "invoice",
+      external_invoice_number: null,
+      migration_batch_id: null,
+      migration_as_of_date: null,
+      customer_id: job.customer_id ?? `cust-${index + 1}`,
+      customer_name: job.customer_name,
+      shipment_reference: job.reference,
+      quote_reference: job.quote_reference,
+      branch: job.primary_branch,
+      status,
+      issue_date: nepalDay(now, -(index + 10)),
+      due_date: nepalDay(now, dueDays),
+      currency: "NPR",
+      line_items: [{
+        id: `line-${index + 1}`,
+        description: `${job.mode} freight ${job.origin} to ${job.destination}`,
+        quantity: 1,
+        unit_price: subtotal,
+        tax_rate: 13,
+        subtotal,
+        tax_amount: tax,
+        total,
+      }],
+      subtotal,
+      tax_total: tax,
+      total,
+      amount_paid: paid,
+      balance_due: total - paid,
+      notes: null,
+      created_by_name: "Prakash Adhikari",
+      created_by_email: "prakash.adhikari@kcpl.com.np",
+      created_at: iso(now, -(index + 10) * DAY),
+      updated_at: job.updated_at,
+      payments: paid
+        ? [{
+            id: `pay-${index + 1}`,
+            invoice_reference: `INV-${job.reference.slice(5)}`,
+            amount: paid,
+            currency: "NPR" as CrmCurrency,
+            payment_date: nepalDay(now, -(index + 2)),
+            method: "bank_transfer" as const,
+            reference: `TXN-${9000 + index}`,
+            notes: null,
+            recorded_by_name: "Prakash Adhikari",
+            recorded_by_email: "prakash.adhikari@kcpl.com.np",
+            created_at: iso(now, -(index + 2) * DAY),
+          }]
+        : [],
+    };
+  });
+
+  const ageDays = (invoice: FinanceInvoice) => Math.floor((now - Date.parse(`${invoice.due_date}T00:00:00Z`)) / DAY);
+  const bucket = (from: number, to: number) => invoices
+    .filter((invoice) => invoice.balance_due > 0 && ageDays(invoice) >= from && ageDays(invoice) <= to)
+    .reduce((sum, invoice) => sum + invoice.balance_due, 0);
+  const summary: FinanceCurrencySummary = {
+    currency: "NPR",
+    invoiced: invoices.reduce((sum, invoice) => sum + invoice.total, 0),
+    opening_balance: 0,
+    collected: invoices.reduce((sum, invoice) => sum + invoice.amount_paid, 0),
+    outstanding: invoices.reduce((sum, invoice) => sum + invoice.balance_due, 0),
+    overdue: invoices.filter((invoice) => invoice.status === "overdue").reduce((sum, invoice) => sum + invoice.balance_due, 0),
+    aging_0_30: bucket(0, 30),
+    aging_31_60: bucket(31, 60),
+    aging_61_90: bucket(61, 90),
+    aging_90_plus: bucket(91, Number.MAX_SAFE_INTEGER),
+    invoice_count: invoices.length,
+    opening_balance_count: 0,
+  };
+  const count = (status: FinanceInvoiceStatus) => invoices.filter((invoice) => invoice.status === status).length;
+  return {
+    generated_at: iso(now, 0),
+    invoices,
+    currency_summaries: [summary],
+    overdue_count: count("overdue"),
+    unpaid_count: invoices.filter((invoice) => invoice.balance_due > 0).length,
+    paid_count: count("paid"),
+    draft_count: count("draft"),
+    opening_balance_count: 0,
+  };
+}

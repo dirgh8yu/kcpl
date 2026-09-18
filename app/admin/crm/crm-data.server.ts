@@ -1,3 +1,4 @@
+import { mockCrmCustomers, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
@@ -238,6 +239,7 @@ function taskFromDoc(id: string, data: Record<string, unknown>, profiles: KcplSt
 }
 
 export async function listCrmCustomers(context?: KcplStaffContext): Promise<CrmCustomerSummary[] | null> {
+  if (qaMockDataEnabled() && context) return mockCrmCustomers(context);
   if (!firebaseRuntimeConfigured()) return null;
   const [snapshot, profiles] = await Promise.all([
     firebaseAdminDb().collection("customers").orderBy("updated_at", "desc").limit(2000).get(),
