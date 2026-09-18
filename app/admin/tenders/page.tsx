@@ -5,6 +5,7 @@ import { OperationsShell } from "../operations-shell";
 import type { TmsOrder } from "../rating/tms-rating";
 import { listTmsOrders } from "../rating/tms-rating.server";
 import { getStaffContext } from "../staff-directory.server";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { reconcileExpiredTmsTenders } from "./tms-tender-expiry.server";
 import type { TmsTender } from "./tms-tendering";
 import { listTmsTenders } from "./tms-tendering.server";
@@ -95,5 +96,14 @@ function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: Tm
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-white p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">KCPL Tender Workspace</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Transport Orders</Link><Link href="/admin/partners" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Partners</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Tender Workspace"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/rating", label: "Transport Orders", primary: true },
+      { href: "/admin/partners", label: "Partners" },
+    ]}
+  />;
 }

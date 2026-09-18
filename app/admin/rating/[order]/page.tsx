@@ -4,6 +4,7 @@ import { OperationsShell } from "../../operations-shell";
 import { getStaffContext } from "../../staff-directory.server";
 import { listTmsTenders } from "../../tenders/tms-tendering.server";
 import type { TmsTender } from "../../tenders/tms-tendering";
+import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { listTmsOrders } from "../tms-rating.server";
 import type { TmsOrder, TmsOrderStatus } from "../tms-rating";
 
@@ -115,4 +116,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Grid({ children }: { children: React.ReactNode }) { return <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">{children}</dl>; }
 function Datum({ label, value }: { label: string; value: string }) { return <div><dt className="text-[11px] font-medium text-[var(--admin-muted)]">{label}</dt><dd className="mt-1 text-[13px] font-medium leading-[19px]">{value}</dd></div>; }
 function DetailRow({ label, value }: { label: string; value: string }) { return <div className="grid grid-cols-[88px_1fr] gap-3 py-[5px] text-[12px]"><span className="text-[var(--admin-muted)]">{label}</span><span className="break-words font-medium">{value}</span></div>; }
-function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) { return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-white p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">KCPL Transport Order</p><h1 className="mt-3 text-[22px] font-semibold">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Transport Orders</Link><Link href="/admin/command-centre" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Operations</Link></div></section></main>; }
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate
+    eyebrow="KCPL Transport Order"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/rating", label: "Transport Orders", primary: true },
+      { href: "/admin/command-centre", label: "Operations Home" },
+    ]}
+  />;
+}
