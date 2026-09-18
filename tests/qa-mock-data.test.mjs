@@ -8,10 +8,12 @@ import {
   mockCommandCentre,
   mockCustomsDeskRows,
   mockDeliveryWorkspace,
+  mockDocumentVault,
   mockFinanceSnapshot,
   mockFreightAuditQueue,
   mockFreightDocumentWorkspace,
   mockPickupWorkspace,
+  mockQuoteSummaries,
   mockVisibilityWorkspace,
   mockWorkflowOverview,
   qaMockDataEnabled,
@@ -82,6 +84,8 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/alerts/alert-engine.server.ts",
     "app/admin/freight-audit/freight-audit.server.ts",
     "app/admin/customs/customs-data.server.ts",
+    "app/admin/documents/documents-data.server.ts",
+    "app/admin/admin-data.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
@@ -260,4 +264,29 @@ test("the alert, audit and customs fixtures stay tied to the same shipments", ()
     assert.equal(row.customs_open, row.open_steps.length);
   }
   assert.ok(customs.some((row) => row.state === "blocked"), "a blocked customs file must appear");
+});
+
+test("the vault counts are tallied from its rows, and the pipeline spans its states", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+
+  const vault = mockDocumentVault(staff, now);
+  assert.ok(vault.rows.length > 0);
+  // The header counts must be a tally of the table, not numbers beside it.
+  assert.equal(vault.verified_count, vault.rows.filter((row) => row.effective_status === "verified").length);
+  assert.equal(vault.rejected_count, vault.rows.filter((row) => row.effective_status === "rejected").length);
+  assert.equal(vault.expired_count, vault.rows.filter((row) => row.effective_status === "expired").length);
+  assert.ok(vault.review_count > 0, "a document awaiting review must appear");
+  assert.ok(vault.expired_count > 0, "an expired document must appear");
+
+  const quotes = mockQuoteSummaries(staff, now);
+  const statuses = new Set(quotes.map((quote) => quote.status));
+  for (const status of ["new", "reviewing", "quoted", "won"]) {
+    assert.ok(statuses.has(status), `enquiry pipeline is missing the ${status} state`);
+  }
+  // Every shipment came from an enquiry, so each job's quote reference is present.
+  const quoteRefs = new Set(quotes.map((quote) => quote.reference));
+  for (const job of mockCommandCentre(staff, now).jobs) {
+    assert.ok(quoteRefs.has(job.quote_reference), `no enquiry for ${job.reference}`);
+  }
 });

@@ -1,3 +1,4 @@
+import { mockDocumentVault, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
   effectiveShipmentDocumentStatus,
@@ -103,6 +104,7 @@ async function getAllInChunks(refs: FirebaseFirestore.DocumentReference[], size 
 }
 
 export async function listDocumentVault(context: KcplStaffContext): Promise<DocumentVaultDashboard | null> {
+  if (qaMockDataEnabled()) return mockDocumentVault(context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const documentsSnapshot = await db.collectionGroup("documents").get();

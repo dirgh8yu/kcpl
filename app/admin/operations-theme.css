@@ -201,7 +201,7 @@
 .ops-record-row[data-selected="true"] { background: #fff7f3; box-shadow: inset 3px 0 0 var(--ops-accent); }
 
 .ops-split { display: grid; grid-template-columns: minmax(280px, 350px) minmax(0, 1fr); min-height: calc(100vh - 58px); }
-.ops-split-list { min-width: 0; border-right: 1px solid var(--ops-line); background: rgba(255,253,250,.74); }
+.ops-split-list { min-width: 0; border-right: 1px solid var(--ops-line); background: var(--admin-surface); }
 .ops-split-detail { min-width: 0; background: var(--ops-canvas); }
 
 

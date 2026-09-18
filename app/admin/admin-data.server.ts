@@ -1,3 +1,4 @@
+import { mockQuoteSummaries, qaMockDataEnabled } from "./qa-fixtures";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
 import {
@@ -144,6 +145,7 @@ async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>)
 }
 
 export async function listQuoteSummaries(context: KcplStaffContext): Promise<QuoteSummary[] | null> {
+  if (qaMockDataEnabled()) return mockQuoteSummaries(context);
   if (!configured()) return null;
   const [snapshot, profiles] = await Promise.all([
     firebaseAdminDb().collection("quotes").orderBy("created_at", "desc").limit(1000).get(),

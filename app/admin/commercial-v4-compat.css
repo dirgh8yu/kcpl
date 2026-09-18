@@ -7,20 +7,23 @@
  */
 
 .kcpl-admin-shell[data-commercial-context] {
-  --commercial-crimson: #DC143C;
-  --commercial-crimson-dark: #B61032;
-  --commercial-ink: #101010;
-  --commercial-muted: #686862;
-  --commercial-muted-2: #878780;
-  --commercial-line: #D6D6D0;
-  --commercial-line-dark: #AFAFA8;
-  --commercial-canvas: #F6F6F3;
-  --commercial-soft: #EEEEE8;
-  --commercial-white: #FFFFFF;
+  /* Aliased to the shared --admin-* scale. These were literals of a warm brand
+   * palette, which is why Plan & Sell still rendered on cream after Operate
+   * moved to the cool neutrals. */
+  --commercial-crimson: var(--admin-crimson);
+  --commercial-crimson-dark: var(--admin-crimson-dark);
+  --commercial-ink: var(--admin-ink);
+  --commercial-muted: var(--admin-muted);
+  --commercial-muted-2: var(--admin-faint);
+  --commercial-line: var(--admin-line);
+  --commercial-line-dark: var(--admin-line-strong);
+  --commercial-canvas: var(--admin-canvas);
+  --commercial-soft: var(--admin-surface-soft);
+  --commercial-white: var(--admin-surface);
   overflow-x: clip;
   background: var(--commercial-canvas);
   color: var(--commercial-ink);
-  font-family: var(--font-manrope), var(--font-geist), Arial, sans-serif;
+  font-family: var(--font-geist), Arial, sans-serif;
 }
 
 .kcpl-admin-shell[data-commercial-context] .kcpl-admin-content {

@@ -798,3 +798,129 @@ export function mockCustomsDeskRows(staff: KcplStaffContext, now = Date.now()): 
       };
     });
 }
+
+import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents/documents-data.server.ts";
+import type { QuoteSummary, QuoteStatus } from "./admin-data.ts";
+import type { ShipmentDocumentReviewStatus } from "../shipment-document-types";
+
+const VAULT_REVIEW: ShipmentDocumentReviewStatus[] = ["verified", "under_review", "received", "rejected", "verified", "superseded"];
+
+/* Two documents per shipment. The counts on the vault header are tallied from
+ * the rows below rather than stated, so the header cannot disagree with the
+ * table -- and the review states rotate so every filter has something in it. */
+export function mockDocumentVault(staff: KcplStaffContext, now = Date.now()): DocumentVaultDashboard {
+  const rows: DocumentVaultRow[] = [];
+  mockCommandCentre(staff, now).jobs.forEach((job, jobIndex) => {
+    const kinds: { type: ShipmentDocumentType; label: string }[] = [
+      { type: "commercial_invoice", label: "Commercial invoice" },
+      { type: job.mode === "air" ? "air_waybill" : job.mode === "ocean" ? "bill_of_lading" : "road_consignment_note", label: "Carriage document" },
+    ];
+    kinds.forEach((kind, position) => {
+      const review = VAULT_REVIEW[(jobIndex + position) % VAULT_REVIEW.length];
+      const expired = (jobIndex + position) % 9 === 0;
+      rows.push({
+        id: rows.length + 1,
+        shipment_reference: job.reference,
+        customer_id: job.customer_id,
+        customer_name: job.customer_name,
+        branch: job.primary_branch,
+        handling_branches: job.handling_branches,
+        shipment_status: job.status,
+        origin: job.origin,
+        destination: job.destination,
+        mode: job.mode,
+        filename: `${job.reference}-${kind.type}.pdf`,
+        document_type: kind.type,
+        content_type: "application/pdf",
+        size_bytes: 180_000 + rows.length * 4_200,
+        uploaded_at: iso(now, -(jobIndex + 2) * HOUR),
+        uploaded_by: job.assigned_to_name ?? "KCPL Operations",
+        uploaded_by_email: job.assigned_to_email,
+        review_status: review,
+        effective_status: expired ? "expired" : review,
+        customer_safe: kind.type !== "commercial_invoice",
+        review_note: review === "rejected" ? "Illegible scan, please re-upload" : null,
+        reviewed_at: review === "received" ? null : iso(now, -(jobIndex + 1) * HOUR),
+        reviewed_by: review === "received" ? null : "Prakash Adhikari",
+        reviewed_by_email: review === "received" ? null : "prakash.adhikari@kcpl.com.np",
+        verified_at: review === "verified" ? iso(now, -jobIndex * HOUR) : null,
+        verified_by: review === "verified" ? "Prakash Adhikari" : null,
+        verified_by_email: review === "verified" ? "prakash.adhikari@kcpl.com.np" : null,
+        expires_on: expired ? nepalDay(now, -2) : null,
+        supersedes_document_id: null,
+        superseded_by_document_id: null,
+        deleted_at: null,
+        deleted_by: null,
+        deleted_by_email: null,
+        sha256: `${rows.length}`.padStart(64, "0"),
+        storage_delete_pending: false,
+      });
+    });
+  });
+  const count = (predicate: (row: DocumentVaultRow) => boolean) => rows.filter(predicate).length;
+  return {
+    generated_at: iso(now, 0),
+    rows,
+    active_count: count((row) => row.effective_status !== "deleted" && row.effective_status !== "superseded"),
+    verified_count: count((row) => row.effective_status === "verified"),
+    review_count: count((row) => row.effective_status === "received" || row.effective_status === "under_review"),
+    rejected_count: count((row) => row.effective_status === "rejected"),
+    expired_count: count((row) => row.effective_status === "expired"),
+    deleted_count: count((row) => row.effective_status === "deleted"),
+    cleanup_pending_count: count((row) => row.storage_delete_pending),
+  };
+}
+
+const QUOTE_STATUS: QuoteStatus[] = ["new", "reviewing", "quoted", "won", "lost"];
+
+/* Enquiries sit upstream of shipments, so each job's quote_reference gets its
+ * enquiry back, plus a few that never converted -- a pipeline where everything
+ * is won shows none of the states the desk works through. */
+export function mockQuoteSummaries(staff: KcplStaffContext, now = Date.now()): QuoteSummary[] {
+  const jobs = mockCommandCentre(staff, now).jobs;
+  const converted: QuoteSummary[] = jobs.map((job, index) => ({
+    reference: job.quote_reference,
+    created_at: iso(now, -(index + 3) * DAY),
+    status: "won",
+    origin: job.origin,
+    destination: job.destination,
+    mode: job.mode,
+    cargo_type: job.mode === "ocean" ? "FCL" : "General cargo",
+    contact_name: job.assigned_to_name ?? "KCPL desk",
+    contact_email: `ops@${job.customer_name.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+    company_name: job.customer_name,
+    phone: "+977 1 4000000",
+    customer_id: job.customer_id,
+    assigned_to: job.assigned_to_name,
+    assigned_to_uid: job.assigned_to_uid,
+    assigned_to_name: job.assigned_to_name,
+    assigned_to_email: job.assigned_to_email,
+    assigned_to_phone: job.assigned_to_phone,
+    note_count: index % 3,
+    email_count: 1 + (index % 4),
+    last_customer_email_at: iso(now, -(index + 1) * DAY),
+  }));
+  const open: QuoteSummary[] = ["Nepal Cold Storage", "Kathmandu Valley Traders", "Pokhara Handicrafts", "Janakpur Agro", "Butwal Steel", "Dharan Timber"].map((company, index) => ({
+    reference: `QT-2609-${900 + index}`,
+    created_at: iso(now, -(index + 1) * DAY),
+    status: QUOTE_STATUS[index % 4],
+    origin: ["Shanghai", "Singapore", "Dubai", "Kolkata", "Delhi", "Bangkok"][index],
+    destination: "Kathmandu",
+    mode: ["ocean", "air", "road", "ocean", "road", "air"][index],
+    cargo_type: "General cargo",
+    contact_name: ["Ramesh Karki", "Sita Rai", "Deepak Lama", "Nirmala Joshi", "Kiran Bista", "Asha Magar"][index],
+    contact_email: `enquiries@${company.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+    company_name: company,
+    phone: "+977 1 4000000",
+    customer_id: null,
+    assigned_to: index % 2 === 0 ? "Meera Karki" : null,
+    assigned_to_uid: index % 2 === 0 ? "uid-meera.karki" : null,
+    assigned_to_name: index % 2 === 0 ? "Meera Karki" : null,
+    assigned_to_email: index % 2 === 0 ? "meera.karki@kcpl.com.np" : null,
+    assigned_to_phone: index % 2 === 0 ? "+977 1 4000000" : null,
+    note_count: index % 2,
+    email_count: index % 3,
+    last_customer_email_at: index % 3 ? iso(now, -(index + 1) * HOUR) : null,
+  }));
+  return [...open, ...converted];
+}

@@ -9,15 +9,16 @@
 .kcpl-admin-shell[data-commercial-context] {
   --kcpl-c: #DC143C;
   --kcpl-c-dark: #B61032;
-  --kcpl-ink: #101010;
-  --kcpl-copy: #4F4F4A;
-  --kcpl-muted: #686862;
-  --kcpl-muted-2: #878780;
-  --kcpl-line: #D6D6D0;
-  --kcpl-line-strong: #AFAFA8;
-  --kcpl-canvas: #F6F6F3;
-  --kcpl-soft: #EEEEE8;
-  --kcpl-white: #FFFFFF;
+  /* Same aliasing as commercial-v4-compat.css: one palette, not three. */
+  --kcpl-ink: var(--admin-ink);
+  --kcpl-copy: var(--admin-muted);
+  --kcpl-muted: var(--admin-muted);
+  --kcpl-muted-2: var(--admin-faint);
+  --kcpl-line: var(--admin-line);
+  --kcpl-line-strong: var(--admin-line-strong);
+  --kcpl-canvas: var(--admin-canvas);
+  --kcpl-soft: var(--admin-surface-soft);
+  --kcpl-white: var(--admin-surface);
 }
 
 /* ---- Interaction quality ------------------------------------------------ */
@@ -186,7 +187,7 @@
   padding-top: 24px;
   background: var(--kcpl-canvas);
   color: var(--kcpl-ink);
-  font-family: var(--font-manrope), var(--font-geist), Arial, sans-serif;
+  font-family: var(--font-geist), Arial, sans-serif;
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div[class*="max-w-[1152px]"] {
