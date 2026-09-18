@@ -12,7 +12,6 @@ import {
   Clock3,
   FileCheck2,
   FileText,
-  MapPinned,
   MoreHorizontal,
   PackageCheck,
   Plane,
@@ -127,6 +126,22 @@ function ageShort(value: string, anchor: string) {
   if (hours < 24) return { label: `${Math.round(hours)}h`, danger: false };
   const days = Math.max(1, Math.round(hours / 24));
   return { label: `${days}d`, danger: days >= 2 };
+}
+
+/** How long until it lands. Negative means it is already overdue against its ETA. */
+function etaShort(value: string | null, anchor: string) {
+  if (!value) return { label: "ETA unset", late: false };
+  const time = Date.parse(value);
+  const anchorTime = Date.parse(anchor);
+  if (!Number.isFinite(time) || !Number.isFinite(anchorTime)) return { label: "ETA unset", late: false };
+  const hours = (time - anchorTime) / 3_600_000;
+  if (hours < 0) {
+    const overdue = Math.abs(hours);
+    return { label: overdue < 24 ? `${Math.round(overdue)}h late` : `${Math.round(overdue / 24)}d late`, late: true };
+  }
+  if (hours < 1) return { label: "due now", late: false };
+  if (hours < 24) return { label: `in ${Math.round(hours)}h`, late: false };
+  return { label: `in ${Math.round(hours / 24)}d`, late: false };
 }
 
 function statusTone(status: ShipmentStatus): Tone {
@@ -286,72 +301,30 @@ function Workload({ data, workflow }: { data: CommandCentreData; workflow: Workf
   );
 }
 
-type Point = { x: number; y: number; code: string };
-const hubPoints: Record<string, Point> = {
-  KTM: { x: 708, y: 178, code: "KTM" }, KATHMANDU: { x: 708, y: 178, code: "KTM" },
-  DXB: { x: 592, y: 196, code: "DXB" }, DUBAI: { x: 592, y: 196, code: "DXB" },
-  SIN: { x: 786, y: 278, code: "SIN" }, SINGAPORE: { x: 786, y: 278, code: "SIN" },
-  SHA: { x: 824, y: 160, code: "SHA" }, SHANGHAI: { x: 824, y: 160, code: "SHA" }, PVG: { x: 824, y: 160, code: "PVG" },
-  BOM: { x: 657, y: 216, code: "BOM" }, MUMBAI: { x: 657, y: 216, code: "BOM" },
-  DEL: { x: 684, y: 184, code: "DEL" }, DELHI: { x: 684, y: 184, code: "DEL" },
-  CCU: { x: 735, y: 196, code: "CCU" }, KOLKATA: { x: 735, y: 196, code: "CCU" },
-  LHR: { x: 464, y: 119, code: "LHR" }, LONDON: { x: 464, y: 119, code: "LHR" },
-  MEL: { x: 866, y: 337, code: "MEL" }, MELBOURNE: { x: 866, y: 337, code: "MEL" },
-  SYD: { x: 900, y: 322, code: "SYD" }, SYDNEY: { x: 900, y: 322, code: "SYD" },
-  HKG: { x: 812, y: 194, code: "HKG" }, HONGKONG: { x: 812, y: 194, code: "HKG" },
-  BKK: { x: 762, y: 225, code: "BKK" }, BANGKOK: { x: 762, y: 225, code: "BKK" },
-  DOH: { x: 570, y: 194, code: "DOH" }, AUH: { x: 601, y: 201, code: "AUH" },
-};
-
-function hubPoint(value: string) {
-  const normalized = value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (hubPoints[normalized]) return hubPoints[normalized];
-  for (const [key, point] of Object.entries(hubPoints)) if (normalized.includes(key)) return point;
-  return null;
-}
-
-function LiveMovement({ movements }: { movements: OverviewMovement[] }) {
-  const lanes = useMemo(() => {
-    const map = new Map<string, { origin: string; destination: string; count: number; from: Point; to: Point }>();
-    for (const row of movements) {
-      const from = hubPoint(row.origin);
-      const to = hubPoint(row.destination);
-      if (!from || !to || from.code === to.code) continue;
-      const key = `${from.code}-${to.code}`;
-      const current = map.get(key) ?? { origin: from.code, destination: to.code, count: 0, from, to };
-      current.count += 1;
-      map.set(key, current);
-    }
-    return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 6);
-  }, [movements]);
-  const nodes = useMemo(() => {
-    const map = new Map<string, { point: Point; count: number }>();
-    for (const lane of lanes) {
-      for (const point of [lane.from, lane.to]) {
-        const row = map.get(point.code) ?? { point, count: 0 };
-        row.count += lane.count;
-        map.set(point.code, row);
-      }
-    }
-    return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [lanes]);
-
+// This card used to draw a world map whose landmass was four invented polygons
+// and whose city coordinates were eyeballed rather than projected -- decorative
+// pseudo-geography that told the reader nothing. "Live movement" is a question
+// about where each shipment is right now and when it lands, so it answers that.
+function LiveMovement({ movements, generatedAt, returnTo }: { movements: OverviewMovement[]; generatedAt: string; returnTo: string }) {
+  const rows = movements.slice(0, 6);
   return (
-    <section className={`${styles.card} ${styles.mapCard}`} aria-labelledby="movement-title">
-      <div className={styles.cardHeader}><div><h2 id="movement-title">Live movement</h2><p>Active shipments across key routes</p></div><Link className={styles.secondaryButton} href="/admin/visibility">View live <ArrowRight size={13} /></Link></div>
-      <div className={styles.mapBody}>
-        <svg className={styles.mapSvg} viewBox="0 0 1000 400" role="img" aria-label="Active KCPL movement network by route">
-          <path className={styles.mapLand} d="M66 119l74-39 76 17 39 46-22 45-63 5-39-23-53 13-40-29zM299 84l88-30 96 17 43 33 12 57-43 36-62-11-36 28-52-21-17-49zM522 91l104-23 123 15 81 37 77-2 48 31-31 49-79 8-37 56-73 26-58-37-61 9-37-29-52 5-25-41 31-50zM803 286l68-14 62 24 29 50-54 24-76-12-34-37z" />
-          <defs><marker id="overview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path className={extras.routeArrow} d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" /></marker></defs>
-          {lanes.map((lane, index) => {
-            const midX = (lane.from.x + lane.to.x) / 2;
-            const midY = Math.min(lane.from.y, lane.to.y) - 45 - index * 4;
-            return <path key={`${lane.origin}-${lane.destination}`} className={`${styles.routeLine} ${index === 0 ? styles.routeLineHot : ""}`} d={`M ${lane.from.x} ${lane.from.y} Q ${midX} ${midY} ${lane.to.x} ${lane.to.y}`} markerEnd="url(#overview-arrow)" />;
-          })}
-          {nodes.map(({ point, count }) => <g key={point.code}><circle className={styles.routeNode} cx={point.x} cy={point.y} r="6"/><circle className={extras.routeNodeCore} cx={point.x} cy={point.y} r="2.5" fill="currentColor"/><text className={extras.routeNodeLabel} x={point.x + 10} y={point.y - 4} fontSize="11" fontWeight="700" fill="currentColor">{point.code}</text><text className={extras.routeNodeMeta} x={point.x + 10} y={point.y + 10} fontSize="9" fill="currentColor">{count} active</text></g>)}
-        </svg>
-        <div className={styles.mapFoot}><span>{movements.length} active visibility records · {lanes.length} plotted lanes</span><MapPinned size={14} strokeWidth={1.7} /></div>
+    <section className={styles.card} aria-labelledby="movement-title">
+      <div className={styles.cardHeader}><div><h2 id="movement-title">Live movement</h2><p>Where active shipments are now</p></div><Link className={styles.secondaryButton} href="/admin/visibility">View live <ArrowRight size={13} /></Link></div>
+      <div className={styles.movementBody}>
+        {rows.length ? rows.map((row) => {
+          const eta = etaShort(row.eta, generatedAt);
+          return (
+            <Link key={row.reference} href={jobHref(row.reference, returnTo)} className={styles.movementRow}>
+              <span className={styles.movementWhere}>
+                <strong>{row.current_location || row.origin}</strong>
+                <span>{row.reference} · {row.last_milestone || row.status}</span>
+              </span>
+              <span className={styles.movementEta} data-late={eta.late || undefined}>{eta.label}</span>
+            </Link>
+          );
+        }) : <div className={styles.financeEmpty}>No active movement in this scope.</div>}
       </div>
+      <div className={styles.movementFoot}>{movements.length} active visibility record{movements.length === 1 ? "" : "s"}</div>
     </section>
   );
 }
@@ -625,7 +598,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
 
       <div className={styles.lowerGrid}>
         <Workload data={data} workflow={workflow} />
-        <LiveMovement movements={workflow.movements} />
+        <LiveMovement movements={workflow.movements} generatedAt={data.generated_at} returnTo={returnTo} />
         <RecentActivity activity={workflow.recent_activity} generatedAt={data.generated_at} returnTo={returnTo} />
         <FinanceSnapshot finance={finance} />
       </div>
