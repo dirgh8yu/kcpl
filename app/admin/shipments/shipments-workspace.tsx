@@ -164,40 +164,30 @@ export function ShipmentsWorkspace({ data, canStartShipment = false }: { data: C
             label="Total shipments"
             value={overview.total}
             tone="accent"
-            active={status === "all" && !attention}
-            onClick={() => setFilters({ status: null, attention: null })}
           />
           <OpsKpiCard
             icon={<Navigation size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="In transit"
             value={overview.inTransit}
             tone="info"
-            active={status === "in_transit" && !attention}
-            onClick={() => setFilters({ status: "in_transit", attention: null })}
           />
           <OpsKpiCard
             icon={<Truck size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Out for delivery"
             value={overview.outForDelivery}
             tone="success"
-            active={status === "out_for_delivery" && !attention}
-            onClick={() => setFilters({ status: "out_for_delivery", attention: null })}
           />
           <OpsKpiCard
             icon={<FileText size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Customs clearance"
             value={overview.customs}
             tone="warning"
-            active={status === "customs_clearance" && !attention}
-            onClick={() => setFilters({ status: "customs_clearance", attention: null })}
           />
           <OpsKpiCard
             icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>}
             label="Requires attention"
             value={overview.attention}
             tone="danger"
-            active={attention}
-            onClick={() => setFilters({ status: null, attention: "1" })}
           />
         </OpsKpiStrip>
       </div>

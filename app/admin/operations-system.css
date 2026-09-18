@@ -134,7 +134,7 @@
 .app-nav-group summary:hover { color: var(--admin-muted); background: transparent; }
 .app-nav-group a { position: relative; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-left: 2px solid transparent; border-radius: var(--app-radius); padding: 0 10px 0 12px; color: var(--admin-muted); font-size: 14px; font-weight: 400; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
 .app-nav-group a:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
-.app-nav-group a[aria-current="page"] { color: var(--admin-ink); background: var(--admin-surface-muted); border-left-color: var(--admin-crimson); font-weight: 500; }
+.app-nav-group a[aria-current="page"] { color: var(--admin-ink); background: var(--admin-surface-muted); font-weight: 500; }
 .app-nav-group a[aria-current="page"] svg { color: currentColor; opacity: 1; }
 .app-nav-item-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .app-nav-item-main > svg { flex: none; color: currentColor; opacity: .72; }

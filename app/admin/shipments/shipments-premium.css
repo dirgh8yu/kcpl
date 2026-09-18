@@ -106,34 +106,24 @@
 .kcpl-admin-content .shipments-register .ops-kpi:nth-child(4) { animation-delay: 90ms; }
 .kcpl-admin-content .shipments-register .ops-kpi:nth-child(5) { animation-delay: 120ms; }
 
-.kcpl-admin-content .shipments-register .ops-kpi:hover {
+/* Statistics, not controls: flat, and no hover affordance to promise a press
+ * that does nothing. Only a button.ops-kpi may lift. */
+.kcpl-admin-content .shipments-register div.ops-kpi {
+  background: var(--ship-canvas);
+  box-shadow: none;
+}
+
+.kcpl-admin-content .shipments-register button.ops-kpi:hover {
   border-color: var(--ship-line-strong);
   box-shadow: var(--ship-shadow-raised);
 }
 
 /* A lift that a touch tap cannot leave stuck on. Same gate as the dashboard metric tile. */
 @media (hover: hover) and (pointer: fine) {
-  .kcpl-admin-content .shipments-register .ops-kpi:hover { transform: translateY(-1px); }
+  .kcpl-admin-content .shipments-register button.ops-kpi:hover { transform: translateY(-1px); }
 }
 
-.kcpl-admin-content .shipments-register .ops-kpi:focus-visible { outline: none; box-shadow: var(--ship-focus); }
-
-.kcpl-admin-content .shipments-register .ops-kpi[data-active="true"] {
-  border-color: var(--ship-line-strong);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow-raised);
-}
-
-.kcpl-admin-content .shipments-register .ops-kpi[data-active="true"]::after {
-  position: absolute;
-  right: 16px;
-  bottom: 8px;
-  left: 16px;
-  height: 2px;
-  border-radius: var(--app-radius-sm);
-  background: var(--admin-crimson);
-  content: "";
-}
+.kcpl-admin-content .shipments-register button.ops-kpi:focus-visible { outline: none; box-shadow: var(--ship-focus); }
 
 .kcpl-admin-content .shipments-register .ops-kpi-icon {
   width: 32px;
@@ -148,9 +138,13 @@
 
 .kcpl-admin-content .shipments-register .shipments-toolbar {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(260px, 380px) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "search .    actions"
+    "tabs   tabs tabs";
   align-items: center;
-  gap: 16px;
+  row-gap: 10px;
+  column-gap: 16px;
   margin-bottom: 16px;
   padding: 8px;
   border: 1px solid var(--ship-line);
@@ -175,10 +169,15 @@
   box-shadow: var(--ship-focus);
 }
 
+.kcpl-admin-content .shipments-register .shipments-toolbar-search { grid-area: search; }
+.kcpl-admin-content .shipments-register .shipments-toolbar-actions { grid-area: actions; }
+
 .kcpl-admin-content .shipments-register .shipments-status-filters {
+  grid-area: tabs;
   display: flex;
   min-width: 0;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -344,16 +343,20 @@
 
 @media (max-width: 1240px) {
   .kcpl-admin-content .shipments-register .ops-kpi-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .kcpl-admin-content .shipments-register .shipments-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
-  .kcpl-admin-content .shipments-register .shipments-status-filters { grid-column: 1 / -1; grid-row: 2; }
+  .kcpl-admin-content .shipments-register .shipments-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "search actions" "tabs tabs";
+  }
 }
 
 @media (max-width: 900px) {
   .kcpl-admin-content .shipments-register .ops-page-header { margin-inline: 16px; }
   .kcpl-admin-content .shipments-register .ops-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kcpl-admin-content .shipments-register .shipments-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .shipments-register .shipments-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "search" "actions" "tabs";
+  }
   .kcpl-admin-content .shipments-register .shipments-toolbar-actions { justify-content: flex-start; min-width: 0; overflow-x: auto; }
-  .kcpl-admin-content .shipments-register .shipments-status-filters { grid-column: auto; grid-row: auto; }
 }
 
 @media (max-width: 760px) {
