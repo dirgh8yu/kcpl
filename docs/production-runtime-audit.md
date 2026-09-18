@@ -63,6 +63,28 @@ Recorded so the state is discoverable rather than tribal:
 - No approving review is required, because a sole maintainer cannot approve their own pull
   request. Stale reviews are dismissed when new commits land.
 
+## Public endpoint abuse controls
+
+`POST /api/quotes` is the only endpoint the public internet can write to. Three layers
+protect it, in this order: field validation and a honeypot, an attestation check, then a
+durable rate limit. The first and third are always on; the attestation is opt-in.
+
+| Setting | Where | Effect when absent |
+|---|---|---|
+| `CLOUDFLARE_TURNSTILE_SECRET_KEY` | App Hosting runtime | The attestation step reports `not_configured` and is skipped. No third-party call is made. |
+| `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` | Build-time public env | The form asks for no token and loads no third-party script. Set it together with the secret. |
+| `KCPL_RATE_LIMIT_SALT` | App Hosting runtime | Counters are still hashed, but a fixed default label is used. Setting it makes the stored keys useless to anyone hashing a known address to confirm a guess. |
+
+Rate-limit subjects are stored hashed in the `quote_rate_limits` collection, so no raw IP or
+email address is kept. Give `quote_rate_limits.expires_at` a Firestore TTL policy and the
+counters expire without a scheduled job.
+
+The attestation fails open if Cloudflare cannot be reached, and refuses only on an explicit
+rejection: provider unavailability is not evidence that a customer is a bot, and the rate limit
+still bounds abuse either way. The rate limiter fails open for the same reason — it shares
+Firestore with the write it guards, so an unreachable store already means the enquiry cannot be
+saved, and refusing it would only break the sales funnel.
+
 ## Verification sequence
 
 1. Deploy the candidate commit to the intended production host.

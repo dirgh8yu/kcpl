@@ -1,6 +1,7 @@
 import { firebaseAdminDb } from "../../firebase-admin.server";
 import { findCrmDuplicates } from "../../admin/crm/crm-data.server";
 import { isTrustedSameOriginRequest } from "../../request-security";
+import { evaluateQuoteChallenge } from "./quote-challenge-policy";
 import {
   checkQuoteRateLimit,
   clientAddress,
@@ -46,6 +47,7 @@ type QuotePayload = {
   companyName?: unknown;
   phone?: unknown;
   website?: unknown;
+  challengeToken?: unknown;
 };
 
 type CleanQuote = {
@@ -156,13 +158,36 @@ export async function POST(request: Request) {
   const quote = validated.data;
   const reference = createReference();
   const createdAt = new Date().toISOString();
+  const remoteAddress = clientAddress(request);
+
+  // Attestation first: a scripted client is refused before it can spend a shared
+  // address budget that a legitimate customer behind the same NAT also needs.
+  // Unconfigured challenges return immediately, so this costs nothing until the
+  // keys exist.
+  const challenge = await evaluateQuoteChallenge({
+    token: text(payload.challengeToken),
+    remoteAddress,
+  });
+  if (challenge.reason === "transport_error") {
+    console.warn("Quote challenge verification was degraded for this submission");
+  }
+  if (!challenge.ok) {
+    console.warn("Quote submission failed its challenge", { reference, reason: challenge.reason, detail: challenge.detail });
+    return json(
+      {
+        ok: false,
+        error: "KCPL could not verify this submission as a genuine enquiry. Please try again, or email us directly.",
+      },
+      403,
+    );
+  }
 
   // Abuse control before any Firestore or CRM work is done on KCPL's behalf.
   // A scripted client reaching this route otherwise costs a duplicate scan plus
   // a write per request.
   const limit = await checkQuoteRateLimit({
     subjects: [
-      { policy: quoteRateLimitPolicies.address, value: clientAddress(request) },
+      { policy: quoteRateLimitPolicies.address, value: remoteAddress },
       { policy: quoteRateLimitPolicies.contact, value: quote.contactEmail },
     ],
     store: firestoreQuoteRateLimitStore(),
