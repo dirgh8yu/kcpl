@@ -182,9 +182,11 @@ function money(amount: number, currency: string) {
 function Metric({ href, label, value, icon, tone }: { href: string; label: string; value: number; icon: ReactNode; tone: Tone }) {
   return (
     <Link href={href} className={styles.metric}>
-      <span className={`${styles.metricIcon} ${toneIconClass(tone)}`}>{icon}</span>
-      <span className={styles.metricCopy}><strong>{value}</strong><span>{label}</span></span>
-      <ChevronRight size={15} strokeWidth={1.8} className={styles.metricChevron} aria-hidden="true" />
+      <span className={styles.metricLabel}>
+        <span className={`${styles.metricDot} ${toneIconClass(tone)}`}>{icon}</span>
+        <span className={styles.metricLabelText}>{label}</span>
+      </span>
+      <strong className={styles.metricValue}>{value}</strong>
     </Link>
   );
 }
