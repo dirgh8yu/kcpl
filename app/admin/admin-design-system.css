@@ -418,15 +418,17 @@ button.ops-button {
 }
 .workspace-gate[data-embedded="true"] { min-height: calc(100vh - 114px); }
 .workspace-gate-panel {
-  width: min(100%, 640px);
-  border-top: 1px solid var(--admin-ink);
-  border-bottom: 1px solid var(--admin-line);
+  width: min(100%, 560px);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
   background: var(--admin-surface);
-  padding: 30px;
+  padding: 28px;
 }
-.workspace-gate-panel h1 { margin: 8px 0 0; font-size: clamp(26px, 4vw, 36px); font-weight: 800; line-height: 1.08; letter-spacing: -.035em; }
-.workspace-gate-detail { margin-top: 10px; color: var(--admin-muted); font-size: 13px; font-weight: 600; line-height: 1.65; }
-.workspace-gate-body { margin-top: 18px; border-top: 1px solid var(--admin-line); padding-top: 16px; color: var(--admin-muted); font-size: 12px; font-weight: 600; line-height: 1.6; }
+/* Matches the page-title scale used across the staff product. A gate is a
+ * message, not a magazine cover. */
+.workspace-gate-panel h1 { margin: 8px 0 0; font-size: 20px; font-weight: 620; line-height: 1.25; letter-spacing: -.018em; }
+.workspace-gate-detail { margin-top: 8px; color: var(--admin-muted); font-size: 13px; font-weight: 400; line-height: 1.6; }
+.workspace-gate-body { margin-top: 18px; border-top: 1px solid var(--admin-line); padding-top: 16px; color: var(--admin-muted); font-size: 12px; font-weight: 400; line-height: 1.6; }
 .workspace-gate-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
 
 .shipments-toolbar .ops-search { flex: 1 1 300px; max-width: 380px; }

@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { getStaffContext, type KcplStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail } from "../staff-permissions";
@@ -181,6 +180,16 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
   );
 }
 
+// Uses the shared gate rather than a bespoke one: the five kcpl-overview-gate*
+// classes this used to render had no CSS anywhere in the repo, so every Overview
+// gate state -- data unavailable, load error, restricted role, signed out --
+// rendered as unstyled text.
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`kcpl-overview-gate font-[var(--font-inter)] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}><section className="kcpl-overview-gate-card"><span className="kcpl-overview-gate-mark"><ShieldCheck size={16} strokeWidth={1.75} aria-hidden="true"/></span><p className="kcpl-overview-gate-kicker">KCPL Operations</p><h1>{title}</h1><p>{detail}</p><div className="kcpl-overview-gate-actions"><Link href="/admin/enquiries">Open Enquiries</Link><Link href="/">KCPL website</Link></div></section></main>;
+  return <V4WorkspaceGate
+    eyebrow="KCPL Operations"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[{ href: "/admin/enquiries", label: "Open Enquiries", primary: true }, { href: "/", label: "KCPL website" }]}
+  />;
 }
