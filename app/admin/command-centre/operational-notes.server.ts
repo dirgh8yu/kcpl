@@ -1,7 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
-import { mockOperationalNote, overviewMockEnabled } from "./overview-mock";
+import { mockOperationalNote, qaMockDataEnabled } from "../qa-fixtures";
 
 export type OperationalNote = {
   id: string;
@@ -42,7 +42,7 @@ function visible(note: OperationalNote, context: KcplStaffContext) {
 }
 
 export async function getLatestOperationalNote(context: KcplStaffContext): Promise<OperationalNote | null> {
-  if (overviewMockEnabled()) return mockOperationalNote(context.branches[0] ?? null);
+  if (qaMockDataEnabled()) return mockOperationalNote(context.branches[0] ?? null);
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("operational_notes").orderBy("created_at", "desc").limit(100).get();
   for (const doc of snapshot.docs) {

@@ -16,6 +16,7 @@ import {
   externalObservationIsNewer,
   type ExternalDerivedExceptionPlan,
 } from "./external-workflow-state";
+import { mockVisibilityWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import {
   confidenceValue,
   etaDeltaHours,
@@ -199,6 +200,7 @@ function visibilityFromData(id: string, data: Record<string, unknown>, customerN
 }
 
 export async function listTrackingVisibility(context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockVisibilityWorkspace(context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const snapshot = await db.collection("shipments").limit(2000).get();

@@ -9,7 +9,7 @@ import { listFreightDocumentWorkspace } from "../freight-documents/freight-docum
 import { listTrackingVisibility } from "../visibility/tracking-visibility.server";
 import { listDeliveryWorkspace } from "../delivery/delivery-control.server";
 import { listFreightAuditQueue } from "../freight-audit/freight-audit.server";
-import { mockWorkflowOverview, overviewMockEnabled } from "./overview-mock";
+import { mockWorkflowOverview, qaMockDataEnabled } from "../qa-fixtures";
 
 export type OverviewMovement = {
   reference: string;
@@ -115,7 +115,7 @@ async function loadRecentActivity(visibleReferences: Set<string>, staff: KcplSta
 }
 
 export async function loadWorkflowOverview(staff: KcplStaffContext): Promise<WorkflowOverview> {
-  if (overviewMockEnabled()) return mockWorkflowOverview();
+  if (qaMockDataEnabled()) return mockWorkflowOverview();
   const [ordersResult, tendersResult, pickupResult, documentResult, visibilityResult, deliveryResult, auditResult, alertsResult] = await Promise.allSettled([
     staff.permissions.canViewCommercial ? listTmsOrders(staff) : Promise.resolve(null),
     staff.permissions.canViewCommercial ? listTmsTenders(staff) : Promise.resolve(null),

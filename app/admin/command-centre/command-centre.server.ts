@@ -10,7 +10,7 @@ import {
 } from "../staff-directory.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { CommandCentreBranchLoad, CommandCentreData, CommandCentreJob, CommandCentreStaffLoad } from "./command-centre-data";
-import { mockCommandCentre, overviewMockEnabled } from "./overview-mock";
+import { mockCommandCentre, qaMockDataEnabled } from "../qa-fixtures";
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -77,7 +77,7 @@ async function loadDocumentsByIds(collectionName: string, ids: Iterable<string>)
 }
 
 export async function loadCommandCentre(context: KcplStaffContext, options: { includeDelivered?: boolean } = {}): Promise<CommandCentreData | null> {
-  if (overviewMockEnabled()) return mockCommandCentre(context);
+  if (qaMockDataEnabled()) return mockCommandCentre(context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const [shipmentsSnapshot, tasksSnapshot, customsSnapshot, staffProfiles] = await Promise.all([

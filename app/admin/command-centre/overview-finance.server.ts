@@ -1,7 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
-import { mockFinanceSnapshot, overviewMockEnabled } from "./overview-mock";
+import { mockFinanceSnapshot, qaMockDataEnabled } from "../qa-fixtures";
 
 export type OverviewFinanceTrendPoint = {
   date: string;
@@ -99,7 +99,7 @@ function addDaily(bucket: Bucket, date: string, kind: "revenue" | "cost", amount
 }
 
 export async function getOverviewFinanceSnapshot(staff: KcplStaffContext): Promise<OverviewFinanceSnapshot | null> {
-  if (overviewMockEnabled()) return staff.permissions.canManageFinance ? mockFinanceSnapshot() : null;
+  if (qaMockDataEnabled()) return staff.permissions.canManageFinance ? mockFinanceSnapshot() : null;
   if (!firebaseRuntimeConfigured() || !staff.permissions.canManageFinance) return null;
   const db = firebaseAdminDb();
   const [invoices, costs, shipments] = await Promise.all([

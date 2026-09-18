@@ -1,5 +1,5 @@
 /*
- * Local render fixtures for the Overview.
+ * Local render fixtures for the staff product.
  *
  * WHY: the Overview only renders its real surface when Firebase is configured.
  * Without it every card falls back to "data unavailable", which makes the page
@@ -19,17 +19,17 @@
  * pixel-identical and diffable.
  */
 
-import type { KcplBranch } from "../crm/crm-data";
-import type { KcplStaffContext } from "../staff-directory.server";
-import { qaAuthBypassEnabled } from "../qa-auth-bypass.ts";
-import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
-import type { OperationalNote } from "./operational-notes.server";
-import type { OverviewFinanceSnapshot } from "./overview-finance.server";
-import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./workflow-overview.server";
+import type { KcplBranch } from "./crm/crm-data";
+import type { KcplStaffContext } from "./staff-directory.server";
+import { qaAuthBypassEnabled } from "./qa-auth-bypass.ts";
+import type { CommandCentreData, CommandCentreJob } from "./command-centre/command-centre-data";
+import type { OperationalNote } from "./command-centre/operational-notes.server";
+import type { OverviewFinanceSnapshot } from "./command-centre/overview-finance.server";
+import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./command-centre/workflow-overview.server";
 
 type RuntimeEnv = Record<string, string | undefined>;
 
-export function overviewMockEnabled(env: RuntimeEnv = process.env) {
+export function qaMockDataEnabled(env: RuntimeEnv = process.env) {
   if (env.KCPL_QA_MOCK_DATA !== "true") return false;
   return qaAuthBypassEnabled(env);
 }
@@ -314,4 +314,130 @@ export function mockOperationalNote(branch: KcplBranch | null, now = Date.now())
     created_by_name: "Sunita Shrestha",
     created_by_email: "sunita.shrestha@kcpl.com.np",
   };
+}
+
+/* ----------------------------------------------------------------------------
+ * Workspace fixtures.
+ *
+ * These derive from mockCommandCentre's jobs rather than inventing their own
+ * rows, so the pickup queue, the visibility board and the Overview all describe
+ * the same shipments. A QA environment where /admin/shipments and
+ * /admin/visibility disagree about KCPL-2609-0142 is worse than no fixture.
+ *
+ * Each returns the shape its real loader returns, and calls that module's own
+ * summarize function rather than hand-writing the counts -- so the aggregates
+ * are computed by production code and cannot drift from the rows.
+ * -------------------------------------------------------------------------- */
+
+import { summarizePickups, type PickupAppointmentStatus, type PickupQueueRow } from "./pickups/pickup-appointments.ts";
+import { summarizeVisibility, type TrackingMilestone, type VisibilityShipment } from "./visibility/tracking-visibility.ts";
+
+const PICKUP_STAGE: Record<CommandCentreJob["status"], PickupAppointmentStatus> = {
+  booking_confirmed: "unscheduled",
+  preparing: "requested",
+  in_transit: "picked_up",
+  customs_clearance: "picked_up",
+  out_for_delivery: "picked_up",
+  delivered: "picked_up",
+  exception: "missed",
+};
+
+const MILESTONE: Record<CommandCentreJob["status"], TrackingMilestone> = {
+  booking_confirmed: "booked",
+  preparing: "pickup_scheduled",
+  in_transit: "departed",
+  customs_clearance: "import_customs",
+  out_for_delivery: "out_for_delivery",
+  delivered: "delivered",
+  exception: "exception",
+};
+
+export function mockPickupWorkspace(staff: KcplStaffContext, now = Date.now()) {
+  const nowIso = iso(now, 0);
+  const rows: PickupQueueRow[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
+    // An unowned file has not been scheduled by anyone yet, which is the state
+    // the pickup desk exists to clear.
+    const status: PickupAppointmentStatus = job.assigned_to_email ? PICKUP_STAGE[job.status] : "unscheduled";
+    const scheduled = status !== "unscheduled";
+    const confirmed = status === "confirmed" || status === "driver_assigned" || status === "picked_up";
+    return {
+      id: `pickup-${index + 1}`,
+      shipment_reference: job.reference,
+      transport_order_id: `TO-${job.reference.slice(5)}`,
+      tender_id: null,
+      booking_reference: `BK-${job.reference.slice(5)}`,
+      branch: job.primary_branch,
+      customer_id: job.customer_id,
+      customer_name: job.customer_name,
+      partner_id: null,
+      partner_name: job.carrier,
+      origin: job.origin,
+      destination: job.destination,
+      status,
+      channel: index % 3 === 0 ? "carrier_api" : "manual",
+      requested_window_start: scheduled ? iso(now, -(index + 2) * HOUR) : null,
+      requested_window_end: scheduled ? iso(now, -(index + 1) * HOUR) : null,
+      confirmed_window_start: confirmed ? iso(now, -(index + 2) * HOUR) : null,
+      confirmed_window_end: confirmed ? iso(now, -(index + 1) * HOUR) : null,
+      pickup_location: job.current_location,
+      contact_name: job.assigned_to_name,
+      contact_phone: job.assigned_to_phone,
+      provider_reference: null,
+      driver_name: status === "driver_assigned" || status === "picked_up" ? "Ram Bahadur" : null,
+      driver_phone: status === "driver_assigned" || status === "picked_up" ? "+977 98 0000000" : null,
+      vehicle_reference: status === "picked_up" ? `BA-${2000 + index} KHA` : null,
+      attempt_count: status === "missed" ? 2 : 0,
+      picked_up_at: status === "picked_up" ? iso(now, -(index + 1) * HOUR) : null,
+      missed_at: status === "missed" ? iso(now, -3 * HOUR) : null,
+      missed_reason: status === "missed" ? "Carrier vehicle did not arrive" : null,
+      notes: null,
+      created_at: iso(now, -(index + 6) * HOUR),
+      updated_at: job.updated_at,
+      shipment_status: job.status,
+      current_location: job.current_location,
+    };
+  });
+  return { kind: "ready" as const, rows, summary: summarizePickups(rows, nowIso), generated_at: nowIso };
+}
+
+export function mockVisibilityWorkspace(staff: KcplStaffContext, now = Date.now()) {
+  const nowIso = iso(now, 0);
+  const rows: VisibilityShipment[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
+    // Every third active file has slipped against its original ETA, so the
+    // delayed and stale columns are exercised rather than always reading zero.
+    const slipped = job.status !== "delivered" && index % 3 === 1;
+    const lastEventHoursAgo = job.status === "exception" ? 26 : (index % 5) + 1;
+    return {
+      reference: job.reference,
+      quote_reference: job.quote_reference,
+      customer_id: job.customer_id,
+      customer_name: job.customer_name,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      primary_branch: job.primary_branch,
+      handling_branches: job.handling_branches,
+      status: job.status,
+      carrier: job.carrier,
+      carrier_reference: job.carrier ? `${job.carrier.slice(0, 3).toUpperCase()}-${job.reference.slice(-4)}` : null,
+      eta: job.eta,
+      original_eta: slipped && job.eta ? iso(Date.parse(job.eta), -14 * HOUR) : job.eta,
+      current_location: job.current_location,
+      last_milestone: MILESTONE[job.status],
+      last_event_at: iso(now, -lastEventHoursAgo * HOUR),
+      last_received_at: iso(now, -lastEventHoursAgo * HOUR),
+      last_source: index % 3 === 0 ? "carrier_api" : "manual",
+      last_provider: job.carrier,
+      observed_external_milestone: null,
+      observed_external_at: null,
+      observed_external_provider: null,
+      external_reconciliation_status: null,
+      external_promotion_blocker: null,
+      stale_after: iso(now, (12 - lastEventHoursAgo) * HOUR),
+      stale: lastEventHoursAgo > 12,
+      eta_delta_hours: slipped ? 14 : null,
+      updated_at: job.updated_at,
+    };
+  });
+  return { kind: "ready" as const, rows, summary: summarizeVisibility(rows, nowIso), generated_at: nowIso };
 }

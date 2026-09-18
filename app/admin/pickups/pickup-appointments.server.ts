@@ -2,6 +2,7 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { recordTrackingEvent } from "../visibility/tracking-visibility.server";
+import { mockPickupWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import {
   pickupAppointmentStatuses,
   pickupChannels,
@@ -132,6 +133,7 @@ async function sourceSnapshots(shipment: Record<string, unknown>) {
 }
 
 export async function listPickupWorkspace(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockPickupWorkspace(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const [shipmentsSnapshot, appointmentsSnapshot] = await Promise.all([

@@ -6,9 +6,11 @@ import { fileURLToPath } from "node:url";
 import {
   mockCommandCentre,
   mockFinanceSnapshot,
+  mockPickupWorkspace,
+  mockVisibilityWorkspace,
   mockWorkflowOverview,
-  overviewMockEnabled,
-} from "../app/admin/command-centre/overview-mock.ts";
+  qaMockDataEnabled,
+} from "../app/admin/qa-fixtures.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const source = (path) => readFileSync(`${root}/${path}`, "utf8");
@@ -24,12 +26,12 @@ const development = {
 // staff making operational decisions, so the negative cases are the point of
 // this suite -- exactly as they are for the QA auth bypass it depends on.
 test("mock data stays off unless its own flag is exactly \"true\"", () => {
-  assert.equal(overviewMockEnabled({}), false);
-  assert.equal(overviewMockEnabled({ NODE_ENV: "development" }), false);
-  assert.equal(overviewMockEnabled({ ...development, KCPL_QA_MOCK_DATA: undefined }), false);
+  assert.equal(qaMockDataEnabled({}), false);
+  assert.equal(qaMockDataEnabled({ NODE_ENV: "development" }), false);
+  assert.equal(qaMockDataEnabled({ ...development, KCPL_QA_MOCK_DATA: undefined }), false);
   for (const value of ["1", "yes", "TRUE", "True", " true", "true "]) {
     assert.equal(
-      overviewMockEnabled({ ...development, KCPL_QA_MOCK_DATA: value }),
+      qaMockDataEnabled({ ...development, KCPL_QA_MOCK_DATA: value }),
       false,
       `flag value ${JSON.stringify(value)} must not enable mock data`,
     );
@@ -37,12 +39,12 @@ test("mock data stays off unless its own flag is exactly \"true\"", () => {
 });
 
 test("mock data can never activate in a production runtime", () => {
-  assert.equal(overviewMockEnabled({ ...development, NODE_ENV: "production" }), false);
-  assert.equal(overviewMockEnabled({ ...development, NODE_ENV: "test" }), false);
-  assert.equal(overviewMockEnabled({ ...development, NODE_ENV: undefined }), false);
-  assert.equal(overviewMockEnabled({ ...development, VERCEL_ENV: "production" }), false);
+  assert.equal(qaMockDataEnabled({ ...development, NODE_ENV: "production" }), false);
+  assert.equal(qaMockDataEnabled({ ...development, NODE_ENV: "test" }), false);
+  assert.equal(qaMockDataEnabled({ ...development, NODE_ENV: undefined }), false);
+  assert.equal(qaMockDataEnabled({ ...development, VERCEL_ENV: "production" }), false);
   assert.equal(
-    overviewMockEnabled({ KCPL_QA_MOCK_DATA: "true", VERCEL_ENV: "production" }),
+    qaMockDataEnabled({ KCPL_QA_MOCK_DATA: "true", VERCEL_ENV: "production" }),
     false,
   );
 });
@@ -51,33 +53,35 @@ test("mock data can never activate in a production runtime", () => {
 // of QA-preview mode, so turning it on without the auth bypass does nothing.
 test("mock data requires the QA auth bypass as well as its own flag", () => {
   assert.equal(
-    overviewMockEnabled({ KCPL_QA_MOCK_DATA: "true", NODE_ENV: "development" }),
+    qaMockDataEnabled({ KCPL_QA_MOCK_DATA: "true", NODE_ENV: "development" }),
     false,
     "the mock flag alone must not be enough",
   );
-  assert.equal(overviewMockEnabled(development), true);
+  assert.equal(qaMockDataEnabled(development), true);
   assert.equal(
-    overviewMockEnabled({ ...development, NODE_ENV: undefined, VERCEL_ENV: "preview" }),
+    qaMockDataEnabled({ ...development, NODE_ENV: undefined, VERCEL_ENV: "preview" }),
     true,
   );
 });
 
-test("every Overview loader gates its fixture behind overviewMockEnabled", () => {
+test("every loader gates its fixture behind qaMockDataEnabled", () => {
   const loaders = [
     "app/admin/command-centre/command-centre.server.ts",
     "app/admin/command-centre/workflow-overview.server.ts",
     "app/admin/command-centre/overview-finance.server.ts",
     "app/admin/command-centre/operational-notes.server.ts",
+    "app/admin/pickups/pickup-appointments.server.ts",
+    "app/admin/visibility/tracking-visibility.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
-    assert.match(text, /overviewMockEnabled\(\)/, `${path}: fixture must be gated`);
+    assert.match(text, /qaMockDataEnabled\(\)/, `${path}: fixture must be gated`);
     for (const line of text.split("\n")) {
       if (!/\bmock[A-Z]/.test(line)) continue;
       if (line.trimStart().startsWith("import")) continue;
       assert.match(
         line,
-        /overviewMockEnabled\(\)/,
+        /qaMockDataEnabled\(\)/,
         `${path}: a fixture is reachable without the gate: ${line.trim()}`,
       );
     }
@@ -85,7 +89,7 @@ test("every Overview loader gates its fixture behind overviewMockEnabled", () =>
 });
 
 test("the fixtures are deterministic and carry no live randomness", () => {
-  const text = source("app/admin/command-centre/overview-mock.ts");
+  const text = source("app/admin/qa-fixtures.ts");
   // Matches a call, not a mention, so the file can document the rule it follows.
   assert.doesNotMatch(text, /Math\s*\.\s*random\s*\(/, "screenshots must be reproducible");
 
@@ -132,4 +136,51 @@ test("the fixtures cover the states the Overview exists to surface", () => {
     );
     assert.equal(currency.profit, currency.revenue - currency.cost);
   }
+});
+
+// A QA environment whose pages disagree about the same shipment is worse than no
+// fixture at all, so the workspaces must be derived from the same jobs.
+test("the workspace fixtures describe the same shipments as the Overview", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+  const references = mockCommandCentre(staff, now).jobs.map((job) => job.reference);
+
+  const pickups = mockPickupWorkspace(staff, now);
+  const visibility = mockVisibilityWorkspace(staff, now);
+  assert.equal(pickups.kind, "ready");
+  assert.equal(visibility.kind, "ready");
+  assert.deepEqual(pickups.rows.map((row) => row.shipment_reference), references);
+  assert.deepEqual(visibility.rows.map((row) => row.reference), references);
+});
+
+test("the workspace summaries are computed by the real summarize functions", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+
+  const pickups = mockPickupWorkspace(staff, now);
+  // Counted off the rows, not typed in beside them.
+  assert.equal(
+    pickups.summary.unscheduled,
+    pickups.rows.filter((row) => row.status === "unscheduled").length,
+  );
+  assert.ok(pickups.summary.unscheduled > 0, "an unscheduled pickup must appear");
+  assert.ok(pickups.rows.some((row) => row.status === "missed"), "a missed pickup must appear");
+
+  const visibility = mockVisibilityWorkspace(staff, now);
+  assert.ok(visibility.summary.active > 0, "active shipments must appear");
+  assert.ok(
+    visibility.rows.some((row) => row.eta_delta_hours !== null),
+    "a delayed shipment must appear so the delayed column is exercised",
+  );
+  assert.ok(
+    visibility.rows.some((row) => row.stale),
+    "a stale shipment must appear so the stale column is exercised",
+  );
+});
+
+test("the workspace fixtures are deterministic", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+  assert.deepEqual(mockPickupWorkspace(staff, now), mockPickupWorkspace(staff, now));
+  assert.deepEqual(mockVisibilityWorkspace(staff, now), mockVisibilityWorkspace(staff, now));
 });
