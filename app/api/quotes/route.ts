@@ -1,6 +1,12 @@
 import { firebaseAdminDb } from "../../firebase-admin.server";
 import { findCrmDuplicates } from "../../admin/crm/crm-data.server";
 import { isTrustedSameOriginRequest } from "../../request-security";
+import {
+  checkQuoteRateLimit,
+  clientAddress,
+  quoteRateLimitPolicies,
+} from "./quote-rate-limit-policy";
+import { firestoreQuoteRateLimitStore } from "./quote-rate-limit.server";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
 const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
@@ -61,10 +67,10 @@ type CleanQuote = {
   phone: string;
 };
 
-function json(body: unknown, status = 200) {
+function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return Response.json(body, {
     status,
-    headers: { "cache-control": "no-store" },
+    headers: { "cache-control": "no-store", ...headers },
   });
 }
 
@@ -150,6 +156,32 @@ export async function POST(request: Request) {
   const quote = validated.data;
   const reference = createReference();
   const createdAt = new Date().toISOString();
+
+  // Abuse control before any Firestore or CRM work is done on KCPL's behalf.
+  // A scripted client reaching this route otherwise costs a duplicate scan plus
+  // a write per request.
+  const limit = await checkQuoteRateLimit({
+    subjects: [
+      { policy: quoteRateLimitPolicies.address, value: clientAddress(request) },
+      { policy: quoteRateLimitPolicies.contact, value: quote.contactEmail },
+    ],
+    store: firestoreQuoteRateLimitStore(),
+  });
+  if (limit.degraded) {
+    console.warn("Quote rate limiting was degraded for this submission");
+  }
+  if (!limit.allowed) {
+    console.warn("Quote submission rate limited", { reference, policy: limit.blockedBy });
+    return json(
+      {
+        ok: false,
+        error: "Too many enquiries from this connection. Please try again shortly, or email KCPL directly.",
+      },
+      429,
+      { "retry-after": String(limit.retryAfterSeconds) },
+    );
+  }
+
   let crmMatches: Array<{ id: string; display_name: string; reason: string }> = [];
 
   try {
