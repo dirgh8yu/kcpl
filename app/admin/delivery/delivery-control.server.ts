@@ -1,3 +1,4 @@
+import { mockDeliveryWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminBucket, firebaseAdminDb, firebaseRuntimeConfigured, firebaseStorageBucketName } from "../../firebase-admin.server";
@@ -167,6 +168,7 @@ export async function getDeliveryControl(reference: string, context: KcplStaffCo
 }
 
 export async function listDeliveryWorkspace(context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockDeliveryWorkspace(context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const snapshot = await db.collection("shipments").limit(2000).get();

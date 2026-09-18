@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 import {
   mockCommandCentre,
+  mockDeliveryWorkspace,
   mockFinanceSnapshot,
+  mockFreightDocumentWorkspace,
   mockPickupWorkspace,
   mockVisibilityWorkspace,
   mockWorkflowOverview,
@@ -72,6 +74,8 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/command-centre/operational-notes.server.ts",
     "app/admin/pickups/pickup-appointments.server.ts",
     "app/admin/visibility/tracking-visibility.server.ts",
+    "app/admin/freight-documents/freight-documents.server.ts",
+    "app/admin/delivery/delivery-control.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
@@ -151,6 +155,11 @@ test("the workspace fixtures describe the same shipments as the Overview", () =>
   assert.equal(visibility.kind, "ready");
   assert.deepEqual(pickups.rows.map((row) => row.shipment_reference), references);
   assert.deepEqual(visibility.rows.map((row) => row.reference), references);
+
+  const documents = mockFreightDocumentWorkspace(staff, now);
+  const delivery = mockDeliveryWorkspace(staff, now);
+  assert.deepEqual(documents.rows.map((row) => row.reference), references);
+  assert.deepEqual(delivery.rows.map((row) => row.reference), references);
 });
 
 test("the workspace summaries are computed by the real summarize functions", () => {
@@ -183,4 +192,35 @@ test("the workspace fixtures are deterministic", () => {
   const staff = { can_access_all_branches: true, branches: [] };
   assert.deepEqual(mockPickupWorkspace(staff, now), mockPickupWorkspace(staff, now));
   assert.deepEqual(mockVisibilityWorkspace(staff, now), mockVisibilityWorkspace(staff, now));
+  assert.deepEqual(mockFreightDocumentWorkspace(staff, now), mockFreightDocumentWorkspace(staff, now));
+  assert.deepEqual(mockDeliveryWorkspace(staff, now), mockDeliveryWorkspace(staff, now));
+});
+
+test("the document and delivery fixtures exercise their queue states", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+
+  const documents = mockFreightDocumentWorkspace(staff, now);
+  // The queue exists to surface files missing their primary carriage document;
+  // a fixture where every file has one would always read zero.
+  assert.ok(documents.summary.missing_primary > 0, "a file missing its primary document must appear");
+  assert.ok(documents.summary.review_pending > 0, "a document awaiting review must appear");
+  assert.equal(
+    documents.summary.missing_primary,
+    documents.rows.filter((row) => row.missing_primary_carriage_document).length,
+  );
+  assert.equal(
+    documents.summary.generated_current,
+    documents.rows.reduce((sum, row) => sum + row.current_generated_count, 0),
+  );
+
+  const delivery = mockDeliveryWorkspace(staff, now);
+  const states = new Set(delivery.rows.map((row) => row.delivery_state));
+  for (const state of ["delivery_active", "delivery_failed", "pod_verified"]) {
+    assert.ok(states.has(state), `delivery fixture is missing the ${state} state`);
+  }
+  assert.ok(
+    delivery.rows.some((row) => row.pod_status === "received"),
+    "an outstanding POD must appear",
+  );
 });

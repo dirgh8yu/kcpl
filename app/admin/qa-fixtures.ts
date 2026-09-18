@@ -441,3 +441,132 @@ export function mockVisibilityWorkspace(staff: KcplStaffContext, now = Date.now(
   });
   return { kind: "ready" as const, rows, summary: summarizeVisibility(rows, nowIso), generated_at: nowIso };
 }
+
+import {
+  primaryCarriageDocumentKind,
+  recommendedGeneratedDocumentKinds,
+  type FreightDocumentQueueRow,
+  type GeneratedFreightDocumentKind,
+  type GeneratedFreightDocumentRow,
+} from "./freight-documents/freight-documents.ts";
+import { summarizeDelivery, type DeliveryAttemptStatus, type DeliveryPodState, type DeliveryQueueRow } from "./delivery/delivery-control.ts";
+import type { ShipmentDocumentType } from "../shipment-document-types";
+
+const DOCUMENT_TYPE: Record<GeneratedFreightDocumentKind, ShipmentDocumentType> = {
+  house_bill_of_lading: "bill_of_lading",
+  house_air_waybill: "air_waybill",
+  road_consignment_note: "road_consignment_note",
+  shipping_instruction: "shipping_instruction",
+  cargo_manifest: "cargo_manifest",
+  pickup_order: "pickup_order",
+  delivery_order: "delivery_order",
+};
+
+export function mockFreightDocumentWorkspace(staff: KcplStaffContext, now = Date.now()) {
+  const rows: FreightDocumentQueueRow[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
+    const primary = primaryCarriageDocumentKind(job.mode);
+    // Every third file is missing its primary carriage document, which is the
+    // queue's whole reason to exist -- if all of them had one the screen would
+    // always read zero.
+    const hasPrimary = Boolean(primary) && index % 3 !== 0;
+    const kinds: GeneratedFreightDocumentKind[] = hasPrimary && primary ? [primary, "cargo_manifest"] : ["cargo_manifest"];
+    const generated: GeneratedFreightDocumentRow[] = kinds.map((kind, position) => ({
+      document_id: `doc-${index + 1}-${position + 1}`,
+      shipment_reference: job.reference,
+      kind,
+      label: kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+      filename: `${job.reference}-${kind}.pdf`,
+      document_type: DOCUMENT_TYPE[kind],
+      revision: 1,
+      review_status: index % 4 === 1 ? "under_review" : "approved",
+      customer_safe: kind !== "cargo_manifest",
+      sha256: `${index}`.padStart(64, "0"),
+      generated_at: iso(now, -(index + 2) * HOUR),
+      generated_by_name: job.assigned_to_name,
+      superseded: false,
+    }));
+    return {
+      reference: job.reference,
+      branch: job.primary_branch,
+      customer_id: job.customer_id,
+      customer_name: job.customer_name,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      booking_reference: `BK-${job.reference.slice(5)}`,
+      carrier_name: job.carrier,
+      transport_order_id: `TO-${job.reference.slice(5)}`,
+      pieces: 12 + index * 3,
+      weight_kg: 850 + index * 145,
+      volume_cbm: 4 + index,
+      container_count: job.mode === "ocean" ? 1 : 0,
+      equipment: job.mode === "ocean" ? "40HC" : null,
+      pickup_date: nepalDay(now, -2),
+      delivery_date: job.eta ? job.eta.slice(0, 10) : null,
+      cargo_description: `${job.customer_name} consignment`,
+      updated_at: job.updated_at,
+      recommended_kinds: recommendedGeneratedDocumentKinds(job.mode),
+      generated_documents: generated,
+      current_generated_count: generated.filter((doc) => !doc.superseded).length,
+      missing_primary_carriage_document: Boolean(primary && !generated.some((doc) => doc.kind === primary && !doc.superseded)),
+    };
+  });
+  // Mirrors the production derivation in freight-documents.server.ts rather than
+  // stating the counts, so the summary cannot disagree with the table.
+  const summary = {
+    eligible: rows.length,
+    missing_primary: rows.filter((row) => row.missing_primary_carriage_document).length,
+    generated_current: rows.reduce((sum, row) => sum + row.current_generated_count, 0),
+    review_pending: rows.reduce((sum, row) => sum + row.generated_documents.filter((doc) => !doc.superseded && ["received", "under_review"].includes(doc.review_status)).length, 0),
+  };
+  return { kind: "ready" as const, rows, summary, generated_at: iso(now, 0) };
+}
+
+const DELIVERY_STATE: Record<CommandCentreJob["status"], DeliveryPodState> = {
+  booking_confirmed: "not_started",
+  preparing: "not_started",
+  in_transit: "not_started",
+  customs_clearance: "not_started",
+  out_for_delivery: "delivery_active",
+  delivered: "delivered_pod_pending",
+  exception: "delivery_failed",
+};
+
+export function mockDeliveryWorkspace(staff: KcplStaffContext, now = Date.now()) {
+  const rows: DeliveryQueueRow[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
+    const state = DELIVERY_STATE[job.status];
+    // One delivered file per pair has a verified POD, so the queue shows both
+    // outstanding and cleared proof rather than a single state.
+    const verified = state === "delivered_pod_pending" && index % 2 === 0;
+    const attempted = state !== "not_started";
+    const lastAttempt: DeliveryAttemptStatus | null = state === "delivery_failed"
+      ? "failed"
+      : state === "delivery_active"
+        ? "out_for_delivery"
+        : state === "delivered_pod_pending"
+          ? "delivered"
+          : null;
+    return {
+      reference: job.reference,
+      quote_reference: job.quote_reference,
+      customer_id: job.customer_id,
+      customer_name: job.customer_name,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      primary_branch: job.primary_branch,
+      status: job.status,
+      delivery_state: verified ? "pod_verified" : state,
+      attempt_count: state === "delivery_failed" ? 2 : attempted ? 1 : 0,
+      last_attempt_status: lastAttempt,
+      last_attempt_at: attempted ? iso(now, -(index + 1) * HOUR) : null,
+      pod_status: verified ? "verified" : state === "delivered_pod_pending" ? "received" : "not_received",
+      pod_evidence_count: verified ? 2 : state === "delivered_pod_pending" ? 1 : 0,
+      recipient_name: verified || state === "delivered_pod_pending" ? "Warehouse supervisor" : null,
+      next_delivery_at: state === "delivery_failed" ? iso(now, 18 * HOUR) : job.eta,
+      current_location: job.current_location,
+      updated_at: job.updated_at,
+    };
+  });
+  return { kind: "ready" as const, rows, summary: summarizeDelivery(rows), generated_at: iso(now, 0) };
+}

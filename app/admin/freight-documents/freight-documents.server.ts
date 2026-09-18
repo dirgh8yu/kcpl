@@ -1,3 +1,4 @@
+import { mockFreightDocumentWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminBucket, firebaseAdminDb, firebaseRuntimeConfigured, firebaseStorageBucketName } from "../../firebase-admin.server";
@@ -108,6 +109,7 @@ function generatedRow(reference: string, doc: FirebaseFirestore.QueryDocumentSna
 }
 
 export async function listFreightDocumentWorkspace(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockFreightDocumentWorkspace(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const shipments = await db.collection("shipments").orderBy("updated_at", "desc").limit(1500).get();
