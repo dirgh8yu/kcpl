@@ -1,15 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { buildManagementAnalytics, resolveManagementRange } from "../../../../admin/management/management.server";
 import { getStaffContext } from "../../../../admin/staff-directory.server";
-
-function csvCell(value: unknown) {
-  const text = value === null || value === undefined ? "" : String(value);
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-}
-
-function row(values: unknown[]) {
-  return values.map(csvCell).join(",");
-}
+import { csvRow as row } from "../../../../admin/management/csv-export-policy";
 
 export async function GET(request: Request) {
   const access = await getAdminAccess();
