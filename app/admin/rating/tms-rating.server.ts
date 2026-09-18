@@ -1,3 +1,4 @@
+import { mockTmsOrders, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
@@ -154,6 +155,7 @@ function canAccessRateCard(staff: KcplStaffContext, card: PartnerBuyRateCard) { 
 function procurementLockedByConsolidation(order: TmsOrder) { return Boolean(order.procurement_locked_by_load && order.consolidation_load_id && !order.is_consolidation_master); }
 
 export async function listTmsOrders(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockTmsOrders(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("transport_orders").orderBy("updated_at", "desc").limit(500).get();
   const orders = snapshot.docs.map((doc) => orderFromData(doc.id, doc.data() as Record<string, unknown>)).filter((order): order is TmsOrder => Boolean(order));

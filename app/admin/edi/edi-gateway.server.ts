@@ -1,3 +1,4 @@
+import { mockEdiGateway, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -333,6 +334,7 @@ export async function acknowledgeOutboundEdi(transactionIdValue: string, externa
 }
 
 export async function listEdiGatewayDashboard(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockEdiGateway(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("edi_transactions").orderBy("created_at", "desc").limit(750).get();
   const rows = snapshot.docs

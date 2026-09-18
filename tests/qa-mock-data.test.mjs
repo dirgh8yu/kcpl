@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   mockAutomationAlerts,
   mockCommandCentre,
+  mockConsolidationLoads,
   mockCrmCustomers,
   mockCustomsDeskRows,
   mockDeliveryWorkspace,
@@ -14,9 +15,11 @@ import {
   mockFinanceSnapshot,
   mockFreightAuditQueue,
   mockFreightDocumentWorkspace,
+  mockManagementAnalytics,
   mockPartnerDashboard,
   mockPickupWorkspace,
   mockQuoteSummaries,
+  mockTmsOrders,
   mockVisibilityWorkspace,
   mockWorkflowOverview,
   qaMockDataEnabled,
@@ -93,6 +96,15 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/partners/partners.server.ts",
     "app/admin/finance/finance.server.ts",
     "app/admin/staff-directory.server.ts",
+    "app/admin/carrier-integrations/carrier-integrations.server.ts",
+    "app/admin/migration/migration-batches.server.ts",
+    "app/admin/payables/payables.server.ts",
+    "app/admin/pricing/tms-pricing.server.ts",
+    "app/admin/edi/edi-gateway.server.ts",
+    "app/admin/tenders/tms-tendering.server.ts",
+    "app/admin/rating/tms-rating.server.ts",
+    "app/admin/consolidation/tms-consolidation.server.ts",
+    "app/admin/management/management.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
@@ -329,4 +341,48 @@ test("the commercial and finance fixtures are tallied from their own rows", () =
   assert.ok(finance.overdue_count > 0, "an overdue receivable must appear");
   // Ageing buckets are what the screen is for; an all-zero ledger hides them.
   assert.ok(summary.aging_31_60 + summary.aging_61_90 + summary.aging_90_plus > 0, "an aged balance must appear");
+});
+
+test("management analytics roll up to the ledgers they came from", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const range = { key: "last_90_days", label: "Last 90 days", from: null, to: null };
+  const analytics = mockManagementAnalytics(range, now);
+
+  // Every roll-up is a reduction over analytics.jobs, so the branch, customer
+  // and route views must each add back up to the same total.
+  const total = analytics.jobs.reduce((sum, row) => sum + row.revenue, 0);
+  assert.equal(analytics.branches.reduce((sum, row) => sum + row.revenue, 0), total);
+  assert.equal(analytics.customers.reduce((sum, row) => sum + row.revenue, 0), total);
+  assert.equal(analytics.routes.reduce((sum, row) => sum + row.revenue, 0), total);
+  assert.equal(analytics.financials[0].revenue, total);
+
+  assert.ok(analytics.customers.length > 1, "customer performance must have rows");
+  assert.ok(analytics.staff_workload.length > 0, "staff workload must have rows");
+  assert.equal(analytics.quote_decided, analytics.quote_won + analytics.quote_lost);
+  assert.ok(analytics.exception_shipments > 0, "an exception must reach the management view");
+});
+
+test("the transport-order chain is one list, not four", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+  const references = new Set(mockCommandCentre(staff, now).jobs.map((job) => job.reference));
+
+  const orders = mockTmsOrders(staff, now);
+  assert.equal(orders.kind, "ready");
+  for (const order of orders.orders) {
+    assert.ok(references.has(order.id.replace("TO-", "KCPL-")), `order ${order.id} has no shipment`);
+  }
+
+  // Consolidation members must be real transport orders, or the load planner
+  // would be planning work that does not exist.
+  const orderIds = new Set(orders.orders.map((order) => order.id));
+  const loads = mockConsolidationLoads(staff, now);
+  assert.equal(loads.kind, "ready");
+  assert.ok(loads.loads.length > 0, "a consolidation load must appear");
+  for (const load of loads.loads) {
+    assert.ok(load.members.length > 0, `load ${load.reference} has no members`);
+    for (const member of load.members) {
+      assert.ok(orderIds.has(member.order_id), `load member ${member.order_id} is not a real order`);
+    }
+  }
 });

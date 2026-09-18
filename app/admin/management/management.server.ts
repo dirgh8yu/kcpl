@@ -1,3 +1,4 @@
+import { mockManagementAnalytics, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { managementRangeKeys, type BranchPerformance, type ConcentrationRisk, type CurrencyFinancialMetric, type CustomerPerformance, type JobPerformance, type ManagementAnalytics, type ManagementBranch, type ManagementRange, type ManagementRangeKey, type RoutePerformance, type StaffWorkload, type TrendPoint } from "./management-data";
@@ -122,6 +123,7 @@ function ensureMoney(map: Map<string, MutableMoney>, key: string) {
 }
 
 export async function buildManagementAnalytics(range: ManagementRange): Promise<ManagementAnalytics | null> {
+  if (qaMockDataEnabled()) return mockManagementAnalytics(range);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const [invoicesSnapshot, payablesSnapshot, shipmentsSnapshot, quotesSnapshot, customersSnapshot, costsSnapshot, tasksSnapshot, customsSnapshot] = await Promise.all([

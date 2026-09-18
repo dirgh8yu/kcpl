@@ -1,3 +1,4 @@
+import { mockTmsTenders, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
@@ -214,6 +215,7 @@ function counterPricingProjection(raw: unknown, version: CommercialVersion) {
 }
 
 export async function listTmsTenders(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockTmsTenders(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("transport_tenders").orderBy("updated_at", "desc").limit(1000).get();
   const now = new Date().toISOString();

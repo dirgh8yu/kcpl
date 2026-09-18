@@ -1,3 +1,4 @@
+import { mockConsolidationLoads, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
@@ -261,6 +262,7 @@ async function masterTenderIsAuthoritative(transaction: FirebaseFirestore.Transa
 }
 
 export async function listConsolidationLoads(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockConsolidationLoads(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("consolidation_loads").orderBy("updated_at", "desc").limit(500).get();
   const loads = snapshot.docs.map((doc) => loadFromData(doc.id, doc.data() as Record<string, unknown>)).filter((load): load is TmsConsolidationLoad => Boolean(load));

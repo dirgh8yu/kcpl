@@ -1208,3 +1208,709 @@ export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()):
     opening_balance_count: 0,
   };
 }
+
+import { carrierIntegrationDefinitions, type CarrierIntegrationProvider, type CarrierIntegrationState } from "./carrier-integrations/carrier-integrations.ts";
+import type { CarrierProviderDashboard, CarrierShipmentCandidate } from "./carrier-integrations/carrier-integrations.server.ts";
+import type { MigrationBatchDashboard, MigrationBatchSummary } from "./migration/migration-batches.ts";
+
+const PROVIDER_FOR_MODE: Record<string, CarrierIntegrationProvider | null> = {
+  ocean: "maersk_ocean",
+  air: "dhl_express",
+  road: null,
+  rail: null,
+};
+
+/* The provider cards come from carrierIntegrationDefinitions, so the
+ * capabilities and auth notes are the real ones -- only the health is
+ * synthesised, and one provider is left degraded so that state is visible. */
+export function mockCarrierIntegrations(staff: KcplStaffContext, now = Date.now()) {
+  const providers: CarrierProviderDashboard[] = carrierIntegrationDefinitions.map((definition, index) => {
+    const state: CarrierIntegrationState = index === 0 ? "healthy" : "degraded";
+    return {
+      id: definition.id,
+      label: definition.label,
+      carrier: definition.carrier,
+      modes: definition.modes,
+      auth: definition.auth,
+      capabilities: definition.capabilities,
+      active_capabilities: definition.activeCapabilities,
+      docs_note: definition.docsNote,
+      state,
+      configured: true,
+      configuration: { tracking: true, schedules: index === 0, webhook: index === 0, private_api: false },
+      last_action: state === "healthy" ? "tracking_poll" : "tracking_poll",
+      last_success_at: iso(now, -(index + 1) * HOUR),
+      last_failure_at: state === "degraded" ? iso(now, -30 * MINUTE) : null,
+      last_http_status: state === "degraded" ? 503 : 200,
+      last_message: state === "degraded" ? "Provider returned 503 on the last poll" : "OK",
+      last_latency_ms: state === "degraded" ? 8_400 : 420,
+    };
+  });
+
+  const rows: CarrierShipmentCandidate[] = mockCommandCentre(staff, now).jobs
+    .filter((job) => job.carrier)
+    .map((job, index) => {
+      const provider = PROVIDER_FOR_MODE[job.mode] ?? null;
+      return {
+        reference: job.reference,
+        provider,
+        carrier: job.carrier ?? "",
+        carrier_reference: provider ? `${job.carrier?.slice(0, 3).toUpperCase()}-${job.reference.slice(-4)}` : null,
+        booking_reference: `BK-${job.reference.slice(5)}`,
+        mode: job.mode,
+        status: job.status,
+        branch: job.primary_branch,
+        current_location: job.current_location,
+        last_tracking_at: provider ? iso(now, -(index + 1) * HOUR) : null,
+        last_tracking_provider: provider,
+        last_sync_at: provider ? iso(now, -(index + 1) * HOUR) : null,
+        sync_error: provider && index % 6 === 0 ? "Carrier rejected the reference on the last sync" : null,
+      };
+    });
+
+  return {
+    kind: "ready" as const,
+    providers,
+    rows,
+    // Tallied from the rows, mirroring the production derivation.
+    summary: {
+      configured: providers.filter((provider) => provider.configured).length,
+      degraded: providers.filter((provider) => provider.state === "degraded").length,
+      linked_shipments: rows.filter((row) => row.provider).length,
+      dhl_sync_ready: rows.filter((row) => row.provider === "dhl_express" && row.carrier_reference).length,
+      maersk_linked: rows.filter((row) => row.provider === "maersk_ocean").length,
+    },
+    generated_at: iso(now, 0),
+  };
+}
+
+/* Import history. One batch per outcome the screen distinguishes, so the
+ * completed / partial / interrupted counters are never all in one column. */
+export function mockMigrationBatches(now = Date.now()): MigrationBatchDashboard {
+  const seeds: { type: string; stage: string; status: MigrationBatchSummary["status"]; total: number; invalid: number; duplicate: number }[] = [
+    { type: "customers", stage: "Stage 1 · Customers", status: "completed", total: 148, invalid: 0, duplicate: 6 },
+    { type: "shipments", stage: "Stage 2 · Shipments", status: "completed", total: 312, invalid: 0, duplicate: 11 },
+    { type: "receivables", stage: "Stage 3 · Receivables", status: "partial_failure", total: 96, invalid: 7, duplicate: 3 },
+    { type: "payables", stage: "Stage 3 · Payables", status: "interrupted", total: 64, invalid: 2, duplicate: 1 },
+    { type: "customers", stage: "Stage 1 · Customers", status: "running", total: 40, invalid: 0, duplicate: 0 },
+  ];
+  const batches: MigrationBatchSummary[] = seeds.map((seed, index) => {
+    const ready = seed.total - seed.invalid - seed.duplicate;
+    const imported = seed.status === "completed" ? ready : seed.status === "partial_failure" ? ready - seed.invalid : seed.status === "interrupted" ? Math.floor(ready / 2) : 0;
+    return {
+      id: `batch-${index + 1}`,
+      stage_label: seed.stage,
+      type_label: seed.type.replace(/^./, (c) => c.toUpperCase()),
+      type: seed.type,
+      phase: seed.stage.split("·")[0].trim(),
+      status: seed.status,
+      stored_status: seed.status,
+      source_filename: `kcpl-${seed.type}-2026-09.csv`,
+      total_rows: seed.total,
+      ready_rows: ready,
+      duplicate_rows: seed.duplicate,
+      invalid_rows: seed.invalid,
+      imported_count: imported,
+      created_by_name: "Sunita Shrestha",
+      created_by_email: "sunita.shrestha@kcpl.com.np",
+      created_at: iso(now, -(index + 2) * DAY),
+      completed_at: seed.status === "running" ? null : iso(now, -(index + 2) * DAY + 40 * MINUTE),
+      error: seed.status === "partial_failure" ? `${seed.invalid} rows failed validation` : seed.status === "interrupted" ? "Import interrupted before completion" : null,
+      rollback_status: null,
+      rollback_recovery_id: null,
+      rollback_completed_at: null,
+      rollback_error: null,
+      rollback_reversed_record_keys: [],
+      created_records: [],
+      detail_metrics: [
+        { label: "Ready", value: ready },
+        { label: "Duplicates", value: seed.duplicate },
+        { label: "Invalid", value: seed.invalid },
+      ],
+    };
+  });
+  const count = (status: MigrationBatchSummary["status"]) => batches.filter((batch) => batch.status === status).length;
+  return {
+    generated_at: iso(now, 0),
+    batches,
+    total_batches: batches.length,
+    completed_batches: count("completed"),
+    partial_failure_batches: count("partial_failure"),
+    interrupted_batches: count("interrupted"),
+    imported_records: batches.reduce((sum, batch) => sum + batch.imported_count, 0),
+  };
+}
+
+import type { PartnerOption } from "./partners/partners-data.ts";
+import type {
+  PayableBill,
+  PayableCurrencySummary,
+  PayableStatus,
+  PayablesDashboard,
+} from "./payables/payables-data.ts";
+
+/* The active partners as selectable options, so the payables form offers the
+ * same suppliers the partner directory lists. */
+export function mockPartnerOptions(staff: KcplStaffContext, now = Date.now()): PartnerOption[] {
+  return mockPartnerDashboard(staff, now).partners
+    .filter((partner) => partner.status === "active")
+    .map((partner) => ({
+      id: partner.id,
+      name: partner.display_name,
+      currency: partner.preferred_currency,
+      payment_terms_days: partner.payment_terms_days,
+      owner_branch: partner.owner_branch,
+      types: partner.types,
+    }));
+}
+
+const PAYABLE_STATUS: PayableStatus[] = ["paid", "approved", "overdue", "partially_paid", "draft", "approved"];
+
+/* One supplier bill per carried shipment, mirroring the freight-audit queue so
+ * the two finance screens describe the same liabilities. */
+export function mockPayablesDashboard(staff: KcplStaffContext, now = Date.now()): PayablesDashboard {
+  const bills: PayableBill[] = mockCommandCentre(staff, now).jobs
+    .filter((job) => job.carrier)
+    .map((job, index) => {
+      const status = PAYABLE_STATUS[index % PAYABLE_STATUS.length];
+      const subtotal = 42_000 + index * 3_500;
+      const tax = 0;
+      const total = subtotal + tax;
+      const paid = status === "paid" ? total : status === "partially_paid" ? Math.round(total * 0.5) : 0;
+      const dueDays = status === "overdue" ? -(9 + (index % 50)) : 21 - (index % 12);
+      return {
+        reference: `AP-${job.reference.slice(5)}`,
+        record_type: "bill" as const,
+        supplier_id: null,
+        supplier_name: job.carrier ?? "Unknown carrier",
+        supplier_bill_reference: `INV-${job.reference.slice(-4)}`,
+        shipment_reference: job.reference,
+        customer_id: job.customer_id,
+        customer_name: job.customer_name,
+        branch: job.primary_branch,
+        category: "freight" as const,
+        status,
+        bill_date: nepalDay(now, -(index + 6)),
+        due_date: nepalDay(now, dueDays),
+        currency: "USD" as CrmCurrency,
+        description: `${job.mode} freight ${job.origin} to ${job.destination}`,
+        subtotal,
+        tax_rate: 0,
+        tax_total: tax,
+        total,
+        amount_paid: paid,
+        balance_due: total - paid,
+        notes: null,
+        migration_batch_id: null,
+        migration_as_of_date: null,
+        created_by_name: "Prakash Adhikari",
+        created_by_email: "prakash.adhikari@kcpl.com.np",
+        created_at: iso(now, -(index + 6) * DAY),
+        updated_at: job.updated_at,
+        payments: paid
+          ? [{
+              id: `appay-${index + 1}`,
+              payable_reference: `AP-${job.reference.slice(5)}`,
+              amount: paid,
+              currency: "USD" as CrmCurrency,
+              payment_date: nepalDay(now, -(index + 1)),
+              method: "bank_transfer" as const,
+              reference: `TXN-AP-${7000 + index}`,
+              notes: null,
+              recorded_by_name: "Prakash Adhikari",
+              recorded_by_email: "prakash.adhikari@kcpl.com.np",
+              created_at: iso(now, -(index + 1) * DAY),
+            }]
+          : [],
+      };
+    });
+
+  const ageDays = (bill: PayableBill) => Math.floor((now - Date.parse(`${bill.due_date}T00:00:00Z`)) / DAY);
+  const bucket = (from: number, to: number) => bills
+    .filter((bill) => bill.balance_due > 0 && ageDays(bill) >= from && ageDays(bill) <= to)
+    .reduce((sum, bill) => sum + bill.balance_due, 0);
+  const summary: PayableCurrencySummary = {
+    currency: "USD",
+    billed: bills.reduce((sum, bill) => sum + bill.total, 0),
+    opening_balance: 0,
+    paid: bills.reduce((sum, bill) => sum + bill.amount_paid, 0),
+    outstanding: bills.reduce((sum, bill) => sum + bill.balance_due, 0),
+    overdue: bills.filter((bill) => bill.status === "overdue").reduce((sum, bill) => sum + bill.balance_due, 0),
+    aging_0_30: bucket(0, 30),
+    aging_31_60: bucket(31, 60),
+    aging_61_90: bucket(61, 90),
+    aging_90_plus: bucket(91, Number.MAX_SAFE_INTEGER),
+    bill_count: bills.length,
+    opening_balance_count: 0,
+  };
+  const count = (status: PayableStatus) => bills.filter((bill) => bill.status === status).length;
+  return {
+    generated_at: iso(now, 0),
+    bills,
+    currency_summaries: [summary],
+    overdue_count: count("overdue"),
+    unpaid_count: bills.filter((bill) => bill.balance_due > 0).length,
+    paid_count: count("paid"),
+    draft_count: count("draft"),
+    opening_balance_count: 0,
+  };
+}
+
+import type {
+  CustomerPricingProfile,
+  PricingOrderCandidate,
+  PricingRule,
+} from "./pricing/tms-pricing.ts";
+import type { TmsMode } from "./rating/tms-rating.ts";
+
+const TMS_MODE: Record<string, TmsMode> = { ocean: "sea", air: "air", road: "road", rail: "rail" };
+
+/* Orders awaiting a sell price, the customers they belong to, and the markup
+ * rules that would apply. The pricing statuses rotate so the desk shows unpriced
+ * work and work already quoted, not one uniform column. */
+export function mockPricingWorkspace(staff: KcplStaffContext, now = Date.now()) {
+  const jobs = mockCommandCentre(staff, now).jobs.filter((job) => job.status !== "delivered");
+  const orders: PricingOrderCandidate[] = jobs.map((job, index) => ({
+    id: `TO-${job.reference.slice(5)}`,
+    branch: job.primary_branch,
+    customer_id: job.customer_id,
+    origin: job.origin,
+    destination: job.destination,
+    mode: TMS_MODE[job.mode] ?? "multimodal",
+    customer_name: job.customer_name,
+    buy_cost: 42_000 + index * 3_500,
+    buy_currency: "USD",
+    status: job.status,
+    pricing_status: (["unpriced", "priced", "approval_required", "quoted"] as const)[index % 4],
+    quoted_reference: index % 4 === 3 ? job.quote_reference : null,
+  }));
+
+  const customers: CustomerPricingProfile[] = [...new Set(jobs.map((job) => job.customer_name))].map((name, index) => {
+    const mine = jobs.find((job) => job.customer_name === name)!;
+    return {
+      id: mine.customer_id ?? `cust-${index + 1}`,
+      display_name: name,
+      preferred_currency: "NPR",
+      markup_percent: index % 3 === 0 ? 18 : null,
+      pricing_notes: index % 3 === 0 ? "Contracted markup, review each quarter" : null,
+      primary_branch: mine.primary_branch,
+    };
+  });
+
+  const rules: PricingRule[] = [
+    { id: "rule-1", name: "Global floor", active: true, priority: 100, scope: "global", branch: null, customer_id: null, origin: null, destination: null, mode: null, sell_currency: null, markup_percent: 15, target_margin_percent: 18, minimum_margin_percent: 8, accessorial_markup_percent: 10, fixed_markup: 0, approval_below_margin_percent: 10, notes: "Applies when nothing more specific matches", created_at: iso(now, -200 * DAY), updated_at: iso(now, -40 * DAY) },
+    { id: "rule-2", name: "Ocean import via Kolkata", active: true, priority: 50, scope: "lane", branch: "Birgunj", customer_id: null, origin: "Kolkata", destination: "Kathmandu", mode: "sea", sell_currency: "USD", markup_percent: 12, target_margin_percent: 15, minimum_margin_percent: 7, accessorial_markup_percent: 8, fixed_markup: 150, approval_below_margin_percent: 9, notes: null, created_at: iso(now, -120 * DAY), updated_at: iso(now, -20 * DAY) },
+    { id: "rule-3", name: "Air express", active: true, priority: 40, scope: "branch", branch: "Kathmandu", customer_id: null, origin: null, destination: null, mode: "air", sell_currency: "USD", markup_percent: 22, target_margin_percent: 25, minimum_margin_percent: 12, accessorial_markup_percent: 12, fixed_markup: 0, approval_below_margin_percent: 14, notes: null, created_at: iso(now, -90 * DAY), updated_at: iso(now, -10 * DAY) },
+    { id: "rule-4", name: "Legacy road rule", active: false, priority: 10, scope: "global", branch: null, customer_id: null, origin: null, destination: null, mode: "road", sell_currency: null, markup_percent: 9, target_margin_percent: null, minimum_margin_percent: 5, accessorial_markup_percent: 5, fixed_markup: 0, approval_below_margin_percent: 6, notes: "Superseded by the global floor", created_at: iso(now, -300 * DAY), updated_at: iso(now, -150 * DAY) },
+  ];
+
+  return { kind: "ready" as const, orders, customers, rules };
+}
+
+import type { EdiLedgerRow } from "./edi/edi-gateway.server.ts";
+import type { EdiTransactionSet, EdiTransactionStatus } from "./edi/edi-x12.ts";
+
+/* An EDI ledger for the shipments that have a carrier: a 204 tender out, a 990
+ * response back, then 214 status messages. One is quarantined, because a
+ * gateway screen whose failure column is always empty hides the reason it
+ * exists. */
+export function mockEdiGateway(staff: KcplStaffContext, now = Date.now()) {
+  const rows: EdiLedgerRow[] = [];
+  mockCommandCentre(staff, now).jobs
+    .filter((job) => job.carrier)
+    .forEach((job, index) => {
+      const add = (direction: "inbound" | "outbound", set: EdiTransactionSet, status: EdiTransactionStatus, hoursAgo: number, message: string | null) => {
+        rows.push({
+          id: `edi-${rows.length + 1}`,
+          direction,
+          transaction_set: set,
+          status,
+          branch: job.primary_branch,
+          partner: job.carrier,
+          reference: `ISA-${5000 + rows.length}`,
+          tender_reference: `TND-${job.reference.slice(5)}`,
+          shipment_reference: job.reference,
+          transaction_control: `${1000 + rows.length}`,
+          interchange_control: `${900000 + rows.length}`,
+          message,
+          created_at: iso(now, -hoursAgo * HOUR),
+          processed_at: status === "processed" || status === "dispatched" ? iso(now, -(hoursAgo - 1) * HOUR) : null,
+        });
+      };
+      add("outbound", "204", index % 5 === 0 ? "queued" : "dispatched", index + 6, null);
+      if (index % 5 !== 0) add("inbound", "990", "processed", index + 4, "Tender accepted");
+      if (index % 7 === 0) {
+        add("inbound", "214", "quarantined", index + 2, "Segment L11 missing a qualifier");
+      } else {
+        add("inbound", "214", "processed", index + 2, "Status update applied");
+      }
+    });
+
+  // Tallied from the rows, mirroring the production derivation.
+  const summary = {
+    outbound204Queued: rows.filter((row) => row.transaction_set === "204" && row.status === "queued").length,
+    outbound204Dispatched: rows.filter((row) => row.transaction_set === "204" && row.status === "dispatched").length,
+    inbound990Processed: rows.filter((row) => row.transaction_set === "990" && row.status === "processed").length,
+    inbound214Processed: rows.filter((row) => row.transaction_set === "214" && row.status === "processed").length,
+    quarantined: rows.filter((row) => row.status === "quarantined" || row.status === "failed").length,
+  };
+  return { kind: "ready" as const, rows, summary, configured: true };
+}
+
+import type { TmsTender, TmsTenderChannel, TmsTenderStatus } from "./tenders/tms-tendering.ts";
+
+const TENDER_STATUS: TmsTenderStatus[] = ["booked", "sent", "accepted", "countered", "sent", "rejected"];
+
+/* One tender per carried shipment. The EDI gateway needs sent tenders on the
+ * manual or edi_204 channels to have anything to queue a 204 against, so those
+ * statuses and channels are deliberately present. */
+export function mockTmsTenders(staff: KcplStaffContext, now = Date.now()) {
+  const tenders: TmsTender[] = mockCommandCentre(staff, now).jobs
+    .filter((job) => job.carrier)
+    .map((job, index) => {
+      const status = TENDER_STATUS[index % TENDER_STATUS.length];
+      const channel: TmsTenderChannel = index % 3 === 0 ? "edi_204" : index % 3 === 1 ? "manual" : "email";
+      const offered = 42_000 + index * 3_500;
+      const countered = status === "countered" ? Math.round(offered * 1.08) : null;
+      const settled = status === "booked" || status === "accepted";
+      return {
+        id: `tender-${index + 1}`,
+        order_id: `TO-${job.reference.slice(5)}`,
+        tender_reference: `TND-${job.reference.slice(5)}`,
+        status,
+        channel,
+        partner_id: `partner-${index + 1}`,
+        partner_name: job.carrier ?? "Unknown carrier",
+        recipient_name: "Partner desk",
+        recipient_email: `ops@${job.carrier?.toLowerCase().replace(/[^a-z]+/g, "")}.com`,
+        rate_card_id: `rc-${index + 1}`,
+        mode: TMS_MODE[job.mode] ?? "multimodal",
+        service: job.mode === "air" ? "Express" : "Standard",
+        equipment: job.mode === "ocean" ? "40HC" : null,
+        currency: "USD",
+        offered_cost: offered,
+        counter_cost: countered,
+        counter_currency: countered ? "USD" : null,
+        final_cost: settled ? offered : null,
+        final_currency: settled ? "USD" : null,
+        origin: job.origin,
+        destination: job.destination,
+        pickup_date: nepalDay(now, -2),
+        response_due_at: iso(now, (index % 4) * HOUR + 2 * HOUR),
+        sent_at: iso(now, -(index + 5) * HOUR),
+        responded_at: status === "sent" ? null : iso(now, -(index + 2) * HOUR),
+        response_note: status === "rejected" ? "No equipment available on the requested date" : null,
+        booking_reference: status === "booked" ? `BK-${job.reference.slice(5)}` : null,
+        pickup_confirmation: status === "booked" ? `PU-${job.reference.slice(-4)}` : null,
+        booked_at: status === "booked" ? iso(now, -(index + 1) * HOUR) : null,
+        shipment_reference: job.reference,
+        created_by_name: job.assigned_to_name ?? "KCPL Operations",
+        created_by_email: job.assigned_to_email ?? "ops@kcpl.com.np",
+        updated_at: job.updated_at,
+      };
+    });
+  return { kind: "ready" as const, tenders };
+}
+
+import type { TmsOrder, TmsOrderStatus } from "./rating/tms-rating.ts";
+import type { TmsConsolidationLoad, TmsLoadMember } from "./consolidation/tms-consolidation.ts";
+
+const ORDER_STATUS: TmsOrderStatus[] = ["booked", "selected", "rated", "tendering", "draft", "booked"];
+
+/* The transport order behind each shipment. Rating, pricing, tendering and the
+ * load planner all read these, so they are one list rather than four. */
+export function mockTmsOrders(staff: KcplStaffContext, now = Date.now()) {
+  const orders: TmsOrder[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
+    const status = ORDER_STATUS[index % ORDER_STATUS.length];
+    const selected = status === "booked" || status === "selected" || status === "tendering";
+    return {
+      id: `TO-${job.reference.slice(5)}`,
+      branch: job.primary_branch,
+      customer_id: job.customer_id,
+      customer_name: job.customer_name,
+      origin: job.origin,
+      destination: job.destination,
+      mode: TMS_MODE[job.mode] ?? "multimodal",
+      pickup_date: nepalDay(now, -2),
+      delivery_date: job.eta ? job.eta.slice(0, 10) : null,
+      weight_kg: 850 + index * 145,
+      volume_cbm: 4 + index,
+      pieces: 12 + index * 3,
+      container_count: job.mode === "ocean" ? 1 : 0,
+      equipment: job.mode === "ocean" ? "40HC" : null,
+      temperature_requirement: null,
+      carrier_requirement: job.carrier,
+      notes: null,
+      status,
+      selected_rate_card_id: selected ? `rc-${index + 1}` : null,
+      selected_partner_id: selected ? `partner-${index + 1}` : null,
+      selected_cost: selected ? 42_000 + index * 3_500 : null,
+      selected_currency: selected ? "USD" : null,
+      created_at: iso(now, -(index + 8) * DAY),
+      created_by_name: job.assigned_to_name ?? "KCPL Operations",
+      created_by_email: job.assigned_to_email ?? "ops@kcpl.com.np",
+      updated_at: job.updated_at,
+    };
+  });
+  return { kind: "ready" as const, orders };
+}
+
+/* Two consolidation loads built from the ocean and road orders, so the planner
+ * shows a load being procured and one already booked. */
+export function mockConsolidationLoads(staff: KcplStaffContext, now = Date.now()) {
+  const orders = mockTmsOrders(staff, now).orders;
+  const build = (
+    index: number,
+    mode: TmsMode,
+    status: TmsConsolidationLoad["status"],
+    pool: TmsOrder[],
+  ): TmsConsolidationLoad => {
+    const members: TmsLoadMember[] = pool.slice(0, 3).map((order) => ({
+      order_id: order.id,
+      customer_id: order.customer_id,
+      customer_name: order.customer_name,
+      origin: order.origin,
+      destination: order.destination,
+      mode: order.mode,
+      weight_kg: order.weight_kg,
+      volume_cbm: order.volume_cbm,
+      pieces: order.pieces,
+      container_count: order.container_count,
+      equipment: order.equipment,
+      temperature_requirement: null,
+      prior_selected_cost: order.selected_cost,
+      prior_selected_currency: order.selected_currency,
+      allocated_cost: status === "booked" ? order.selected_cost : null,
+      allocated_currency: status === "booked" ? order.selected_currency : null,
+      shipment_reference: order.id.replace("TO-", "KCPL-"),
+    }));
+    return {
+      id: `load-${index + 1}`,
+      reference: `LD-2609-${100 + index}`,
+      name: `${mode === "sea" ? "Kolkata ocean" : "Raxaul road"} consolidation ${index + 1}`,
+      branch: members[0]?.origin === "Kolkata" ? "Kolkata" : "Birgunj",
+      mode,
+      status,
+      equipment: mode === "sea" ? "40HC" : "10T truck",
+      capacity_weight_kg: mode === "sea" ? 26_000 : 10_000,
+      capacity_volume_cbm: mode === "sea" ? 67 : 38,
+      capacity_pieces: 200,
+      capacity_containers: mode === "sea" ? 1 : null,
+      members,
+      stops: [
+        { id: `stop-${index}-1`, sequence: 1, kind: "pickup", location: members[0]?.origin ?? "Kolkata", order_ids: members.map((member) => member.order_id), planned_at: iso(now, -2 * DAY), instructions: null },
+        { id: `stop-${index}-2`, sequence: 2, kind: "customs", location: "Birgunj ICD", order_ids: members.map((member) => member.order_id), planned_at: iso(now, -1 * DAY), instructions: null },
+        { id: `stop-${index}-3`, sequence: 3, kind: "delivery", location: "Kathmandu", order_ids: members.map((member) => member.order_id), planned_at: iso(now, 1 * DAY), instructions: null },
+      ],
+      master_order_id: status === "booked" ? `TO-MASTER-${index + 1}` : null,
+      master_tender_id: status === "booked" ? `tender-master-${index + 1}` : null,
+      master_booking_reference: status === "booked" ? `BK-LD-${100 + index}` : null,
+      procurement_partner_id: status === "booked" ? "partner-1" : null,
+      procurement_partner_name: status === "booked" ? "Maersk" : null,
+      procurement_cost: status === "booked" ? 96_000 : null,
+      procurement_currency: status === "booked" ? "USD" : null,
+      created_at: iso(now, -(index + 4) * DAY),
+      created_by_name: "Sunita Shrestha",
+      created_by_email: "sunita.shrestha@kcpl.com.np",
+      updated_at: iso(now, -(index + 1) * HOUR),
+    };
+  };
+  const ocean = orders.filter((order) => order.mode === "sea");
+  const road = orders.filter((order) => order.mode === "road");
+  const loads = [
+    build(0, "sea", "booked", ocean),
+    build(1, "road", "ready_for_procurement", road),
+  ].filter((load) => load.members.length > 0);
+  return { kind: "ready" as const, loads };
+}
+
+import type {
+  BranchPerformance,
+  ConcentrationRisk,
+  CurrencyFinancialMetric,
+  CustomerPerformance,
+  JobPerformance,
+  ManagementAnalytics,
+  ManagementRange,
+  RoutePerformance,
+  StaffWorkload,
+  TrendPoint,
+} from "./management/management-data.ts";
+
+const margin = (revenue: number, cost: number) => (revenue ? Number((((revenue - cost) / revenue) * 100).toFixed(2)) : null);
+
+/* Management analytics is the one screen that aggregates everything, so it is
+ * built from the same jobs and invoices the other screens show: revenue per job
+ * comes from mockFinanceDashboard, cost from the payables, and every roll-up --
+ * by branch, customer, route and currency -- is reduced from those rows rather
+ * than stated, so no figure here can contradict the ledger it came from. */
+export function mockManagementAnalytics(range: ManagementRange, now = Date.now()): ManagementAnalytics {
+  // A management report is an all-branches view by definition.
+  const staff = { can_access_all_branches: true, branches: [] } as unknown as KcplStaffContext;
+  const jobs = mockCommandCentre(staff, now).jobs;
+  const invoices = mockFinanceDashboard(staff, now).invoices;
+  const bills = mockPayablesDashboard(staff, now).bills;
+
+  const revenueFor = (reference: string) => invoices.filter((invoice) => invoice.shipment_reference === reference).reduce((sum, invoice) => sum + invoice.total, 0);
+  // Payables are in USD and receivables in NPR; the screen reports per currency,
+  // so the cost side is converted at one fixed rate rather than mixed silently.
+  const NPR_PER_USD = 133;
+  const costFor = (reference: string) => bills.filter((bill) => bill.shipment_reference === reference).reduce((sum, bill) => sum + bill.total * NPR_PER_USD, 0);
+
+  const jobRows: JobPerformance[] = jobs.map((job) => {
+    const revenue = revenueFor(job.reference);
+    const cost = costFor(job.reference);
+    return {
+      shipment_reference: job.reference,
+      customer_id: job.customer_id,
+      customer_name: job.customer_name,
+      branch: job.primary_branch,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      status: job.status,
+      currency: "NPR",
+      revenue,
+      cost,
+      profit: revenue - cost,
+      margin_percent: margin(revenue, cost),
+      period_revenue: revenue,
+      period_cost: cost,
+      period_profit: revenue - cost,
+      period_margin_percent: margin(revenue, cost),
+    };
+  });
+
+  const roll = <T,>(keyOf: (row: JobPerformance) => string, make: (key: string, rows: JobPerformance[]) => T): T[] => {
+    const groups = new Map<string, JobPerformance[]>();
+    for (const row of jobRows) {
+      const key = keyOf(row);
+      groups.set(key, [...(groups.get(key) ?? []), row]);
+    }
+    return [...groups.entries()].map(([key, rows]) => make(key, rows));
+  };
+  const sum = (rows: JobPerformance[], field: "revenue" | "cost") => rows.reduce((total, row) => total + row[field], 0);
+
+  const branches: BranchPerformance[] = roll((row) => row.branch, (key, rows) => {
+    const revenue = sum(rows, "revenue");
+    const cost = sum(rows, "cost");
+    return {
+      branch: key as BranchPerformance["branch"],
+      currency: "NPR" as CrmCurrency,
+      revenue,
+      cost,
+      profit: revenue - cost,
+      margin_percent: margin(revenue, cost),
+      active_jobs: rows.filter((row) => row.status !== "delivered").length,
+      invoice_count: rows.length,
+    };
+  });
+
+  const customers: CustomerPerformance[] = roll((row) => row.customer_name, (key, rows) => {
+    const revenue = sum(rows, "revenue");
+    const cost = sum(rows, "cost");
+    return {
+      customer_id: rows[0].customer_id ?? key,
+      customer_name: key,
+      currency: "NPR" as CrmCurrency,
+      revenue,
+      cost,
+      profit: revenue - cost,
+      margin_percent: margin(revenue, cost),
+      invoice_count: rows.length,
+      shipment_count: rows.length,
+    };
+  }).sort((a, b) => b.revenue - a.revenue);
+
+  const routes: RoutePerformance[] = roll((row) => `${row.origin}|${row.destination}|${row.mode}`, (key, rows) => {
+    const [origin, destination, mode] = key.split("|");
+    const revenue = sum(rows, "revenue");
+    const cost = sum(rows, "cost");
+    return { origin, destination, mode, currency: "NPR" as CrmCurrency, revenue, cost, profit: revenue - cost, margin_percent: margin(revenue, cost), jobs: rows.length };
+  }).sort((a, b) => b.revenue - a.revenue);
+
+  const totalRevenue = sum(jobRows, "revenue");
+  const totalCost = sum(jobRows, "cost");
+  const financials: CurrencyFinancialMetric[] = [{
+    currency: "NPR",
+    revenue: totalRevenue,
+    cost: totalCost,
+    profit: totalRevenue - totalCost,
+    margin_percent: margin(totalRevenue, totalCost),
+    receivables: invoices.reduce((total, invoice) => total + invoice.balance_due, 0),
+    overdue_receivables: invoices.filter((invoice) => invoice.status === "overdue").reduce((total, invoice) => total + invoice.balance_due, 0),
+    payables: Math.round(bills.reduce((total, bill) => total + bill.balance_due, 0) * NPR_PER_USD),
+    overdue_payables: Math.round(bills.filter((bill) => bill.status === "overdue").reduce((total, bill) => total + bill.balance_due, 0) * NPR_PER_USD),
+    invoice_count: invoices.length,
+    cost_item_count: bills.length,
+  }];
+
+  const trends: TrendPoint[] = [5, 4, 3, 2, 1, 0].map((back) => {
+    const share = [0.72, 0.81, 0.88, 0.94, 0.97, 1][5 - back];
+    const revenue = Math.round(totalRevenue * share);
+    const cost = Math.round(totalCost * share);
+    return { month: nepalDay(now, -back * 30).slice(0, 7), currency: "NPR" as CrmCurrency, revenue, cost, profit: revenue - cost };
+  });
+
+  const topFive = customers.slice(0, 5).reduce((total, row) => total + row.revenue, 0);
+  const concentration: ConcentrationRisk[] = [{
+    currency: "NPR",
+    total_revenue: totalRevenue,
+    top_customer_name: customers[0]?.customer_name ?? null,
+    top_customer_share_percent: totalRevenue ? Number(((customers[0]?.revenue ?? 0) / totalRevenue * 100).toFixed(2)) : 0,
+    top_five_share_percent: totalRevenue ? Number((topFive / totalRevenue * 100).toFixed(2)) : 0,
+  }];
+
+  const staffWorkload: StaffWorkload[] = STAFF_SEEDS.map((person) => {
+    const mine = jobs.filter((job) => job.assigned_to_email === person.email && job.status !== "delivered");
+    return {
+      staff_name: person.name,
+      staff_email: person.email,
+      active_jobs: mine.length,
+      urgent_jobs: mine.filter((job) => job.priority === "urgent").length,
+      open_tasks: mine.reduce((total, job) => total + job.open_tasks, 0),
+      overdue_tasks: mine.reduce((total, job) => total + job.overdue_tasks, 0),
+    };
+  }).filter((row) => row.active_jobs > 0);
+
+  const quotes = mockQuoteSummaries(staff, now);
+  const won = quotes.filter((quote) => quote.status === "won").length;
+  const lost = quotes.filter((quote) => quote.status === "lost").length;
+  const decided = won + lost;
+  const active = jobs.filter((job) => job.status !== "delivered");
+
+  return {
+    generated_at: iso(now, 0),
+    range,
+    financials,
+    branches,
+    customers,
+    jobs: jobRows,
+    loss_making_jobs: jobRows.filter((row) => row.profit < 0),
+    routes,
+    trends,
+    concentration,
+    staff_workload: staffWorkload,
+    data_quality: {
+      excluded_currency_records: 0,
+      excluded_currency_values: [],
+      unassigned_branch_financial_records: 0,
+      active_unassigned_branch_shipments: active.filter((job) => !job.assigned_to_email).length,
+      unlinked_invoice_records: 0,
+      orphaned_job_cost_records: 0,
+    },
+    quote_total: quotes.length,
+    quote_won: won,
+    quote_lost: lost,
+    quote_open: quotes.length - decided,
+    quote_decided: decided,
+    quote_conversion_percent: decided ? Number((won / decided * 100).toFixed(2)) : 0,
+    quote_decision_rate_percent: quotes.length ? Number((decided / quotes.length * 100).toFixed(2)) : 0,
+    active_shipments: active.length,
+    delivered_in_period: jobs.filter((job) => job.status === "delivered").length,
+    urgent_shipments: active.filter((job) => job.priority === "urgent").length,
+    exception_shipments: active.filter((job) => job.status === "exception").length,
+    customs_blocked_shipments: active.filter((job) => job.required_customs_open > 0).length,
+    unassigned_shipments: active.filter((job) => !job.assigned_to_email).length,
+  };
+}

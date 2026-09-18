@@ -1,4 +1,4 @@
-import { mockPartnerDashboard, qaMockDataEnabled } from "../qa-fixtures";
+import { mockPartnerDashboard, mockPartnerOptions, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue } from "../branch-access-policy";
@@ -328,6 +328,7 @@ export async function listPartnerDashboard(context: KcplStaffContext): Promise<P
 }
 
 export async function listPartnerOptions(context: KcplStaffContext): Promise<PartnerOption[] | null> {
+  if (qaMockDataEnabled()) return mockPartnerOptions(context);
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("partners").where("status", "==", "active").limit(2500).get();
   return snapshot.docs

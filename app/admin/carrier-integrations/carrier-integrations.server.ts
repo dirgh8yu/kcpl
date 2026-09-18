@@ -1,3 +1,4 @@
+import { mockCarrierIntegrations, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -182,6 +183,7 @@ function candidateFromSnapshot(snapshot: FirebaseFirestore.QueryDocumentSnapshot
 }
 
 export async function listCarrierIntegrationDashboard(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockCarrierIntegrations(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const [health, shipments] = await Promise.all([

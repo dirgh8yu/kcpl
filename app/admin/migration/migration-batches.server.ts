@@ -1,3 +1,4 @@
+import { mockMigrationBatches, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import type { MigrationBatchDashboard, MigrationBatchStatus, MigrationBatchSummary, MigrationCreatedRecord } from "./migration-batches";
 
@@ -101,6 +102,7 @@ function batchFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot, generat
 }
 
 export async function listMigrationBatches(): Promise<MigrationBatchDashboard | null> {
+  if (qaMockDataEnabled()) return mockMigrationBatches();
   if (!firebaseRuntimeConfigured()) return null;
   const generatedAt = new Date().toISOString();
   const snapshot = await firebaseAdminDb().collection("migration_batches").orderBy("created_at", "desc").limit(500).get();

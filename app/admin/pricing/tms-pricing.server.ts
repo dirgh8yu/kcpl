@@ -1,3 +1,4 @@
+import { mockPricingWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
@@ -191,6 +192,7 @@ export async function listPricingRules(staff: KcplStaffContext) {
 }
 
 export async function listPricingWorkspace(staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockPricingWorkspace(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const [orderSnapshot, rulesResult] = await Promise.all([
     firebaseAdminDb().collection("transport_orders").orderBy("updated_at", "desc").limit(750).get(),
