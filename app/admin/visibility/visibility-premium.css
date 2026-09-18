@@ -1,0 +1,989 @@
+/* Liveness: loaded by app/admin/visibility/page.tsx, never by app/layout.tsx.
+   `operations-system.css` must remain the final *root* stylesheet
+   (scripts/check-ui-contract.mjs enforces it), so a route-level design sheet
+   follows the shipments-premium.css / job-file-premium.css precedent instead
+   of appending to the shared sheet.
+
+   This is the Live Visibility redesign block from the `dirgh8yu-fix-ui-ux`
+   branch (PR #195), lifted verbatim out of operations-system.css. Precedence is
+   unchanged: the route loads this after the root sheets, exactly as the block
+   was the last thing in operations-system.css. */
+
+/* ============================================================
+   KCPL Live Visibility
+   Operational movement control tower
+   ============================================================ */
+
+.kcpl-admin-content .visibility-v2 {
+  min-height: calc(100dvh - var(--app-toolbar-height));
+  background: var(--admin-canvas);
+  color: var(--admin-ink);
+}
+
+.kcpl-admin-content .visibility-page {
+  padding: 20px 24px 28px;
+}
+
+/* HEADER */
+
+.kcpl-admin-content .visibility-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 16px;
+}
+
+.kcpl-admin-content .visibility-heading {
+  display: flex;
+  min-width: 0;
+  gap: 16px;
+}
+
+.kcpl-admin-content .visibility-heading-accent {
+  width: 3px;
+  min-height: 82px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--admin-crimson);
+}
+
+.kcpl-admin-content .visibility-breadcrumb {
+  margin: 0 0 8px;
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.kcpl-admin-content .visibility-breadcrumb span {
+  margin-inline: 6px;
+  color: var(--admin-line-strong);
+}
+
+.kcpl-admin-content .visibility-heading h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 650;
+  line-height: 32px;
+  letter-spacing: -.035em;
+}
+
+.kcpl-admin-content .visibility-description {
+  max-width: 760px;
+  margin: 3px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.kcpl-admin-content .visibility-header-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.kcpl-admin-content .visibility-last-updated {
+  display: grid;
+  margin-right: 6px;
+  gap: 1px;
+  text-align: right;
+}
+
+.kcpl-admin-content .visibility-last-updated span {
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-last-updated strong {
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* METRICS */
+
+.kcpl-admin-content .visibility-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kcpl-admin-content .visibility-metric {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  padding: 13px 14px;
+  color: inherit;
+  text-align: left;
+}
+
+button.visibility-metric {
+  cursor: pointer;
+}
+
+button.visibility-metric:hover {
+  border-color: var(--admin-line-strong);
+}
+
+.kcpl-admin-content
+.visibility-metric[data-active="true"] {
+  border-color: var(--admin-crimson);
+}
+
+.kcpl-admin-content .visibility-metric-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-crimson);
+}
+
+.kcpl-admin-content
+.visibility-metric[data-tone="success"]
+.visibility-metric-icon {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+}
+
+.kcpl-admin-content
+.visibility-metric[data-tone="warning"]
+.visibility-metric-icon {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+}
+
+.kcpl-admin-content
+.visibility-metric[data-tone="danger"]
+.visibility-metric-icon {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+}
+
+.kcpl-admin-content .visibility-metric > div {
+  display: grid;
+  min-width: 0;
+}
+
+.kcpl-admin-content .visibility-metric strong {
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kcpl-admin-content .visibility-metric > div span {
+  color: var(--admin-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-metric-arrow {
+  margin-left: auto;
+  color: var(--admin-muted);
+  font-size: 18px;
+}
+
+.kcpl-admin-content .visibility-notice {
+  margin-bottom: 14px;
+}
+
+/* CONTROL TOWER */
+
+.kcpl-admin-content .visibility-control-tower {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(290px, 360px);
+  align-items: start;
+  gap: 14px;
+}
+
+.kcpl-admin-content .visibility-main {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+
+.kcpl-admin-content .visibility-right-rail {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+
+.kcpl-admin-content .visibility-panel {
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: var(--admin-surface);
+}
+
+.kcpl-admin-content .visibility-panel-heading {
+  display: flex;
+  min-height: 60px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px 11px;
+}
+
+.kcpl-admin-content .visibility-panel-heading h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 20px;
+}
+
+.kcpl-admin-content .visibility-panel-heading p {
+  margin: 2px 0 0;
+  color: var(--admin-muted);
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.kcpl-admin-content .visibility-text-action {
+  flex: none;
+  color: var(--admin-ink);
+  font-size: 10px;
+  font-weight: 550;
+  text-decoration: none;
+}
+
+.kcpl-admin-content .visibility-text-action:hover {
+  color: var(--admin-crimson);
+}
+
+/* MOVEMENT */
+
+.kcpl-admin-content .visibility-movement-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(250px, 300px);
+  min-height: 310px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.kcpl-admin-content .visibility-route-board {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--admin-line);
+  background: var(--admin-surface-muted);
+  padding: 24px;
+}
+
+.kcpl-admin-content .visibility-route-board-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.kcpl-admin-content .visibility-route-track {
+  display: grid;
+  grid-template-columns:
+    minmax(90px, auto)
+    minmax(120px, 1fr)
+    minmax(90px, auto);
+  align-items: center;
+  margin-top: 70px;
+  gap: 14px;
+}
+
+.kcpl-admin-content
+.visibility-route-origin,
+.kcpl-admin-content
+.visibility-route-destination {
+  display: grid;
+  position: relative;
+  gap: 1px;
+}
+
+.kcpl-admin-content
+.visibility-route-destination {
+  text-align: right;
+}
+
+.kcpl-admin-content
+.visibility-route-origin i,
+.kcpl-admin-content
+.visibility-route-destination i {
+  position: absolute;
+  top: -19px;
+  width: 10px;
+  height: 10px;
+  border: 3px solid var(--admin-crimson);
+  border-radius: 50%;
+  background: var(--admin-surface);
+}
+
+.kcpl-admin-content
+.visibility-route-origin i {
+  left: 0;
+}
+
+.kcpl-admin-content
+.visibility-route-destination i {
+  right: 0;
+}
+
+.kcpl-admin-content
+.visibility-route-origin strong,
+.kcpl-admin-content
+.visibility-route-destination strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.kcpl-admin-content
+.visibility-route-origin small,
+.kcpl-admin-content
+.visibility-route-destination small {
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-route-line-graphic {
+  position: relative;
+  height: 2px;
+  background: var(--admin-line-strong);
+}
+
+.kcpl-admin-content .visibility-route-progress {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 58%;
+  background: var(--admin-crimson);
+}
+
+.kcpl-admin-content
+.visibility-route-progress[data-stale="true"] {
+  background: var(--admin-danger);
+}
+
+.kcpl-admin-content .visibility-route-vehicle {
+  position: absolute;
+  top: 50%;
+  left: 58%;
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border: 1px solid var(--admin-line);
+  border-radius: 50%;
+  background: var(--admin-surface);
+  color: var(--admin-crimson);
+  transform: translate(-50%, -50%);
+}
+
+.kcpl-admin-content .visibility-route-current {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  left: 24px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px 14px;
+  border-top: 1px solid var(--admin-line);
+  padding-top: 12px;
+}
+
+.kcpl-admin-content .visibility-route-current span {
+  grid-row: span 2;
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-route-current strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kcpl-admin-content .visibility-route-current small {
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-route-warning {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--admin-danger);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* FEATURED SHIPMENT */
+
+.kcpl-admin-content .visibility-featured-shipment {
+  padding: 16px;
+}
+
+.kcpl-admin-content .visibility-featured-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.kcpl-admin-content .visibility-featured-title p {
+  margin: 4px 0 0;
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.kcpl-admin-content .visibility-facts {
+  display: grid;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.kcpl-admin-content .visibility-fact {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 1px 10px;
+}
+
+.kcpl-admin-content .visibility-fact dt {
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-fact dd {
+  margin: 0;
+  color: var(--admin-ink);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.kcpl-admin-content
+.visibility-fact dd[data-danger="true"] {
+  color: var(--admin-danger);
+}
+
+.kcpl-admin-content .visibility-fact small {
+  grid-column: 2;
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+.kcpl-admin-content .visibility-featured-action {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  padding: 0 12px;
+  color: var(--admin-ink);
+  font-size: 11px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.kcpl-admin-content .visibility-featured-action:hover {
+  border-color: var(--admin-crimson);
+  color: var(--admin-crimson);
+}
+
+/* FILTER BAR */
+
+.kcpl-admin-content .visibility-register-header {
+  padding: 14px 16px 6px;
+}
+
+.kcpl-admin-content .visibility-register-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.kcpl-admin-content .visibility-register-header p {
+  margin: 2px 0 0;
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-filterbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px 10px;
+}
+
+.kcpl-admin-content .visibility-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.kcpl-admin-content .visibility-filterbar select {
+  min-height: 36px;
+  max-width: 150px;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  padding: 0 28px 0 10px;
+  color: var(--admin-ink);
+  font: inherit;
+  font-size: 11px;
+}
+
+/* TABLE */
+
+.kcpl-admin-content
+.visibility-register-v2
+.ops-table-wrap {
+  border: 0;
+  border-top: 1px solid var(--admin-line);
+}
+
+.kcpl-admin-content .visibility-table-v2 {
+  min-width: 980px;
+}
+
+.kcpl-admin-content .visibility-table-v2 th {
+  background: var(--admin-surface-muted);
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-table-v2 td {
+  height: 53px;
+  vertical-align: middle;
+  font-size: 11px;
+}
+
+.kcpl-admin-content .visibility-table-v2 tbody tr {
+  cursor: pointer;
+}
+
+.kcpl-admin-content .visibility-table-v2 tbody tr:hover {
+  background: var(--admin-surface-muted);
+}
+
+.kcpl-admin-content
+.visibility-table-v2
+tbody
+tr[data-selected="true"] {
+  background: rgb(220 20 60 / 3%);
+  box-shadow: inset 3px 0 0 var(--admin-crimson);
+}
+
+.kcpl-admin-content .visibility-reference {
+  color: var(--admin-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.kcpl-admin-content .visibility-reference:hover {
+  color: var(--admin-crimson);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.kcpl-admin-content .visibility-customer {
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.kcpl-admin-content .visibility-route,
+.kcpl-admin-content .visibility-mode {
+  color: var(--admin-ink);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-route span {
+  margin-inline: 5px;
+  color: var(--admin-muted);
+}
+
+.kcpl-admin-content .visibility-signal-cell {
+  display: grid;
+  gap: 1px;
+}
+
+.kcpl-admin-content .visibility-signal-cell strong {
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.kcpl-admin-content .visibility-signal-cell small {
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+.kcpl-admin-content .visibility-delay {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-delay.is-delayed {
+  color: var(--admin-danger);
+  font-weight: 600;
+}
+
+.kcpl-admin-content .visibility-status-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.kcpl-admin-content .visibility-next-event {
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-row-action {
+  width: 42px;
+}
+
+.kcpl-admin-content .visibility-row-action button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.kcpl-admin-content .visibility-row-action button:hover {
+  background: var(--admin-surface-muted);
+}
+
+/* PAGINATION */
+
+.kcpl-admin-content .visibility-pagination {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--admin-line);
+  padding: 9px 12px;
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kcpl-admin-content .visibility-page-number {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--admin-crimson);
+  color: white;
+  font-size: 11px;
+}
+
+/* PROVIDER HEALTH */
+
+.kcpl-admin-content .visibility-provider-list {
+  padding: 0 14px 8px;
+}
+
+.kcpl-admin-content .visibility-provider {
+  display: grid;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 9px;
+  border-top: 1px solid var(--admin-line);
+  padding: 11px 0;
+}
+
+.kcpl-admin-content
+.visibility-provider:first-child {
+  border-top: 0;
+}
+
+.kcpl-admin-content .visibility-provider-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--admin-surface-muted);
+  color: var(--admin-ink);
+}
+
+.kcpl-admin-content .visibility-provider > div {
+  display: grid;
+}
+
+.kcpl-admin-content .visibility-provider strong {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.kcpl-admin-content .visibility-provider small {
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+.kcpl-admin-content .visibility-provider-state {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--admin-success);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-provider-state i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--admin-success);
+}
+
+.kcpl-admin-content
+.visibility-provider-state.is-degraded {
+  color: var(--admin-danger);
+}
+
+.kcpl-admin-content
+.visibility-provider-state.is-degraded i {
+  background: var(--admin-danger);
+}
+
+.kcpl-admin-content .visibility-provider time {
+  grid-column: 3;
+  color: var(--admin-muted);
+  font-size: 8px;
+  text-align: right;
+}
+
+.kcpl-admin-content .visibility-provider-empty {
+  padding: 18px 2px;
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.kcpl-admin-content .visibility-feed-links {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--admin-line);
+  padding: 11px 14px;
+}
+
+.kcpl-admin-content .visibility-feed-links a {
+  color: var(--admin-muted);
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.kcpl-admin-content .visibility-feed-links a:hover {
+  color: var(--admin-crimson);
+}
+
+/* RECENT SIGNALS */
+
+.kcpl-admin-content .visibility-signal-list {
+  padding: 0 14px 10px;
+}
+
+.kcpl-admin-content .visibility-signal-list button {
+  display: grid;
+  width: 100%;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-top: 1px solid var(--admin-line);
+  background: transparent;
+  padding: 10px 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kcpl-admin-content
+.visibility-signal-list button:first-child {
+  border-top: 0;
+}
+
+.kcpl-admin-content
+.visibility-signal-list button:hover strong {
+  color: var(--admin-crimson);
+}
+
+.kcpl-admin-content .visibility-signal-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--admin-surface-muted);
+}
+
+.kcpl-admin-content
+.visibility-signal-icon[data-tone="success"] {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+}
+
+.kcpl-admin-content
+.visibility-signal-icon[data-tone="warning"] {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+}
+
+.kcpl-admin-content
+.visibility-signal-icon[data-tone="danger"] {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+}
+
+.kcpl-admin-content
+.visibility-signal-icon[data-tone="info"] {
+  background: rgb(220 20 60 / 7%);
+  color: var(--admin-crimson);
+}
+
+.kcpl-admin-content .visibility-signal-list div {
+  display: grid;
+  min-width: 0;
+}
+
+.kcpl-admin-content .visibility-signal-list strong {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-signal-list span {
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .visibility-signal-list time {
+  color: var(--admin-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1240px) {
+  .kcpl-admin-content .visibility-summary-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .kcpl-admin-content .visibility-control-tower {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-content .visibility-right-rail {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .kcpl-admin-content .visibility-movement-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-content .visibility-route-board {
+    min-height: 280px;
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-line);
+  }
+
+  .kcpl-admin-content .visibility-filterbar {
+    flex-wrap: wrap;
+  }
+
+  .kcpl-admin-content .visibility-search {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .kcpl-admin-content .visibility-page {
+    padding: 16px;
+  }
+
+  .kcpl-admin-content .visibility-page-header {
+    flex-direction: column;
+  }
+
+  .kcpl-admin-content .visibility-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .kcpl-admin-content .visibility-last-updated {
+    width: 100%;
+    margin: 0 0 4px;
+    text-align: left;
+  }
+
+  .kcpl-admin-content .visibility-summary-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .kcpl-admin-content .visibility-right-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .kcpl-admin-content .visibility-filterbar select {
+    flex: 1 1 calc(50% - 7px);
+    max-width: none;
+  }
+
+  .kcpl-admin-content .visibility-route-track {
+    grid-template-columns:
+      80px
+      1fr
+      80px;
+  }
+
+  .kcpl-admin-content .visibility-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
