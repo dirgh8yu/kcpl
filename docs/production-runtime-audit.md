@@ -36,9 +36,14 @@ Evidence for the decision:
   is green on every commit in the available history.
 - The Cloudflare Workers build has **failed on every commit**, including commits whose
   `KCPL CI / quality` check passed. It has never been green, so it has never been a signal.
-- The repository contains no `wrangler`, `open-next` or Cloudflare build configuration. The
-  secondary pipeline is configured outside Git, and its stale repo-side binding
-  (`.openai/hosting.json`, an OpenAI project id plus a D1 database) has been removed.
+- Vercel **also deploys this repository, including to a `Production` environment on every push
+  to `main`** (deployment records exist for `dd18274`, `5651e94`, `79c1584`, `8ab499d3` — all
+  `main` commits — alongside `Preview` deployments on PR heads). It is green, so unlike
+  Cloudflare it is *currently serving*. Two successful production deployers is the drift this
+  document exists to prevent, and it is not what "single canonical runtime" means in practice.
+- The repository contains no `wrangler`, `open-next`, `vercel.json` or Cloudflare/Vercel build
+  configuration. Both secondary pipelines are configured outside Git, and the stale repo-side
+  binding (`.openai/hosting.json`, an OpenAI project id plus a D1 database) has been removed.
 
 Consequences:
 
@@ -49,8 +54,18 @@ Consequences:
 - `KCPL_ALLOWED_ORIGINS` and the application security configuration must name the Firebase App
   Hosting origin, not a second host.
 
-Still outstanding, and only resolvable in the hosting dashboards: disconnect the Cloudflare
-Workers build from the repository so a permanently red check stops masking real ones.
+Still outstanding, and only resolvable in the hosting dashboards — this is the one item in this
+document that cannot be completed from the repository:
+
+1. **Vercel** — decide whether it is the canonical runtime or a demoted one. If Firebase App
+   Hosting stays canonical, disconnect the Vercel project's production branch (or demote it to
+   preview-only) so `main` is not deployed twice. Whichever wins, the other must be demoted
+   *before* `NEXT_PUBLIC_SITE_URL` and `KCPL_ALLOWED_ORIGINS` are pointed at an origin.
+2. **Cloudflare Workers** — disconnect the build so a permanently red check stops masking real
+   ones. It has never been green and carries no application signal.
+
+Until (1) is settled, "the canonical origin" is ambiguous, so setting `NEXT_PUBLIC_SITE_URL` to
+it would be a guess rather than a configuration step.
 
 ## Release controls in force
 
