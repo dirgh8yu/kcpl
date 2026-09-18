@@ -43,8 +43,9 @@ yarn-error.log*
 # local QA render reports (scripts/qa-render-inventory.mjs)
 /.qa/
 
-# agent skill tooling (local dev only, not part of the app)
+# agent skill tooling (local dev only, not part of the app).
+# skills-lock.json is tracked on purpose: it pins the skill versions the
+# plans/ audits were written against. See plans/README.md for the install.
 /.agents/
 /.claude/
 /agent/
-/skills-lock.json

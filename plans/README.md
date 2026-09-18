@@ -4,6 +4,26 @@ Status index for the `plans/` directory. Produced by the `improve-animations` /
 `find-animation-opportunities` skills (Emil Kowalski motion philosophy, see
 `.claude/skills/`). One row per plan; update the status column when a plan lands.
 
+## Installing the skills
+
+The skill bodies are local dev tooling, not app code, so `.agents/` and
+`.claude/` stay gitignored. Install them before doing motion work:
+
+```bash
+npx skills add emilkowalski/skill
+```
+
+That writes `.agents/skills/*` and symlinks `.claude/skills/*` at the paths this
+directory cites — notably
+[`.claude/skills/improve-animations/AUDIT.md`](../.claude/skills/improve-animations/AUDIT.md),
+the source of the standing rules below and of the `AUDIT.md §5` decisions closed
+in [public-motion-audit.md](public-motion-audit.md).
+
+`skills-lock.json` **is** tracked, and pins the exact revisions the audits in this
+directory were written against. If `npx skills add` resolves a newer skill, the
+lockfile hashes change — re-read the rules before assuming an old audit's
+reasoning still holds.
+
 | # | Plan | Area | Severity | Status |
 |---|---|---|---|---|
 | — | [admin-motion-audit.md](admin-motion-audit.md) | `app/admin/**` motion | MEDIUM | **DONE** — all 7 opportunities shipped at `c86557e` |
