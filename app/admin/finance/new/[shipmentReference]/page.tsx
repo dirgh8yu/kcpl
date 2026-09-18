@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getAdminAccess } from "../../../admin-auth";
 import { getStaffContext } from "../../../staff-directory.server";
+import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { resolveInvoiceCustomerFromShipment } from "../../finance-linking.server";
 import { ShipmentInvoiceForm } from "./shipment-invoice-form";
 
@@ -32,5 +32,5 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[var(--admin-surface-muted)] p-6 text-[var(--admin-ink)]"><section className="w-full max-w-xl rounded-[var(--app-radius)] border border-black/10 bg-white p-8 shadow-sm"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.2em] text-[#b78a3e]">KCPL Finance</p><h1 className="mt-3 text-3xl font-semibold">{title}</h1><p className="mt-3 text-sm leading-6 text-black/50">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/finance" className="rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 py-3 text-sm font-semibold text-white">Finance</Link><Link href="/admin" className="rounded-[var(--app-radius)] border border-black/10 px-4 py-3 text-sm font-semibold">Operations</Link></div></section></main>;
+  return <V4WorkspaceGate eyebrow="KCPL Finance" title={title} detail={detail} actions={[{ href: "/admin/finance", label: "Finance", primary: true }, { href: "/admin/command-centre", label: "Operations Home" }]}/>;
 }

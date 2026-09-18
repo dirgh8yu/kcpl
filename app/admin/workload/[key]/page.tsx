@@ -20,6 +20,7 @@ import { loadCommandCentre } from "../../command-centre/command-centre.server";
 import type { CommandCentreJob } from "../../command-centre/command-centre-data";
 import { kcplBranches, type KcplBranch } from "../../crm/crm-data";
 import { OperationsShell } from "../../operations-shell";
+import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import {
   OpsBadge,
   OpsEmptyState,
@@ -234,5 +235,5 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[var(--admin-surface-soft)] p-6 text-[var(--admin-ink)]"><section className="w-full max-w-xl rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-8 shadow-[0_12px_36px_rgba(54,43,34,.06)]"><span className="grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]"><UserRound size={17}/></span><p className="mt-5 text-[length:var(--app-label-size)] font-bold text-[var(--admin-faint)]">KCPL Staff workload</p><h1 className="mt-2 text-[28px] font-[730] leading-tight tracking-[-.04em] text-[var(--admin-ink)]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex flex-wrap gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="primary" data-size="md">Operations home</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="md">Shipments</Link></div></section></main>;
+  return <V4WorkspaceGate eyebrow="KCPL Staff workload" title={title} detail={detail}/>;
 }

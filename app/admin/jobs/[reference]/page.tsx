@@ -62,9 +62,11 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
       <div id="shipment-work" className="shipment-detail-anchor shipment-job-file-embedded">
         <JobFileWorkspace
           initialJob={result.job}
+          initialReadiness={workflow.readiness}
           returnTo={returnTo}
           role={staff.permissions.role}
           canManageBranches={staff.permissions.role === "management"}
+          canOverride={staff.permissions.role === "management"}
           currentUserName={access.user.displayName}
           currentUserEmail={access.user.email}
           nowIso={new Date().toISOString()}

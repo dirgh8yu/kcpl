@@ -13,8 +13,6 @@ import {
   type FinanceInvoice,
   type FinanceInvoiceLine,
   type FinanceInvoiceStatus,
-  type FinanceOverviewSummary,
-  type FinanceOverviewCurrencySummary,
   type FinancePayment,
   type FinancePaymentMethod,
   type FinanceReceivableRecordType,
@@ -322,37 +320,6 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
   };
 }
 
-export async function getFinanceOverviewSummary(context: KcplStaffContext): Promise<FinanceOverviewSummary | null> {
-  if (!firebaseRuntimeConfigured() || !canAccessFinance(context)) return null;
-  const snapshot = await firebaseAdminDb().collection("invoices").orderBy("updated_at", "desc").limit(3000).get();
-  const summaries = new Map<CrmCurrency, FinanceOverviewCurrencySummary>();
-
-  for (const doc of snapshot.docs) {
-    if (!canAccessInvoice(context, doc.get("branch"))) continue;
-    const invoice = await invoiceFromSnapshot(doc, false);
-    if (invoice.status === "draft" || invoice.status === "void" || invoice.record_type === "opening_balance") continue;
-    const summary = summaries.get(invoice.currency) ?? {
-      currency: invoice.currency,
-      invoiced: 0,
-      collected: 0,
-      outstanding: 0,
-      overdue: 0,
-      invoice_count: 0,
-    };
-    summary.invoiced += invoice.total;
-    summary.collected += invoice.amount_paid;
-    summary.outstanding += invoice.balance_due;
-    if (invoice.status === "overdue") summary.overdue += invoice.balance_due;
-    summary.invoice_count += 1;
-    summaries.set(invoice.currency, summary);
-  }
-
-  return {
-    generated_at: new Date().toISOString(),
-    currency_summaries: [...summaries.values()].sort((a, b) => b.outstanding - a.outstanding || a.currency.localeCompare(b.currency)),
-  };
-}
-
 export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, actor: Actor, context: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!canAccessFinance(context)) return { kind: "forbidden" as const };
@@ -451,43 +418,6 @@ export async function issueFinanceInvoice(reference: string, actor: Actor, conte
   await recomputeCustomerFinance(loaded.invoice.customer_id);
   await writeCustomerActivity(loaded.invoice.customer_id, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)} · due ${loaded.invoice.due_date}`, actor);
   await writeJobActivity(loaded.invoice.shipment_reference, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)}`, actor);
-  return { kind: "updated" as const };
-}
-
-export async function recordFinancePayment(reference: string, input: { amount: number; paymentDate: string; method: FinancePaymentMethod; reference: string; notes: string }, actor: Actor, context: KcplStaffContext) {
-  const loaded = await getFinanceInvoice(reference, context);
-  if (loaded.kind !== "ready") return loaded;
-  if (!["issued", "partially_paid", "overdue"].includes(loaded.invoice.status)) return { kind: "invalid_status" as const };
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0 || amount > loaded.invoice.balance_due + 0.00001) return { kind: "invalid_amount" as const };
-  const db = firebaseAdminDb();
-  const invoiceRef = db.collection("invoices").doc(loaded.invoice.reference);
-  const paymentId = childId("payment");
-  const now = new Date().toISOString();
-  const nextPaid = Math.round((loaded.invoice.amount_paid + amount) * 100) / 100;
-  const nextBalance = Math.max(0, Math.round((loaded.invoice.total - nextPaid) * 100) / 100);
-  const nextStatus: FinanceInvoiceStatus = nextBalance <= 0.00001
-    ? "paid"
-    : loaded.invoice.due_date < operationalDate() ? "overdue" : "partially_paid";
-  const paymentDate = safeDate(input.paymentDate, operationalDate());
-  const batch = db.batch();
-  batch.create(invoiceRef.collection("payments").doc(paymentId), {
-    invoice_reference: loaded.invoice.reference,
-    amount,
-    currency: loaded.invoice.currency,
-    payment_date: paymentDate,
-    method: input.method,
-    reference: input.reference.trim() || null,
-    notes: input.notes.trim() || null,
-    recorded_by_name: actor.name,
-    recorded_by_email: actor.email,
-    created_at: now,
-  });
-  batch.update(invoiceRef, { amount_paid: nextPaid, balance_due: nextBalance, status: nextStatus, updated_at: now });
-  await batch.commit();
-  await recomputeCustomerFinance(loaded.invoice.customer_id);
-  await writeCustomerActivity(loaded.invoice.customer_id, `Payment recorded: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${amount.toFixed(2)} received · ${loaded.invoice.currency} ${nextBalance.toFixed(2)} remaining`, actor);
-  await writeJobActivity(loaded.invoice.shipment_reference, `Payment recorded: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${amount.toFixed(2)} received`, actor);
   return { kind: "updated" as const };
 }
 

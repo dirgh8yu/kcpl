@@ -43,7 +43,12 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Workflow and policy tests
-        run: npm test 2>&1 | tee test-output.txt
+        shell: bash
+        # `tee` must not swallow the suite's exit code; the artifact is uploaded
+        # by the next step either way, but a red suite has to fail this job.
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.txt
 
       - name: Upload test output
         if: always()

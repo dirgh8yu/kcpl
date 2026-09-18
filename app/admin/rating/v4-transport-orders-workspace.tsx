@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 import type { KcplBranch } from "../crm/crm-data";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
@@ -62,6 +63,7 @@ function nextAction(order: TmsOrder) {
 }
 
 export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initialOrders: TmsOrder[]; branches: KcplBranch[] }) {
+  const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrderId, setSelectedOrderId] = useState(initialOrders[0]?.id ?? "");
   const [query, setQuery] = useState("");
@@ -206,7 +208,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
             <thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">ORDER</th><th className="w-[170px] px-3 font-medium">ROUTE</th><th className="w-[150px] px-3 font-medium">CUSTOMER</th><th className="w-[90px] px-3 font-medium">MODE</th><th className="w-[120px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">PICKUP</th><th className="w-[120px] px-3 text-right font-medium">PROCUREMENT</th></tr></thead>
             <tbody>{filtered.length ? filtered.map((order) => {
               const chosen = selected?.id === order.id;
-              return <tr key={order.id} onClick={() => setSelectedOrderId(order.id)} onDoubleClick={() => window.location.assign(`/admin/rating/${encodeURIComponent(order.id)}`)} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}>
+              return <tr key={order.id} tabIndex={0} aria-selected={chosen || undefined} onClick={() => setSelectedOrderId(order.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedOrderId(order.id); } }} onDoubleClick={() => router.push(`/admin/rating/${encodeURIComponent(order.id)}`)} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}>
                 <td className="relative px-3 text-[13px] font-semibold">{chosen ? <span className="absolute inset-y-0 left-0 w-0.5 bg-[var(--admin-crimson)]"/> : null}<span className="block truncate">{order.id}</span></td>
                 <td className="px-3 text-[13px] text-[var(--admin-muted)]"><span className="block truncate">{order.origin} → {order.destination}</span></td>
                 <td className="px-3 text-[13px] text-[var(--admin-muted)]"><span className="block truncate">{order.customer_name || "Not linked"}</span></td>
