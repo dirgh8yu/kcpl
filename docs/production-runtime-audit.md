@@ -85,6 +85,21 @@ still bounds abuse either way. The rate limiter fails open for the same reason �
 Firestore with the write it guards, so an unreachable store already means the enquiry cannot be
 saved, and refusing it would only break the sales funnel.
 
+## Management export data integrity
+
+`GET /api/admin/management/export` hands Management a CSV that is opened in Excel or Sheets,
+which makes every field inside it a potential spreadsheet formula. Quoting commas and quotes is
+not sufficient: a cell beginning with `=`, `+`, `-`, `@`, a tab or a carriage return is treated
+as a formula, so a customer name or an origin supplied by a user could execute on the machine
+of whoever opens the export.
+
+The cell policy in `app/admin/management/csv-export-policy.ts` neutralises a text cell with a
+leading apostrophe, which spreadsheet software reads as "this is text". Numeric columns stay
+numeric — a genuine number is emitted bare, so `-1234.5` in a revenue column still sums — while
+a *string* that merely looks numeric is treated as text, because a string reaching the export
+came from data KCPL does not control. Behaviour is pinned by
+`tests/csv-export-policy.test.mjs`.
+
 ## Verification sequence
 
 1. Deploy the candidate commit to the intended production host.
