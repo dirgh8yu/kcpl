@@ -440,3 +440,87 @@
     transition-duration: 1ms;
   }
 }
+
+/* Shipment register v2: information architecture first, decoration second. */
+.kcpl-admin-content .shipments-register {
+  --ship-mat: var(--admin-surface);
+  --ship-mat-strong: var(--admin-surface);
+  --ship-line: var(--admin-line);
+  --ship-line-strong: var(--admin-line-strong);
+  --ship-shadow: var(--app-shadow-sm);
+  --ship-motion: var(--app-duration-fast) var(--app-ease-out);
+  --ship-focus: 0 0 0 3px color-mix(in srgb, var(--admin-crimson) 18%, transparent);
+  padding-bottom: 40px;
+}
+.kcpl-admin-content .shipments-register .ops-page-header {
+  margin: 0;
+  padding: 26px 32px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--admin-line);
+  border-radius: 0;
+  background: var(--admin-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.kcpl-admin-content .shipments-register .ops-page-heading h1 { font-size: 28px; letter-spacing: -.04em; }
+.kcpl-admin-content .shipments-register .ops-page-description { margin-top: 6px; }
+.kcpl-admin-content .shipments-register .shipments-actions { gap: 8px; }
+.kcpl-admin-content .shipments-register .ops-button,
+.kcpl-admin-content .shipments-register .shipments-filter-trigger,
+.kcpl-admin-content .shipments-register .shipments-reset { min-height: 40px; border-radius: var(--app-radius-md); }
+.kcpl-admin-content .shipments-register .shipments-actions [data-variant="primary"],
+.kcpl-admin-content .shipment-inspector-footer [data-variant="primary"] { border-color: var(--admin-crimson); background: var(--admin-crimson); box-shadow: none; }
+.kcpl-admin-content .shipments-register .shipments-actions [data-variant="primary"]:hover,
+.kcpl-admin-content .shipment-inspector-footer [data-variant="primary"]:hover { border-color: var(--admin-crimson-dark); background: var(--admin-crimson-dark); }
+.kcpl-admin-content .shipments-register .ops-button:not(:disabled):hover,
+.kcpl-admin-content .shipments-register .shipments-filter-trigger:hover,
+.kcpl-admin-content .shipments-register .shipments-reset:hover { transform: none; }
+.kcpl-admin-content .shipments-register .ops-kpi-strip { gap: 10px; }
+.kcpl-admin-content .shipments-register .ops-kpi {
+  min-height: 82px;
+  padding: 14px;
+  border-radius: var(--app-radius-lg);
+  background: var(--admin-surface);
+  box-shadow: var(--app-shadow-sm);
+  backdrop-filter: none;
+}
+.kcpl-admin-content .shipments-register .ops-kpi:hover { transform: translateY(-1px); box-shadow: var(--app-shadow-md); }
+.kcpl-admin-content .shipments-register .ops-kpi[data-active="true"] { border-color: var(--admin-crimson); background: var(--admin-accent-bg); box-shadow: none; }
+.kcpl-admin-content .shipments-register .ops-kpi[data-active="true"]::after { right: 14px; bottom: 7px; left: 14px; background: var(--admin-crimson); }
+.kcpl-admin-content .shipments-register .shipments-toolbar {
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 6px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius-lg);
+  background: var(--admin-surface);
+  box-shadow: var(--app-shadow-sm);
+  backdrop-filter: none;
+}
+.kcpl-admin-content .shipments-register .shipments-toolbar .ops-search { min-height: 40px; border-radius: var(--app-radius-md); background: var(--admin-surface-soft); }
+.kcpl-admin-content .shipments-register .shipments-toolbar .ops-search:focus-within { border-color: var(--admin-crimson); box-shadow: var(--ship-focus); }
+.kcpl-admin-content .shipments-register .shipments-filter-tab { min-height: 38px; padding-inline: 12px; border-radius: var(--app-radius-md); }
+.kcpl-admin-content .shipments-register .shipments-filter-tab[data-active="true"],
+.kcpl-admin-content .shipments-register .shipments-filter-tab[data-state="active"] { background: var(--admin-ink); box-shadow: none; }
+.kcpl-admin-content .shipments-register .shipments-view-toggle { gap: 2px; padding: 3px; border-radius: var(--app-radius-md); background: var(--admin-surface-soft); }
+.kcpl-admin-content .shipments-register .shipments-view-toggle button { min-width: 38px; min-height: 36px; padding-inline: 10px; border-radius: var(--app-radius-sm); }
+.kcpl-admin-content .shipments-register .shipments-view-toggle button[data-active="true"] { color: var(--admin-ink); box-shadow: var(--app-shadow-sm); }
+.kcpl-admin-content .shipments-register .ops-surface,
+.kcpl-admin-content .shipments-register .ops-pagination { border-radius: var(--app-radius-lg); background: var(--admin-surface); box-shadow: var(--app-shadow-sm); backdrop-filter: none; }
+.kcpl-admin-content .shipments-register .shipments-register-table th { height: 40px; padding-inline: 14px; background: var(--admin-surface-soft); }
+.kcpl-admin-content .shipments-register .shipments-register-table td { height: 58px; padding-inline: 14px; }
+.kcpl-admin-content .shipments-register .shipments-register-table tbody tr:hover { background: var(--admin-surface-soft); }
+.kcpl-admin-content .shipments-register .shipments-register-table tbody tr[data-selected="true"] { background: var(--admin-accent-bg); box-shadow: inset 3px 0 0 var(--admin-crimson); }
+.kcpl-admin-content .shipment-inspector { width: min(500px, 100vw); border-left-color: var(--admin-line); background: var(--admin-surface); box-shadow: var(--app-shadow-lg); backdrop-filter: none; }
+.kcpl-admin-content .shipment-inspector-header { padding: 20px 22px; }
+.kcpl-admin-content .shipment-inspector section { padding: 18px 22px; }
+.kcpl-admin-content .shipment-inspector-footer { padding: 14px 22px; background: var(--admin-surface); backdrop-filter: none; }
+
+@media (max-width: 900px) {
+  .kcpl-admin-content .shipments-register .ops-page-header { margin: 0; padding: 22px 20px 18px; }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .shipments-register .ops-page-header { padding: 18px 16px; }
+  .kcpl-admin-content .shipments-register .shipments-toolbar { margin-inline: -2px; }
+}
