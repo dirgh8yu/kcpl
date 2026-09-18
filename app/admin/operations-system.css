@@ -461,7 +461,9 @@
 .kcpl-admin-content .ops-kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
 .kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
 .kcpl-admin-content button.ops-kpi { cursor: pointer; }
-.kcpl-admin-content button.ops-kpi:hover { border-color: var(--admin-line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / 7%); transform: translateY(-1px); }
+.kcpl-admin-content button.ops-kpi:hover { border-color: var(--admin-line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / 7%); }
+/* Touch fires false hovers on tap; keep the KPI hover lift to real pointers. */
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content button.ops-kpi:hover { transform: translateY(-1px); } }
 .kcpl-admin-content button.ops-kpi:active { transform: scale(.98); box-shadow: 0 1px 2px rgb(16 24 40 / 4%); }
 .kcpl-admin-content .ops-kpi[data-active="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
 .kcpl-admin-content .ops-kpi-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: var(--admin-surface-soft); color: var(--admin-muted); }

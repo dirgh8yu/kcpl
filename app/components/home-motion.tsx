@@ -39,7 +39,7 @@ export function WhyKCPL() {
       </motion.div>
       <div className="why-process">
         <div className="why-process-track" aria-hidden="true"><motion.i initial={false} animate={{ scaleY: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : 1.35, delay: reduce ? 0 : .18, ease: [0.65, 0, 0.35, 1] }}/></div>
-        {whyItems.map(({ icon: Icon, title, copy, detail }, index) => <motion.article key={title} className="why-stage" initial={reduce ? false : { opacity: 0, x: 30 }} animate={inView ? { opacity: 1, x: 0 } : {}} transition={{ duration: reduce ? 0 : .72, delay: reduce ? 0 : .2 + index * .14, ease: [0.22, 1, 0.36, 1] }} whileHover={reduce ? undefined : { x: 6 }}>
+        {whyItems.map(({ icon: Icon, title, copy, detail }, index) => <motion.article key={title} className="why-stage" initial={reduce ? false : { opacity: 0, x: 30 }} animate={inView ? { opacity: 1, x: 0 } : {}} transition={{ duration: reduce ? 0 : .72, delay: reduce ? 0 : .2 + index * .14, ease: [0.22, 1, 0.36, 1] }}>
           <div className="why-stage-number"><span>0{index + 1}</span><i/></div>
           <div className="why-stage-icon"><Icon size={24} strokeWidth={1.25}/></div>
           <div className="why-stage-heading"><small>{detail}</small><h3>{title}</h3></div>
@@ -281,7 +281,7 @@ export function JourneyTimeline() {
   return <div ref={ref} className="journey-system">
     <div className="journey-route-labels" aria-hidden="true"><span>Origin / enquiry</span><span>Destination / handover</span></div>
     <div className="journey-track"><motion.div className="journey-progress" initial={false} animate={{ scaleX: inView ? 1 : 0, scaleY: inView ? 1 : 0 }} transition={{ duration: reduce ? 0 : 1.4, ease: [0.65, 0, 0.35, 1] }}/></div>
-    <motion.span className="journey-moving-point" aria-hidden="true" initial={false} animate={{ left: inView ? "100%" : "0%", opacity: inView ? [0, 1, 1, 0] : 0 }} transition={{ duration: reduce ? 0 : 1.55, delay: reduce ? 0 : .18, ease: [0.65, 0, 0.35, 1] }}/>
+    <motion.span className="journey-moving-point-track" aria-hidden="true" initial={false} animate={{ x: inView ? "100%" : "0%", opacity: inView ? [0, 1, 1, 0] : 0 }} transition={{ duration: reduce ? 0 : 1.55, delay: reduce ? 0 : .18, ease: [0.65, 0, 0.35, 1] }}><span className="journey-moving-point"/></motion.span>
     {stages.map(([n,label,title,copy],index)=><motion.article key={n} className="journey-stage" initial={reduce ? false : { opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: reduce ? 0 : .65, delay: reduce ? 0 : .22 + index * .16, ease: [0.22, 1, 0.36, 1] }}><span className="journey-node"><i/></span><b>{n}</b><small>{label}</small><h3>{title}</h3><p>{copy}</p><span className="journey-stage-rule" aria-hidden="true"/></motion.article>)}
   </div>;
 }
@@ -305,7 +305,7 @@ export function QuoteLaunch() {
           <span className="quote-flight-origin"><i/>KTM / ORIGIN</span>
           <span className="quote-flight-destination"><i/>ROUTE / FORWARD</span>
           <span className="quote-flight-path"/>
-          <motion.span className="quote-flight-plane" initial={false} animate={reduce ? { left: "72%", bottom: "67%", opacity: 1 } : inView ? { left: "72%", bottom: "67%", opacity: 1, rotate: -10 } : { left: "8%", bottom: "17%", opacity: .15, rotate: -2 }} transition={{ duration: reduce ? 0 : 1.65, delay: reduce ? 0 : .2, ease: [0.65, 0, 0.35, 1] }}><PlaneTakeoff size={38} strokeWidth={1.25}/></motion.span>
+          <motion.span className="quote-flight-plane-track" initial={false} animate={reduce ? { x: "72%", y: "-67%" } : inView ? { x: "72%", y: "-67%" } : { x: "8%", y: "-17%" }} transition={{ duration: reduce ? 0 : 1.65, delay: reduce ? 0 : .2, ease: [0.65, 0, 0.35, 1] }}><motion.span className="quote-flight-plane" initial={false} animate={reduce ? { opacity: 1, rotate: 0 } : inView ? { opacity: 1, rotate: -10 } : { opacity: .15, rotate: -2 }} transition={{ duration: reduce ? 0 : 1.65, delay: reduce ? 0 : .2, ease: [0.65, 0, 0.35, 1] }}><PlaneTakeoff size={38} strokeWidth={1.25}/></motion.span></motion.span>
         </div>
       </div>
 

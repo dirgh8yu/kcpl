@@ -28,3 +28,27 @@ All: `transform`/`opacity`/color properties only, `prefers-reduced-motion` gated
 ## Verdict
 
 Near-zero motion today. Highest leverage: command palette open/close (#1) — most-used overlay, currently most jarring, but must stay ≤180ms since it's triggered by keyboard as often as by click. Nothing on this list should exceed ~220ms; list/table content stays untouched.
+
+## Status — all seven shipped
+
+Verified in `app/admin/operations-system.css` + `operations-shell.tsx` at `c86557e`:
+
+| # | Status | Landed as |
+|---|---|---|
+| 1 | DONE | `.app-command-backdrop` / `.app-command-dialog` entrance **only** via `@starting-style` (`translateY(-8px) scale(.98)` → settled, `--app-duration-base` = 180ms `--app-ease-out`); the palette unmounts on close, so there is deliberately no exit animation — that is what keeps it keyboard-fast |
+| 2 | DONE | `.app-notification-panel` `transform-origin: top right`, `scale(.96) → 1` + opacity, `--app-duration-base`, `@starting-style` |
+| 3 | DONE | `.app-nav-group-list` grid-rows `0fr → 1fr` (`--app-duration-*`, `--app-ease-out`); chevron driven by `summary[data-collapsed]`; reduced-motion carve-out |
+| 4 | DONE | `.app-sidebar[data-open]` `translateX` with `--app-ease-drawer` + `.app-nav-backdrop` fade; reduced-motion carve-out for the ≤1023px case |
+| 5 | DONE | `.kcpl-admin-shell .ops-button:active:not(:disabled)` `scale(.98)` at `--app-duration-fast` (120ms) |
+| 6 | DONE | `data-active` toggles (filter chips, tabs, stat toggles) transition colour only at `--app-duration-fast` |
+| 7 | DONE | `.ops-empty` `opacity 0→1` + `translateY(4px)→0` (`ops-fade-in`, `--app-duration-slow` = 240ms) |
+
+Follow-up landed after this audit: the KPI card hover lift
+(`.kcpl-admin-content button.ops-kpi:hover`) is now gated behind
+`@media (hover: hover) and (pointer: fine)` so a touch tap no longer leaves a
+stuck `translateY(-1px)`.
+
+Still open from this audit's category work: `transition: width 160ms ease` on
+`.kcpl-ops-overview .overview-status-item-track span` is dead CSS (no component
+renders `kcpl-ops-overview`). Removing the leftover selectors belongs to
+[admin-css-consolidation.md](admin-css-consolidation.md), not to motion work.
