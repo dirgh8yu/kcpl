@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -39,6 +39,8 @@ import styles from "./overview-dashboard.module.css";
 import extras from "./overview-dashboard-extras.module.css";
 
 const DAY_MS = 86_400_000;
+// Mirrors --app-duration-fast in overview-dashboard.module.css; keep the two in step.
+const LAUNCHER_EXIT_MS = 120;
 const creationModes = ["road", "ocean", "air", "rail"] as const;
 type CreationMode = typeof creationModes[number];
 type Tone = "danger" | "warning" | "success" | "info" | "neutral" | "violet";
@@ -458,7 +460,7 @@ function OperationalNotes({ note, selectedBranch, canPostNotes, generatedAt }: {
   );
 }
 
-function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, onClose }: { canViewCommercial: boolean; selectedBranch: string; branches: string[]; onClose: () => void }) {
+function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, closing, onClose }: { canViewCommercial: boolean; selectedBranch: string; branches: string[]; closing: boolean; onClose: () => void }) {
   const router = useRouter();
   const defaultBranch = selectedBranch !== "all" && branches.includes(selectedBranch)
     ? selectedBranch
@@ -512,8 +514,8 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, onCl
   }
 
   return (
-    <div className={styles.launcherBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className={styles.launcher} role="dialog" aria-modal="true" aria-labelledby="new-shipment-title">
+    <div className={styles.launcherBackdrop} data-closing={closing ? "true" : undefined} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className={styles.launcher} data-closing={closing ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="new-shipment-title">
         <div className={styles.launcherHeader}>
           <div><h2 id="new-shipment-title">New shipment</h2><p>Start a new movement through KCPL’s controlled transport-order, tender and booking chain. The shipment record is still created only by the existing server-authoritative workflow.</p></div>
           <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close new shipment"><X size={15} /></button>
@@ -552,6 +554,31 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [launcherOpen, setLauncherOpen] = useState(false);
+  const [launcherClosing, setLauncherClosing] = useState(false);
+  // The unmount is deferred until the exit has played, so the timer has to be
+  // cancellable: reopening inside that window must not be closed by the old timer.
+  const launcherTimer = useRef<number | null>(null);
+  const clearLauncherTimer = useCallback(() => {
+    if (launcherTimer.current === null) return;
+    window.clearTimeout(launcherTimer.current);
+    launcherTimer.current = null;
+  }, []);
+  // Exit is shorter than the entrance: the user has already decided to leave.
+  const closeLauncher = useCallback(() => {
+    clearLauncherTimer();
+    setLauncherClosing(true);
+    launcherTimer.current = window.setTimeout(() => {
+      launcherTimer.current = null;
+      setLauncherOpen(false);
+      setLauncherClosing(false);
+    }, LAUNCHER_EXIT_MS);
+  }, [clearLauncherTimer]);
+  const openLauncher = useCallback(() => {
+    clearLauncherTimer();
+    setLauncherClosing(false);
+    setLauncherOpen(true);
+  }, [clearLauncherTimer]);
+  useEffect(() => clearLauncherTimer, [clearLauncherTimer]);
   const { search } = useWorkspaceQuery();
   const returnTo = `/admin/command-centre${search}`;
   const activeShipments = useMemo(() => data.jobs.filter((job) => job.status !== "delivered"), [data.jobs]);
@@ -570,7 +597,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
         <div className={styles.heroActions}>
           <div className={styles.timeBlock}><strong>{formatOperationalDate(data.operational_date)}</strong><span>Local time {formatNepalTime(data.generated_at)} (NPT)</span></div>
           <button type="button" className={styles.secondaryButton} onClick={() => startRefresh(() => router.refresh())} disabled={refreshing}><RefreshCw size={14} className={refreshing ? "app-refreshing" : undefined} />{refreshing ? "Refreshing" : "Refresh"}</button>
-          <button type="button" className={styles.blackButton} onClick={() => setLauncherOpen(true)}><Plus size={15} strokeWidth={2} /> New shipment</button>
+          <button type="button" className={styles.blackButton} onClick={openLauncher}><Plus size={15} strokeWidth={2} /> New shipment</button>
         </div>
       </section>
 
@@ -611,7 +638,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
 
       <OperationalNotes note={note} selectedBranch={selectedBranch} canPostNotes={canPostNotes} generatedAt={data.generated_at} />
 
-      {launcherOpen ? <NewShipmentLauncher canViewCommercial={canViewCommercial} selectedBranch={selectedBranch} branches={branches} onClose={() => setLauncherOpen(false)} /> : null}
+      {launcherOpen ? <NewShipmentLauncher canViewCommercial={canViewCommercial} selectedBranch={selectedBranch} branches={branches} closing={launcherClosing} onClose={closeLauncher} /> : null}
     </div>
   );
 }

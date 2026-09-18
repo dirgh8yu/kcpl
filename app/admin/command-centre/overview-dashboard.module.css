@@ -38,7 +38,7 @@
 .timeBlock { text-align: right; }
 .timeBlock strong { display: block; font-size: 13px; font-weight: 650; }
 .timeBlock span { display: block; margin-top: 3px; color: var(--overview-faint); font-size: 11px; }
-.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 7px; padding: 0 15px; font: inherit; font-size: 13px; font-weight: 650; text-decoration: none; cursor: pointer; }
+.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 7px; padding: 0 15px; font: inherit; font-size: 13px; font-weight: 650; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 .blackButton { border: 1px solid var(--overview-action); background: var(--overview-action); color: var(--overview-surface); }
 .blackButton:hover { border-color: var(--overview-action-hover); background: var(--overview-action-hover); }
 .blackButton:disabled { cursor: default; opacity: 0.45; }
@@ -52,8 +52,9 @@
 .warningBanner { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; border: 1px solid var(--admin-warning-line); border-radius: 7px; background: var(--overview-warning-soft); padding: 10px 12px; color: var(--overview-warning); font-size: 12px; line-height: 18px; }
 
 .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-.metric { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); padding: 16px; color: inherit; text-decoration: none; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
-.metric:hover { border-color: var(--overview-line-strong); box-shadow: 0 4px 14px rgba(16, 24, 40, 0.07); transform: translateY(-1px); }
+.metric { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); padding: 16px; color: inherit; text-decoration: none; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); transition: border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), box-shadow var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+.metric:hover { border-color: var(--overview-line-strong); box-shadow: 0 4px 14px rgba(16, 24, 40, 0.07); }
+@media (hover: hover) and (pointer: fine) { .metric:hover { transform: translateY(-1px); } }
 .metricIcon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; }
 .metricCopy strong { display: block; font-size: 26px; font-weight: 730; line-height: 28px; letter-spacing: -0.025em; }
 .metricCopy span { display: block; margin-top: 5px; color: var(--overview-muted); font-size: 12.5px; line-height: 16px; }
@@ -69,6 +70,10 @@
 .lowerGrid { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.45fr) minmax(260px, 0.9fr) minmax(280px, 1fr); gap: 16px; margin-top: 16px; }
 .card { min-width: 0; overflow: hidden; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); opacity: 0; transform: translateY(6px); animation: overview-card-in var(--app-duration-slow, 240ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)) forwards; }
 @keyframes overview-card-in { to { opacity: 1; transform: none; } }
+/* Cascade the entrance per grid region; 30ms reads as sequence without feeling slow. */
+.card:nth-child(2) { animation-delay: 30ms; }
+.card:nth-child(3) { animation-delay: 60ms; }
+.card:nth-child(4) { animation-delay: 90ms; }
 .cardHeader { display: flex; min-height: 62px; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px 18px 12px; }
 .cardHeader h2 { margin: 0; font-size: 16px; font-weight: 720; letter-spacing: -0.02em; }
 .cardHeader p { margin: 4px 0 0; color: var(--overview-muted); font-size: 12.5px; line-height: 17px; }
@@ -175,6 +180,9 @@
 @starting-style { .launcherBackdrop { opacity: 0; } }
 .launcher { width: min(520px, 100%); border: 1px solid var(--overview-line); border-radius: 9px; background: var(--overview-surface); box-shadow: 0 20px 50px rgba(16, 24, 40, 0.18); opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 @starting-style { .launcher { opacity: 0; transform: scale(.98) translateY(-8px); } }
+/* Exit mirrors the entrance and runs faster -- the decision to leave is already made. */
+.launcherBackdrop[data-closing] { opacity: 0; transition-duration: var(--app-duration-fast, 120ms); }
+.launcher[data-closing] { opacity: 0; transform: scale(.98) translateY(-8px); transition-duration: var(--app-duration-fast, 120ms); }
 .launcherHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--overview-line); padding: 16px; }
 .launcherHeader h2 { margin: 0; font-size: 17px; font-weight: 730; }
 .launcherHeader p { margin: 6px 0 0; color: var(--overview-muted); font-size: 12.5px; line-height: 18px; }
@@ -213,6 +221,7 @@
 @media (prefers-reduced-motion: reduce) {
   .metric { transition: none; }
   .metric:hover { transform: none; }
-  .card { animation: none; opacity: 1; transform: none; }
+  .card { animation: none; opacity: 1; transform: none; animation-delay: 0s; }
+  .blackButton, .secondaryButton, .iconButton, .textButton { transition-property: background-color, border-color, color; }
   .launcherBackdrop, .launcher { transition: none; }
 }
