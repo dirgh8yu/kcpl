@@ -7,26 +7,17 @@
    This file is intentionally the final admin layer: shared semantic primitives first,
    narrowly-scoped workspace refinements second. Avoid adding one-off page overrides here. */
 
+/* The --admin-* palette deliberately does NOT live here any more.
+ * This block sits on .kcpl-admin-shell, which nests inside .kcpl-admin-route,
+ * so every token it declared shadowed the system palette for the entire staff
+ * product -- the cool scale in operations-system.css was never the one that
+ * rendered. operations-system.css is now the single source; this file keeps
+ * only the layout and typeface it actually owns. */
 .kcpl-admin-shell {
-  --admin-crimson: #DC143C;
-  --admin-crimson-dark: #B61032;
-  --admin-crimson-deep: #9C0D2A;
-  --admin-ink: #101010;
-  --admin-canvas: #F6F6F3;
-  --admin-surface: #FFFFFF;
-  --admin-surface-muted: #EEEEE8;
-  --admin-line: #D6D6D0;
-  --admin-line-strong: #AFAFA8;
-  --admin-muted: #5B5B57;
-  --admin-faint: #777771;
-  --admin-danger: #A80E2F;
-  --admin-warning: #72500C;
-  --admin-success: #18794E;
-  --admin-info: #315D83;
   min-height: 100vh;
   background: var(--admin-canvas);
   color: var(--admin-ink);
-  font-family: var(--font-manrope), Arial, sans-serif;
+  font-family: var(--font-geist), Arial, sans-serif;
   font-synthesis: none;
 }
 

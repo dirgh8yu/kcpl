@@ -68,7 +68,7 @@
 .neutralIcon { background: var(--admin-surface-soft); color: var(--overview-muted); }
 .violetIcon { background: var(--overview-violet-soft); color: var(--overview-violet); }
 
-.primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr); gap: 12px; align-items: start; }
+.primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(272px, 0.86fr); gap: 12px; align-items: start; }
 .lowerGrid { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.45fr) minmax(260px, 0.9fr) minmax(280px, 1fr); gap: 12px; margin-top: 12px; align-items: start; }
 .card { min-width: 0; overflow: hidden; border: 1px solid var(--overview-line); border-radius: var(--app-radius, 8px); background: var(--overview-surface); opacity: 0; transform: translateY(6px); animation: overview-card-in var(--app-duration-slow) var(--app-ease-out) forwards; }
 @keyframes overview-card-in { to { opacity: 1; transform: none; } }
@@ -82,8 +82,23 @@
 .cardTitleRow { display: flex; align-items: center; gap: 8px; }
 .countBadge { display: inline-flex; min-width: 26px; height: 22px; align-items: center; justify-content: center; border-radius: 999px; background: var(--overview-danger-soft); padding: 0 8px; color: var(--overview-danger); font-size: 12px; font-weight: 720; }
 
-.tableWrap { overflow-x: auto; border-top: 1px solid var(--overview-line); }
-.table { width: 100%; min-width: 880px; border-collapse: collapse; }
+.tableWrap { border-top: 1px solid var(--overview-line); }
+/* Fixed layout so nine columns fit the card exactly. Auto layout let long
+ * customer names and routes push the table past its container, which the
+ * card's overflow:hidden then clipped mid-column. */
+.table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.table th, .table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Customer is the only column allowed to ellipsis: a truncated reference or a
+ * clipped status pill costs the reader the thing they came for, a shortened
+ * company name does not. Everything else is sized to its longest real value. */
+.table th:nth-child(1), .table td:nth-child(1) { width: 40px; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 150px; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 182px; }
+.table th:nth-child(5), .table td:nth-child(5) { width: 148px; }
+.table th:nth-child(6), .table td:nth-child(6) { width: 104px; }
+.table th:nth-child(7), .table td:nth-child(7) { width: 146px; }
+.table th:nth-child(8), .table td:nth-child(8) { width: 48px; }
+.table th:nth-child(9), .table td:nth-child(9) { width: 36px; }
 .table th { height: 34px; border-bottom: 1px solid var(--overview-line); background: var(--overview-canvas); padding: 0 12px; color: var(--overview-faint); font-size: 11px; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
 .table td { height: 44px; border-bottom: 1px solid var(--overview-line); padding: 8px 12px; color: var(--overview-ink); font-size: 13px; vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: 0; }

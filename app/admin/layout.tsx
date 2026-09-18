@@ -1,15 +1,15 @@
-import { Inter } from "next/font/google";
+import { Geist } from "next/font/google";
 import type { ReactNode } from "react";
 
-const adminInter = Inter({
+const adminFont = Geist({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-admin-inter",
+  variable: "--font-admin-geist",
 });
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className={`${adminInter.className} ${adminInter.variable} kcpl-admin-route`}>
+    <div className={`${adminFont.className} ${adminFont.variable} kcpl-admin-route`}>
       {children}
     </div>
   );

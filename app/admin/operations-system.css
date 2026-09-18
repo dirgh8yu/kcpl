@@ -13,16 +13,23 @@
   --admin-crimson: #DC143C;
   --admin-crimson-dark: #B61032;
   --admin-crimson-deep: #9C0D2A;
+  /* Brand-pinned by tests/admin-ui-system.test.mjs -- the Figma identity black.
+   * Not ours to soften. */
   --admin-ink: #101010;
-  /* Neutral foundation — one cool, precise gray scale shared with the command centre. */
-  --admin-canvas: #F7F8FA;
+  /* Neutral foundation — one cool, precise gray scale shared with the command
+   * centre. This is the ONLY place the admin palette is defined; a second warm
+   * set used to live in admin-design-system.css on .kcpl-admin-shell, which
+   * nests inside .kcpl-admin-route and therefore silently won. That is what
+   * made the whole staff product render on a cream canvas with warm grey
+   * rules while every component was written against these cool tokens. */
+  --admin-canvas: #F6F8FB;
   --admin-surface: #FFFFFF;
-  --admin-surface-soft: #F2F4F7;
-  --admin-surface-muted: #EAECF0;
-  --admin-line: #E4E7EC;
-  --admin-line-strong: #D0D5DD;
-  --admin-muted: #667085;
-  --admin-faint: #98A2B3;
+  --admin-surface-soft: #F4F6FA;
+  --admin-surface-muted: #EDF0F5;
+  --admin-line: #E3E8EF;
+  --admin-line-strong: #CBD3DE;
+  --admin-muted: #5C6675;
+  --admin-faint: #8B95A4;
   /* Semantic ink — Untitled-grade 700 shades that hold AA contrast on light chips. */
   --admin-danger: #B42318;
   --admin-warning: #B54708;
@@ -89,7 +96,7 @@
   min-height: 100dvh;
   background: var(--admin-canvas);
   color: var(--admin-ink);
-  font-family: var(--font-inter), Arial, sans-serif;
+  font-family: var(--font-geist), var(--font-inter), Arial, sans-serif;
   font-size: var(--app-font-size);
   line-height: 1.5;
   font-synthesis: none;

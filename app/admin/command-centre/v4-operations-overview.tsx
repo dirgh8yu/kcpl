@@ -106,13 +106,6 @@ function greeting(value: string) {
   return "Good evening";
 }
 
-function shortDate(value: string | null) {
-  if (!value) return "—";
-  const parsed = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);
-  if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone: value.length === 10 ? "UTC" : "Asia/Kathmandu" }).format(parsed);
-}
-
 function relativeAge(value: string, anchor: string) {
   const time = Date.parse(value);
   const anchorTime = Date.parse(anchor);
@@ -238,7 +231,7 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
           <table className={styles.table} aria-label="Shipments requiring attention">
             <thead><tr>
               <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
-              <th>Reference</th><th>Customer</th><th>Route</th><th>Status</th><th>Blocker / Next action</th><th>Owner</th><th>Age</th><th>ETA</th><th><span className={styles.srOnly}>Actions</span></th>
+              <th>Reference</th><th>Customer</th><th>Route</th><th>Status</th><th>Blocker / Next action</th><th>Owner</th><th>Age</th><th><span className={styles.srOnly}>Actions</span></th>
             </tr></thead>
             <tbody>
               {jobs.map((job) => {
@@ -256,7 +249,6 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
                     <td><Link href={withReturn(issue.href, returnTo)} className={styles.referenceLink}>{issue.label}</Link></td>
                     <td><span className={styles.owner}><span className={styles.ownerAvatar}>{jobOwner === "Unassigned" ? <UserRoundX size={12} /> : initials(jobOwner)}</span><span className={jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}>{jobOwner}</span></span></td>
                     <td className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
-                    <td>{shortDate(job.eta)}</td>
                     <td><Link className={styles.rowAction} href={jobHref(job.reference, returnTo)} aria-label={`Open ${job.reference}`}><MoreHorizontal size={16} strokeWidth={1.8} /></Link></td>
                   </tr>
                 );
