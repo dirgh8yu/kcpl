@@ -463,6 +463,10 @@
 .kcpl-admin-content .ops-kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
 .kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
 .kcpl-admin-content button.ops-kpi { cursor: pointer; }
+/* Non-interactive KPIs are statistics, not controls: no raised surface, no
+ * hover affordance, so a card that cannot be pressed never looks like it can. */
+.kcpl-admin-content div.ops-kpi { background: var(--admin-surface-soft); box-shadow: none; }
+.kcpl-admin-content div.ops-kpi .ops-kpi-icon { background: var(--admin-surface); }
 .kcpl-admin-content button.ops-kpi:hover { border-color: var(--admin-line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / 7%); }
 /* Touch fires false hovers on tap; keep the KPI hover lift to real pointers. */
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content button.ops-kpi:hover { transform: translateY(-1px); } }
@@ -473,6 +477,14 @@
 .kcpl-admin-content .ops-kpi-copy span { display: block; margin-top: 5px; color: var(--admin-muted); font-size: 12.5px; line-height: 16px; }
 .kcpl-admin-content .ops-kpi-copy em { display: block; margin-top: 2px; color: var(--admin-faint); font-size: 11.5px; font-style: normal; line-height: 15px; }
 .kcpl-admin-content .ops-kpi-chevron { color: var(--admin-faint); }
+/* One icon weight for the whole staff product. The admin shipped five stroke
+ * widths (1.7 / 1.75 / 1.8 / 1.9 / 2) across ~700 icons, which is what made the
+ * iconography read as cheap rather than the icon set itself. CSS overrides the
+ * SVG presentation attribute, so this normalises every glyph without touching
+ * the call sites. Matched on stroke="currentColor" rather than lucide's own
+ * class, because that class only exists at runtime and the dead-CSS audit's
+ * source scan cannot see it. */
+.kcpl-admin-shell svg[stroke="currentColor"] { stroke-width: 1.75; }
 .kcpl-admin-content .ops-kpi:has(> .ops-kpi-copy:first-child) { grid-template-columns: minmax(0, 1fr) auto; }
 .kcpl-admin-content .ops-kpi[data-tone="accent"] .ops-kpi-icon { background: var(--admin-accent-bg); color: var(--admin-crimson); }
 .kcpl-admin-content .ops-kpi[data-tone="info"] .ops-kpi-icon { background: var(--admin-info-bg); color: var(--admin-info); }
@@ -492,8 +504,7 @@
 .kcpl-admin-content .shipments-view-toggle button[data-active="true"] { background: var(--admin-surface); color: var(--admin-ink); box-shadow: var(--app-surface-shadow); }
 
 /* Country flag chip (falls back to the ISO code when the flag glyph is unavailable). */
-.kcpl-admin-content .ship-flag { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 21px; height: 15px; border-radius: 3px; overflow: hidden; background: var(--admin-surface-muted); box-shadow: inset 0 0 0 1px var(--admin-line); font-size: 13px; line-height: 1; }
-.kcpl-admin-content .ship-flag[data-code] { font-size: 13px; }
+.kcpl-admin-content .ship-flag { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; min-width: 24px; height: 16px; padding: 0 4px; border-radius: 3px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 10px; font-weight: 600; letter-spacing: .04em; line-height: 1; font-variant-numeric: tabular-nums; }
 
 /* Inline origin -> destination route with flags. */
 .kcpl-admin-content .ship-route { display: flex; align-items: center; gap: 7px; min-width: 0; }

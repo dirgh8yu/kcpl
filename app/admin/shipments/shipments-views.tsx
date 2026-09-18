@@ -110,18 +110,17 @@ function resolveCountry(raw: string | null): { code: string; name: string } | nu
   return null;
 }
 
-function flagEmoji(code: string) {
-  if (!/^[A-Z]{2}$/.test(code)) return "";
-  return String.fromCodePoint(...[...code].map((char) => 0x1f1e6 + char.charCodeAt(0) - 65));
-}
-
+// Emoji flags render through whatever emoji font the machine happens to ship,
+// so the same row looked different on every workstation and turned to a blob at
+// 13px. The ISO code is legible everywhere and is the vocabulary freight staff
+// already use. The city name beside it carries the meaning, so this stays
+// aria-hidden rather than doubling up for screen readers.
 export function CountryFlag({ location }: { location: string | null }) {
   const country = resolveCountry(location);
   if (!country) return null;
-  const flag = flagEmoji(country.code);
   return (
     <span className="ship-flag" title={country.name} data-code={country.code} aria-hidden="true">
-      {flag || country.code}
+      {country.code}
     </span>
   );
 }
