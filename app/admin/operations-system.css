@@ -1624,36 +1624,8 @@
   }
 }
 
-/* Live visibility: surface operational signal before the detailed register. */
-.kcpl-admin-content .visibility-register {
-  overflow: hidden;
-}
 .kcpl-admin-content .visibility-table-wrap {
   border: 0;
-}
-.kcpl-admin-content .visibility-register .ops-table {
-  min-width: 980px;
-}
-.kcpl-admin-content .visibility-register .ops-table th {
-  white-space: nowrap;
-}
-.kcpl-admin-content .visibility-register .ops-table td {
-  vertical-align: middle;
-}
-.kcpl-admin-content .visibility-register .ops-table tbody tr[data-selected="true"] {
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
-}
-.kcpl-admin-content .visibility-register .ops-table tbody tr:hover {
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .visibility-register .ops-table td:first-child {
-  width: 150px;
-}
-.kcpl-admin-content .visibility-register .ops-table td:nth-child(2) {
-  min-width: 220px;
-}
-.kcpl-admin-content .visibility-register .ops-table td:nth-child(4) {
-  min-width: 170px;
 }
 .kcpl-admin-content .visibility-panel-header {
   min-height: 80px;
