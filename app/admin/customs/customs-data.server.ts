@@ -1,3 +1,4 @@
+import { mockCustomsDeskRows, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../../shipment-document-policy";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shipment-document-types";
@@ -152,6 +153,7 @@ async function loadDocumentsAndOverrides(shipmentRefs: FirebaseFirestore.Documen
 }
 
 export async function listCustomsDeskRows(context: KcplStaffContext): Promise<CustomsDeskRow[] | null> {
+  if (qaMockDataEnabled()) return mockCustomsDeskRows(context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
 

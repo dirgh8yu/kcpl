@@ -4,9 +4,12 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  mockAutomationAlerts,
   mockCommandCentre,
+  mockCustomsDeskRows,
   mockDeliveryWorkspace,
   mockFinanceSnapshot,
+  mockFreightAuditQueue,
   mockFreightDocumentWorkspace,
   mockPickupWorkspace,
   mockVisibilityWorkspace,
@@ -76,6 +79,9 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/visibility/tracking-visibility.server.ts",
     "app/admin/freight-documents/freight-documents.server.ts",
     "app/admin/delivery/delivery-control.server.ts",
+    "app/admin/alerts/alert-engine.server.ts",
+    "app/admin/freight-audit/freight-audit.server.ts",
+    "app/admin/customs/customs-data.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
@@ -223,4 +229,35 @@ test("the document and delivery fixtures exercise their queue states", () => {
     delivery.rows.some((row) => row.pod_status === "received"),
     "an outstanding POD must appear",
   );
+});
+
+test("the alert, audit and customs fixtures stay tied to the same shipments", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const staff = { can_access_all_branches: true, branches: [] };
+  const references = new Set(mockCommandCentre(staff, now).jobs.map((job) => job.reference));
+
+  const alerts = mockAutomationAlerts(staff, now);
+  assert.ok(alerts.length > 0, "alerts must be raised");
+  for (const alert of alerts) {
+    assert.ok(references.has(alert.entity_id), `alert points at an unknown shipment: ${alert.entity_id}`);
+  }
+  // An alert list without a critical is not exercising the screen's worst case.
+  assert.ok(alerts.some((alert) => alert.severity === "critical"), "a critical alert must appear");
+  assert.ok(alerts.some((alert) => alert.type === "shipment_unassigned"), "an unassigned alert must appear");
+
+  const audit = mockFreightAuditQueue(staff, now);
+  for (const row of audit.rows) {
+    assert.ok(references.has(row.shipment_reference), `audit row points at an unknown shipment: ${row.shipment_reference}`);
+  }
+  assert.ok(audit.summary.review_required > 0, "a bill needing review must appear");
+  assert.equal(audit.summary.total, audit.rows.length);
+
+  const customs = mockCustomsDeskRows(staff, now);
+  for (const row of customs) {
+    assert.ok(references.has(row.reference), `customs row points at an unknown shipment: ${row.reference}`);
+    // The desk state is classified by customsDeskState, so open steps and a
+    // blocked state must not contradict each other.
+    assert.equal(row.customs_open, row.open_steps.length);
+  }
+  assert.ok(customs.some((row) => row.state === "blocked"), "a blocked customs file must appear");
 });

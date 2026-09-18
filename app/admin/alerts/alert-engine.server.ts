@@ -1,3 +1,4 @@
+import { mockAutomationAlerts, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -435,6 +436,7 @@ function visibleToContext(alert: AutomationAlert, context: KcplStaffContext, ema
 }
 
 export async function listAutomationAlerts(context: KcplStaffContext, email: string, includeResolved = false) {
+  if (qaMockDataEnabled()) return mockAutomationAlerts(context);
   if (!firebaseRuntimeConfigured()) return null;
   const snapshot = await firebaseAdminDb().collection("alerts").orderBy("last_triggered_at", "desc").limit(1000).get();
   const alerts = snapshot.docs.map((doc) => alertFromDoc(doc.id, doc.data() as Record<string, unknown>));

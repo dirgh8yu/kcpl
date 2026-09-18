@@ -570,3 +570,231 @@ export function mockDeliveryWorkspace(staff: KcplStaffContext, now = Date.now())
   });
   return { kind: "ready" as const, rows, summary: summarizeDelivery(rows), generated_at: iso(now, 0) };
 }
+
+import type { AutomationAlert, AutomationAlertSeverity, AutomationAlertType } from "./alerts/alert-data.ts";
+
+/* Alerts are not independent data: every one of them is a shipment problem the
+ * Overview already knows about. Deriving them from the same jobs means the
+ * alert list and the attention queue never contradict each other. */
+export function mockAutomationAlerts(staff: KcplStaffContext, now = Date.now()): AutomationAlert[] {
+  const jobs = mockCommandCentre(staff, now).jobs.filter((job) => job.status !== "delivered");
+  const alerts: AutomationAlert[] = [];
+  const push = (
+    job: CommandCentreJob,
+    type: AutomationAlertType,
+    severity: AutomationAlertSeverity,
+    title: string,
+    detail: string,
+    hoursAgo: number,
+  ) => {
+    const index = alerts.length + 1;
+    alerts.push({
+      id: `alert-${index}`,
+      fingerprint: `${type}:${job.reference}`,
+      type,
+      severity,
+      status: index % 5 === 0 ? "acknowledged" : "open",
+      title,
+      detail,
+      entity_type: "shipment",
+      entity_id: job.reference,
+      parent_reference: job.reference,
+      branch: job.primary_branch,
+      assigned_to_name: job.assigned_to_name,
+      assigned_to_email: job.assigned_to_email,
+      target_roles: ["operations"],
+      action_path: `/admin/jobs/${encodeURIComponent(job.reference)}`,
+      first_triggered_at: iso(now, -(hoursAgo + 6) * HOUR),
+      last_triggered_at: iso(now, -hoursAgo * HOUR),
+      escalated_at: severity === "critical" ? iso(now, -hoursAgo * HOUR) : null,
+      acknowledged_at: index % 5 === 0 ? iso(now, -1 * HOUR) : null,
+      acknowledged_by_name: index % 5 === 0 ? "Sunita Shrestha" : null,
+      acknowledged_by_email: index % 5 === 0 ? "sunita.shrestha@kcpl.com.np" : null,
+      resolved_at: null,
+      resolved_by_name: null,
+      resolved_by_email: null,
+    });
+  };
+
+  for (const job of jobs) {
+    if (job.status === "exception") {
+      push(job, "shipment_exception", "critical", "Shipment exception", job.current_location ?? "Exception raised at origin", 1);
+    }
+    if (job.overdue_tasks > 0) {
+      push(job, "job_task_overdue", job.overdue_tasks >= 3 ? "critical" : "warning", `${job.overdue_tasks} overdue task${job.overdue_tasks === 1 ? "" : "s"}`, `${job.customer_name} · ${job.origin} to ${job.destination}`, 2);
+    }
+    if (job.required_customs_open > 0) {
+      push(job, "customs_open", "warning", `${job.required_customs_open} customs step${job.required_customs_open === 1 ? "" : "s"} open`, `Required before clearance at ${job.destination}`, 3);
+    }
+    if (!job.assigned_to_email) {
+      push(job, "shipment_unassigned", "warning", "Shipment unassigned", `${job.customer_name} has no owner`, 4);
+    }
+  }
+  return alerts;
+}
+
+import {
+  DEFAULT_FREIGHT_AUDIT_TOLERANCE_AMOUNT,
+  DEFAULT_FREIGHT_AUDIT_TOLERANCE_PERCENT,
+  summarizeFreightAudits,
+  type FreightAuditQueueRow,
+  type FreightAuditStatus,
+} from "./freight-audit/freight-audit.ts";
+
+/* One supplier bill per shipment that has a carrier. The variance is what the
+ * audit desk is for, so a third of the bills disagree with the booked cost --
+ * a queue where every invoice matches never exercises its own screen. */
+export function mockFreightAuditQueue(staff: KcplStaffContext, now = Date.now()) {
+  const rows: FreightAuditQueueRow[] = mockCommandCentre(staff, now).jobs
+    .filter((job) => job.carrier)
+    .map((job, index) => {
+      const booked = 42_000 + index * 3_500;
+      const variance = index % 3 === 0 ? Math.round(booked * 0.085) : index % 3 === 1 ? Math.round(booked * 0.004) : 0;
+      const invoiceTotal = booked + variance;
+      const variancePercent = booked ? Number(((variance / booked) * 100).toFixed(2)) : 0;
+      const withinTolerance = Math.abs(variancePercent) <= 1;
+      const status: FreightAuditStatus = variance === 0
+        ? "matched"
+        : withinTolerance
+          ? "approved_variance"
+          : index % 6 === 0
+            ? "disputed"
+            : "review_required";
+      return {
+        payable_reference: `AP-${job.reference.slice(5)}`,
+        shipment_reference: job.reference,
+        supplier_id: null,
+        supplier_name: job.carrier ?? "Unknown carrier",
+        supplier_bill_reference: `INV-${job.reference.slice(-4)}`,
+        branch: job.primary_branch,
+        status,
+        invoice_currency: "NPR",
+        invoice_subtotal: invoiceTotal,
+        invoice_tax: 0,
+        invoice_total: invoiceTotal,
+        booked_partner_id: null,
+        booked_partner_name: job.carrier,
+        booked_currency: "NPR",
+        booked_cost: booked,
+        booked_commercial_version_id: `cv-${index + 1}`,
+        booked_commercial_fingerprint: `fp-${index + 1}`,
+        commercial_lineage_status: "versioned",
+        expected_linehaul: booked,
+        expected_fuel_surcharge: 0,
+        expected_accessorials: 0,
+        expected_rate_unit: job.mode === "ocean" ? "per_container" : "per_shipment",
+        expected_quantity: 1,
+        minimum_applied: false,
+        variance_amount: variance || null,
+        variance_percent: variance ? variancePercent : null,
+        tolerance_amount: DEFAULT_FREIGHT_AUDIT_TOLERANCE_AMOUNT,
+        tolerance_percent: DEFAULT_FREIGHT_AUDIT_TOLERANCE_PERCENT,
+        within_tolerance: withinTolerance,
+        duplicate_of: null,
+        issues: variance && !withinTolerance
+          ? [{ code: "amount_variance" as const, severity: "blocking" as const, title: "Invoice exceeds booked cost", detail: `Billed ${invoiceTotal} against a booked ${booked}` }]
+          : [],
+        dispute_note: status === "disputed" ? "Raised with the carrier for re-issue" : null,
+        resolution_note: null,
+        audited_at: status === "matched" ? iso(now, -(index + 1) * HOUR) : null,
+        audited_by_name: status === "matched" ? "Prakash Adhikari" : null,
+        audited_by_email: status === "matched" ? "prakash.adhikari@kcpl.com.np" : null,
+        approved_at: status === "approved_variance" ? iso(now, -(index + 2) * HOUR) : null,
+        approved_by_name: status === "approved_variance" ? "Prakash Adhikari" : null,
+        approved_by_email: status === "approved_variance" ? "prakash.adhikari@kcpl.com.np" : null,
+        updated_at: job.updated_at,
+        payable_status: status === "disputed" ? "on_hold" : "open",
+        customer_name: job.customer_name,
+        carrier_reference: job.carrier ? `${job.carrier.slice(0, 3).toUpperCase()}-${job.reference.slice(-4)}` : null,
+      };
+    });
+  return { kind: "ready" as const, rows, summary: summarizeFreightAudits(rows), generated_at: iso(now, 0) };
+}
+
+import type { CustomsDeskRow, CustomsDeskStep } from "./customs/customs-data.server.ts";
+import { customsDeskRisk, customsDeskState } from "./customs/customs-policy.ts";
+
+/* The desk's state and risk are not restated here -- customsDeskState and
+ * customsDeskRisk classify the rows, so the badges come from the same policy
+ * the real page runs. */
+export function mockCustomsDeskRows(staff: KcplStaffContext, now = Date.now()): CustomsDeskRow[] {
+  return mockCommandCentre(staff, now).jobs
+    .filter((job) => job.required_customs_total > 0 && job.status !== "delivered")
+    .map((job, index) => {
+      const completed = job.required_customs_total - job.required_customs_open;
+      const steps: CustomsDeskStep[] = Array.from({ length: job.required_customs_total }, (_, position) => ({
+        id: `${job.reference}-step-${position + 1}`,
+        title: ["Bill of entry", "Duty assessment", "Physical inspection", "Release order", "Gate pass", "Transit permit"][position % 6],
+        detail: position < completed ? "Completed" : "Awaiting customs broker",
+        branch: job.primary_branch,
+        completed: position < completed,
+      }));
+      const openSteps = steps.filter((step) => !step.completed);
+      // Every fourth file is short a document, which is what blocks a desk.
+      const missing = index % 4 === 0 && job.required_customs_open > 0
+        ? [{ type: "commercial_invoice" as ShipmentDocumentType, label: "Commercial invoice", reason: "Required for duty assessment", uploaded: false }]
+        : [];
+      const clearanceStatus = job.status === "customs_clearance"
+        ? (index % 5 === 0 ? "held" as const : "lodged" as const)
+        : job.required_customs_open === 0 ? "released" as const : "preparing" as const;
+      const etaDays = job.eta ? Math.round((Date.parse(job.eta) - now) / DAY) : null;
+      const releaseRequired = job.mode === "ocean" || job.mode === "air";
+      return {
+        reference: job.reference,
+        quote_reference: job.quote_reference,
+        customer_name: job.customer_name,
+        origin: job.origin,
+        destination: job.destination,
+        mode: job.mode,
+        status: job.status,
+        eta: job.eta,
+        current_location: job.current_location,
+        branch: job.primary_branch,
+        handling_branches: job.handling_branches,
+        assigned_to_name: job.assigned_to_name,
+        assigned_to_email: job.assigned_to_email,
+        customs_required: job.required_customs_total,
+        customs_completed: completed,
+        customs_open: job.required_customs_open,
+        customs_other_branch_open: 0,
+        open_steps: openSteps,
+        customs_integrity_warnings: [],
+        missing_documents: missing,
+        document_required: 3,
+        document_present: 3 - missing.length,
+        document_direction: "import",
+        document_advisories: [],
+        release_required: releaseRequired,
+        clearance: {
+          status: clearanceStatus,
+          entry_point: job.primary_branch === "Birgunj" ? "Birgunj ICD" : "Tribhuvan Customs",
+          declaration_reference: `DEC-${job.reference.slice(-4)}`,
+          agent_partner_id: null,
+          agent_name: "Himal Clearing Agency",
+          hold_reason: clearanceStatus === "held" ? "Valuation query raised by customs" : null,
+          release_evidence: clearanceStatus === "released" ? `REL-${job.reference.slice(-4)}` : null,
+          released_at: clearanceStatus === "released" ? iso(now, -6 * HOUR) : null,
+          updated_at: job.updated_at,
+          updated_by_name: job.assigned_to_name,
+          updated_by_email: job.assigned_to_email,
+        },
+        state: customsDeskState({
+          requiredSteps: job.required_customs_total,
+          openSteps: openSteps.length,
+          missingDocuments: missing.length,
+          integrityIssues: 0,
+          shipmentInCustoms: job.status === "customs_clearance",
+          releaseRequired,
+          clearanceStatus,
+        }),
+        risk: customsDeskRisk({
+          status: job.status,
+          openSteps: openSteps.length,
+          missingDocuments: missing.length,
+          integrityIssues: 0,
+          etaDays,
+          releaseRequired,
+        }),
+      };
+    });
+}

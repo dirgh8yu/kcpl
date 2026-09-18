@@ -1,3 +1,4 @@
+import { mockFreightAuditQueue, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
@@ -236,6 +237,7 @@ export async function reviewFreightAudit(reference: string, action: "recheck" | 
 }
 
 export async function listFreightAuditQueue(context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockFreightAuditQueue(context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
   const snapshot = await firebaseAdminDb().collection("payables").orderBy("updated_at", "desc").limit(250).get();
