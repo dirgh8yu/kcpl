@@ -1,3 +1,4 @@
+/* KCPL public UI — platform layer and motion tokens follow. */
 @layer theme, base, kcpl-legacy, components, utilities;
 @import "tailwindcss";
 
@@ -13,7 +14,44 @@
 }
 
 * { box-sizing:border-box; }
-html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; overscroll-behavior-y:none; }
+html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; overscroll-behavior-y:none; -webkit-tap-highlight-color:transparent; }
+
+/* Pressable controls own every axis of their tap: no double-tap-zoom wait,
+   no long-press text selection, and instant press feedback (:active) since the
+   tap highlight is now invisible. */
+button, a, [role="button"], summary, label:has(input), select {
+  touch-action: manipulation;
+}
+button, [role="button"] { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+
+/* Motion tokens shared by public UI and admin product. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Press feedback lives on pointer-down, not release. */
+button:active, a:active, [role="button"]:active, summary:active {
+  transform: scale(0.97);
+}
+button, a, [role="button"], summary { transition-property: transform; transition-duration: 160ms; transition-timing-function: var(--ease-out); }
+
+/* Some elements already carry their own transform transitions; keep their
+   press feedback without losing their existing transitions. */
+.site-header button, .mobile-nav-links a, .satellite-marker {
+  transition-property: transform, background-color, color;
+}
+
+/* Keep full-size tappables from visibly shrinking when they are full-width
+   (buttons that are also layout rows read as broken when scaled). */
+.mobile-nav-panel a:active { transform: none; }
+.mobile-quote-cta a:active { transform: scale(0.97); }
+
+/* Inputs: iOS zooms into any input under 16px. Fix the cause, keep the zoom. */
+@media (pointer: coarse) {
+  input, textarea, select { font-size: max(16px, 1em); }
+}
 body { margin:0; overflow-x:hidden; background:var(--background); color:var(--foreground); font-family:var(--font-manrope),Arial,sans-serif; }
 a { text-decoration:none; }
 a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
@@ -938,9 +976,15 @@ summary::-webkit-details-marker { display:none; }
 .faq-list { border-top:1px solid rgb(16 24 32 / .2); }
 .faq-list article { border-bottom:1px solid rgb(16 24 32 / .2); }
 .faq-list article>button { display:flex; min-height:92px; width:100%; align-items:center; justify-content:space-between; gap:2rem; border:0; background:transparent; padding:1.2rem 0; color:var(--ink); cursor:pointer; text-align:left; font-family:var(--font-cormorant),"Iowan Old Style",Georgia,serif; font-size:clamp(1.55rem,2.5vw,2.15rem); font-weight:600; line-height:1.08; }
-.faq-list article>button svg { flex:0 0 auto; color:var(--rhododendron); transition:transform .3s ease; }
+.faq-list article>button svg { flex:0 0 auto; color:var(--rhododendron); transition:transform .3s var(--ease-in-out); }
 .faq-list article.is-open>button svg { transform:rotate(180deg); }
-.faq-list article>div>p { max-width:700px; padding:0 3.5rem 1.8rem 0; color:var(--slate); font-size:.84rem; line-height:1.85; }
+/* Smooth accordion: the panel grid animates rows 0fr<->1fr while the inner
+   wrapper clips its row. Interruptible (retargets mid-motion) and GPU-cheap.
+   Reduced-motion blocks below neutralize the duration. */
+.faq-list article>div { display:grid; grid-template-rows:0fr; transition:grid-template-rows .34s var(--ease-in-out); }
+.faq-list article>div>div { min-height:0; overflow:hidden; }
+.faq-list article.is-open>div { grid-template-rows:1fr; }
+.faq-list article>div p { max-width:700px; padding:0 3.5rem 1.8rem 0; color:var(--slate); font-size:.84rem; line-height:1.85; }
 
 .not-found-page { position:relative; min-height:82svh; overflow:hidden; background:var(--ink); color:var(--parchment); }
 .not-found-grid { position:absolute; inset:0; opacity:.16; background-image:linear-gradient(rgb(143 175 185 / .22) 1px,transparent 1px),linear-gradient(90deg,rgb(143 175 185 / .22) 1px,transparent 1px); background-size:74px 74px; mask-image:linear-gradient(90deg,black,transparent 82%); }
@@ -988,7 +1032,7 @@ summary::-webkit-details-marker { display:none; }
   .faq-section,.privacy-section { padding:5.5rem 0; }
   .faq-layout,.privacy-layout,.not-found-shell { grid-template-columns:1fr; gap:3rem; }
   .faq-layout>div:first-child,.privacy-layout>aside { position:relative; top:auto; }
-  .faq-list article>button { min-height:82px; font-size:1.55rem; }.faq-list article>div>p { padding-right:0; }
+  .faq-list article>button { min-height:82px; font-size:1.55rem; }.faq-list article>div p { padding-right:0; }
   .not-found-shell { align-content:center; padding-top:8rem; }
   .not-found-code { font-size:9rem; }
   .not-found-copy h1 { font-size:clamp(3.5rem,17vw,4.8rem); }

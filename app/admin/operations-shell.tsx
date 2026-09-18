@@ -127,9 +127,9 @@ export function OperationsShell({
         </Link>
         <div className="app-scope"><span className="app-scope-mark" style={{ background: "var(--admin-success)" }}/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
         <nav className="app-workspaces" aria-label="KCPL workspaces">
-          {groups.map(({ group, items }) => <details key={group} className="app-nav-group" open={!collapsedGroups.has(group)}>
-            <summary onClick={(event) => { event.preventDefault(); toggleGroup(group); }}>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
-            {items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}
+          {groups.map(({ group, items }) => <details key={group} className={collapsedGroups.has(group) ? "app-nav-group is-collapsed" : "app-nav-group"} open>
+            <summary data-collapsed={collapsedGroups.has(group) || undefined} onClick={(event) => { event.preventDefault(); toggleGroup(group); }}>{group}<ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></summary>
+            <div className="app-nav-group-list"><div>{items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}</div></div>
           </details>)}
         </nav>
         <div className="app-sidebar-footer">

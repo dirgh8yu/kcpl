@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Container } from "./container";
 
 const faqs = [
@@ -29,11 +29,14 @@ const faqs = [
 
 export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Panels stay mounted so the height can transition; aria-hidden keeps
+  // collapsed panels out of the accessibility tree (mirrors `hidden`).
   return <section className="faq-section bg-offwhite" aria-labelledby="faq-heading">
     <Container>
       <div className="faq-layout">
         <div><p className="eyebrow text-rhododendron">Freight questions</p><h2 id="faq-heading">Useful details before you plan a route.</h2><p>For cargo-specific requirements, share the route and shipment details with the KCPL team.</p></div>
-        <div className="faq-list">{faqs.map((faq, index) => { const open = openIndex === index; const panelId = `faq-panel-${index}`; const buttonId = `faq-button-${index}`; return <article key={faq.question} className={open ? "is-open" : ""}><button id={buttonId} type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpenIndex(open ? null : index)}><span>{faq.question}</span><ChevronDown size={19} aria-hidden="true" /></button><div id={panelId} role="region" aria-labelledby={buttonId} hidden={!open}><p>{faq.answer}</p></div></article>; })}</div>
+        <div className="faq-list">{faqs.map((faq, index) => { const open = openIndex === index; const panelId = `faq-panel-${index}`; const buttonId = `faq-button-${index}`; return <article key={faq.question} className={open ? "is-open" : ""}><button id={buttonId} type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpenIndex(open ? null : index)}><span>{faq.question}</span><ChevronDown size={19} aria-hidden="true" /></button><div ref={(node) => { panelRefs.current[index] = node; }} id={panelId} role="region" aria-labelledby={buttonId} aria-hidden={!open} className={open ? "is-open" : ""}><div><p>{faq.answer}</p></div></div></article>; })}</div>
       </div>
     </Container>
   </section>;

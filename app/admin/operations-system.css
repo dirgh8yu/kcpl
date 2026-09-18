@@ -120,7 +120,6 @@
 .app-nav-group { margin-bottom: 2px; }
 .app-nav-group summary { min-height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 4px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .app-nav-group summary::-webkit-details-marker { display: none; }
-.app-nav-group:not([open]) summary svg { transform: rotate(-90deg); }
 .app-nav-group summary:hover { color: var(--admin-muted); background: transparent; }
 .app-nav-group a { position: relative; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-left: 2px solid transparent; border-radius: var(--app-radius); padding: 0 10px 0 12px; color: var(--admin-muted); font-size: 14px; font-weight: 400; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
 .app-nav-group a:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
@@ -1121,6 +1120,17 @@
 .kcpl-admin-content .ops-empty { opacity: 0; transform: translateY(4px); animation: ops-fade-in var(--app-duration-slow) var(--app-ease-out) forwards; }
 @keyframes ops-fade-in { to { opacity: 1; transform: none; } }
 
+/* Nav groups (plans/admin-motion-audit.md #3): details stays [open] in the DOM
+ * (the shell preventDefaults native toggling) so the group animates via the
+ * grid-rows trick (0fr <-> 1fr) + opacity; summary[data-collapsed] drives it.
+ * Interruptible: retargets from the current value mid-motion.
+ */
+.app-nav-group > .app-nav-group-list { display: grid; grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows var(--app-duration-slow) var(--app-ease-out), opacity var(--app-duration-fast) var(--app-ease-out), visibility 0s linear 0s; }
+.app-nav-group.is-collapsed > .app-nav-group-list { grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows var(--app-duration-slow) var(--app-ease-out), opacity var(--app-duration-fast) var(--app-ease-out), visibility 0s linear var(--app-duration-slow); }
+.app-nav-group > .app-nav-group-list > div { min-height: 0; overflow: hidden; }
+.app-nav-group summary svg { transition: transform var(--app-duration-fast) var(--app-ease-out); }
+.app-nav-group summary[data-collapsed] svg { transform: rotate(-90deg); }
+
 /* Radix Popover/Dialog content: real symmetric enter/exit, keyed off the
  * data-state Radix already sets (Radix defers unmount for CSS animations,
  * so both directions play in full — no component changes needed). */
@@ -1194,6 +1204,9 @@
   .kcpl-admin-content .ops-action-menu-item { transition: none; }
   .kcpl-admin-content .ops-notice { transition: none; }
   .kcpl-admin-content :where(table tbody tr) { transition: none; }
+  .app-nav-group > .app-nav-group-list,
+  .app-nav-group.is-collapsed > .app-nav-group-list { transition: none; }
+  .app-nav-group summary svg { transition: none; }
 }
 @media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
   .app-sidebar, .app-sidebar[data-open="true"], .app-nav-backdrop, .app-nav-backdrop[data-open="true"] { transition: none; }
