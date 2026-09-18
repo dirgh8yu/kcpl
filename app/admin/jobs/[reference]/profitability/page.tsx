@@ -4,6 +4,7 @@ import { getAdminAccess } from "../../../admin-auth";
 import { getDigitalJobFile } from "../../../job-file.server";
 import { jobCostCategoryLabels } from "../../../job-file";
 import { OperationsShell } from "../../../operations-shell";
+import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { OpsBadge, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 import { listPayablesDashboard } from "../../../payables/payables.server";
 import { payableStatusLabels } from "../../../payables/payables-data";
@@ -61,4 +62,4 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
 }
 
 function MoneyCell({label,value,positive}:{label:string;value:string;positive?:boolean}) { return <div className="rounded-[var(--app-radius)] bg-white p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[length:var(--app-label-size)] ${positive === false ? "text-[var(--admin-danger)]" : positive === true ? "text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
-function Gate({ title, detail }: { title: string; detail: string }) { return <main className="grid min-h-screen place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)]"><section className="w-full max-w-xl rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-8 shadow-[0_18px_50px_rgba(81,61,47,.06)]"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-[var(--admin-crimson)]">KCPL Job Profitability</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[var(--admin-muted)]">{detail}</p><Link href="/admin" className="mt-6 inline-flex rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 py-2.5 text-[length:var(--app-label-size)] font-bold text-white">Operations</Link></section></main>; }
+function Gate({ title, detail }: { title: string; detail: string }) { return <V4WorkspaceGate eyebrow="KCPL Job Profitability" title={title} detail={detail}/>; }

@@ -8,6 +8,7 @@ import test from "node:test";
 
 const pagePath = new URL("../app/admin/jobs/[reference]/page.tsx", import.meta.url);
 const overviewPath = new URL("../app/admin/jobs/[reference]/v4-shipment-detail-overview.tsx", import.meta.url);
+const workspacePath = new URL("../app/admin/jobs/[reference]/job-file-workspace.tsx", import.meta.url);
 
 const sections = ["shipment-work", "shipment-exceptions", "shipment-delivery", "shipment-activity"];
 
@@ -39,4 +40,18 @@ test("shipment detail surfaces truthful next actions from workflow readiness", a
   const overview = await readFile(overviewPath, "utf8");
   assert.match(overview, /Record customs release|Complete customs checklist|Set customs requirements/);
   assert.match(overview, /Verify required documents|Record proof of delivery/);
+});
+
+// The overview advertises "Close shipment" and routes it to the #shipment-work section, so the live
+// Job File workspace must actually offer closeout. The legacy workflow spine used to be the only
+// caller of close_job/reopen_job, which left the advertised action unresolvable once it was dropped.
+test("the advertised closeout action resolves inside the live Job File workspace", async () => {
+  const workspace = await readFile(workspacePath, "utf8");
+  assert.match(workspace, /action: "close_job"/);
+  assert.match(workspace, /action: "reopen_job"/);
+  assert.match(workspace, /id="shipment-closeout"/);
+
+  const page = await readFile(pagePath, "utf8");
+  assert.match(page, /initialReadiness=\{workflow\.readiness\}/);
+  assert.match(page, /canOverride=\{staff\.permissions\.role === "management"\}/);
 });

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
   BriefcaseBusiness,
   CalendarDays,
@@ -11,11 +12,14 @@ import {
   Download,
   FileText,
   Landmark,
+  LockKeyhole,
   Mail,
   MapPin,
+  PackageCheck,
   Phone,
   Plus,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   Trash2,
   Upload,
@@ -36,6 +40,7 @@ import {
   type JobTask,
 } from "../../job-file";
 import { kcplStaffRoleLabels, type KcplStaffRole } from "../../staff-permissions";
+import type { ShipmentWorkflowReadiness } from "../../workflow-guard";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
@@ -75,22 +80,28 @@ function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "v
 
 export function JobFileWorkspace({
   initialJob,
+  initialReadiness,
   returnTo,
   role,
   canManageBranches,
+  canOverride,
   currentUserName,
   currentUserEmail,
   nowIso,
 }: {
   initialJob: DigitalJobFile;
+  initialReadiness: ShipmentWorkflowReadiness;
   returnTo: string;
   role: KcplStaffRole;
   canManageBranches: boolean;
+  canOverride: boolean;
   currentUserName: string;
   currentUserEmail: string;
   nowIso: string;
 }) {
   const [job, setJob] = useState(initialJob);
+  const [workflow, setWorkflow] = useState(initialReadiness);
+  const [closeReason, setCloseReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [documents, setDocuments] = useState<ShipmentDocument[]>([]);
@@ -124,9 +135,10 @@ export function JobFileWorkspace({
 
   async function refresh() {
     const response = await fetch(`/api/admin/jobs/${encodeURIComponent(job.reference)}`, { cache: "no-store" });
-    const data = await response.json() as { job?: DigitalJobFile; error?: string };
+    const data = await response.json() as { job?: DigitalJobFile; workflow?: ShipmentWorkflowReadiness; error?: string };
     if (!response.ok || !data.job) throw new Error(data.error || "Could not refresh the Job File.");
     setJob(data.job);
+    if (data.workflow) setWorkflow(data.workflow);
     setDraft({
       primaryBranch: data.job.primary_branch,
       handlingBranches: data.job.handling_branches,
@@ -223,6 +235,51 @@ export function JobFileWorkspace({
     }
   }
 
+  // Closeout completes the operational lifecycle. The API re-checks customs, required
+  // documents, POD and open tasks, so the panel only ever reflects the real guard result.
+  async function closeJob(overrideReason = "") {
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/jobs/${encodeURIComponent(job.reference)}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "close_job", overrideReason }),
+      });
+      const data = await response.json() as { workflow?: ShipmentWorkflowReadiness; overrideUsed?: boolean; error?: string };
+      if (!response.ok) throw new Error(data.error || "The Job File could not be closed.");
+      await refresh();
+      setCloseReason("");
+      setNotice(data.overrideUsed ? "Job closed with a recorded management override." : "Operational closeout complete. Job File locked as closed.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The Job File could not be closed.");
+    } finally { setBusy(false); }
+  }
+
+  async function reopenJob() {
+    const reason = closeReason.trim();
+    if (reason.length < 8) {
+      setNotice("Add a reopening reason of at least 8 characters. Management reasons are audited.");
+      return;
+    }
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/jobs/${encodeURIComponent(job.reference)}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "reopen_job", reason }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "The Job File could not be reopened.");
+      await refresh();
+      setCloseReason("");
+      setNotice("Job File reopened and returned to active operations.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The Job File could not be reopened.");
+    } finally { setBusy(false); }
+  }
+
   function toggleHandlingBranch(branch: KcplBranch) {
     if (!canManageBranches) return;
     setDraft((current) => ({
@@ -299,6 +356,15 @@ export function JobFileWorkspace({
 
         <div className="ops-grid-main">
           <div className="ops-stack">
+            <OpsSurface id="shipment-closeout" eyebrow="Controlled closeout" title="Operational closeout" description="Customs, required documents, POD and open tasks are re-checked before closeout. Closing locks the operational lifecycle and keeps the record for finance, audit and the customer." action={workflow.job_closed
+              ? (canOverride ? <OpsButton variant="secondary" size="sm" disabled={busy} onClick={reopenJob}><RotateCcw size={12}/>{busy ? "Reopening…" : "Reopen job"}</OpsButton> : null)
+              : <OpsButton variant="primary" size="sm" disabled={busy || (!workflow.can_close && !canOverride)} onClick={() => closeJob(workflow.can_close ? "" : closeReason)}><PackageCheck size={12}/>{busy ? "Closing…" : workflow.can_close ? "Close job" : "Close with override"}</OpsButton>}>
+              {workflow.job_closed ? <div className="flex items-start gap-2.5 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-success)]"><LockKeyhole size={13} className="mt-0.5 shrink-0"/><span>Closed{workflow.job_closed_at ? ` ${dateTime(workflow.job_closed_at)}` : ""}{workflow.job_closed_by_name ? ` by ${workflow.job_closed_by_name}` : ""}. The shipment, documents, customs controls and audit trail remain available as the permanent record.{canOverride ? " Management can reopen with an audited reason." : " Only Management can reopen a closed job."}</span></div>
+                : workflow.close_blockers.length ? <div className="grid gap-2">{workflow.close_blockers.map((blocker) => <div key={blocker} className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] p-2.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]"><AlertTriangle size={11} className="mt-0.5 shrink-0"/><span>{blocker}</span></div>)}{canOverride ? <OpsField label="Management override reason" hint="Recorded against the closeout in the shipment activity trail. Minimum 8 characters."><textarea value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being closed before every control is satisfied?"/></OpsField> : <p className="text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Only Management can override a blocked closeout.</p>}</div>
+                  : <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-success)]"><PackageCheck size={12} className="mt-0.5 shrink-0"/><span>All operational closeout controls are satisfied. This job is ready to close.</span></div>}
+              {!workflow.job_closed && workflow.warnings.length ? <div className="mt-3 space-y-1">{workflow.warnings.map((warning) => <p key={warning} className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-faint)]">• {warning}</p>)}</div> : null}
+            </OpsSurface>
+
             <OpsSurface id="shipment-tasks" eyebrow="Work queue" title="Operational tasks" description="Every unfinished action for this shipment, kept beside the record it belongs to." action={<OpsButton variant="secondary" size="sm" onClick={() => setTaskOpen((value) => !value)}><Plus size={12}/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>
               {taskOpen ? <form onSubmit={addTask} className="mb-4 grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4 sm:grid-cols-2">
                 <OpsField label="Task"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField>

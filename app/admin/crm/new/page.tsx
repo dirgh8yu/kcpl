@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
+import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getStaffContext } from "../../staff-directory.server";
 import type { CrmCustomerSummary } from "../crm-data";
 import { crmDashboardStats } from "../crm-data.server";
@@ -24,5 +24,5 @@ export default async function NewCustomerPage() {
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)]"><section className="w-full max-w-xl rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-8"><p className="ops-eyebrow">KCPL Customers</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/crm" className="ops-button" data-variant="primary" data-size="md">Customers</Link><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations Home</Link></div></section></main>;
+  return <V4WorkspaceGate eyebrow="KCPL Customers" title={title} detail={detail} actions={[{ href: "/admin/crm", label: "Customers", primary: true }, { href: "/admin/command-centre", label: "Operations Home" }]}/>;
 }

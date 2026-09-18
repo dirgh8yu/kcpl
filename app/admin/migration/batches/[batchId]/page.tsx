@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, Archive, CheckCircle2, Clock3, Database, FileSpreadsheet } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
+import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { OpsBadge, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 import { getStaffContext } from "../../../staff-directory.server";
 import { getMigrationBatch } from "../../migration-batches.server";
@@ -96,5 +97,5 @@ function Safety({ title, detail }: { title: string; detail: string }) {
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <main className="grid min-h-screen place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)]"><section className="w-full max-w-xl rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-8"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-[var(--admin-crimson)]">KCPL Migration Control Centre</p><h1 className="mt-3 text-[25px] font-[730] tracking-[-.04em]">{title}</h1><p className="mt-3 text-[11px] leading-6 text-[var(--admin-muted)]">{detail}</p><Link href="/admin/command-centre" className="ops-button mt-6" data-variant="primary" data-size="md">Operations Home</Link></section></main>;
+  return <V4WorkspaceGate eyebrow="KCPL Migration Control Centre" title={title} detail={detail} actions={[{ href: "/admin/command-centre", label: "Operations Home", primary: true }, { href: "/admin/migration", label: "Migration Hub" }]}/>;
 }

@@ -2,7 +2,11 @@
  * Legacy compatibility layers may be revised or retired during route migrations,
  * but behaviour and workflow invariants must remain intact. This canonical sheet
  * owns application chrome, shared primitives and product-level tokens.
+ * The retired `.kcpl-ops-overview` dashboard layer is gone for good: it
+ * duplicated overview-dashboard.module.css and never matched a rendered node.
  * Read docs/OPERATING_SYSTEM.md before changing these components or tokens.
+ *
+ * Dead rules can be re-checked with: npm run audit:dead-css
  */
 .kcpl-admin-route {
   /* KCPL brand anchors — crimson accent and ink are contract-pinned. */
@@ -143,9 +147,6 @@
 .app-breadcrumb > :last-child { overflow: hidden; text-overflow: ellipsis; }
 .app-breadcrumb svg { flex-shrink: 0; opacity: .45; }
 .app-breadcrumb a { color: var(--admin-ink); font-weight: 500; text-decoration: none; }
-.app-global-search { display: flex; align-items: center; gap: 8px; height: 34px; width: 280px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12.5px; cursor: pointer; transition: border-color 120ms ease; }
-.app-global-search:hover { border-color: var(--admin-line-strong); }
-.app-global-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
 .app-branch { position: relative; display: inline-flex; align-items: center; gap: 8px; height: var(--app-control-height); padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-soft); color: var(--admin-ink); transition: border-color 120ms ease; }
 .app-branch:hover { border-color: var(--admin-line-strong); }
 .app-branch select { appearance: none; min-width: 96px; padding: 0 16px 0 0; border: 0; background: transparent; color: var(--admin-ink); font: inherit; font-size: 12.5px; font-weight: 550; outline: none; cursor: pointer; }
@@ -235,7 +236,6 @@
 .kcpl-admin-shell .ops-button:disabled, .kcpl-admin-shell .ops-button[aria-disabled="true"] { background: var(--admin-surface-muted); border-color: var(--admin-line); color: var(--admin-faint); box-shadow: none; transform: none; opacity: .65; }
 .kcpl-admin-content :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea) { min-height: var(--app-control-height); border-radius: var(--app-radius); font-size: 14px; font-weight: 400; line-height: 20px; color: var(--admin-ink); font-family: inherit; box-shadow: none; }
 .kcpl-admin-content :where(.ops-field input,.ops-field select,.ops-input,.ops-select,.shipments-filter) { width: 100%; min-height: var(--app-control-height); padding: 8px 11px; border: 1px solid var(--admin-line); background: var(--admin-surface); border-radius: var(--app-radius); }
-.kcpl-admin-content .shipments-filter { width: auto; min-width: 128px; }
 .kcpl-admin-content .ops-field { display: grid; gap: 6px; }
 .kcpl-admin-content .ops-field-label { margin: 0; color: var(--admin-muted); font-size: 13px; font-weight: 500; letter-spacing: normal; text-transform: none; }
 .kcpl-admin-content .ops-field small { color: var(--admin-faint); font-size: 12px; font-weight: 400; line-height: 16px; }
@@ -293,7 +293,6 @@
 .kcpl-admin-content .ops-empty h3 { font-size: 14px; line-height: 20px; }
 .kcpl-admin-content .ops-empty p { font-size: 13px; line-height: 20px; }
 .kcpl-admin-content .ops-empty-icon { background: transparent; }
-.kcpl-admin-content .shipments-register-content { padding-top: 0; }
 .kcpl-admin-content .shipments-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -448,10 +447,6 @@
 .kcpl-admin-content .shipment-next-action-cell[data-tone="warning"] { color: var(--admin-warning); font-weight: 500; }
 .kcpl-admin-content .shipment-next-action-cell[data-tone="success"] { color: var(--admin-success); }
 .kcpl-admin-content .shipments-register-table { min-width: 1120px; }
-.kcpl-admin-content .shipments-register-grid { grid-template-columns: minmax(0,1fr) 320px; min-height: 400px; border: 1px solid var(--admin-line); border-top: 0; background: var(--admin-surface); }
-.kcpl-admin-content .shipments-table-wrap { max-height: calc(100dvh - 290px); min-height: 320px; }
-.kcpl-admin-content .shipments-table thead { position: sticky; top: 0; z-index: 1; }
-.kcpl-admin-content .shipment-peek-panel { padding: 18px; background: var(--admin-surface); }
 
 /* Header action cluster (Export / Import / New shipment). */
 .kcpl-admin-content .shipments-actions,
@@ -547,42 +542,6 @@
 .kcpl-admin-content .tender-workspace-page .ops-button {
   min-height: 36px;
 }
-.kcpl-admin-content .shipment-live-flow,
-.kcpl-admin-content .shipment-workflow-spine {
-  color: var(--admin-ink);
-  font-family: inherit;
-}
-.kcpl-admin-content .shipment-live-flow .ops-eyebrow,
-.kcpl-admin-content .shipment-workflow-spine .ops-eyebrow {
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 16px;
-  text-transform: none;
-}
-.kcpl-admin-content .shipment-live-flow :where(.ops-button,.ops-badge),
-.kcpl-admin-content .shipment-workflow-spine :where(.ops-button,.ops-badge) {
-  font-family: inherit;
-}
-.kcpl-admin-content .shipment-live-flow .ops-button,
-.kcpl-admin-content .shipment-workflow-spine .ops-button {
-  min-height: 36px;
-}
-.kcpl-admin-content .shipment-live-flow .ops-button[data-size="sm"],
-.kcpl-admin-content .shipment-workflow-spine .ops-button[data-size="sm"] {
-  min-height: 36px;
-  font-size: 13px;
-}
-.kcpl-admin-content .shipment-workflow-spine > .ops-surface {
-  border-radius: var(--app-surface-radius);
-}
-.kcpl-admin-content .shipment-workflow-spine .ops-surface-header {
-  min-height: 64px;
-}
-.kcpl-admin-content .shipment-workflow-spine .ops-surface-header .ops-button {
-  min-height: 40px;
-}
 .kcpl-admin-content .shipment-inspector {
   width: min(520px, 100vw);
   overscroll-behavior: contain;
@@ -615,140 +574,10 @@
 .kcpl-admin-content .shipment-inspector-footer .ops-button {
   min-height: var(--app-control-height-touch);
 }
-.kcpl-admin-content .shipment-peek-head h2 { font-size: 18px; font-weight: 600; line-height: 26px; }
-.kcpl-admin-content .shipment-peek-section { padding-block: 14px; }
-.kcpl-admin-content .shipment-peek-kicker, .kcpl-admin-content .shipment-peek-label { color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; }
-.kcpl-admin-content .shipment-peek-actions { display: grid; gap: 8px; padding-top: 14px; }
 .ops-pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 10px; border: 1px solid var(--admin-line); border-top: 0; padding: 10px 12px; background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; line-height: 16px; }
 .ops-pagination-actions { display: flex; align-items: center; gap: 8px; }
 
 /* Existing bespoke workspaces use the same scale without changing their information structure. */
-.kcpl-admin-content .kcpl-ops-overview { background: var(--admin-canvas); font-family: inherit; }
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-content {
-  width: min(1480px, 100%);
-  margin: 0 auto;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpis {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  overflow: hidden;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--admin-line);
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi {
-  display: flex;
-  min-width: 0;
-  min-height: 112px;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-  border-right: 1px solid var(--admin-line);
-  background: var(--admin-surface);
-  padding: 16px;
-  color: var(--admin-ink);
-  text-decoration: none;
-  transition: background-color 140ms ease, box-shadow 140ms ease;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:last-child { border-right: 0; }
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:hover,
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:focus-visible {
-  background: var(--admin-surface-muted);
-  box-shadow: inset 0 -3px 0 var(--admin-crimson);
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi-label {
-  overflow: hidden;
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi-value {
-  color: var(--admin-ink);
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 32px;
-  font-variant-numeric: tabular-nums;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi-detail {
-  overflow: hidden;
-  color: var(--admin-faint);
-  font-size: 12px;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi.is-danger .overview-dashboard-kpi-value { color: var(--admin-danger); }
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi.is-warning .overview-dashboard-kpi-value { color: var(--admin-warning); }
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi.is-info .overview-dashboard-kpi-value { color: var(--admin-info); }
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface {
-  overflow: hidden;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--admin-surface);
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface-header {
-  display: flex;
-  min-height: 56px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--admin-line);
-  padding: 12px 16px;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface-title {
-  min-width: 0;
-  color: var(--admin-ink);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface-action {
-  flex: none;
-  min-width: 0;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface :where(table, .overflow-x-auto) {
-  min-width: 0;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface tbody tr {
-  min-height: 48px;
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface tbody tr:hover {
-  background: var(--admin-canvas);
-}
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-surface a:focus-visible,
-.kcpl-admin-content .kcpl-ops-overview .overview-dashboard-kpi:focus-visible {
-  outline: 2px solid var(--app-focus);
-  outline-offset: -2px;
-}
-.kcpl-admin-content .kcpl-ops-overview-inner { width: 100%; max-width: none; margin: 0; padding: 0 var(--app-page-gap) 24px; }
-.kcpl-admin-content .overview-intro { padding: 16px 0; gap: 18px; border-bottom: 1px solid var(--admin-line); align-items: center; }
-.kcpl-admin-content .overview-kicker { margin-bottom: 4px; font-size: 12px; color: var(--admin-faint); }
-.kcpl-admin-content .overview-lede { margin-top: 4px; max-width: 650px; font-size: 13px; line-height: 20px; }
-.kcpl-admin-content .overview-meta-list { gap: 4px; }
-.kcpl-admin-content .overview-meta-list > div { padding: 0; gap: 8px; }
-.kcpl-admin-content .overview-meta-list :where(dt,dd) { font-size: 12px; font-weight: 400; line-height: 16px; }
-.kcpl-admin-content .overview-header-actions { margin-top: 8px; gap: 8px; }
-.kcpl-admin-content :where(.overview-primary-action,.overview-text-action) { min-height: var(--app-control-height); padding: 6px 12px; font-size: 13px; border-radius: var(--app-radius); box-shadow: none; transform: none; }
-.kcpl-admin-content .overview-controlbar { padding: 10px 0; min-height: 48px; gap: 12px; }
-.kcpl-admin-content .overview-quick-actions { margin: 0; padding: 8px 0; gap: 10px; }
-.kcpl-admin-content .overview-metrics { margin: 0; border: 1px solid var(--admin-line); background: var(--admin-surface); }
-.kcpl-admin-content .overview-metric { min-height: 88px; padding: 14px 16px; box-shadow: none; }
-.kcpl-admin-content .overview-metric-label { font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: normal; }
-.kcpl-admin-content .overview-metric-value { margin-top: 7px; font-size: 26px; font-weight: 600; line-height: 1; }
-.kcpl-admin-content .overview-metric-detail { margin-top: 5px; font-size: 12px; }
-.kcpl-admin-content :where(.overview-workgrid,.overview-network-grid) { margin-top: 16px; gap: 16px; }
-.kcpl-admin-content :where(.overview-register,.overview-workflows,.overview-activity) { background: var(--admin-surface); border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); }
-.kcpl-admin-content :where(.overview-workflows,.overview-activity) { margin-top: 16px; }
-.kcpl-admin-content .overview-section-head { padding: 14px 16px; margin: 0; border-bottom: 1px solid var(--admin-line); }
-.kcpl-admin-content .overview-section-head h2 { font-size: 16px; font-weight: 600; }
-.kcpl-admin-content .overview-section-kicker { font-size: 12px; color: var(--admin-faint); }
-.kcpl-admin-content .overview-section-head > div > p:last-child { font-size: 13px; line-height: 20px; }
-.kcpl-admin-content :where(.overview-row,.overview-today-row,.overview-workflow-row,.overview-branch-row,.overview-staff-row,.overview-activity-row) { padding: 11px 16px; min-height: 56px; }
-.kcpl-admin-content :where(.overview-row-title,.overview-today-title,.overview-workflow-name strong,.overview-branch-name strong,.overview-staff-name strong) { font-size: 13px; font-weight: 600; }
-.kcpl-admin-content :where(.overview-row-subtitle,.overview-row-route,.overview-today-subtitle,.overview-today-route) { font-size: 12px; }
 .kcpl-admin-content .shipment-detail-inner { width: calc(100% - var(--app-page-gap) * 2); max-width: none; }
 .kcpl-admin-content .shipment-detail-header { padding: 20px 0; gap: 16px; }
 .kcpl-admin-content .shipment-detail-title-row { margin-top: 5px; gap: 10px; }
@@ -762,8 +591,6 @@
 .kcpl-admin-content .shipment-next-rail { top: calc(var(--app-toolbar-height) + 54px); padding: 16px; box-shadow: none; }
 .kcpl-admin-content .ops-filter-pill, .kcpl-admin-content .ops-segmented { border-radius: var(--app-radius); }
 .kcpl-admin-content .ops-filter-pill { font-size: 12px; }
-.kcpl-admin-content .ops-drawer { top: 0; right: 0; bottom: 0; width: min(520px,100vw); border-radius: 0; background: var(--admin-surface); }
-.kcpl-admin-content .ops-drawer-header { padding: 16px; background: var(--admin-surface); backdrop-filter: none; }
 
 @media (max-width: 1200px) {
   .app-global-search { width: 220px; }

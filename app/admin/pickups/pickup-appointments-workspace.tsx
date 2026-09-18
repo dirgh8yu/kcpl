@@ -514,7 +514,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       const attention = row.status !== "cancelled" && row.status !== "picked_up" && pickupNeedsAttention(row, nowIso);
                       const rowSelected = row.shipment_reference === selectedReference;
                       return (
-                        <tr key={row.id} className={`cursor-pointer border-b border-[var(--admin-line)] transition-colors last:border-b-0 ${rowSelected ? "bg-[var(--admin-surface-muted)]" : "hover:bg-[var(--admin-canvas)]"}`} aria-selected={rowSelected || undefined} onClick={() => choose(row)}>
+                        <tr key={row.id} tabIndex={0} className={`cursor-pointer border-b border-[var(--admin-line)] transition-colors last:border-b-0 ${rowSelected ? "bg-[var(--admin-surface-muted)]" : "hover:bg-[var(--admin-canvas)]"}`} aria-selected={rowSelected || undefined} onClick={() => choose(row)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(row); } }}>
                           <td className="whitespace-nowrap px-4 py-3 align-top">
                             <span className="block font-medium text-[var(--admin-ink)]">{row.id}</span>
                             <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.booking_reference || row.provider_reference || "—"}</span>

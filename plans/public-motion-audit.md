@@ -1,6 +1,8 @@
 # Public UI motion audit
 
-- **Status**: DONE (two deviations recorded below)
+- **Status**: DONE — all items shipped; both `AUDIT.md` deviations **decided and closed**
+  (see Decisions below); the three open feel-checks are now either enforced by
+  `tests/public-ui-motion-contract.test.mjs` or down to one browser-only check
 - **Commit stamped**: `c86557e`
 - **Scope**: public routes only — `app/globals.css`, `app/components/**` (the admin
   product has its own sheet and its own audit: [admin-motion-audit.md](admin-motion-audit.md))
@@ -21,11 +23,11 @@
 | 8 | `.satellite-marker-ring` / `-core` (network map) | `transition: height, width` — layout animation on hover/active/focus | State indication | `transform: scale(1.5556)` / `scale(1.5)` with compensated `border-width` (`.9643px` / `.6667px`, and `1.2857px` for the focus ring) so the rendered stroke is unchanged; hover variants gated |
 | 9 | `.satellite-marker-label` | `transition: font-size` | Polish | Font-size dropped from the transition list (colour still transitions, size snaps with the panel swap) |
 
-## Deviations (deliberate, do not re-report)
+## Decisions (closed — do not re-open without new evidence)
 
-### `AUDIT.md` §5 — “Framer Motion `x`/`y`/`scale` shorthands are not hardware-accelerated”
+### DECISION 1 — `AUDIT.md` §5 “Framer Motion `x`/`y`/`scale` shorthands are not hardware-accelerated” → **not adopted**
 
-**Not applied.** The installed renderer is `motion@13.1.0`, whose `motion-dom`
+The rule stays deliberately unapplied. The installed renderer is `motion@13.1.0`, whose `motion-dom`
 build lists `transform` itself in `acceleratedValues`
 (`node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs`):
 independent transforms (`x`, `y`, `scale`, `rotate`) are composed into that single
@@ -43,9 +45,11 @@ The rule *was* applied where it is unambiguously correct: every animated
 grep -n "transition:[^;]*\(width\|height\|font-size\|left\|right\|top\|bottom\|margin\|padding\)" app/globals.css   # no output
 ```
 
-### `AUDIT.md` §5 — animated layout properties
+### DECISION 2 — `AUDIT.md` §5 animated layout properties → **adopted everywhere it applies**
 
-N/A for the remaining case: `app/admin/operations-system.css` still has
+Nothing animated that forces layout is left in either sheet, and the public site now has a
+regression guard for it (`tests/public-ui-motion-contract.test.mjs`, test 1: "no public
+transition animates a layout property"). The only remaining case is not a decision: `app/admin/operations-system.css` still has
 `transition: width 160ms ease` on `.kcpl-ops-overview .overview-status-item-track span`,
 which is dead CSS — no component renders `kcpl-ops-overview` or
 `overview-status-item*`. It belongs to the leftover selectors tracked by
@@ -69,15 +73,33 @@ which is dead CSS — no component renders `kcpl-ops-overview` or
 npm run check:ui          # UI contract: stylesheet order, no !important, token presence
 npx tsc -b --noEmit
 npm run lint
-node --experimental-strip-types --test tests/admin-ui-system.test.mjs tests/operations-overview-ui-contract.test.mjs tests/shipment-detail-ui-contract.test.mjs tests/commercial-ui-contract.test.mjs tests/workflow-navigation.test.mjs
+node --experimental-strip-types --test tests/admin-ui-system.test.mjs tests/operations-overview-ui-contract.test.mjs tests/shipment-detail-ui-contract.test.mjs tests/commercial-ui-contract.test.mjs tests/workflow-navigation.test.mjs tests/public-ui-motion-contract.test.mjs
 ```
 
-Feel checks that still need a human eye (cannot be judged from source):
+### Now enforced mechanically
 
-- The satellite marker ring must stay visually identical at rest, hover and
-  keyboard focus — confirm the stroke does not look thinner or thicker when it
-  scales up (DevTools → 10% animation playback).
-- The journey dot and the flight plane must start and finish at exactly the same
-  points they did before the wrapper refactor.
-- Toggle `prefers-reduced-motion` in the Rendering panel: the `.why-stage` hover
-  lift must disappear, while colour and opacity feedback remain.
+`tests/public-ui-motion-contract.test.mjs` (in `npm test`, so CI covers it) pins the four
+things that used to be “look at it in the browser” claims:
+
+1. no `transition` in `app/globals.css` animates `width`/`height`/`font-size`/`left`/
+   `right`/`top`/`bottom`/`margin`/`padding` (`stroke-width` and `border-width` excluded —
+   they paint a stroke on a fixed-size element rather than moving siblings);
+2. the map marker's `scale × border-width` still equals the resting stroke at rest, on
+   hover and on keyboard focus (`1.5556 × .9643 ≈ 1.5`, `1.5 × .6667 ≈ 1.0`,
+   `1.5556 × 1.2857 ≈ 2.0`), including the legacy 18px/28px and 8px/12px geometry the
+   scales came from;
+3. the journey dot and quote flight plane travel on a full-bleed `position:absolute;
+   inset:0; pointer-events:none` track, and neither moving point declares an animated
+   offset — so the travel distance is the same as the old `left`/`bottom` animation;
+4. the blanket reduced-motion reset is present **and** `.why-stage:hover` carries its own
+   carve-out, which it needs because the blanket reset is single-class specificity.
+
+### Still needs a browser
+
+- Sub-pixel rasterisation of the compensated borders: the arithmetic is now exact, but
+  whether the browser rounds `0.9643px × 1.5556` to the same device pixels it used to
+  round a plain `1.5px` can only be confirmed visually (DevTools → Rendering → Paint
+  flashing / 10% animation playback).
+- The journey dot and flight plane must *look* like they start and finish at the same
+  points. The structure that makes that true is pinned by test 3; the endpoints themselves
+  are still an eyeball comparison against the pre-refactor build.

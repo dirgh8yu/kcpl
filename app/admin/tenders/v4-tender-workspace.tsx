@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { TmsOrder } from "../rating/tms-rating";
@@ -83,6 +84,8 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
   customers: CustomerOption[];
   canManage: boolean;
 }) {
+  // Booking navigates through the router so the confirmed tender keeps the app shell.
+  const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [tenders, setTenders] = useState(initialTenders);
   const firstTender = initialTenders[0] ?? null;
@@ -246,7 +249,8 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
       const response = await fetch("/api/admin/tenders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "book", tenderId: tender.id, bookingReference, pickupConfirmation }) });
       const data = await response.json() as ApiResponse;
       if (!response.ok || !data.ok || !data.shipmentReference) throw new Error(data.error || "Booking could not be confirmed.");
-      window.location.assign(`/admin/tenders/${encodeURIComponent(tender.id)}`);
+      router.push(`/admin/tenders/${encodeURIComponent(tender.id)}`);
+      router.refresh();
     } catch (error) {
       setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Booking could not be confirmed." });
       setBusy(false);
@@ -282,7 +286,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
           <table className="w-full min-w-[800px] table-fixed border-collapse text-left"><thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">TENDER</th><th className="w-[170px] px-3 font-medium">ORDER / ROUTE</th><th className="w-[150px] px-3 font-medium">PARTNER</th><th className="w-[120px] px-3 text-right font-medium">COMMERCIAL</th><th className="w-[110px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">DEADLINE</th></tr></thead>
             <tbody>{filtered.length ? filtered.map((tender) => {
               const chosen = selected?.id === tender.id;
-              return <tr key={tender.id} onClick={() => setSelectedTenderId(tender.id)} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}><td className="relative px-3 text-[13px] font-semibold">{chosen ? <span className="absolute inset-y-0 left-0 w-0.5 bg-[var(--admin-crimson)]"/> : null}<span className="block truncate">{tender.tender_reference}</span></td><td className="px-3"><span className="block truncate text-[12px] font-medium">{tender.order_id}</span><span className="mt-0.5 block truncate text-[11px] text-[var(--admin-muted)]">{tender.origin} → {tender.destination}</span></td><td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]"><span className="block truncate">{tender.partner_name}</span></td><td className="px-3 text-right text-[12px] font-semibold tabular-nums">{finalCommercial(tender)}</td><td className="px-3"><span className={`inline-flex rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium ${statusClasses(tender.status)}`}>{tmsTenderStatusLabels[tender.status]}</span></td><td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]">{shortDate(tender.response_due_at)}</td></tr>;
+              return <tr key={tender.id} tabIndex={0} aria-selected={chosen || undefined} onClick={() => setSelectedTenderId(tender.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedTenderId(tender.id); } }} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}><td className="relative px-3 text-[13px] font-semibold">{chosen ? <span className="absolute inset-y-0 left-0 w-0.5 bg-[var(--admin-crimson)]"/> : null}<span className="block truncate">{tender.tender_reference}</span></td><td className="px-3"><span className="block truncate text-[12px] font-medium">{tender.order_id}</span><span className="mt-0.5 block truncate text-[11px] text-[var(--admin-muted)]">{tender.origin} → {tender.destination}</span></td><td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]"><span className="block truncate">{tender.partner_name}</span></td><td className="px-3 text-right text-[12px] font-semibold tabular-nums">{finalCommercial(tender)}</td><td className="px-3"><span className={`inline-flex rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium ${statusClasses(tender.status)}`}>{tmsTenderStatusLabels[tender.status]}</span></td><td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]">{shortDate(tender.response_due_at)}</td></tr>;
             }) : <tr><td colSpan={6} className="h-48 px-6 text-center"><p className="text-[14px] font-semibold">No tenders match this view</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Change filters or create a tender from an eligible order.</p></td></tr>}</tbody></table>
         </div>
         <aside className="min-h-[650px] bg-white px-6 py-5">{selected ? <TenderInspector tender={selected} order={selectedTenderOrder} canManage={canManage} busy={busy} counterFor={counterFor} setCounterFor={setCounterFor} counterCost={counterCost} setCounterCost={setCounterCost} counterCurrency={counterCurrency} setCounterCurrency={setCounterCurrency} responseNote={responseNote} setResponseNote={setResponseNote} bookingFor={bookingFor} setBookingFor={setBookingFor} bookingReference={bookingReference} setBookingReference={setBookingReference} pickupConfirmation={pickupConfirmation} setPickupConfirmation={setPickupConfirmation} onRespond={respond} onCancel={cancel} onBook={book}/> : <div className="grid h-full place-items-center text-center"><div><p className="text-[14px] font-semibold">No tender selected</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Choose a row to inspect procurement authority.</p></div></div>}</aside>
