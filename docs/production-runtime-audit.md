@@ -22,11 +22,46 @@ These integrations are operationally useful but do not make the whole KCPL runti
 - SendGrid transactional email.
 - Bootstrap/recovery admin allowlist when active Firestore staff profiles already exist.
 
-## Hosting finding
+## Canonical production runtime — decided
 
-The repository contains Firebase App Hosting configuration and the application runtime is written to consume Firebase-injected configuration. A separate OpenAI/Cloudflare hosting project is also attached to the repository, and the Cloudflare Workers deployment for the Document Vault 3E2 commit failed while KCPL CI passed.
+**Firebase App Hosting is the single canonical production runtime.** The OpenAI/Cloudflare
+deployment path is demoted: it is not a second opinion on the same application, and it must not
+be read as one.
 
-Until one production host is explicitly designated as canonical, treat a green application CI run and a successful hosting rollout as separate gates. Do not interpret a Cloudflare deployment failure as an application regression when Firebase App Hosting is the intended runtime, and do not assume Firebase-injected environment variables exist on a non-Firebase host.
+Evidence for the decision:
+
+- `apphosting.yaml` is committed and the runtime is written to consume Firebase-injected
+  configuration (Admin SDK, Storage bucket, Secret Manager).
+- Firebase App Hosting rollouts succeed — `App Hosting - Rollout (kcpl-82574/asia-southeast1/kcpl)`
+  is green on every commit in the available history.
+- The Cloudflare Workers build has **failed on every commit**, including commits whose
+  `KCPL CI / quality` check passed. It has never been green, so it has never been a signal.
+- The repository contains no `wrangler`, `open-next` or Cloudflare build configuration. The
+  secondary pipeline is configured outside Git, and its stale repo-side binding
+  (`.openai/hosting.json`, an OpenAI project id plus a D1 database) has been removed.
+
+Consequences:
+
+- A green `KCPL CI / quality` run and a successful hosting rollout are separate gates. A failing
+  Cloudflare build is not an application regression.
+- Firebase-injected environment variables do not exist on a non-Firebase host; do not assume they
+  do when debugging anywhere else.
+- `KCPL_ALLOWED_ORIGINS` and the application security configuration must name the Firebase App
+  Hosting origin, not a second host.
+
+Still outstanding, and only resolvable in the hosting dashboards: disconnect the Cloudflare
+Workers build from the repository so a permanently red check stops masking real ones.
+
+## Release controls in force
+
+Recorded so the state is discoverable rather than tribal:
+
+- `main` is protected. Pull requests are required before merge, and `KCPL CI / quality` must pass.
+- Force-pushes and branch deletion are blocked on `main`.
+- `enforce_admins` is off, so an administrator keeps a deliberate break-glass path; use it only
+  for a rollback, and say so in the PR.
+- No approving review is required, because a sole maintainer cannot approve their own pull
+  request. Stale reviews are dismissed when new commits land.
 
 ## Verification sequence
 
