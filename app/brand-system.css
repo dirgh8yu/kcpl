@@ -115,14 +115,6 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-/* Retire the old animated serif lockup wherever old markup survives during migration. */
-.brand-header-rail,
-.brand-header-stage,
-.brand-header-full,
-.brand-header-short {
-  font-family: var(--font-manrope), Arial, sans-serif;
-  animation: none;
-}
 
 /* Public navigation uses only the approved crimson / black / canvas system. */
 .site-header.is-scrolled,

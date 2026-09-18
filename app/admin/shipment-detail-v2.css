@@ -298,7 +298,6 @@
   margin: 0;
 }
 .shipment-job-file-embedded .ops-page-actions > a:first-child { display: none; }
-.shipment-job-file-embedded .ops-page > .ops-stat-strip { display: none; }
 .shipment-job-file-embedded .ops-content-wide { width: 100%; max-width: none; margin: 0; padding: 0; }
 
 .shipment-detail-v2 .ops-grid-main { align-items: start; }
@@ -386,10 +385,6 @@
   padding: 16px 0;
   background: transparent;
   box-shadow: none;
-}
-#shipment-exceptions .ops-stat-strip {
-  border-block-color: var(--shipment-line);
-  background: transparent;
 }
 
 /* Delivery: keep controls powerful but visually subordinate. */

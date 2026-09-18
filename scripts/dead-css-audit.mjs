@@ -1,5 +1,10 @@
 #!/usr/bin/env node
-// Audit the admin stylesheets for rules that can never apply.
+// Audit the stylesheets for rules that can never apply.
+//
+// Every non-module sheet under app/ is scanned by default, not just the three
+// admin sheets that were originally tracked. The narrower set is why the other
+// eleven sheets were able to accumulate unreachable rules unnoticed: the gate
+// only ever looked at three of the twenty. `--file` still audits a single sheet.
 //
 // A rule is reported as unreachable ("dead") only when EVERY selector in its
 // list contains at least one class token that cannot reach the DOM. Liveness is
@@ -25,23 +30,47 @@
 //   npm run audit:dead-css
 //   npm run audit:dead-css -- --list     # every dead rule, with its tokens
 //   npm run audit:dead-css -- --spans    # contiguous deletable spans
+//   npm run audit:dead-css -- --safe-runs  # runs a single edit can cut
+//   npm run audit:dead-css -- --prune    # dry-run: what --safe-runs would cut
+//   npm run audit:dead-css -- --prune --write   # apply the cut
 //   npm run audit:dead-css -- --json     # machine-readable, for the gate test
 
 import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const SHEETS = [
-  "app/admin/operations-system.css",
-  "app/admin/operations-polish.css",
-  "app/admin/operations-hotfix.css",
-];
+// Every non-module stylesheet under app/, discovered rather than listed so a
+// new sheet is covered the moment it is imported. `*.module.css` is excluded on
+// purpose: its classes are consumed as `styles.foo`, never as literals, so it is
+// a liveness *source* and auditing it for dead rules would be meaningless.
+const SHEETS = (() => {
+  const found = [];
+  (function walk(dir) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules") walk(full);
+      } else if (entry.name.endsWith(".css") && !entry.name.endsWith(".module.css")) {
+        found.push(path.relative(ROOT, full));
+      }
+    }
+  })(path.join(ROOT, "app"));
+  return found.sort();
+})();
 const SNAPSHOT = path.join(ROOT, ".qa", "rendered-tokens.txt");
 
 const wantList = process.argv.includes("--list");
 const wantSpans = process.argv.includes("--spans");
 const wantRegions = process.argv.includes("--regions");
 const wantSafeRuns = process.argv.includes("--safe-runs");
+const wantPrune = process.argv.includes("--prune");
+const wantWrite = process.argv.includes("--write");
 const fileArgIndex = process.argv.indexOf("--file");
 const fileOverride = fileArgIndex >= 0 ? process.argv[fileArgIndex + 1] : null;
 const wantJson = process.argv.includes("--json");
@@ -281,6 +310,202 @@ const verdictFor = (selector) => {
   return perSelector.flat();
 };
 
+// A comment line, and nothing else. The `{`/`;` exclusion matters: `* { … }` is a
+// universal-selector rule, not a comment continuation, and treating it as one
+// would let a cut step over a live rule.
+const isCommentLine = (body) => {
+  if (!body) return false;
+  if (body.includes("{") || body.includes(";")) return false;
+  return body.startsWith("/*") || body.startsWith("*") || body.endsWith("*/");
+};
+
+const isStructuralLine = (lines, n) => {
+  const body = (lines[n - 1] ?? "").trim();
+  return body === "" || isCommentLine(body);
+};
+
+// A comment block immediately above a dead rule (no blank line between them) is
+// that rule's own documentation — this file's convention is comment-then-block —
+// so it is retired with the rule rather than left describing a class that no
+// longer exists. The walk stops at the first blank line, so a section header or
+// an unrelated comment cannot be pulled in, and it is capped so a runaway
+// comment block cannot clear a page of the sheet.
+const COMMENT_EXTENSION_LIMIT = 8;
+const extendUpOverComments = (lines, start) => {
+  let top = start;
+  for (let n = start - 1; n >= 1 && start - n <= COMMENT_EXTENSION_LIMIT; n -= 1) {
+    if (!isCommentLine((lines[n - 1] ?? "").trim())) break;
+    top = n;
+  }
+  if (top === start) return start;
+  const above = (lines[top - 2] ?? "").trim();
+  if (above === "" || above.endsWith("}") || above.endsWith("{")) return top;
+  return start;
+};
+
+// The unit that can be cut without any risk of damaging the file.
+//
+// Each dead rule contributes its own line span (plus its attached comment), and
+// spans are merged only across lines that are blank or a comment. That one
+// restriction does all the work:
+//
+//   * an at-rule's opening (`@media (…) {`) and closing (`}`) lines are neither,
+//     so a span can never cross an at-rule boundary and orphan a brace;
+//   * a reachable rule's lines are neither, so a span can never swallow one;
+//   * a dead rule nested in `@media`, or wedged between two live rules, is still
+//     removed by its own span — which is why this covers every dead rule and not
+//     just the ones that happen to be adjacent.
+const computeSafeRuns = (lines, dead) => {
+  const spans = dead
+    .map((rule) => ({ start: extendUpOverComments(lines, rule.start), end: rule.end, rules: 1 }))
+    .sort((a, b) => a.start - b.start);
+  const merged = [];
+  for (const span of spans) {
+    const last = merged[merged.length - 1];
+    if (last) {
+      let gapIsStructural = true;
+      for (let n = last.end + 1; n < span.start; n++) if (!isStructuralLine(lines, n)) gapIsStructural = false;
+      if (span.start <= last.end + 1 || gapIsStructural) {
+        last.end = Math.max(last.end, span.end);
+        last.rules += span.rules;
+        continue;
+      }
+    }
+    merged.push({ ...span });
+  }
+  return merged;
+};
+
+// Brace balance with comments blanked, so a comment that mentions a brace
+// cannot make a correct cut look like it unbalanced the file.
+const braceBalance = (css) => {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  return (clean.match(/\{/g) ?? []).length - (clean.match(/\}/g) ?? []).length;
+};
+
+const inRuns = (runs, n) => runs.some((run) => n >= run.start && n <= run.end);
+
+// Remove the verified dead runs. Every guard below fails closed, because the one
+// direction that can damage the stylesheet is cutting a rule that still applies.
+const pruneSheet = (full, label) => {
+  const original = fs.readFileSync(full, "utf8");
+  const lines = original.split("\n");
+  const parsed = parseRules(original);
+  const dead = parsed.filter((rule) => verdictFor(rule.selector));
+  const runs = computeSafeRuns(lines, dead);
+
+  if (!runs.length) {
+    console.log(`  ${label}: nothing safely deletable`);
+    return { removed: 0, runs: 0, refused: false };
+  }
+
+  const deadKeys = new Set(dead.map((rule) => `${rule.start}-${rule.end}`));
+  const liveRules = parsed.filter((rule) => !deadKeys.has(`${rule.start}-${rule.end}`));
+  const deadLines = new Set();
+  for (const rule of dead) for (let n = rule.start; n <= rule.end; n++) deadLines.add(n);
+
+  const bodyOf = (n) => (lines[n - 1] ?? "").trim();
+  const structural = (n) => isStructuralLine(lines, n);
+  // A dead rule must be covered by exactly one run, or the arithmetic below is
+  // meaningless — so check it rather than trusting the merge.
+  const covered = (rule) => runs.filter((run) => rule.start >= run.start && rule.end <= run.end);
+  const uncovered = dead.filter((rule) => covered(rule).length !== 1);
+  const expectedRemaining = dead.filter((rule) => covered(rule).length === 0);
+
+  const refusals = [];
+  if (uncovered.length) {
+    refusals.push(`${uncovered.length} unreachable rules are not cleanly inside a run (e.g. line ${uncovered[0].start})`);
+  }
+  for (const run of runs) {
+    for (const rule of liveRules) {
+      if (rule.start <= run.end && rule.end >= run.start) {
+        refusals.push(`run ${run.start}-${run.end} overlaps a reachable rule at ${rule.start}-${rule.end}`);
+      }
+    }
+    for (let n = run.start; n <= run.end; n++) {
+      if (!deadLines.has(n) && !structural(n)) {
+        refusals.push(`run ${run.start}-${run.end} contains non-rule content at line ${n}: ${bodyOf(n).slice(0, 60)}`);
+      }
+    }
+    // A cut line must not be shared with the line above it. Ending on `}` or `{`
+    // is fine — that is a block closing, or an at-rule opening a block the run
+    // sits inside, and deleting whole lines inside it leaves the braces intact.
+    // Anything else means the run's first line is the tail of a longer line.
+    const above = bodyOf(run.start - 1);
+    const opensOrCloses = above.endsWith("}") || above.endsWith("{");
+    if (above && !structural(run.start - 1) && !opensOrCloses) {
+      refusals.push(`run ${run.start} starts mid-line after: ${above.slice(0, 60)}`);
+    }
+  }
+
+  if (refusals.length) {
+    console.log(`  ${label}: REFUSED — no change made`);
+    for (const reason of refusals.slice(0, 10)) console.log(`    ${reason}`);
+    return { removed: 0, runs: 0, refused: true };
+  }
+
+  const kept = lines.filter((_, index) => !inRuns(runs, index + 1));
+  const after = kept.join("\n");
+
+  // The invariants a correct cut cannot break.
+  const problems = [];
+  if (braceBalance(original) !== braceBalance(after)) problems.push("brace balance changed");
+  const afterParsed = parseRules(after);
+  const afterDead = afterParsed.filter((rule) => verdictFor(rule.selector));
+  const afterLive = afterParsed.length - afterDead.length;
+  if (afterLive !== liveRules.length) {
+    problems.push(`reachable rules went from ${liveRules.length} to ${afterLive}`);
+  }
+  // The unreachable rules left behind must be exactly the ones no run covered.
+  // Comparing identities rather than counts catches a cut that removes the wrong
+  // rule and a cut that removes one rule too many in a single check.
+  const identity = (rule) => `${rule.context} :: ${rule.selector.replace(/\s+/g, " ")}`;
+  const remainingNow = afterDead.map(identity).sort();
+  const remainingExpected = expectedRemaining.map(identity).sort();
+  if (remainingNow.length !== remainingExpected.length) {
+    problems.push(`${remainingNow.length} unreachable rules remain, expected ${remainingExpected.length}`);
+  } else {
+    for (let i = 0; i < remainingNow.length; i++) {
+      if (remainingNow[i] !== remainingExpected[i]) {
+        problems.push(`a cut removed the wrong rule: ${remainingNow[i].slice(0, 80)}`);
+        break;
+      }
+    }
+  }
+  if (problems.length) {
+    console.log(`  ${label}: REFUSED — no change made`);
+    for (const reason of problems) console.log(`    ${reason}`);
+    return { removed: 0, runs: 0, refused: true };
+  }
+
+  const removedLines = original.split("\n").length - kept.length;
+  const summary = runs
+    .map((run) => `${run.start}-${run.end} (${run.end - run.start + 1} lines, ${run.rules} rules)`)
+    .join(", ");
+
+  if (!wantWrite) {
+    console.log(`  ${label}: would remove ${removedLines} lines in ${runs.length} runs — ${summary}`);
+    console.log("    dry run: re-run with --write to apply");
+    return { removed: 0, runs: runs.length, refused: false };
+  }
+
+  fs.writeFileSync(full, after);
+  // Confirm the write actually landed and still parses as intended.
+  const written = fs.readFileSync(full, "utf8");
+  if (written !== after) {
+    fs.writeFileSync(full, original);
+    console.log(`  ${label}: REFUSED — write did not land; original restored`);
+    return { removed: 0, runs: 0, refused: true };
+  }
+  console.log(`  ${label}: removed ${removedLines} lines in ${runs.length} runs — ${summary}`);
+  if (expectedRemaining.length) {
+    console.log(`    ${expectedRemaining.length} unreachable rules are left for a targeted review (see --list)`);
+  }
+  return { removed: removedLines, runs: runs.length, refused: false };
+};
+
+let pruneRefused = false;
+
 const report = { sheets: [], totals: { rules: 0, dead: 0, lines: 0 } };
 
 const sheets = fileOverride ? [path.resolve(ROOT, fileOverride)] : SHEETS.map((s) => path.join(ROOT, s));
@@ -347,42 +572,20 @@ for (const sheet of sheets) {
     flush();
   }
 
-  if (wantSafeRuns) {
-    // The unit that can be cut without any risk of damaging the file: a run of
-    // consecutive TOP-LEVEL dead rules where every line between them is blank
-    // or a comment. Anything else (a run that spans an at-rule prelude, or one
-    // that sits inside a media query) is excluded, because cutting the range
-    // wholesale would orphan a brace — the rule has to be removed on its own.
+  if (wantSafeRuns || wantPrune) {
     const lines = fs.readFileSync(full, "utf8").split("\n");
-    const bodyOf = (n) => (lines[n - 1] ?? "").trim();
-    const structural = (n) => {
-      const body = bodyOf(n);
-      return body === "" || body.startsWith("/*") || body.endsWith("*/") || /^\*/.test(body);
-    };
-    const deadTop = dead.filter((rule) => !rule.context).sort((a, b) => a.start - b.start);
-    const runs = [];
-    let run = null;
-    for (const rule of deadTop) {
-      let contiguous = false;
-      if (run) {
-        let ok = true;
-        for (let n = run.end + 1; n < rule.start; n++) if (!structural(n)) ok = false;
-        contiguous = ok;
+    const runs = computeSafeRuns(lines, dead);
+    if (wantPrune) {
+      const label = path.isAbsolute(sheet) ? path.relative(ROOT, sheet) : sheet;
+      const result = pruneSheet(full, label);
+      if (result.refused) pruneRefused = true;
+    } else {
+      for (const item of runs) {
+        const offset = lines.slice(0, item.start - 1).reduce((sum, l) => sum + Buffer.byteLength(l) + 1, 0);
+        console.log(
+          `  run ${item.start}-${item.end}  lines=${item.end - item.start + 1}  rules=${item.rules}  byteOffset=${offset}`,
+        );
       }
-      if (contiguous) {
-        run.end = rule.end;
-        run.rules += 1;
-      } else {
-        if (run) runs.push(run);
-        run = { start: rule.start, end: rule.end, rules: 1 };
-      }
-    }
-    if (run) runs.push(run);
-    for (const item of runs) {
-      const offset = lines.slice(0, item.start - 1).reduce((sum, l) => sum + Buffer.byteLength(l) + 1, 0);
-      console.log(
-        `  run ${item.start}-${item.end}  lines=${item.end - item.start + 1}  rules=${item.rules}  byteOffset=${offset}`,
-      );
     }
   }
 
@@ -422,6 +625,8 @@ for (const sheet of sheets) {
     }
   }
 }
+
+if (wantPrune && pruneRefused) process.exitCode = 1;
 
 if (wantJson) {
   console.log(JSON.stringify(report, null, 2));
