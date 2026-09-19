@@ -19,19 +19,23 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Job profitability is available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageJobCosts) return <Gate title="Profitability is restricted" detail="Your role can operate shipments, but commercial job-cost data is withheld."/>;
+  // Gates past this point keep the navigation shell; losing the sidebar on a
+  // backend hiccup strands the user with no way out but the back button.
+  const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: staff.permissions.role === "management" };
+  const shellGate = (title: string, detail: string) => <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>;
+  if (!staff.permissions.canManageJobCosts) return shellGate("Profitability is restricted", "Your role can operate shipments, but commercial job-cost data is withheld.");
   const { reference } = await params;
   const result = await getDigitalJobFile(reference, staff);
-  if (result.kind === "unavailable") return <Gate title="Profitability unavailable" detail="Firestore is unavailable for this deployment."/>;
-  if (result.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
-  if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment belongs to a branch outside your staff profile."/>;
+  if (result.kind === "unavailable") return shellGate("Profitability unavailable", "Firestore is unavailable for this deployment.");
+  if (result.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
+  if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment belongs to a branch outside your staff profile.");
 
   const job = result.job;
   const payablesDashboard = staff.permissions.canManageFinance ? await listPayablesDashboard(staff) : null;
   const bills = payablesDashboard?.bills.filter((bill) => bill.shipment_reference === job.reference) ?? [];
   const currencies = [...new Set([...Object.keys(job.revenue_totals), ...Object.keys(job.cost_totals)])].sort();
 
-  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+  return <OperationsShell {...shellProps}>
     <OpsPage>
       <OpsPageHeader eyebrow="Commercial control" title="Job profitability" description={<span><OpsMono>{job.reference}</OpsMono> · {job.origin || "Origin"} → {job.destination || "Destination"}</span>} meta={<><span>{job.customer_name || "Customer not linked"}</span><span>{job.primary_branch}</span><span>No automatic FX conversion</span></>} actions={<><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="md">Digital Job File</Link>{staff.permissions.canManageFinance ? <Link href={`/admin/payables?shipment=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="primary" data-size="md">Add supplier bill</Link> : null}</>}/>
       <OpsKpiStrip><OpsKpiCard label="Customer" value={job.customer_name || "Not linked"} icon={<Building2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/><OpsKpiCard label="Branch" value={job.primary_branch} icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} /><OpsKpiCard label="Revenue currencies" value={Object.keys(job.revenue_totals).length} icon={<CircleDollarSign size={18} strokeWidth={1.9} aria-hidden="true"/>}/><OpsKpiCard label="Recognised costs" value={job.costs.length} icon={<WalletCards size={18} strokeWidth={1.9} aria-hidden="true"/>} /></OpsKpiStrip>
@@ -62,4 +66,4 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
 }
 
 function MoneyCell({label,value,positive}:{label:string;value:string;positive?:boolean}) { return <div className="rounded-[var(--app-radius)] bg-white p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[length:var(--app-label-size)] ${positive === false ? "text-[var(--admin-danger)]" : positive === true ? "text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
-function Gate({ title, detail }: { title: string; detail: string }) { return <V4WorkspaceGate eyebrow="KCPL Job Profitability" title={title} detail={detail}/>; }
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) { return <V4WorkspaceGate eyebrow="KCPL Job Profitability" title={title} detail={detail} embedded={embedded}/>; }

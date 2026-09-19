@@ -24,18 +24,32 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Digital Job Files are available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
+  // Every gate past this point has a staff context, so it can keep the
+  // navigation shell. Losing the sidebar on a backend hiccup strands the user
+  // on a dead end with no way out but the browser's back button.
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
+    isManagement: staff.permissions.role === "management",
+  };
+  const shellGate = (title: string, detail: string) => (
+    <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>
+  );
   const { reference } = await params;
   const { returnTo: requestedReturn } = await searchParams;
   const returnTo = typeof requestedReturn === "string" && (requestedReturn === "/admin/shipments" || requestedReturn.startsWith("/admin/shipments?")) ? requestedReturn : "/admin/shipments";
   const shipmentAccess = await checkShipmentBranchAccess(reference, staff);
-  if (shipmentAccess.kind === "unavailable") return <Gate title="Job File unavailable" detail="Firestore is not available for this deployment."/>;
-  if (shipmentAccess.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
-  if (shipmentAccess.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is outside the branches assigned to your KCPL staff profile."/>;
+  if (shipmentAccess.kind === "unavailable") return shellGate("Job File unavailable", "Firestore is not available for this deployment.");
+  if (shipmentAccess.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
+  if (shipmentAccess.kind === "forbidden") return shellGate("Outside your branch access", "This shipment is outside the branches assigned to your KCPL staff profile.");
 
   const result = await getDigitalJobFile(reference, staff);
-  if (result.kind === "unavailable") return <Gate title="Job File unavailable" detail="Firestore is not available for this deployment."/>;
-  if (result.kind === "missing") return <Gate title="Shipment not found" detail="This shipment reference does not exist."/>;
-  if (result.kind === "forbidden") return <Gate title="Outside your branch access" detail="This shipment is outside the branches assigned to your KCPL staff profile."/>;
+  if (result.kind === "unavailable") return shellGate("Job File unavailable", "Firestore is not available for this deployment.");
+  if (result.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
+  if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment is outside the branches assigned to your KCPL staff profile.");
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
   const [workflow, activity, exceptionCases, delivery] = await Promise.all([
@@ -44,19 +58,12 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     getShipmentExceptions(result.job.reference, staff),
     getDeliveryControl(result.job.reference, staff),
   ]);
-  if (workflow.kind !== "ready") return <Gate title="Workflow unavailable" detail="The controlled workflow state could not be loaded for this shipment."/>;
+  if (workflow.kind !== "ready") return shellGate("Workflow unavailable", "The controlled workflow state could not be loaded for this shipment.");
 
   const exceptionBranches = [...new Set([result.job.primary_branch, ...result.job.handling_branches])]
     .filter((branch) => staffCanAccessBranch(staff, branch));
 
-  return <OperationsShell
-    userName={access.user.displayName}
-    canManageStaff={staff.permissions.canManageStaff}
-    canManageFinance={staff.permissions.canManageFinance}
-    canViewCommercial={staff.permissions.canViewCommercial}
-    canManageJobFile={staff.permissions.canManageJobFile}
-    isManagement={staff.permissions.role === "management"}
-  >
+  return <OperationsShell {...shellProps}>
     <div className="app-record-return"><Link href={returnTo}>← Back to shipments</Link></div>
     <V4ShipmentDetailOverview job={result.job} readiness={workflow.readiness}>
       <div id="shipment-work" className="shipment-detail-anchor shipment-job-file-embedded">
@@ -117,11 +124,12 @@ function QuietSection({ eyebrow, title, detail }: { eyebrow: string; title: stri
   </section>;
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
     eyebrow="KCPL Digital Job File"
     title={title}
     detail={detail}
+    embedded={embedded}
     actions={[
       { href: "/admin/shipments", label: "Shipments", primary: true },
       { href: "/admin/command-centre", label: "Operations Overview" },

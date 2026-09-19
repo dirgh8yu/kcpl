@@ -102,16 +102,19 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Staff workload is available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageJobFile) return <Gate title="Operations access required" detail="Your current role does not include operational Job File access."/>;
-  if (!firebaseRuntimeConfigured()) return <Gate title="Workload data unavailable" detail="Firebase operational data is unavailable for this deployment."/>;
+  // Gates past this point keep the navigation shell.
+  const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: staff.permissions.role === "management" };
+  const shellGate = (title: string, detail: string) => <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>;
+  if (!staff.permissions.canManageJobFile) return shellGate("Operations access required", "Your current role does not include operational Job File access.");
+  if (!firebaseRuntimeConfigured()) return shellGate("Workload data unavailable", "Firebase operational data is unavailable for this deployment.");
 
   const { key: rawKey } = await params;
   const key = decodeURIComponent(rawKey).trim().toLowerCase();
   const [data, profiles] = await Promise.all([loadCommandCentre(staff), listStaffProfiles()]);
-  if (!data) return <Gate title="Workload data unavailable" detail="KCPL operational data could not be loaded."/>;
+  if (!data) return shellGate("Workload data unavailable", "KCPL operational data could not be loaded.");
 
   const load = data.staff_load.find((item) => item.key.toLowerCase() === key || item.email.toLowerCase() === key);
-  if (!load) return <Gate title="Staff workload not found" detail="This staff member is not visible within your current branch-access scope."/>;
+  if (!load) return shellGate("Staff workload not found", "This staff member is not visible within your current branch-access scope.");
 
   const targetEmail = load.email.trim().toLowerCase();
   const targetName = load.name.trim();
@@ -160,12 +163,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   const attentionJobs = assignedJobs.filter((job) => job.status === "exception" || job.priority === "urgent" || job.overdue_tasks > 0 || job.required_customs_open > 0);
 
   return (
-    <OperationsShell
-      userName={access.user.displayName}
-      canManageStaff={staff.permissions.canManageStaff}
-      canManageFinance={staff.permissions.canManageFinance}
-      isManagement={staff.permissions.role === "management"}
-    >
+    <OperationsShell {...shellProps}>
       <OpsPage>
         <OpsPageHeader
           eyebrow="Staff workload"
@@ -234,6 +232,6 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   );
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="KCPL Staff workload" title={title} detail={detail}/>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate eyebrow="KCPL Staff workload" title={title} detail={detail} embedded={embedded}/>;
 }

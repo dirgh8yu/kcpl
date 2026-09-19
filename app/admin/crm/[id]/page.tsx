@@ -57,11 +57,24 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
 
   const staff = await getStaffContext(access.user);
   const permissions = staff.permissions;
+  // Gates past this point keep the navigation shell; losing the sidebar on a
+  // backend hiccup strands the user with no way out but the back button.
+  const shellProps = {
+    userName: access.user.displayName,
+    canManageStaff: staff.permissions.canManageStaff,
+    canManageFinance: staff.permissions.canManageFinance,
+    canViewCommercial: staff.permissions.canViewCommercial,
+    canManageJobFile: staff.permissions.canManageJobFile,
+    isManagement: staff.permissions.role === "management",
+  };
+  const shellGate = (title: string, detail: string) => (
+    <OperationsShell {...shellProps}><CustomerGate title={title} detail={detail} embedded/></OperationsShell>
+  );
   const { id } = await params;
   const customerAccess = await checkCrmCustomerAccess(id, staff);
-  if (customerAccess.kind === "unavailable") return <CustomerGate title="Firestore is unavailable" detail="The CRM backend is not available for this deployment."/>;
-  if (customerAccess.kind === "missing") return <CustomerGate title="Customer not found" detail="This CRM record does not exist or has been archived."/>;
-  if (customerAccess.kind === "forbidden") return <CustomerGate title="Customer access restricted" detail="This customer belongs to a KCPL branch outside your assigned access."/>;
+  if (customerAccess.kind === "unavailable") return shellGate("Firestore is unavailable", "The CRM backend is not available for this deployment.");
+  if (customerAccess.kind === "missing") return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
+  if (customerAccess.kind === "forbidden") return shellGate("Customer access restricted", "This customer belongs to a KCPL branch outside your assigned access.");
   let customer: CrmCustomerDetail | null | undefined;
   let linked: CrmQuoteLinkItem[] = [];
   let suggested: CrmQuoteLinkItem[] = [];
@@ -96,21 +109,14 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   }
 
   if (failed) return <CustomerGate title="Customer 360 could not be loaded" detail="KCPL customer data is temporarily unavailable."/>;
-  if (customer === undefined) return <CustomerGate title="Firestore is unavailable" detail="The CRM backend is not available for this deployment."/>;
-  if (!customer || customer.archived) return <CustomerGate title="Customer not found" detail="This CRM record does not exist or has been archived."/>;
+  if (customer === undefined) return shellGate("Firestore is unavailable", "The CRM backend is not available for this deployment.");
+  if (!customer || customer.archived) return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
 
   const safeCustomer = redactCustomerForRole(customer, permissions);
   const reconciledCustomer = reconcileCustomerFinance(safeCustomer, financeSnapshot, permissions);
   const safeHistory = redactHistoryForRole(history, permissions);
 
-  return <OperationsShell
-    userName={access.user.displayName}
-    canManageStaff={staff.permissions.canManageStaff}
-    canManageFinance={staff.permissions.canManageFinance}
-    canViewCommercial={staff.permissions.canViewCommercial}
-    canManageJobFile={staff.permissions.canManageJobFile}
-    isManagement={staff.permissions.role === "management"}
-  >
+  return <OperationsShell {...shellProps}>
     <Customer360Workspace initialCustomer={reconciledCustomer} initialFinanceSnapshot={financeSnapshot} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={permissions.canViewCommercial} creditVisible={permissions.canManageCredit}/>
     <section className="ops-content-wide pb-12 pt-0">
       <div className="mb-3 border-b border-[var(--admin-line)] pb-3"><p className="ops-eyebrow">Account tools</p><h2 className="mt-1 text-[15px] font-semibold tracking-[-.01em] text-[var(--admin-ink)]">Advanced customer controls</h2><p className="mt-1 max-w-2xl text-[11px] leading-[17px] text-[var(--admin-muted)]">Detailed profile editing, operational history, rate cards, document storage and quote matching stay available without crowding the everyday account view.</p></div>
@@ -129,11 +135,12 @@ function Tool({ title, detail, children }: { title: string; detail: string; chil
   return <details className="crm360-tool"><summary><span><strong>{title}</strong><small>{detail}</small></span><span>Open</span></summary><div className="crm360-tool-body">{children}</div></details>;
 }
 
-function CustomerGate({ title, detail }: { title: string; detail: string }) {
+function CustomerGate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
     eyebrow="KCPL Customer 360"
     title={title}
     detail={detail}
+    embedded={embedded}
     actions={[
       { href: "/admin/crm", label: "Back to Customers", primary: true },
       { href: "/admin", label: "Enquiries" },
