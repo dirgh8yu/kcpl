@@ -122,6 +122,7 @@ export function OpsKpiCard({
   icon,
   tone = "neutral",
   active = false,
+  variant = "metric",
   onClick,
 }: {
   label: ReactNode;
@@ -130,6 +131,13 @@ export function OpsKpiCard({
   icon?: ReactNode;
   tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
   active?: boolean;
+  /**
+   * "metric" is the default and styles `value` as a large number. Use "text"
+   * when the value is a word or phrase -- at 26px/700 a word like
+   * "Receivables" overflows the card and is clipped, because the strip's
+   * columns are sized for digits.
+   */
+  variant?: "metric" | "text";
   onClick?: () => void;
 }) {
   const zero = typeof value === "number" && value === 0;
@@ -145,9 +153,9 @@ export function OpsKpiCard({
     </>
   );
   if (onClick) {
-    return <button type="button" onClick={onClick} className="ops-kpi" aria-pressed={active} data-tone={tone} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
+    return <button type="button" onClick={onClick} className="ops-kpi" aria-pressed={active} data-tone={tone} data-variant={variant} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
   }
-  return <div className="ops-kpi" data-tone={tone} data-zero={zero || undefined}>{body}</div>;
+  return <div className="ops-kpi" data-tone={tone} data-variant={variant} data-zero={zero || undefined}>{body}</div>;
 }
 
 export function OpsBadge({

@@ -116,6 +116,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-end justify-between gap-5"><div><p className="ops-eyebrow">Relationships</p><h1 className="mt-2 text-[31px] font-[730] tracking-[-.045em] text-[var(--admin-ink)]">Customers</h1><p className="mt-2 max-w-2xl text-[11px] leading-5 text-[var(--admin-muted)]">Customer accounts that buy KCPL freight and logistics services. Carriers, agents, transporters, suppliers and overseas counterparts live in Partners.</p></div><div className="flex items-center gap-2"><span className="hidden text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)] sm:inline">Working as {userName}</span><OpsButton variant="primary" onClick={openNew}><Plus size={13}/>New record</OpsButton></div></div>
       </section>
 
+      <div className="px-5 py-5 lg:px-8">
       <OpsKpiStrip>
         <OpsKpiCard label="Records" value={stats.total} icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
         <OpsKpiCard label="Prospects" value={stats.prospects} tone="info" icon={<Sparkles size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "prospect"} onClick={() => setStatusFilter(statusFilter === "prospect" ? "all" : "prospect")}/>
@@ -124,6 +125,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
         <OpsKpiCard label="On hold" value={stats.onHold} tone="warning" icon={<Pause size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "on_hold"} onClick={() => setStatusFilter(statusFilter === "on_hold" ? "all" : "on_hold")}/>
         <OpsKpiCard label="Follow-ups" value={stats.followUpsDue} tone={stats.followUpsDue ? "warning" : "neutral"} icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
       </OpsKpiStrip>
+      </div>
 
       <div className="grid min-h-[calc(100vh-214px)] xl:grid-cols-[350px_minmax(0,1fr)]">
         <aside className="min-h-0 border-r border-[var(--admin-line)] bg-[var(--admin-surface)]/72">

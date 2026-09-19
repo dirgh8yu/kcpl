@@ -77,13 +77,13 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
     />
 
     <OpsKpiStrip>
-      <OpsKpiCard label="Stage 1" value="Customers" detail="Complete · still available" icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 2" value="Shipments" detail="Complete · still available" icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 3A" value="Receivables" detail="Complete · still available" icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 3B" value="Payables" detail="Complete · still available" icon={<ReceiptText size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 4A" value="Batch history" detail="Complete · evidence ledger" icon={<History size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 4B" value="Paper archive" detail="Complete · evidence preserved" icon={<Archive size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 4C" value="Recovery" detail="Active · dry run first" icon={<RotateCcw size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 1" value="Customers" variant="text" detail="Complete · still available" icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 2" value="Shipments" variant="text" detail="Complete · still available" icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 3A" value="Receivables" variant="text" detail="Complete · still available" icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 3B" value="Payables" variant="text" detail="Complete · still available" icon={<ReceiptText size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 4A" value="Batch history" variant="text" detail="Complete · evidence ledger" icon={<History size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 4B" value="Paper archive" variant="text" detail="Complete · evidence preserved" icon={<Archive size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
+      <OpsKpiCard label="Stage 4C" value="Recovery" variant="text" detail="Active · dry run first" icon={<RotateCcw size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
     </OpsKpiStrip>
 
     <div className="ops-content-wide ops-stack">
