@@ -462,7 +462,11 @@ button.ops-button {
   .ops-page-heading h1 { font-size: clamp(30px, 10vw, 38px); }
   .ops-page-description { font-size: 13px; line-height: 1.55; }
   .ops-page-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
-  .ops-page-actions .ops-button { width: 100%; }
+  /* Several workspaces build their primary action as an inline button rather
+   * than .ops-button, which left the primary narrower than the secondary
+   * beside it and under the 44px touch target. Bind the action bar's own
+   * children instead of the class so every page action behaves the same. */
+  .ops-page-actions :where(.ops-button, button, a) { width: 100%; min-height: 44px; }
   .ops-content, .ops-content-wide { padding: 18px 16px 42px; }
   .ops-surface-header { align-items: flex-start; flex-direction: column; }
   .ops-surface-action { width: 100%; }

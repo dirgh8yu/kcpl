@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -403,9 +403,9 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
             <OpsButton variant="secondary" onClick={handleRefresh} disabled={busy}>
               <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/> Refresh
             </OpsButton>
-            <PrimaryButton type="button" disabled={!hasSchedulable || busy} onClick={scheduleNext}>
+            <OpsButton variant="primary" type="button" disabled={!hasSchedulable || busy} onClick={scheduleNext}>
               <Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Schedule pickup
-            </PrimaryButton>
+            </OpsButton>
           </div>
         )}
       />
@@ -599,11 +599,11 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                   <div className="grid grid-cols-2 gap-2 border-b border-[var(--admin-line)] p-4">
                     <OpsButton type="button" variant="secondary" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
                     {selected.status === "confirmed" || selected.status === "requested" ? (
-                      <PrimaryButton type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</PrimaryButton>
+                      <OpsButton variant="primary" type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</OpsButton>
                     ) : selected.status === "driver_assigned" ? (
-                      <PrimaryButton type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</PrimaryButton>
+                      <OpsButton variant="primary" type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</OpsButton>
                     ) : (
-                      <PrimaryButton type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</PrimaryButton>
+                      <OpsButton variant="primary" type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</OpsButton>
                     )}
                   </div>
                 ) : null}
@@ -661,7 +661,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                     <p className="mt-3 text-xs text-[var(--admin-muted)]">Times are saved and displayed in Nepal time (NPT).</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <OpsButton type="button" variant="secondary" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act("schedule", schedulePayload(false))}>Request pickup</OpsButton>
-                      <PrimaryButton type="button" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</PrimaryButton>
+                      <OpsButton variant="primary" type="button" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</OpsButton>
                     </div>
                   </section>
                 ) : null}
@@ -674,7 +674,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       <OpsField label="Driver phone"><input value={driverPhone} onChange={(event) => setDriverPhone(event.target.value)}/></OpsField>
                       <OpsField label="Vehicle reference"><input value={vehicleReference} onChange={(event) => setVehicleReference(event.target.value)} placeholder="Truck / plate / vehicle"/></OpsField>
                     </div>
-                    <div className="mt-4"><PrimaryButton type="button" disabled={busy || driverName.trim().length < 2 || selected.status === "unscheduled"} onClick={() => act("assign_driver", { driverName, driverPhone, vehicleReference, notes })}><Truck size={15} strokeWidth={1.75} aria-hidden="true"/>Save driver assignment</PrimaryButton></div>
+                    <div className="mt-4"><OpsButton variant="primary" type="button" disabled={busy || driverName.trim().length < 2 || selected.status === "unscheduled"} onClick={() => act("assign_driver", { driverName, driverPhone, vehicleReference, notes })}><Truck size={15} strokeWidth={1.75} aria-hidden="true"/>Save driver assignment</OpsButton></div>
                   </section>
                 ) : null}
 
@@ -682,7 +682,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                   <section className="border-b border-[var(--admin-line)] bg-[var(--admin-canvas)] px-4 py-4">
                     <EditorHeading title="Pickup outcome" detail="Complete the collection or record the operational exception." onClose={() => setEditor("details")}/>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <PrimaryButton type="button" disabled={busy || selected.status === "unscheduled"} onClick={() => act("picked_up", { eventTime: new Date().toISOString(), location: pickupLocation })}><Check size={15} strokeWidth={1.75} aria-hidden="true"/>Cargo picked up</PrimaryButton>
+                      <OpsButton variant="primary" type="button" disabled={busy || selected.status === "unscheduled"} onClick={() => act("picked_up", { eventTime: new Date().toISOString(), location: pickupLocation })}><Check size={15} strokeWidth={1.75} aria-hidden="true"/>Cargo picked up</OpsButton>
                       <OpsButton type="button" variant="danger" disabled={busy || selected.status === "unscheduled" || missedReason.trim().length < 6} onClick={() => act("missed", { reason: missedReason })}><AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>Mark missed</OpsButton>
                       <OpsButton type="button" variant="ghost" disabled={busy || selected.status === "unscheduled"} onClick={() => act("cancel", { note: notes })}>Cancel pickup</OpsButton>
                     </div>
@@ -717,9 +717,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   );
 }
 
-function PrimaryButton({ children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[var(--admin-crimson)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-focus)] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}>{children}</button>;
-}
 
 function FilterSelect({ value, ariaLabel, onChange, children }: { value: string; ariaLabel: string; onChange: (value: string) => void; children: ReactNode }) {
   return <select className={filterControlClass} value={value} onChange={(event) => onChange(event.target.value)} aria-label={ariaLabel}>{children}</select>;
