@@ -107,7 +107,7 @@ export function RecoveryPanel({ batchId, rollbackStatus }: { batchId: string; ro
 
         {plan.warnings.length ? <OpsNotice tone={plan.can_execute ? "warning" : "danger"}>{plan.warnings.join(" ")}</OpsNotice> : null}
 
-        <div className="overflow-x-auto rounded-[var(--app-radius)] border border-[var(--admin-line)]">
+        <div className="ops-scroll-x overflow-x-auto rounded-[var(--app-radius)] border border-[var(--admin-line)]">
           <table className="ops-table min-w-[800px]"><thead><tr><th>Type</th><th>Record</th><th>State</th><th>Archive</th><th>Reason</th></tr></thead><tbody>{plan.records.map((record) => <tr key={record.key}><td><OpsBadge tone="neutral">{record.kind}</OpsBadge></td><td>{record.status === "already_reversed" || record.status === "missing" ? <OpsMono>{record.id}</OpsMono> : <Link href={record.href} className="font-bold text-[var(--admin-crimson)]"><OpsMono>{record.id}</OpsMono></Link>}</td><td><OpsBadge tone={tone(record.status)}>{label(record.status)}</OpsBadge></td><td>{record.archive_relinks ? `${record.archive_relinks} preserved` : "None"}</td><td><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{record.reasons.length ? record.reasons.join(" ") : "Ownership and untouched-state checks passed."}</span></td></tr>)}</tbody></table>
         </div>
 

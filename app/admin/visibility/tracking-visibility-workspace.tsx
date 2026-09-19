@@ -24,6 +24,7 @@ import {
   OpsMono,
   OpsNotice,
   OpsPage,
+  OpsPageHeader,
   OpsSearch,
   OpsTableWrap,
   useAdminPortalContainer,
@@ -480,61 +481,49 @@ export function TrackingVisibilityWorkspace({
     <OpsPage className="visibility-v2">
       <div className="visibility-page">
         {/* HEADER */}
-        <header className="visibility-page-header">
-          <div className="visibility-heading">
-            <span className="visibility-heading-accent" />
-
-            <div>
-              <p className="visibility-breadcrumb">
-                Operate <span>›</span> Live Visibility
-              </p>
-
-              <h1>Live Visibility</h1>
-
-              <p className="visibility-description">
-                Monitor shipment feeds, ETA movement and the latest carrier or
-                counterpart events from one operational register.
-              </p>
-            </div>
-          </div>
-
-          <div className="visibility-header-actions">
-            <div className="visibility-last-updated">
-              <span>Last updated</span>
-
+        <OpsPageHeader
+          eyebrow="Operate"
+          title="Live Visibility"
+          description="Monitor shipment feeds, ETA movement and the latest carrier or counterpart events from one operational register."
+          meta={
+            <span className="visibility-last-updated">
+              Last updated{" "}
               <strong>
                 {lastUpdated ? dateTime(lastUpdated) : "No tracking signal"}
               </strong>
-            </div>
-
-            <OpsButton
-              variant="secondary"
-              disabled={refreshing || sweeping}
-              onClick={() => {
-                void refresh();
-              }}
-            >
-              <RefreshCw
-                size={15}
-                strokeWidth={1.75}
-                className={refreshing ? "app-refreshing" : ""}
-              />
-              Refresh
-            </OpsButton>
-
-            {canSweep ? (
+            </span>
+          }
+          actions={
+            <>
               <OpsButton
-                variant="primary"
-                disabled={sweeping || refreshing}
-                onClick={sweep}
+                variant="secondary"
+                disabled={refreshing || sweeping}
+                onClick={() => {
+                  void refresh();
+                }}
               >
-                <Activity size={15} strokeWidth={1.75} />
-
-                {sweeping ? "Sweeping…" : "Run health sweep"}
+                <RefreshCw
+                  size={15}
+                  strokeWidth={1.75}
+                  className={refreshing ? "app-refreshing" : ""}
+                />
+                Refresh
               </OpsButton>
-            ) : null}
-          </div>
-        </header>
+
+              {canSweep ? (
+                <OpsButton
+                  variant="primary"
+                  disabled={sweeping || refreshing}
+                  onClick={sweep}
+                >
+                  <Activity size={15} strokeWidth={1.75} />
+
+                  {sweeping ? "Sweeping…" : "Run health sweep"}
+                </OpsButton>
+              ) : null}
+            </>
+          }
+        />
 
         {/* SUMMARY STRIP */}
         <section

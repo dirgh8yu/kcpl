@@ -26,78 +26,14 @@
 
 /* HEADER */
 
-.kcpl-admin-content .visibility-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 28px;
-  margin-bottom: 16px;
-}
-
-.kcpl-admin-content .visibility-heading {
-  display: flex;
-  min-width: 0;
-  gap: 16px;
-}
-
-.kcpl-admin-content .visibility-heading-accent {
-  width: 3px;
-  min-height: 82px;
-  flex: none;
-  border-radius: 3px;
-  background: var(--admin-crimson);
-}
-
-.kcpl-admin-content .visibility-breadcrumb {
-  margin: 0 0 8px;
+.kcpl-admin-content .visibility-last-updated {
   color: var(--admin-muted);
   font-size: 11px;
 }
 
-.kcpl-admin-content .visibility-breadcrumb span {
-  margin-inline: 6px;
-  color: var(--admin-line-strong);
-}
-
-.kcpl-admin-content .visibility-heading h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 650;
-  line-height: 32px;
-  letter-spacing: -.035em;
-}
-
-.kcpl-admin-content .visibility-description {
-  max-width: 760px;
-  margin: 3px 0 0;
-  color: var(--admin-muted);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.kcpl-admin-content .visibility-header-actions {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-}
-
-.kcpl-admin-content .visibility-last-updated {
-  display: grid;
-  margin-right: 6px;
-  gap: 1px;
-  text-align: right;
-}
-
-.kcpl-admin-content .visibility-last-updated span {
-  color: var(--admin-muted);
-  font-size: 10px;
-}
-
 .kcpl-admin-content .visibility-last-updated strong {
-  color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 500;
+  color: var(--admin-ink);
+  font-weight: 550;
 }
 
 /* METRICS */
@@ -944,21 +880,6 @@ tr[data-selected="true"] {
 @media (max-width: 760px) {
   .kcpl-admin-content .visibility-page {
     padding: 16px;
-  }
-
-  .kcpl-admin-content .visibility-page-header {
-    flex-direction: column;
-  }
-
-  .kcpl-admin-content .visibility-header-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .kcpl-admin-content .visibility-last-updated {
-    width: 100%;
-    margin: 0 0 4px;
-    text-align: left;
   }
 
   .kcpl-admin-content .visibility-summary-grid {

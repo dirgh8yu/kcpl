@@ -192,7 +192,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
         <div className="ops-content ops-stack">
           <div className="ops-grid-main">
             <OpsSurface eyebrow="Ownership" title="Assigned shipments" description={`${assignedJobs.length} active movement${assignedJobs.length === 1 ? "" : "s"} currently owned by ${targetName}.`} flush>
-              {assignedJobs.length ? <div className="ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[980px] w-full"><thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Branch</th><th>ETA</th><th>Tasks</th><th>Customs</th><th></th></tr></thead><tbody>{assignedJobs.map((job) => <tr key={job.reference}>
+              {assignedJobs.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[980px] w-full"><thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Branch</th><th>ETA</th><th>Tasks</th><th>Customs</th><th></th></tr></thead><tbody>{assignedJobs.map((job) => <tr key={job.reference}>
                 <td><strong className="ops-route"><span>{job.origin || "Origin"}</span><ArrowRight size={11} className="ops-route-arrow"/><span>{job.destination || "Destination"}</span></strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name}</span></td>
                 <td><OpsMono>{job.reference}</OpsMono><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.current_location || job.primary_branch}</span></td>
                 <td><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></td>
@@ -219,7 +219,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
           </div>
 
           <OpsSurface eyebrow="Task queue" title="Open tasks" description={`Operational tasks specifically assigned to ${targetName}, including work on shipments they may not directly own.`} flush priority={overdueTasks ? "danger" : tasks.length ? "info" : "success"}>
-            {tasks.length ? <div className="ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[900px] w-full"><thead><tr><th>Task</th><th>Shipment</th><th>Branch</th><th>Due</th><th>State</th><th></th></tr></thead><tbody>{tasks.map((task) => <tr key={`${task.shipmentReference}:${task.id}`}>
+            {tasks.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[900px] w-full"><thead><tr><th>Task</th><th>Shipment</th><th>Branch</th><th>Due</th><th>State</th><th></th></tr></thead><tbody>{tasks.map((task) => <tr key={`${task.shipmentReference}:${task.id}`}>
               <td><strong className="block max-w-[360px] text-[var(--admin-ink)]">{task.title}</strong>{task.detail ? <span className="mt-1 block max-w-[420px] truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{task.detail}</span> : null}</td>
               <td><OpsMono>{task.shipmentReference}</OpsMono></td>
               <td>{task.branch}</td>

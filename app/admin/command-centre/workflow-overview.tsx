@@ -18,7 +18,7 @@ export function WorkflowOverviewStrip({ overview }: { overview: WorkflowOverview
     <div className="overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-[0_8px_28px_rgba(54,43,34,.04)]">
       <div className="border-b border-[var(--admin-line)] px-4 py-3.5 sm:px-5">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="ops-eyebrow">End-to-end workflow</p><h2 className="mt-1 text-[15px] font-[740] tracking-[-.02em] text-[var(--admin-ink)]">One operating pipeline</h2><p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Move work forward from enquiry to procurement, pickup, freight documents, execution, delivery and Match-Pay without hunting for the next workspace.</p></div><Link href="/admin/alerts" className="ops-button" data-variant="secondary" data-size="sm">Open blockers</Link></div>
-        <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="ops-scroll-x mt-3 flex items-center gap-1.5 overflow-x-auto pb-1">
           <FlowLink href="/admin">Enquiry</FlowLink><ArrowRight size={10} className="shrink-0 text-[var(--admin-muted)]"/>
           <FlowLink href="/admin/rating">Order & rate</FlowLink><ArrowRight size={10} className="shrink-0 text-[var(--admin-muted)]"/>
           <FlowLink href="/admin/pricing">Price</FlowLink><ArrowRight size={10} className="shrink-0 text-[var(--admin-muted)]"/>

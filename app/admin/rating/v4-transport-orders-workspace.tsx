@@ -163,7 +163,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
         </div>
       </header>
 
-      <nav className="flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">
+      <nav className="ops-scroll-x flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">
         {tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium leading-[19px] ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}
       </nav>
 
@@ -203,7 +203,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
       </div>
 
       <section className="grid min-h-[620px] lg:grid-cols-[minmax(0,800px)_351px]">
-        <div className="min-w-0 overflow-x-auto lg:border-r lg:border-[var(--admin-line)]">
+        <div className="ops-scroll-x min-w-0 overflow-x-auto lg:border-r lg:border-[var(--admin-line)]">
           <table className="w-full min-w-[800px] table-fixed border-collapse text-left">
             <thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">ORDER</th><th className="w-[170px] px-3 font-medium">ROUTE</th><th className="w-[150px] px-3 font-medium">CUSTOMER</th><th className="w-[90px] px-3 font-medium">MODE</th><th className="w-[120px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">PICKUP</th><th className="w-[120px] px-3 text-right font-medium">PROCUREMENT</th></tr></thead>
             <tbody>{filtered.length ? filtered.map((order) => {

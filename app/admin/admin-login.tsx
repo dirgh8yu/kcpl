@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { inMemoryPersistence, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { firebaseClientAuth } from "../firebase-client";
 
 export function AdminLogin() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,10 +38,15 @@ export function AdminLogin() {
         throw new Error(data.error || "KCPL sign-in was not accepted.");
       }
 
-      window.location.assign("/admin");
+      // The session cookie was just set server-side. `refresh()` clears the
+      // client cache and re-renders the server components behind /admin so the
+      // authenticated shell is what lands, without a full document reload.
+      router.replace("/admin");
+      router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "KCPL sign-in failed.");
-    } finally {
+      // Only released on failure: on success the form stays disabled until the
+      // navigation unmounts it, so the fields cannot flash back to editable.
       setBusy(false);
     }
   }

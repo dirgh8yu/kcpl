@@ -1950,6 +1950,82 @@
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-content .ops-skeleton-line { animation: none; }
 }
+
+/* Instant loading state (app/admin/loading.tsx).
+ * Scoped to .kcpl-admin-shell rather than .kcpl-admin-content because the
+ * skeleton also paints the fixed sidebar and topbar, which sit outside the
+ * content box. Geometry comes from the real .app-* chrome classes; these rules
+ * only supply the placeholder blocks. */
+.kcpl-admin-shell .ops-boot-block { display: block; border-radius: 6px; background: linear-gradient(90deg, var(--admin-surface-soft), var(--admin-surface-muted), var(--admin-surface-soft)); background-size: 200% 100%; animation: ops-skeleton-shimmer 1.4s ease-in-out infinite; }
+.kcpl-admin-shell .ops-boot-line-xs { width: 84px; height: 9px; }
+.kcpl-admin-shell .ops-boot-line-sm { width: 108px; height: 11px; }
+.kcpl-admin-shell .ops-boot-line-md { width: 190px; height: 12px; }
+.kcpl-admin-shell .ops-boot-line-lg { width: min(560px, 72%); height: 12px; }
+
+.kcpl-admin-shell .ops-boot-brand { gap: 10px; }
+.kcpl-admin-shell .ops-boot-brand-mark { width: 28px; height: 28px; flex: none; border-radius: 8px; }
+.kcpl-admin-shell .ops-boot-stack { display: grid; gap: 5px; }
+/* Horizontal scroll affordance.
+ * Classic self-disabling scroll shadow: the two `local` gradients scroll with
+ * the content and cover the shadows when the container is at that edge, so a
+ * strip that does not overflow shows nothing at all. Without this a clipped
+ * tab strip or wide table reads as broken rather than scrollable. */
+.kcpl-admin-shell .ops-scroll-x {
+  background:
+    linear-gradient(to right, var(--admin-surface) 40%, rgb(255 255 255 / 0%)) left center / 36px 100% no-repeat local,
+    linear-gradient(to left, var(--admin-surface) 40%, rgb(255 255 255 / 0%)) right center / 36px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgb(16 16 16 / 22%), rgb(16 16 16 / 0%)) left center / 20px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgb(16 16 16 / 22%), rgb(16 16 16 / 0%)) right center / 20px 100% no-repeat scroll;
+  /* The shorthand above resets background-color to transparent, and this
+   * selector outranks .ops-table-wrap { background: #fff }. Restore the
+   * surface fill explicitly so those wraps do not go see-through. */
+  background-color: var(--admin-surface);
+  scroll-snap-type: x proximity;
+}
+/* Snapping keeps a tab or column from resting half-clipped after a scroll. */
+.kcpl-admin-shell .ops-scroll-x > * > * { scroll-snap-align: start; }
+
+.kcpl-admin-shell .ops-scroll-x[data-surface="muted"] {
+  background-color: var(--admin-surface-muted);
+}
+
+/* .app-scope pushes its last child right; the skeleton has only one. */
+.kcpl-admin-shell .ops-boot-scope > .ops-boot-block:last-child { margin-left: 0; }
+
+.kcpl-admin-shell .ops-boot-nav { display: grid; align-content: start; gap: 22px; }
+.kcpl-admin-shell .ops-boot-nav-group { display: grid; gap: 10px; padding: 0 4px; }
+.kcpl-admin-shell .ops-boot-nav-item { height: 13px; }
+.kcpl-admin-shell .ops-boot-nav-item:nth-child(3) { width: 78%; }
+.kcpl-admin-shell .ops-boot-nav-item:nth-child(4) { width: 88%; }
+.kcpl-admin-shell .ops-boot-nav-item:nth-child(5) { width: 70%; }
+
+.kcpl-admin-shell .ops-boot { display: grid; gap: 20px; padding: 24px; }
+.kcpl-admin-shell .ops-boot-header { display: grid; gap: 10px; }
+.kcpl-admin-shell .ops-boot-title { width: min(320px, 46%); height: 26px; border-radius: 8px; }
+
+.kcpl-admin-shell .ops-boot-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kcpl-admin-shell .ops-boot-kpi { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); }
+.kcpl-admin-shell .ops-boot-kpi-value { width: 62%; height: 20px; }
+
+.kcpl-admin-shell .ops-boot-table { border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); overflow: hidden; }
+.kcpl-admin-shell .ops-boot-table-head { padding: 14px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface-muted); }
+.kcpl-admin-shell .ops-boot-row { display: grid; grid-template-columns: 1.6fr 1fr 1fr 0.8fr; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-shell .ops-boot-row:last-child { border-bottom: 0; }
+.kcpl-admin-shell .ops-boot-cell { height: 12px; }
+
+.kcpl-admin-shell .ops-boot-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-shell .ops-boot-block { animation: none; }
+}
+@media (max-width: 1100px) {
+  .kcpl-admin-shell .ops-boot-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-shell .ops-boot { padding: 16px; }
+  .kcpl-admin-shell .ops-boot-kpis { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-shell .ops-boot-row { grid-template-columns: 1.6fr 1fr; }
+}
 @media (max-width: 760px) {
   .kcpl-admin-content .ops-detail-grid { grid-template-columns: minmax(0, 1fr); }
 }

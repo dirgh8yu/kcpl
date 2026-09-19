@@ -96,6 +96,19 @@ function formatNepalTime(value: string) {
   }).format(parsed);
 }
 
+/**
+ * The line under the greeting. `critical` is null when the blocker count could
+ * not be loaded, which is not the same as zero blockers — say so rather than
+ * claiming the board is clear.
+ */
+function heroSummary(critical: number | null, attention: number) {
+  const attentionText = `${attention} shipment${attention === 1 ? "" : "s"} need attention`;
+  if (critical === null) return attention > 0 ? `Blocker count unavailable · ${attentionText}` : "Blocker count unavailable.";
+  if (critical > 0) return `${critical} critical blocker${critical === 1 ? "" : "s"} · ${attentionText}`;
+  if (attention > 0) return `No critical blockers · ${attentionText}`;
+  return "Nothing is blocking the board right now.";
+}
+
 function greeting(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "Good morning";
@@ -560,7 +573,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
   return (
     <div className={styles.dashboard}>
       <section className={styles.hero}>
-        <div className={styles.heroCopy}><h1>{greeting(data.generated_at)}, {firstName}</h1><p>Here’s what needs your attention today.</p></div>
+        <div className={styles.heroCopy}><h1>{greeting(data.generated_at)}, {firstName}</h1><p>{heroSummary(critical, attentionShipments.length)}</p></div>
         <div className={styles.heroActions}>
           <div className={styles.timeBlock}><strong>{formatOperationalDate(data.operational_date)}</strong><span>Local time {formatNepalTime(data.generated_at)} (NPT)</span></div>
           <button type="button" className={styles.secondaryButton} onClick={() => startRefresh(() => router.refresh())} disabled={refreshing}><RefreshCw size={14} className={refreshing ? "app-refreshing" : undefined} />{refreshing ? "Refreshing" : "Refresh"}</button>

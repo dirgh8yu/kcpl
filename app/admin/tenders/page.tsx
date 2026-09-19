@@ -73,7 +73,7 @@ function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: Tm
         <div><h1 className="text-[22px] font-semibold leading-[30px]">Bookings</h1><p className="mt-[3px] text-[13px] leading-[19px] text-[var(--admin-muted)]">{sorted.length} confirmed booking{sorted.length === 1 ? "" : "s"} with authoritative tender lineage</p></div>
         <Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Tender Workspace</Link>
       </header>
-      <nav className="flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">
+      <nav className="ops-scroll-x flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">
         <Link href="/admin/rating" className="flex h-10 shrink-0 items-center px-2 text-[13px] font-medium text-[var(--admin-muted)]">Orders</Link>
         <Link href="/admin/tenders" className="flex h-10 shrink-0 items-center px-2 text-[13px] font-medium text-[var(--admin-muted)]">Tenders</Link>
         <span className="relative flex h-10 shrink-0 items-center px-2 text-[13px] font-medium">Bookings<span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/></span>
@@ -81,7 +81,7 @@ function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: Tm
         <Link href="/admin/shipments" className="flex h-10 shrink-0 items-center px-2 text-[13px] font-medium text-[var(--admin-muted)]">Shipments</Link>
         <Link href="/admin/consolidation" className="flex h-10 shrink-0 items-center px-2 text-[13px] font-medium text-[var(--admin-muted)]">Consolidations</Link>
       </nav>
-      <section className="mt-4 overflow-x-auto border-t border-[var(--admin-line)]">
+      <section className="ops-scroll-x mt-4 overflow-x-auto border-t border-[var(--admin-line)]">
         <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
           <thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[160px] px-3 font-medium">BOOKING</th><th className="w-[150px] px-3 font-medium">ORDER</th><th className="w-[190px] px-3 font-medium">ROUTE</th><th className="w-[170px] px-3 font-medium">CUSTOMER</th><th className="w-[160px] px-3 font-medium">PARTNER</th><th className="w-[130px] px-3 font-medium">SHIPMENT</th><th className="w-[90px] px-3 text-right font-medium">ACTION</th></tr></thead>
           <tbody>{sorted.length ? sorted.map((tender) => {

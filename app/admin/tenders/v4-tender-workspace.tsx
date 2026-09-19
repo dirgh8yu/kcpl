@@ -264,7 +264,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
         <div className="flex gap-2"><button type="button" onClick={refresh} disabled={busy} className="ops-button" data-variant="secondary" data-size="sm">Refresh</button>{canManage ? <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="sm">Create tender</button> : null}</div>
       </header>
 
-      <nav className="flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">{tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}</nav>
+      <nav className="ops-scroll-x flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">{tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}</nav>
 
       {notice ? <div className={`mt-4 flex min-h-10 items-center justify-between gap-3 border px-3 py-2 text-[12px] font-medium ${notice.tone === "success" ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : notice.tone === "warning" ? "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]" : "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]"}`}><span>{notice.text}</span><button type="button" onClick={() => setNotice(null)} className="text-[11px] font-semibold">Dismiss</button></div> : null}
 
@@ -282,7 +282,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
       </div>
 
       <section className="grid min-h-[650px] lg:grid-cols-[minmax(0,800px)_351px]">
-        <div className="min-w-0 overflow-x-auto lg:border-r lg:border-[var(--admin-line)]">
+        <div className="ops-scroll-x min-w-0 overflow-x-auto lg:border-r lg:border-[var(--admin-line)]">
           <table className="w-full min-w-[800px] table-fixed border-collapse text-left"><thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">TENDER</th><th className="w-[170px] px-3 font-medium">ORDER / ROUTE</th><th className="w-[150px] px-3 font-medium">PARTNER</th><th className="w-[120px] px-3 text-right font-medium">COMMERCIAL</th><th className="w-[110px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">DEADLINE</th></tr></thead>
             <tbody>{filtered.length ? filtered.map((tender) => {
               const chosen = selected?.id === tender.id;

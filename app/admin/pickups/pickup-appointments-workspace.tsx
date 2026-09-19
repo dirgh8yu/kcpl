@@ -237,6 +237,11 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const selected = rows.find((row) => row.shipment_reference === selectedReference) ?? null;
   const selectedWindowStart = selected ? rowWindowStart(selected) : null;
   const selectedWindowEnd = selected ? rowWindowEnd(selected) : null;
+  // With the inspector open the register loses ~390px. Every column dropped
+  // here is already shown in the inspector, so the register keeps the columns
+  // you steer by (reference, customer, window, status) instead of pushing
+  // Status out of view behind a horizontal scrollbar.
+  const compact = selected !== null;
   const origins = useMemo(() => uniqueValues(rows.map((row) => row.origin)), [rows]);
   const partners = useMemo(() => uniqueValues(rows.map((row) => row.partner_name)), [rows]);
   const branches = useMemo(() => uniqueValues(rows.map((row) => row.branch)), [rows]);
@@ -420,7 +425,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
         <div className={`grid min-h-0 gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_minmax(330px,390px)]" : "grid-cols-1"}`}>
           <section className="min-w-0 overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)]" aria-label="Pickup register">
-            <div className="overflow-x-auto border-b border-[var(--admin-line)]" role="group" aria-label="Pickup status views">
+            <div className="ops-scroll-x overflow-x-auto border-b border-[var(--admin-line)]" role="group" aria-label="Pickup status views">
               <div className="flex min-w-max items-stretch px-2">
                 {STATUS_TABS.map((item) => {
                   const active = focus === item.value;
@@ -487,23 +492,23 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
             </div>
 
             {filtered.length ? (
-              <div className="overflow-x-auto">
+              <div className="ops-scroll-x overflow-x-auto">
                 <table className="w-full border-collapse text-left text-sm">
                   <thead className="bg-[var(--admin-surface-muted)] text-xs font-medium text-[var(--admin-muted)]">
                     <tr>
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup / Reference</th>
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Customer</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup address</th>
+                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup address</th>}
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">
                         <button type="button" className="inline-flex items-center gap-1 text-inherit" onClick={() => updateFilters({ sort: sortDirection === "asc" ? "desc" : "asc" })} aria-label={`Sort pickup window ${sortDirection === "asc" ? "descending" : "ascending"}`}>
                           Pickup window{sortDirection === "asc" ? <ArrowUp size={13} strokeWidth={1.75} aria-hidden="true"/> : <ArrowDown size={13} strokeWidth={1.75} aria-hidden="true"/>}
                         </button>
                       </th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Carrier</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Driver</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Linked shipment</th>
+                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Carrier</th>}
+                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Driver</th>}
+                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Linked shipment</th>}
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Status</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Updated</th>
+                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Updated</th>}
                       <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3 text-right"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
@@ -520,26 +525,30 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                             <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.booking_reference || row.provider_reference || "—"}</span>
                           </td>
                           <td className="px-4 py-3 align-top text-[var(--admin-ink)]">{row.customer_name}</td>
-                          <td className="px-4 py-3 align-top">
-                            <span className="block text-[var(--admin-ink)]">{row.pickup_location || row.origin}</span>
-                            {row.pickup_location && row.origin && row.pickup_location !== row.origin ? <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin}</span> : null}
-                          </td>
+                          {compact ? null : (
+                            <td className="px-4 py-3 align-top">
+                              <span className="block text-[var(--admin-ink)]">{row.pickup_location || row.origin}</span>
+                              {row.pickup_location && row.origin && row.pickup_location !== row.origin ? <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin}</span> : null}
+                            </td>
+                          )}
                           <td className="whitespace-nowrap px-4 py-3 align-top">
                             <span className="block text-[var(--admin-ink)]">{windowDayLabel(start, todayKey, tomorrowKey)}</span>
                             <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{start ? `${timeLabel(start)}${end ? ` – ${timeLabel(end)}` : ""}` : "Awaiting appointment"}</span>
                           </td>
-                          <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{row.partner_name || "—"}</td>
-                          <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-ink)]">{row.driver_name || "—"}</td>
-                          <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="font-medium text-[var(--admin-info)] hover:underline" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link>
-                          </td>
+                          {compact ? null : <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{row.partner_name || "—"}</td>}
+                          {compact ? null : <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-ink)]">{row.driver_name || "—"}</td>}
+                          {compact ? null : (
+                            <td className="whitespace-nowrap px-4 py-3 align-top">
+                              <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="font-medium text-[var(--admin-info)] hover:underline" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link>
+                            </td>
+                          )}
                           <td className="whitespace-nowrap px-4 py-3 align-top">
                             <div className="flex items-center gap-2">
                               <OpsBadge tone={statusTone(row)}>{statusLabel(row.status)}</OpsBadge>
                               {attention ? <span title="Needs attention"><AlertTriangle size={15} strokeWidth={1.75} className="text-[var(--admin-danger)]" aria-label="Needs attention"/></span> : null}
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{relativeAge(row.updated_at, nowIso)}</td>
+                          {compact ? null : <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{relativeAge(row.updated_at, nowIso)}</td>}
                           <td className="px-4 py-3 text-right align-top">
                             <button type="button" className="inline-grid min-h-9 min-w-9 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={(event) => { event.stopPropagation(); choose(row); }} aria-label={`Open pickup ${row.id}`}>
                               <MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true"/>

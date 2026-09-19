@@ -151,7 +151,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
           <div className="ops-grid-main">
             <OpsSurface eyebrow="Live movements" title="Active shipments" description={`${jobs.length} active movement${jobs.length === 1 ? "" : "s"} connected to ${branch}.`} flush>
               {jobs.length ? (
-                <div className="ops-table-wrap overflow-x-auto">
+                <div className="ops-scroll-x ops-table-wrap overflow-x-auto">
                   <table className="ops-table min-w-[1050px] w-full">
                     <thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Owner</th><th>ETA</th><th>Open tasks</th><th>Customs</th><th></th></tr></thead>
                     <tbody>{jobs.map((job) => (
@@ -177,7 +177,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
               </OpsSurface>
 
               <OpsSurface eyebrow="Ownership" title="Owners" description="Active movement load by current shipment owner." flush>
-                {owners.length ? <div className="ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[520px] w-full"><thead><tr><th>Owner</th><th>Jobs</th><th>Tasks</th><th>Customs</th><th>Exceptions</th></tr></thead><tbody>{owners.map((owner) => <tr key={owner.key}><td className={owner.key === "unassigned" ? "font-semibold text-[var(--admin-warning)]" : "font-semibold"}>{owner.name}</td><td>{owner.jobs}</td><td>{owner.openTasks}</td><td>{owner.customsOpen}</td><td className={owner.exceptions ? "font-bold text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}>{owner.exceptions}</td></tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<UserRound size={15}/>} title="No ownership load" description="There are no active movements to distribute across staff."/>}
+                {owners.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[520px] w-full"><thead><tr><th>Owner</th><th>Jobs</th><th>Tasks</th><th>Customs</th><th>Exceptions</th></tr></thead><tbody>{owners.map((owner) => <tr key={owner.key}><td className={owner.key === "unassigned" ? "font-semibold text-[var(--admin-warning)]" : "font-semibold"}>{owner.name}</td><td>{owner.jobs}</td><td>{owner.openTasks}</td><td>{owner.customsOpen}</td><td className={owner.exceptions ? "font-bold text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}>{owner.exceptions}</td></tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<UserRound size={15}/>} title="No ownership load" description="There are no active movements to distribute across staff."/>}
               </OpsSurface>
             </div>
           </div>
