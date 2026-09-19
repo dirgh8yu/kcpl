@@ -2188,3 +2188,40 @@
 @media (prefers-reduced-motion: reduce) {
   .portal-nav-link, .portal-signout, .portal-skip-link { transition: none; }
 }
+
+/* Customer portal -- inbound document exchange.
+ * The checklist is the customer's half of the Document Vault: one line per
+ * requirement KCPL seeded on the shipment, in customer language. Rows carry
+ * data-state so the marker colour tracks the state without a second class. */
+.kcpl-admin-content .portal-exchange { display: grid; gap: var(--app-space-4); }
+.kcpl-admin-content .portal-checklist { display: grid; gap: var(--app-space-2); margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .portal-checklist li {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+  padding: 10px 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius);
+  background: var(--admin-surface);
+}
+.kcpl-admin-content .portal-checklist li[data-state="needed"] { border-color: var(--admin-warning-line); background: var(--admin-warning-bg); }
+.kcpl-admin-content .portal-checklist li[data-state="resend"] { border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .portal-checklist-mark { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--admin-surface-muted); color: var(--admin-muted); }
+.kcpl-admin-content .portal-checklist li[data-state="confirmed"] .portal-checklist-mark { background: var(--admin-success-bg); color: var(--admin-success); }
+.kcpl-admin-content .portal-checklist li[data-state="with_kcpl"] .portal-checklist-mark { background: var(--admin-info-bg); color: var(--admin-info); }
+.kcpl-admin-content .portal-checklist li[data-state="needed"] .portal-checklist-mark { background: var(--admin-surface); color: var(--admin-warning); }
+.kcpl-admin-content .portal-checklist li[data-state="resend"] .portal-checklist-mark { background: var(--admin-surface); color: var(--admin-danger); }
+.kcpl-admin-content .portal-checklist-main { display: grid; gap: 2px; min-width: 0; margin-right: auto; }
+.kcpl-admin-content .portal-checklist-main strong { font-size: var(--app-text-md); font-weight: 550; }
+.kcpl-admin-content .portal-checklist-main span { color: var(--admin-muted); font-size: var(--app-text-sm); }
+/* The visible control is the button next to each row; the input itself is only
+ * ever opened through it, but it stays focusable for keyboard and assistive use. */
+.kcpl-admin-content .portal-file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+.kcpl-admin-content .portal-exchange-free { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--app-space-3); border-top: 1px solid var(--admin-line); padding-top: var(--app-space-4); }
+.kcpl-admin-content .portal-exchange-free .ops-field { min-width: 240px; }
+.kcpl-admin-content .portal-action-list { padding: var(--app-space-4); }
+
+@media (max-width: 760px) {
+  .kcpl-admin-content .portal-checklist li { flex-wrap: wrap; }
+  .kcpl-admin-content .portal-checklist-main { margin-right: 0; width: 100%; }
+}

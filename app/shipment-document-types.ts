@@ -53,6 +53,13 @@ export const shipmentDocumentReviewStatusLabels: Record<ShipmentDocumentReviewSt
   deleted: "Deleted",
 };
 
+export const shipmentDocumentSources = ["staff", "customer_portal"] as const;
+export type ShipmentDocumentSource = (typeof shipmentDocumentSources)[number];
+
+export function shipmentDocumentSourceValue(value: unknown): ShipmentDocumentSource {
+  return value === "customer_portal" ? "customer_portal" : "staff";
+}
+
 export type ShipmentDocument = {
   id: number;
   shipment_reference: string;
@@ -63,6 +70,8 @@ export type ShipmentDocument = {
   uploaded_at: string;
   uploaded_by: string;
   uploaded_by_email?: string | null;
+  /** Absent on documents filed before the customer portal existed; treat as staff. */
+  uploaded_by_source?: ShipmentDocumentSource;
   review_status?: ShipmentDocumentReviewStatus;
   customer_safe?: boolean;
   review_note?: string | null;

@@ -1,8 +1,11 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { listShipmentDocuments } from "../shipment-documents.server";
 import {
+  portalDocumentChecklist,
   portalDocumentReleased,
   portalDocumentView,
+  portalDocumentVisibleToSender,
+  portalOutstandingUploads,
   portalInvoiceView,
   portalInvoiceVisible,
   portalQuoteView,
@@ -13,6 +16,7 @@ import {
   type PortalDocumentView,
   type PortalInvoiceView,
   type PortalQuoteView,
+  type PortalRequirementRow,
   type PortalShipmentEventView,
   type PortalShipmentView,
 } from "./portal-access-policy";
@@ -91,7 +95,9 @@ export async function listPortalShipments(session: PortalSession): Promise<Unava
 export type PortalShipmentDetail = {
   shipment: PortalShipmentView;
   events: PortalShipmentEventView[];
-  documents: PortalDocumentView[];
+  /** Released by KCPL, plus the customer's own submissions. */
+  documents: PortalDocumentRow[];
+  checklist: PortalRequirementRow[];
 };
 
 export async function getPortalShipment(session: PortalSession, reference: string): Promise<
@@ -122,10 +128,15 @@ export async function getPortalShipment(session: PortalSession, reference: strin
       }
     }
 
-    const [eventSnapshot, documents] = await Promise.all([
+    const [eventSnapshot, documents, requirementSnapshot] = await Promise.all([
       snapshot.ref.collection("events").orderBy("event_time", "desc").limit(200).get(),
       listShipmentDocuments(normalized),
+      snapshot.ref.collection("document_requirements").limit(100).get(),
     ]);
+
+    const documentRecords = documents.kind === "ready"
+      ? documents.documents.map((document) => document as unknown as Record<string, unknown>)
+      : [];
 
     return {
       kind: "ready",
@@ -133,11 +144,16 @@ export async function getPortalShipment(session: PortalSession, reference: strin
         shipment,
         events: eventSnapshot.docs.map((document) =>
           portalShipmentEventView(document.data() as Record<string, unknown>, document.id)),
-        documents: documents.kind === "ready"
-          ? documents.documents
-              .filter((document) => portalDocumentReleased(document as unknown as Record<string, unknown>))
-              .map((document) => portalDocumentView(document as unknown as Record<string, unknown>, normalized))
-          : [],
+        documents: documentRecords
+          .filter((document) => portalDocumentVisibleToSender(document))
+          .map((document) => portalDocumentRow(document, shipment)),
+        // The checklist is derived from every live document, including ones the
+        // customer may not see, so a line cannot read "still needed" because the
+        // paper KCPL holds has not been released back to them.
+        checklist: portalDocumentChecklist({
+          requirements: requirementSnapshot.docs.map((requirement) => requirement.data() as Record<string, unknown>),
+          documents: documentRecords,
+        }),
       },
     };
   } catch (error) {
@@ -146,7 +162,12 @@ export async function getPortalShipment(session: PortalSession, reference: strin
   }
 }
 
-export type PortalDocumentRow = PortalDocumentView & { shipment_status: string };
+export type PortalDocumentRow = PortalDocumentView & {
+  shipment_status: string;
+  /** True when this is a document the customer sent to KCPL. */
+  from_customer: boolean;
+  review_state: string;
+};
 
 export async function listPortalDocuments(session: PortalSession): Promise<
   Unavailable | { kind: "ready"; documents: PortalDocumentRow[]; scanned: number; total: number }
@@ -159,11 +180,9 @@ export async function listPortalDocuments(session: PortalSession): Promise<
       const listing = await listShipmentDocuments(shipment.reference);
       if (listing.kind !== "ready") return [] as PortalDocumentRow[];
       return listing.documents
-        .filter((document) => portalDocumentReleased(document as unknown as Record<string, unknown>))
-        .map((document) => ({
-          ...portalDocumentView(document as unknown as Record<string, unknown>, shipment.reference),
-          shipment_status: shipment.status,
-        }));
+        .map((document) => document as unknown as Record<string, unknown>)
+        .filter((document) => portalDocumentVisibleToSender(document))
+        .map((document) => portalDocumentRow(document, shipment));
     }));
     const documents = results.flat().sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at));
     return { kind: "ready", documents, scanned: scanned.length, total: shipments.length };
@@ -171,6 +190,20 @@ export async function listPortalDocuments(session: PortalSession): Promise<
     console.error("KCPL portal document listing failed", error);
     return { kind: "unavailable" };
   }
+}
+
+function portalDocumentRow(document: Record<string, unknown>, shipment: PortalShipmentView): PortalDocumentRow {
+  return {
+    ...portalDocumentView(document, shipment.reference),
+    shipment_status: shipment.status,
+    from_customer: document.uploaded_by_source === "customer_portal",
+    // Customer-facing review language. The staff review note is never carried.
+    review_state: document.review_status === "verified"
+      ? "confirmed"
+      : document.review_status === "rejected"
+        ? "resend"
+        : document.uploaded_by_source === "customer_portal" ? "with_kcpl" : "released",
+  };
 }
 
 export type PortalCurrencyBalance = {
@@ -281,9 +314,19 @@ export type PortalOverview = {
   attentionCount: number;
   deliveredCount: number;
   documents: PortalDocumentRow[];
+  /** Shipments with required paperwork the customer can still supply. */
+  outstanding: PortalOutstandingDocuments[];
+  outstandingCount: number;
   finance: PortalFinanceSummary | null;
   quoteCount: number;
   requestCount: number;
+};
+
+export type PortalOutstandingDocuments = {
+  reference: string;
+  origin: string;
+  destination: string;
+  rows: PortalRequirementRow[];
 };
 
 export async function getPortalOverview(session: PortalSession): Promise<Unavailable | { kind: "ready"; overview: PortalOverview }> {
@@ -300,19 +343,39 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
     const horizon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const today = new Date().toISOString().slice(0, 10);
 
-    // The overview only surfaces documents for the shipments it already lists,
-    // so it never costs more reads than the shipment workspace itself.
+    // The overview only looks at the shipments it already lists, so it never
+    // costs more reads than the shipment workspace itself. One pass produces
+    // both halves of the document story: what KCPL released, and what KCPL is
+    // still waiting on from the customer.
     const recent = shipments.slice(0, 6);
+    const db = firebaseAdminDb();
     const documentResults = await Promise.all(recent.map(async (shipment) => {
-      const listing = await listShipmentDocuments(shipment.reference);
-      if (listing.kind !== "ready") return [] as PortalDocumentRow[];
-      return listing.documents
-        .filter((document) => portalDocumentReleased(document as unknown as Record<string, unknown>))
-        .map((document) => ({
-          ...portalDocumentView(document as unknown as Record<string, unknown>, shipment.reference),
-          shipment_status: shipment.status,
-        }));
+      const [listing, requirementSnapshot] = await Promise.all([
+        listShipmentDocuments(shipment.reference),
+        db.collection("shipments").doc(shipment.reference).collection("document_requirements").limit(100).get(),
+      ]);
+      const records = listing.kind === "ready"
+        ? listing.documents.map((document) => document as unknown as Record<string, unknown>)
+        : [];
+      const checklist = portalDocumentChecklist({
+        requirements: requirementSnapshot.docs.map((requirement) => requirement.data() as Record<string, unknown>),
+        documents: records,
+      });
+      return {
+        released: records.filter((document) => portalDocumentReleased(document)).map((document) => portalDocumentRow(document, shipment)),
+        outstanding: portalOutstandingUploads(checklist),
+        shipment,
+      };
     }));
+
+    const outstanding = documentResults
+      .filter((entry) => entry.outstanding.length > 0)
+      .map((entry) => ({
+        reference: entry.shipment.reference,
+        origin: entry.shipment.origin,
+        destination: entry.shipment.destination,
+        rows: entry.outstanding,
+      }));
 
     return {
       kind: "ready",
@@ -327,7 +390,11 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
           && isoDay(shipment.eta) <= horizon).length,
         attentionCount: shipments.filter((shipment) => shipment.status === "exception").length,
         deliveredCount: shipments.filter((shipment) => shipment.status === "delivered").length,
-        documents: documentResults.flat().sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at)).slice(0, 6),
+        documents: documentResults.flatMap((entry) => entry.released)
+          .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))
+          .slice(0, 6),
+        outstanding,
+        outstandingCount: outstanding.reduce((total, entry) => total + entry.rows.length, 0),
         finance: invoiceResult.kind === "ready" ? invoiceResult.summary : null,
         quoteCount: quoteResult.kind === "ready" ? quoteResult.quotes.length : 0,
         requestCount: quoteResult.kind === "ready" ? quoteResult.requests.length : 0,

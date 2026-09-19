@@ -196,6 +196,151 @@ export function portalQuoteVisible(quote: Record<string, unknown>) {
   return amount !== null && Number.isFinite(amount);
 }
 
+/* ------------------------------------------------------------------ *
+ * Inbound documents
+ * ------------------------------------------------------------------ */
+
+/**
+ * Document types a customer may send to KCPL.
+ *
+ * Default-deny, and deliberately narrow: these are the papers the *shipper*
+ * originates. Everything absent from this list -- bills of lading, air
+ * waybills, delivery orders, manifests, customs entries, proof of delivery --
+ * is produced by KCPL, a carrier or an authority, so accepting a customer's
+ * copy of one would put a document KCPL did not issue into the same vault as
+ * the ones it did.
+ */
+export const customerUploadableDocumentTypes = [
+  "commercial_invoice",
+  "packing_list",
+  "certificate_of_origin",
+  "import_permit",
+  "export_permit",
+  "dangerous_goods_declaration",
+  "insurance_certificate",
+  "other",
+] as const;
+export type CustomerUploadableDocumentType = (typeof customerUploadableDocumentTypes)[number];
+
+export function portalCanUploadDocumentType(value: unknown): value is CustomerUploadableDocumentType {
+  return customerUploadableDocumentTypes.includes(value as CustomerUploadableDocumentType);
+}
+
+/** One customer upload is one file. Smaller than the staff ceiling on purpose:
+ * this is a phone photo or a PDF from an accounts package, not a scan batch. */
+export const PORTAL_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+
+/**
+ * A document the customer sent is visible to that customer whether or not
+ * staff have marked it customer-safe: they supplied it, so withholding it
+ * would only hide their own paperwork from them. Everything else still needs
+ * an explicit release.
+ */
+export function portalDocumentVisibleToSender(document: Record<string, unknown>, now = new Date()) {
+  if (document.deleted_at) return false;
+  const status = typeof document.review_status === "string" ? document.review_status : "";
+  if (status === "deleted") return false;
+  return document.uploaded_by_source === "customer_portal" || portalDocumentReleased(document, now);
+}
+
+export const portalRequirementStates = ["needed", "with_kcpl", "confirmed", "resend"] as const;
+export type PortalRequirementState = (typeof portalRequirementStates)[number];
+
+export type PortalRequirementRow = {
+  document_type: string;
+  required: boolean;
+  state: PortalRequirementState;
+  /** Whether the customer can satisfy this line themselves. */
+  uploadable: boolean;
+  submitted_count: number;
+  last_submitted_at: string | null;
+};
+
+/**
+ * Derive the customer-facing checklist for one shipment.
+ *
+ * Fulfilment is computed from the documents themselves, exactly as the staff
+ * workflow guard computes it -- the requirement record carries no completion
+ * flag. Four states, in customer language rather than review language:
+ *
+ *   needed     -- required, nothing live has been supplied
+ *   with_kcpl  -- supplied and waiting on KCPL's review
+ *   confirmed  -- verified by KCPL and not expired
+ *   resend     -- KCPL rejected what was supplied and needs it again
+ *
+ * The staff review note is deliberately not carried into any of these: it is
+ * internal reviewer copy, not a message written for the customer.
+ */
+export function portalDocumentChecklist({
+  requirements,
+  documents,
+  now = new Date(),
+}: {
+  requirements: Array<Record<string, unknown>>;
+  documents: Array<Record<string, unknown>>;
+  now?: Date;
+}): PortalRequirementRow[] {
+  const today = now.toISOString().slice(0, 10);
+
+  const byType = new Map<string, Array<Record<string, unknown>>>();
+  for (const document of documents) {
+    const type = typeof document.document_type === "string" ? document.document_type : "";
+    if (!type) continue;
+    const status = typeof document.review_status === "string" ? document.review_status : "received";
+    // Superseded and deleted copies are history, not evidence.
+    if (status === "deleted" || status === "superseded" || document.deleted_at) continue;
+    byType.set(type, [...(byType.get(type) ?? []), document]);
+  }
+
+  return requirements
+    .map((requirement) => {
+      const documentType = typeof requirement.document_type === "string" ? requirement.document_type : "";
+      const supplied = byType.get(documentType) ?? [];
+      const verified = supplied.some((document) => {
+        if (document.review_status !== "verified") return false;
+        const expires = typeof document.expires_on === "string" ? document.expires_on.trim() : "";
+        return !expires || expires >= today;
+      });
+      const pending = supplied.some((document) => document.review_status === "received" || document.review_status === "under_review");
+      const rejected = supplied.some((document) => document.review_status === "rejected");
+
+      const state: PortalRequirementState = verified
+        ? "confirmed"
+        : pending
+          ? "with_kcpl"
+          : rejected
+            ? "resend"
+            : "needed";
+
+      const timestamps = supplied
+        .map((document) => (typeof document.uploaded_at === "string" ? document.uploaded_at : ""))
+        .filter(Boolean)
+        .sort();
+
+      return {
+        document_type: documentType,
+        required: requirement.required !== false,
+        state,
+        uploadable: portalCanUploadDocumentType(documentType),
+        submitted_count: supplied.length,
+        last_submitted_at: timestamps.at(-1) ?? null,
+      };
+    })
+    .filter((row) => row.document_type)
+    // Outstanding work first, and required lines above advisory ones.
+    .sort((a, b) => {
+      const order: Record<PortalRequirementState, number> = { needed: 0, resend: 1, with_kcpl: 2, confirmed: 3 };
+      return order[a.state] - order[b.state]
+        || Number(b.required) - Number(a.required)
+        || a.document_type.localeCompare(b.document_type);
+    });
+}
+
+/** Checklist lines the customer can still act on themselves. */
+export function portalOutstandingUploads(rows: PortalRequirementRow[]) {
+  return rows.filter((row) => row.uploadable && row.required && (row.state === "needed" || row.state === "resend"));
+}
+
 const activeShipmentStatuses = new Set([
   "booking_confirmed",
   "preparing",

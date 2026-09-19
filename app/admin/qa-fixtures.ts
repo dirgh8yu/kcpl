@@ -818,6 +818,7 @@ export function mockDocumentVault(staff: KcplStaffContext, now = Date.now()): Do
     kinds.forEach((kind, position) => {
       const review = VAULT_REVIEW[(jobIndex + position) % VAULT_REVIEW.length];
       const expired = (jobIndex + position) % 9 === 0;
+      const customerSent = kind.type === "commercial_invoice";
       rows.push({
         id: rows.length + 1,
         shipment_reference: job.reference,
@@ -834,8 +835,11 @@ export function mockDocumentVault(staff: KcplStaffContext, now = Date.now()): Do
         content_type: "application/pdf",
         size_bytes: 180_000 + rows.length * 4_200,
         uploaded_at: iso(now, -(jobIndex + 2) * HOUR),
-        uploaded_by: job.assigned_to_name ?? "KCPL Operations",
-        uploaded_by_email: job.assigned_to_email,
+        // Shipper-originated papers are shown arriving from the customer portal
+        // so the review queue's provenance badge has something to render.
+        uploaded_by: customerSent ? job.customer_name : job.assigned_to_name ?? "KCPL Operations",
+        uploaded_by_email: customerSent ? null : job.assigned_to_email,
+        uploaded_by_source: customerSent ? "customer_portal" : "staff",
         review_status: review,
         effective_status: expired ? "expired" : review,
         customer_safe: kind.type !== "commercial_invoice",

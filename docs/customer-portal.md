@@ -67,6 +67,58 @@ Release rules:
   reported as *missing*, never *forbidden*, so the portal cannot be used to test whether
   a reference exists.
 
+## Inbound documents
+
+Documents move both ways. `/portal/shipments/<reference>` shows the customer their
+half of the Document Vault: one line per requirement KCPL seeded on the shipment,
+in customer language rather than review language.
+
+| State | Meaning |
+|---|---|
+| **Needed** | Required, and nothing live has been supplied |
+| **With KCPL** | Supplied, waiting on review |
+| **Confirmed** | Verified by KCPL and not expired |
+| **Send again** | Rejected; KCPL needs it re-sent |
+
+Fulfilment is derived from the documents themselves, exactly as the staff workflow
+guard derives it — the requirement record carries no completion flag. The checklist is
+computed from **every** live document, including ones the customer cannot see, so a
+line never reads "still needed" because the paper KCPL already holds has not been
+released back. The staff review note is deliberately never carried into any state: it
+is internal reviewer copy, not a message written for a customer.
+
+### What a customer may send
+
+`customerUploadableDocumentTypes` is a default-deny allowlist of the papers a
+*shipper* originates: commercial invoice, packing list, certificate of origin, import
+and export permits, dangerous-goods declaration, insurance certificate, other.
+Everything absent from it — bills of lading, air waybills, delivery orders, manifests,
+customs entries, proof of delivery — is produced by KCPL, a carrier or an authority,
+so accepting a customer's copy would put a document KCPL did not issue into the same
+vault as the ones it did.
+
+### How an upload is treated
+
+`POST /api/portal/documents/[reference]` gates in this order, before a byte is stored:
+portal session → `canSubmitRequests` → same-origin → the shipment belongs to this
+session's customer → the type is on the allowlist → extension is PDF/JPEG/PNG/WEBP →
+size within `PORTAL_UPLOAD_MAX_BYTES` (10 MB, narrower than the staff vault's 15 MB) →
+magic bytes match the extension. A shipment that is not the caller's is reported as
+*missing*, never *forbidden*.
+
+The file then goes through the same `uploadShipmentDocument()` the staff route uses, so
+it lands as `review_status: "received"` and `customer_safe: false` — evidence awaiting
+review, never verified paperwork, and not releasable back to the portal until a staff
+member says so. The route cannot supersede an existing document: replacing KCPL's copy
+of anything is a staff decision, so `supersedesDocumentId` is not accepted from it at
+all. Uploads are rate limited per portal account.
+
+`uploaded_by_source: "customer_portal"` records provenance. It drives three things: the
+**From customer** badge and filter in the staff Document Vault, a
+`document_received_from_customer` entry on the Job File activity, and the rule that a
+customer can always see a document they sent even before it is released — withholding
+it would only hide their own paperwork from them.
+
 ## What the portal never writes
 
 A customer request (`POST /api/portal/requests`) creates an ordinary enquiry in `quotes`
@@ -123,11 +175,12 @@ in server routes only, exactly like the staff product.
 |---|---|
 | `/portal` | Sign-in, or the account overview |
 | `/portal/shipments`, `/portal/shipments/[reference]` | Movements, milestones, released documents |
-| `/portal/documents` | Every released document across recent shipments |
+| `/portal/documents` | Released documents and the customer's own submissions, filterable by direction |
 | `/portal/invoices` | Issued invoices and balances (account owners) |
 | `/portal/requests` | New freight request, issued quotes, open requests |
 | `POST /api/portal/session` | Mints the session cookie from a fresh, verified Firebase sign-in |
 | `GET /api/portal/documents/[reference]/[id]` | Download; ownership then release are checked before any bytes are read |
+| `POST /api/portal/documents/[reference]` | Customer upload against a shipment; lands unreviewed and unreleased |
 | `POST /api/portal/requests` | Customer-raised enquiry or "ask to proceed" |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |
 
@@ -146,5 +199,12 @@ excluded from public analytics and from the public site's mobile quote CTA.
   scan costs one read per shipment). The workspace states the coverage when it is capped.
 - **No payment capture.** Invoices are read-only; bank details, payment references and
   credit terms stay with KCPL accounts.
+- **Uploads are not malware-scanned.** Type, extension, size and magic bytes are
+  checked, and files are served back only through authenticated, force-download routes
+  with `X-Content-Type-Options: nosniff` — but no antivirus runs over them. Staff open
+  customer-supplied files at the same risk they do an emailed attachment today.
+- **No upload notification yet.** A customer upload appears in the staff Document
+  Vault under the "From customers" filter and on the Job File activity, but nothing
+  pushes it at the assigned operator. That lands with the notifications work.
 - **Single customer per login.** A contact who buys through two KCPL customer records
   needs two portal accounts.

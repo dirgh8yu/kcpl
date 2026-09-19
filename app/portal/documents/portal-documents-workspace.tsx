@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { FileText } from "lucide-react";
 import {
+  OpsBadge,
   OpsButton,
   OpsEmptyState,
   OpsFilterChip,
@@ -29,6 +30,7 @@ export function PortalDocumentsWorkspace({
 }) {
   const [query, setQuery] = useState("");
   const [documentType, setDocumentType] = useState("all");
+  const [direction, setDirection] = useState<"all" | "from_kcpl" | "from_you">("all");
 
   const types = useMemo(() => {
     const seen = new Map<string, number>();
@@ -39,23 +41,26 @@ export function PortalDocumentsWorkspace({
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return documents.filter((document) => {
+      if (direction === "from_kcpl" && document.from_customer) return false;
+      if (direction === "from_you" && !document.from_customer) return false;
       if (documentType !== "all" && document.document_type !== documentType) return false;
       if (!needle) return true;
       return [document.filename, document.shipment_reference, portalDocumentLabel(document.document_type)]
         .some((value) => value.toLowerCase().includes(needle));
     });
-  }, [documents, documentType, query]);
+  }, [documents, direction, documentType, query]);
 
-  const filtered = documentType !== "all" || query.trim().length > 0;
+  const sentByYou = documents.filter((document) => document.from_customer).length;
+  const filtered = documentType !== "all" || direction !== "all" || query.trim().length > 0;
 
   return (
     <OpsPage>
       <OpsPageHeader
         eyebrow="Kapileshwor Cargo"
         title="Documents"
-        description="Bills of lading, air waybills, customs paperwork and proof of delivery that KCPL has released to your account."
+        description="Paperwork KCPL has released to you, and the documents you have sent to KCPL."
         meta={<>
-          <span>{documents.length} document{documents.length === 1 ? "" : "s"} released</span>
+          <span>{documents.length} document{documents.length === 1 ? "" : "s"}</span>
           {total > scanned ? <span>Covering your {scanned} most recent shipments of {total}</span> : null}
         </>}
       />
@@ -68,8 +73,13 @@ export function PortalDocumentsWorkspace({
               placeholder="Search file name, type or shipment…"
               aria-label="Search your documents"
             />
+            <div className="portal-filter-group" role="group" aria-label="Document direction filter">
+              <OpsFilterChip active={direction === "all"} onClick={() => setDirection("all")}>All</OpsFilterChip>
+              <OpsFilterChip active={direction === "from_kcpl"} onClick={() => setDirection("from_kcpl")}>From KCPL</OpsFilterChip>
+              <OpsFilterChip active={direction === "from_you"} onClick={() => setDirection("from_you")}>Sent by you · {sentByYou}</OpsFilterChip>
+            </div>
             <div className="portal-filter-group" role="group" aria-label="Document type filter">
-              <OpsFilterChip active={documentType === "all"} onClick={() => setDocumentType("all")}>All</OpsFilterChip>
+              <OpsFilterChip active={documentType === "all"} onClick={() => setDocumentType("all")}>All types</OpsFilterChip>
               {types.map(([type, count]) => (
                 <OpsFilterChip key={type} active={documentType === type} onClick={() => setDocumentType(type)}>
                   {portalDocumentLabel(type)} · {count}
@@ -77,7 +87,7 @@ export function PortalDocumentsWorkspace({
               ))}
             </div>
             {filtered ? (
-              <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setQuery(""); }}>Reset</OpsButton>
+              <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setDirection("all"); setQuery(""); }}>Reset</OpsButton>
             ) : null}
             <span className="portal-toolbar-count">{rows.length} shown</span>
           </OpsToolbar>
@@ -89,7 +99,8 @@ export function PortalDocumentsWorkspace({
                   <tr>
                     <th>Document</th>
                     <th>Shipment</th>
-                    <th>Released</th>
+                    <th>Direction</th>
+                    <th>Date</th>
                     <th>Size</th>
                     <th><span className="portal-sr-only">Download</span></th>
                   </tr>
@@ -105,6 +116,13 @@ export function PortalDocumentsWorkspace({
                         <Link href={`/portal/shipments/${encodeURIComponent(document.shipment_reference)}`} className="portal-row-link">
                           <OpsMono>{document.shipment_reference}</OpsMono>
                         </Link>
+                      </td>
+                      <td>
+                        {document.from_customer ? (
+                          <OpsBadge tone={document.review_state === "confirmed" ? "success" : document.review_state === "resend" ? "danger" : "info"}>
+                            {document.review_state === "confirmed" ? "Confirmed" : document.review_state === "resend" ? "Send again" : "With KCPL"}
+                          </OpsBadge>
+                        ) : <OpsBadge tone="neutral">From KCPL</OpsBadge>}
                       </td>
                       <td>{portalDate(document.uploaded_at)}</td>
                       <td>{portalFileSize(document.size_bytes)}</td>
@@ -128,10 +146,10 @@ export function PortalDocumentsWorkspace({
               <OpsEmptyState
                 kind={filtered ? "search" : "neutral"}
                 icon={<FileText size={18}/>}
-                title={filtered ? "No documents match this view" : "No documents released yet"}
+                title={filtered ? "No documents match this view" : "No documents yet"}
                 description={filtered
-                  ? "Try a different type or clear the search."
-                  : "KCPL releases shipment paperwork to your account as each document is verified."}
+                  ? "Try a different filter or clear the search."
+                  : "Paperwork KCPL releases to you, and anything you send from a shipment, is listed here."}
                 action={filtered ? <OpsButton size="sm" variant="secondary" onClick={() => { setDocumentType("all"); setQuery(""); }}>Reset view</OpsButton> : undefined}
               />
             </div>
