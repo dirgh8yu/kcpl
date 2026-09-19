@@ -14,7 +14,8 @@ import {
   FileText,
   MoreHorizontal,
   PackageCheck,
-  Plane,
+  PlaneLanding,
+  PlaneTakeoff,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -204,7 +205,7 @@ function Metric({ href, label, value, icon, tone }: { href: string; label: strin
   return (
     <Link href={href} className={styles.metric}>
       <span className={styles.metricLabel}>
-        <span className={`${styles.metricDot} ${toneIconClass(tone)}`}>{icon}</span>
+        <span className={`${styles.metricDot} ${toneIconClass(value === 0 ? "neutral" : tone)}`}>{icon}</span>
         <span className={styles.metricLabelText}>{label}</span>
       </span>
       <strong className={styles.metricValue}>{value}</strong>
@@ -215,7 +216,7 @@ function Metric({ href, label, value, icon, tone }: { href: string; label: strin
 function TodayItem({ href, label, value, icon, tone }: { href: string; label: string; value: number | null; icon: ReactNode; tone: Tone }) {
   return (
     <Link href={href} className={styles.todayItem}>
-      <span className={`${styles.todayItemIcon} ${toneIconClass(tone)}`}>{icon}</span>
+      <span className={`${styles.todayItemIcon} ${toneIconClass(value === 0 ? "neutral" : tone)}`}>{icon}</span>
       <strong>{label}</strong>
       <span className={styles.todayItemCount}>{value === null ? "—" : value}</span>
       <ChevronRight size={13} strokeWidth={1.8} className={styles.metricChevron} aria-hidden="true" />
@@ -344,7 +345,8 @@ function LiveMovement({ movements, generatedAt, returnTo }: { movements: Overvie
 
 function activityIcon(item: OverviewActivity) {
   const value = `${item.type} ${item.title}`.toLowerCase();
-  if (value.includes("track") || value.includes("depart") || value.includes("arriv")) return <Plane size={14} strokeWidth={1.8} />;
+  if (value.includes("arriv")) return <PlaneLanding size={14} strokeWidth={1.8} />;
+  if (value.includes("track") || value.includes("depart")) return <PlaneTakeoff size={14} strokeWidth={1.8} />;
   if (value.includes("customs")) return <ShieldCheck size={14} strokeWidth={1.8} />;
   if (value.includes("document") || value.includes("pod")) return <FileText size={14} strokeWidth={1.8} />;
   if (value.includes("assign") || value.includes("owner")) return <Users size={14} strokeWidth={1.8} />;
@@ -597,15 +599,15 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
         <section className={`${styles.card} ${styles.todayCard}`} aria-labelledby="today-title">
           <div className={styles.cardHeader}><div><h2 id="today-title">Today</h2></div><Link className={styles.textButton} href="/admin/delivery">View calendar <ArrowRight size={13} /></Link></div>
           <div className={styles.todayList}>
-            <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="danger" icon={<Plane size={14} />} />
-            <TodayItem href="/admin/visibility" label="Departing today" value={workflow.visibility?.departing_today ?? null} tone="info" icon={<Plane size={14} />} />
+            <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="neutral" icon={<PlaneLanding size={16} />} />
+            <TodayItem href="/admin/visibility" label="Departing today" value={workflow.visibility?.departing_today ?? null} tone="neutral" icon={<PlaneTakeoff size={16} />} />
             <TodayItem href="/admin/customs" label="Customs clearance" value={customs} tone="success" icon={<FileCheck2 size={14} />} />
             <TodayItem href="/admin/delivery" label="POD overdue" value={workflow.delivery?.pod_overdue ?? null} tone="danger" icon={<CircleAlert size={14} />} />
             <TodayItem href="/admin/tenders" label="Booking approvals" value={workflow.tendering?.accepted_or_countered ?? null} tone="violet" icon={<PackageCheck size={14} />} />
             <TodayItem href="/admin/freight-documents" label="Missing documents" value={workflow.documents?.missing_primary ?? null} tone="danger" icon={<FileText size={14} />} />
             <TodayItem href="/admin/shipments?attention=1" label="Unassigned shipments" value={data.totals.unassigned_jobs} tone="danger" icon={<UserRoundX size={14} />} />
           </div>
-          <Link href="/admin/alerts" className={styles.todayCritical}><span className={`${styles.todayItemIcon} ${styles.dangerIcon}`}><AlertTriangle size={15} /></span><span><strong>{critical === null ? "Critical blockers unavailable" : `${critical} critical blocker${critical === 1 ? "" : "s"}`}</strong><span>{critical ? "Require immediate attention" : "No unresolved critical automation alert"}</span></span><ChevronRight size={15} /></Link>
+          <Link href="/admin/alerts" className={styles.todayCritical} data-tone={critical === null ? "neutral" : critical > 0 ? "danger" : "success"}><span className={styles.todayItemIcon}>{critical === 0 ? <CheckCircle2 size={16}/> : <AlertTriangle size={16}/>}</span><span><strong>{critical === null ? "Blocker status unavailable" : critical === 0 ? "No critical blockers" : `${critical} critical blocker${critical === 1 ? "" : "s"}`}</strong><span>{critical === null ? "Open Tasks & Alerts to check again" : critical > 0 ? "Review issues that need immediate action" : "No immediate action needed"}</span></span><ChevronRight size={15} /></Link>
         </section>
       </div>
 

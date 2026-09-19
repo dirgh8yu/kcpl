@@ -22,14 +22,14 @@
    * nests inside .kcpl-admin-route and therefore silently won. That is what
    * made the whole staff product render on a cream canvas with warm grey
    * rules while every component was written against these cool tokens. */
-  --admin-canvas: #F6F8FB;
+  --admin-canvas: #FAFAFB;
   --admin-surface: #FFFFFF;
-  --admin-surface-soft: #F4F6FA;
-  --admin-surface-muted: #EDF0F5;
-  --admin-line: #E3E8EF;
-  --admin-line-strong: #CBD3DE;
-  --admin-muted: #5C6675;
-  --admin-faint: #8B95A4;
+  --admin-surface-soft: #F5F5F7;
+  --admin-surface-muted: #EDEEF0;
+  --admin-line: #E5E6E9;
+  --admin-line-strong: #CFD1D7;
+  --admin-muted: #626570;
+  --admin-faint: #747884;
   /* Semantic ink — Untitled-grade 700 shades that hold AA contrast on light chips. */
   --admin-danger: #B42318;
   --admin-warning: #B54708;
@@ -50,7 +50,7 @@
   --app-control-height: 40px;
   --app-control-height-touch: 44px;
   --app-radius: 8px;
-  --app-surface-radius: 10px;
+  --app-surface-radius: 8px;
   --app-dialog-radius: 12px;
   --app-space-1: 4px;
   --app-space-2: 8px;
@@ -64,7 +64,7 @@
   --app-focus: #2E90FA;
   --app-font-size: 14px;
   --app-label-size: 12px;
-  --app-title-size: 24px;
+  --app-title-size: 22px;
   /* Typography scale v2 — new UI should reach for these instead of raw px. */
   --app-text-xs: 11px;
   --app-text-sm: 12px;
@@ -129,15 +129,15 @@
 .app-scope-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--admin-crimson); }
 .app-workspaces { overflow-y: auto; flex: 1; min-height: 0; padding: 12px 8px; scrollbar-width: thin; }
 .app-nav-group { margin-bottom: 2px; }
-.app-nav-group summary { min-height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 4px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.app-nav-group summary { min-height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 4px; list-style: none; cursor: pointer; color: var(--admin-muted); font-size: 11px; font-weight: 500; letter-spacing: .02em; text-transform: uppercase; }
 .app-nav-group summary::-webkit-details-marker { display: none; }
 .app-nav-group summary:hover { color: var(--admin-muted); background: transparent; }
-.app-nav-group a { position: relative; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-left: 2px solid transparent; border-radius: var(--app-radius); padding: 0 10px 0 12px; color: var(--admin-muted); font-size: 14px; font-weight: 400; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
+.app-nav-group a { position: relative; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-left: 2px solid transparent; border-radius: var(--app-radius); padding: 0 10px 0 12px; color: var(--admin-muted); font-size: 13px; font-weight: 450; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
 .app-nav-group a:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
 .app-nav-group a[aria-current="page"] { color: var(--admin-ink); background: var(--admin-surface-muted); font-weight: 500; }
 .app-nav-group a[aria-current="page"] svg { color: currentColor; opacity: 1; }
 .app-nav-item-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.app-nav-item-main > svg { flex: none; color: currentColor; opacity: .72; }
+.app-nav-item-main > svg { flex: none; color: currentColor; opacity: 1; }
 .app-nav-item-main > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
 .app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
@@ -166,6 +166,21 @@
 .app-refreshing { animation: app-spin 1s linear infinite; }
 @keyframes app-spin { to { transform: rotate(360deg); } }
 
+/* Integration cards use operational labels; technical setup stays expandable. */
+.kcpl-admin-content .ops-integration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 16px; margin-top: 24px; }
+.kcpl-admin-content .ops-integration-heading { display: flex; align-items: center; gap: 12px; }
+.kcpl-admin-content .ops-integration-symbol { display: grid; place-items: center; width: 38px; height: 38px; color: var(--admin-muted); border: 1px solid var(--admin-line); border-radius: var(--app-radius); }
+.kcpl-admin-content .ops-integration-guidance { margin: 0 0 16px; font-size: 13px; line-height: 20px; color: var(--admin-muted); }
+.kcpl-admin-content .ops-integration-capabilities { display: grid; gap: 10px; }
+.kcpl-admin-content .ops-integration-capabilities > span { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
+.kcpl-admin-content .ops-integration-note { margin-top: 12px; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .ops-integration-health { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0; padding-top: 16px; border-top: 1px solid var(--admin-line); font-size: 12px; }
+.kcpl-admin-content .ops-integration-health dt { color: var(--admin-muted); margin-bottom: 4px; }
+.kcpl-admin-content .ops-integration-health dd { margin: 0; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .ops-integration-details { border-top: 1px solid var(--admin-line); padding-top: 12px; font-size: 12px; color: var(--admin-muted); overflow-wrap: anywhere; }
+.kcpl-admin-content .ops-integration-details summary { cursor: pointer; padding-block: 4px; color: var(--admin-ink); }
+.kcpl-admin-content .ops-integration-details p { margin-top: 8px; }
+
 /* Shared page anatomy: title and actions, filter toolbar, working surface. */
 .kcpl-admin-content :where(main,.ops-page) { min-width: 0; color: var(--admin-ink); background: var(--admin-canvas); }
 .kcpl-admin-content .ops-page { min-height: calc(100dvh - var(--app-toolbar-height)); }
@@ -173,10 +188,10 @@
 .kcpl-admin-content :where(h2) { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; }
 .kcpl-admin-content :where(h3) { font-family: inherit; font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: normal; }
 .kcpl-admin-content .ops-page-header {
-  --ops-page-header-pad-top: 28px;
+  --ops-page-header-pad-top: 24px;
   padding: var(--ops-page-header-pad-top) var(--app-page-gap) 0;
   border-bottom: 1px solid var(--admin-line);
-  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+  background: var(--admin-canvas);
   backdrop-filter: none;
 }
 .kcpl-admin-content .ops-page-header-main { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; width: 100%; max-width: none; margin: 0; padding: 0 0 18px; }
@@ -202,7 +217,7 @@
 .kcpl-admin-content .ops-surface-header {
   display: flex; align-items: flex-start; justify-content: space-between; flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface);
 }
-.kcpl-admin-content .ops-surface-header h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; }
+.kcpl-admin-content .ops-surface-header h2 { margin: 0; font-size: 14px; font-weight: 600; line-height: 24px; }
 .kcpl-admin-content .ops-surface-description { margin-top: 2px; color: var(--admin-muted); font-size: 13px; font-weight: 400; line-height: 20px; }
 .kcpl-admin-content .ops-surface-body { padding: 18px; }
 .kcpl-admin-content .ops-surface-body-flush { padding: 0; }
@@ -469,23 +484,25 @@
 /* Six metrics need a slightly tighter track than the 190px default to stay on
  * one row inside the page gutter; without it the sixth card orphans. */
 .kcpl-admin-content .ops-kpi-strip.ops-kpi-strip-tight { grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); }
-.kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
+.kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: start; gap: 10px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
 .kcpl-admin-content button.ops-kpi { cursor: pointer; }
 /* Non-interactive KPIs are statistics, not controls: no raised surface, no
  * hover affordance, so a card that cannot be pressed never looks like it can. */
-.kcpl-admin-content div.ops-kpi { background: var(--admin-surface-soft); box-shadow: none; }
-.kcpl-admin-content div.ops-kpi .ops-kpi-icon { background: var(--admin-surface); }
+.kcpl-admin-content div.ops-kpi { background: var(--admin-surface); box-shadow: none; }
+.kcpl-admin-content div.ops-kpi .ops-kpi-icon { background: transparent; }
 .kcpl-admin-content button.ops-kpi:hover { border-color: var(--admin-line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / 7%); }
 /* Touch fires false hovers on tap; keep the KPI hover lift to real pointers. */
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content button.ops-kpi:hover { transform: translateY(-1px); } }
 .kcpl-admin-content button.ops-kpi:active { transform: scale(.98); box-shadow: 0 1px 2px rgb(16 24 40 / 4%); }
 .kcpl-admin-content .ops-kpi[data-active="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
-.kcpl-admin-content .ops-kpi-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: var(--admin-surface-soft); color: var(--admin-muted); }
-.kcpl-admin-content .ops-kpi-copy { min-width: 0; }
-.kcpl-admin-content .ops-kpi-copy strong { display: block; color: var(--admin-ink); font-size: 26px; font-weight: 700; line-height: 28px; letter-spacing: -.025em; overflow-wrap: break-word; }
+.kcpl-admin-content .ops-kpi-icon { display: grid; width: 24px; height: 24px; place-items: center; border-radius: var(--app-radius-sm); background: transparent; color: var(--admin-muted); }
+.kcpl-admin-content .ops-kpi-icon svg { width: 16px; height: 16px; }
+.kcpl-admin-content .ops-kpi[data-zero="true"] .ops-kpi-icon { color: var(--admin-muted); background: transparent; }
+.kcpl-admin-content .ops-kpi-copy { display: flex; flex-direction: column; min-width: 0; }
+.kcpl-admin-content .ops-kpi-copy strong { display: block; color: var(--admin-ink); font-size: 24px; font-weight: 600; line-height: 30px; letter-spacing: -.025em; overflow-wrap: break-word; font-variant-numeric: tabular-nums; }
 /* A word in the value slot does not fit the digit-sized column at 26px. */
 .kcpl-admin-content .ops-kpi[data-variant="text"] .ops-kpi-copy strong { font-size: 15px; font-weight: 600; line-height: 20px; letter-spacing: -.01em; }
-.kcpl-admin-content .ops-kpi-copy span { display: block; margin-top: 5px; color: var(--admin-muted); font-size: 12.5px; line-height: 16px; }
+.kcpl-admin-content .ops-kpi-copy span { display: block; order: -1; margin: 0 0 6px; color: var(--admin-muted); font-size: 12.5px; line-height: 16px; }
 .kcpl-admin-content .ops-kpi-copy em { display: block; margin-top: 2px; color: var(--admin-faint); font-size: 11.5px; font-style: normal; line-height: 15px; }
 .kcpl-admin-content .ops-kpi-chevron { color: var(--admin-faint); }
 /* One icon weight for the whole staff product. The admin shipped five stroke
@@ -497,12 +514,12 @@
  * source scan cannot see it. */
 .kcpl-admin-shell svg[stroke="currentColor"] { stroke-width: 1.75; }
 .kcpl-admin-content .ops-kpi:has(> .ops-kpi-copy:first-child) { grid-template-columns: minmax(0, 1fr) auto; }
-.kcpl-admin-content .ops-kpi[data-tone="accent"] .ops-kpi-icon { background: var(--admin-accent-bg); color: var(--admin-crimson); }
-.kcpl-admin-content .ops-kpi[data-tone="info"] .ops-kpi-icon { background: var(--admin-info-bg); color: var(--admin-info); }
+.kcpl-admin-content .ops-kpi[data-tone="accent"] .ops-kpi-icon { background: transparent; color: var(--admin-muted); }
+.kcpl-admin-content .ops-kpi[data-tone="info"] .ops-kpi-icon { background: transparent; color: var(--admin-muted); }
 .kcpl-admin-content .ops-kpi[data-tone="success"] .ops-kpi-icon { background: var(--admin-success-bg); color: var(--admin-success); }
 .kcpl-admin-content .ops-kpi[data-tone="warning"] .ops-kpi-icon { background: var(--admin-warning-bg); color: var(--admin-warning); }
 .kcpl-admin-content .ops-kpi[data-tone="danger"] .ops-kpi-icon { background: var(--admin-danger-bg); color: var(--admin-danger); }
-.kcpl-admin-content .ops-kpi[data-zero="true"] .ops-kpi-copy strong { color: var(--admin-faint); }
+.kcpl-admin-content .ops-kpi[data-zero="true"] .ops-kpi-copy strong { color: var(--admin-muted); }
 @media (max-width: 640px) {
   .kcpl-admin-content .ops-kpi { min-height: 72px; padding: 12px; }
   .kcpl-admin-content .ops-kpi-copy strong { font-size: 22px; line-height: 26px; }
@@ -1011,7 +1028,7 @@
 }
 
 /* Notification panel: same entrance-only treatment, anchored to its trigger. */
-.app-notification-panel { transform-origin: top right; opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); }
+.app-notification-panel { transform-origin: var(--radix-popover-content-transform-origin); opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); }
 @starting-style {
   .app-notification-panel { opacity: 0; transform: scale(.96); }
 }
@@ -1679,8 +1696,12 @@
 .app-search-error { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--admin-line); color: var(--admin-warning); font-size: 13px; line-height: 20px; }
 .app-command-dialog { border-color: var(--admin-line-strong); border-radius: var(--app-dialog-radius); background: var(--admin-surface); }
 .app-notification-toggle { position: relative; }
+.app-notification-icon { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border: 1px solid var(--admin-line); border-radius: var(--app-radius-sm); color: var(--admin-muted); background: var(--admin-surface); }
+.app-notification-icon[data-tone="critical"] { color: var(--admin-danger); background: var(--admin-danger-bg); border-color: var(--admin-danger-line); }
+.app-notification-icon[data-tone="warning"] { color: var(--admin-warning); background: var(--admin-warning-bg); border-color: var(--admin-warning-line); }
+.app-unread-label { color: var(--admin-info); font-weight: 600; }
 .app-notification-count { position: absolute; top: -1px; right: -1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 4px; background: var(--admin-crimson); color: white; font-size: 9px; line-height: 15px; text-align: center; }
-.app-notification-panel { position: absolute; top: 40px; right: 0; z-index: 80; width: min(390px,calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--admin-line-strong); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: 0 12px 32px rgb(16 16 16 / 12%); }
+.app-notification-panel { z-index: 80; width: min(440px,calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--admin-line-strong); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: 0 12px 32px rgb(16 16 16 / 12%); }
 .ops-saved-views { margin: 12px 0; }
 .ops-saved-view-list, .ops-save-view-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .ops-saved-view { display: inline-flex; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); }

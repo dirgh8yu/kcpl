@@ -32,7 +32,7 @@
   padding: 20px 24px 32px;
 }
 .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
-.heroCopy h1 { margin: 0; color: var(--overview-ink); font-size: 20px; font-weight: 620; letter-spacing: -0.018em; line-height: 1.2; }
+.heroCopy h1 { margin: 0; color: var(--overview-ink); font-size: var(--app-title-size); font-weight: 600; letter-spacing: -0.018em; line-height: 1.2; }
 .heroCopy p { margin: 3px 0 0; color: var(--overview-muted); font-size: 13px; }
 .heroActions { display: flex; align-items: center; gap: 18px; }
 .timeBlock { text-align: right; }
@@ -54,11 +54,11 @@
 .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
 .metric { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; gap: 10px; min-height: 74px; border: 1px solid var(--overview-line); border-radius: var(--app-radius, 8px); background: var(--overview-surface); padding: 12px 14px; color: inherit; text-decoration: none; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
 .metric:hover { border-color: var(--overview-line-strong); background: var(--overview-canvas); }
-@media (hover: hover) and (pointer: fine) { .metric:hover { transform: translateY(-1px); } }
+@media (hover: hover) and (pointer: fine) { .metric:hover { transform: none; } }
 .metricLabel { display: flex; min-width: 0; align-items: center; gap: 7px; }
-.metricLabelText { overflow: hidden; color: var(--overview-muted); font-size: 12px; font-weight: 500; letter-spacing: -0.005em; text-overflow: ellipsis; white-space: nowrap; }
+.metricLabelText { color: var(--overview-muted); font-size: 12px; font-weight: 500; letter-spacing: -0.005em; white-space: normal; }
 .metricDot { display: grid; width: 20px; height: 20px; flex: none; place-items: center; border-radius: var(--app-radius-sm, 6px); }
-.metricDot svg { width: 12px; height: 12px; }
+.metricDot svg { width: 16px; height: 16px; }
 .metricValue { display: block; color: var(--overview-ink); font-size: 26px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
 .metricChevron { color: var(--overview-faint); }
 .dangerIcon { background: var(--overview-danger-soft); color: var(--overview-danger); }
@@ -133,7 +133,9 @@
 .todayItemCount { color: var(--overview-ink); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .todayCritical { display: grid; grid-template-columns: 32px minmax(0, 1fr) 16px; align-items: center; gap: 12px; margin: 12px; border: 1px solid var(--admin-danger-line); border-radius: 8px; background: var(--overview-danger-soft); padding: 12px; color: var(--overview-danger); text-decoration: none; }
 .todayCritical strong { display: block; font-size: 13px; }
-.todayCritical span { display: block; margin-top: 3px; color: var(--overview-danger); font-size: 12px; }
+.todayCritical span { display: block; margin-top: 3px; color: inherit; font-size: 12px; }
+.todayCritical[data-tone="success"] { border-color: var(--overview-line); background: var(--overview-surface); color: var(--overview-success); }
+.todayCritical[data-tone="neutral"] { border-color: var(--overview-line); background: var(--overview-canvas); color: var(--overview-muted); }
 
 .workloadBody { padding: 4px 16px 14px; }
 .workloadRow { display: grid; grid-template-columns: minmax(112px, 1.5fr) minmax(56px, 1fr) 26px; align-items: center; gap: 10px; min-height: 34px; color: inherit; text-decoration: none; }
