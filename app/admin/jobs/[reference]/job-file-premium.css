@@ -276,8 +276,12 @@
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-route-connector {
-  align-self: center;
+  /* Each route node stacks a small label over a larger value, so centring the
+   * connector in the row left it floating in the gap between the two,
+   * connecting nothing. Sit it on the value line instead. */
+  align-self: end;
   height: 1px;
+  margin-bottom: 8px;
   background: var(--admin-line-strong);
 }
 
@@ -372,7 +376,11 @@
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
+  /* The title column was a hard 120px. Most stage labels are one short word,
+   * but "Customs setup" needs ~125px at 18px and broke across two lines in
+   * production. Keep 120px as the alignment floor and let a longer title take
+   * the width it needs. */
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr) auto;
   gap: 16px;
   align-items: baseline;
 }
