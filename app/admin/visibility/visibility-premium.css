@@ -908,3 +908,25 @@ tr[data-selected="true"] {
     flex-direction: column;
   }
 }
+
+/* Touch targets.
+ * These are 10px text links with no padding, so they render 14-28px tall --
+ * well under the 44px a finger needs. Scoped to coarse pointers so the desktop
+ * layout, where they are clicked with a cursor, is left exactly as designed. */
+@media (pointer: coarse) {
+  .kcpl-admin-content .visibility-text-action,
+  .kcpl-admin-content .visibility-reference,
+  .kcpl-admin-content .visibility-feed-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* The row overflow menu is a 30px square; a finger needs 44. */
+  .kcpl-admin-content .visibility-row-action button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .kcpl-admin-content .visibility-featured-action { min-height: 44px; }
+}

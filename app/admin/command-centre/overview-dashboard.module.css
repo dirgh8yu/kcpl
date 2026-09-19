@@ -239,6 +239,15 @@
   .noteEditorActions { justify-content: flex-end; }
 }
 
+/* The row overflow action is a 32px square, which a cursor hits easily and a
+ * finger does not. Scoped to coarse pointers so the desktop row keeps its
+ * proportions. */
+@media (pointer: coarse) {
+  .rowAction { width: 44px; height: 44px; }
+  .workloadRow,
+  .textButton { min-height: 44px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .metric { transition: none; }
   .metric:hover { transform: none; }
