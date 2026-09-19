@@ -228,10 +228,12 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
         <div className="customs-clearance-queue">
           <OpsToolbar className="customs-clearance-toolbar">
             <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shipment, customer, declaration, agent…" aria-label="Search customs clearance"/>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Branch filter">
-              <OpsFilterChip active={branch === "all"} onClick={() => setBranch("all")}>All branches</OpsFilterChip>
-              {branches.map((item) => <OpsFilterChip key={item} active={branch === item} onClick={() => setBranch(item)}>{item}</OpsFilterChip>)}
-            </div>
+            {branches.length ? (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Branch filter">
+                <OpsFilterChip active={branch === "all"} onClick={() => setBranch("all")}>All branches</OpsFilterChip>
+                {branches.map((item) => <OpsFilterChip key={item} active={branch === item} onClick={() => setBranch(item)}>{item}</OpsFilterChip>)}
+              </div>
+            ) : null}
             <select value={risk} onChange={(event) => setRisk(event.target.value as RiskFilter)} aria-label="Filter by Customs risk" style={selectStyle}><option value="all">All risk</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="normal">Normal</option></select>
             <select value={state} onChange={(event) => setStateFilter(event.target.value as StateFilter)} aria-label="Filter by Customs state" style={selectStyle}><option value="all">All states</option><option value="blocked">Blocked</option><option value="in_progress">In progress</option><option value="awaiting_release">Awaiting release</option><option value="ready">Checklist ready</option><option value="released">Customs released</option></select>
             {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}

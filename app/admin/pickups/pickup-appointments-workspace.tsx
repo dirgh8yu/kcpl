@@ -403,7 +403,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
             <OpsButton variant="secondary" onClick={handleRefresh} disabled={busy}>
               <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/> Refresh
             </OpsButton>
-            <OpsButton variant="primary" type="button" disabled={!hasSchedulable || busy} onClick={scheduleNext}>
+            <OpsButton
+              variant="primary"
+              type="button"
+              disabled={!hasSchedulable || busy}
+              onClick={scheduleNext}
+              title={hasSchedulable ? undefined : "No shipment is currently awaiting collection, so there is nothing to schedule."}
+            >
               <Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Schedule pickup
             </OpsButton>
           </div>
@@ -561,7 +567,16 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 </table>
               </div>
             ) : (
-              <OpsEmptyState compact kind="search" title="No pickups" description="No pickups match the current search and filters." action={<OpsButton type="button" variant="secondary" onClick={() => workspace.update({ q: null, view: null, origin: null, partner: null, branch: null, date: null, status: null, driver: null, page: null })}>Clear filters</OpsButton>}/>
+              rows.length === 0 ? (
+                <OpsEmptyState
+                  compact
+                  kind="healthy"
+                  title="No pickups yet"
+                  description="Pickups appear here once a shipment reaches a stage that needs collection from origin. Nothing is waiting on a pickup right now."
+                />
+              ) : (
+                <OpsEmptyState compact kind="search" title="No pickups" description="No pickups match the current search and filters." action={<OpsButton type="button" variant="secondary" onClick={() => workspace.update({ q: null, view: null, origin: null, partner: null, branch: null, date: null, status: null, driver: null, page: null })}>Clear filters</OpsButton>}/>
+              )
             )}
 
             <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--admin-line)] px-4 py-3 text-xs text-[var(--admin-muted)]">
