@@ -1,16 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Bell, CheckCheck, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
+import { Bell, CheckCheck, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
-import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
+import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 
 type NotificationResponse = { notifications: OperationsNotification[]; unread_count: number; preferences: NotificationPreferences; email_configured: boolean };
 type StateFilter = "all" | "unread" | "read" | "resolved";
 type SeverityFilter = "all" | OperationsNotification["severity"];
-type TypeIconProps = { category: NotificationCategory; severity: OperationsNotification["severity"] };
+import { NotificationIcon } from "./notification-icon";
 
 function chipStyle(active: boolean): React.CSSProperties {
   return {
@@ -18,10 +18,10 @@ function chipStyle(active: boolean): React.CSSProperties {
     alignItems: "center",
     height: "var(--app-control-height)",
     padding: "0 12px",
-    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
+    border: `1px solid ${active ? "var(--admin-line-strong)" : "var(--admin-line)"}`,
     borderRadius: "var(--app-radius)",
-    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
-    color: active ? "white" : "var(--admin-muted)",
+    background: active ? "var(--admin-surface-muted)" : "var(--admin-surface)",
+    color: active ? "var(--admin-ink)" : "var(--admin-muted)",
     fontSize: 13,
     fontWeight: 500,
     cursor: "pointer",
@@ -38,14 +38,6 @@ const selectStyle: React.CSSProperties = {
   font: "inherit",
   fontSize: 13,
 };
-
-function TypeIcon({ category, severity }: TypeIconProps) {
-  const color = severity === "critical" ? "var(--admin-danger)" : severity === "warning" ? "var(--admin-warning)" : "var(--admin-info)";
-  if (category === "documents") return <FileText size={14} style={{ color }}/>;
-  if (category === "assignments") return <UserRound size={14} style={{ color }}/>;
-  if (category === "quotes") return <Link2 size={14} style={{ color }}/>;
-  return <AlertTriangle size={14} style={{ color }}/>;
-}
 
 function ageLabel(value: string) {
   const stamp = Date.parse(value);
@@ -146,17 +138,11 @@ export function NotificationsWorkspace() {
   const filtersActive = Boolean(query.trim()) || category !== "all" || state !== "all" || severity !== "all";
 
   return <OpsPage>
+    <OpsPageHeader title="Notifications" description="Your assignments, shipment updates and operational alerts." meta={<span>{counts.unread} unread · Updates every 30 seconds</span>} actions={<>
+      <OpsButton variant="secondary" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={16} className={loading ? "app-refreshing" : ""}/>Refresh</OpsButton>
+      {counts.unread > 0 ? <OpsButton variant="secondary" size="sm" onClick={() => void markAllRead()} disabled={busy}><CheckCheck size={16}/>{busy ? "Updating…" : "Mark all read"}</OpsButton> : null}
+    </>}/>
     <div className="notifications-workspace-page">
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Notifications</h1>
-          <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>Activity log · {counts.unread} unread of {notifications.length} total · auto-refresh every 30 seconds</p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <OpsButton variant="secondary" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={13} className={loading ? "app-refreshing" : ""}/>Refresh</OpsButton>
-          {counts.unread > 0 ? <OpsButton variant="secondary" size="sm" onClick={() => void markAllRead()} disabled={busy}><CheckCheck size={13}/>{busy ? "Updating…" : "Mark all read"}</OpsButton> : null}
-        </div>
-      </header>
 
       {error ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
 
@@ -181,7 +167,7 @@ export function NotificationsWorkspace() {
         {loading && !data ? <OpsEmptyState icon={<Bell size={18}/>} title="Loading notifications" description="Retrieving retained operational signals."/> : filtered.length ? filtered.map((item, index) => {
           const unread = !item.read_at && !item.resolved;
           return <button key={item.id} type="button" onClick={() => void openNotification(item)} style={{ display: "flex", width: "100%", gap: 12, padding: "14px 16px", border: 0, borderBottom: index < filtered.length - 1 ? "1px solid var(--admin-line)" : "none", background: unread ? "var(--admin-canvas)" : "transparent", textAlign: "left", cursor: "pointer", color: "inherit", font: "inherit" }}>
-            <div style={{ marginTop: 1 }}><TypeIcon category={item.category} severity={item.severity}/></div>
+            <div style={{ marginTop: 1 }}><NotificationIcon category={item.category} severity={item.severity} resolved={item.resolved}/></div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                 <span style={{ fontWeight: unread ? 600 : 400, fontSize: 13.5 }}>{item.title}</span>

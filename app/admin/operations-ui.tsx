@@ -153,9 +153,9 @@ export function OpsKpiCard({
     </>
   );
   if (onClick) {
-    return <button type="button" onClick={onClick} className="ops-kpi" aria-pressed={active} data-tone={tone} data-variant={variant} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
+    return <button type="button" onClick={onClick} className="ops-kpi" aria-pressed={active} data-tone={zero ? "neutral" : tone} data-variant={variant} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
   }
-  return <div className="ops-kpi" data-tone={tone} data-variant={variant} data-zero={zero || undefined}>{body}</div>;
+  return <div className="ops-kpi" data-tone={zero ? "neutral" : tone} data-variant={variant} data-zero={zero || undefined}>{body}</div>;
 }
 
 export function OpsBadge({
