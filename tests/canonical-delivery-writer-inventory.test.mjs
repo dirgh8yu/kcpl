@@ -247,6 +247,16 @@ const reviewedClassifications = [
     category: "F",
     rationale: "Read-only Custom GPT action gateway over pickup appointments.",
   },
+  {
+    file: "app/portal/portal-access-policy.ts",
+    category: "F",
+    rationale: "Pure customer-portal decision module with no Firebase dependency at all; the ShipmentStatus set it holds classifies a status as active for a customer-facing count and never assigns one.",
+  },
+  {
+    file: "app/portal/portal-data.server.ts",
+    category: "F",
+    rationale: "Read model behind the customer portal. Every Firestore call is a get; shipment_status is projected onto a document row for display, and the .set() calls the scan sees are in-memory Map writes used to group balances and de-duplicate quotes.",
+  },
 ];
 
 // Class F is falsifiable: a read-only module must contain no mutation statement that

@@ -27,6 +27,7 @@ export function MobileQuoteCta() {
 
   if (
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/portal") ||
     pathname === "/quote" ||
     pathname === "/privacy" ||
     pathname === "/network"
