@@ -1,3 +1,4 @@
+import { mockShipmentActivityTimeline, qaMockDataEnabled } from "./qa-fixtures.ts";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
@@ -52,6 +53,7 @@ function documentLabel(value: unknown) {
 }
 
 export async function getShipmentActivityTimeline(reference: string, context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockShipmentActivityTimeline(reference, context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const id = reference.trim().toUpperCase();

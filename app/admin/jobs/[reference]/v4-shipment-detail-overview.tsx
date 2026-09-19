@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { DigitalJobFile, JobTask } from "../../job-file";
 import type { ShipmentWorkflowReadiness } from "../../workflow-guard";
 import { shipmentStatusLabels } from "../../../shipment-types";
+
+type RecordSection =
+  | "summary" | "movement" | "tasks" | "customs" | "documents"
+  | "exceptions" | "delivery" | "commercial" | "activity";
 
 function statusClass(status: DigitalJobFile["status"]) {
   if (status === "delivered") return "is-success";
@@ -128,6 +134,7 @@ export function V4ShipmentDetailOverview({
   readiness: ShipmentWorkflowReadiness;
   children?: ReactNode;
 }) {
+  const [section, setSection] = useState<RecordSection>("summary");
   const owner = job.assigned_to_name || job.assigned_to_email || "Unassigned";
   const requiredDocuments = readiness.documents.filter((document) => document.required);
   const verifiedDocuments = requiredDocuments.filter((document) => document.verified_count > 0).length;
@@ -140,19 +147,24 @@ export function V4ShipmentDetailOverview({
   const profit = firstCurrency ? job.profit_totals[firstCurrency as keyof typeof job.profit_totals] ?? revenue - cost : revenue - cost;
   const margin = firstCurrency ? job.margin_percent[firstCurrency as keyof typeof job.margin_percent] : undefined;
 
+  // These were anchor links into one 7,000px page: the bar looked like tabs but
+  // only jump-scrolled, so every section stayed mounted and the record could
+  // never be read one concern at a time. They are real tabs now; the panels
+  // themselves are hidden by CSS keyed on data-section, which keeps the
+  // server-rendered sections exactly where they are in the tree.
   const navigation = [
-    ["Summary", "#shipment-overview"],
-    ["Movement", "#shipment-movement"],
-    ["Tasks", "#shipment-tasks"],
-    ["Customs", "#shipment-customs"],
-    ["Documents", "#shipment-documents"],
-    ["Exceptions", "#shipment-exceptions"],
-    ["Delivery", "#shipment-delivery"],
-    ["Commercial", "#shipment-commercial"],
-    ["Activity", "#shipment-activity"],
+    ["Summary", "summary"],
+    ["Movement", "movement"],
+    ["Tasks", "tasks"],
+    ["Customs", "customs"],
+    ["Documents", "documents"],
+    ["Exceptions", "exceptions"],
+    ["Delivery", "delivery"],
+    ["Commercial", "commercial"],
+    ["Activity", "activity"],
   ] as const;
 
-  return <div className="shipment-detail-v2">
+  return <div className="shipment-detail-v2" data-section={section}>
     <section className="shipment-detail-summary">
       <div className="shipment-detail-inner">
         <header className="shipment-detail-header">
@@ -194,8 +206,19 @@ export function V4ShipmentDetailOverview({
     </section>
 
     <nav className="shipment-record-nav" aria-label="Shipment record sections">
-      <div className="shipment-detail-inner shipment-record-nav-inner">
-        {navigation.map(([label, href]) => <a key={label} href={href}>{label}</a>)}
+      <div className="shipment-detail-inner shipment-record-nav-inner ops-scroll-x" role="tablist">
+        {navigation.map(([label, key]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={section === key}
+            data-active={section === key || undefined}
+            onClick={() => setSection(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </nav>
 

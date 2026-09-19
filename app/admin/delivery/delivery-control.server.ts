@@ -1,4 +1,4 @@
-import { mockDeliveryWorkspace, qaMockDataEnabled } from "../qa-fixtures";
+import { mockDeliveryControl, mockDeliveryWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminBucket, firebaseAdminDb, firebaseRuntimeConfigured, firebaseStorageBucketName } from "../../firebase-admin.server";
@@ -134,6 +134,7 @@ async function loadDocumentsByIds(collectionName: string, ids: string[]) {
 }
 
 export async function getDeliveryControl(reference: string, context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockDeliveryControl(reference, context);
   const scope = await shipmentScope(reference, context);
   if (scope.kind !== "ready") return scope;
   const [attemptsSnapshot, evidenceSnapshot] = await Promise.all([

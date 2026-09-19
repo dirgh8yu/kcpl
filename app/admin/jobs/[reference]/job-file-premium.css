@@ -1,23 +1,30 @@
-/* Apple UI Design System – Verified: 8pt Grid, SF Pro Typography, Material-Depth, Natural Spring Motion
-   KCPL identity override: the staff product intentionally retains Inter and KCPL crimson/black/neutral branding.
-   Route-scoped presentation only. Workflow, permissions, mutations and record contracts remain unchanged. */
+/* Digital Job File presentation.
+ *
+ * This sheet used to carry its own parallel design system: translucent "glass"
+ * surfaces, a warm cream page gradient, 20px radii, 300ms motion and Inter,
+ * none of which the rest of the staff product uses any more. The Job File was
+ * the one screen that never rendered locally, so it kept the pre-rebuild
+ * language while every other workspace moved on.
+ *
+ * The --job-* tokens below now resolve to the shared admin and app token
+ * scale, which is what brings the whole file onto the system without rewriting
+ * each of its ~900 declarations. Route-scoped presentation only: workflow,
+ * permissions, mutations and record contracts are unchanged. */
 
 .kcpl-admin-content .shipment-detail-v2 {
-  --job-glass: rgba(255, 255, 255, 0.78);
-  --job-glass-strong: rgba(255, 255, 255, 0.9);
-  --job-glass-soft: rgba(250, 250, 248, 0.72);
-  --job-line: rgba(16, 16, 16, 0.1);
-  --job-line-strong: rgba(16, 16, 16, 0.16);
-  --job-shadow: 0 16px 48px rgba(16, 16, 16, 0.08);
-  --job-shadow-soft: 0 8px 24px rgba(16, 16, 16, 0.06);
-  --job-focus: 0 0 0 3px rgba(220, 20, 60, 0.2);
-  --job-motion: 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --job-glass: var(--admin-surface);
+  --job-glass-strong: var(--admin-surface);
+  --job-glass-soft: var(--admin-surface-soft);
+  --job-line: var(--admin-line);
+  --job-line-strong: var(--admin-line-strong);
+  --job-shadow: none;
+  --job-shadow-soft: none;
+  --job-focus: 0 0 0 3px rgb(220 20 60 / 20%);
+  --job-motion: var(--app-duration-base) var(--app-ease-out);
   min-width: 0;
-  background:
-    radial-gradient(circle at 88% 4%, rgba(220, 20, 60, 0.045), transparent 28%),
-    linear-gradient(180deg, #f8f8f6 0%, #f3f3f0 100%);
+  background: var(--admin-canvas);
   color: var(--admin-ink);
-  font-family: var(--font-inter), sans-serif;
+  font-family: inherit;
 }
 
 .kcpl-admin-content .shipment-detail-v2 *,
@@ -28,20 +35,19 @@
 
 .kcpl-admin-content .app-record-return {
   width: min(1440px, calc(100% - 48px));
-  margin: 24px auto 0;
+  margin: 14px auto 0;
 }
 
 .kcpl-admin-content .app-record-return a {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 32px;
   align-items: center;
-  border-radius: 12px;
-  padding: 0 16px;
-  background: rgba(255, 255, 255, 0.56);
+  border-radius: var(--app-radius);
+  padding: 0;
+  background: none;
   color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 600;
-  backdrop-filter: blur(20px) saturate(180%);
+  font-size: 12.5px;
+  font-weight: 500;
   transition: transform var(--job-motion), background-color var(--job-motion), color var(--job-motion), box-shadow var(--job-motion);
 }
 
@@ -80,11 +86,10 @@
   align-items: center;
   margin-top: 16px;
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
   padding: 32px;
   background: var(--job-glass);
   box-shadow: var(--job-shadow);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-eyebrow,
@@ -102,9 +107,9 @@
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 {
   max-width: 960px;
-  font-size: clamp(32px, 4vw, 48px);
-  font-weight: 650;
-  line-height: 1.08;
+  font-size: var(--app-title-size);
+  font-weight: 620;
+  line-height: 1.2;
   letter-spacing: -0.022em;
 }
 
@@ -147,9 +152,9 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-header-facts > span {
   min-width: 0;
   border: 0.5px solid var(--job-line);
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--admin-surface);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-header-facts strong,
@@ -181,18 +186,17 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a,
 .kcpl-admin-content .shipment-detail-v2 .ops-button {
   min-height: 44px;
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   transition: transform var(--job-motion), background-color var(--job-motion), border-color var(--job-motion), box-shadow var(--job-motion), color var(--job-motion);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a {
   border: 0.5px solid var(--job-line-strong);
   padding: 0 24px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--admin-surface);
   color: var(--admin-ink);
   font-size: 12px;
   font-weight: 650;
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a:hover,
@@ -235,10 +239,9 @@
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 24px;
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
   padding: 24px;
   background: var(--job-glass-soft);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-route-line {
@@ -273,8 +276,9 @@
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-route-connector {
+  align-self: center;
   height: 1px;
-  background: linear-gradient(90deg, var(--admin-crimson), rgba(220, 20, 60, 0.18));
+  background: var(--admin-line-strong);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-context-facts {
@@ -297,17 +301,16 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav-inner {
   gap: 8px;
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
   padding: 8px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--admin-surface);
   box-shadow: var(--job-shadow-soft);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a {
   min-height: 44px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 0 16px;
   color: var(--admin-muted);
   font-size: 11px;
@@ -357,15 +360,14 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section) {
   margin: 0 0 16px;
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
   padding: 24px;
   background: var(--job-glass);
   box-shadow: var(--job-shadow-soft);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-flow-section {
-  border-left: 4px solid var(--admin-crimson);
+  border-left: 1px solid var(--admin-line);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
@@ -390,9 +392,9 @@
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
   gap: 8px;
-  margin-top: 24px;
+  margin-top: 20px;
   border: 0;
 }
 
@@ -400,10 +402,10 @@
   min-height: 56px;
   margin: 0;
   border: 0.5px solid var(--job-line);
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 8px 12px;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--admin-surface);
   color: var(--admin-muted);
   font-size: 10px;
   font-weight: 650;
@@ -418,7 +420,7 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a:hover {
   transform: translateY(-1px);
   border-color: var(--job-line-strong);
-  background: #fff;
+  background: var(--admin-surface);
   color: var(--admin-ink);
   box-shadow: var(--job-shadow-soft);
 }
@@ -485,41 +487,44 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div:first-child {
   min-height: 88px;
   border: 0.5px solid var(--job-line);
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--admin-surface);
 }
 
-/* Decision rail */
+/* Decision rail.
+ * Was a near-black glass panel with a pink eyebrow, the only dark surface in
+ * the entire staff product. It is an ordinary card now; the rail earns
+ * attention from its position and its primary action, not from inverting the
+ * palette on one screen. */
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
   position: sticky;
   top: 184px;
-  border: 0;
-  border-radius: 20px;
-  padding: 24px;
-  background: rgba(16, 16, 16, 0.94);
-  color: #fff;
-  box-shadow: 0 24px 56px rgba(16, 16, 16, 0.16);
-  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
+  padding: 20px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  box-shadow: none;
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail .shipment-detail-eyebrow {
-  color: #ff8aa1;
+  color: var(--admin-muted);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail h2 {
-  margin-top: 8px;
-  color: #fff;
-  font-size: 20px;
-  font-weight: 650;
-  line-height: 1.25;
-  letter-spacing: -0.022em;
+  margin-top: 6px;
+  color: var(--admin-ink);
+  font-size: 17px;
+  font-weight: 620;
+  line-height: 1.3;
+  letter-spacing: -0.018em;
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-detail {
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 12px;
+  margin-top: 6px;
+  color: var(--admin-muted);
+  font-size: 12.5px;
   line-height: 1.55;
 }
 
@@ -531,23 +536,21 @@
   justify-content: center;
   margin-top: 24px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 0 24px;
   background: var(--admin-crimson);
   color: #fff;
-  box-shadow: 0 8px 24px rgba(220, 20, 60, 0.22);
+  box-shadow: none;
   transition: transform var(--job-motion), background-color var(--job-motion), box-shadow var(--job-motion);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-link:hover {
-  transform: translateY(-1px) scale(1.01);
   background: var(--admin-crimson-dark);
   color: #fff;
-  box-shadow: 0 16px 32px rgba(220, 20, 60, 0.24);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-link:active {
-  transform: scale(0.96);
+  transform: scale(0.98);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl {
@@ -557,51 +560,49 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl > div {
   grid-template-columns: 96px minmax(0, 1fr);
   gap: 16px;
-  padding: 16px 0;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.14);
+  padding: 13px 0;
+  border-top: 1px solid var(--admin-line);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dt {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--admin-muted);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dd {
-  color: #fff;
+  color: var(--admin-ink);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-links {
   gap: 16px;
-  padding-top: 24px;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.14);
+  padding-top: 18px;
+  border-top: 1px solid var(--admin-line);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-links a {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.72);
-  transition: color var(--job-motion), transform var(--job-motion);
+  color: var(--admin-muted);
+  transition: color var(--job-motion);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-next-links a:hover {
-  transform: translateY(-1px);
-  color: #fff;
+  color: var(--admin-ink);
 }
 
 /* Working record */
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
   border: 0;
   padding: 32px 0 72px;
-  background: rgba(238, 238, 234, 0.7);
+  background: var(--admin-canvas);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded {
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
   padding: 24px;
   background: var(--job-glass);
   box-shadow: var(--job-shadow);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page {
@@ -674,10 +675,9 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block > section {
   overflow: hidden;
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.82);
+  border-radius: var(--app-surface-radius);
+  background: var(--admin-surface);
   box-shadow: var(--job-shadow-soft);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-header,
@@ -685,7 +685,7 @@
   min-height: 0;
   border-bottom: 0.5px solid var(--job-line);
   padding: 24px;
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--admin-surface);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-body,
@@ -701,16 +701,16 @@
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface form {
   border: 0.5px solid var(--job-line);
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 16px;
-  background: rgba(246, 246, 243, 0.74);
+  background: var(--admin-surface-soft);
   box-shadow: none;
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded :is(input, select, textarea),
 .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block :is(input, select, textarea) {
   min-height: 44px;
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   transition: border-color var(--job-motion), box-shadow var(--job-motion), background-color var(--job-motion);
 }
 
@@ -729,9 +729,9 @@
 .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-empty {
   min-height: 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--app-radius);
   padding: 24px;
-  background: rgba(246, 246, 243, 0.62);
+  background: var(--admin-surface-soft);
   text-align: left;
 }
 
@@ -763,16 +763,15 @@
 .kcpl-admin-content .shipment-detail-v2 #shipment-exceptions,
 .kcpl-admin-content .shipment-detail-v2 #shipment-delivery,
 .kcpl-admin-content .shipment-detail-v2 #shipment-activity {
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
 }
 
 .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section {
   border: 0.5px solid var(--job-line);
-  border-radius: 20px;
+  border-radius: var(--app-surface-radius);
   padding: 24px;
   background: var(--job-glass);
   box-shadow: var(--job-shadow-soft);
-  backdrop-filter: blur(20px) saturate(180%);
 }
 
 /* Responsive */
@@ -823,7 +822,7 @@
   .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header {
     gap: 24px;
     margin-top: 8px;
-    border-radius: 20px;
+    border-radius: var(--app-surface-radius);
     padding: 24px;
   }
 
@@ -852,7 +851,7 @@
   }
 
   .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav-inner {
-    border-radius: 12px;
+    border-radius: var(--app-radius);
   }
 
   .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
@@ -896,7 +895,7 @@
   .kcpl-admin-content .shipment-detail-v2 .shipment-flow-section,
   .kcpl-admin-content .shipment-detail-v2 .shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section),
   .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
-    border-radius: 12px;
+    border-radius: var(--app-radius);
     padding: 16px;
   }
 

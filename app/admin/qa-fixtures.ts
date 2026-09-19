@@ -1914,3 +1914,496 @@ export function mockManagementAnalytics(range: ManagementRange, now = Date.now()
     unassigned_shipments: active.filter((job) => !job.assigned_to_email).length,
   };
 }
+
+import type { DigitalJobFile, JobCost, JobTask, CustomsStep } from "./job-file.ts";
+import type { ShipmentWorkflowReadiness, WorkflowDocumentState, WorkflowStage } from "./workflow-guard.ts";
+import type { ShipmentActivityItem, ShipmentActivityTimeline } from "./shipment-activity.ts";
+import { summarizeShipmentExceptions, type ShipmentException } from "./shipment-exceptions.ts";
+import type { DeliveryAttempt, PodEvidence } from "./delivery/delivery-control.ts";
+
+/* ---------------------------------------------------------------------------
+ * Digital Job File
+ *
+ * The detail page loads six independent server modules. All six derive from the
+ * same mockCommandCentre() job, so the header, the workflow rail, the task
+ * list, the activity trail and the delivery panel describe one shipment rather
+ * than six unrelated ones.
+ * ------------------------------------------------------------------------- */
+
+/** The one job every Job File fixture is built from. */
+function mockJob(reference: string, staff: KcplStaffContext, now: number) {
+  const jobs = mockCommandCentre(staff, now).jobs;
+  return jobs.find((job) => job.reference === reference.trim().toUpperCase()) ?? null;
+}
+
+const JOB_OWNER = { uid: "staff-ops-1", name: "Prakash Adhikari", email: "prakash@kcpl.local", phone: "+977 1 4000001" };
+
+function mockJobTasks(job: CommandCentreJob, now: number): JobTask[] {
+  const seeds: Array<[string, string, number, boolean]> = [
+    ["Confirm booking with carrier", "Reconfirm equipment and cut-off against the accepted tender.", -42, true],
+    ["Collect commercial invoice & packing list", "Customer to send final signed copies for customs entry.", -18, true],
+    ["Lodge customs declaration", "Submit entry once HS classification is agreed with the broker.", 6, false],
+    ["Confirm delivery window with consignee", "Warehouse accepts deliveries 09:00-16:00 only.", 30, false],
+  ];
+  return seeds.map(([title, detail, dueHours, completed], index) => ({
+    id: `${job.reference}-task-${index + 1}`,
+    title,
+    detail,
+    branch: job.primary_branch,
+    due_at: iso(now, dueHours * HOUR),
+    assigned_to_uid: JOB_OWNER.uid,
+    assigned_to_name: job.assigned_to_name ?? JOB_OWNER.name,
+    assigned_to_email: job.assigned_to_email ?? JOB_OWNER.email,
+    assigned_to_phone: JOB_OWNER.phone,
+    completed,
+    completed_at: completed ? iso(now, (dueHours - 2) * HOUR) : null,
+    created_at: iso(now, -72 * HOUR + index * HOUR),
+    created_by: JOB_OWNER.name,
+  }));
+}
+
+function mockCustomsSteps(job: CommandCentreJob, now: number): CustomsStep[] {
+  const seeds: Array<[string, string, boolean, boolean]> = [
+    ["HS classification agreed", "Tariff lines confirmed with the licensed broker.", true, true],
+    ["Duty and VAT assessed", "Assessment notice received from the customs office.", true, true],
+    ["Entry lodged", "Declaration submitted against the commercial invoice.", true, job.required_customs_open === 0],
+    ["Physical examination", "Only if the lane rule selects the shipment for inspection.", false, false],
+  ];
+  return seeds.map(([title, detail, required, completed], index) => ({
+    id: `${job.reference}-customs-${index + 1}`,
+    title,
+    detail,
+    branch: job.primary_branch,
+    required,
+    completed,
+    completed_at: completed ? iso(now, -(24 - index * 4) * HOUR) : null,
+    completed_by: completed ? JOB_OWNER.name : null,
+    created_at: iso(now, -60 * HOUR + index * HOUR),
+  }));
+}
+
+function mockJobCosts(job: CommandCentreJob, now: number): JobCost[] {
+  const seeds: Array<[JobCost["category"], string, string, number, JobCost["source_type"]]> = [
+    ["freight", "Ocean freight - main leg", "Maersk", 285000, "payable"],
+    ["customs", "Customs brokerage & duty handling", "Himalaya Clearing House", 48500, "manual"],
+    ["transport", "Inland haulage to consignee", "Annapurna Transport", 62000, "payable"],
+    ["handling", "Terminal handling at destination", "Birgunj ICD", 18750, "manual"],
+  ];
+  return seeds.map(([category, label, vendor, amount, source], index) => ({
+    id: `${job.reference}-cost-${index + 1}`,
+    category,
+    label,
+    vendor,
+    amount,
+    currency: "NPR" as const,
+    notes: null,
+    source_type: source,
+    source_reference: source === "payable" ? `AP-${job.reference.slice(-8)}-${index + 1}` : null,
+    locked: source === "payable",
+    created_at: iso(now, -(40 - index * 6) * HOUR),
+    created_by: JOB_OWNER.name,
+  }));
+}
+
+export function mockShipmentBranchAccess(reference: string, staff: KcplStaffContext, now = Date.now()) {
+  const job = mockJob(reference, staff, now);
+  if (!job) return { kind: "missing" as const };
+  return {
+    kind: "allowed" as const,
+    primaryBranch: job.primary_branch,
+    handlingBranches: job.handling_branches,
+    accessBranches: [...new Set([job.primary_branch, ...job.handling_branches])],
+    branchDataComplete: true,
+  };
+}
+
+export function mockDigitalJobFile(reference: string, staff: KcplStaffContext, now = Date.now()) {
+  const job = mockJob(reference, staff, now);
+  if (!job) return { kind: "missing" as const };
+
+  const tasks = mockJobTasks(job, now);
+  const customsSteps = mockCustomsSteps(job, now);
+  const canViewCosts = staff.permissions.canManageJobCosts;
+  const costs = canViewCosts ? mockJobCosts(job, now) : [];
+
+  // Totals are summed from the rows above rather than restated, so the header
+  // figures can never drift from the cost table underneath them.
+  const costTotal = costs.reduce((total, cost) => total + cost.amount, 0);
+  const revenueTotal = canViewCosts ? Math.round(costTotal * 1.28) : 0;
+  const profit = revenueTotal - costTotal;
+
+  const file: DigitalJobFile = {
+    reference: job.reference,
+    quote_reference: job.quote_reference,
+    customer_id: job.customer_id,
+    customer_name: job.customer_name,
+    status: job.status,
+    origin: job.origin,
+    destination: job.destination,
+    mode: job.mode,
+    eta: job.eta,
+    current_location: job.current_location,
+    carrier: job.carrier,
+    carrier_reference: job.carrier ? `${job.carrier.slice(0, 3).toUpperCase()}-${job.reference.slice(-6)}` : null,
+    primary_branch: job.primary_branch,
+    handling_branches: job.handling_branches,
+    assigned_to_uid: job.assigned_to_uid ?? JOB_OWNER.uid,
+    assigned_to_name: job.assigned_to_name ?? JOB_OWNER.name,
+    assigned_to_email: job.assigned_to_email ?? JOB_OWNER.email,
+    assigned_to_phone: job.assigned_to_phone ?? JOB_OWNER.phone,
+    assigned_to_job_title: "Operations executive",
+    assigned_to_branches: [job.primary_branch],
+    priority: job.priority,
+    internal_reference: `JF/${job.primary_branch.slice(0, 3).toUpperCase()}/${job.reference.slice(-4)}`,
+    internal_notes: "Consignee warehouse accepts deliveries 09:00-16:00 only. Call the site contact one hour before arrival.",
+    tasks,
+    customs_steps: customsSteps,
+    costs,
+    cost_totals: canViewCosts ? { NPR: costTotal } : {},
+    revenue_totals: canViewCosts ? { NPR: revenueTotal } : {},
+    profit_totals: canViewCosts ? { NPR: profit } : {},
+    margin_percent: canViewCosts && revenueTotal > 0 ? { NPR: Math.round((profit / revenueTotal) * 10000) / 100 } : {},
+    can_view_costs: canViewCosts,
+    updated_at: job.updated_at,
+  };
+  return { kind: "ready" as const, job: file };
+}
+
+/** Documents the workflow rail checks for. Two are deliberately still missing
+ *  so the rail shows a real blocked state rather than an all-green screen. */
+function mockWorkflowDocuments(job: CommandCentreJob): WorkflowDocumentState[] {
+  const seeds: Array<[WorkflowDocumentState["document_type"], string, boolean, boolean, WorkflowDocumentState["source"], string]> = [
+    ["bill_of_lading", "Bill of Lading", true, true, "mode", "Ocean main leg requires a transport document."],
+    ["commercial_invoice", "Commercial Invoice", true, true, "core", "Required for every customs entry."],
+    ["packing_list", "Packing List", true, true, "core", "Required for every customs entry."],
+    ["certificate_of_origin", "Certificate of Origin", true, job.status === "delivered", "route", "Preferential origin claim on this lane."],
+    ["insurance_certificate", "Insurance Certificate", false, false, "cargo", "Advisory for this cargo value."],
+  ];
+  return seeds.map(([document_type, label, required, present, source, reason]) => ({
+    document_type,
+    label,
+    required,
+    advisory: !required,
+    present,
+    count: present ? 1 : 0,
+    uploaded_count: present ? 1 : 0,
+    verified_count: present ? 1 : 0,
+    reason,
+    source,
+  }));
+}
+
+export function mockShipmentWorkflowReadiness(reference: string, staff: KcplStaffContext, now = Date.now()) {
+  const job = mockJob(reference, staff, now);
+  if (!job) return { kind: "missing" as const };
+
+  const documents = mockWorkflowDocuments(job);
+  const customsSteps = mockCustomsSteps(job, now);
+  const tasks = mockJobTasks(job, now);
+
+  // Every count below is derived from the rows the page also renders, so the
+  // rail and the lists underneath it cannot disagree.
+  const requiredCustoms = customsSteps.filter((step) => step.required);
+  const completedCustoms = requiredCustoms.filter((step) => step.completed).length;
+  const customsChecklistReady = completedCustoms === requiredCustoms.length;
+  const customsReleased = job.status === "delivered" || job.status === "out_for_delivery";
+  const customsReady = customsChecklistReady && customsReleased;
+  const openTasks = tasks.filter((task) => !task.completed).length;
+  const documentPackReady = documents.filter((doc) => doc.required).every((doc) => doc.present);
+  const delivered = job.status === "delivered";
+  const proofOfDeliveryPresent = delivered;
+
+  const stage = (id: WorkflowStage["id"], label: string, state: WorkflowStage["state"], detail: string): WorkflowStage =>
+    ({ id, label, state, detail });
+  const inTransitOrLater = ["in_transit", "customs_clearance", "out_for_delivery", "delivered"].includes(job.status);
+
+  const closeBlockers: string[] = [];
+  if (!customsChecklistReady) closeBlockers.push("All required customs checklist steps must be complete.");
+  if (!documentPackReady) closeBlockers.push("All required operational documents must be verified and unexpired.");
+  if (!proofOfDeliveryPresent) closeBlockers.push("A verified Proof of Delivery (POD) must be present.");
+  if (openTasks > 0) closeBlockers.push(`${openTasks} operational task${openTasks === 1 ? " remains" : "s remain"} open.`);
+
+  const readiness: ShipmentWorkflowReadiness = {
+    reference: job.reference,
+    status: job.status,
+    customer_id: job.customer_id,
+    customer_linked: Boolean(job.customer_id),
+    assigned_owner: Boolean(job.assigned_to_name),
+    customs_required: requiredCustoms.length,
+    customs_completed: completedCustoms,
+    customs_checklist_ready: customsChecklistReady,
+    customs_release_required: true,
+    customs_clearance_status: customsReleased ? "released" : customsChecklistReady ? "lodged" : "not_started",
+    customs_released: customsReleased,
+    customs_ready: customsReady,
+    open_tasks: openTasks,
+    documents,
+    document_intelligence: {
+      direction: "import",
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      cargo_type: "General cargo",
+      rules_applied: ["Core commercial pack", `${job.mode} transport document`, "Preferential origin lane"],
+      advisories: documentPackReady ? [] : ["Certificate of Origin is still outstanding for the preferential claim."],
+    },
+    document_pack_ready: documentPackReady,
+    proof_of_delivery_present: proofOfDeliveryPresent,
+    invoice_count: 1,
+    issued_invoice_count: 1,
+    paid_invoice_count: delivered ? 1 : 0,
+    billing_ready: delivered,
+    job_closed: false,
+    job_closed_at: null,
+    job_closed_by_name: null,
+    blockers: customsReady ? [] : ["Customs release is not yet recorded for this shipment."],
+    warnings: openTasks ? [`${openTasks} operational task${openTasks === 1 ? "" : "s"} still open.`] : [],
+    close_blockers: closeBlockers,
+    can_close: closeBlockers.length === 0,
+    stages: [
+      stage("won", "Won", "complete", "Shipment and Job File created from an accepted quote."),
+      stage("setup", "Setup", "complete", `CRM customer ${job.customer_id ?? "linked"} confirmed.`),
+      stage("customs", "Customs", customsReady ? "complete" : "current", customsReady ? "Customs checklist complete and explicit release recorded." : `${completedCustoms}/${requiredCustoms.length} required customs steps complete.`),
+      stage("documents", "Docs", documentPackReady ? "complete" : "blocked", documentPackReady ? "Verified required document pack is present." : "Required files are missing, unverified or expired."),
+      stage("transit", "Transit", inTransitOrLater ? "complete" : "pending", inTransitOrLater ? "Movement has reached transit/clearance stage." : "Movement milestone not reached yet."),
+      stage("delivery", "Delivery", delivered ? "complete" : job.status === "out_for_delivery" ? "current" : "pending", delivered ? "Cargo marked delivered." : job.status === "out_for_delivery" ? "Final-mile delivery is active." : "Delivery not yet reached."),
+      stage("pod", "POD", proofOfDeliveryPresent ? "complete" : "pending", proofOfDeliveryPresent ? "Verified Proof of Delivery captured." : "Verified POD required for operational closeout."),
+      stage("close", "Close", closeBlockers.length ? "blocked" : "current", closeBlockers.length ? `${closeBlockers.length} closeout blocker${closeBlockers.length === 1 ? "" : "s"}.` : "Ready for operational closeout."),
+    ],
+  };
+  return { kind: "ready" as const, readiness };
+}
+
+export function mockShipmentActivityTimeline(reference: string, staff: KcplStaffContext, now = Date.now()) {
+  const job = mockJob(reference, staff, now);
+  if (!job) return { kind: "missing" as const };
+
+  const owner = job.assigned_to_name ?? JOB_OWNER.name;
+  const email = job.assigned_to_email ?? JOB_OWNER.email;
+  const entry = (
+    hours: number,
+    category: ShipmentActivityItem["category"],
+    title: string,
+    detail: string | null,
+    tone: ShipmentActivityItem["tone"],
+    source: string,
+  ): ShipmentActivityItem => ({
+    id: `${job.reference}-activity-${Math.abs(hours)}-${category}`,
+    category,
+    title,
+    detail,
+    occurred_at: iso(now, hours * HOUR),
+    actor_name: owner,
+    actor_email: email,
+    branch: job.primary_branch,
+    source,
+    tone,
+  });
+
+  const items: ShipmentActivityItem[] = [
+    entry(-96, "workflow", "Job File opened", "Created from the accepted quote.", "neutral", "Workflow"),
+    entry(-94, "ownership", `Assigned to ${owner}`, "Operations ownership set for the primary branch.", "info", "Ownership"),
+    entry(-72, "document", "Commercial Invoice uploaded", "Verified against the booking.", "success", "Documents"),
+    entry(-70, "document", "Packing List uploaded", "Verified against the booking.", "success", "Documents"),
+    entry(-48, "customs", "HS classification agreed", "Tariff lines confirmed with the licensed broker.", "success", "Customs"),
+    entry(-36, "customs", "Duty and VAT assessed", "Assessment notice received from the customs office.", "success", "Customs"),
+    entry(-24, "shipment", `Movement update - ${job.current_location ?? job.origin}`, "Carrier milestone received.", "info", "Tracking"),
+    entry(-12, "task", "Task completed: Collect commercial invoice & packing list", null, "success", "Tasks"),
+    entry(-6, "alert", "Certificate of Origin still outstanding", "Required for the preferential origin claim on this lane.", "warning", "Automation alert"),
+    entry(-2, "finance", "Invoice issued", "Customer invoice raised against this job.", "info", "Finance"),
+  ];
+
+  const timeline: ShipmentActivityTimeline = {
+    reference: job.reference,
+    generated_at: iso(now, 0),
+    items: items.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)),
+  };
+  return { kind: "ready" as const, timeline };
+}
+
+export function mockShipmentExceptions(reference: string, staff: KcplStaffContext, now = Date.now()) {
+  const job = mockJob(reference, staff, now);
+  if (!job) return { kind: "missing" as const };
+
+  const owner = job.assigned_to_name ?? JOB_OWNER.name;
+  const email = job.assigned_to_email ?? JOB_OWNER.email;
+  const base = {
+    reference: job.reference,
+    branch: job.primary_branch,
+    assigned_to_name: owner,
+    assigned_to_email: email,
+    opened_by_name: owner,
+    opened_by_email: email,
+    updated_by_name: owner,
+    updated_by_email: email,
+  };
+
+  // An exception file that carries one open case, one being watched and one
+  // closed shows every state the control can render.
+  const exceptions: ShipmentException[] = [
+    {
+      ...base,
+      id: `${job.reference}-exception-1`,
+      category: "customs",
+      severity: "high",
+      status: "open",
+      title: "Certificate of Origin not received from shipper",
+      detail: "The preferential origin claim cannot be lodged without the signed certificate.",
+      operational_impact: "Customs entry is held; demurrage starts if this is not cleared within 48 hours.",
+      sla_due_at: iso(now, 18 * HOUR),
+      opened_at: iso(now, -20 * HOUR),
+      updated_at: iso(now, -4 * HOUR),
+      resolved_at: null,
+      resolved_by_name: null,
+      resolved_by_email: null,
+      resolution: null,
+    },
+    {
+      ...base,
+      id: `${job.reference}-exception-2`,
+      category: "delay",
+      severity: "medium",
+      status: "monitoring",
+      title: "Vessel arrival slipped by 36 hours",
+      detail: "Carrier advised a revised ETA after a port congestion delay at transshipment.",
+      operational_impact: "Delivery appointment with the consignee may need to move.",
+      sla_due_at: iso(now, 40 * HOUR),
+      opened_at: iso(now, -48 * HOUR),
+      updated_at: iso(now, -10 * HOUR),
+      resolved_at: null,
+      resolved_by_name: null,
+      resolved_by_email: null,
+      resolution: null,
+    },
+    {
+      ...base,
+      id: `${job.reference}-exception-3`,
+      category: "document",
+      severity: "low",
+      status: "resolved",
+      title: "Packing list showed the wrong carton count",
+      detail: "Shipper reissued the packing list with the corrected count.",
+      operational_impact: "No customs impact; corrected before the entry was lodged.",
+      sla_due_at: iso(now, -60 * HOUR),
+      opened_at: iso(now, -80 * HOUR),
+      updated_at: iso(now, -64 * HOUR),
+      resolved_at: iso(now, -64 * HOUR),
+      resolved_by_name: owner,
+      resolved_by_email: email,
+      resolution: "Corrected packing list received and verified against the commercial invoice.",
+    },
+  ];
+
+  const nowIso = iso(now, 0);
+  return {
+    kind: "ready" as const,
+    exceptions,
+    // Derived by the production summariser so the counts match the rows.
+    summary: summarizeShipmentExceptions(exceptions, nowIso),
+    generated_at: nowIso,
+  };
+}
+
+export function mockDeliveryControl(reference: string, staff: KcplStaffContext, now = Date.now()) {
+  const job = mockJob(reference, staff, now);
+  if (!job) return { kind: "missing" as const };
+
+  const delivered = job.status === "delivered";
+  const active = job.status === "out_for_delivery";
+  const owner = job.assigned_to_name ?? JOB_OWNER.name;
+  const email = job.assigned_to_email ?? JOB_OWNER.email;
+
+  const attempts: DeliveryAttempt[] = [];
+  if (delivered || active) {
+    attempts.push({
+      id: `${job.reference}-attempt-1`,
+      shipment_reference: job.reference,
+      attempt_number: 1,
+      status: delivered ? "delivered" : "out_for_delivery",
+      scheduled_for: iso(now, delivered ? -8 * HOUR : 3 * HOUR),
+      event_time: delivered ? iso(now, -6 * HOUR) : null,
+      location: job.destination,
+      latitude: null,
+      longitude: null,
+      recipient_name: delivered ? "Warehouse supervisor" : null,
+      recipient_phone: delivered ? "+977 1 4000123" : null,
+      recipient_relation: delivered ? "Consignee warehouse" : null,
+      driver_name: "Ram Bahadur",
+      driver_phone: "+977 9800000001",
+      vehicle_reference: "BA-2000 KHA",
+      failure_reason: null,
+      notes: delivered ? "Cargo handed over against signed POD." : "Driver dispatched from the destination depot.",
+      created_at: iso(now, -12 * HOUR),
+      created_by_name: owner,
+      created_by_email: email,
+      updated_at: iso(now, delivered ? -6 * HOUR : -1 * HOUR),
+      updated_by_name: owner,
+      updated_by_email: email,
+    });
+  }
+
+  const evidence: PodEvidence[] = delivered
+    ? [
+        {
+          id: `${job.reference}-pod-1`,
+          shipment_reference: job.reference,
+          attempt_id: `${job.reference}-attempt-1`,
+          kind: "signature",
+          filename: `${job.reference}-pod-signature.png`,
+          content_type: "image/png",
+          size_bytes: 184_320,
+          sha256: "b3f1c2d4e5a6978811223344556677889900aabbccddeeff0011223344556677",
+          review_status: "verified",
+          customer_safe: true,
+          captured_at: iso(now, -6 * HOUR),
+          uploaded_at: iso(now, -5 * HOUR),
+          uploaded_by_name: owner,
+          uploaded_by_email: email,
+          reviewed_at: iso(now, -4 * HOUR),
+          reviewed_by_name: owner,
+          reviewed_by_email: email,
+          review_note: "Signature matches the nominated consignee contact.",
+        },
+        {
+          id: `${job.reference}-pod-2`,
+          shipment_reference: job.reference,
+          attempt_id: `${job.reference}-attempt-1`,
+          kind: "photo",
+          filename: `${job.reference}-pod-cargo.jpg`,
+          content_type: "image/jpeg",
+          size_bytes: 962_144,
+          sha256: "0099aabbccddeeff112233445566778899aabbccddeeff00112233445566778",
+          review_status: "verified",
+          customer_safe: false,
+          captured_at: iso(now, -6 * HOUR),
+          uploaded_at: iso(now, -5 * HOUR),
+          uploaded_by_name: owner,
+          uploaded_by_email: email,
+          reviewed_at: iso(now, -4 * HOUR),
+          reviewed_by_name: owner,
+          reviewed_by_email: email,
+          review_note: null,
+        },
+      ]
+    : [];
+
+  return {
+    kind: "ready" as const,
+    reference: job.reference,
+    attempts,
+    evidence,
+    shipment_status: job.status,
+    current_location: job.current_location,
+    tracking_last_event_at: iso(now, -3 * HOUR),
+    pod_status: (delivered ? "verified" : "not_received") as "not_received" | "received" | "rejected" | "verified",
+    pod_document_id: delivered ? `${job.reference}-pod-1` : null,
+    pod_verified_at: delivered ? iso(now, -4 * HOUR) : null,
+    pod_verified_by: delivered ? owner : null,
+    external_observed_milestone: active ? "out_for_delivery" : delivered ? "delivered" : null,
+    external_observed_at: active || delivered ? iso(now, -3 * HOUR) : null,
+    external_observed_provider: active || delivered ? "Carrier API" : null,
+    delivery_completion_id: delivered ? `${job.reference}-completion-1` : null,
+    delivery_completed_at: delivered ? iso(now, -6 * HOUR) : null,
+    delivery_completion_source: delivered ? "pod_verified" : null,
+  };
+}

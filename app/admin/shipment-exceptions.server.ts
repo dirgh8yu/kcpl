@@ -1,3 +1,4 @@
+import { mockShipmentExceptions, qaMockDataEnabled } from "./qa-fixtures.ts";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "./crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "./staff-directory.server";
@@ -110,6 +111,7 @@ async function shipmentScope(reference: string, context: KcplStaffContext) {
 }
 
 export async function getShipmentExceptions(reference: string, context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockShipmentExceptions(reference, context);
   const scope = await shipmentScope(reference, context);
   if (scope.kind !== "ready") return scope;
   const snapshot = await scope.shipmentRef.collection("exceptions").limit(500).get();

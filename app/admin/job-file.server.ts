@@ -1,3 +1,4 @@
+import { mockDigitalJobFile, qaMockDataEnabled } from "./qa-fixtures.ts";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "./crm/crm-data";
@@ -144,6 +145,7 @@ function canAccessJob(context: KcplStaffContext, primary: KcplBranch, handling: 
 }
 
 export async function getDigitalJobFile(reference: string, context: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockDigitalJobFile(reference, context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const id = reference.trim().toUpperCase();

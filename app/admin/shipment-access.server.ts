@@ -1,3 +1,4 @@
+import { mockShipmentBranchAccess, qaMockDataEnabled } from "./qa-fixtures.ts";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { type KcplStaffContext } from "./staff-directory.server";
 import { resolveShipmentBranchAccess } from "./shipment-access-policy";
@@ -5,6 +6,7 @@ import { resolveShipmentBranchAccess } from "./shipment-access-policy";
 export { resolveShipmentBranchAccess } from "./shipment-access-policy";
 
 export async function checkShipmentBranchAccess(reference: string, staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockShipmentBranchAccess(reference, staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const normalized = reference.trim().toUpperCase();

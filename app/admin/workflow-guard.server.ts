@@ -1,3 +1,4 @@
+import { mockShipmentWorkflowReadiness, qaMockDataEnabled } from "./qa-fixtures.ts";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../shipment-document-policy";
@@ -75,6 +76,7 @@ function stageState(complete: boolean, current: boolean, blocked = false): Workf
 }
 
 export async function getShipmentWorkflowReadiness(reference: string, context?: KcplStaffContext) {
+  if (qaMockDataEnabled() && context) return mockShipmentWorkflowReadiness(reference, context);
   const loaded = await loadWorkflowSource(reference, context);
   if (loaded.kind !== "ready") return loaded;
   const { source } = loaded;
