@@ -22,7 +22,10 @@ export function trackAnalyticsEvent(name: string) {
 export function Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const internalRoute = pathname.startsWith("/admin");
+  // Private product surfaces are never measured: the staff operations system
+  // and the authenticated customer portal both carry customer data in the URL
+  // and in the page, and neither is a marketing page.
+  const internalRoute = pathname.startsWith("/admin") || pathname.startsWith("/portal");
   const [consent, setConsent] = useState<"granted" | "denied" | null>(null);
 
   useEffect(() => {

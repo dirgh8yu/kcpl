@@ -90,6 +90,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "paper-archive", href: "/admin/migration/archive", label: "Paper Archive", group: "Organisation", hint: "Historical paper evidence and linked digital records", keywords: ["archive", "paper", "history"], permission: "management", icon: "Folder", prefixes: ["/admin/migration/archive"] },
   { id: "migration-recovery", href: "/admin/migration/recovery", label: "Migration Recovery", group: "Organisation", hint: "Dry-run and controlled rollback of migration batches", keywords: ["migration", "recovery", "rollback"], permission: "management_finance", icon: "Database", prefixes: ["/admin/migration/recovery"] },
   { id: "staff", href: "/admin/staff", label: "People & Branches", group: "Organisation", hint: "Staff access, teams and branch ownership", keywords: ["staff", "people", "branches", "permissions", "rbac"], permission: "staff", icon: "Users2", prefixes: ["/admin/staff"] },
+  { id: "portal-access", href: "/admin/portal-access", label: "Customer Portal Access", group: "Organisation", hint: "Customer logins for shipment, document and invoice self-service", keywords: ["portal", "customer login", "self service", "customer access", "invite"], permission: "staff", icon: "Users", prefixes: ["/admin/portal-access"] },
 ];
 
 export const workflowGroupOrder: WorkflowWorkspace["group"][] = ["Operate", "Plan & Sell", "Network", "Finance", "Organisation"];

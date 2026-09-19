@@ -111,6 +111,24 @@ Core workspaces include:
 
 Record IDs, shipment references, AWBs/BL-style references and system keys use monospace treatment for fast scanning.
 
+## KCPL Customer Portal
+
+`/portal` is the authenticated customer self-service surface: a customer's own shipments
+and milestones, the documents KCPL has released to them, their issued invoices, their
+quotes, and a form to raise a new freight request.
+
+It renders on the same foundation as the staff product — the `app/admin/operations-ui.tsx`
+primitives inside `app/admin/operations-system.css` — and adds no second design system.
+
+Customer sessions are a separate principal from staff sessions: their own cookie
+(`kcpl_portal_session`), their own authority record (`portal_accounts`) and a scope of
+exactly one customer. An address that is an active staff account can never hold portal
+access. Management provisions logins at **Organisation → Customer Portal Access**
+(`/admin/portal-access`).
+
+See [`docs/customer-portal.md`](docs/customer-portal.md) for the authority model,
+redaction rules, provisioning runbook and known gaps.
+
 ## Security notes
 
 - Never commit production secrets, private keys or service-account JSON.

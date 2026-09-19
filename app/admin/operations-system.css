@@ -2044,3 +2044,147 @@
 .kcpl-admin-content .ops-activity-title { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .kcpl-admin-content .ops-activity-detail { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--admin-muted); }
 .kcpl-admin-content .ops-activity-actor { display: block; font-size: 12px; font-weight: 500; color: var(--admin-faint); }
+
+/* ------------------------------------------------------------------------ *
+ * Customer portal (`/portal`)
+ *
+ * The portal is the same operating system as the staff product, not a second
+ * design language: it nests `.kcpl-admin-shell` / `.kcpl-admin-content` so
+ * every Ops primitive above styles it unchanged. `.kcpl-portal-route` is a
+ * modifier that removes the staff chrome a customer surface does not have --
+ * the fixed sidebar gutter and the fixed toolbar offset -- and adds the small
+ * amount of chrome a customer surface does: a sticky header, a document list
+ * and the sign-in card. Everything else is inherited.
+ * ------------------------------------------------------------------------ */
+.kcpl-portal-route { min-height: 100dvh; background: var(--admin-canvas); }
+.kcpl-portal-route .kcpl-admin-content { padding: 0; }
+.kcpl-portal-route .kcpl-admin-content .ops-page { min-height: auto; }
+.portal-shell { display: flex; flex-direction: column; min-height: 100dvh; }
+.portal-skip-link { position: fixed; top: 6px; left: 12px; z-index: 150; transform: translateY(-150%); padding: 8px 12px; border-radius: var(--app-radius); background: var(--admin-ink); color: #FFFFFF; font-size: var(--app-text-sm); font-weight: 600; text-decoration: none; }
+.portal-skip-link:focus { transform: translateY(0); }
+
+.portal-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-5);
+  min-height: var(--app-toolbar-height);
+  padding: 0 var(--app-page-gap);
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-surface);
+}
+.portal-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--admin-ink); text-decoration: none; }
+.portal-brand-text strong { display: block; font-size: var(--app-text-base); font-weight: 650; letter-spacing: -.01em; line-height: 1.2; }
+.portal-brand-text small { display: block; margin-top: 1px; color: var(--admin-muted); font-size: var(--app-text-xs); line-height: 1.2; }
+.portal-nav { display: flex; align-items: center; gap: var(--app-space-1); min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+.portal-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--app-control-height);
+  padding: 0 11px;
+  border-radius: var(--app-radius);
+  color: var(--admin-muted);
+  font-size: var(--app-text-md);
+  font-weight: 450;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out);
+}
+.portal-nav-link svg { flex: none; opacity: .72; }
+.portal-nav-link[aria-current="page"] { background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 550; }
+.portal-nav-link[aria-current="page"] svg { opacity: 1; }
+.portal-account { display: flex; align-items: center; gap: var(--app-space-2); margin-left: auto; }
+.portal-account-initials { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--admin-accent-bg); color: var(--admin-crimson-deep); font-size: var(--app-text-xs); font-weight: 650; }
+.portal-account-meta { display: grid; min-width: 0; }
+.portal-account-meta strong { font-size: var(--app-text-sm); font-weight: 600; line-height: 1.3; }
+.portal-account-meta small { color: var(--admin-faint); font-size: var(--app-text-xs); line-height: 1.3; }
+.portal-signout { display: grid; place-items: center; width: var(--app-control-height); min-height: var(--app-control-height); border-radius: var(--app-radius); color: var(--admin-muted); transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.portal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--app-space-3); margin-top: auto; padding: var(--app-space-4) var(--app-page-gap); border-top: 1px solid var(--admin-line); color: var(--admin-faint); font-size: var(--app-text-sm); }
+.portal-footer a { color: var(--admin-muted); font-weight: 500; }
+
+/* Workspace content -------------------------------------------------------- */
+.kcpl-admin-content .portal-stack { display: grid; }
+.kcpl-admin-content .portal-toolbar { padding-inline: var(--app-space-4); }
+.kcpl-admin-content .portal-toolbar-count { margin-left: auto; color: var(--admin-muted); font-size: var(--app-text-sm); white-space: nowrap; }
+.kcpl-admin-content .portal-filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.kcpl-admin-content .portal-empty-wrap { padding: var(--app-space-4); }
+.kcpl-admin-content .portal-lane { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-weight: 500; }
+.kcpl-admin-content .portal-lane-arrow { color: var(--admin-faint); }
+.kcpl-admin-content .portal-cell-title { display: block; font-weight: 500; }
+.kcpl-admin-content .portal-cell-detail { display: block; margin-top: 2px; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 400; }
+.kcpl-admin-content .portal-row-link { color: var(--admin-ink); font-weight: 500; text-decoration: none; }
+.kcpl-admin-content .portal-row-link:hover { text-decoration: underline; }
+.kcpl-admin-content .portal-row-open { display: inline-grid; place-items: center; min-width: 32px; min-height: 32px; border-radius: var(--app-radius); color: var(--admin-muted); }
+.kcpl-admin-content .portal-row-open:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .portal-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.kcpl-admin-content .portal-footnote { margin: 0; color: var(--admin-faint); font-size: var(--app-text-sm); line-height: 20px; }
+.kcpl-admin-content .portal-timeline-detail { margin: 0 0 4px; color: var(--admin-muted); font-size: var(--app-text-base); line-height: 1.5; }
+.kcpl-admin-content .portal-timeline-location { display: block; color: var(--admin-faint); font-size: var(--app-text-sm); font-weight: 500; }
+
+.kcpl-admin-content .portal-document-list { display: grid; gap: var(--app-space-2); margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .portal-document-list li { display: flex; align-items: center; gap: var(--app-space-3); padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); }
+.kcpl-admin-content .portal-document-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--app-radius-sm); background: var(--admin-surface-muted); color: var(--admin-muted); }
+.kcpl-admin-content .portal-document-main { display: grid; gap: 2px; min-width: 0; margin-right: auto; }
+.kcpl-admin-content .portal-document-main strong { font-size: var(--app-text-md); font-weight: 550; }
+.kcpl-admin-content .portal-document-main span { color: var(--admin-muted); font-size: var(--app-text-sm); overflow-wrap: anywhere; }
+
+.kcpl-admin-content .portal-form { display: grid; gap: var(--app-space-4); }
+.kcpl-admin-content .portal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--app-space-3); }
+.kcpl-admin-content .portal-form-actions { display: flex; justify-content: flex-end; }
+
+/* Sign-in ------------------------------------------------------------------ */
+.portal-login { min-height: 100dvh; background: var(--admin-canvas); }
+.kcpl-admin-content.portal-login-content { display: grid; place-items: center; min-height: 100dvh; padding: var(--app-space-5) var(--app-space-4); }
+.kcpl-admin-content .portal-login-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-radius-xl);
+  background: var(--admin-surface);
+  padding: var(--app-space-6);
+  box-shadow: var(--app-shadow-lg);
+}
+.kcpl-admin-content .portal-login-head { display: flex; align-items: center; gap: var(--app-space-3); }
+.kcpl-admin-content .portal-login-head h1 { margin: 0; font-size: var(--app-text-2xl); font-weight: 600; letter-spacing: -.02em; }
+.kcpl-admin-content .portal-login-eyebrow { margin: 0 0 2px; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 500; }
+.kcpl-admin-content .portal-login-intro { margin: var(--app-space-4) 0 0; color: var(--admin-muted); font-size: var(--app-text-md); line-height: 21px; }
+.kcpl-admin-content .portal-login-form { display: grid; gap: var(--app-space-4); margin-top: var(--app-space-5); }
+.kcpl-admin-content .portal-login-messages { display: grid; gap: 6px; }
+.kcpl-admin-content .portal-login-error { margin: 0; border: 1px solid var(--admin-danger-line); border-radius: var(--app-radius); background: var(--admin-danger-bg); padding: 10px 12px; color: var(--admin-danger); font-size: var(--app-text-base); font-weight: 500; }
+.kcpl-admin-content .portal-login-notice { margin: var(--app-space-3) 0 0; border: 1px solid var(--admin-info-line); border-radius: var(--app-radius); background: var(--admin-info-bg); padding: 10px 12px; color: var(--admin-info); font-size: var(--app-text-base); font-weight: 500; }
+.kcpl-admin-content .portal-login-submit { width: 100%; }
+.kcpl-admin-content .portal-login-link { justify-self: center; border: 0; background: none; color: var(--admin-muted); font-size: var(--app-text-base); font-weight: 500; text-decoration: underline; cursor: pointer; }
+.kcpl-admin-content .portal-login-footnote { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--app-space-3); margin-top: var(--app-space-5); border-top: 1px solid var(--admin-line); padding-top: var(--app-space-4); color: var(--admin-faint); font-size: var(--app-text-sm); }
+.kcpl-admin-content .portal-login-footnote span { display: inline-flex; align-items: center; gap: 6px; }
+.kcpl-admin-content .portal-login-footnote a { color: var(--admin-ink); font-weight: 500; }
+.kcpl-admin-content .portal-password-control { position: relative; display: block; }
+.kcpl-admin-content .portal-password-control input { padding-right: 44px; }
+.kcpl-admin-content .portal-password-toggle { position: absolute; top: 50%; right: 4px; display: grid; place-items: center; width: 34px; height: 34px; transform: translateY(-50%); border: 0; border-radius: var(--app-radius-sm); background: none; color: var(--admin-muted); cursor: pointer; }
+
+@media (hover: hover) and (pointer: fine) {
+  .portal-nav-link:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+  .portal-signout:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+  .kcpl-admin-content .portal-password-toggle:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+}
+
+@media (max-width: 860px) {
+  .portal-topbar { flex-wrap: wrap; gap: var(--app-space-3); padding: var(--app-space-2) var(--app-space-4); }
+  .portal-nav { order: 3; width: 100%; padding-bottom: 2px; }
+  .portal-account-meta { display: none; }
+  .portal-footer { padding-inline: var(--app-space-4); }
+  .kcpl-admin-content .portal-toolbar { padding-inline: var(--app-space-3); }
+  .kcpl-admin-content .portal-login-card { padding: var(--app-space-5); }
+  .kcpl-admin-content .portal-document-list li { flex-wrap: wrap; }
+}
+
+@media (max-width: 760px) {
+  .portal-nav-link { min-height: var(--app-control-height-touch); }
+  .portal-signout { min-height: var(--app-control-height-touch); }
+  .kcpl-admin-content .portal-row-open { min-height: var(--app-control-height-touch); min-width: var(--app-control-height-touch); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-nav-link, .portal-signout, .portal-skip-link { transition: none; }
+}
