@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CalendarClock, FileText, Package, Receipt, Truck } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, FileText, FileUp, Package, Receipt, Truck } from "lucide-react";
 import {
   OpsBadge,
   OpsEmptyState,
@@ -50,6 +50,13 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
             <OpsKpiCard label="In transit" value={overview.inTransitCount} icon={<Truck size={16} strokeWidth={1.75}/>} tone="info"/>
             <OpsKpiCard label="Arriving in 7 days" value={overview.arrivingCount} icon={<CalendarClock size={16} strokeWidth={1.75}/>} tone="neutral"/>
             <OpsKpiCard
+              label="Documents needed"
+              value={overview.outstandingCount}
+              icon={<FileUp size={16} strokeWidth={1.75}/>}
+              tone={overview.outstandingCount > 0 ? "warning" : "success"}
+              detail={overview.outstandingCount > 0 ? "KCPL is waiting on you" : "Nothing outstanding"}
+            />
+            <OpsKpiCard
               label="Needs attention"
               value={overview.attentionCount}
               icon={<AlertTriangle size={16} strokeWidth={1.75}/>}
@@ -57,6 +64,39 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
               detail={overview.attentionCount > 0 ? "KCPL is working on these" : "No exceptions raised"}
             />
           </OpsKpiStrip>
+
+          {overview.outstanding.length ? (
+            <OpsSurface
+              eyebrow="Action needed"
+              title="Paperwork KCPL is waiting on"
+              description="Send these from the shipment so KCPL can keep the cargo moving."
+              priority="warning"
+              flush
+            >
+              <ul className="portal-document-list portal-action-list">
+                {overview.outstanding.map((entry) => (
+                  <li key={entry.reference}>
+                    <span className="portal-document-icon" aria-hidden="true"><FileUp size={15} strokeWidth={1.75}/></span>
+                    <span className="portal-document-main">
+                      <strong>{entry.rows.map((row) => portalDocumentLabel(row.document_type)).join(", ")}</strong>
+                      <span>
+                        <OpsMono>{entry.reference}</OpsMono>
+                        {entry.origin ? ` · ${entry.origin} → ${entry.destination}` : ""}
+                      </span>
+                    </span>
+                    <Link
+                      href={`/portal/shipments/${encodeURIComponent(entry.reference)}#documents`}
+                      className="ops-button"
+                      data-variant="primary"
+                      data-size="sm"
+                    >
+                      Send now
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </OpsSurface>
+          ) : null}
 
           {overview.finance && outstanding.length ? (
             <OpsSurface

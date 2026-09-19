@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseAdminStorage, firebaseStorageBucketName } from "./firebase-admin.server";
 import { shipmentDocumentReviewStatusValue } from "./shipment-document-policy";
 import {
+  shipmentDocumentSourceValue,
   shipmentDocumentTypeLabels,
   type ShipmentDocument,
   type ShipmentDocumentReviewStatus,
@@ -66,6 +67,7 @@ function shipmentDocumentFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapsh
     uploaded_at: typeof data.uploaded_at === "string" ? data.uploaded_at : "",
     uploaded_by: typeof data.uploaded_by === "string" ? data.uploaded_by : "KCPL Staff",
     uploaded_by_email: nullableString(data.uploaded_by_email),
+    uploaded_by_source: shipmentDocumentSourceValue(data.uploaded_by_source),
     review_status: shipmentDocumentReviewStatusValue(data.review_status),
     customer_safe: data.customer_safe === true,
     review_note: nullableString(data.review_note),
@@ -140,12 +142,18 @@ export async function uploadShipmentDocument(
     uploadedByEmail?: string;
     data: ArrayBuffer;
     supersedesDocumentId?: number | null;
+    /** Who originated the file. Customer-portal uploads are recorded as such so
+     * the review queue can tell an inbound customer document from one a staff
+     * member filed, and so the portal can show the sender their own upload
+     * before it has been released. */
+    source?: "staff" | "customer_portal";
   },
 ) {
   if (!configured()) return { kind: "unavailable" as const };
   const shipment = await shipmentRef(reference);
   if (!shipment) return { kind: "missing" as const };
 
+  const source = values.source ?? "staff";
   const bytes = Buffer.from(values.data);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const existingDocuments = await shipment.ref.collection("documents").where("sha256", "==", sha256).limit(10).get();
@@ -191,6 +199,7 @@ export async function uploadShipmentDocument(
     uploaded_at: uploadedAt,
     uploaded_by: values.uploadedBy,
     uploaded_by_email: values.uploadedByEmail || null,
+    uploaded_by_source: source,
     review_status: "received",
     customer_safe: false,
     review_note: null,
@@ -227,10 +236,14 @@ export async function uploadShipmentDocument(
       });
     }
     batch.create(shipment.ref.collection("job_activity").doc(activityId("document-upload")), {
-      type: supersededSnapshot ? "document_superseded" : "document_uploaded",
+      type: supersededSnapshot
+        ? "document_superseded"
+        : source === "customer_portal" ? "document_received_from_customer" : "document_uploaded",
       title: supersededSnapshot
         ? `${shipmentDocumentTypeLabels[values.documentType]} replacement uploaded`
-        : `${shipmentDocumentTypeLabels[values.documentType]} uploaded`,
+        : source === "customer_portal"
+          ? `${shipmentDocumentTypeLabels[values.documentType]} received from the customer`
+          : `${shipmentDocumentTypeLabels[values.documentType]} uploaded`,
       detail: values.filename,
       actor_name: values.uploadedBy,
       actor_email: values.uploadedByEmail || null,

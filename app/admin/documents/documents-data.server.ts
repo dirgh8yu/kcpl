@@ -5,8 +5,10 @@ import {
   shipmentDocumentReviewStatusValue,
 } from "../../shipment-document-policy";
 import {
+  shipmentDocumentSourceValue,
   shipmentDocumentTypeLabels,
   type ShipmentDocumentEffectiveStatus,
+  type ShipmentDocumentSource,
   type ShipmentDocumentReviewStatus,
   type ShipmentDocumentType,
 } from "../../shipment-document-types";
@@ -33,6 +35,7 @@ export type DocumentVaultRow = {
   uploaded_at: string;
   uploaded_by: string;
   uploaded_by_email: string | null;
+  uploaded_by_source: ShipmentDocumentSource;
   review_status: ShipmentDocumentReviewStatus;
   effective_status: ShipmentDocumentEffectiveStatus;
   customer_safe: boolean;
@@ -187,6 +190,7 @@ export async function listDocumentVault(context: KcplStaffContext): Promise<Docu
       uploaded_at: text(doc.get("uploaded_at")),
       uploaded_by: text(doc.get("uploaded_by"), "KCPL Staff"),
       uploaded_by_email: nullable(doc.get("uploaded_by_email")),
+      uploaded_by_source: shipmentDocumentSourceValue(doc.get("uploaded_by_source")),
       review_status: reviewStatus,
       effective_status: effectiveShipmentDocumentStatus({ status: reviewStatus, expiresOn, today }),
       customer_safe: doc.get("customer_safe") === true,

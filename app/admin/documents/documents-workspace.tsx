@@ -154,12 +154,15 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const type: "all" | ShipmentDocumentType = shipmentDocumentTypes.includes(typeValue as ShipmentDocumentType) ? typeValue as ShipmentDocumentType : "all";
   const branchValue = params.get("branch");
   const branch: "all" | KcplBranch = kcplBranches.includes(branchValue as KcplBranch) ? branchValue as KcplBranch : "all";
+  const originValue = params.get("origin");
+  const origin: "all" | "customer" | "staff" = originValue === "customer" || originValue === "staff" ? originValue : "all";
   const selectedKey = params.get("selected");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
 
   const pendingReview = dashboard.rows.filter((row) => row.review_status === "received" || row.review_status === "under_review").length;
+  const customerInbound = dashboard.rows.filter((row) => row.uploaded_by_source === "customer_portal" && (row.review_status === "received" || row.review_status === "under_review")).length;
   const setStatusFilter = (nextStatus: StatusFilter) => {
     update({ status: nextStatus === "all" ? null : nextStatus, selected: null });
   };
@@ -170,12 +173,13 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
       if (status === "pending" && row.review_status !== "received" && row.review_status !== "under_review") return false;
       if (status !== "active" && status !== "all" && status !== "pending" && row.effective_status !== status) return false;
       if (type !== "all" && row.document_type !== type) return false;
+      if (origin !== "all" && row.uploaded_by_source !== (origin === "customer" ? "customer_portal" : "staff")) return false;
       if (branch !== "all" && !row.handling_branches.includes(branch)) return false;
       if (!terms.length) return true;
       const haystack = [row.shipment_reference, row.customer_id ?? "", row.customer_name, row.filename, shipmentDocumentTypeLabels[row.document_type], row.uploaded_by, row.uploaded_by_email ?? "", row.reviewed_by ?? "", row.reviewed_by_email ?? "", row.verified_by ?? "", row.verified_by_email ?? "", row.review_note ?? "", row.origin, row.destination, row.mode, row.branch ?? "", statusLabel(row.effective_status), row.sha256 ?? ""].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
-  }, [branch, dashboard.rows, query, status, type]);
+  }, [branch, dashboard.rows, origin, query, status, type]);
   const selected = selectedKey ? dashboard.rows.find((row) => `${row.shipment_reference}:${row.id}` === selectedKey) ?? null : null;
 
   async function deleteDocument(row: DocumentVaultRow) {
@@ -232,6 +236,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
               <OpsFilterChip active={status === "expired"} onClick={() => setStatusFilter("expired")}>Expired</OpsFilterChip>
               <OpsFilterChip active={status === "superseded"} onClick={() => setStatusFilter("superseded")}>Superseded</OpsFilterChip>
               <OpsFilterChip active={status === "deleted"} onClick={() => setStatusFilter("deleted")}>Deleted</OpsFilterChip>
+              <OpsFilterChip active={origin === "customer"} onClick={() => update({ origin: origin === "customer" ? null : "customer", selected: null })}>From customers{customerInbound ? ` · ${customerInbound}` : ""}</OpsFilterChip>
             </div>
             <select value={type} onChange={(event) => update({ type: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by document type" style={selectStyle}><option value="all">All document types</option>{shipmentDocumentTypes.map((item) => <option key={item} value={item}>{shipmentDocumentTypeLabels[item]}</option>)}</select>
             <select value={branch} onChange={(event) => update({ branch: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by branch" style={selectStyle}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
@@ -244,7 +249,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
               const key = `${row.shipment_reference}:${row.id}`;
               const inactive = row.review_status === "deleted" || row.review_status === "superseded";
               return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} aria-selected={selectedKey === key} tabIndex={0} onClick={() => update({ selected: key }, "push")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); update({ selected: key }, "push"); } }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
-                <td><div style={{ fontWeight: 500 }}>{row.filename}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by} · {bytes(row.size_bytes)}</div></td>
+                <td><div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>{row.filename}{row.uploaded_by_source === "customer_portal" ? <OpsBadge tone="info">From customer</OpsBadge> : null}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by} · {bytes(row.size_bytes)}</div></td>
                 <td>{shipmentDocumentTypeLabels[row.document_type]}</td>
                 <td><OpsMono>{row.shipment_reference}</OpsMono><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.customer_name}</div></td>
                 <td style={{ color: "var(--admin-muted)", whiteSpace: "nowrap" }}>{dateTime(row.uploaded_at)}</td>

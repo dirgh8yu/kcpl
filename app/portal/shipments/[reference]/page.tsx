@@ -17,6 +17,7 @@ import { getPortalShipment, type PortalShipmentDetail } from "../../portal-data.
 import { PortalLoginPage } from "../../portal-login-page";
 import { PortalShell } from "../../portal-shell";
 import { PortalUnavailable, PortalWorkspaceUnavailable } from "../../portal-frame";
+import { PortalDocumentExchange } from "./portal-document-exchange";
 import {
   portalDate,
   portalDateTime,
@@ -44,7 +45,9 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
       accountEmail={access.session.email}
       capabilities={access.session.capabilities}
     >
-      {result.kind === "ready" ? <ShipmentDetail detail={result.detail}/> : null}
+      {result.kind === "ready"
+        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests}/>
+        : null}
       {result.kind === "missing" ? (
         <OpsPage>
           <OpsPageHeader eyebrow="Kapileshwor Cargo" title="Shipment not found"/>
@@ -66,8 +69,8 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
   );
 }
 
-function ShipmentDetail({ detail }: { detail: PortalShipmentDetail }) {
-  const { shipment, events, documents } = detail;
+function ShipmentDetail({ detail, canSend }: { detail: PortalShipmentDetail; canSend: boolean }) {
+  const { shipment, events, documents, checklist } = detail;
 
   return (
     <OpsPage>
@@ -133,10 +136,12 @@ function ShipmentDetail({ detail }: { detail: PortalShipmentDetail }) {
             />
           </OpsSurface>
 
+          <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend}/>
+
           <OpsSurface
             eyebrow="Paperwork"
             title="Documents"
-            description="Only documents KCPL has released to your account are shown here."
+            description="Documents KCPL has released to you, and the ones you have sent."
           >
             {documents.length ? (
               <ul className="portal-document-list">
@@ -145,8 +150,16 @@ function ShipmentDetail({ detail }: { detail: PortalShipmentDetail }) {
                     <span className="portal-document-icon" aria-hidden="true"><FileText size={15} strokeWidth={1.75}/></span>
                     <span className="portal-document-main">
                       <strong>{portalDocumentLabel(document.document_type)}</strong>
-                      <span>{document.filename} · {portalFileSize(document.size_bytes)} · released {portalDate(document.uploaded_at)}</span>
+                      <span>
+                        {document.filename} · {portalFileSize(document.size_bytes)} · {portalDate(document.uploaded_at)}
+                        {document.from_customer ? " · sent by you" : ""}
+                      </span>
                     </span>
+                    {document.from_customer ? (
+                      <OpsBadge tone={document.review_state === "confirmed" ? "success" : document.review_state === "resend" ? "danger" : "info"}>
+                        {document.review_state === "confirmed" ? "Confirmed" : document.review_state === "resend" ? "Send again" : "With KCPL"}
+                      </OpsBadge>
+                    ) : null}
                     <a
                       className="ops-button"
                       data-variant="secondary"
@@ -163,8 +176,8 @@ function ShipmentDetail({ detail }: { detail: PortalShipmentDetail }) {
                 compact
                 kind="neutral"
                 icon={<FileText size={18}/>}
-                title="No documents released for this shipment"
-                description="Ask your KCPL account manager if you are expecting paperwork."
+                title="No documents yet"
+                description="Documents KCPL releases to you, and anything you send, will be listed here."
               />
             )}
           </OpsSurface>
