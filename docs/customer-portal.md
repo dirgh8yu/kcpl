@@ -119,6 +119,64 @@ all. Uploads are rate limited per portal account.
 customer can always see a document they sent even before it is released — withholding
 it would only hide their own paperwork from them.
 
+## Notifications
+
+The portal is no longer only a pull. Customers are emailed when their cargo moves,
+and the operator who owns a job is told when a customer sends paperwork into it.
+
+### Milestone emails
+
+`dispatchPortalNotifications()` is a **scheduled sweep**, not a hook on the writers.
+Canonical shipment status is set in several places — the delivery authority, external
+event promotion, manual delivery control — and every one sits inside the authority the
+system audit is about. Reading the result on a schedule keeps notification concerns
+entirely outside that chain: nothing in the dispatcher can fail a booking, delay a
+settlement or change a state. The cost is latency, bounded by how often
+`POST /api/internal/automation` runs, which is the right trade for a courtesy.
+
+Rules the sweep keeps:
+
+- **Only a real change.** A status equal to the last one notified sends nothing, and a
+  shipment seen for the first time is never news — otherwise switching notifications on
+  would mail a customer about their entire history.
+- **`preparing` is not notified.** It is an internal readiness step that changes nothing
+  the customer can act on, and notifications that teach people to ignore notifications
+  are worse than none.
+- **Only bound, active, subscribed accounts.** An account that has never completed its
+  invite has not proved control of the address, so it is never mailed.
+- **Exactly once.** Every message carries a deterministic key
+  (`portal:topic:reference:fact:recipient`), and a delivery row in
+  `portal_email_deliveries` is claimed *before* the provider call and confirmed after,
+  so a crash between the two leaves a `pending` row rather than a silent re-send.
+- **The watermark advances regardless.** `portal_notification_state/{reference}` records
+  the last status seen whether or not anything was sent, so enabling a topic never
+  replays history.
+- A ceiling of 200 emails per sweep, as a defence against a watermark bug turning into
+  a mailshot.
+
+The copy builder takes a fixed set of operational facts — reference, status, mode,
+lane, ETA, current location — and there is no parameter through which a rate, a cost,
+a supplier or an internal note could reach a customer's inbox. Every interpolated value
+is HTML-escaped.
+
+### Preferences
+
+`/portal/settings` lets each customer switch topics for **their own login**: the account
+being changed comes from the verified session, never from the request body, so one
+portal user cannot silence another's notifications. Absent preferences mean subscribed —
+a customer given portal access expects to hear about their own cargo, and every topic is
+switchable from the portal itself. The page says plainly when outgoing email is not yet
+configured, rather than silently saving settings that do nothing.
+
+### Telling ops about inbound documents
+
+A customer upload notifies the shipment's assigned operator through the existing staff
+notification centre (`category: "documents"`), linking into the Document Vault filtered
+to that shipment. An unassigned shipment has nobody to tell; the vault's "From
+customers" filter is the backstop. The notification is awaited but never thrown: a
+notification failure must not turn a stored upload into an error the customer is asked
+to retry.
+
 ## What the portal never writes
 
 A customer request (`POST /api/portal/requests`) creates an ordinary enquiry in `quotes`
@@ -178,10 +236,12 @@ in server routes only, exactly like the staff product.
 | `/portal/documents` | Released documents and the customer's own submissions, filterable by direction |
 | `/portal/invoices` | Issued invoices and balances (account owners) |
 | `/portal/requests` | New freight request, issued quotes, open requests |
+| `/portal/settings` | The customer's own notification preferences |
 | `POST /api/portal/session` | Mints the session cookie from a fresh, verified Firebase sign-in |
 | `GET /api/portal/documents/[reference]/[id]` | Download; ownership then release are checked before any bytes are read |
 | `POST /api/portal/documents/[reference]` | Customer upload against a shipment; lands unreviewed and unreleased |
 | `POST /api/portal/requests` | Customer-raised enquiry or "ask to proceed" |
+| `POST /api/portal/notifications` | Saves the signed-in account's notification topics |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |
 
 Portal pages are `force-dynamic`, `no-store` and `robots: noindex`, and `/portal` is
@@ -203,8 +263,15 @@ excluded from public analytics and from the public site's mobile quote CTA.
   checked, and files are served back only through authenticated, force-download routes
   with `X-Content-Type-Options: nosniff` — but no antivirus runs over them. Staff open
   customer-supplied files at the same risk they do an emailed attachment today.
-- **No upload notification yet.** A customer upload appears in the staff Document
-  Vault under the "From customers" filter and on the Job File activity, but nothing
-  pushes it at the assigned operator. That lands with the notifications work.
+- **Notification latency is the sweep interval.** Milestone emails go out when
+  `/api/internal/automation` next runs, not the instant a status changes. If KCPL wants
+  near-real-time delivery, the sweep needs to run more often — the dispatcher itself is
+  cheap and idempotent, so that is a scheduling decision rather than a code change.
+- **Email only.** WhatsApp is the channel most KCPL customers actually read; the
+  dispatcher is written so a second transport can be added beside the mailer without
+  touching the decision rules.
+- **No notification on document release.** The `documents` topic currently governs the
+  ops-side upload notification and is stored for customers, but the sweep does not yet
+  mail a customer when KCPL releases a document to them.
 - **Single customer per login.** A contact who buys through two KCPL customer records
   needs two portal accounts.

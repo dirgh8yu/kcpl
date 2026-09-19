@@ -253,6 +253,11 @@ const reviewedClassifications = [
     rationale: "Pure customer-portal decision module with no Firebase dependency at all; the ShipmentStatus set it holds classifies a status as active for a customer-facing count and never assigns one.",
   },
   {
+    file: "app/portal/portal-notifications.server.ts",
+    category: "A",
+    rationale: "Customer notification sweep. Reads canonical shipment status and writes only its own records: a delivery row per outbound email in portal_email_deliveries, and a per-shipment notification watermark in portal_notification_state. It never writes the shipment document, so it cannot assign or influence canonical status -- reading the result on a schedule is precisely what keeps notifications outside the delivery authority.",
+  },
+  {
     file: "app/portal/portal-data.server.ts",
     category: "F",
     rationale: "Read model behind the customer portal. Every Firestore call is a get; shipment_status is projected onto a document row for display, and the .set() calls the scan sees are in-memory Map writes used to group balances and de-duplicate quotes.",
@@ -413,6 +418,18 @@ const expectedReviewedSurfaces = [
       /collection\("customers"\)\.doc\(customerId\)\.set\(\{ active_shipment_count: active, completed_shipment_count: completed/,
     ],
     rejects: [/collection\("shipments"\)\.doc\([^)]*\)\.update\(\{[^}]*\bstatus:/],
+  },
+  {
+    id: "Customer notification sweep writes only its own delivery and watermark records",
+    file: "app/portal/portal-notifications.server.ts",
+    patterns: [
+      /collection\("portal_email_deliveries"\)/,
+      /collection\("portal_notification_state"\)/,
+    ],
+    rejects: [
+      /collection\("shipments"\)\.doc\([^)]*\)\.(?:update|set|create|delete)\(/,
+      /status: "delivered"/,
+    ],
   },
   {
     id: "EDI X12 module stays a pure parser and serializer",
