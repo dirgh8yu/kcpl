@@ -111,7 +111,10 @@
 .ops-grid-main {
   gap: 0;
   grid-template-columns: minmax(0, 800px) minmax(300px, 351px);
-  align-items: stretch;
+  /* `stretch` made the shorter column grow to match the taller one, so a
+   * Contacts card with two entries carried ~180px of empty surface. It also
+   * defeats position: sticky on a grid item, which the detail rails want. */
+  align-items: start;
 }
 
 .ops-surface {

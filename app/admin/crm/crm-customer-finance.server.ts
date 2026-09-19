@@ -1,3 +1,4 @@
+import { mockCrmCustomerFinanceSnapshot, qaMockDataEnabled } from "../qa-fixtures.ts";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "./crm-data";
@@ -53,8 +54,11 @@ export async function getCrmCustomerFinanceSnapshot(
   customerId: string,
   context: KcplStaffContext,
 ): Promise<CrmCustomerFinanceSnapshot | null | undefined> {
-  if (!firebaseRuntimeConfigured()) return undefined;
+  // The permission check stays ahead of the fixture: a role that may not see
+  // commercial data must not see fabricated commercial data either.
   if (!context.permissions.canViewCommercial) return null;
+  if (qaMockDataEnabled()) return mockCrmCustomerFinanceSnapshot(customerId, context);
+  if (!firebaseRuntimeConfigured()) return undefined;
 
   const db = firebaseAdminDb();
   const id = customerId.trim().toUpperCase();

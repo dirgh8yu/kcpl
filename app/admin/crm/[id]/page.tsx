@@ -3,7 +3,7 @@ import { OperationsShell } from "../../operations-shell";
 import { getStaffContext } from "../../staff-directory.server";
 import type { StaffCapabilities } from "../../staff-permissions";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
-import { checkCrmCustomerAccess } from "../crm-access.server";
+import { checkCrmCustomerReadAccess } from "../crm-access.server";
 import type { CrmCustomerDocument } from "../crm-customer-document-types";
 import { listCrmCustomerDocuments } from "../crm-customer-documents.server";
 import type { CrmCustomerFinanceSnapshot } from "../crm-customer-finance";
@@ -71,7 +71,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
     <OperationsShell {...shellProps}><CustomerGate title={title} detail={detail} embedded/></OperationsShell>
   );
   const { id } = await params;
-  const customerAccess = await checkCrmCustomerAccess(id, staff);
+  const customerAccess = await checkCrmCustomerReadAccess(id, staff);
   if (customerAccess.kind === "unavailable") return shellGate("Firestore is unavailable", "The CRM backend is not available for this deployment.");
   if (customerAccess.kind === "missing") return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
   if (customerAccess.kind === "forbidden") return shellGate("Customer access restricted", "This customer belongs to a KCPL branch outside your assigned access.");

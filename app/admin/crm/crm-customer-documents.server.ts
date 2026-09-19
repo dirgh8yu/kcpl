@@ -1,3 +1,4 @@
+import { mockCrmCustomerDocuments, qaMockDataEnabled } from "../qa-fixtures.ts";
 import { firebaseAdminDb, firebaseAdminStorage, firebaseStorageBucketName } from "../../firebase-admin.server";
 import type { CrmCustomerDocument, CrmCustomerDocumentType } from "./crm-customer-document-types";
 
@@ -35,6 +36,7 @@ async function customerRef(customerId: string) {
 }
 
 export async function listCrmCustomerDocuments(customerId: string) {
+  if (qaMockDataEnabled()) return mockCrmCustomerDocuments(customerId);
   if (!(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)) return { kind: "unavailable" as const };
   const customer = await customerRef(customerId);
   if (!customer) return { kind: "missing" as const };

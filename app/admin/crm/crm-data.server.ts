@@ -1,4 +1,4 @@
-import { mockCrmCustomers, qaMockDataEnabled } from "../qa-fixtures";
+import { mockCrmCustomerDetail, mockCrmCustomers, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
@@ -388,6 +388,7 @@ function profileFromResolvedManager(identity: Awaited<ReturnType<typeof resolveS
 }
 
 export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail | null | undefined> {
+  if (qaMockDataEnabled()) return mockCrmCustomerDetail(id);
   if (!firebaseRuntimeConfigured()) return undefined;
   const ref = firebaseAdminDb().collection("customers").doc(id.trim().toUpperCase());
   const [snapshot, profiles] = await Promise.all([ref.get(), listStaffProfiles()]);

@@ -466,6 +466,9 @@
  * the cards ran flush to the window edge and never lined up with the page
  * title above them. Nested strips keep their container's padding. */
 .kcpl-admin-content .ops-page > .ops-kpi-strip { padding-inline: 24px; }
+/* Six metrics need a slightly tighter track than the 190px default to stay on
+ * one row inside the page gutter; without it the sixth card orphans. */
+.kcpl-admin-content .ops-kpi-strip.ops-kpi-strip-tight { grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); }
 .kcpl-admin-content .ops-kpi { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface); color: inherit; text-align: left; box-shadow: 0 1px 2px rgb(16 24 40 / 4%); transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
 .kcpl-admin-content button.ops-kpi { cursor: pointer; }
 /* Non-interactive KPIs are statistics, not controls: no raised surface, no

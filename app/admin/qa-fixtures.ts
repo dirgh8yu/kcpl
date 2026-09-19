@@ -2407,3 +2407,362 @@ export function mockDeliveryControl(reference: string, staff: KcplStaffContext, 
     delivery_completion_source: delivered ? "pod_verified" : null,
   };
 }
+
+import type {
+  CrmActivity, CrmAddress, CrmContact, CrmCustomerDetail, CrmNote, CrmTask,
+} from "./crm/crm-data.ts";
+import type { CrmQuoteLinkItem } from "./crm/crm-quote-links.server.ts";
+import type { CrmOperationsHistory } from "./crm/crm-operations-history.server.ts";
+import type { CrmRateCard } from "./crm/crm-rate-cards.ts";
+import type { CrmCustomerDocument } from "./crm/crm-customer-document-types.ts";
+import type { CrmCustomerFinanceSnapshot } from "./crm/crm-customer-finance.ts";
+
+/* ---------------------------------------------------------------------------
+ * Customer 360
+ *
+ * Built on top of mockCrmCustomers() and the same command-centre jobs, so the
+ * account header, the quote and shipment history, the rate cards and the
+ * finance snapshot all describe one customer's real book of work rather than
+ * unrelated demo rows.
+ * ------------------------------------------------------------------------- */
+
+/* Loaders like getCrmCustomer() take no staff context -- in production they do
+ * not branch-check either, because checkCrmCustomerAccess() already did. These
+ * fixtures match that split: the access check is staff-scoped, the record
+ * loaders are not. */
+const ALL_BRANCH_CONTEXT = { can_access_all_branches: true, branches: [] } as unknown as KcplStaffContext;
+
+function mockCrmAccount(id: string, staff: KcplStaffContext, now: number) {
+  const wanted = id.trim().toLowerCase();
+  return mockCrmCustomers(staff, now).find((account) => account.id.toLowerCase() === wanted) ?? null;
+}
+
+/** The jobs this customer owns, which drive its history and finance rows. */
+function mockCustomerJobs(name: string, staff: KcplStaffContext, now: number) {
+  return mockCommandCentre(staff, now).jobs.filter((job) => job.customer_name === name);
+}
+
+export function mockCrmCustomerReadAccess(id: string, staff: KcplStaffContext, now = Date.now()) {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return { kind: "missing" as const };
+  return { kind: "ready" as const, branch: account.primary_branch, id: account.id };
+}
+
+export function mockCrmCustomerDetail(id: string, staff: KcplStaffContext = ALL_BRANCH_CONTEXT, now = Date.now()): CrmCustomerDetail | null {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return null;
+
+  const manager = account.account_manager_name ?? "Prakash Adhikari";
+  const managerEmail = account.account_manager_email ?? "prakash@kcpl.local";
+
+  const contacts: CrmContact[] = [
+    {
+      id: `${account.id}-contact-1`,
+      customer_id: account.id,
+      name: "Sunita Shrestha",
+      job_title: "Logistics manager",
+      email: account.primary_email,
+      phone: account.primary_phone,
+      communication_preference: "email",
+      is_primary: true,
+      notes: "Books all inbound ocean freight and signs off delivery windows.",
+      created_at: iso(now, -120 * DAY),
+      updated_at: iso(now, -8 * DAY),
+    },
+    {
+      id: `${account.id}-contact-2`,
+      customer_id: account.id,
+      name: "Bikash Thapa",
+      job_title: "Accounts payable",
+      email: `accounts@${account.display_name.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+      phone: "+977 1 4000002",
+      communication_preference: "email",
+      is_primary: false,
+      notes: null,
+      created_at: iso(now, -118 * DAY),
+      updated_at: iso(now, -30 * DAY),
+    },
+  ];
+
+  const addresses: CrmAddress[] = [
+    {
+      id: `${account.id}-address-1`,
+      label: "Registered office",
+      line1: "Tripureshwor Marg 44",
+      line2: null,
+      city: "Kathmandu",
+      state_region: "Bagmati",
+      postal_code: "44600",
+      country: "Nepal",
+      is_primary: true,
+      created_at: iso(now, -120 * DAY),
+      updated_at: iso(now, -120 * DAY),
+    },
+    {
+      id: `${account.id}-address-2`,
+      label: "Delivery warehouse",
+      line1: "Balaju Industrial District, Gate 3",
+      line2: "Receiving bay 2",
+      city: "Kathmandu",
+      state_region: "Bagmati",
+      postal_code: "44600",
+      country: "Nepal",
+      is_primary: false,
+      created_at: iso(now, -90 * DAY),
+      updated_at: iso(now, -14 * DAY),
+    },
+  ];
+
+  const notes: CrmNote[] = [
+    {
+      id: `${account.id}-note-1`,
+      note: "Deliveries are accepted 09:00-16:00 only; the site contact must be called an hour ahead.",
+      author_name: manager,
+      author_email: managerEmail,
+      created_at: iso(now, -21 * DAY),
+    },
+    {
+      id: `${account.id}-note-2`,
+      note: "Prefers consolidated monthly invoicing rather than one invoice per shipment.",
+      author_name: manager,
+      author_email: managerEmail,
+      created_at: iso(now, -46 * DAY),
+    },
+  ];
+
+  const activity: CrmActivity[] = [
+    { id: `${account.id}-activity-1`, type: "quote_sent", title: "Quote issued", detail: "Ocean import quote sent for the Shanghai lane.", actor_name: manager, actor_email: managerEmail, created_at: iso(now, -9 * DAY) },
+    { id: `${account.id}-activity-2`, type: "call", title: "Call with logistics manager", detail: "Agreed the revised delivery window after the vessel delay.", actor_name: manager, actor_email: managerEmail, created_at: iso(now, -4 * DAY) },
+    { id: `${account.id}-activity-3`, type: "invoice_issued", title: "Invoice issued", detail: "Monthly consolidated invoice raised.", actor_name: manager, actor_email: managerEmail, created_at: iso(now, -2 * DAY) },
+  ];
+
+  const tasks: CrmTask[] = [
+    {
+      id: `${account.id}-task-1`,
+      title: "Renew annual rate agreement",
+      detail: "Current sea-freight rate card expires at the end of the quarter.",
+      due_at: iso(now, 9 * DAY),
+      priority: "high",
+      assigned_to_uid: account.account_manager_uid,
+      assigned_to_name: manager,
+      assigned_to_email: managerEmail,
+      assigned_to_phone: account.account_manager_phone,
+      completed: false,
+      completed_at: null,
+      completed_by_name: null,
+      created_by_name: manager,
+      created_by_email: managerEmail,
+      created_at: iso(now, -12 * DAY),
+      updated_at: iso(now, -3 * DAY),
+    },
+    {
+      id: `${account.id}-task-2`,
+      title: "Collect updated PAN/VAT certificate",
+      detail: "Compliance file needs the current year's certificate.",
+      due_at: iso(now, -2 * DAY),
+      priority: "normal",
+      assigned_to_uid: account.account_manager_uid,
+      assigned_to_name: manager,
+      assigned_to_email: managerEmail,
+      assigned_to_phone: account.account_manager_phone,
+      completed: false,
+      completed_at: null,
+      completed_by_name: null,
+      created_by_name: manager,
+      created_by_email: managerEmail,
+      created_at: iso(now, -25 * DAY),
+      updated_at: iso(now, -25 * DAY),
+    },
+  ];
+
+  return {
+    ...account,
+    trading_name: account.display_name,
+    website: `https://www.${account.display_name.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+    industry: "Textiles & apparel",
+    tax_id: "601234567",
+    billing_email: contacts[1].email,
+    transport_preferences: ["Ocean FCL", "Road inland haulage"],
+    internal_summary: "Long-standing import account. Sensitive to delivery-window changes; finance prefers consolidated monthly billing.",
+    commercial: {
+      preferred_currency: account.preferred_currency,
+      payment_terms_days: 30,
+      credit_limit: 5_000_000,
+      outstanding_balance: Math.round(account.revenue_total * 0.18),
+      pricing_notes: "Agreed annual sea-freight tariff; air freight quoted per shipment.",
+      markup_percent: 18,
+      preferred_carriers: ["Maersk", "CMA CGM"],
+    },
+    contacts,
+    addresses,
+    notes,
+    activity,
+    tasks,
+  };
+}
+
+export function mockCrmQuoteLinks(id: string, staff: KcplStaffContext = ALL_BRANCH_CONTEXT, now = Date.now()) {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return null;
+  const jobs = mockCustomerJobs(account.display_name, staff, now);
+
+  const link = (job: CommandCentreJob, index: number, matched: boolean): CrmQuoteLinkItem => ({
+    reference: job.quote_reference,
+    created_at: iso(now, -(20 + index * 3) * DAY),
+    status: matched ? "won" : "new",
+    origin: job.origin,
+    destination: job.destination,
+    contact_name: "Sunita Shrestha",
+    contact_email: account.primary_email ?? `enquiries@${account.display_name.toLowerCase().replace(/[^a-z]+/g, "")}.com.np`,
+    company_name: account.display_name,
+    phone: account.primary_phone,
+    customer_id: matched ? account.id : null,
+    match_reason: matched ? null : "Same company name and contact email as this account.",
+  });
+
+  return {
+    linked: jobs.map((job, index) => link(job, index, true)),
+    // One unlinked enquiry so the "suggested match" path has something to show.
+    suggested: jobs.slice(0, 1).map((job, index) => ({
+      ...link(job, index, false),
+      reference: `${job.quote_reference}-B`,
+    })),
+  };
+}
+
+export function mockCrmOperationsHistory(id: string, staff: KcplStaffContext = ALL_BRANCH_CONTEXT, now = Date.now()): CrmOperationsHistory | null {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return null;
+  const jobs = mockCustomerJobs(account.display_name, staff, now);
+
+  return {
+    quotes: jobs.map((job, index) => ({
+      reference: job.quote_reference,
+      created_at: iso(now, -(20 + index * 3) * DAY),
+      updated_at: iso(now, -(18 + index * 3) * DAY),
+      status: "won" as const,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      currency: "USD" as const,
+      quoted_amount: String(4200 + index * 360),
+      shipment_reference: job.reference,
+    })),
+    shipments: jobs.map((job) => ({
+      reference: job.reference,
+      quote_reference: job.quote_reference,
+      created_at: iso(now, -16 * DAY),
+      updated_at: job.updated_at,
+      status: job.status,
+      eta: job.eta,
+      current_location: job.current_location,
+      carrier: job.carrier,
+      carrier_reference: job.carrier ? `${job.carrier.slice(0, 3).toUpperCase()}-${job.reference.slice(-6)}` : null,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+    })),
+  };
+}
+
+export function mockCrmRateCards(id: string, staff: KcplStaffContext = ALL_BRANCH_CONTEXT, now = Date.now()) {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return { kind: "missing" as const };
+  const manager = account.account_manager_name ?? "Prakash Adhikari";
+  const managerEmail = account.account_manager_email ?? "prakash@kcpl.local";
+
+  const seeds: Array<[string, string, CrmRateCard["mode"], string, number, CrmRateCard["unit"], boolean]> = [
+    ["Shanghai", "Kathmandu", "sea", "Maersk", 2850, "per_container", true],
+    ["Kolkata", "Birgunj", "road", "Annapurna Transport", 420, "per_container", true],
+    ["Dubai", "Kathmandu", "air", "Qatar Airways Cargo", 3.8, "per_kg", true],
+    ["Shanghai", "Kathmandu", "sea", "CMA CGM", 3100, "per_container", false],
+  ];
+
+  return {
+    kind: "ready" as const,
+    rateCards: seeds.map(([origin, destination, mode, carrier, sell, unit, active], index): CrmRateCard => ({
+      id: `${account.id}-rate-${index + 1}`,
+      customer_id: account.id,
+      origin,
+      destination,
+      mode,
+      carrier,
+      service: mode === "air" ? "Express" : "Standard",
+      currency: "USD",
+      cost_rate: Math.round(sell * 0.82 * 100) / 100,
+      sell_rate: sell,
+      unit,
+      minimum_charge: mode === "air" ? 240 : null,
+      valid_from: iso(now, -150 * DAY),
+      valid_until: iso(now, active ? 60 * DAY : -10 * DAY),
+      notes: active ? null : "Superseded by the current Maersk tariff.",
+      active,
+      created_by_name: manager,
+      created_by_email: managerEmail,
+      created_at: iso(now, -150 * DAY),
+      updated_at: iso(now, -(12 + index) * DAY),
+    })),
+  };
+}
+
+export function mockCrmCustomerDocuments(id: string, staff: KcplStaffContext = ALL_BRANCH_CONTEXT, now = Date.now()) {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return { kind: "missing" as const };
+  const slug = account.display_name.toLowerCase().replace(/[^a-z]+/g, "-");
+
+  const seeds: Array<[CrmCustomerDocument["document_type"], string, string, number, number]> = [
+    ["pan_vat", `${slug}-pan-vat.pdf`, "application/pdf", 184_320, -210],
+    ["contract", `${slug}-freight-agreement.pdf`, "application/pdf", 612_400, -180],
+    ["credit_agreement", `${slug}-credit-terms.pdf`, "application/pdf", 240_118, -150],
+    ["rate_sheet", `${slug}-rate-sheet.xlsx`, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 48_900, -30],
+  ];
+
+  return {
+    kind: "ready" as const,
+    documents: seeds.map(([document_type, filename, content_type, size_bytes, days], index): CrmCustomerDocument => ({
+      id: index + 1,
+      customer_id: account.id,
+      filename,
+      content_type,
+      size_bytes,
+      document_type,
+      uploaded_at: iso(now, days * DAY),
+      uploaded_by: account.account_manager_name ?? "Prakash Adhikari",
+    })),
+    storageAvailable: false,
+  };
+}
+
+export function mockCrmCustomerFinanceSnapshot(id: string, staff: KcplStaffContext = ALL_BRANCH_CONTEXT, now = Date.now()): CrmCustomerFinanceSnapshot | null {
+  const account = mockCrmAccount(id, staff, now);
+  if (!account) return null;
+
+  // Derived from the account's own totals so the 360 header, the finance panel
+  // and the CRM list cannot state three different revenue figures.
+  const revenue = account.revenue_total;
+  const cost = account.cost_total;
+  const profit = account.profit_total;
+  const collected = Math.round(revenue * 0.72);
+  const outstanding = revenue - collected;
+  const overdue = Math.round(outstanding * 0.34);
+
+  return {
+    currency: account.preferred_currency,
+    revenue_total: revenue,
+    cost_total: cost,
+    profit_total: profit,
+    gross_margin_percent: revenue > 0 ? Math.round((profit / revenue) * 10000) / 100 : 0,
+    collected_total: collected,
+    outstanding_total: outstanding,
+    overdue_total: overdue,
+    invoice_count: account.quote_count + 2,
+    open_invoice_count: 3,
+    overdue_invoice_count: overdue > 0 ? 1 : 0,
+    draft_invoice_count: 1,
+    oldest_overdue_days: overdue > 0 ? 18 : null,
+    other_currency_invoice_count: 0,
+    other_currency_cost_count: 0,
+    integrity_warning_count: 0,
+    generated_at: iso(now, 0),
+  };
+}

@@ -105,6 +105,19 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/rating/tms-rating.server.ts",
     "app/admin/consolidation/tms-consolidation.server.ts",
     "app/admin/management/management.server.ts",
+    // Digital Job File
+    "app/admin/shipment-access.server.ts",
+    "app/admin/job-file.server.ts",
+    "app/admin/workflow-guard.server.ts",
+    "app/admin/shipment-activity.server.ts",
+    "app/admin/shipment-exceptions.server.ts",
+    // Customer 360
+    "app/admin/crm/crm-access.server.ts",
+    "app/admin/crm/crm-quote-links.server.ts",
+    "app/admin/crm/crm-operations-history.server.ts",
+    "app/admin/crm/crm-rate-cards.server.ts",
+    "app/admin/crm/crm-customer-documents.server.ts",
+    "app/admin/crm/crm-customer-finance.server.ts",
   ];
   for (const path of loaders) {
     const text = source(path);

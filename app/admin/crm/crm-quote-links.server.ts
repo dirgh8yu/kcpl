@@ -1,3 +1,4 @@
+import { mockCrmQuoteLinks, qaMockDataEnabled } from "../qa-fixtures.ts";
 import type { DocumentSnapshot } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { canMutateBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
@@ -83,6 +84,7 @@ function quoteFromDoc(id: string, data: Record<string, unknown>, customerId: str
 }
 
 export async function listCrmQuoteLinks(customerId: string, context?: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockCrmQuoteLinks(customerId, context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const id = customerId.trim().toUpperCase();

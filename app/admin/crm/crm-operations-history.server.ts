@@ -1,3 +1,4 @@
+import { mockCrmOperationsHistory, qaMockDataEnabled } from "../qa-fixtures.ts";
 import type { DocumentSnapshot } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
@@ -67,6 +68,7 @@ function shipmentVisible(snapshot: DocumentSnapshot, context?: KcplStaffContext)
 }
 
 export async function listCrmOperationsHistory(customerId: string, context?: KcplStaffContext): Promise<CrmOperationsHistory | null> {
+  if (qaMockDataEnabled()) return mockCrmOperationsHistory(customerId, context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
   const id = customerId.trim().toUpperCase();

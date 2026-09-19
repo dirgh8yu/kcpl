@@ -1,3 +1,4 @@
+import { mockCrmRateCards, qaMockDataEnabled } from "../qa-fixtures.ts";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, type CrmCurrency } from "./crm-data";
@@ -73,6 +74,7 @@ async function customerRef(customerId: string) {
 }
 
 export async function listCrmRateCards(customerId: string) {
+  if (qaMockDataEnabled()) return mockCrmRateCards(customerId);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const customer = await customerRef(customerId);
   if (!customer) return { kind: "missing" as const };
