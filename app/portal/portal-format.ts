@@ -1,5 +1,5 @@
-import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types";
-import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types";
+import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types.ts";
+import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types.ts";
 
 export const portalModeLabels: Record<string, string> = {
   air: "Air freight",

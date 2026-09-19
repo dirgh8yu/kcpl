@@ -4,6 +4,9 @@ import {
   portalCanUploadDocumentType,
   PORTAL_UPLOAD_MAX_BYTES,
 } from "../../../../portal/portal-access-policy";
+import { createDirectNotification } from "../../../../admin/notifications/notification-centre.server";
+import { firebaseAdminDb } from "../../../../firebase-admin.server";
+import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../../../shipment-document-types";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { validateShipmentDocumentBytes } from "../../../../shipment-document-policy";
 import { uploadShipmentDocument } from "../../../../shipment-documents.server";
@@ -70,6 +73,37 @@ async function authorize(request: Request, reference: string): Promise<
   return { session: access.session, normalized };
 }
 
+/**
+ * Put an inbound customer document in front of the person who owns the job.
+ *
+ * Without this the file waits in the Document Vault for someone to notice it,
+ * which is the failure mode the whole feature exists to remove. An unassigned
+ * shipment has nobody to tell; the vault's "From customers" filter is the
+ * backstop for those.
+ */
+async function notifyAssignedOperator(reference: string, documentType: string, customerName: string, filename: string) {
+  try {
+    const shipment = await firebaseAdminDb().collection("shipments").doc(reference).get();
+    const targetEmail = typeof shipment.get("job_assigned_to_email") === "string" ? shipment.get("job_assigned_to_email") as string : "";
+    if (!targetEmail.trim()) return;
+    const label = shipmentDocumentTypeLabels[documentType as ShipmentDocumentType] ?? "Document";
+    await createDirectNotification({
+      targetEmail,
+      targetName: typeof shipment.get("job_assigned_to_name") === "string" ? shipment.get("job_assigned_to_name") as string : null,
+      category: "documents",
+      severity: "info",
+      title: `${label} received from ${customerName}`,
+      detail: `${filename} arrived through the customer portal and is waiting for review on ${reference}.`,
+      actionPath: `/admin/documents?q=${encodeURIComponent(reference)}`,
+      parentReference: reference,
+      sourceType: "operational",
+      sourceId: reference,
+    });
+  } catch (error) {
+    console.error("KCPL portal upload notification failed", error);
+  }
+}
+
 export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
   const { reference } = await context.params;
   const auth = await authorize(request, reference);
@@ -133,6 +167,11 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       return json({ ok: true, duplicate: true, message: "KCPL already has this exact file for this shipment." }, 200);
     }
     if (result.kind !== "created") return json({ ok: false, error: "The document could not be sent." }, 500);
+
+    // The document is stored; telling the operator is a courtesy on top of it.
+    // A notification failure must not turn a successful upload into an error
+    // the customer is asked to retry, so it is awaited but never thrown.
+    await notifyAssignedOperator(auth.normalized, documentType, auth.session.customerName, file.name);
 
     return json({ ok: true, message: "Sent to KCPL. It will show as confirmed once the team has checked it." }, 201);
   } catch (error) {

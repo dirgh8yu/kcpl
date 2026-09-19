@@ -3,6 +3,7 @@ import { evaluateFreightAutomation } from "../../../admin/alerts/freight-automat
 import { dispatchAllAssignmentEmails } from "../../../admin/notifications/assignment-email.server";
 import { dispatchPendingAlertEmails } from "../../../admin/notifications/notification-email.server";
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
+import { dispatchPortalNotifications } from "../../../portal/portal-notifications.server";
 import { automationMachineAuthorized } from "../../../machine-auth-policy";
 
 function json(body: unknown, status = 200) {
@@ -21,9 +22,13 @@ export async function POST(request: Request) {
       evaluateFreightAutomation(),
     ]);
     if (result.kind !== "completed" || payables.kind !== "completed" || freight.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
-    const [alertEmails, assignmentEmails] = await Promise.all([
+    const [alertEmails, assignmentEmails, portalEmails] = await Promise.all([
       dispatchPendingAlertEmails(),
       dispatchAllAssignmentEmails(),
+      // Customer-facing, and deliberately last in the fan-out: a portal
+      // notification failure must never mask a staff alert or an automation
+      // result, so its own errors stay inside its dispatcher.
+      dispatchPortalNotifications(),
     ]);
     return json({
       ok: true,
@@ -35,6 +40,8 @@ export async function POST(request: Request) {
         automatic_tasks_reopened: freight.tasks_reopened,
         automatic_tasks_completed: freight.tasks_auto_completed,
         notification_emails_sent: (alertEmails.sent ?? 0) + assignmentEmails.sent,
+        portal_emails_sent: portalEmails.kind === "completed" ? portalEmails.sent : 0,
+        portal_shipments_watched: portalEmails.kind === "completed" ? portalEmails.watched : 0,
       },
     });
   } catch (error) {

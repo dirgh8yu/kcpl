@@ -2,6 +2,11 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { isAllowedAdminEmail } from "../admin/admin-auth";
 import { staffProfileByEmail } from "../admin/staff-directory.server";
 import {
+  portalNotificationPreferences,
+  portalNotificationTopics,
+  type PortalNotificationPreferences,
+} from "./portal-notifications";
+import {
   decidePortalAccess,
   normalizePortalEmail,
   portalAccountKey,
@@ -122,6 +127,45 @@ async function bindPortalAccountUid(email: string, uid: string) {
   } catch (error) {
     console.error("KCPL portal uid binding failed", error);
     return false;
+  }
+}
+
+/** A customer's own notification settings, read for their session only. */
+export async function getPortalNotificationPreferences(email: string): Promise<PortalNotificationPreferences | null> {
+  if (!firebaseRuntimeConfigured()) return null;
+  try {
+    const snapshot = await firebaseAdminDb().collection(PORTAL_ACCOUNTS).doc(portalAccountKey(email)).get();
+    if (!snapshot.exists) return null;
+    return portalNotificationPreferences(snapshot.data() as Record<string, unknown>);
+  } catch (error) {
+    console.error("KCPL portal notification preference read failed", error);
+    return null;
+  }
+}
+
+/**
+ * Save a customer's notification settings.
+ *
+ * Scoped to the signed-in account's own record: the email comes from the
+ * session, never from the request body, so one portal user cannot silence
+ * another's notifications.
+ */
+export async function savePortalNotificationPreferences(email: string, preferences: PortalNotificationPreferences) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const key = portalAccountKey(email);
+  if (!key) return { kind: "missing" as const };
+  try {
+    const reference = firebaseAdminDb().collection(PORTAL_ACCOUNTS).doc(key);
+    const snapshot = await reference.get();
+    if (!snapshot.exists) return { kind: "missing" as const };
+    await reference.update({
+      notification_preferences: Object.fromEntries(portalNotificationTopics.map((topic) => [topic, preferences[topic] === true])),
+      updated_at: new Date().toISOString(),
+    });
+    return { kind: "saved" as const };
+  } catch (error) {
+    console.error("KCPL portal notification preference save failed", error);
+    return { kind: "unavailable" as const };
   }
 }
 

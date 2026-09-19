@@ -1,0 +1,158 @@
+import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types.ts";
+import { portalModeLabel } from "./portal-format.ts";
+
+/*
+ * Customer notification policy.
+ *
+ * Pure, like the access policy: what a customer is told, when, and in what
+ * words is decided here so it can be tested without a mail provider.
+ *
+ * Two rules this module exists to keep:
+ *
+ *   1. A notification says no more than the portal itself would show. The copy
+ *      builder takes a fixed set of operational fields and has no route to a
+ *      rate, a margin, a supplier or an internal note -- an email cannot leak
+ *      what the screen already redacts.
+ *   2. Nothing is sent twice. Every message carries a deterministic key derived
+ *      from the fact that caused it, so a re-run of the scheduled sweep
+ *      recognises what it already sent rather than mailing the customer again.
+ */
+
+export const portalNotificationTopics = ["shipment_updates", "documents"] as const;
+export type PortalNotificationTopic = (typeof portalNotificationTopics)[number];
+
+export const portalNotificationTopicLabels: Record<PortalNotificationTopic, string> = {
+  shipment_updates: "Shipment milestones",
+  documents: "Document requests and releases",
+};
+
+export const portalNotificationTopicHints: Record<PortalNotificationTopic, string> = {
+  shipment_updates: "When a shipment is booked, moves, clears customs, is out for delivery or is delivered.",
+  documents: "When KCPL needs paperwork from you, or releases a document to your account.",
+};
+
+export type PortalNotificationPreferences = Record<PortalNotificationTopic, boolean>;
+
+/**
+ * Absent preferences mean subscribed. A customer who was given portal access
+ * expects to hear about their own cargo; silence is the surprising default, and
+ * every topic is switchable from the portal itself.
+ */
+export function portalNotificationPreferences(record: Record<string, unknown> | null | undefined): PortalNotificationPreferences {
+  const stored = record && typeof record.notification_preferences === "object" && record.notification_preferences
+    ? record.notification_preferences as Record<string, unknown>
+    : {};
+  return {
+    shipment_updates: stored.shipment_updates !== false,
+    documents: stored.documents !== false,
+  };
+}
+
+export function portalNotificationTopicValue(value: unknown): PortalNotificationTopic | null {
+  return portalNotificationTopics.includes(value as PortalNotificationTopic) ? value as PortalNotificationTopic : null;
+}
+
+/**
+ * Statuses worth an email. `preparing` is deliberately excluded: it is an
+ * internal readiness step that changes nothing the customer can act on, and a
+ * notification that teaches people to ignore notifications is worse than none.
+ */
+const notifiableStatuses = new Set<string>([
+  "booking_confirmed",
+  "in_transit",
+  "customs_clearance",
+  "out_for_delivery",
+  "delivered",
+  "exception",
+]);
+
+export function portalNotifiableStatusChange(previous: string | null, next: string) {
+  if (!notifiableStatuses.has(next)) return false;
+  // The first observation of a shipment is not news: the sweep would otherwise
+  // mail a customer about every shipment already on their account the day
+  // notifications are switched on.
+  if (previous === null) return false;
+  return previous !== next;
+}
+
+/** Deterministic, so a repeated sweep recognises what it already sent. */
+export function portalNotificationKey(input: { topic: PortalNotificationTopic; reference: string; fact: string; recipient: string }) {
+  return `portal:${input.topic}:${input.reference}:${input.fact}:${input.recipient.trim().toLowerCase()}`;
+}
+
+export type PortalMilestoneMessage = {
+  subject: string;
+  text: string;
+  html: string;
+};
+
+export type PortalMilestoneFacts = {
+  reference: string;
+  status: string;
+  mode: string;
+  origin: string;
+  destination: string;
+  eta: string | null;
+  currentLocation: string | null;
+  customerName: string;
+  portalUrl: string;
+};
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] || character);
+}
+
+function statusSentence(status: string, facts: PortalMilestoneFacts) {
+  if (status === "delivered") return "This shipment has been delivered.";
+  if (status === "exception") return "KCPL has flagged an issue on this shipment and is working on it.";
+  if (status === "out_for_delivery") return "The cargo is out for final delivery.";
+  if (status === "customs_clearance") return "The cargo is in customs clearance.";
+  if (status === "in_transit") return facts.currentLocation
+    ? `The cargo is in transit, last reported at ${facts.currentLocation}.`
+    : "The cargo is in transit.";
+  return "KCPL has confirmed the booking for this shipment.";
+}
+
+/**
+ * Build the milestone email.
+ *
+ * The input type is the whole contract: operational facts only. There is no
+ * parameter here through which a price, a cost, a supplier or a staff note
+ * could reach a customer's inbox.
+ */
+export function portalMilestoneMessage(facts: PortalMilestoneFacts): PortalMilestoneMessage {
+  const statusLabel = shipmentStatusLabels[facts.status as ShipmentStatus] ?? "Shipment update";
+  const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
+  const subject = `${facts.reference} · ${statusLabel}`;
+
+  const lines = [
+    statusSentence(facts.status, facts),
+    "",
+    `Shipment: ${facts.reference}`,
+    `Route: ${lane}`,
+    `Mode: ${portalModeLabel(facts.mode)}`,
+    `Status: ${statusLabel}`,
+  ];
+  if (facts.eta) lines.push(`Estimated arrival: ${facts.eta.slice(0, 10)}`);
+  lines.push("", `Track it in your KCPL portal: ${facts.portalUrl}`, "",
+    "You can turn these emails off in the portal under Notifications.");
+
+  const html = [
+    `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">Kapileshwor Cargo</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(statusLabel)}</h2>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(statusSentence(facts.status, facts))}</p>`,
+    `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Shipment</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Route</td><td>${escapeHtml(lane)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Mode</td><td>${escapeHtml(portalModeLabel(facts.mode))}</td></tr>`,
+    facts.eta ? `<tr><td style="color:#5C6675;padding-right:12px">Estimated arrival</td><td>${escapeHtml(facts.eta.slice(0, 10))}</td></tr>` : "",
+    `</table>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">Open the shipment</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. You can turn these emails off in the portal under Notifications.</p>`,
+    `</div>`,
+  ].join("");
+
+  return { subject, text: lines.join("\n"), html };
+}
