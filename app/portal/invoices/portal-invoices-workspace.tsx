@@ -76,7 +76,9 @@ export function PortalInvoicesWorkspace({
                     {invoices.map((invoice) => (
                       <tr key={invoice.reference}>
                         <td>
-                          <OpsMono>{invoice.external_invoice_number ?? invoice.reference}</OpsMono>
+                          <Link href={`/portal/invoices/${encodeURIComponent(invoice.reference)}`} className="portal-row-link">
+                            <OpsMono>{invoice.external_invoice_number ?? invoice.reference}</OpsMono>
+                          </Link>
                           {invoice.record_type === "opening_balance"
                             ? <span className="portal-cell-detail">Opening balance</span>
                             : null}

@@ -45,6 +45,7 @@ import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsSurface } from "../../operations-ui";
+import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
 
 function dateLabel(value: string | null) {
   if (!value) return "Not set";
@@ -88,6 +89,8 @@ export function JobFileWorkspace({
   currentUserName,
   currentUserEmail,
   nowIso,
+  freeTime,
+  canManageJobFile,
 }: {
   initialJob: DigitalJobFile;
   initialReadiness: ShipmentWorkflowReadiness;
@@ -98,6 +101,8 @@ export function JobFileWorkspace({
   currentUserName: string;
   currentUserEmail: string;
   nowIso: string;
+  freeTime: FreeTimePanelData | null;
+  canManageJobFile: boolean;
 }) {
   const [job, setJob] = useState(initialJob);
   const [workflow, setWorkflow] = useState(initialReadiness);
@@ -395,6 +400,7 @@ export function JobFileWorkspace({
           </div>
 
           <aside className="ops-stack xl:sticky xl:top-[76px]">
+            <FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/>
             <OpsSurface id="shipment-movement" eyebrow="Shipment identity" title={job.customer_name || "Unlinked customer"} description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}>
               <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <Fact icon={<UserRound size={12}/>} label="Customer" value={job.customer_name || "Not linked"}/><Fact label="Quote" value={job.quote_reference} mono/><Fact label="Mode" value={job.mode || "Not set"}/><Fact label="Carrier" value={job.carrier || "Not assigned"}/><Fact label="Carrier ref" value={job.carrier_reference || "Not assigned"} mono/><Fact icon={<MapPin size={12}/>} label="Current location" value={job.current_location || "Not updated"}/><Fact icon={<Landmark size={12}/>} label="Primary branch" value={<Link href={`/admin/branches/${encodeURIComponent(job.primary_branch)}`} className="hover:text-[var(--admin-crimson)] hover:underline">{job.primary_branch}</Link>}/>

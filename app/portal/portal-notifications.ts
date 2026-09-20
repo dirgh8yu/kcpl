@@ -19,17 +19,19 @@ import { portalDocumentLabel, portalModeLabel } from "./portal-format.ts";
  *      recognises what it already sent rather than mailing the customer again.
  */
 
-export const portalNotificationTopics = ["shipment_updates", "documents"] as const;
+export const portalNotificationTopics = ["shipment_updates", "documents", "free_time"] as const;
 export type PortalNotificationTopic = (typeof portalNotificationTopics)[number];
 
 export const portalNotificationTopicLabels: Record<PortalNotificationTopic, string> = {
   shipment_updates: "Shipment milestones",
   documents: "Document requests and releases",
+  free_time: "Free time running out",
 };
 
 export const portalNotificationTopicHints: Record<PortalNotificationTopic, string> = {
   shipment_updates: "When a shipment is booked, moves, clears customs, is out for delivery or is delivered.",
   documents: "When KCPL needs paperwork from you, or releases a document to your account.",
+  free_time: "Before storage or demurrage charges start on cargo at a port or depot.",
 };
 
 export type PortalNotificationPreferences = Record<PortalNotificationTopic, boolean>;
@@ -46,6 +48,7 @@ export function portalNotificationPreferences(record: Record<string, unknown> | 
   return {
     shipment_updates: stored.shipment_updates !== false,
     documents: stored.documents !== false,
+    free_time: stored.free_time !== false,
   };
 }
 
@@ -159,6 +162,67 @@ export function portalDocumentReleaseMessage(facts: PortalDocumentReleaseFacts):
     `</table>`,
     `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">Download the document</a></p>`,
     `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. You can turn these emails off in the portal under Notifications.</p>`,
+    `</div>`,
+  ].join("");
+
+  return { subject, text, html };
+}
+
+export type PortalFreeTimeFacts = {
+  reference: string;
+  origin: string;
+  destination: string;
+  location: string | null;
+  daysRemaining: number;
+  deadline: string | null;
+  customerName: string;
+  portalUrl: string;
+};
+
+/**
+ * The free-time warning.
+ *
+ * Deliberately blunt about the consequence, because a countdown that does not
+ * say what happens at zero is just a date. It never states a charge amount: the
+ * rate KCPL records is what the carrier quoted, not an invoice, and putting a
+ * number in an inbox would read as one.
+ */
+export function portalFreeTimeMessage(facts: PortalFreeTimeFacts): PortalMilestoneMessage {
+  const place = facts.location ? ` at ${facts.location}` : "";
+  const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
+  const headline = facts.daysRemaining === 0
+    ? `Today is the last free day${place}`
+    : facts.daysRemaining === 1
+      ? `1 free day left${place}`
+      : `${facts.daysRemaining} free days left${place}`;
+  const subject = `${facts.reference} · ${headline}`;
+
+  const text = [
+    `${headline}.`,
+    "",
+    "Once free time ends, the carrier or terminal may charge storage and demurrage for each day the cargo stays.",
+    "",
+    `Shipment: ${facts.reference}`,
+    `Route: ${lane}`,
+    facts.deadline ? `Last free day: ${facts.deadline}` : "",
+    "",
+    `See the shipment: ${facts.portalUrl}`,
+    "",
+    "Contact your KCPL account manager if you need an extension.",
+  ].filter((line, index, lines) => line !== "" || lines[index - 1] !== "").join("\n");
+
+  const html = [
+    `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">Kapileshwor Cargo</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(headline)}</h2>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">Once free time ends, the carrier or terminal may charge storage and demurrage for each day the cargo stays.</p>`,
+    `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Shipment</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Route</td><td>${escapeHtml(lane)}</td></tr>`,
+    facts.deadline ? `<tr><td style="color:#5C6675;padding-right:12px">Last free day</td><td>${escapeHtml(facts.deadline)}</td></tr>` : "",
+    `</table>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">See the shipment</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. Contact your account manager if you need an extension. You can turn these emails off in the portal under Notifications.</p>`,
     `</div>`,
   ].join("");
 

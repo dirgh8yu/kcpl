@@ -21,6 +21,13 @@ import {
   type PortalShipmentView,
 } from "./portal-access-policy";
 import type { PortalSession } from "./portal-auth";
+import {
+  freeTimeNeedsAttention,
+  freeTimeStatus,
+  shipmentFreeTimeFromRecord,
+  type FreeTimeStatus,
+  type ShipmentFreeTime,
+} from "../shipment-free-time";
 
 /*
  * Every reader in this module takes the resolved session and scopes its query
@@ -79,21 +86,39 @@ async function loadCustomerShipments(customerId: string) {
     });
   }
 
-  return shipments.sort(byUpdatedDescending);
+  const records = new Map<string, Record<string, unknown>>();
+  snapshot.docs.forEach((document) => records.set(document.id, document.data() as Record<string, unknown>));
+
+  return { shipments: shipments.sort(byUpdatedDescending), records };
 }
 
 export async function listPortalShipments(session: PortalSession): Promise<Unavailable | { kind: "ready"; shipments: PortalShipmentView[] }> {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
   try {
-    return { kind: "ready", shipments: await loadCustomerShipments(session.customerId) };
+    const { shipments } = await loadCustomerShipments(session.customerId);
+    return { kind: "ready", shipments };
   } catch (error) {
     console.error("KCPL portal shipment listing failed", error);
     return { kind: "unavailable" };
   }
 }
 
+export type PortalFreeTimeView = {
+  freeTime: ShipmentFreeTime;
+  status: FreeTimeStatus;
+};
+
+export type PortalDeliveryConfirmation = {
+  confirmed_at: string;
+  received_by: string | null;
+};
+
 export type PortalShipmentDetail = {
   shipment: PortalShipmentView;
+  /** This account's own confirmation of receipt, when it has given one. */
+  confirmation: PortalDeliveryConfirmation | null;
+  /** Null when KCPL has not recorded an allowance for this shipment. */
+  freeTime: PortalFreeTimeView | null;
   events: PortalShipmentEventView[];
   /** Released by KCPL, plus the customer's own submissions. */
   documents: PortalDocumentRow[];
@@ -115,7 +140,11 @@ export async function getPortalShipment(session: PortalSession, reference: strin
     // would confirm that the reference exists.
     if (!snapshot.exists || String(snapshot.get("customer_id") ?? "") !== session.customerId) return { kind: "missing" };
 
-    const shipment = portalShipmentView(normalized, snapshot.data() as Record<string, unknown>);
+    const record = snapshot.data() as Record<string, unknown>;
+    const freeTime = shipmentFreeTimeFromRecord(record);
+    const freeTimeState = freeTimeStatus(freeTime, new Date().toISOString().slice(0, 10));
+
+    const shipment = portalShipmentView(normalized, record);
     if (!shipment.origin) {
       const quoteReference = String(snapshot.get("quote_reference") ?? "").trim();
       if (quoteReference) {
@@ -128,10 +157,12 @@ export async function getPortalShipment(session: PortalSession, reference: strin
       }
     }
 
-    const [eventSnapshot, documents, requirementSnapshot] = await Promise.all([
+    const confirmationId = `${session.email.replace(/[^a-z0-9]+/gi, "-")}`.slice(0, 120);
+    const [eventSnapshot, documents, requirementSnapshot, confirmationSnapshot] = await Promise.all([
       snapshot.ref.collection("events").orderBy("event_time", "desc").limit(200).get(),
       listShipmentDocuments(normalized),
       snapshot.ref.collection("document_requirements").limit(100).get(),
+      snapshot.ref.collection("customer_confirmations").doc(confirmationId).get(),
     ]);
 
     const documentRecords = documents.kind === "ready"
@@ -142,6 +173,13 @@ export async function getPortalShipment(session: PortalSession, reference: strin
       kind: "ready",
       detail: {
         shipment,
+        confirmation: confirmationSnapshot.exists ? {
+          confirmed_at: String(confirmationSnapshot.get("created_at") ?? ""),
+          received_by: typeof confirmationSnapshot.get("received_by") === "string" ? confirmationSnapshot.get("received_by") as string : null,
+        } : null,
+        // The internal note stays out: it is KCPL's working context, not copy
+        // written for a customer.
+        freeTime: freeTimeState.state === "not_set" ? null : { freeTime: { ...freeTime, note: null }, status: freeTimeState },
         events: eventSnapshot.docs.map((document) =>
           portalShipmentEventView(document.data() as Record<string, unknown>, document.id)),
         documents: documentRecords
@@ -174,7 +212,7 @@ export async function listPortalDocuments(session: PortalSession): Promise<
 > {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
   try {
-    const shipments = await loadCustomerShipments(session.customerId);
+    const { shipments } = await loadCustomerShipments(session.customerId);
     const scanned = shipments.slice(0, DOCUMENT_SHIPMENT_LIMIT);
     const results = await Promise.all(scanned.map(async (shipment) => {
       const listing = await listShipmentDocuments(shipment.reference);
@@ -274,6 +312,38 @@ export async function listPortalInvoices(session: PortalSession): Promise<
   }
 }
 
+export async function getPortalInvoice(session: PortalSession, reference: string): Promise<
+  Unavailable | { kind: "forbidden" } | { kind: "missing" } | { kind: "ready"; invoice: PortalInvoiceView }
+> {
+  if (!session.capabilities.canViewFinance) return { kind: "forbidden" };
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
+  const normalized = reference.trim().toUpperCase();
+  if (!normalized) return { kind: "missing" };
+  try {
+    const snapshot = await firebaseAdminDb().collection("invoices").doc(normalized).get();
+    // Scope from the session, and someone else's invoice reads as missing.
+    if (!snapshot.exists || String(snapshot.get("customer_id") ?? "") !== session.customerId) return { kind: "missing" };
+    const record = { ...(snapshot.data() as Record<string, unknown>), reference: snapshot.id };
+    if (!portalInvoiceVisible(record)) return { kind: "missing" };
+    return { kind: "ready", invoice: portalInvoiceView(record) };
+  } catch (error) {
+    console.error("KCPL portal invoice read failed", error);
+    return { kind: "unavailable" };
+  }
+}
+
+/** Ownership check for the remittance routes, before any bytes move. */
+export async function portalOwnsInvoice(session: PortalSession, reference: string) {
+  if (!session.capabilities.canViewFinance || !firebaseRuntimeConfigured()) return false;
+  try {
+    const snapshot = await firebaseAdminDb().collection("invoices").doc(reference.trim().toUpperCase()).get();
+    return snapshot.exists && String(snapshot.get("customer_id") ?? "") === session.customerId;
+  } catch (error) {
+    console.error("KCPL portal invoice ownership check failed", error);
+    return false;
+  }
+}
+
 export async function listPortalQuotes(session: PortalSession): Promise<
   Unavailable | { kind: "ready"; quotes: PortalQuoteView[]; requests: PortalQuoteView[] }
 > {
@@ -317,9 +387,19 @@ export type PortalOverview = {
   /** Shipments with required paperwork the customer can still supply. */
   outstanding: PortalOutstandingDocuments[];
   outstandingCount: number;
+  /** Free-time clocks running out, soonest first. */
+  freeTime: PortalFreeTimeRow[];
   finance: PortalFinanceSummary | null;
   quoteCount: number;
   requestCount: number;
+};
+
+export type PortalFreeTimeRow = {
+  reference: string;
+  origin: string;
+  destination: string;
+  location: string | null;
+  status: FreeTimeStatus;
 };
 
 export type PortalOutstandingDocuments = {
@@ -332,14 +412,14 @@ export type PortalOutstandingDocuments = {
 export async function getPortalOverview(session: PortalSession): Promise<Unavailable | { kind: "ready"; overview: PortalOverview }> {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
   try {
-    const [shipmentResult, invoiceResult, quoteResult] = await Promise.all([
-      listPortalShipments(session),
+    const [shipmentSource, invoiceResult, quoteResult] = await Promise.all([
+      loadCustomerShipments(session.customerId),
       listPortalInvoices(session),
       listPortalQuotes(session),
     ]);
-    if (shipmentResult.kind !== "ready") return { kind: "unavailable" };
 
-    const shipments = shipmentResult.shipments;
+    const shipments = shipmentSource.shipments;
+    const shipmentRecords = shipmentSource.records;
     const horizon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const today = new Date().toISOString().slice(0, 10);
 
@@ -368,6 +448,29 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
       };
     }));
 
+    // Free time rides on the shipment documents already read above, so the
+    // countdown costs no extra reads.
+    const freeTimeRows = shipments.length
+      ? shipments
+          .filter((shipment) => shipment.status !== "delivered")
+          .map((shipment) => {
+            const record = shipmentRecords.get(shipment.reference);
+            if (!record) return null;
+            const freeTime = shipmentFreeTimeFromRecord(record);
+            const status = freeTimeStatus(freeTime, today);
+            if (!freeTimeNeedsAttention(status)) return null;
+            return {
+              reference: shipment.reference,
+              origin: shipment.origin,
+              destination: shipment.destination,
+              location: freeTime.location,
+              status,
+            };
+          })
+          .filter((row): row is PortalFreeTimeRow => row !== null)
+          .sort((a, b) => a.status.daysRemaining - b.status.daysRemaining)
+      : [];
+
     const outstanding = documentResults
       .filter((entry) => entry.outstanding.length > 0)
       .map((entry) => ({
@@ -395,6 +498,7 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
           .slice(0, 6),
         outstanding,
         outstandingCount: outstanding.reduce((total, entry) => total + entry.rows.length, 0),
+        freeTime: freeTimeRows,
         finance: invoiceResult.kind === "ready" ? invoiceResult.summary : null,
         quoteCount: quoteResult.kind === "ready" ? quoteResult.quotes.length : 0,
         requestCount: quoteResult.kind === "ready" ? quoteResult.requests.length : 0,
