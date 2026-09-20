@@ -7,6 +7,11 @@ import {
   type PortalNotificationPreferences,
 } from "./portal-notifications";
 import {
+  decidePortalTeamChange,
+  type PortalTeamAction,
+  type PortalTeamDecision,
+} from "./portal-access-policy";
+import {
   decidePortalAccess,
   normalizePortalEmail,
   portalAccountKey,
@@ -128,6 +133,131 @@ async function bindPortalAccountUid(email: string, uid: string) {
     console.error("KCPL portal uid binding failed", error);
     return false;
   }
+}
+
+export type PortalTeamMember = {
+  email: string;
+  role: PortalRole;
+  active: boolean;
+  bound: boolean;
+  last_sign_in_at: string | null;
+  created_at: string;
+};
+
+/**
+ * The logins on one customer's account.
+ *
+ * Scoped by `customer_id` at the query, so a customer's team view can only
+ * ever be their own -- there is no code path here that returns another
+ * customer's accounts, whatever a caller passes.
+ */
+export async function listPortalTeam(customerId: string): Promise<PortalTeamMember[] | null> {
+  if (!firebaseRuntimeConfigured() || !customerId.trim()) return null;
+  try {
+    const snapshot = await firebaseAdminDb().collection(PORTAL_ACCOUNTS)
+      .where("customer_id", "==", customerId.trim())
+      .limit(50)
+      .get();
+    return snapshot.docs
+      .map((document) => {
+        const data = document.data() as Record<string, unknown>;
+        return {
+          email: normalizePortalEmail(data.email) || document.id,
+          role: portalRoleValue(data.role),
+          active: data.active === true,
+          bound: Boolean(nullable(data.uid)),
+          last_sign_in_at: nullable(data.last_sign_in_at),
+          created_at: text(data.created_at),
+        };
+      })
+      .sort((a, b) => a.role.localeCompare(b.role) || a.email.localeCompare(b.email));
+  } catch (error) {
+    console.error("KCPL portal team listing failed", error);
+    return null;
+  }
+}
+
+/**
+ * Apply an account owner's change to their own team.
+ *
+ * The customer id is the session's, never the request's. The decision itself
+ * is `decidePortalTeamChange`, which is pure and tested; this function only
+ * gathers the facts it needs and performs the write it allows.
+ */
+export async function applyPortalTeamChange(input: {
+  action: PortalTeamAction;
+  customerId: string;
+  customerName: string;
+  actorRole: PortalRole;
+  actorEmail: string;
+  targetEmail: string;
+}): Promise<
+  | { kind: "applied"; email: string }
+  | { kind: "denied"; decision: Extract<PortalTeamDecision, { kind: "denied" }> }
+  | { kind: "staff_email" }
+  | { kind: "unavailable" }
+> {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
+  const targetEmail = normalizePortalEmail(input.targetEmail);
+
+  let team: PortalTeamMember[] | null;
+  try {
+    team = await listPortalTeam(input.customerId);
+  } catch {
+    return { kind: "unavailable" };
+  }
+  if (!team) return { kind: "unavailable" };
+
+  const existing = team.find((member) => member.email === targetEmail) ?? null;
+  let target: { email: string; customer_id: string; role: PortalRole } | null = existing
+    ? { email: existing.email, customer_id: input.customerId, role: existing.role }
+    : null;
+
+  // An address already provisioned elsewhere is not on this team, so the
+  // listing above cannot see it. Look it up directly so the decision refuses
+  // it as another customer's rather than treating it as a free address.
+  if (!target && targetEmail) {
+    try {
+      const snapshot = await firebaseAdminDb().collection(PORTAL_ACCOUNTS).doc(portalAccountKey(targetEmail)).get();
+      if (snapshot.exists) {
+        const data = snapshot.data() as Record<string, unknown>;
+        target = {
+          email: normalizePortalEmail(data.email) || snapshot.id,
+          customer_id: text(data.customer_id).trim(),
+          role: portalRoleValue(data.role),
+        };
+      }
+    } catch (error) {
+      console.error("KCPL portal team target lookup failed", error);
+      return { kind: "unavailable" };
+    }
+  }
+
+  const decision = decidePortalTeamChange({
+    action: input.action,
+    actorRole: input.actorRole,
+    actorEmail: input.actorEmail,
+    targetEmail,
+    customerId: input.customerId,
+    target,
+    activeMemberCount: team.filter((member) => member.role === "member" && member.active).length,
+  });
+  if (decision.kind === "denied") return { kind: "denied", decision };
+
+  if (input.action === "invite") {
+    // Always a member: an owner cannot mint another owner.
+    const saved = await savePortalAccount(
+      { email: targetEmail, customerId: input.customerId, role: "member" },
+      { name: input.customerName, email: input.actorEmail },
+    );
+    if (saved.kind === "staff_email") return { kind: "staff_email" };
+    if (saved.kind !== "saved") return { kind: "unavailable" };
+    return { kind: "applied", email: targetEmail };
+  }
+
+  const result = await setPortalAccountActive(targetEmail, input.action === "enable", { email: input.actorEmail });
+  if (result.kind !== "saved") return { kind: "unavailable" };
+  return { kind: "applied", email: targetEmail };
 }
 
 /** A customer's own notification settings, read for their session only. */

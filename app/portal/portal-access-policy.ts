@@ -197,6 +197,98 @@ export function portalQuoteVisible(quote: Record<string, unknown>) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Customer-managed team
+ * ------------------------------------------------------------------ */
+
+/**
+ * How many member logins one customer may create for themselves.
+ *
+ * Not a licensing limit -- a blast radius. Each login is a door into that
+ * customer's shipments and documents, and an account owner adding colleagues
+ * without KCPL in the loop is exactly the convenience this exists for, so the
+ * ceiling is what stops a compromised owner account from minting doors
+ * indefinitely. KCPL can always provision beyond it from the staff side.
+ */
+export const PORTAL_TEAM_MEMBER_LIMIT = 10;
+
+export const portalTeamActions = ["invite", "enable", "disable"] as const;
+export type PortalTeamAction = (typeof portalTeamActions)[number];
+
+export const portalTeamDenialReasons = [
+  "not_owner",
+  "invalid_email",
+  "self",
+  "other_customer",
+  "owner_target",
+  "limit_reached",
+  "missing_target",
+] as const;
+export type PortalTeamDenialReason = (typeof portalTeamDenialReasons)[number];
+
+export type PortalTeamDecision =
+  | { kind: "allowed" }
+  | { kind: "denied"; reason: PortalTeamDenialReason };
+
+/**
+ * Decide whether an account owner may make this change to their own team.
+ *
+ * The rules, and why each exists:
+ *
+ * - **Owners only.** A member managing logins would make the access level
+ *   meaningless.
+ * - **Members only, never owners.** An owner cannot create another owner, nor
+ *   disable one. Who holds commercial authority over an account is KCPL's
+ *   decision, not a customer's, and it keeps one compromised owner from
+ *   locking the real one out.
+ * - **Never yourself.** Removing the last owner would strand the account with
+ *   nobody able to manage it.
+ * - **Own customer only.** The customer id comes from the session, and a
+ *   target that belongs elsewhere is refused rather than silently reassigned.
+ */
+export function decidePortalTeamChange(input: {
+  action: PortalTeamAction;
+  actorRole: PortalRole;
+  actorEmail: string;
+  targetEmail: string;
+  customerId: string;
+  /** The target's stored record, when one exists. */
+  target: { email: string; customer_id: string; role: PortalRole } | null;
+  activeMemberCount: number;
+}): PortalTeamDecision {
+  if (input.actorRole !== "owner") return { kind: "denied", reason: "not_owner" };
+
+  const targetEmail = normalizePortalEmail(input.targetEmail);
+  if (!targetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+    return { kind: "denied", reason: "invalid_email" };
+  }
+  if (targetEmail === normalizePortalEmail(input.actorEmail)) return { kind: "denied", reason: "self" };
+
+  if (input.target) {
+    if (input.target.customer_id !== input.customerId) return { kind: "denied", reason: "other_customer" };
+    if (input.target.role === "owner") return { kind: "denied", reason: "owner_target" };
+  } else if (input.action !== "invite") {
+    return { kind: "denied", reason: "missing_target" };
+  }
+
+  // Only a new or re-enabled login consumes a seat.
+  if ((input.action === "invite" && !input.target) || input.action === "enable") {
+    if (input.activeMemberCount >= PORTAL_TEAM_MEMBER_LIMIT) return { kind: "denied", reason: "limit_reached" };
+  }
+
+  return { kind: "allowed" };
+}
+
+export const portalTeamDenialMessages: Record<PortalTeamDenialReason, string> = {
+  not_owner: "Only an account owner can manage logins for this account.",
+  invalid_email: "Enter a valid email address.",
+  self: "You cannot change your own access. Contact your KCPL account manager.",
+  other_customer: "That address already has KCPL portal access under a different account.",
+  owner_target: "Account owners are managed by KCPL. Contact your account manager to change one.",
+  limit_reached: `This account has reached its limit of ${PORTAL_TEAM_MEMBER_LIMIT} team logins. Contact your KCPL account manager if you need more.`,
+  missing_target: "That login could not be found on this account.",
+};
+
+/* ------------------------------------------------------------------ *
  * Inbound documents
  * ------------------------------------------------------------------ */
 

@@ -159,6 +159,26 @@ lane, ETA, current location — and there is no parameter through which a rate, 
 a supplier or an internal note could reach a customer's inbox. Every interpolated value
 is HTML-escaped.
 
+### Released documents
+
+The sweep also mails a customer when KCPL releases a document to them, which is
+usually the thing they were actually waiting for. Three guards:
+
+- **The same release rules as the portal**, so an email can never point at a
+  document the recipient is not allowed to download.
+- **A baseline per shipment.** `documents_baseline_at` is stamped the first time
+  a shipment is swept, and only releases after it are notified — switching the
+  topic on never mails a customer their entire back catalogue of paperwork.
+- **Keyed by document id**, so a later re-review of the same document (an expiry
+  change, a re-verification) never mails about it twice.
+
+A document the customer sent themselves is never announced back to them.
+
+Documents live in a per-shipment subcollection, so checking them would cost a
+read per shipment per sweep. Releasing a document touches the shipment's
+`updated_at`, so the sweep compares that against `last_seen_updated_at` and
+skips the read entirely when nothing can have changed.
+
 ### Preferences
 
 `/portal/settings` lets each customer switch topics for **their own login**: the account
@@ -186,6 +206,31 @@ scoping. A "ask to proceed" on a quote writes a note and a namespaced
 `portal_booking_request` marker — it never sets a status, a price or a booking. Nothing
 in the portal touches the commercial authority chain (commercial versions, approvals,
 tenders, bookings, settlement).
+
+## Customer-managed team logins
+
+An account **owner** can invite colleagues from `/portal/settings` without going
+through KCPL — the phone call the portal exists to remove. The decision lives in
+`decidePortalTeamChange`, a pure function with its own tests, and the route
+supplies only session facts:
+
+- **Owners only.** A member managing logins would make the access level meaningless.
+- **Members only, never owners.** An owner cannot create or disable another owner.
+  Who holds commercial authority over an account is KCPL's decision, and it keeps
+  one compromised owner from locking the real one out.
+- **Never yourself**, so the last owner cannot strand the account.
+- **Own customer only.** The customer id comes from the session; an address already
+  provisioned under a different customer is refused rather than reassigned.
+- **A seat limit** (`PORTAL_TEAM_MEMBER_LIMIT`, currently 10). Not licensing — blast
+  radius: each login is a door into that customer's shipments, and the ceiling stops
+  a compromised owner minting them indefinitely. KCPL can provision beyond it from
+  the staff side.
+- Staff addresses are refused here exactly as they are in staff provisioning.
+
+The invited colleague receives the same Firebase password-reset invite, so KCPL
+never handles a customer password regardless of who did the inviting. If the
+invite cannot be sent the login is still created and the response says so, rather
+than leaving the owner believing mail went out.
 
 ## Provisioning (staff runbook)
 
@@ -236,12 +281,13 @@ in server routes only, exactly like the staff product.
 | `/portal/documents` | Released documents and the customer's own submissions, filterable by direction |
 | `/portal/invoices` | Issued invoices and balances (account owners) |
 | `/portal/requests` | New freight request, issued quotes, open requests |
-| `/portal/settings` | The customer's own notification preferences |
+| `/portal/settings` | Notification preferences, and team logins for account owners |
 | `POST /api/portal/session` | Mints the session cookie from a fresh, verified Firebase sign-in |
 | `GET /api/portal/documents/[reference]/[id]` | Download; ownership then release are checked before any bytes are read |
 | `POST /api/portal/documents/[reference]` | Customer upload against a shipment; lands unreviewed and unreleased |
 | `POST /api/portal/requests` | Customer-raised enquiry or "ask to proceed" |
 | `POST /api/portal/notifications` | Saves the signed-in account's notification topics |
+| `GET`/`POST /api/portal/team` | An account owner's own team logins (owners only) |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |
 
 Portal pages are `force-dynamic`, `no-store` and `robots: noindex`, and `/portal` is
@@ -270,8 +316,8 @@ excluded from public analytics and from the public site's mobile quote CTA.
 - **Email only.** WhatsApp is the channel most KCPL customers actually read; the
   dispatcher is written so a second transport can be added beside the mailer without
   touching the decision rules.
-- **No notification on document release.** The `documents` topic currently governs the
-  ops-side upload notification and is stored for customers, but the sweep does not yet
-  mail a customer when KCPL releases a document to them.
+- **Team invites depend on the same mail configuration.** Without a provider, an
+  account owner has to pass the one-time link to their colleague themselves, exactly
+  as KCPL staff do.
 - **Single customer per login.** A contact who buys through two KCPL customer records
   needs two portal accounts.

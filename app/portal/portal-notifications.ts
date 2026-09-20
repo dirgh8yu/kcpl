@@ -1,5 +1,6 @@
 import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types.ts";
-import { portalModeLabel } from "./portal-format.ts";
+import { portalDocumentReleased } from "./portal-access-policy.ts";
+import { portalDocumentLabel, portalModeLabel } from "./portal-format.ts";
 
 /*
  * Customer notification policy.
@@ -78,6 +79,90 @@ export function portalNotifiableStatusChange(previous: string | null, next: stri
 /** Deterministic, so a repeated sweep recognises what it already sent. */
 export function portalNotificationKey(input: { topic: PortalNotificationTopic; reference: string; fact: string; recipient: string }) {
   return `portal:${input.topic}:${input.reference}:${input.fact}:${input.recipient.trim().toLowerCase()}`;
+}
+
+/* ------------------------------------------------------------------ *
+ * Released documents
+ * ------------------------------------------------------------------ */
+
+/**
+ * When a document became the customer's to see.
+ *
+ * `reviewed_at` is written every time staff act on a document, which is what
+ * releasing one is; an unreviewed document falls back to its upload time.
+ */
+export function portalDocumentReleaseTime(document: Record<string, unknown>) {
+  const reviewed = typeof document.reviewed_at === "string" ? document.reviewed_at.trim() : "";
+  if (reviewed) return reviewed;
+  const uploaded = typeof document.uploaded_at === "string" ? document.uploaded_at.trim() : "";
+  return uploaded || null;
+}
+
+/**
+ * Whether a released document is worth an email.
+ *
+ * `baseline` is the moment this shipment first came under notification, and it
+ * is what stops switching the topic on from mailing a customer their entire
+ * back catalogue of paperwork. A document released before the portal started
+ * watching is already visible to them; only a new release is news.
+ *
+ * A document the customer sent themselves is never notified back to them.
+ */
+export function portalNotifiableDocumentRelease(input: {
+  document: Record<string, unknown>;
+  baseline: string | null;
+  now?: Date;
+}) {
+  if (!portalDocumentReleased(input.document, input.now ?? new Date())) return false;
+  if (input.document.uploaded_by_source === "customer_portal") return false;
+  if (!input.baseline) return false;
+  const released = portalDocumentReleaseTime(input.document);
+  return Boolean(released && released > input.baseline);
+}
+
+export type PortalDocumentReleaseFacts = {
+  reference: string;
+  documentType: string;
+  filename: string;
+  origin: string;
+  destination: string;
+  customerName: string;
+  portalUrl: string;
+};
+
+export function portalDocumentReleaseMessage(facts: PortalDocumentReleaseFacts): PortalMilestoneMessage {
+  const label = portalDocumentLabel(facts.documentType);
+  const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
+  const subject = `${facts.reference} · ${label} ready`;
+
+  const text = [
+    `KCPL has released the ${label.toLowerCase()} for this shipment. You can download it from your portal.`,
+    "",
+    `Shipment: ${facts.reference}`,
+    `Route: ${lane}`,
+    `Document: ${label}`,
+    "",
+    `Download it here: ${facts.portalUrl}`,
+    "",
+    "You can turn these emails off in the portal under Notifications.",
+  ].join("\n");
+
+  const html = [
+    `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">Kapileshwor Cargo</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(label)} ready</h2>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">KCPL has released the ${escapeHtml(label.toLowerCase())} for this shipment. You can download it from your portal.</p>`,
+    `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Shipment</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Route</td><td>${escapeHtml(lane)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">Document</td><td>${escapeHtml(label)}</td></tr>`,
+    `</table>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">Download the document</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. You can turn these emails off in the portal under Notifications.</p>`,
+    `</div>`,
+  ].join("");
+
+  return { subject, text, html };
 }
 
 export type PortalMilestoneMessage = {
