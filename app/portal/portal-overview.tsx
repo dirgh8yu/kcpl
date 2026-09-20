@@ -3,8 +3,6 @@ import { AlarmClock, AlertTriangle, ArrowRight, CalendarClock, FileText, FileUp,
 import {
   OpsBadge,
   OpsEmptyState,
-  OpsKpiCard,
-  OpsKpiStrip,
   OpsMetric,
   OpsMetricStrip,
   OpsMono,
@@ -13,6 +11,7 @@ import {
   OpsSurface,
   OpsTableWrap,
 } from "../admin/operations-ui";
+import { PortalKpiStrip } from "./portal-kpi";
 import type { PortalOverview as PortalOverviewData } from "./portal-data.server";
 import { freeTimeSummary } from "../shipment-free-time";
 import {
@@ -46,32 +45,37 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
-          <OpsKpiStrip>
-            <OpsKpiCard label="Active shipments" value={overview.activeCount} icon={<Package size={16} strokeWidth={1.75}/>} tone="accent"/>
-            <OpsKpiCard label="In transit" value={overview.inTransitCount} icon={<Truck size={16} strokeWidth={1.75}/>} tone="info"/>
-            <OpsKpiCard label="Arriving in 7 days" value={overview.arrivingCount} icon={<CalendarClock size={16} strokeWidth={1.75}/>} tone="neutral"/>
-            <OpsKpiCard
-              label="Free time running out"
-              value={overview.freeTime.length}
-              icon={<AlarmClock size={16} strokeWidth={1.75}/>}
-              tone={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : overview.freeTime.length ? "warning" : "success"}
-              detail={overview.freeTime.length ? "Clear these to avoid charges" : "No clocks close to expiry"}
-            />
-            <OpsKpiCard
-              label="Documents needed"
-              value={overview.outstandingCount}
-              icon={<FileUp size={16} strokeWidth={1.75}/>}
-              tone={overview.outstandingCount > 0 ? "warning" : "success"}
-              detail={overview.outstandingCount > 0 ? "KCPL is waiting on you" : "Nothing outstanding"}
-            />
-            <OpsKpiCard
-              label="Needs attention"
-              value={overview.attentionCount}
-              icon={<AlertTriangle size={16} strokeWidth={1.75}/>}
-              tone={overview.attentionCount > 0 ? "danger" : "success"}
-              detail={overview.attentionCount > 0 ? "KCPL is working on these" : "No exceptions raised"}
-            />
-          </OpsKpiStrip>
+          <PortalKpiStrip
+            items={[
+              { key: "active", icon: Package, label: "Active shipments", value: overview.activeCount, tone: "accent" },
+              { key: "in-transit", icon: Truck, label: "In transit", value: overview.inTransitCount, tone: "info" },
+              { key: "arriving", icon: CalendarClock, label: "Arriving in 7 days", value: overview.arrivingCount, tone: "neutral" },
+              {
+                key: "free-time",
+                icon: AlarmClock,
+                label: "Free time running out",
+                value: overview.freeTime.length,
+                tone: overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : overview.freeTime.length ? "warning" : "success",
+                detail: overview.freeTime.length ? "Clear these to avoid charges" : "No clocks close to expiry",
+              },
+              {
+                key: "documents",
+                icon: FileUp,
+                label: "Documents needed",
+                value: overview.outstandingCount,
+                tone: overview.outstandingCount > 0 ? "warning" : "success",
+                detail: overview.outstandingCount > 0 ? "KCPL is waiting on you" : "Nothing outstanding",
+              },
+              {
+                key: "attention",
+                icon: AlertTriangle,
+                label: "Needs attention",
+                value: overview.attentionCount,
+                tone: overview.attentionCount > 0 ? "danger" : "success",
+                detail: overview.attentionCount > 0 ? "KCPL is working on these" : "No exceptions raised",
+              },
+            ]}
+          />
 
           {overview.freeTime.length ? (
             <OpsSurface

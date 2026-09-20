@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing, Mail, ShieldCheck } from "lucide-react";
+import { BellRing, Mail, ShieldCheck, Users } from "lucide-react";
 import {
   OpsDetailGrid,
   OpsDetailItem,
@@ -10,6 +10,7 @@ import {
   OpsPageHeader,
   OpsSurface,
 } from "../../admin/operations-ui";
+import { PortalKpiStrip } from "../portal-kpi";
 import {
   portalNotificationTopicHints,
   portalNotificationTopicLabels,
@@ -66,6 +67,8 @@ export function PortalSettingsWorkspace({
     }
   }
 
+  const topicsOn = portalNotificationTopics.filter((topic) => preferences[topic]).length;
+
   return (
     <OpsPage>
       <OpsPageHeader
@@ -77,6 +80,43 @@ export function PortalSettingsWorkspace({
         <div className="ops-stack portal-stack">
           {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
           {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
+
+          <PortalKpiStrip
+            items={[
+              {
+                key: "topics",
+                icon: BellRing,
+                label: "Email topics on",
+                value: topicsOn,
+                tone: topicsOn > 0 ? "accent" : "neutral",
+                detail: `of ${portalNotificationTopics.length} KCPL can send you`,
+              },
+              {
+                key: "delivery",
+                icon: Mail,
+                label: "Email delivery",
+                value: emailConfigured ? "Active" : "Not switched on",
+                tone: emailConfigured ? "success" : "warning",
+                detail: emailConfigured ? "Notifications are being sent" : "Your choices are saved for later",
+              },
+              {
+                key: "access",
+                icon: ShieldCheck,
+                label: "Your access level",
+                value: portalRoleLabels[role],
+                tone: "info",
+                detail: customerName,
+              },
+              team ? {
+                key: "team",
+                icon: Users,
+                label: "Logins on this account",
+                value: team.length,
+                tone: "neutral",
+                detail: "You manage these as the account owner",
+              } : null,
+            ]}
+          />
 
           {!emailConfigured ? (
             <OpsNotice tone="warning">

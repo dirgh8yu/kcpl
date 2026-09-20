@@ -1,16 +1,15 @@
 import Link from "next/link";
-import { Receipt } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Receipt, Wallet } from "lucide-react";
 import {
   OpsBadge,
   OpsEmptyState,
-  OpsMetric,
-  OpsMetricStrip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
   OpsSurface,
   OpsTableWrap,
 } from "../../admin/operations-ui";
+import { PortalKpiStrip, type PortalKpiTone } from "../portal-kpi";
 import type { PortalInvoiceView } from "../portal-access-policy";
 import type { PortalFinanceSummary } from "../portal-data.server";
 import { portalDate, portalInvoiceStatusLabel, portalInvoiceTone, portalMoney } from "../portal-format";
@@ -22,6 +21,8 @@ export function PortalInvoicesWorkspace({
   invoices: PortalInvoiceView[];
   summary: PortalFinanceSummary;
 }) {
+  const settled = invoices.filter((invoice) => invoice.balance_due <= 0).length;
+
   return (
     <OpsPage>
       <OpsPageHeader
@@ -35,25 +36,41 @@ export function PortalInvoicesWorkspace({
       />
       <div className="ops-content">
         <div className="ops-stack portal-stack">
-          {summary.balances.length ? (
-            <OpsSurface
-              eyebrow="Account position"
-              title="Balances"
-              description="Totals are grouped by the currency each invoice was issued in; KCPL does not convert between them here."
-              priority={summary.overdueInvoices > 0 ? "warning" : "normal"}
-            >
-              <OpsMetricStrip columns={Math.min(4, Math.max(1, summary.balances.length))}>
-                {summary.balances.map((balance) => (
-                  <OpsMetric
-                    key={balance.currency}
-                    icon={<Receipt size={14} strokeWidth={1.75}/>}
-                    label={`${balance.currency} outstanding`}
-                    value={portalMoney(balance.outstanding, balance.currency)}
-                    detail={`${portalMoney(balance.invoiced, balance.currency)} invoiced · ${portalMoney(balance.paid, balance.currency)} receipted`}
-                  />
-                ))}
-              </OpsMetricStrip>
-            </OpsSurface>
+          <PortalKpiStrip
+            items={[
+              { key: "issued", icon: Receipt, label: "Invoices issued", value: invoices.length, tone: "accent" },
+              {
+                key: "open",
+                icon: FileText,
+                label: "Open invoices",
+                value: summary.openInvoices,
+                tone: summary.openInvoices > 0 ? "info" : "success",
+                detail: summary.openInvoices > 0 ? "Still carrying a balance" : "Nothing outstanding",
+              },
+              {
+                key: "overdue",
+                icon: AlertTriangle,
+                label: "Overdue",
+                value: summary.overdueInvoices,
+                tone: summary.overdueInvoices > 0 ? "danger" : "success",
+                detail: summary.overdueInvoices > 0 ? "Past the agreed due date" : "Nothing past its due date",
+              },
+              { key: "settled", icon: CheckCircle2, label: "Settled in full", value: settled, tone: "success" },
+              ...summary.balances.map((balance) => ({
+                key: `balance-${balance.currency}`,
+                icon: Wallet,
+                label: `${balance.currency} outstanding`,
+                value: portalMoney(balance.outstanding, balance.currency),
+                tone: (balance.overdue > 0 ? "danger" : balance.outstanding > 0 ? "warning" : "success") as PortalKpiTone,
+                detail: `${portalMoney(balance.invoiced, balance.currency)} invoiced · ${portalMoney(balance.paid, balance.currency)} receipted`,
+              })),
+            ]}
+          />
+
+          {summary.balances.length > 1 ? (
+            <p className="portal-footnote">
+              Balances are grouped by the currency each invoice was issued in; KCPL does not convert between them here.
+            </p>
           ) : null}
 
           <OpsSurface eyebrow="Billing" title="Issued invoices" flush>

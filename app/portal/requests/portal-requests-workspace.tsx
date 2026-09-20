@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Send, Tag } from "lucide-react";
+import { ClipboardCheck, Package, Send, Tag } from "lucide-react";
 import {
   OpsBadge,
   OpsButton,
@@ -16,6 +16,7 @@ import {
   OpsSurface,
   OpsTableWrap,
 } from "../../admin/operations-ui";
+import { PortalKpiStrip } from "../portal-kpi";
 import type { PortalQuoteView } from "../portal-access-policy";
 import type { PortalCapabilities } from "../portal-access-policy";
 import { portalDate, portalMoney } from "../portal-format";
@@ -113,6 +114,9 @@ export function PortalRequestsWorkspace({
     }
   }
 
+  const awaitingDecision = quotes.filter((quote) => !quote.shipment_reference).length;
+  const booked = quotes.length - awaitingDecision;
+
   return (
     <OpsPage>
       <OpsPageHeader
@@ -129,6 +133,29 @@ export function PortalRequestsWorkspace({
         <div className="ops-stack portal-stack">
           {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
           {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
+
+          <PortalKpiStrip
+            items={[
+              { key: "quotes", icon: Tag, label: "Quotes issued", value: quotes.length, tone: "accent" },
+              {
+                key: "awaiting",
+                icon: ClipboardCheck,
+                label: "Ready to book",
+                value: awaitingDecision,
+                tone: awaitingDecision > 0 ? "warning" : "success",
+                detail: awaitingDecision > 0 ? "Ask KCPL to proceed" : "No quotes waiting on you",
+              },
+              { key: "booked", icon: Package, label: "Booked from a quote", value: booked, tone: "success" },
+              {
+                key: "requests",
+                icon: Send,
+                label: "With KCPL to price",
+                value: requests.length,
+                tone: requests.length > 0 ? "info" : "success",
+                detail: requests.length > 0 ? "Being worked on now" : "Every request has been priced",
+              },
+            ]}
+          />
 
           {capabilities.canSubmitRequests ? (
             <OpsSurface

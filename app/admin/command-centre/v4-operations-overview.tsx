@@ -29,6 +29,7 @@ import {
   shipmentNeedsAttention,
   shipmentNextAction,
 } from "../shipments/shipment-queue-policy";
+import { AppKpiStrip } from "../kpi-strip";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
 import type { OperationalNote } from "./operational-notes.server";
@@ -198,18 +199,6 @@ function money(amount: number, currency: string) {
   } catch {
     return `${currency} ${Math.round(amount).toLocaleString("en-AU")}`;
   }
-}
-
-function Metric({ href, label, value, icon, tone }: { href: string; label: string; value: number; icon: ReactNode; tone: Tone }) {
-  return (
-    <Link href={href} className={styles.metric}>
-      <span className={styles.metricLabel}>
-        <span className={`${styles.metricDot} ${toneIconClass(tone)}`}>{icon}</span>
-        <span className={styles.metricLabelText}>{label}</span>
-      </span>
-      <strong className={styles.metricValue}>{value}</strong>
-    </Link>
-  );
 }
 
 function TodayItem({ href, label, value, icon, tone }: { href: string; label: string; value: number | null; icon: ReactNode; tone: Tone }) {
@@ -584,12 +573,17 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
       {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={16} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the Digital Job File before acting.</span></div> : null}
 
       <section className={styles.metrics} aria-label="Operational pulse">
-        <Metric href="/admin/shipments?attention=1" label="Requires attention" value={attentionShipments.length} tone="danger" icon={<AlertTriangle size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/customs" label="Customs pending" value={data.totals.customs_blockers} tone="warning" icon={<CircleAlert size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/alerts" label="Overdue" value={data.totals.overdue_tasks} tone="danger" icon={<Clock3 size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/delivery" label="Due today" value={data.totals.deliveries_today} tone="success" icon={<Truck size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/shipments?attention=1" label="Unassigned" value={data.totals.unassigned_jobs} tone="neutral" icon={<Users size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/shipments?status=in_transit" label="In transit" value={inTransit} tone="success" icon={<CheckCircle2 size={16} strokeWidth={1.9} />} />
+        <AppKpiStrip
+          tight
+          items={[
+            { key: "attention", href: "/admin/shipments?attention=1", icon: AlertTriangle, label: "Requires attention", value: attentionShipments.length, tone: "danger" },
+            { key: "customs", href: "/admin/customs", icon: CircleAlert, label: "Customs pending", value: data.totals.customs_blockers, tone: "warning" },
+            { key: "overdue", href: "/admin/alerts", icon: Clock3, label: "Overdue", value: data.totals.overdue_tasks, tone: "danger" },
+            { key: "due-today", href: "/admin/delivery", icon: Truck, label: "Due today", value: data.totals.deliveries_today, tone: "success" },
+            { key: "unassigned", href: "/admin/shipments?attention=1", icon: Users, label: "Unassigned", value: data.totals.unassigned_jobs, tone: "neutral", ariaLabel: "Unassigned shipments" },
+            { key: "in-transit", href: "/admin/shipments?status=in_transit", icon: CheckCircle2, label: "In transit", value: inTransit, tone: "success" },
+          ]}
+        />
       </section>
 
       <div className={styles.primaryGrid}>

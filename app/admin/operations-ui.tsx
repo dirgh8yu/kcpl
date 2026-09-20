@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNode } from "react";
+import { cloneElement, isValidElement, type ButtonHTMLAttributes, type InputHTMLAttributes, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import Link from "next/link";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
@@ -115,6 +116,17 @@ export function OpsKpiStrip({ children, className }: { children: ReactNode; clas
   return <div className={cx("ops-kpi-strip", className)}>{children}</div>;
 }
 
+/**
+ * One glyph size for every KPI card in the product. Call sites passed 16, 18
+ * and 20 depending on when they were written, which is what made the same card
+ * look subtly different from page to page; the stylesheet already normalises
+ * stroke width the same way, for the same reason.
+ */
+function kpiIcon(icon: ReactNode) {
+  if (!isValidElement(icon)) return icon;
+  return cloneElement(icon as ReactElement<{ size?: number | string }>, { size: 16 });
+}
+
 export function OpsKpiCard({
   label,
   value,
@@ -124,6 +136,8 @@ export function OpsKpiCard({
   active = false,
   variant = "metric",
   onClick,
+  href,
+  ariaLabel,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -139,21 +153,28 @@ export function OpsKpiCard({
    */
   variant?: "metric" | "text";
   onClick?: () => void;
+  /** Renders the card as a link. A card either navigates or filters, never both. */
+  href?: string;
+  ariaLabel?: string;
 }) {
   const zero = typeof value === "number" && value === 0;
+  const interactive = Boolean(onClick) || Boolean(href);
   const body = (
     <>
-      {icon ? <span className="ops-kpi-icon">{icon}</span> : null}
+      {icon ? <span className="ops-kpi-icon">{kpiIcon(icon)}</span> : null}
       <span className="ops-kpi-copy">
         <strong>{value}</strong>
         <span>{label}</span>
         {detail ? <em>{detail}</em> : null}
       </span>
-      {onClick ? <ChevronRight size={16} strokeWidth={1.75} className="ops-kpi-chevron" aria-hidden="true" /> : null}
+      {interactive ? <ChevronRight size={16} strokeWidth={1.75} className="ops-kpi-chevron" aria-hidden="true" /> : null}
     </>
   );
+  if (href) {
+    return <Link href={href} className="ops-kpi" aria-label={ariaLabel} data-tone={tone} data-variant={variant} data-active={active || undefined} data-zero={zero || undefined}>{body}</Link>;
+  }
   if (onClick) {
-    return <button type="button" onClick={onClick} className="ops-kpi" aria-pressed={active} data-tone={tone} data-variant={variant} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
+    return <button type="button" onClick={onClick} className="ops-kpi" aria-label={ariaLabel} aria-pressed={active} data-tone={tone} data-variant={variant} data-active={active || undefined} data-zero={zero || undefined}>{body}</button>;
   }
   return <div className="ops-kpi" data-tone={tone} data-variant={variant} data-zero={zero || undefined}>{body}</div>;
 }
