@@ -1,5 +1,5 @@
 import { getPortalAccess } from "../portal-auth";
-import { getPortalNotificationPreferences } from "../portal-accounts.server";
+import { getPortalNotificationPreferences, listPortalTeam } from "../portal-accounts.server";
 import { portalNotificationPreferences } from "../portal-notifications";
 import { transactionalEmailConfigured } from "../../integrations/sendgrid-email.server";
 import { PortalLoginPage } from "../portal-login-page";
@@ -8,14 +8,18 @@ import { PortalUnavailable } from "../portal-frame";
 import { PortalSettingsWorkspace } from "./portal-settings-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Notifications · KCPL Customer Portal", robots: { index: false, follow: false } };
+export const metadata = { title: "Account settings · KCPL Customer Portal", robots: { index: false, follow: false } };
 
 export default async function PortalSettingsPage() {
   const access = await getPortalAccess();
   if (access.kind === "unconfigured") return <PortalUnavailable/>;
   if (access.kind === "signed-out") return <PortalLoginPage/>;
 
-  const stored = await getPortalNotificationPreferences(access.session.email);
+  const [stored, team] = await Promise.all([
+    getPortalNotificationPreferences(access.session.email),
+    // Only an account owner manages logins, so only an owner is served the list.
+    access.session.role === "owner" ? listPortalTeam(access.session.customerId) : Promise.resolve(null),
+  ]);
   return (
     <PortalShell
       customerName={access.session.customerName}
@@ -28,6 +32,7 @@ export default async function PortalSettingsPage() {
         role={access.session.role}
         initialPreferences={stored ?? portalNotificationPreferences(null)}
         emailConfigured={transactionalEmailConfigured()}
+        team={team}
       />
     </PortalShell>
   );

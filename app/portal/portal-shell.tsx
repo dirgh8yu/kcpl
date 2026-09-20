@@ -20,7 +20,7 @@ const navigation: PortalNavItem[] = [
   { href: "/portal/documents", label: "Documents", icon: <FileText size={15} strokeWidth={1.75} aria-hidden="true"/> },
   { href: "/portal/invoices", label: "Invoices", icon: <Receipt size={15} strokeWidth={1.75} aria-hidden="true"/>, requires: "canViewFinance" },
   { href: "/portal/requests", label: "Quotes & requests", icon: <Send size={15} strokeWidth={1.75} aria-hidden="true"/> },
-  { href: "/portal/settings", label: "Notifications", icon: <BellRing size={15} strokeWidth={1.75} aria-hidden="true"/> },
+  { href: "/portal/settings", label: "Settings", icon: <BellRing size={15} strokeWidth={1.75} aria-hidden="true"/> },
 ];
 
 function initialsFor(name: string) {

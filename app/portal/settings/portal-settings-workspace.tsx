@@ -17,6 +17,8 @@ import {
   type PortalNotificationPreferences,
 } from "../portal-notifications";
 import { portalRoleLabels, type PortalRole } from "../portal-access-policy";
+import type { PortalTeamMember } from "../portal-accounts.server";
+import { PortalTeamPanel } from "./portal-team-panel";
 
 export function PortalSettingsWorkspace({
   email,
@@ -24,12 +26,15 @@ export function PortalSettingsWorkspace({
   role,
   initialPreferences,
   emailConfigured,
+  team,
 }: {
   email: string;
   customerName: string;
   role: PortalRole;
   initialPreferences: PortalNotificationPreferences;
   emailConfigured: boolean;
+  /** Null for anyone who is not an account owner. */
+  team: PortalTeamMember[] | null;
 }) {
   const [preferences, setPreferences] = useState(initialPreferences);
   const [busy, setBusy] = useState(false);
@@ -65,8 +70,8 @@ export function PortalSettingsWorkspace({
     <OpsPage>
       <OpsPageHeader
         eyebrow="Kapileshwor Cargo"
-        title="Notifications"
-        description="Choose what KCPL emails you about. These settings apply to your own login only."
+        title="Account settings"
+        description="Choose what KCPL emails you about, and manage the logins on this account."
       />
       <div className="ops-content">
         <div className="ops-stack portal-stack">
@@ -105,6 +110,8 @@ export function PortalSettingsWorkspace({
               ))}
             </ul>
           </OpsSurface>
+
+          {team ? <PortalTeamPanel initialTeam={team} currentEmail={email}/> : null}
 
           <OpsSurface eyebrow="Account" title="Your login">
             <OpsDetailGrid columns={3}>

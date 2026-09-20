@@ -2,10 +2,13 @@ import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import { normalizePortalEmail, portalShipmentView } from "./portal-access-policy";
+import { listShipmentDocuments } from "../shipment-documents.server";
 import {
+  portalDocumentReleaseMessage,
   portalMilestoneMessage,
   portalNotificationKey,
   portalNotificationPreferences,
+  portalNotifiableDocumentRelease,
   portalNotifiableStatusChange,
 } from "./portal-notifications";
 
@@ -147,54 +150,111 @@ export async function dispatchPortalNotifications() {
       continue;
     }
 
+    const documentSubscribers = customerAccounts.filter((account) => account.preferences.documents);
+
     for (const document of shipments.docs) {
       const shipment = portalShipmentView(document.id, document.data() as Record<string, unknown>);
       const stateRef = db.collection("portal_notification_state").doc(document.id);
       const state = await stateRef.get();
       const previous = state.exists && typeof state.get("last_status") === "string" ? state.get("last_status") as string : null;
+      const lastSeenUpdatedAt = state.exists && typeof state.get("last_seen_updated_at") === "string"
+        ? state.get("last_seen_updated_at") as string
+        : null;
+      // Null until this shipment has been under notification once. Everything
+      // released before that moment is back catalogue, not news.
+      const documentsBaseline = state.exists && typeof state.get("documents_baseline_at") === "string"
+        ? state.get("documents_baseline_at") as string
+        : null;
       watched += 1;
 
-      // The watermark advances whether or not anything is sent, so switching a
-      // topic on never replays history, and an unnotifiable status still moves
-      // the baseline forward.
-      if (previous !== shipment.status) {
-        await stateRef.set({
-          last_status: shipment.status,
-          last_seen_at: new Date().toISOString(),
-          customer_id: customerId,
-        }, { merge: true });
-      }
+      const now = new Date().toISOString();
+      const stateUpdate: Record<string, string> = { customer_id: customerId, last_seen_at: now };
+      if (previous !== shipment.status) stateUpdate.last_status = shipment.status;
+      if (lastSeenUpdatedAt !== shipment.updated_at) stateUpdate.last_seen_updated_at = shipment.updated_at;
+      if (!documentsBaseline) stateUpdate.documents_baseline_at = now;
 
-      if (!portalNotifiableStatusChange(previous, shipment.status)) continue;
-
-      for (const account of subscribers) {
-        if (sent >= MAX_EMAILS_PER_SWEEP) break;
-        const message = portalMilestoneMessage({
-          reference: shipment.reference,
-          status: shipment.status,
-          mode: shipment.mode,
-          origin: shipment.origin,
-          destination: shipment.destination,
-          eta: shipment.eta,
-          currentLocation: shipment.current_location,
-          customerName: account.customerName,
-          portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
-        });
-        const result = await sendOnce({
-          key: portalNotificationKey({
-            topic: "shipment_updates",
+      if (portalNotifiableStatusChange(previous, shipment.status)) {
+        for (const account of subscribers) {
+          if (sent >= MAX_EMAILS_PER_SWEEP) break;
+          const message = portalMilestoneMessage({
             reference: shipment.reference,
-            fact: shipment.status,
-            recipient: account.email,
-          }),
-          to: account.email,
-          subject: message.subject,
-          text: message.text,
-          html: message.html,
-          reference: shipment.reference,
-        });
-        if (result.kind === "sent") sent += 1;
+            status: shipment.status,
+            mode: shipment.mode,
+            origin: shipment.origin,
+            destination: shipment.destination,
+            eta: shipment.eta,
+            currentLocation: shipment.current_location,
+            customerName: account.customerName,
+            portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
+          });
+          const result = await sendOnce({
+            key: portalNotificationKey({
+              topic: "shipment_updates",
+              reference: shipment.reference,
+              fact: shipment.status,
+              recipient: account.email,
+            }),
+            to: account.email,
+            subject: message.subject,
+            text: message.text,
+            html: message.html,
+            reference: shipment.reference,
+          });
+          if (result.kind === "sent") sent += 1;
+        }
       }
+
+      // Documents live in a subcollection, so checking them costs a read per
+      // shipment. Releasing a document touches the shipment's `updated_at`, so
+      // an unchanged timestamp means nothing can have been released since the
+      // last sweep and the read is skipped entirely. A shipment being seen for
+      // the first time has no baseline yet, so it is recorded and left alone.
+      const worthChecking = documentsBaseline
+        && documentSubscribers.length > 0
+        && lastSeenUpdatedAt !== shipment.updated_at
+        && sent < MAX_EMAILS_PER_SWEEP;
+
+      if (worthChecking) {
+        const listing = await listShipmentDocuments(shipment.reference);
+        const released = listing.kind === "ready"
+          ? listing.documents
+              .map((entry) => entry as unknown as Record<string, unknown>)
+              .filter((entry) => portalNotifiableDocumentRelease({ document: entry, baseline: documentsBaseline }))
+          : [];
+
+        for (const entry of released) {
+          for (const account of documentSubscribers) {
+            if (sent >= MAX_EMAILS_PER_SWEEP) break;
+            const message = portalDocumentReleaseMessage({
+              reference: shipment.reference,
+              documentType: String(entry.document_type ?? "other"),
+              filename: String(entry.filename ?? "Document"),
+              origin: shipment.origin,
+              destination: shipment.destination,
+              customerName: account.customerName,
+              portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}#documents`),
+            });
+            const result = await sendOnce({
+              // Keyed by document id, so a later re-review of the same document
+              // never mails the customer about it twice.
+              key: portalNotificationKey({
+                topic: "documents",
+                reference: shipment.reference,
+                fact: `document-${String(entry.id ?? "")}`,
+                recipient: account.email,
+              }),
+              to: account.email,
+              subject: message.subject,
+              text: message.text,
+              html: message.html,
+              reference: shipment.reference,
+            });
+            if (result.kind === "sent") sent += 1;
+          }
+        }
+      }
+
+      await stateRef.set(stateUpdate, { merge: true });
     }
   }
 
