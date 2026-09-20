@@ -484,15 +484,6 @@ button.visibility-metric:hover {
   font-size: 11px;
 }
 
-/* TABLE */
-
-.kcpl-admin-content
-.visibility-register-v2
-.ops-table-wrap {
-  border: 0;
-  border-top: 1px solid var(--admin-line);
-}
-
 .kcpl-admin-content .visibility-table-v2 {
   min-width: 980px;
 }
