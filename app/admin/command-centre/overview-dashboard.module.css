@@ -69,7 +69,11 @@
 .violetIcon { background: var(--overview-violet-soft); color: var(--overview-violet); }
 
 .primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(272px, 0.86fr); gap: 12px; align-items: start; }
-.lowerGrid { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.45fr) minmax(260px, 0.9fr) minmax(280px, 1fr); gap: 12px; margin-top: 12px; align-items: start; }
+/* The first track holds the workload chart, whose longest label ("Delivered
+ * (this week)") plus a readable bar and the count needs ~328px. At the old
+ * 220px it could not reach its own min-content, so the row overflowed the card
+ * and .card's overflow:hidden cut the counts off. */
+.lowerGrid { display: grid; grid-template-columns: minmax(328px, 0.9fr) minmax(360px, 1.45fr) minmax(260px, 0.9fr) minmax(280px, 1fr); gap: 12px; margin-top: 12px; align-items: start; }
 .card { min-width: 0; overflow: hidden; border: 1px solid var(--overview-line); border-radius: var(--app-radius, 8px); background: var(--overview-surface); opacity: 0; transform: translateY(6px); animation: overview-card-in var(--app-duration-slow) var(--app-ease-out) forwards; }
 @keyframes overview-card-in { to { opacity: 1; transform: none; } }
 /* Cascade the entrance per grid region; 30ms reads as sequence without feeling slow. */
@@ -136,7 +140,11 @@
 .todayCritical span { display: block; margin-top: 3px; color: var(--overview-danger); font-size: 12px; }
 
 .workloadBody { padding: 4px 16px 14px; }
-.workloadRow { display: grid; grid-template-columns: minmax(112px, 1.5fr) minmax(56px, 1fr) 26px; align-items: center; gap: 10px; min-height: 34px; color: inherit; text-decoration: none; }
+/* The label track floors at 0 so a narrow card ellipsizes the label instead of
+ * forcing the row wider than the card, and the count track is wide enough for a
+ * three-digit total. Both stay in fr rather than auto so every row's bar track
+ * is the same width -- the bars are only comparable if they share a scale. */
+.workloadRow { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(48px, 1fr) 28px; align-items: center; gap: 10px; min-height: 34px; color: inherit; text-decoration: none; }
 .workloadRow span:first-child { overflow: hidden; color: var(--overview-muted); font-size: 12.5px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .workloadTrack { height: 6px; overflow: hidden; border-radius: 999px; background: var(--admin-surface-muted); }
 /* The fill is a <span> inside the track, so it is not a grid item and is not
@@ -213,9 +221,17 @@
 .launcherChoice strong { display: block; font-size: 13.5px; }
 .launcherChoice span { display: block; margin-top: 4px; color: var(--overview-muted); font-size: 12px; line-height: 17px; }
 
+/* These queries read the viewport, but the admin shell parks a fixed 240px
+ * sidebar beside this page and clips what spills past it (operations-system.css,
+ * .kcpl-admin-content), so the viewport overstates the room by that 240px plus
+ * this page's 48px of padding. The four lower cards need 1264px of track and gap
+ * at their minimums, so the row only fits from 1552px of viewport up. */
+@media (max-width: 1551px) {
+  .lowerGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 1260px) {
   .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .lowerGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {

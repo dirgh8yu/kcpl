@@ -571,17 +571,72 @@
 .kcpl-admin-content .tender-workspace-page .ops-button {
   min-height: 36px;
 }
-.kcpl-admin-content .shipment-inspector {
-  width: min(520px, 100vw);
+/* The shipment inspector is a bottom sheet, not a side drawer: it rises over the
+ * full page width and is dismissed from the close bar at its top edge. */
+.kcpl-admin-content .shipment-sheet {
+  height: min(92dvh, 100%);
   overscroll-behavior: contain;
-  border-left-color: var(--admin-line-strong);
-  box-shadow: -16px 0 40px rgb(16 16 16 / 10%);
+  border-top-color: var(--admin-line-strong);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -18px 48px rgb(16 16 16 / 14%);
 }
-.kcpl-admin-content .shipment-inspector-header {
-  min-height: 88px;
-  padding: 20px 24px 16px;
+.kcpl-admin-content .shipment-sheet-inner {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
 }
-.kcpl-admin-content .shipment-inspector-close {
+.kcpl-admin-content .shipment-sheet-closebar {
+  display: flex;
+  min-height: 34px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 16px 16px 0 0;
+  padding: 12px 0 6px;
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+}
+.kcpl-admin-content .shipment-sheet-closebar-grip {
+  display: block;
+  width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--admin-line-strong);
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), width var(--app-duration-fast) var(--app-ease-out);
+}
+.kcpl-admin-content .shipment-sheet-closebar-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity var(--app-duration-fast) var(--app-ease-out);
+}
+.kcpl-admin-content .shipment-sheet-closebar:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .shipment-sheet-closebar:hover .shipment-sheet-closebar-grip { width: 64px; background: var(--admin-crimson); }
+.kcpl-admin-content .shipment-sheet-closebar:is(:hover, :focus-visible) .shipment-sheet-closebar-hint { opacity: 1; }
+.kcpl-admin-content .shipment-sheet-header {
+  padding: 4px 24px 16px;
+}
+.kcpl-admin-content .shipment-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 28px;
+}
+.kcpl-admin-content .shipment-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+.kcpl-admin-content .shipment-sheet-close {
   display: inline-grid;
   width: var(--app-control-height-touch);
   min-height: var(--app-control-height-touch);
@@ -593,14 +648,14 @@
   color: var(--admin-muted);
   cursor: pointer;
 }
-.kcpl-admin-content .shipment-inspector-close:hover {
+.kcpl-admin-content .shipment-sheet-close:hover {
   background: var(--admin-surface-muted);
   color: var(--admin-ink);
 }
-.kcpl-admin-content .shipment-inspector-footer {
+.kcpl-admin-content .shipment-sheet-footer {
   padding: 16px 24px 20px;
 }
-.kcpl-admin-content .shipment-inspector-footer .ops-button {
+.kcpl-admin-content .shipment-sheet-footer .ops-button {
   min-height: var(--app-control-height-touch);
 }
 .ops-pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 10px; border: 1px solid var(--admin-line); border-top: 0; padding: 10px 12px; background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; line-height: 16px; }
@@ -986,13 +1041,17 @@
 .kcpl-admin-content .ops-action-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
 .kcpl-admin-content .shipments-filter-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
 .kcpl-admin-content .shipments-filter-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
-.kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
-.kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+.kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
 .kcpl-admin-content .ops-dialog-overlay[data-state="open"] { animation: ops-fade-in-overlay var(--app-duration-base) var(--app-ease-out); }
 .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: ops-fade-out-overlay var(--app-duration-fast) var(--app-ease-out); }
 @keyframes ops-pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes ops-pop-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.98); } }
+.kcpl-admin-content .shipment-sheet[data-state="open"] { animation: ops-sheet-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content .shipment-sheet[data-state="closed"] { animation: ops-sheet-out var(--app-duration-base) var(--app-ease-out); }
 @keyframes ops-drawer-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ops-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes ops-sheet-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
 @keyframes ops-drawer-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(24px); } }
 @keyframes ops-fade-in-overlay { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ops-fade-out-overlay { from { opacity: 1; } to { opacity: 0; } }
@@ -1042,8 +1101,12 @@
   .kcpl-admin-content .ops-action-menu[data-state="closed"],
   .kcpl-admin-content .shipments-filter-menu[data-state="open"],
   .kcpl-admin-content .shipments-filter-menu[data-state="closed"],
-  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="open"],
-  .kcpl-admin-content :is(.ops-drawer, .shipment-inspector, .freight-document-inspector, .visibility-inspector)[data-state="closed"],
+  .kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="open"],
+  .kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="closed"],
+  .kcpl-admin-content .shipment-sheet[data-state="open"],
+  .kcpl-admin-content .shipment-sheet[data-state="closed"],
+  .kcpl-admin-content .shipment-sheet-closebar-grip,
+  .kcpl-admin-content .shipment-sheet-closebar-hint,
   .kcpl-admin-content .ops-dialog-overlay[data-state="open"],
   .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: none; }
   .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
@@ -1910,8 +1973,11 @@
   .kcpl-admin-content .shipments-filter-trigger,
   .kcpl-admin-content .shipments-attention-filter,
   .kcpl-admin-content .shipments-reset { min-height: var(--app-control-height-touch); }
-  .kcpl-admin-content .shipment-inspector-header { padding-inline: 16px; }
-  .kcpl-admin-content .shipment-inspector-footer { padding-inline: 16px; }
+  .kcpl-admin-content .shipment-sheet { height: min(94dvh, 100%); }
+  .kcpl-admin-content .shipment-sheet-header { padding-inline: 16px; }
+  .kcpl-admin-content .shipment-sheet-body { padding-inline: 16px; }
+  .kcpl-admin-content .shipment-sheet-footer { padding-inline: 16px; }
+  .kcpl-admin-content .shipment-sheet-footer .ops-button { flex: 1 1 auto; justify-content: center; }
 }
 
 /* Shared operational primitives: timeline, detail grids, action menu, skeleton. */

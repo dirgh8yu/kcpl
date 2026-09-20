@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
-import { AlertTriangle, Download, FileText, LayoutGrid, Map as MapIcon, Navigation, Package, Plus, SlidersHorizontal, Table as TableIcon, Truck, Upload, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, Download, FileText, LayoutGrid, Map as MapIcon, Navigation, Package, Plus, SlidersHorizontal, Table as TableIcon, Truck, Upload, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
@@ -350,69 +350,85 @@ function ShipmentPanel({ job, returnTo, container, onClose }: { job: CommandCent
     <OpsDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
       <OpsDialog.Portal container={container ?? undefined}>
         <OpsDialog.Overlay className="ops-dialog-overlay fixed inset-0 z-[70] cursor-default bg-black/15" />
-        <OpsDialog.Content className="shipment-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[480px]" aria-label={`Shipment ${job.reference}`}>
+        <OpsDialog.Content className="shipment-sheet fixed inset-x-0 bottom-0 z-[80] flex w-full flex-col overflow-hidden border-t border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl" aria-label={`Shipment ${job.reference}`}>
           <OpsDialog.Title className="sr-only">{job.reference} shipment details</OpsDialog.Title>
           <OpsDialog.Description className="sr-only">Review shipment status, readiness, route and the next permitted action.</OpsDialog.Description>
-          <header className="shipment-inspector-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-            <div className="min-w-0">
-              <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
-              <h2 className="mt-1 text-base font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
-              <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
-              <OpsDialog.Close asChild>
-                <button type="button" className="shipment-inspector-close" aria-label="Close shipment panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
-              </OpsDialog.Close>
+
+          {/* The close bar: the sheet's primary dismiss affordance, so it is a real
+            * button spanning the full width rather than a decorative grab handle. */}
+          <OpsDialog.Close asChild>
+            <button type="button" className="shipment-sheet-closebar" aria-label="Close shipment panel">
+              <span className="shipment-sheet-closebar-grip" aria-hidden="true"/>
+              <span className="shipment-sheet-closebar-hint"><ChevronDown size={13} strokeWidth={2} aria-hidden="true"/>Close</span>
+            </button>
+          </OpsDialog.Close>
+
+          <header className="shipment-sheet-header shrink-0 border-b border-[var(--admin-line)]">
+            <div className="shipment-sheet-inner flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
+                <h2 className="mt-1 text-lg font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
+                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
+                <OpsDialog.Close asChild>
+                  <button type="button" className="shipment-sheet-close" aria-label="Close shipment panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+                </OpsDialog.Close>
+              </div>
             </div>
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {hasBlockingWork ? (
-              <section className="border-b border-[var(--admin-line)] px-5 py-4">
+            <div className="shipment-sheet-body shipment-sheet-inner">
+              {hasBlockingWork ? (
                 <div className="flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-danger-bg)] px-3 py-2.5 text-[var(--admin-danger)]">
                   <AlertTriangle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
                   <div><strong className="block text-sm">Attention required</strong><span className="mt-0.5 block text-xs">{action.detail}</span></div>
                 </div>
-              </section>
-            ) : null}
+              ) : null}
 
-            <PanelSection title="Job status">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                <Detail label="Workflow status"><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></Detail>
-                <Detail label="Priority"><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></Detail>
-                <Detail label="Assigned to" warning={jobOwner === "Unassigned"}>{jobOwner}</Detail>
-                <Detail label="Branch">{job.primary_branch}</Detail>
+              <div className="shipment-sheet-grid">
+                <PanelSection title="Job status">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <Detail label="Workflow status"><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></Detail>
+                    <Detail label="Priority"><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></Detail>
+                    <Detail label="Assigned to" warning={jobOwner === "Unassigned"}>{jobOwner}</Detail>
+                    <Detail label="Branch">{job.primary_branch}</Detail>
+                  </div>
+                </PanelSection>
+
+                <PanelSection title="Next action">
+                  <strong className="block text-sm font-semibold text-[var(--admin-ink)]">{action.title}</strong>
+                  <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{action.detail}</p>
+                </PanelSection>
+
+                <PanelSection title="Route">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <Detail label="Origin">{job.origin || "—"}</Detail>
+                    <Detail label="Destination">{job.destination || "—"}</Detail>
+                    <Detail label="Current location">{job.current_location || "—"}</Detail>
+                    <Detail label="Mode">{job.mode || "—"}</Detail>
+                    <Detail label="ETA">{shortDate(job.eta)}</Detail>
+                    <Detail label="Carrier" warning={!job.carrier}>{job.carrier || "Not assigned"}</Detail>
+                  </div>
+                </PanelSection>
+
+                <PanelSection title="Readiness">
+                  <ReadinessRow label="Open work" value={job.open_tasks ? `${job.open_tasks} task${job.open_tasks === 1 ? "" : "s"}` : "Clear"} warning={job.overdue_tasks > 0}/>
+                  <ReadinessRow label="Customs" value={job.required_customs_open ? `${job.required_customs_open} open` : "Clear"} warning={job.required_customs_open > 0}/>
+                  <ReadinessRow label="Exception" value={openException ? "Open" : "None"} warning={openException}/>
+                  <ReadinessRow label="Owner" value={jobOwner} warning={jobOwner === "Unassigned"}/>
+                </PanelSection>
               </div>
-            </PanelSection>
-
-            <PanelSection title="Next action">
-              <strong className="block text-sm font-semibold text-[var(--admin-ink)]">{action.title}</strong>
-              <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">{action.detail}</p>
-            </PanelSection>
-
-            <PanelSection title="Route">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                <Detail label="Origin">{job.origin || "—"}</Detail>
-                <Detail label="Destination">{job.destination || "—"}</Detail>
-                <Detail label="Current location">{job.current_location || "—"}</Detail>
-                <Detail label="Mode">{job.mode || "—"}</Detail>
-                <Detail label="ETA">{shortDate(job.eta)}</Detail>
-                <Detail label="Carrier" warning={!job.carrier}>{job.carrier || "Not assigned"}</Detail>
-              </div>
-            </PanelSection>
-
-            <PanelSection title="Readiness">
-              <ReadinessRow label="Open work" value={job.open_tasks ? `${job.open_tasks} task${job.open_tasks === 1 ? "" : "s"}` : "Clear"} warning={job.overdue_tasks > 0}/>
-              <ReadinessRow label="Customs" value={job.required_customs_open ? `${job.required_customs_open} open` : "Clear"} warning={job.required_customs_open > 0}/>
-              <ReadinessRow label="Exception" value={openException ? "Open" : "None"} warning={openException}/>
-              <ReadinessRow label="Owner" value={jobOwner} warning={jobOwner === "Unassigned"}/>
-            </PanelSection>
+            </div>
           </div>
 
-          <footer className="shipment-inspector-footer flex shrink-0 flex-wrap gap-2 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-3">
-            <Link href={withReturn(action.href)} className="ops-button flex-1" data-variant="primary" data-size="md">{action.title}</Link>
-            <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open shipment</Link>
+          <footer className="shipment-sheet-footer shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)]">
+            <div className="shipment-sheet-inner flex flex-wrap items-center justify-end gap-2">
+              <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open shipment</Link>
+              <Link href={withReturn(action.href)} className="ops-button" data-variant="primary" data-size="md">{action.title}</Link>
+            </div>
           </footer>
         </OpsDialog.Content>
       </OpsDialog.Portal>
@@ -421,7 +437,7 @@ function ShipmentPanel({ job, returnTo, container, onClose }: { job: CommandCent
 }
 
 function PanelSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="border-b border-[var(--admin-line)] px-5 py-4"><h3 className="mb-3 text-xs font-semibold uppercase tracking-[.06em] text-[var(--admin-line-strong)]">{title}</h3>{children}</section>;
+  return <section className="shipment-sheet-card"><h3 className="mb-3 text-xs font-semibold uppercase tracking-[.06em] text-[var(--admin-line-strong)]">{title}</h3>{children}</section>;
 }
 
 function Detail({ label, children, warning = false }: { label: string; children: React.ReactNode; warning?: boolean }) {
