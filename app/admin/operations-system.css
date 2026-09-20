@@ -2287,3 +2287,25 @@
 .kcpl-portal-route .portal-customer-switch select { max-width: 200px; padding: 6px 8px; border: 1px solid var(--admin-border); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-text); font: inherit; font-size: var(--app-text-sm); }
 .kcpl-portal-route .portal-customer-switch select:disabled { opacity: 0.6; }
 .kcpl-portal-route .portal-customer-switch [role="alert"] { color: var(--admin-danger); font-size: var(--app-text-sm); }
+
+/* Customer portal -- Nepali.
+ * Devanagari needs more vertical room than Latin at the same nominal size, and
+ * the UI face the portal otherwise uses has no Devanagari coverage, so a
+ * Nepali portal would fall back to whatever the device happens to have. The
+ * face is already loaded by the root layout for the public site. */
+.kcpl-portal-route .portal-shell[data-locale="ne"],
+.portal-shell[data-locale="ne"] { font-family: var(--font-devanagari), var(--font-inter), system-ui, sans-serif; }
+.portal-shell[data-locale="ne"] .ops-page-header h1,
+.portal-shell[data-locale="ne"] .ops-surface-header h2,
+.portal-shell[data-locale="ne"] .ops-badge,
+.portal-shell[data-locale="ne"] .portal-nav-link { line-height: 1.7; }
+
+/* Customer portal -- language choice.
+ * Two buttons rather than a select: there are two languages, the Nepali label
+ * is written in Devanagari so the reader recognises it without knowing the
+ * English word for it, and each carries its own `lang` so the browser picks
+ * the right face for the label itself. */
+.kcpl-admin-content .portal-language-choice { display: flex; align-items: center; gap: var(--app-space-2); flex-wrap: wrap; }
+.kcpl-admin-content .portal-language-choice button { padding: 8px 14px; border: 1px solid var(--admin-border); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-text); font: inherit; font-size: var(--app-text-sm); cursor: pointer; }
+.kcpl-admin-content .portal-language-choice button[data-active="true"] { border-color: var(--admin-accent-line); background: var(--admin-accent-bg); font-weight: 600; }
+.kcpl-admin-content .portal-language-choice button:disabled { opacity: 0.6; cursor: default; }

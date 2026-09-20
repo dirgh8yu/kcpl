@@ -7,21 +7,22 @@ import { BellRing, Building2, FileText, LayoutDashboard, LogOut, Receipt, Send, 
 import { useState, type ReactNode } from "react";
 import type { PortalCapabilities } from "./portal-access-policy";
 import type { PortalSession } from "./portal-auth";
+import { portalLocaleTags, portalTranslator, type PortalTextKey } from "./portal-i18n";
 
 type PortalNavItem = {
   href: string;
-  label: string;
+  label: PortalTextKey;
   icon: ReactNode;
   requires?: keyof PortalCapabilities;
 };
 
 const navigation: PortalNavItem[] = [
-  { href: "/portal", label: "Overview", icon: <LayoutDashboard size={15} strokeWidth={1.75} aria-hidden="true"/> },
-  { href: "/portal/shipments", label: "Shipments", icon: <Truck size={15} strokeWidth={1.75} aria-hidden="true"/> },
-  { href: "/portal/documents", label: "Documents", icon: <FileText size={15} strokeWidth={1.75} aria-hidden="true"/> },
-  { href: "/portal/invoices", label: "Invoices", icon: <Receipt size={15} strokeWidth={1.75} aria-hidden="true"/>, requires: "canViewFinance" },
-  { href: "/portal/requests", label: "Quotes & requests", icon: <Send size={15} strokeWidth={1.75} aria-hidden="true"/> },
-  { href: "/portal/settings", label: "Settings", icon: <BellRing size={15} strokeWidth={1.75} aria-hidden="true"/> },
+  { href: "/portal", label: "chrome.overview", icon: <LayoutDashboard size={15} strokeWidth={1.75} aria-hidden="true"/> },
+  { href: "/portal/shipments", label: "chrome.shipments", icon: <Truck size={15} strokeWidth={1.75} aria-hidden="true"/> },
+  { href: "/portal/documents", label: "chrome.documents", icon: <FileText size={15} strokeWidth={1.75} aria-hidden="true"/> },
+  { href: "/portal/invoices", label: "chrome.invoices", icon: <Receipt size={15} strokeWidth={1.75} aria-hidden="true"/>, requires: "canViewFinance" },
+  { href: "/portal/requests", label: "chrome.requests", icon: <Send size={15} strokeWidth={1.75} aria-hidden="true"/> },
+  { href: "/portal/settings", label: "chrome.settings", icon: <BellRing size={15} strokeWidth={1.75} aria-hidden="true"/> },
 ];
 
 function initialsFor(name: string) {
@@ -44,6 +45,7 @@ function isActive(pathname: string, href: string) {
  * scope would show a not-found where a document used to be.
  */
 function CustomerSwitcher({ session }: { session: PortalSession }) {
+  const t = portalTranslator(session.locale);
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -60,13 +62,13 @@ function CustomerSwitcher({ session }: { session: PortalSession }) {
       });
       const body = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok || !body.ok) {
-        setError(body.error || "That account could not be opened.");
+        setError(body.error || t("chrome.account_switch_failed"));
         return;
       }
       router.push("/portal");
       router.refresh();
     } catch {
-      setError("That account could not be opened.");
+      setError(t("chrome.account_switch_failed"));
     } finally {
       setBusy(false);
     }
@@ -75,7 +77,7 @@ function CustomerSwitcher({ session }: { session: PortalSession }) {
   return (
     <div className="portal-customer-switch">
       <Building2 size={15} strokeWidth={1.75} aria-hidden="true"/>
-      <label className="portal-sr-only" htmlFor="portal-customer-switch">Account</label>
+      <label className="portal-sr-only" htmlFor="portal-customer-switch">{t("chrome.account")}</label>
       <select
         id="portal-customer-switch"
         value={session.customerId}
@@ -93,21 +95,24 @@ function CustomerSwitcher({ session }: { session: PortalSession }) {
 
 export function PortalShell({ children, session }: { children: ReactNode; session: PortalSession }) {
   const pathname = usePathname() ?? "/portal";
+  const t = portalTranslator(session.locale);
   const items = navigation.filter((item) => !item.requires || session.capabilities[item.requires] === true);
   const multiCustomer = session.customers.length > 1;
 
   return (
-    <div className="kcpl-admin-shell portal-shell">
-      <a className="portal-skip-link" href="#portal-content">Skip to content</a>
+    // `lang` carries to assistive technology and hyphenation; `data-locale` is
+    // what switches the Devanagari face, which only the portal needs.
+    <div className="kcpl-admin-shell portal-shell" lang={portalLocaleTags[session.locale]} data-locale={session.locale}>
+      <a className="portal-skip-link" href="#portal-content">{t("chrome.skip")}</a>
       <header className="portal-topbar">
         <Link href="/portal" className="portal-brand" aria-label="KCPL customer portal overview">
           <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={26} height={26} priority/>
           <span className="portal-brand-text">
             <strong>KCPL</strong>
-            <small>Customer portal</small>
+            <small>{t("chrome.brand_sub")}</small>
           </span>
         </Link>
-        <nav className="portal-nav" aria-label="Customer portal">
+        <nav className="portal-nav" aria-label={t("chrome.nav_label")}>
           {items.map((item) => (
             <Link
               key={item.href}
@@ -116,7 +121,7 @@ export function PortalShell({ children, session }: { children: ReactNode; sessio
               aria-current={isActive(pathname, item.href) ? "page" : undefined}
             >
               {item.icon}
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </Link>
           ))}
         </nav>
@@ -127,15 +132,15 @@ export function PortalShell({ children, session }: { children: ReactNode; sessio
             <strong>{session.customerName}</strong>
             <small>{session.email}</small>
           </span>
-          <a href="/api/portal/session?logout=1" className="portal-signout" aria-label="Sign out of the KCPL customer portal">
+          <a href="/api/portal/session?logout=1" className="portal-signout" aria-label={t("chrome.sign_out")}>
             <LogOut size={16} strokeWidth={1.75} aria-hidden="true"/>
           </a>
         </div>
       </header>
       <div id="portal-content" tabIndex={-1} className="kcpl-admin-content">{children}</div>
       <footer className="portal-footer">
-        <span>Kapileshwor Cargo Pvt. Ltd. · Kathmandu, Nepal</span>
-        <Link href="/">Public website</Link>
+        <span>{t("chrome.footer")}</span>
+        <Link href="/">{t("chrome.public_site")}</Link>
       </footer>
     </div>
   );

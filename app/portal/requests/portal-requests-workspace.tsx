@@ -19,6 +19,7 @@ import {
 import type { PortalQuoteView } from "../portal-access-policy";
 import type { PortalCapabilities } from "../portal-access-policy";
 import { portalDate, portalMoney } from "../portal-format";
+import { portalTranslator, type PortalLocale } from "../portal-i18n";
 
 type FormState = {
   origin: string;
@@ -46,11 +47,14 @@ export function PortalRequestsWorkspace({
   quotes,
   requests,
   capabilities,
+  locale,
 }: {
   quotes: PortalQuoteView[];
   requests: PortalQuoteView[];
   capabilities: PortalCapabilities;
+  locale: PortalLocale;
 }) {
+  const t = portalTranslator(locale);
   const router = useRouter();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -79,13 +83,13 @@ export function PortalRequestsWorkspace({
       const data = await response.json() as { ok?: boolean; error?: string; reference?: string; fields?: Record<string, string> };
       if (!response.ok || !data.ok) {
         if (data.fields) setFieldErrors(data.fields);
-        throw new Error(data.error || "The request could not be submitted.");
+        throw new Error(data.error || t("req.submit_failed"));
       }
       setForm(emptyForm);
-      setNotice(`Request ${data.reference} has been sent to the KCPL team.`);
+      setNotice(t("req.submitted", { reference: data.reference ?? "" }));
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The request could not be submitted.");
+      setError(reason instanceof Error ? reason.message : t("req.submit_failed"));
     } finally {
       setBusy(false);
     }
@@ -103,11 +107,11 @@ export function PortalRequestsWorkspace({
         body: JSON.stringify({ kind: "booking", quoteReference: reference }),
       });
       const data = await response.json() as { ok?: boolean; error?: string };
-      if (!response.ok || !data.ok) throw new Error(data.error || "The booking request could not be sent.");
-      setNotice(`KCPL has been notified that you want to proceed with ${reference}.`);
+      if (!response.ok || !data.ok) throw new Error(data.error || t("req.booking_failed"));
+      setNotice(t("req.booking_sent", { reference }));
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The booking request could not be sent.");
+      setError(reason instanceof Error ? reason.message : t("req.booking_failed"));
     } finally {
       setBookingBusy("");
     }
@@ -116,12 +120,12 @@ export function PortalRequestsWorkspace({
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow="Kapileshwor Cargo"
-        title="Quotes & requests"
-        description="Raise a new freight request, follow the ones KCPL is still working on, and review the quotes you have been issued."
+        eyebrow={t("overview.eyebrow")}
+        title={t("req.title")}
+        description={t("req.description")}
         meta={<>
-          <span>{quotes.length} quote{quotes.length === 1 ? "" : "s"}</span>
-          <span>{requests.length} open request{requests.length === 1 ? "" : "s"}</span>
+          <span>{quotes.length === 1 ? t("req.quote_count_one") : t("req.quote_count", { count: quotes.length })}</span>
+          <span>{requests.length === 1 ? t("req.open_count_one") : t("req.open_count", { count: requests.length })}</span>
         </>}
       />
 
@@ -132,55 +136,55 @@ export function PortalRequestsWorkspace({
 
           {capabilities.canSubmitRequests ? (
             <OpsSurface
-              eyebrow="New request"
-              title="Ask KCPL to quote a movement"
-              description="Share what you know. KCPL confirms routing, the customs point and the price before anything is booked."
+              eyebrow={t("req.new_eyebrow")}
+              title={t("req.new_title")}
+              description={t("req.new_description")}
             >
               <form onSubmit={submitRequest} className="portal-form" aria-busy={busy}>
                 <div className="portal-form-grid">
-                  <OpsField label="Origin" hint={fieldErrors.origin}>
-                    <input required value={form.origin} onChange={(event) => update("origin", event.target.value)} placeholder="Shanghai, China" disabled={busy}/>
+                  <OpsField label={t("overview.origin")} hint={fieldErrors.origin}>
+                    <input required value={form.origin} onChange={(event) => update("origin", event.target.value)} placeholder={t("req.origin_placeholder")} disabled={busy}/>
                   </OpsField>
-                  <OpsField label="Destination" hint={fieldErrors.destination}>
-                    <input required value={form.destination} onChange={(event) => update("destination", event.target.value)} placeholder="Kathmandu, Nepal" disabled={busy}/>
+                  <OpsField label={t("overview.destination")} hint={fieldErrors.destination}>
+                    <input required value={form.destination} onChange={(event) => update("destination", event.target.value)} placeholder={t("req.destination_placeholder")} disabled={busy}/>
                   </OpsField>
-                  <OpsField label="Mode">
+                  <OpsField label={t("ship.mode")}>
                     <select value={form.mode} onChange={(event) => update("mode", event.target.value)} disabled={busy}>
-                      <option value="unsure">Not sure yet</option>
-                      <option value="sea">Sea freight</option>
-                      <option value="air">Air freight</option>
-                      <option value="road">Road / cross-border</option>
+                      <option value="unsure">{t("req.mode_unsure")}</option>
+                      <option value="sea">{t("mode.sea")}</option>
+                      <option value="air">{t("mode.air")}</option>
+                      <option value="road">{t("req.mode_road")}</option>
                     </select>
                   </OpsField>
-                  <OpsField label="Commodity" hint={fieldErrors.cargoType}>
-                    <input value={form.cargoType} onChange={(event) => update("cargoType", event.target.value)} placeholder="Machinery parts" disabled={busy}/>
+                  <OpsField label={t("req.commodity")} hint={fieldErrors.cargoType}>
+                    <input value={form.cargoType} onChange={(event) => update("cargoType", event.target.value)} placeholder={t("req.commodity_placeholder")} disabled={busy}/>
                   </OpsField>
-                  <OpsField label="Weight" hint={fieldErrors.weight}>
-                    <input value={form.weight} onChange={(event) => update("weight", event.target.value)} inputMode="decimal" placeholder="1200" disabled={busy}/>
+                  <OpsField label={t("req.weight")} hint={fieldErrors.weight}>
+                    <input value={form.weight} onChange={(event) => update("weight", event.target.value)} inputMode="decimal" placeholder={t("req.weight_placeholder")} disabled={busy}/>
                   </OpsField>
-                  <OpsField label="Weight unit">
+                  <OpsField label={t("req.weight_unit")}>
                     <select value={form.weightUnit} onChange={(event) => update("weightUnit", event.target.value)} disabled={busy}>
-                      <option value="kg">Kilograms</option>
-                      <option value="tonnes">Tonnes</option>
-                      <option value="lb">Pounds</option>
+                      <option value="kg">{t("req.unit_kg")}</option>
+                      <option value="tonnes">{t("req.unit_tonnes")}</option>
+                      <option value="lb">{t("req.unit_lb")}</option>
                     </select>
                   </OpsField>
-                  <OpsField label="Cargo ready date" hint={fieldErrors.timing}>
-                    <input value={form.timing} onChange={(event) => update("timing", event.target.value)} placeholder="Ready in two weeks" disabled={busy}/>
+                  <OpsField label={t("req.ready_date")} hint={fieldErrors.timing}>
+                    <input value={form.timing} onChange={(event) => update("timing", event.target.value)} placeholder={t("req.ready_placeholder")} disabled={busy}/>
                   </OpsField>
                 </div>
-                <OpsField label="Anything else KCPL should know" hint={fieldErrors.requirements}>
+                <OpsField label={t("req.anything_else")} hint={fieldErrors.requirements}>
                   <textarea
                     value={form.requirements}
                     onChange={(event) => update("requirements", event.target.value)}
-                    placeholder="Dimensions, packing, delivery site access, deadlines, permits…"
+                    placeholder={t("req.anything_else_placeholder")}
                     disabled={busy}
                   />
                 </OpsField>
                 <div className="portal-form-actions">
                   <OpsButton type="submit" variant="primary" disabled={busy}>
                     <Send size={15} strokeWidth={1.75} aria-hidden="true"/>
-                    <span>{busy ? "Sending…" : "Send request"}</span>
+                    <span>{busy ? t("req.sending") : t("req.send")}</span>
                   </OpsButton>
                 </div>
               </form>
@@ -188,9 +192,9 @@ export function PortalRequestsWorkspace({
           ) : null}
 
           <OpsSurface
-            eyebrow="Commercial"
-            title="Quotes issued to you"
-            description="Prices KCPL has confirmed. Ask to proceed and your account manager will convert the quote into a booking."
+            eyebrow={t("req.commercial_eyebrow")}
+            title={t("req.quotes_title")}
+            description={t("req.quotes_description")}
             flush
           >
             {quotes.length ? (
@@ -198,12 +202,12 @@ export function PortalRequestsWorkspace({
                 <table className="ops-table">
                   <thead>
                     <tr>
-                      <th>Quote</th>
-                      <th>Route</th>
-                      <th>Price</th>
-                      <th>Valid until</th>
-                      <th>Shipment</th>
-                      <th><span className="portal-sr-only">Action</span></th>
+                      <th>{t("req.col_quote")}</th>
+                      <th>{t("common.route")}</th>
+                      <th>{t("req.col_price")}</th>
+                      <th>{t("req.col_valid")}</th>
+                      <th>{t("common.shipment")}</th>
+                      <th><span className="portal-sr-only">{t("req.col_action")}</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -211,14 +215,14 @@ export function PortalRequestsWorkspace({
                       <tr key={quote.reference}>
                         <td>
                           <OpsMono>{quote.reference}</OpsMono>
-                          <span className="portal-cell-detail">Raised {portalDate(quote.created_at)}</span>
+                          <span className="portal-cell-detail">{t("req.raised_on", { date: portalDate(quote.created_at) })}</span>
                         </td>
                         <td>
                           <span className="portal-lane">{quote.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{quote.destination}</span>
                           {quote.cargo_type ? <span className="portal-cell-detail">{quote.cargo_type}</span> : null}
                         </td>
                         <td>
-                          <strong>{quote.quoted_amount === null ? "—" : portalMoney(quote.quoted_amount, quote.quote_currency)}</strong>
+                          <strong>{quote.quoted_amount === null ? t("common.none") : portalMoney(quote.quoted_amount, quote.quote_currency)}</strong>
                           {quote.customer_quote_note ? <span className="portal-cell-detail">{quote.customer_quote_note}</span> : null}
                         </td>
                         <td>{portalDate(quote.valid_until)}</td>
@@ -227,7 +231,7 @@ export function PortalRequestsWorkspace({
                             <Link href={`/portal/shipments/${encodeURIComponent(quote.shipment_reference)}`} className="portal-row-link">
                               <OpsMono>{quote.shipment_reference}</OpsMono>
                             </Link>
-                          ) : <OpsBadge tone="neutral">Not booked</OpsBadge>}
+                          ) : <OpsBadge tone="neutral">{t("req.not_booked")}</OpsBadge>}
                         </td>
                         <td>
                           {!quote.shipment_reference && capabilities.canSubmitRequests ? (
@@ -237,7 +241,7 @@ export function PortalRequestsWorkspace({
                               disabled={bookingBusy === quote.reference}
                               onClick={() => requestBooking(quote.reference)}
                             >
-                              {bookingBusy === quote.reference ? "Sending…" : "Ask to proceed"}
+                              {bookingBusy === quote.reference ? t("req.sending") : t("req.ask_to_proceed")}
                             </OpsButton>
                           ) : null}
                         </td>
@@ -251,17 +255,17 @@ export function PortalRequestsWorkspace({
                 <OpsEmptyState
                   kind="neutral"
                   icon={<Tag size={18}/>}
-                  title="No quotes yet"
-                  description="Quotes KCPL issues to your account appear here with their price and validity."
+                  title={t("req.no_quotes_title")}
+                  description={t("req.no_quotes_description")}
                 />
               </div>
             )}
           </OpsSurface>
 
           <OpsSurface
-            eyebrow="In progress"
-            title="Requests KCPL is working on"
-            description="Requests that have not been priced yet."
+            eyebrow={t("req.progress_eyebrow")}
+            title={t("req.progress_title")}
+            description={t("req.progress_description")}
             flush
           >
             {requests.length ? (
@@ -269,10 +273,10 @@ export function PortalRequestsWorkspace({
                 <table className="ops-table">
                   <thead>
                     <tr>
-                      <th>Reference</th>
-                      <th>Route</th>
-                      <th>Commodity</th>
-                      <th>Raised</th>
+                      <th>{t("overview.col_reference")}</th>
+                      <th>{t("common.route")}</th>
+                      <th>{t("req.commodity")}</th>
+                      <th>{t("req.col_raised")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,7 +286,7 @@ export function PortalRequestsWorkspace({
                         <td>
                           <span className="portal-lane">{request.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{request.destination}</span>
                         </td>
-                        <td>{request.cargo_type ?? "—"}</td>
+                        <td>{request.cargo_type ?? t("common.none")}</td>
                         <td>{portalDate(request.created_at)}</td>
                       </tr>
                     ))}
@@ -295,8 +299,8 @@ export function PortalRequestsWorkspace({
                   compact
                   kind="healthy"
                   icon={<Send size={18}/>}
-                  title="Nothing waiting"
-                  description="Every request you have raised has been priced."
+                  title={t("req.nothing_waiting_title")}
+                  description={t("req.nothing_waiting_description")}
                 />
               </div>
             )}

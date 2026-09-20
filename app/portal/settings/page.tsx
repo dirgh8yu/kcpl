@@ -31,6 +31,7 @@ export default async function PortalSettingsPage() {
         initialPreferences={stored ?? portalNotificationPreferences(null)}
         emailConfigured={transactionalEmailConfigured()}
         team={team}
+        locale={access.session.locale}
       />
     </PortalShell>
   );

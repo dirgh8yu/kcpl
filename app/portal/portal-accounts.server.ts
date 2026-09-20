@@ -1,6 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { isAllowedAdminEmail } from "../admin/admin-auth";
 import { staffProfileByEmail } from "../admin/staff-directory.server";
+import { portalLocaleValue, type PortalLocale } from "./portal-i18n";
 import {
   portalNotificationPreferences,
   portalNotificationTopics,
@@ -89,6 +90,9 @@ export type PortalResolvedAccount =
       capabilities: Extract<PortalAccessDecision, { kind: "allowed" }>["capabilities"];
       /** Every customer this login may read, the primary first. */
       customers: PortalCustomerScope[];
+      /** The reader's language, stored on the account rather than in a cookie
+       * so the scheduled notification sweep can write in it too. */
+      locale: PortalLocale;
     }
   | Extract<PortalAccessDecision, { kind: "denied" }>
   | { kind: "unavailable" };
@@ -115,6 +119,9 @@ export async function resolvePortalAccount(
   }
 
   const account = accountSnapshot.exists ? accountRecord(accountSnapshot.data() as Record<string, unknown>) : null;
+  // Read alongside the record rather than inside it: a language preference is
+  // account state, never an input to the access decision.
+  const locale = portalLocaleValue(accountSnapshot.exists ? accountSnapshot.get("locale") : null);
   // An inactive staff profile is not a staff principal, so a former staff
   // member can still be given customer access later. The bootstrap allowlist
   // counts too: KCPL_ADMIN_EMAILS can mint staff authority without a profile.
@@ -163,6 +170,7 @@ export async function resolvePortalAccount(
     role: decision.role,
     capabilities: decision.capabilities,
     customers: scope.customers,
+    locale,
   };
 }
 
@@ -364,6 +372,28 @@ export async function savePortalNotificationPreferences(email: string, preferenc
     return { kind: "saved" as const };
   } catch (error) {
     console.error("KCPL portal notification preference save failed", error);
+    return { kind: "unavailable" as const };
+  }
+}
+
+/**
+ * Save a customer's own language.
+ *
+ * Scoped to the signed-in account's record like the notification settings
+ * beside it: the address comes from the session, never the request body.
+ */
+export async function savePortalLocale(email: string, locale: PortalLocale) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const key = portalAccountKey(email);
+  if (!key) return { kind: "missing" as const };
+  try {
+    const reference = firebaseAdminDb().collection(PORTAL_ACCOUNTS).doc(key);
+    const snapshot = await reference.get();
+    if (!snapshot.exists) return { kind: "missing" as const };
+    await reference.update({ locale: portalLocaleValue(locale), updated_at: new Date().toISOString() });
+    return { kind: "saved" as const };
+  } catch (error) {
+    console.error("KCPL portal locale save failed", error);
     return { kind: "unavailable" as const };
   }
 }

@@ -20,7 +20,7 @@ export default async function PortalShipmentsPage() {
       session={access.session}
     >
       {result.kind === "ready"
-        ? <PortalShipmentsWorkspace shipments={result.shipments}/>
+        ? <PortalShipmentsWorkspace locale={access.session.locale} shipments={result.shipments}/>
         : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Shipments" icon={<Package size={18}/>}/>}
     </PortalShell>
   );

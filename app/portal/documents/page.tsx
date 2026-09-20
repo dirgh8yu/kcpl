@@ -20,7 +20,7 @@ export default async function PortalDocumentsPage() {
       session={access.session}
     >
       {result.kind === "ready"
-        ? <PortalDocumentsWorkspace documents={result.documents} scanned={result.scanned} total={result.total}/>
+        ? <PortalDocumentsWorkspace locale={access.session.locale} documents={result.documents} scanned={result.scanned} total={result.total}/>
         : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Documents" icon={<FileText size={18}/>}/>}
     </PortalShell>
   );

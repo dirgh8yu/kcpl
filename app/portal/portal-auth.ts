@@ -3,6 +3,7 @@ import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.
 import { adminSecurityConfigurationValid } from "../admin/admin-security-config";
 import { resolvePortalAccount } from "./portal-accounts.server";
 import type { PortalCapabilities, PortalCustomerScope, PortalDenialReason, PortalIdentity, PortalRole } from "./portal-access-policy";
+import type { PortalLocale } from "./portal-i18n";
 
 /**
  * The customer portal session is deliberately a different cookie, a different
@@ -37,6 +38,8 @@ export type PortalSession = {
   customers: PortalCustomerScope[];
   role: PortalRole;
   capabilities: PortalCapabilities;
+  /** The language this customer reads the portal and their emails in. */
+  locale: PortalLocale;
 };
 
 export type PortalAccess =
@@ -70,6 +73,7 @@ export async function authorizePortalIdentity(
       customers: decision.customers,
       role: decision.role,
       capabilities: decision.capabilities,
+      locale: decision.locale,
     },
   };
 }

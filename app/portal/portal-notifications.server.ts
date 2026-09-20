@@ -3,6 +3,7 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import { normalizePortalEmail, portalShipmentView } from "./portal-access-policy";
 import { listShipmentDocuments } from "../shipment-documents.server";
+import { portalLocaleValue, type PortalLocale } from "./portal-i18n";
 import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
@@ -39,6 +40,9 @@ type Account = {
   customerId: string;
   customerName: string;
   preferences: ReturnType<typeof portalNotificationPreferences>;
+  /** Each recipient is written to in their own language, which is why the
+   * preference lives on the account: this sweep has no browser to ask. */
+  locale: PortalLocale;
 };
 
 function deliveryId(key: string) {
@@ -66,6 +70,7 @@ async function activePortalAccounts(): Promise<Account[]> {
       email,
       customerId,
       customerName: typeof data.customer_name === "string" ? data.customer_name : customerId,
+      locale: portalLocaleValue(data.locale),
       preferences: portalNotificationPreferences(data),
     }];
   });
@@ -192,7 +197,7 @@ export async function dispatchPortalNotifications() {
             currentLocation: shipment.current_location,
             customerName: account.customerName,
             portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
-          });
+          }, account.locale);
           const result = await sendOnce({
             key: portalNotificationKey({
               topic: "shipment_updates",
@@ -239,7 +244,7 @@ export async function dispatchPortalNotifications() {
               destination: shipment.destination,
               customerName: account.customerName,
               portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}#documents`),
-            });
+            }, account.locale);
             const result = await sendOnce({
               // Keyed by document id, so a later re-review of the same document
               // never mails the customer about it twice.
@@ -279,7 +284,7 @@ export async function dispatchPortalNotifications() {
               deadline: status.deadline,
               customerName: account.customerName,
               portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
-            });
+            }, account.locale);
             const result = await sendOnce({
               key: portalNotificationKey({
                 topic: "free_time",

@@ -20,7 +20,7 @@ export default async function PortalRequestsPage() {
       session={access.session}
     >
       {result.kind === "ready"
-        ? <PortalRequestsWorkspace quotes={result.quotes} requests={result.requests} capabilities={access.session.capabilities}/>
+        ? <PortalRequestsWorkspace locale={access.session.locale} quotes={result.quotes} requests={result.requests} capabilities={access.session.capabilities}/>
         : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Quotes & requests" icon={<Send size={18}/>}/>}
     </PortalShell>
   );

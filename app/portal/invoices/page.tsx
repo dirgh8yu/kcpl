@@ -21,7 +21,7 @@ export default async function PortalInvoicesPage() {
       session={access.session}
     >
       {result.kind === "ready"
-        ? <PortalInvoicesWorkspace invoices={result.invoices} summary={result.summary}/>
+        ? <PortalInvoicesWorkspace locale={access.session.locale} invoices={result.invoices} summary={result.summary}/>
         : null}
       {result.kind === "forbidden" ? (
         <OpsPage>
