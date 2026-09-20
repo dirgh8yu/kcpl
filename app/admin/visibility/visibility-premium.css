@@ -38,94 +38,10 @@
 
 /* METRICS */
 
+/* The summary strip is the product's shared KPI strip (AppKpiStrip); the cards
+ * are styled once in operations-system.css, so only its spacing is local. */
 .kcpl-admin-content .visibility-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
   margin-bottom: 14px;
-}
-
-.kcpl-admin-content .visibility-metric {
-  display: flex;
-  min-width: 0;
-  min-height: 76px;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--admin-line);
-  border-radius: 8px;
-  background: var(--admin-surface);
-  padding: 13px 14px;
-  color: inherit;
-  text-align: left;
-}
-
-button.visibility-metric {
-  cursor: pointer;
-}
-
-button.visibility-metric:hover {
-  border-color: var(--admin-line-strong);
-}
-
-.kcpl-admin-content
-.visibility-metric[data-active="true"] {
-  border-color: var(--admin-crimson);
-}
-
-.kcpl-admin-content .visibility-metric-icon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: none;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--admin-surface-muted);
-  color: var(--admin-crimson);
-}
-
-.kcpl-admin-content
-.visibility-metric[data-tone="success"]
-.visibility-metric-icon {
-  background: var(--admin-success-bg);
-  color: var(--admin-success);
-}
-
-.kcpl-admin-content
-.visibility-metric[data-tone="warning"]
-.visibility-metric-icon {
-  background: var(--admin-warning-bg);
-  color: var(--admin-warning);
-}
-
-.kcpl-admin-content
-.visibility-metric[data-tone="danger"]
-.visibility-metric-icon {
-  background: var(--admin-danger-bg);
-  color: var(--admin-danger);
-}
-
-.kcpl-admin-content .visibility-metric > div {
-  display: grid;
-  min-width: 0;
-}
-
-.kcpl-admin-content .visibility-metric strong {
-  font-size: 19px;
-  font-weight: 650;
-  line-height: 22px;
-  font-variant-numeric: tabular-nums;
-}
-
-.kcpl-admin-content .visibility-metric > div span {
-  color: var(--admin-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.kcpl-admin-content .visibility-metric-arrow {
-  margin-left: auto;
-  color: var(--admin-muted);
-  font-size: 18px;
 }
 
 .kcpl-admin-content .visibility-notice {
@@ -842,11 +758,6 @@ tr[data-selected="true"] {
 /* RESPONSIVE */
 
 @media (max-width: 1240px) {
-  .kcpl-admin-content .visibility-summary-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-  }
-
   .kcpl-admin-content .visibility-control-tower {
     grid-template-columns: 1fr;
   }
@@ -880,11 +791,6 @@ tr[data-selected="true"] {
 @media (max-width: 760px) {
   .kcpl-admin-content .visibility-page {
     padding: 16px;
-  }
-
-  .kcpl-admin-content .visibility-summary-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
   }
 
   .kcpl-admin-content .visibility-right-rail {

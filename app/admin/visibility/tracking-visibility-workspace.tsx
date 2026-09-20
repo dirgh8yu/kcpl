@@ -14,7 +14,7 @@ import {
   Truck,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   OpsBadge,
   OpsButton,
@@ -29,6 +29,7 @@ import {
   OpsTableWrap,
   useAdminPortalContainer,
 } from "../operations-ui";
+import { AppKpiStrip } from "../kpi-strip";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { shipmentStatusLabels } from "../../shipment-types";
 import {
@@ -526,81 +527,50 @@ export function TrackingVisibilityWorkspace({
         />
 
         {/* SUMMARY STRIP */}
-        <section
+        <AppKpiStrip
+          tight
           className="visibility-summary-grid"
-          aria-label="Live visibility summary"
-        >
-          <VisibilityMetric
-            label="Active shipments"
-            value={summary.active}
-            icon={<Truck size={18} />}
-            active={focus === "all"}
-            onClick={() =>
-              update({
-                view: null,
-                page: null,
-                selected: null,
-              })
-            }
-          />
-
-          <VisibilityMetric
-            label="Fresh feeds"
-            value={freshFeeds}
-            tone="success"
-            icon={<RadioTower size={18} />}
-          />
-
-          <VisibilityMetric
-            label="ETA delayed"
-            value={summary.delayed}
-            tone={summary.delayed ? "warning" : "neutral"}
-            icon={<Clock3 size={18} />}
-            active={focus === "delayed"}
-            onClick={() =>
-              update({
-                view: focus === "delayed" ? null : "delayed",
-                page: null,
-                selected: null,
-              })
-            }
-          />
-
-          <VisibilityMetric
-            label="Stale feeds"
-            value={summary.stale}
-            tone={summary.stale ? "danger" : "neutral"}
-            icon={<AlertTriangle size={18} />}
-            active={focus === "stale"}
-            onClick={() =>
-              update({
-                view: focus === "stale" ? null : "stale",
-                page: null,
-                selected: null,
-              })
-            }
-          />
-
-          <VisibilityMetric
-            label="At destination"
-            value={atDestination}
-            icon={<Box size={18} />}
-          />
-
-          <VisibilityMetric
-            label="Out for delivery"
-            value={summary.out_for_delivery}
-            icon={<Truck size={18} />}
-            active={focus === "delivery"}
-            onClick={() =>
-              update({
-                view: focus === "delivery" ? null : "delivery",
-                page: null,
-                selected: null,
-              })
-            }
-          />
-        </section>
+          items={[
+            {
+              key: "active",
+              icon: Truck,
+              label: "Active shipments",
+              value: summary.active,
+              tone: "accent",
+              active: focus === "all",
+              onSelect: () => update({ view: null, page: null, selected: null }),
+            },
+            { key: "fresh", icon: RadioTower, label: "Fresh feeds", value: freshFeeds, tone: "success" },
+            {
+              key: "delayed",
+              icon: Clock3,
+              label: "ETA delayed",
+              value: summary.delayed,
+              tone: summary.delayed ? "warning" : "neutral",
+              active: focus === "delayed",
+              onSelect: () => update({ view: focus === "delayed" ? null : "delayed", page: null, selected: null }),
+            },
+            {
+              key: "stale",
+              icon: AlertTriangle,
+              label: "Stale feeds",
+              value: summary.stale,
+              tone: summary.stale ? "danger" : "neutral",
+              active: focus === "stale",
+              onSelect: () => update({ view: focus === "stale" ? null : "stale", page: null, selected: null }),
+            },
+            { key: "at-destination", icon: Box, label: "At destination", value: atDestination },
+            {
+              key: "delivery",
+              icon: Truck,
+              label: "Out for delivery",
+              value: summary.out_for_delivery,
+              tone: "info",
+              active: focus === "delivery",
+              onSelect: () => update({ view: focus === "delivery" ? null : "delivery", page: null, selected: null }),
+            },
+          ]}
+        />
 
         {notice ? (
           <div className="visibility-notice">
@@ -1173,44 +1143,6 @@ export function TrackingVisibilityWorkspace({
         />
       ) : null}
     </OpsPage>
-  );
-}
-
-function VisibilityMetric({
-  label,
-  value,
-  icon,
-  tone = "neutral",
-  active = false,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  icon: ReactNode;
-  tone?: "neutral" | "success" | "warning" | "danger";
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const Component = onClick ? "button" : "div";
-
-  return (
-    <Component
-      className="visibility-metric"
-      data-tone={tone}
-      data-active={active || undefined}
-      onClick={onClick}
-      type={onClick ? "button" : undefined}
-    >
-      <span className="visibility-metric-icon">{icon}</span>
-
-      <div>
-        <strong>{value.toLocaleString("en-AU")}</strong>
-
-        <span>{label}</span>
-      </div>
-
-      {onClick ? <span className="visibility-metric-arrow">›</span> : null}
-    </Component>
   );
 }
 
