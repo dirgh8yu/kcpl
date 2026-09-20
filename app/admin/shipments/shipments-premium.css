@@ -26,12 +26,13 @@
 }
 
 .kcpl-admin-content .shipments-register .ops-page-header {
-  margin: 16px 24px 0;
-  padding: 24px;
-  border: 1px solid var(--ship-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow);
+  margin: 0;
+  padding: 24px var(--app-page-gap) 0;
+  border: 0;
+  border-bottom: 1px solid var(--ship-line);
+  border-radius: 0;
+  background: var(--admin-canvas);
+  box-shadow: none;
 }
 
 .kcpl-admin-content .shipments-register .ops-page-heading h1,
@@ -112,7 +113,7 @@
 /* Statistics, not controls: flat, and no hover affordance to promise a press
  * that does nothing. Only a button.ops-kpi may lift. */
 .kcpl-admin-content .shipments-register div.ops-kpi {
-  background: var(--ship-canvas);
+  background: var(--ship-surface);
   box-shadow: none;
 }
 
@@ -129,8 +130,8 @@
 .kcpl-admin-content .shipments-register button.ops-kpi:focus-visible { outline: none; box-shadow: var(--ship-focus); }
 
 .kcpl-admin-content .shipments-register .ops-kpi-icon {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--app-radius);
   background: var(--ship-canvas);
 }
@@ -360,7 +361,7 @@
 }
 
 @media (max-width: 900px) {
-  .kcpl-admin-content .shipments-register .ops-page-header { margin-inline: 16px; }
+  .kcpl-admin-content .shipments-register .ops-page-header { margin-inline: 0; }
   .kcpl-admin-content .shipments-register .ops-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kcpl-admin-content .shipments-register .shipments-toolbar {
     grid-template-columns: minmax(0, 1fr);
@@ -371,7 +372,7 @@
 
 @media (max-width: 760px) {
   .kcpl-admin-content .shipments-register { padding-bottom: 24px; }
-  .kcpl-admin-content .shipments-register .ops-page-header { margin: 8px 8px 0; padding: 16px; }
+  .kcpl-admin-content .shipments-register .ops-page-header { margin: 0; padding: 18px var(--app-page-gap) 0; }
   .kcpl-admin-content .shipments-register .shipments-actions { width: 100%; justify-content: flex-start; }
   .kcpl-admin-content .shipments-register .shipments-actions .ops-button { flex: 1 1 auto; justify-content: center; }
   .kcpl-admin-content .shipments-register .ops-kpi-strip { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }

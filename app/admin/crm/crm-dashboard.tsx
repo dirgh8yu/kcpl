@@ -19,7 +19,7 @@ import {
   type CrmDashboardStats,
   type CrmDuplicateMatch,
 } from "./crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPageHeader, OpsSearch, OpsSurface } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 
@@ -112,9 +112,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
 
   return (
     <main className="min-h-[calc(100vh-58px)] bg-[var(--admin-canvas)]">
-      <section className="border-b border-[var(--admin-line)] bg-[var(--admin-surface)]/72 px-5 py-6 backdrop-blur-xl lg:px-8">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-end justify-between gap-5"><div><p className="ops-eyebrow">Relationships</p><h1 className="mt-2 text-[31px] font-[730] tracking-[-.045em] text-[var(--admin-ink)]">Customers</h1><p className="mt-2 max-w-2xl text-[11px] leading-5 text-[var(--admin-muted)]">Customer accounts that buy KCPL freight and logistics services. Carriers, agents, transporters, suppliers and overseas counterparts live in Partners.</p></div><div className="flex items-center gap-2"><span className="hidden text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)] sm:inline">Working as {userName}</span><OpsButton variant="primary" onClick={openNew}><Plus size={13}/>New record</OpsButton></div></div>
-      </section>
+      <OpsPageHeader eyebrow="Relationships" title="Customers" description="Customer accounts, contacts and freight history. Manage carriers and suppliers in Partners." meta={<span>Working as {userName}</span>} actions={<OpsButton variant="primary" onClick={openNew}><Plus size={16}/>New customer</OpsButton>}/>
 
       <div className="px-5 py-5 lg:px-8">
       <OpsKpiStrip>

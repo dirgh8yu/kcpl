@@ -1,6 +1,5 @@
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
-import { OpsPage } from "../operations-ui";
 import { getStaffContext } from "../staff-directory.server";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listCarrierIntegrationDashboard } from "./carrier-integrations.server";
@@ -29,7 +28,7 @@ export default async function CarrierIntegrationsPage() {
 
   if (!result) return <OperationsShell {...shell}><Gate title="Carrier integrations temporarily unavailable" detail="Provider status could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
   if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Carrier integrations unavailable" detail="Firebase carrier integration storage is not available for this deployment." embedded/></OperationsShell>;
-  return <OperationsShell {...shell}><OpsPage><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} initialSummary={result.summary} canViewCommercial={staff.permissions.canViewCommercial}/></OpsPage></OperationsShell>;
+  return <OperationsShell {...shell}><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} initialSummary={result.summary} canViewCommercial={staff.permissions.canViewCommercial}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

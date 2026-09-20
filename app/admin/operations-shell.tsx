@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { KcplBranch } from "./crm/crm-data";
 import { OperationsCommandPalette } from "./operations-command-palette";
@@ -142,7 +142,7 @@ export function OperationsShell({
         <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
         {branches && branches.length ? (
           <label className="app-branch">
-            <span className="app-branch-mark" aria-hidden="true">▥</span>
+            <span className="app-branch-mark" aria-hidden="true"><Building2 size={14}/></span>
             <span className="sr-only">Operational branch</span>
             <select value={selectedBranch} onChange={(event) => changeBranch(event.target.value)} aria-label="Operational branch">
               {canAccessAllBranches ? <option value="all">All branches</option> : null}
