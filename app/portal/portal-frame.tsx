@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { OpsEmptyState, OpsPage, OpsPageHeader } from "../admin/operations-ui";
+import { portalText, type PortalLocale } from "./portal-i18n";
 
 /** Shown when Firebase is not configured for this deployment at all. */
 export function PortalUnavailable({
@@ -37,11 +38,16 @@ export function PortalWorkspaceUnavailable({
   title,
   description,
   icon,
+  locale = "en",
 }: {
   eyebrow: string;
   title: string;
   description?: ReactNode;
   icon?: ReactNode;
+  /** This one renders inside the shell, for a reader whose language is
+   * already known. `PortalUnavailable` above deliberately stays English: it is
+   * shown before anyone has signed in, so there is no reader to follow. */
+  locale?: PortalLocale;
 }) {
   return (
     <OpsPage>
@@ -50,8 +56,8 @@ export function PortalWorkspaceUnavailable({
         <OpsEmptyState
           kind="unavailable"
           icon={icon}
-          title="This information is temporarily unavailable"
-          description={description ?? "KCPL's systems could not be reached. Please try again in a moment, or contact your account manager."}
+          title={portalText(locale, "common.unavailable_title")}
+          description={description ?? portalText(locale, "common.unavailable_detail")}
         />
       </div>
     </OpsPage>

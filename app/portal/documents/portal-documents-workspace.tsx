@@ -18,16 +18,20 @@ import {
 } from "../../admin/operations-ui";
 import type { PortalDocumentRow } from "../portal-data.server";
 import { portalDate, portalDocumentLabel, portalFileSize } from "../portal-format";
+import { portalTranslator, type PortalLocale } from "../portal-i18n";
 
 export function PortalDocumentsWorkspace({
   documents,
   scanned,
   total,
+  locale,
 }: {
   documents: PortalDocumentRow[];
   scanned: number;
   total: number;
+  locale: PortalLocale;
 }) {
+  const t = portalTranslator(locale);
   const [query, setQuery] = useState("");
   const [documentType, setDocumentType] = useState("all");
   const [direction, setDirection] = useState<"all" | "from_kcpl" | "from_you">("all");
@@ -45,10 +49,10 @@ export function PortalDocumentsWorkspace({
       if (direction === "from_you" && !document.from_customer) return false;
       if (documentType !== "all" && document.document_type !== documentType) return false;
       if (!needle) return true;
-      return [document.filename, document.shipment_reference, portalDocumentLabel(document.document_type)]
+      return [document.filename, document.shipment_reference, portalDocumentLabel(document.document_type, locale)]
         .some((value) => value.toLowerCase().includes(needle));
     });
-  }, [documents, direction, documentType, query]);
+  }, [documents, direction, documentType, query, locale]);
 
   const sentByYou = documents.filter((document) => document.from_customer).length;
   const filtered = documentType !== "all" || direction !== "all" || query.trim().length > 0;
@@ -56,12 +60,12 @@ export function PortalDocumentsWorkspace({
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow="Kapileshwor Cargo"
-        title="Documents"
-        description="Paperwork KCPL has released to you, and the documents you have sent to KCPL."
+        eyebrow={t("overview.eyebrow")}
+        title={t("docs.title")}
+        description={t("docs.description")}
         meta={<>
-          <span>{documents.length} document{documents.length === 1 ? "" : "s"}</span>
-          {total > scanned ? <span>Covering your {scanned} most recent shipments of {total}</span> : null}
+          <span>{documents.length === 1 ? t("docs.count_one") : t("docs.count", { count: documents.length })}</span>
+          {total > scanned ? <span>{t("docs.coverage", { scanned, total })}</span> : null}
         </>}
       />
       <div className="ops-content">
@@ -70,26 +74,26 @@ export function PortalDocumentsWorkspace({
             <OpsSearch
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search file name, type or shipment…"
-              aria-label="Search your documents"
+              placeholder={t("docs.search_placeholder")}
+              aria-label={t("docs.search_label")}
             />
-            <div className="portal-filter-group" role="group" aria-label="Document direction filter">
-              <OpsFilterChip active={direction === "all"} onClick={() => setDirection("all")}>All</OpsFilterChip>
-              <OpsFilterChip active={direction === "from_kcpl"} onClick={() => setDirection("from_kcpl")}>From KCPL</OpsFilterChip>
-              <OpsFilterChip active={direction === "from_you"} onClick={() => setDirection("from_you")}>Sent by you · {sentByYou}</OpsFilterChip>
+            <div className="portal-filter-group" role="group" aria-label={t("docs.direction_label")}>
+              <OpsFilterChip active={direction === "all"} onClick={() => setDirection("all")}>{t("docs.all")}</OpsFilterChip>
+              <OpsFilterChip active={direction === "from_kcpl"} onClick={() => setDirection("from_kcpl")}>{t("docs.from_kcpl")}</OpsFilterChip>
+              <OpsFilterChip active={direction === "from_you"} onClick={() => setDirection("from_you")}>{t("docs.sent_by_you")} · {sentByYou}</OpsFilterChip>
             </div>
-            <div className="portal-filter-group" role="group" aria-label="Document type filter">
-              <OpsFilterChip active={documentType === "all"} onClick={() => setDocumentType("all")}>All types</OpsFilterChip>
+            <div className="portal-filter-group" role="group" aria-label={t("docs.type_label")}>
+              <OpsFilterChip active={documentType === "all"} onClick={() => setDocumentType("all")}>{t("docs.all_types")}</OpsFilterChip>
               {types.map(([type, count]) => (
                 <OpsFilterChip key={type} active={documentType === type} onClick={() => setDocumentType(type)}>
-                  {portalDocumentLabel(type)} · {count}
+                  {portalDocumentLabel(type, locale)} · {count}
                 </OpsFilterChip>
               ))}
             </div>
             {filtered ? (
-              <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setDirection("all"); setQuery(""); }}>Reset</OpsButton>
+              <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setDirection("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
             ) : null}
-            <span className="portal-toolbar-count">{rows.length} shown</span>
+            <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
           </OpsToolbar>
 
           {rows.length ? (
@@ -97,19 +101,19 @@ export function PortalDocumentsWorkspace({
               <table className="ops-table">
                 <thead>
                   <tr>
-                    <th>Document</th>
-                    <th>Shipment</th>
-                    <th>Direction</th>
-                    <th>Date</th>
-                    <th>Size</th>
-                    <th><span className="portal-sr-only">Download</span></th>
+                    <th>{t("common.document")}</th>
+                    <th>{t("common.shipment")}</th>
+                    <th>{t("docs.col_direction")}</th>
+                    <th>{t("docs.col_date")}</th>
+                    <th>{t("docs.col_size")}</th>
+                    <th><span className="portal-sr-only">{t("common.download")}</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((document) => (
                     <tr key={`${document.shipment_reference}:${document.id}`}>
                       <td>
-                        <span className="portal-cell-title">{portalDocumentLabel(document.document_type)}</span>
+                        <span className="portal-cell-title">{portalDocumentLabel(document.document_type, locale)}</span>
                         <span className="portal-cell-detail">{document.filename}</span>
                       </td>
                       <td>
@@ -120,9 +124,9 @@ export function PortalDocumentsWorkspace({
                       <td>
                         {document.from_customer ? (
                           <OpsBadge tone={document.review_state === "confirmed" ? "success" : document.review_state === "resend" ? "danger" : "info"}>
-                            {document.review_state === "confirmed" ? "Confirmed" : document.review_state === "resend" ? "Send again" : "With KCPL"}
+                            {document.review_state === "confirmed" ? t("docs.state_confirmed") : document.review_state === "resend" ? t("docs.state_resend") : t("docs.state_with_kcpl")}
                           </OpsBadge>
-                        ) : <OpsBadge tone="neutral">From KCPL</OpsBadge>}
+                        ) : <OpsBadge tone="neutral">{t("docs.from_kcpl")}</OpsBadge>}
                       </td>
                       <td>{portalDate(document.uploaded_at)}</td>
                       <td>{portalFileSize(document.size_bytes)}</td>
@@ -133,7 +137,7 @@ export function PortalDocumentsWorkspace({
                           data-size="sm"
                           href={`/api/portal/documents/${encodeURIComponent(document.shipment_reference)}/${encodeURIComponent(document.id)}`}
                         >
-                          Download
+                          {t("common.download")}
                         </a>
                       </td>
                     </tr>
@@ -146,11 +150,11 @@ export function PortalDocumentsWorkspace({
               <OpsEmptyState
                 kind={filtered ? "search" : "neutral"}
                 icon={<FileText size={18}/>}
-                title={filtered ? "No documents match this view" : "No documents yet"}
+                title={filtered ? t("docs.empty_filtered_title") : t("docs.empty_title")}
                 description={filtered
-                  ? "Try a different filter or clear the search."
-                  : "Paperwork KCPL releases to you, and anything you send from a shipment, is listed here."}
-                action={filtered ? <OpsButton size="sm" variant="secondary" onClick={() => { setDocumentType("all"); setQuery(""); }}>Reset view</OpsButton> : undefined}
+                  ? t("ships.empty_filtered_description")
+                  : t("docs.empty_description")}
+                action={filtered ? <OpsButton size="sm" variant="secondary" onClick={() => { setDocumentType("all"); setQuery(""); }}>{t("ships.reset_view")}</OpsButton> : undefined}
               />
             </div>
           )}

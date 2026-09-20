@@ -17,12 +17,13 @@ import {
   type PortalRequirementState,
 } from "../../portal-access-policy";
 import { portalDate, portalDocumentLabel } from "../../portal-format";
+import { portalTranslator, type PortalLocale, type PortalTextKey } from "../../portal-i18n";
 
-const stateLabels: Record<PortalRequirementState, string> = {
-  needed: "Needed",
-  resend: "Send again",
-  with_kcpl: "With KCPL",
-  confirmed: "Confirmed",
+const stateKeys: Record<PortalRequirementState, PortalTextKey> = {
+  needed: "xchg.state_needed",
+  resend: "xchg.state_resend",
+  with_kcpl: "xchg.state_with_kcpl",
+  confirmed: "xchg.state_confirmed",
 };
 
 const stateTones: Record<PortalRequirementState, "warning" | "danger" | "info" | "success"> = {
@@ -43,11 +44,14 @@ export function PortalDocumentExchange({
   reference,
   checklist,
   canSend,
+  locale,
 }: {
   reference: string;
   checklist: PortalRequirementRow[];
   canSend: boolean;
+  locale: PortalLocale;
 }) {
+  const t = portalTranslator(locale);
   const router = useRouter();
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -66,11 +70,11 @@ export function PortalDocumentExchange({
       body.set("documentType", documentType);
       const response = await fetch(`/api/portal/documents/${encodeURIComponent(reference)}`, { method: "POST", body });
       const data = await response.json() as { ok?: boolean; error?: string; message?: string; duplicate?: boolean };
-      if (!response.ok || !data.ok) throw new Error(data.error || "The document could not be sent.");
-      setNotice(data.message ?? "Sent to KCPL.");
+      if (!response.ok || !data.ok) throw new Error(data.error || t("xchg.failed"));
+      setNotice(data.message ?? t("xchg.sent"));
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The document could not be sent.");
+      setError(reason instanceof Error ? reason.message : t("xchg.failed"));
     } finally {
       setBusy("");
     }
@@ -85,11 +89,11 @@ export function PortalDocumentExchange({
   return (
     <OpsSurface
       id="documents"
-      eyebrow="Paperwork"
-      title="What KCPL needs from you"
+      eyebrow={t("overview.paperwork_eyebrow")}
+      title={t("xchg.title")}
       description={outstanding.length
-        ? "Send these and KCPL will confirm each one once the team has checked it."
-        : "Nothing is outstanding on this shipment."}
+        ? t("xchg.description_outstanding")
+        : t("xchg.description_clear")}
       priority={outstanding.some((row) => row.required) ? "warning" : "normal"}
     >
       <div className="portal-exchange">
@@ -102,15 +106,15 @@ export function PortalDocumentExchange({
               <li key={row.document_type} data-state={row.state}>
                 <span className="portal-checklist-mark" aria-hidden="true"><StateIcon state={row.state}/></span>
                 <span className="portal-checklist-main">
-                  <strong>{portalDocumentLabel(row.document_type)}</strong>
+                  <strong>{portalDocumentLabel(row.document_type, locale)}</strong>
                   <span>
-                    {row.required ? "Required" : "If available"}
-                    {row.last_submitted_at ? ` · last sent ${portalDate(row.last_submitted_at)}` : ""}
-                    {row.state === "resend" ? " · KCPL asked for this to be sent again" : ""}
-                    {!row.uploadable && row.state !== "confirmed" ? " · KCPL prepares this one" : ""}
+                    {row.required ? t("xchg.required") : t("xchg.if_available")}
+                    {row.last_submitted_at ? t("xchg.last_sent", { date: portalDate(row.last_submitted_at) }) : ""}
+                    {row.state === "resend" ? t("xchg.asked_again") : ""}
+                    {!row.uploadable && row.state !== "confirmed" ? t("xchg.kcpl_prepares") : ""}
                   </span>
                 </span>
-                <OpsBadge tone={stateTones[row.state]} dot>{stateLabels[row.state]}</OpsBadge>
+                <OpsBadge tone={stateTones[row.state]} dot>{t(stateKeys[row.state])}</OpsBadge>
                 {canSend && row.uploadable && row.state !== "confirmed" ? (
                   <>
                     <input
@@ -118,7 +122,7 @@ export function PortalDocumentExchange({
                       type="file"
                       className="portal-file-input"
                       accept=".pdf,.jpg,.jpeg,.png,.webp"
-                      aria-label={`Send ${portalDocumentLabel(row.document_type)} to KCPL`}
+                      aria-label={t("xchg.send_aria", { document: portalDocumentLabel(row.document_type, locale) })}
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         event.target.value = "";
@@ -131,7 +135,7 @@ export function PortalDocumentExchange({
                       disabled={busy === row.document_type}
                       onClick={() => pick(row.document_type)}
                     >
-                      {busy === row.document_type ? "Sending…" : "Send file"}
+                      {busy === row.document_type ? t("xchg.sending") : t("xchg.send_file")}
                     </OpsButton>
                   </>
                 ) : null}
@@ -143,17 +147,17 @@ export function PortalDocumentExchange({
             compact
             kind="healthy"
             icon={<FileUp size={18}/>}
-            title="No document checklist on this shipment"
-            description="KCPL has not listed any paperwork requirements here. You can still send a document below."
+            title={t("xchg.no_checklist_title")}
+            description={t("xchg.no_checklist_description")}
           />
         )}
 
         {canSend ? (
           <div className="portal-exchange-free">
-            <OpsField label="Send something else" hint="PDF, JPEG, PNG or WEBP, up to 10 MB.">
+            <OpsField label={t("xchg.free_label")} hint={t("xchg.free_hint")}>
               <select value={freeType} onChange={(event) => setFreeType(event.target.value)} disabled={Boolean(busy)}>
                 {customerUploadableDocumentTypes.map((type) => (
-                  <option key={type} value={type}>{portalDocumentLabel(type)}</option>
+                  <option key={type} value={type}>{portalDocumentLabel(type, locale)}</option>
                 ))}
               </select>
             </OpsField>
@@ -162,7 +166,7 @@ export function PortalDocumentExchange({
               type="file"
               className="portal-file-input"
               accept=".pdf,.jpg,.jpeg,.png,.webp"
-              aria-label="Choose a document to send to KCPL"
+              aria-label={t("xchg.choose_aria")}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 event.target.value = "";
@@ -171,13 +175,11 @@ export function PortalDocumentExchange({
             />
             <OpsButton size="sm" variant="secondary" disabled={Boolean(busy)} onClick={() => pick("__free")}>
               <FileUp size={14} strokeWidth={1.75} aria-hidden="true"/>
-              <span>{busy === freeType ? "Sending…" : "Choose file"}</span>
+              <span>{busy === freeType ? t("xchg.sending") : t("xchg.choose_file")}</span>
             </OpsButton>
           </div>
         ) : (
-          <p className="portal-footnote">
-            This login can view documents but cannot send them. Your account owner or KCPL account manager can change that.
-          </p>
+          <p className="portal-footnote">{t("xchg.read_only")}</p>
         )}
       </div>
     </OpsSurface>

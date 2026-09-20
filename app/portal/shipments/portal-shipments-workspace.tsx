@@ -18,15 +18,16 @@ import {
 } from "../../admin/operations-ui";
 import type { PortalShipmentView } from "../portal-access-policy";
 import { portalDate, portalDateTime, portalModeLabel, portalStatusLabel, portalStatusTone } from "../portal-format";
+import { portalTranslator, type PortalLocale, type PortalTextKey } from "../portal-i18n";
 
 type ShipmentFocus = "all" | "active" | "in_transit" | "attention" | "delivered";
 
-const focusLabels: Record<ShipmentFocus, string> = {
-  all: "All",
-  active: "Active",
-  in_transit: "In transit",
-  attention: "Needs attention",
-  delivered: "Delivered",
+const focusKeys: Record<ShipmentFocus, PortalTextKey> = {
+  all: "ships.focus_all",
+  active: "ships.focus_active",
+  in_transit: "ships.focus_in_transit",
+  attention: "ships.focus_attention",
+  delivered: "ships.focus_delivered",
 };
 
 function matchesFocus(shipment: PortalShipmentView, focus: ShipmentFocus) {
@@ -37,7 +38,8 @@ function matchesFocus(shipment: PortalShipmentView, focus: ShipmentFocus) {
   return shipment.status === "delivered";
 }
 
-export function PortalShipmentsWorkspace({ shipments }: { shipments: PortalShipmentView[] }) {
+export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: PortalShipmentView[]; locale: PortalLocale }) {
+  const t = portalTranslator(locale);
   const [focus, setFocus] = useState<ShipmentFocus>("all");
   const [query, setQuery] = useState("");
 
@@ -56,10 +58,10 @@ export function PortalShipmentsWorkspace({ shipments }: { shipments: PortalShipm
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow="Kapileshwor Cargo"
-        title="Shipments"
-        description="Every movement KCPL has handled for your account, with the milestones your operations team records."
-        meta={<span>{shipments.length} shipment{shipments.length === 1 ? "" : "s"} on record</span>}
+        eyebrow={t("overview.eyebrow")}
+        title={t("ships.title")}
+        description={t("ships.description")}
+        meta={<span>{shipments.length === 1 ? t("overview.on_record_one") : t("overview.on_record", { count: shipments.length })}</span>}
       />
       <div className="ops-content">
         <OpsSurface flush>
@@ -67,20 +69,20 @@ export function PortalShipmentsWorkspace({ shipments }: { shipments: PortalShipm
             <OpsSearch
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search reference, route or carrier…"
-              aria-label="Search your shipments"
+              placeholder={t("ships.search_placeholder")}
+              aria-label={t("ships.search_label")}
             />
-            <div className="portal-filter-group" role="group" aria-label="Shipment filter">
-              {(Object.keys(focusLabels) as ShipmentFocus[]).map((value) => (
+            <div className="portal-filter-group" role="group" aria-label={t("ships.filter_label")}>
+              {(Object.keys(focusKeys) as ShipmentFocus[]).map((value) => (
                 <OpsFilterChip key={value} active={focus === value} onClick={() => setFocus(value)}>
-                  {focusLabels[value]}
+                  {t(focusKeys[value])}
                 </OpsFilterChip>
               ))}
             </div>
             {filtered ? (
-              <OpsButton size="sm" variant="ghost" onClick={() => { setFocus("all"); setQuery(""); }}>Reset</OpsButton>
+              <OpsButton size="sm" variant="ghost" onClick={() => { setFocus("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
             ) : null}
-            <span className="portal-toolbar-count">{rows.length} shown</span>
+            <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
           </OpsToolbar>
 
           {rows.length ? (
@@ -88,13 +90,13 @@ export function PortalShipmentsWorkspace({ shipments }: { shipments: PortalShipm
               <table className="ops-table">
                 <thead>
                   <tr>
-                    <th>Reference</th>
-                    <th>Route</th>
-                    <th>Status</th>
-                    <th>Carrier</th>
-                    <th>ETA</th>
-                    <th>Last update</th>
-                    <th><span className="portal-sr-only">Open</span></th>
+                    <th>{t("overview.col_reference")}</th>
+                    <th>{t("common.route")}</th>
+                    <th>{t("common.status")}</th>
+                    <th>{t("ships.col_carrier")}</th>
+                    <th>{t("overview.col_eta")}</th>
+                    <th>{t("overview.col_last_update")}</th>
+                    <th><span className="portal-sr-only">{t("overview.open")}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -104,21 +106,21 @@ export function PortalShipmentsWorkspace({ shipments }: { shipments: PortalShipm
                         <Link href={`/portal/shipments/${encodeURIComponent(shipment.reference)}`} className="portal-row-link">
                           <OpsMono>{shipment.reference}</OpsMono>
                         </Link>
-                        <span className="portal-cell-detail">{portalModeLabel(shipment.mode)}</span>
+                        <span className="portal-cell-detail">{portalModeLabel(shipment.mode, locale)}</span>
                       </td>
                       <td>
-                        <span className="portal-lane">{shipment.origin || "Origin"}<span className="portal-lane-arrow" aria-hidden="true">→</span>{shipment.destination || "Destination"}</span>
-                        {shipment.current_location ? <span className="portal-cell-detail">Now at {shipment.current_location}</span> : null}
+                        <span className="portal-lane">{shipment.origin || t("overview.origin")}<span className="portal-lane-arrow" aria-hidden="true">→</span>{shipment.destination || t("overview.destination")}</span>
+                        {shipment.current_location ? <span className="portal-cell-detail">{t("overview.now_at", { location: shipment.current_location })}</span> : null}
                       </td>
-                      <td><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status)}</OpsBadge></td>
+                      <td><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge></td>
                       <td>
-                        {shipment.carrier ?? "—"}
+                        {shipment.carrier ?? t("common.none")}
                         {shipment.carrier_reference ? <span className="portal-cell-detail"><OpsMono>{shipment.carrier_reference}</OpsMono></span> : null}
                       </td>
                       <td>{portalDate(shipment.eta)}</td>
                       <td>{portalDateTime(shipment.updated_at)}</td>
                       <td>
-                        <Link href={`/portal/shipments/${encodeURIComponent(shipment.reference)}`} className="portal-row-open" aria-label={`Open shipment ${shipment.reference}`}>
+                        <Link href={`/portal/shipments/${encodeURIComponent(shipment.reference)}`} className="portal-row-open" aria-label={t("overview.open_shipment", { reference: shipment.reference })}>
                           <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/>
                         </Link>
                       </td>
@@ -132,11 +134,11 @@ export function PortalShipmentsWorkspace({ shipments }: { shipments: PortalShipm
               <OpsEmptyState
                 kind={filtered ? "search" : "neutral"}
                 icon={<Package size={18}/>}
-                title={filtered ? "No shipments match this view" : "No shipments yet"}
+                title={filtered ? t("ships.empty_filtered_title") : t("ships.empty_title")}
                 description={filtered
-                  ? "Try a different filter or clear the search."
-                  : "Once KCPL books a shipment for your account it appears here with its milestones and documents."}
-                action={filtered ? <OpsButton size="sm" variant="secondary" onClick={() => { setFocus("all"); setQuery(""); }}>Reset view</OpsButton> : undefined}
+                  ? t("ships.empty_filtered_description")
+                  : t("ships.empty_description")}
+                action={filtered ? <OpsButton size="sm" variant="secondary" onClick={() => { setFocus("all"); setQuery(""); }}>{t("ships.reset_view")}</OpsButton> : undefined}
               />
             </div>
           )}

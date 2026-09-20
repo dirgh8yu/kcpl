@@ -1,12 +1,13 @@
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { getStaffContext } from "../../../admin/staff-directory.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
-import { portalRoleValue } from "../../../portal/portal-access-policy";
+import { portalAccountLinkActions, portalRoleValue, type PortalAccountLinkAction } from "../../../portal/portal-access-policy";
 import { createPortalInvite } from "../../../portal/portal-invites.server";
 import {
   listPortalAccounts,
   savePortalAccount,
   setPortalAccountActive,
+  setPortalAccountCustomerLink,
 } from "../../../portal/portal-accounts.server";
 
 function json(body: unknown, status = 200) {
@@ -70,6 +71,22 @@ export async function POST(request: Request) {
     // When no transactional email provider is configured the link is returned
     // once, for a staff member to pass on through their own channel.
     return json({ ok: true, delivered: invite.kind === "sent", link: invite.kind === "link" ? invite.link : null });
+  }
+
+  if (portalAccountLinkActions.includes(action as PortalAccountLinkAction)) {
+    // Which customers a login may read is Management's call, never an account
+    // owner's: the portal side has no route that reaches this.
+    const result = await setPortalAccountCustomerLink({
+      email,
+      action: action as PortalAccountLinkAction,
+      customerId: clean(body.customerId, 120),
+      actorEmail: auth.user.email,
+    });
+    if (result.kind === "missing") return json({ ok: false, error: "That portal account was not found." }, 404);
+    if (result.kind === "invalid_customer") return json({ ok: false, error: "Choose an active customer account." }, 400);
+    if (result.kind === "denied") return json({ ok: false, error: result.message }, 409);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Portal account storage is unavailable." }, 503);
+    return json({ ok: true, additionalCustomerIds: result.additionalCustomerIds });
   }
 
   if (action !== "save") return json({ ok: false, error: "Unknown action." }, 400);

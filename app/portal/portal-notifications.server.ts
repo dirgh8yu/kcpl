@@ -3,6 +3,13 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import { normalizePortalEmail, portalShipmentView } from "./portal-access-policy";
 import { listShipmentDocuments } from "../shipment-documents.server";
+import { portalLocaleValue, type PortalLocale } from "./portal-i18n";
+import {
+  portalPushConfigured,
+  portalPushSubscriptionsByEmail,
+  sendPortalPush,
+  type PortalPushSubscription,
+} from "./portal-push.server";
 import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
@@ -39,6 +46,9 @@ type Account = {
   customerId: string;
   customerName: string;
   preferences: ReturnType<typeof portalNotificationPreferences>;
+  /** Each recipient is written to in their own language, which is why the
+   * preference lives on the account: this sweep has no browser to ask. */
+  locale: PortalLocale;
 };
 
 function deliveryId(key: string) {
@@ -66,6 +76,7 @@ async function activePortalAccounts(): Promise<Account[]> {
       email,
       customerId,
       customerName: typeof data.customer_name === "string" ? data.customer_name : customerId,
+      locale: portalLocaleValue(data.locale),
       preferences: portalNotificationPreferences(data),
     }];
   });
@@ -78,6 +89,60 @@ async function activePortalAccounts(): Promise<Account[]> {
  * so a crash between the two leaves a `pending` row rather than a silent
  * re-send on the next sweep.
  */
+/**
+ * Push the same fact to the account's registered browsers.
+ *
+ * Push is a transport, not a second policy: this is only reached for a
+ * message the notification rules already decided to send, under the same
+ * deterministic key. The key is claimed once per fact per recipient, so a
+ * customer with a phone and a laptop gets one notification on each rather
+ * than the same fact twice on both.
+ *
+ * Nothing here can fail a sweep. A dead endpoint is dropped by the delivery
+ * module and every other failure is logged and stepped over, because an
+ * undelivered push must not cost the email that carries the same news.
+ */
+async function pushOnce(input: {
+  key: string;
+  account: Account;
+  subject: string;
+  text: string;
+  url: string;
+  subscriptions: Map<string, PortalPushSubscription[]>;
+}) {
+  if (!portalPushConfigured()) return;
+  const targets = input.subscriptions.get(input.account.email) ?? [];
+  if (!targets.length) return;
+
+  const reference = firebaseAdminDb().collection("portal_push_deliveries").doc(deliveryId(input.key));
+  try {
+    // create() rather than set(): losing the race means another sweep owns
+    // this fact, exactly as it does for email.
+    await reference.create({
+      key: input.key,
+      recipient_email: input.account.email,
+      started_at: new Date().toISOString(),
+    });
+  } catch {
+    return;
+  }
+
+  // The first line of the email body is the sentence a person reads on a lock
+  // screen; the rest is the detail table, which has no place there.
+  const body = input.text.split("\n")[0] ?? "";
+  for (const target of targets) {
+    await sendPortalPush(target, {
+      title: input.subject,
+      body,
+      url: input.url,
+      // The delivery key, so the same fact arriving twice replaces the first
+      // notification rather than stacking a duplicate.
+      tag: input.key,
+      lang: input.account.locale,
+    });
+  }
+}
+
 async function sendOnce(input: { key: string; to: string; subject: string; text: string; html: string; reference: string }) {
   const reference = firebaseAdminDb().collection("portal_email_deliveries").doc(deliveryId(input.key));
   const existing = await reference.get();
@@ -139,6 +204,12 @@ export async function dispatchPortalNotifications() {
     byCustomer.set(account.customerId, [...(byCustomer.get(account.customerId) ?? []), account]);
   }
 
+  // One read for the whole sweep rather than one per recipient: a customer
+  // with three browsers still costs nothing extra per shipment.
+  const pushSubscriptions = portalPushConfigured()
+    ? await portalPushSubscriptionsByEmail()
+    : new Map<string, PortalPushSubscription[]>();
+
   let sent = 0;
   let watched = 0;
 
@@ -192,14 +263,15 @@ export async function dispatchPortalNotifications() {
             currentLocation: shipment.current_location,
             customerName: account.customerName,
             portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
+          }, account.locale);
+          const key = portalNotificationKey({
+            topic: "shipment_updates",
+            reference: shipment.reference,
+            fact: shipment.status,
+            recipient: account.email,
           });
           const result = await sendOnce({
-            key: portalNotificationKey({
-              topic: "shipment_updates",
-              reference: shipment.reference,
-              fact: shipment.status,
-              recipient: account.email,
-            }),
+            key,
             to: account.email,
             subject: message.subject,
             text: message.text,
@@ -207,6 +279,14 @@ export async function dispatchPortalNotifications() {
             reference: shipment.reference,
           });
           if (result.kind === "sent") sent += 1;
+          await pushOnce({
+            key,
+            account,
+            subject: message.subject,
+            text: message.text,
+            url: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
+            subscriptions: pushSubscriptions,
+          });
         }
       }
 
@@ -239,16 +319,17 @@ export async function dispatchPortalNotifications() {
               destination: shipment.destination,
               customerName: account.customerName,
               portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}#documents`),
+            }, account.locale);
+            // Keyed by document id, so a later re-review of the same document
+            // never notifies the customer about it twice.
+            const key = portalNotificationKey({
+              topic: "documents",
+              reference: shipment.reference,
+              fact: `document-${String(entry.id ?? "")}`,
+              recipient: account.email,
             });
             const result = await sendOnce({
-              // Keyed by document id, so a later re-review of the same document
-              // never mails the customer about it twice.
-              key: portalNotificationKey({
-                topic: "documents",
-                reference: shipment.reference,
-                fact: `document-${String(entry.id ?? "")}`,
-                recipient: account.email,
-              }),
+              key,
               to: account.email,
               subject: message.subject,
               text: message.text,
@@ -256,6 +337,14 @@ export async function dispatchPortalNotifications() {
               reference: shipment.reference,
             });
             if (result.kind === "sent") sent += 1;
+            await pushOnce({
+              key,
+              account,
+              subject: message.subject,
+              text: message.text,
+              url: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}#documents`),
+              subscriptions: pushSubscriptions,
+            });
           }
         }
       }
@@ -279,14 +368,15 @@ export async function dispatchPortalNotifications() {
               deadline: status.deadline,
               customerName: account.customerName,
               portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
+            }, account.locale);
+            const key = portalNotificationKey({
+              topic: "free_time",
+              reference: shipment.reference,
+              fact: `free-time-${threshold}-${status.deadline ?? ""}`,
+              recipient: account.email,
             });
             const result = await sendOnce({
-              key: portalNotificationKey({
-                topic: "free_time",
-                reference: shipment.reference,
-                fact: `free-time-${threshold}-${status.deadline ?? ""}`,
-                recipient: account.email,
-              }),
+              key,
               to: account.email,
               subject: message.subject,
               text: message.text,
@@ -294,6 +384,14 @@ export async function dispatchPortalNotifications() {
               reference: shipment.reference,
             });
             if (result.kind === "sent") sent += 1;
+            await pushOnce({
+              key,
+              account,
+              subject: message.subject,
+              text: message.text,
+              url: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
+              subscriptions: pushSubscriptions,
+            });
           }
         }
       }

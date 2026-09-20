@@ -2331,3 +2331,51 @@
   .kcpl-admin-content .ops-table { min-width: 0; }
   .kcpl-portal-route { background: #FFFFFF; }
 }
+
+/* Job File -- customer document access.
+ * The "not collected" list is the actionable half: released paperwork the
+ * customer has never opened. It is set apart from the table above it because
+ * it asks the operator to do something rather than merely recording what
+ * happened. */
+.kcpl-admin-content .job-access-pending { margin-top: var(--app-space-4); padding-top: var(--app-space-4); border-top: 1px solid var(--admin-border); }
+.kcpl-admin-content .job-access-pending > p { display: flex; align-items: center; gap: var(--app-space-2); margin: 0 0 var(--app-space-3); color: var(--admin-muted); font-size: var(--app-text-sm); }
+.kcpl-admin-content .job-access-pending ul { display: flex; flex-direction: column; gap: var(--app-space-2); margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-access-pending li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--app-space-2); }
+.kcpl-admin-content .job-access-pending li strong { font-size: var(--app-text-sm); font-weight: 600; }
+.kcpl-admin-content .job-access-pending li span { color: var(--admin-muted); font-size: var(--app-text-sm); }
+
+/* Customer portal -- account switcher.
+ * Only rendered for a login linked to more than one KCPL customer record, so
+ * an ordinary account never sees it. It sits inside the account block rather
+ * than the navigation because it changes whose data is shown, not which page. */
+.kcpl-admin-content .portal-customer-switch,
+.kcpl-portal-route .portal-customer-switch { display: inline-flex; align-items: center; gap: var(--app-space-2); padding-right: var(--app-space-3); margin-right: var(--app-space-3); border-right: 1px solid var(--admin-border); color: var(--admin-muted); }
+.kcpl-portal-route .portal-customer-switch select { max-width: 200px; padding: 6px 8px; border: 1px solid var(--admin-border); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-text); font: inherit; font-size: var(--app-text-sm); }
+.kcpl-portal-route .portal-customer-switch select:disabled { opacity: 0.6; }
+.kcpl-portal-route .portal-customer-switch [role="alert"] { color: var(--admin-danger); font-size: var(--app-text-sm); }
+
+/* Customer portal -- Nepali.
+ * Devanagari needs more vertical room than Latin at the same nominal size, and
+ * the UI face the portal otherwise uses has no Devanagari coverage, so a
+ * Nepali portal would fall back to whatever the device happens to have. The
+ * face is already loaded by the root layout for the public site. */
+.kcpl-portal-route .portal-shell[data-locale="ne"],
+.portal-shell[data-locale="ne"] { font-family: var(--font-devanagari), var(--font-inter), system-ui, sans-serif; }
+.portal-shell[data-locale="ne"] .ops-page-header h1,
+.portal-shell[data-locale="ne"] .ops-surface-header h2,
+.portal-shell[data-locale="ne"] .ops-badge,
+.portal-shell[data-locale="ne"] .portal-nav-link { line-height: 1.7; }
+
+/* Customer portal -- language choice.
+ * Two buttons rather than a select: there are two languages, the Nepali label
+ * is written in Devanagari so the reader recognises it without knowing the
+ * English word for it, and each carries its own `lang` so the browser picks
+ * the right face for the label itself. */
+.kcpl-admin-content .portal-language-choice { display: flex; align-items: center; gap: var(--app-space-2); flex-wrap: wrap; }
+.kcpl-admin-content .portal-language-choice button { padding: 8px 14px; border: 1px solid var(--admin-border); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-text); font: inherit; font-size: var(--app-text-sm); cursor: pointer; }
+.kcpl-admin-content .portal-language-choice button[data-active="true"] { border-color: var(--admin-accent-line); background: var(--admin-accent-bg); font-weight: 600; }
+.kcpl-admin-content .portal-language-choice button:disabled { opacity: 0.6; cursor: default; }
+
+/* Customer portal -- push notifications on this device. */
+.kcpl-admin-content .portal-push-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--app-space-3); }
+.kcpl-admin-content .portal-push-control [role="alert"] { color: var(--admin-danger); }

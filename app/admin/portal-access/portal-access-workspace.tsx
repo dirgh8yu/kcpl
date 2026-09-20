@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { KeyRound, UserPlus, Users2 } from "lucide-react";
+import { Building2, KeyRound, UserPlus, Users2 } from "lucide-react";
 import {
   OpsBadge,
   OpsButton,
@@ -37,6 +37,8 @@ export function PortalAccessWorkspace({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [inviteLink, setInviteLink] = useState("");
+  const [linkEmail, setLinkEmail] = useState("");
+  const [linkCustomerId, setLinkCustomerId] = useState(customers[0]?.id ?? "");
 
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -44,6 +46,11 @@ export function PortalAccessWorkspace({
     return accounts.filter((account) =>
       account.email.includes(needle) || account.customer_name.toLowerCase().includes(needle));
   }, [accounts, query]);
+
+  const customerNames = useMemo(
+    () => new Map(customers.map((customer) => [customer.id, customer.name])),
+    [customers],
+  );
 
   async function refresh() {
     const response = await fetch("/api/admin/portal-access", { cache: "no-store" });
@@ -97,6 +104,25 @@ export function PortalAccessWorkspace({
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The invitation could not be created.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function changeLink(action: "link" | "unlink") {
+    if (busy) return;
+    setBusy("link");
+    setError("");
+    setNotice("");
+    setInviteLink("");
+    try {
+      await post({ action, email: linkEmail, customerId: linkCustomerId });
+      setNotice(action === "link"
+        ? `${linkEmail} can now also see ${customerNames.get(linkCustomerId) ?? linkCustomerId}.`
+        : `${linkEmail} can no longer see ${customerNames.get(linkCustomerId) ?? linkCustomerId}.`);
+      await refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The linked customer could not be changed.");
     } finally {
       setBusy("");
     }
@@ -172,6 +198,41 @@ export function PortalAccessWorkspace({
             </form>
           </OpsSurface>
 
+          <OpsSurface
+            eyebrow="Linked accounts"
+            title="Let one login see several customers"
+            description="For a freight agent or a group buying under more than one KCPL customer record. The login keeps its own account; a linked customer is read alongside it and is chosen from a switcher in the portal. Only Management can grant this — an account owner cannot link themselves to another company."
+          >
+            <form className="portal-form" onSubmit={(event) => { event.preventDefault(); void changeLink("link"); }} aria-busy={busy === "link"}>
+              <div className="portal-form-grid">
+                <OpsField label="Portal login">
+                  <select value={linkEmail} onChange={(event) => setLinkEmail(event.target.value)} disabled={busy === "link"} required>
+                    <option value="">Choose a login…</option>
+                    {accounts.map((account) => (
+                      <option key={account.email} value={account.email}>{account.email}</option>
+                    ))}
+                  </select>
+                </OpsField>
+                <OpsField label="Customer account to link">
+                  <select value={linkCustomerId} onChange={(event) => setLinkCustomerId(event.target.value)} disabled={busy === "link"} required>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>
+                    ))}
+                  </select>
+                </OpsField>
+              </div>
+              <div className="portal-form-actions">
+                <OpsButton type="submit" variant="primary" disabled={busy === "link" || !linkEmail || !linkCustomerId}>
+                  <Building2 size={15} strokeWidth={1.75} aria-hidden="true"/>
+                  <span>{busy === "link" ? "Saving…" : "Link customer"}</span>
+                </OpsButton>
+                <OpsButton type="button" variant="secondary" disabled={busy === "link" || !linkEmail || !linkCustomerId} onClick={() => void changeLink("unlink")}>
+                  Remove link
+                </OpsButton>
+              </div>
+            </form>
+          </OpsSurface>
+
           <OpsSurface eyebrow="Accounts" title="Provisioned portal logins" flush>
             <OpsToolbar>
               <OpsSearch
@@ -203,7 +264,14 @@ export function PortalAccessWorkspace({
                           <OpsMono>{account.email}</OpsMono>
                           {account.created_by_email ? <span className="portal-cell-detail">Added by {account.created_by_email}</span> : null}
                         </td>
-                        <td>{account.customer_name || account.customer_id}</td>
+                        <td>
+                          {account.customer_name || account.customer_id}
+                          {account.additional_customer_ids.length ? (
+                            <span className="portal-cell-detail">
+                              Also sees {account.additional_customer_ids.map((id) => customerNames.get(id) ?? id).join(", ")}
+                            </span>
+                          ) : null}
+                        </td>
                         <td>{portalRoleLabels[account.role]}</td>
                         <td>
                           <OpsBadge tone={account.active ? "success" : "neutral"} dot>{account.active ? "Active" : "Disabled"}</OpsBadge>

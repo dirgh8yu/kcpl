@@ -105,7 +105,25 @@ test("an owner can only ever mint a member", async () => {
 test("the team listing is scoped by customer at the query", async () => {
   const source = await readFile(repo("app/portal/portal-accounts.server.ts"), "utf8");
   const listing = source.slice(source.indexOf("export async function listPortalTeam"));
-  assert.match(listing.slice(0, 900), /where\("customer_id", "==", customerId\.trim\(\)\)/);
+  const body = listing.slice(0, 1800);
+  // Two queries, because Firestore cannot OR across fields: the logins that
+  // belong to this customer, and the linked logins that can also read it.
+  // Both are bound to the scoped id, so neither can return another customer's
+  // accounts whatever a caller passes.
+  assert.match(body, /where\("customer_id", "==", scoped\)/);
+  assert.match(body, /where\("additional_customer_ids", "array-contains", scoped\)/);
+  assert.equal(body.match(/\.where\(/g).length, 2, "every read of the accounts collection must be scoped");
+  assert.match(listing, /const scoped = customerId\.trim\(\);/);
+});
+
+test("a linked login is not one of the owner's own members", async () => {
+  const source = await readFile(repo("app/portal/portal-accounts.server.ts"), "utf8");
+  const apply = source.slice(source.indexOf("export async function applyPortalTeamChange"));
+  // A linked agent appears on the team listing because they really can read
+  // this customer's shipments. They are another customer's account, so an
+  // owner must not be able to disable them, nor have them consume a seat.
+  assert.match(apply, /member\.email === targetEmail && !member\.linked/);
+  assert.match(apply, /member\.active && !member\.linked/);
 });
 
 test("only an account owner is served the team list", async () => {

@@ -2,6 +2,7 @@ import { getPortalAccess } from "../../../../../portal/portal-auth";
 import { portalOwnsShipment } from "../../../../../portal/portal-data.server";
 import { portalDocumentReleased } from "../../../../../portal/portal-access-policy";
 import { getShipmentDocumentFile, getShipmentDocumentMetadata } from "../../../../../shipment-documents.server";
+import { recordPortalDocumentDownload } from "../../../../../portal/portal-access-log.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -41,6 +42,20 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
     const result = await getShipmentDocumentFile(normalized, Number(id));
     if (result.kind === "unavailable") return json({ ok: false, error: "Document storage is unavailable." }, 503);
     if (result.kind === "missing" || result.kind === "object-missing") return json({ ok: false, error: "Document not found." }, 404);
+
+    // Logged after the bytes are in hand, so the record means "this customer
+    // received this file" rather than "this customer asked for it". Awaited
+    // rather than fired and forgotten: a serverless invocation can be reclaimed
+    // the moment the response is returned, which would lose the row.
+    await recordPortalDocumentDownload({
+      reference: normalized,
+      documentId: Number(id),
+      documentType: result.document.document_type,
+      filename: result.document.filename,
+      sizeBytes: result.document.size_bytes,
+      accountEmail: access.session.email,
+      customerId: access.session.customerId,
+    });
 
     return new Response(new Uint8Array(result.bytes), {
       headers: {

@@ -1,5 +1,6 @@
 import {
   authorizePortalIdentity,
+  clearPortalCustomerCookie,
   clearPortalSessionCookie,
   portalDenialMessage,
   portalRuntimeConfigured,
@@ -66,11 +67,10 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  return new Response(null, {
-    status: 303,
-    headers: {
-      location: new URL("/portal", request.url).toString(),
-      "set-cookie": clearPortalSessionCookie(),
-    },
-  });
+  // Both cookies, so the next person at a shared browser inherits neither the
+  // session nor the customer an agent happened to be looking at.
+  const headers = new Headers({ location: new URL("/portal", request.url).toString() });
+  headers.append("set-cookie", clearPortalSessionCookie());
+  headers.append("set-cookie", clearPortalCustomerCookie());
+  return new Response(null, { status: 303, headers });
 }

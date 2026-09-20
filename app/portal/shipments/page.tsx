@@ -17,12 +17,10 @@ export default async function PortalShipmentsPage() {
   const result = await listPortalShipments(access.session);
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       {result.kind === "ready"
-        ? <PortalShipmentsWorkspace shipments={result.shipments}/>
+        ? <PortalShipmentsWorkspace locale={access.session.locale} shipments={result.shipments}/>
         : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Shipments" icon={<Package size={18}/>}/>}
     </PortalShell>
   );

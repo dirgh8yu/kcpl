@@ -1,5 +1,20 @@
 import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types.ts";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types.ts";
+import { portalText, type PortalLocale, type PortalTextKey } from "./portal-i18n.ts";
+
+/*
+ * Labels take a locale and default to English, so a caller that has no reader
+ * -- a staff surface, a log line -- keeps the English it always had, and every
+ * customer-facing caller opts in by passing the session's language.
+ */
+
+function labelled(locale: PortalLocale, key: string, fallback: string) {
+  const dictionaryKey = key as PortalTextKey;
+  const translated = portalText(locale, dictionaryKey);
+  // An unknown key comes back as itself; fall back to the English label rather
+  // than printing a dictionary key at a customer.
+  return translated === key ? fallback : translated;
+}
 
 export const portalModeLabels: Record<string, string> = {
   air: "Air freight",
@@ -20,20 +35,26 @@ const statusTones: Record<string, PortalTone> = {
   exception: "danger",
 };
 
-export function portalStatusLabel(status: string) {
-  return shipmentStatusLabels[status as ShipmentStatus] ?? "Shipment update";
+export function portalStatusLabel(status: string, locale: PortalLocale = "en") {
+  const fallback = shipmentStatusLabels[status as ShipmentStatus] ?? "Shipment update";
+  if (locale === "en") return fallback;
+  return labelled(locale, `status.${status}`, fallback);
 }
 
 export function portalStatusTone(status: string): PortalTone {
   return statusTones[status] ?? "neutral";
 }
 
-export function portalModeLabel(mode: string) {
-  return portalModeLabels[mode] ?? portalModeLabels.unsure;
+export function portalModeLabel(mode: string, locale: PortalLocale = "en") {
+  const fallback = portalModeLabels[mode] ?? portalModeLabels.unsure;
+  if (locale === "en") return fallback;
+  return labelled(locale, `mode.${mode}`, labelled(locale, "mode.unsure", fallback));
 }
 
-export function portalDocumentLabel(documentType: string) {
-  return shipmentDocumentTypeLabels[documentType as ShipmentDocumentType] ?? "Document";
+export function portalDocumentLabel(documentType: string, locale: PortalLocale = "en") {
+  const fallback = shipmentDocumentTypeLabels[documentType as ShipmentDocumentType] ?? "Document";
+  if (locale === "en") return fallback;
+  return labelled(locale, `doc.${documentType}`, labelled(locale, "doc.unknown", fallback));
 }
 
 const invoiceStatusTones: Record<string, PortalTone> = {
@@ -54,11 +75,18 @@ export const portalInvoiceStatusLabels: Record<string, string> = {
   overdue: "Overdue",
 };
 
-export function portalInvoiceStatusLabel(status: string) {
-  return portalInvoiceStatusLabels[status] ?? "Open";
+export function portalInvoiceStatusLabel(status: string, locale: PortalLocale = "en") {
+  const fallback = portalInvoiceStatusLabels[status] ?? "Open";
+  if (locale === "en") return fallback;
+  return labelled(locale, `invoice.${status}`, labelled(locale, "invoice.open", fallback));
 }
 
-/** Nepal runs UTC+05:45; portal timestamps are shown in KCPL's own working day. */
+/** Nepal runs UTC+05:45; portal timestamps are shown in KCPL's own working day.
+ *
+ * Deliberately Gregorian in both languages, with Latin digits. Nepal keeps
+ * Bikram Sambat for domestic life, but every carrier document, customs entry
+ * and invoice this portal reports on is dated Gregorian -- a portal that
+ * converted would stop matching the paperwork in the reader's hand. */
 const dateTimeFormat = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeStyle: "short",

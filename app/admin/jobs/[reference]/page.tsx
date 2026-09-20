@@ -11,6 +11,8 @@ import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.ser
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { readShipmentFreeTime } from "../../../shipment-free-time.server";
+import { shipmentCustomerAccessView } from "../../../portal/portal-access-log.server";
+import { CustomerAccessPanel } from "./customer-access-panel";
 import { DeliveryPodControl } from "./delivery-pod-control";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
@@ -53,11 +55,12 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
   if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment is outside the branches assigned to your KCPL staff profile.");
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const [workflow, activity, exceptionCases, delivery] = await Promise.all([
+  const [workflow, activity, exceptionCases, delivery, customerAccess] = await Promise.all([
     getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
     getShipmentActivityTimeline(result.job.reference, staff),
     getShipmentExceptions(result.job.reference, staff),
     getDeliveryControl(result.job.reference, staff),
+    shipmentCustomerAccessView(result.job.reference),
   ]);
   if (workflow.kind !== "ready") return shellGate("Workflow unavailable", "The controlled workflow state could not be loaded for this shipment.");
 
@@ -110,6 +113,16 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
             canReview={staff.permissions.canManageCustomerDocuments}
           />
         ) : <QuietSection eyebrow="Delivery" title="Delivery control unavailable" detail="Delivery and POD state could not be loaded for this shipment."/>}
+      </div>
+
+      <div id="shipment-customer-access" className="shipment-detail-anchor shipment-detail-block">
+        {customerAccess.kind === "ready" ? (
+          <CustomerAccessPanel
+            summaries={customerAccess.summaries}
+            pending={customerAccess.pending}
+            releasedCount={customerAccess.releasedCount}
+          />
+        ) : <QuietSection eyebrow="Customer portal" title="Document access unavailable" detail="The customer document access log could not be loaded for this shipment."/>}
       </div>
 
       <div id="shipment-activity" className="shipment-detail-anchor shipment-detail-block shipment-activity-block">

@@ -20,9 +20,7 @@ export default async function PortalPage() {
   const result = await getPortalOverview(access.session);
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       {result.kind === "ready"
         ? <PortalOverview session={access.session} overview={result.overview}/>

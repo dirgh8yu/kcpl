@@ -5,18 +5,22 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, PackageCheck } from "lucide-react";
 import { OpsButton, OpsField, OpsNotice, OpsSurface } from "../../../admin/operations-ui";
 import { portalDateTime } from "../../portal-format";
+import { portalTranslator, type PortalLocale } from "../../portal-i18n";
 
 export function PortalDeliveryConfirmation({
   reference,
   confirmedAt,
   confirmedBy,
   canConfirm,
+  locale,
 }: {
   reference: string;
   confirmedAt: string | null;
   confirmedBy: string | null;
   canConfirm: boolean;
+  locale: PortalLocale;
 }) {
+  const t = portalTranslator(locale);
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,12 +41,12 @@ export function PortalDeliveryConfirmation({
         body: JSON.stringify({ receivedBy: form.get("receivedBy"), note: form.get("note") }),
       });
       const data = await response.json() as { ok?: boolean; error?: string; message?: string };
-      if (!response.ok || !data.ok) throw new Error(data.error || "The confirmation could not be sent.");
-      setNotice(data.message ?? "Thank you.");
+      if (!response.ok || !data.ok) throw new Error(data.error || t("confirm.failed"));
+      setNotice(data.message ?? t("confirm.thanks"));
       setOpen(false);
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The confirmation could not be sent.");
+      setError(reason instanceof Error ? reason.message : t("confirm.failed"));
     } finally {
       setBusy(false);
     }
@@ -50,11 +54,10 @@ export function PortalDeliveryConfirmation({
 
   if (confirmedAt) {
     return (
-      <OpsSurface eyebrow="Receipt" title="You confirmed this cargo arrived" priority="success">
+      <OpsSurface eyebrow={t("confirm.eyebrow")} title={t("confirm.done_title")} priority="success">
         <p className="portal-footnote">
-          <CheckCircle2 size={14} aria-hidden="true"/> Confirmed {portalDateTime(confirmedAt)}
-          {confirmedBy ? ` · received by ${confirmedBy}` : ""}. KCPL still completes its own proof-of-delivery checks before
-          closing the file.
+          <CheckCircle2 size={14} aria-hidden="true"/> {t("confirm.done_at", { when: portalDateTime(confirmedAt) })}
+          {confirmedBy ? t("confirm.done_by", { name: confirmedBy }) : ""}. {t("confirm.done_note")}
         </p>
       </OpsSurface>
     );
@@ -64,10 +67,10 @@ export function PortalDeliveryConfirmation({
 
   return (
     <OpsSurface
-      eyebrow="Receipt"
-      title="Has this cargo arrived?"
-      description="Telling KCPL it landed helps the team close the file and chase anything that is missing."
-      action={<OpsButton variant="primary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? "Cancel" : "Confirm receipt"}</OpsButton>}
+      eyebrow={t("confirm.eyebrow")}
+      title={t("confirm.title")}
+      description={t("confirm.description")}
+      action={<OpsButton variant="primary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? t("common.cancel") : t("confirm.open")}</OpsButton>}
     >
       {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
@@ -75,17 +78,17 @@ export function PortalDeliveryConfirmation({
       {open ? (
         <form onSubmit={confirm} className="portal-form" aria-busy={busy}>
           <div className="portal-form-grid">
-            <OpsField label="Who received it" hint="Optional. The name of the person at your site.">
-              <input name="receivedBy" placeholder="Site storekeeper" disabled={busy}/>
+            <OpsField label={t("confirm.who_label")} hint={t("confirm.who_hint")}>
+              <input name="receivedBy" placeholder={t("confirm.who_placeholder")} disabled={busy}/>
             </OpsField>
           </div>
-          <OpsField label="Anything KCPL should know" hint="Optional. Damage, shortages or delivery problems.">
-            <textarea name="note" placeholder="Two cartons arrived open; photographs to follow." disabled={busy}/>
+          <OpsField label={t("confirm.note_label")} hint={t("confirm.note_hint")}>
+            <textarea name="note" placeholder={t("confirm.note_placeholder")} disabled={busy}/>
           </OpsField>
           <div className="portal-form-actions">
             <OpsButton type="submit" variant="primary" size="sm" disabled={busy}>
               <PackageCheck size={14} strokeWidth={1.75} aria-hidden="true"/>
-              <span>{busy ? "Sending…" : "Confirm it arrived"}</span>
+              <span>{busy ? t("confirm.sending") : t("confirm.submit")}</span>
             </OpsButton>
           </div>
         </form>

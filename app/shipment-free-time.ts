@@ -1,3 +1,4 @@
+import { portalText, type PortalLocale, type PortalTextKey } from "./portal/portal-i18n.ts";
 /*
  * Free time, demurrage and detention.
  *
@@ -134,16 +135,26 @@ export function freeTimeReminderThreshold(status: FreeTimeStatus): number | null
   return freeTimeReminderThresholds.find((threshold) => status.daysRemaining === threshold) ?? null;
 }
 
-export function freeTimeSummary(freeTime: ShipmentFreeTime, status: FreeTimeStatus) {
-  const place = freeTime.location ? ` at ${freeTime.location}` : "";
-  if (status.state === "not_set") return "No free-time allowance recorded.";
+export function freeTimeSummary(
+  freeTime: ShipmentFreeTime,
+  status: FreeTimeStatus,
+  locale: PortalLocale = "en",
+) {
+  const location = freeTime.location ?? "";
+  // Each case has a with- and without-location template rather than one
+  // sentence plus a glued-on phrase: Nepali puts the place first, so a
+  // sentence assembled in English word order reads as broken Nepali.
+  const say = (key: string, vars: Record<string, string | number> = {}) =>
+    portalText(locale, (location ? `${key}_at` : key) as PortalTextKey, { ...vars, location });
+
+  if (status.state === "not_set") return portalText(locale, "fts.not_set");
   if (status.state === "expired") {
     return status.daysOverdue === 1
-      ? `Free time${place} ended yesterday. Charges may now apply.`
-      : `Free time${place} ended ${status.daysOverdue} days ago. Charges may now apply.`;
+      ? say("fts.expired_yesterday")
+      : say("fts.expired_days", { days: status.daysOverdue });
   }
-  if (status.state === "last_day") return `Today is the last free day${place}.`;
+  if (status.state === "last_day") return say("fts.last_day");
   return status.daysRemaining === 1
-    ? `1 free day left${place}.`
-    : `${status.daysRemaining} free days left${place}.`;
+    ? say("fts.one_day")
+    : say("fts.days", { days: status.daysRemaining });
 }

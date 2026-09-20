@@ -1,0 +1,27 @@
+{
+  "name": "KCPL Customer Portal",
+  "short_name": "KCPL Portal",
+  "description": "Track your KCPL shipments, collect released documents and see your account position.",
+  "start_url": "/portal",
+  "scope": "/portal",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#DC143C",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/images/brand/kcpl-logo-mark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/brand/kcpl-gateway-k.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -12,17 +12,21 @@ import {
   OpsSurface,
   OpsTableWrap,
 } from "../../admin/operations-ui";
-import { PORTAL_TEAM_MEMBER_LIMIT, portalRoleLabels } from "../portal-access-policy";
+import { PORTAL_TEAM_MEMBER_LIMIT } from "../portal-access-policy";
+import { portalTranslator, type PortalLocale } from "../portal-i18n";
 import type { PortalTeamMember } from "../portal-accounts.server";
 import { portalDate } from "../portal-format";
 
 export function PortalTeamPanel({
   initialTeam,
   currentEmail,
+  locale,
 }: {
   initialTeam: PortalTeamMember[];
   currentEmail: string;
+  locale: PortalLocale;
 }) {
+  const t = portalTranslator(locale);
   const [team, setTeam] = useState(initialTeam);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState("");
@@ -48,7 +52,7 @@ export function PortalTeamPanel({
     const data = await response.json() as {
       ok?: boolean; error?: string; delivered?: boolean; link?: string | null; warning?: string;
     };
-    if (!response.ok || !data.ok) throw new Error(data.error || "The change could not be saved.");
+    if (!response.ok || !data.ok) throw new Error(data.error || t("team.save_failed"));
     return data;
   }
 
@@ -72,7 +76,7 @@ export function PortalTeamPanel({
       setEmail("");
       await refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The invitation could not be sent.");
+      setError(reason instanceof Error ? reason.message : t("team.invite_failed"));
     } finally {
       setBusy("");
     }
@@ -88,7 +92,7 @@ export function PortalTeamPanel({
       await send(member.active ? "disable" : "enable", member.email);
       await refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The change could not be saved.");
+      setError(reason instanceof Error ? reason.message : t("team.save_failed"));
     } finally {
       setBusy("");
     }
@@ -96,9 +100,9 @@ export function PortalTeamPanel({
 
   return (
     <OpsSurface
-      eyebrow="Access"
-      title="Your team"
-      description={`Give a colleague their own login to this account. Team members see shipments and documents; invoices and new requests stay with account owners. Up to ${PORTAL_TEAM_MEMBER_LIMIT} team logins.`}
+      eyebrow={t("team.eyebrow")}
+      title={t("team.title")}
+      description={t("team.description", { limit: PORTAL_TEAM_MEMBER_LIMIT })}
     >
       <div className="portal-exchange">
         {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
@@ -107,21 +111,21 @@ export function PortalTeamPanel({
 
         <form onSubmit={invite} className="portal-exchange-free" aria-busy={busy === "invite"}>
           <OpsField
-            label="Colleague's email"
-            hint={atLimit ? "This account has reached its team login limit." : "They will be emailed a link to set their own password."}
+            label={t("team.email_label")}
+            hint={atLimit ? t("team.at_limit") : t("team.email_hint")}
           >
             <input
               type="email"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="colleague@company.com"
+              placeholder={t("team.email_placeholder")}
               disabled={busy === "invite" || atLimit}
             />
           </OpsField>
           <OpsButton type="submit" variant="primary" size="sm" disabled={busy === "invite" || atLimit}>
             <UserPlus size={14} strokeWidth={1.75} aria-hidden="true"/>
-            <span>{busy === "invite" ? "Inviting…" : "Invite"}</span>
+            <span>{busy === "invite" ? t("team.inviting") : t("team.invite")}</span>
           </OpsButton>
         </form>
 
@@ -130,11 +134,11 @@ export function PortalTeamPanel({
             <table className="ops-table">
               <thead>
                 <tr>
-                  <th>Login</th>
-                  <th>Access</th>
-                  <th>State</th>
-                  <th>Last signed in</th>
-                  <th><span className="portal-sr-only">Actions</span></th>
+                  <th>{t("team.col_login")}</th>
+                  <th>{t("team.col_access")}</th>
+                  <th>{t("team.col_state")}</th>
+                  <th>{t("team.col_last_signed_in")}</th>
+                  <th><span className="portal-sr-only">{t("team.col_actions")}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -144,26 +148,27 @@ export function PortalTeamPanel({
                     <tr key={member.email}>
                       <td>
                         <OpsMono>{member.email}</OpsMono>
-                        {isYou ? <span className="portal-cell-detail">This is you</span> : null}
+                        {isYou ? <span className="portal-cell-detail">{t("team.this_is_you")}</span> : null}
+                        {member.linked ? <span className="portal-cell-detail">{t("team.linked")}</span> : null}
                       </td>
-                      <td>{portalRoleLabels[member.role]}</td>
+                      <td>{t(`role.${member.role}`)}</td>
                       <td>
-                        <OpsBadge tone={member.active ? "success" : "neutral"} dot>{member.active ? "Active" : "Disabled"}</OpsBadge>
-                        <span className="portal-cell-detail">{member.bound ? "Signed in before" : "Not signed in yet"}</span>
+                        <OpsBadge tone={member.active ? "success" : "neutral"} dot>{member.active ? t("team.active") : t("team.disabled")}</OpsBadge>
+                        <span className="portal-cell-detail">{member.bound ? t("team.signed_in_before") : t("team.never_signed_in")}</span>
                       </td>
-                      <td>{member.last_sign_in_at ? portalDate(member.last_sign_in_at) : "—"}</td>
+                      <td>{member.last_sign_in_at ? portalDate(member.last_sign_in_at) : t("common.none")}</td>
                       <td>
-                        {member.role === "member" && !isYou ? (
+                        {member.role === "member" && !isYou && !member.linked ? (
                           <OpsButton
                             size="sm"
                             variant={member.active ? "danger" : "secondary"}
                             disabled={busy === member.email}
                             onClick={() => toggle(member)}
                           >
-                            {member.active ? "Disable" : "Enable"}
+                            {member.active ? t("team.disable") : t("team.enable")}
                           </OpsButton>
                         ) : (
-                          <span className="portal-cell-detail">Managed by KCPL</span>
+                          <span className="portal-cell-detail">{t("team.managed_by_kcpl")}</span>
                         )}
                       </td>
                     </tr>
@@ -177,8 +182,8 @@ export function PortalTeamPanel({
             compact
             kind="setup"
             icon={<Users2 size={18}/>}
-            title="No other logins yet"
-            description="Invite a colleague above so they can track shipments without going through you."
+            title={t("team.empty_title")}
+            description={t("team.empty_description")}
           />
         )}
       </div>

@@ -13,16 +13,20 @@ import {
 } from "../../../admin/operations-ui";
 import type { PortalRemittance } from "../../portal-remittance.server";
 import { portalDate, portalFileSize } from "../../portal-format";
+import { portalTranslator, type PortalLocale } from "../../portal-i18n";
 
 export function PortalRemittancePanel({
   reference,
   initialRemittances,
   currency,
+  locale,
 }: {
   reference: string;
   initialRemittances: PortalRemittance[];
   currency: string;
+  locale: PortalLocale;
 }) {
+  const t = portalTranslator(locale);
   const router = useRouter();
   const [remittances, setRemittances] = useState(initialRemittances);
   const [open, setOpen] = useState(false);
@@ -35,7 +39,7 @@ export function PortalRemittancePanel({
     if (busy) return;
     const form = new FormData(event.currentTarget);
     if (!(form.get("file") instanceof File) || !(form.get("file") as File).size) {
-      setError("Attach the bank receipt or payment advice.");
+      setError(t("rem.receipt_aria"));
       return;
     }
     setBusy(true);
@@ -47,8 +51,8 @@ export function PortalRemittancePanel({
         body: form,
       });
       const data = await response.json() as { ok?: boolean; error?: string; message?: string };
-      if (!response.ok || !data.ok) throw new Error(data.error || "The remittance could not be sent.");
-      setNotice(data.message ?? "Sent to KCPL accounts.");
+      if (!response.ok || !data.ok) throw new Error(data.error || t("rem.failed"));
+      setNotice(data.message ?? t("rem.sent"));
       setOpen(false);
 
       const listing = await fetch(`/api/portal/invoices/${encodeURIComponent(reference)}/remittance`, { cache: "no-store" });
@@ -56,7 +60,7 @@ export function PortalRemittancePanel({
       if (listed.ok && listed.remittances) setRemittances(listed.remittances);
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The remittance could not be sent.");
+      setError(reason instanceof Error ? reason.message : t("rem.failed"));
     } finally {
       setBusy(false);
     }
@@ -64,10 +68,10 @@ export function PortalRemittancePanel({
 
   return (
     <OpsSurface
-      eyebrow="Payment"
-      title="Tell KCPL you have paid"
-      description="Send the bank receipt or payment advice. Accounts match it against the bank before the invoice updates, so the balance here will not change immediately."
-      action={<OpsButton variant="secondary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? "Cancel" : "Send a receipt"}</OpsButton>}
+      eyebrow={t("rem.eyebrow")}
+      title={t("rem.title")}
+      description={t("rem.description")}
+      action={<OpsButton variant="secondary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? t("common.cancel") : t("rem.open")}</OpsButton>}
     >
       <div className="portal-exchange">
         {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
@@ -76,26 +80,26 @@ export function PortalRemittancePanel({
         {open ? (
           <form onSubmit={submit} className="portal-form" aria-busy={busy}>
             <div className="portal-form-grid">
-              <OpsField label="Amount paid" hint="Optional, but it helps accounts match the payment.">
+              <OpsField label={t("rem.amount_label")} hint={t("rem.amount_hint")}>
                 <input name="amount" inputMode="decimal" placeholder="25000" disabled={busy}/>
               </OpsField>
-              <OpsField label="Currency">
+              <OpsField label={t("rem.currency")}>
                 <input name="currency" maxLength={3} defaultValue={currency} disabled={busy}/>
               </OpsField>
-              <OpsField label="Date paid">
+              <OpsField label={t("rem.date_paid")}>
                 <input name="paidOn" type="date" disabled={busy}/>
               </OpsField>
-              <OpsField label="Receipt" hint="PDF, JPEG, PNG or WEBP, up to 10 MB.">
+              <OpsField label={t("rem.receipt")} hint={t("rem.receipt_hint")}>
                 <input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" disabled={busy}/>
               </OpsField>
             </div>
-            <OpsField label="Reference or note" hint="Optional. The bank reference, or which invoices this payment covers.">
-              <textarea name="note" placeholder="NEFT ref 993201, covers this invoice and KCPL-I-20260812-004." disabled={busy}/>
+            <OpsField label={t("rem.note_label")} hint={t("rem.note_hint")}>
+              <textarea name="note" placeholder={t("rem.note_placeholder")} disabled={busy}/>
             </OpsField>
             <div className="portal-form-actions">
               <OpsButton type="submit" variant="primary" size="sm" disabled={busy}>
                 <Banknote size={14} strokeWidth={1.75} aria-hidden="true"/>
-                <span>{busy ? "Sending…" : "Send to accounts"}</span>
+                <span>{busy ? t("rem.sending") : t("rem.submit")}</span>
               </OpsButton>
             </div>
           </form>
@@ -108,7 +112,7 @@ export function PortalRemittancePanel({
                 <span className="portal-document-icon" aria-hidden="true"><Receipt size={15} strokeWidth={1.75}/></span>
                 <span className="portal-document-main">
                   <strong>
-                    {remittance.amount === null ? "Payment receipt" : `${remittance.currency ?? ""} ${remittance.amount}`}
+                    {remittance.amount === null ? t("rem.receipt_title") : `${remittance.currency ?? ""} ${remittance.amount}`}
                     {remittance.paid_on ? ` · paid ${portalDate(remittance.paid_on)}` : ""}
                   </strong>
                   <span>
@@ -117,7 +121,7 @@ export function PortalRemittancePanel({
                   </span>
                 </span>
                 <OpsBadge tone={remittance.review_state === "acknowledged" ? "success" : "info"}>
-                  {remittance.review_state === "acknowledged" ? "Acknowledged" : "With accounts"}
+                  {remittance.review_state === "acknowledged" ? t("rem.acknowledged") : t("rem.with_accounts")}
                 </OpsBadge>
                 <a
                   className="ops-button"
@@ -135,8 +139,8 @@ export function PortalRemittancePanel({
             compact
             kind="neutral"
             icon={<Receipt size={18}/>}
-            title="No payment receipts sent"
-            description="If you have paid this invoice, sending the receipt helps KCPL match it quickly."
+            title={t("rem.empty_title")}
+            description={t("rem.empty_description")}
           />
         )}
       </div>

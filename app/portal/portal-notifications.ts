@@ -1,6 +1,7 @@
 import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types.ts";
 import { portalDocumentReleased } from "./portal-access-policy.ts";
-import { portalDocumentLabel, portalModeLabel } from "./portal-format.ts";
+import { portalDocumentLabel, portalModeLabel, portalStatusLabel } from "./portal-format.ts";
+import { portalText, type PortalLocale, type PortalTextKey } from "./portal-i18n.ts";
 
 /*
  * Customer notification policy.
@@ -33,6 +34,16 @@ export const portalNotificationTopicHints: Record<PortalNotificationTopic, strin
   documents: "When KCPL needs paperwork from you, or releases a document to your account.",
   free_time: "Before storage or demurrage charges start on cargo at a port or depot.",
 };
+
+/** The same topics in the reader's language. The English maps above remain for
+ * staff-side surfaces, which are not translated. */
+export function portalNotificationTopicLabel(topic: PortalNotificationTopic, locale: PortalLocale) {
+  return portalText(locale, `topic.${topic}`);
+}
+
+export function portalNotificationTopicHint(topic: PortalNotificationTopic, locale: PortalLocale) {
+  return portalText(locale, `topic.${topic}_hint`);
+}
 
 export type PortalNotificationPreferences = Record<PortalNotificationTopic, boolean>;
 
@@ -77,6 +88,11 @@ export function portalNotifiableStatusChange(previous: string | null, next: stri
   // notifications are switched on.
   if (previous === null) return false;
   return previous !== next;
+}
+
+/** The lane line, falling back to the reference when a leg is unrecorded. */
+function lane(facts: { origin: string; destination: string; reference: string }) {
+  return facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
 }
 
 /** Deterministic, so a repeated sweep recognises what it already sent. */
@@ -133,35 +149,39 @@ export type PortalDocumentReleaseFacts = {
   portalUrl: string;
 };
 
-export function portalDocumentReleaseMessage(facts: PortalDocumentReleaseFacts): PortalMilestoneMessage {
-  const label = portalDocumentLabel(facts.documentType);
+export function portalDocumentReleaseMessage(facts: PortalDocumentReleaseFacts, locale: PortalLocale = "en"): PortalMilestoneMessage {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  const label = portalDocumentLabel(facts.documentType, locale);
   const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
-  const subject = `${facts.reference} · ${label} ready`;
+  // Lower-cased mid-sentence only in English. Devanagari has no letter case,
+  // and `toLowerCase()` on a Nepali label is a no-op that reads as a bug.
+  const inline = locale === "en" ? label.toLowerCase() : label;
+  const subject = `${facts.reference} · ${say("mail.doc_subject", { document: label })}`;
 
   const text = [
-    `KCPL has released the ${label.toLowerCase()} for this shipment. You can download it from your portal.`,
+    say("mail.doc_body", { document: inline }),
     "",
-    `Shipment: ${facts.reference}`,
-    `Route: ${lane}`,
-    `Document: ${label}`,
+    `${say("mail.label_shipment")}: ${facts.reference}`,
+    `${say("mail.label_route")}: ${lane}`,
+    `${say("mail.label_document")}: ${label}`,
     "",
-    `Download it here: ${facts.portalUrl}`,
+    say("mail.doc_download_line", { url: facts.portalUrl }),
     "",
-    "You can turn these emails off in the portal under Notifications.",
+    say("mail.turn_off"),
   ].join("\n");
 
   const html = [
     `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
-    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">Kapileshwor Cargo</p>`,
-    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(label)} ready</h2>`,
-    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">KCPL has released the ${escapeHtml(label.toLowerCase())} for this shipment. You can download it from your portal.</p>`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">${escapeHtml(say("mail.brand"))}</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(say("mail.doc_subject", { document: label }))}</h2>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(say("mail.doc_body", { document: inline }))}</p>`,
     `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Shipment</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Route</td><td>${escapeHtml(lane)}</td></tr>`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Document</td><td>${escapeHtml(label)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_shipment"))}</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_route"))}</td><td>${escapeHtml(lane)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_document"))}</td><td>${escapeHtml(label)}</td></tr>`,
     `</table>`,
-    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">Download the document</a></p>`,
-    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. You can turn these emails off in the portal under Notifications.</p>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.doc_download"))}</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.sent_because", { customer: facts.customerName }))}</p>`,
     `</div>`,
   ].join("");
 
@@ -187,42 +207,48 @@ export type PortalFreeTimeFacts = {
  * rate KCPL records is what the carrier quoted, not an invoice, and putting a
  * number in an inbox would read as one.
  */
-export function portalFreeTimeMessage(facts: PortalFreeTimeFacts): PortalMilestoneMessage {
-  const place = facts.location ? ` at ${facts.location}` : "";
-  const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
-  const headline = facts.daysRemaining === 0
-    ? `Today is the last free day${place}`
+export function portalFreeTimeMessage(facts: PortalFreeTimeFacts, locale: PortalLocale = "en"): PortalMilestoneMessage {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  const location = facts.location ?? "";
+  // With- and without-location templates, as in the portal itself: Nepali puts
+  // the place before the subject, so a glued-on phrase reads as broken Nepali.
+  const headlineKey = facts.daysRemaining === 0
+    ? "mail.ft_last_day"
     : facts.daysRemaining === 1
-      ? `1 free day left${place}`
-      : `${facts.daysRemaining} free days left${place}`;
+      ? "mail.ft_one_day"
+      : "mail.ft_days";
+  const headline = say((location ? `${headlineKey}_at` : headlineKey) as PortalTextKey, {
+    location,
+    days: facts.daysRemaining,
+  });
   const subject = `${facts.reference} · ${headline}`;
 
   const text = [
     `${headline}.`,
     "",
-    "Once free time ends, the carrier or terminal may charge storage and demurrage for each day the cargo stays.",
+    say("free_time.consequence"),
     "",
-    `Shipment: ${facts.reference}`,
-    `Route: ${lane}`,
-    facts.deadline ? `Last free day: ${facts.deadline}` : "",
+    `${say("mail.label_shipment")}: ${facts.reference}`,
+    `${say("mail.label_route")}: ${lane(facts)}`,
+    facts.deadline ? `${say("mail.label_last_free_day")}: ${facts.deadline}` : "",
     "",
-    `See the shipment: ${facts.portalUrl}`,
+    say("mail.see_shipment_line", { url: facts.portalUrl }),
     "",
-    "Contact your KCPL account manager if you need an extension.",
+    say("mail.free_time_extension"),
   ].filter((line, index, lines) => line !== "" || lines[index - 1] !== "").join("\n");
 
   const html = [
     `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
-    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">Kapileshwor Cargo</p>`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">${escapeHtml(say("mail.brand"))}</p>`,
     `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(headline)}</h2>`,
-    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">Once free time ends, the carrier or terminal may charge storage and demurrage for each day the cargo stays.</p>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(say("free_time.consequence"))}</p>`,
     `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Shipment</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Route</td><td>${escapeHtml(lane)}</td></tr>`,
-    facts.deadline ? `<tr><td style="color:#5C6675;padding-right:12px">Last free day</td><td>${escapeHtml(facts.deadline)}</td></tr>` : "",
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_shipment"))}</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_route"))}</td><td>${escapeHtml(lane(facts))}</td></tr>`,
+    facts.deadline ? `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_last_free_day"))}</td><td>${escapeHtml(facts.deadline)}</td></tr>` : "",
     `</table>`,
-    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">See the shipment</a></p>`,
-    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. Contact your account manager if you need an extension. You can turn these emails off in the portal under Notifications.</p>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.see_shipment"))}</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.free_time_sent_because", { customer: facts.customerName }))}</p>`,
     `</div>`,
   ].join("");
 
@@ -252,15 +278,16 @@ function escapeHtml(value: string) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] || character);
 }
 
-function statusSentence(status: string, facts: PortalMilestoneFacts) {
-  if (status === "delivered") return "This shipment has been delivered.";
-  if (status === "exception") return "KCPL has flagged an issue on this shipment and is working on it.";
-  if (status === "out_for_delivery") return "The cargo is out for final delivery.";
-  if (status === "customs_clearance") return "The cargo is in customs clearance.";
+function statusSentence(status: string, facts: PortalMilestoneFacts, locale: PortalLocale) {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  if (status === "delivered") return say("mail.status_delivered");
+  if (status === "exception") return say("mail.status_exception");
+  if (status === "out_for_delivery") return say("mail.status_out_for_delivery");
+  if (status === "customs_clearance") return say("mail.status_customs");
   if (status === "in_transit") return facts.currentLocation
-    ? `The cargo is in transit, last reported at ${facts.currentLocation}.`
-    : "The cargo is in transit.";
-  return "KCPL has confirmed the booking for this shipment.";
+    ? say("mail.status_in_transit_at", { location: facts.currentLocation })
+    : say("mail.status_in_transit");
+  return say("mail.status_booked");
 }
 
 /**
@@ -270,36 +297,38 @@ function statusSentence(status: string, facts: PortalMilestoneFacts) {
  * parameter here through which a price, a cost, a supplier or a staff note
  * could reach a customer's inbox.
  */
-export function portalMilestoneMessage(facts: PortalMilestoneFacts): PortalMilestoneMessage {
-  const statusLabel = shipmentStatusLabels[facts.status as ShipmentStatus] ?? "Shipment update";
+export function portalMilestoneMessage(facts: PortalMilestoneFacts, locale: PortalLocale = "en"): PortalMilestoneMessage {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  const statusLabel = locale === "en"
+    ? shipmentStatusLabels[facts.status as ShipmentStatus] ?? "Shipment update"
+    : portalStatusLabel(facts.status, locale);
   const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
   const subject = `${facts.reference} · ${statusLabel}`;
 
   const lines = [
-    statusSentence(facts.status, facts),
+    statusSentence(facts.status, facts, locale),
     "",
-    `Shipment: ${facts.reference}`,
-    `Route: ${lane}`,
-    `Mode: ${portalModeLabel(facts.mode)}`,
-    `Status: ${statusLabel}`,
+    `${say("mail.label_shipment")}: ${facts.reference}`,
+    `${say("mail.label_route")}: ${lane}`,
+    `${say("mail.label_mode")}: ${portalModeLabel(facts.mode, locale)}`,
+    `${say("mail.label_status")}: ${statusLabel}`,
   ];
-  if (facts.eta) lines.push(`Estimated arrival: ${facts.eta.slice(0, 10)}`);
-  lines.push("", `Track it in your KCPL portal: ${facts.portalUrl}`, "",
-    "You can turn these emails off in the portal under Notifications.");
+  if (facts.eta) lines.push(`${say("mail.label_eta")}: ${facts.eta.slice(0, 10)}`);
+  lines.push("", say("mail.track_line", { url: facts.portalUrl }), "", say("mail.turn_off"));
 
   const html = [
     `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
-    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">Kapileshwor Cargo</p>`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">${escapeHtml(say("mail.brand"))}</p>`,
     `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(statusLabel)}</h2>`,
-    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(statusSentence(facts.status, facts))}</p>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(statusSentence(facts.status, facts, locale))}</p>`,
     `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Shipment</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Route</td><td>${escapeHtml(lane)}</td></tr>`,
-    `<tr><td style="color:#5C6675;padding-right:12px">Mode</td><td>${escapeHtml(portalModeLabel(facts.mode))}</td></tr>`,
-    facts.eta ? `<tr><td style="color:#5C6675;padding-right:12px">Estimated arrival</td><td>${escapeHtml(facts.eta.slice(0, 10))}</td></tr>` : "",
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_shipment"))}</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_route"))}</td><td>${escapeHtml(lane)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_mode"))}</td><td>${escapeHtml(portalModeLabel(facts.mode, locale))}</td></tr>`,
+    facts.eta ? `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_eta"))}</td><td>${escapeHtml(facts.eta.slice(0, 10))}</td></tr>` : "",
     `</table>`,
-    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">Open the shipment</a></p>`,
-    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">Sent to ${escapeHtml(facts.customerName)} because this shipment is on your KCPL account. You can turn these emails off in the portal under Notifications.</p>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.open_shipment"))}</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.sent_because", { customer: facts.customerName }))}</p>`,
     `</div>`,
   ].join("");
 
