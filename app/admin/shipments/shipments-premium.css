@@ -14,10 +14,8 @@
   --ship-surface: var(--admin-surface);
   --ship-canvas: var(--admin-canvas);
   --ship-line: var(--admin-line);
-  --ship-line-strong: var(--admin-line-strong);
   /* Matches the dashboard card shadow so the two pages sit at the same elevation. */
   --ship-shadow: 0 1px 2px rgb(16 24 40 / 4%);
-  --ship-shadow-raised: 0 4px 14px rgb(16 24 40 / 7%);
   --ship-focus: 0 0 0 3px color-mix(in srgb, var(--admin-crimson) 18%, transparent);
 }
 
@@ -25,23 +23,12 @@
   padding-bottom: 32px;
 }
 
-.kcpl-admin-content .shipments-register .ops-page-header {
-  margin: 16px 24px 0;
-  padding: 24px;
-  border: 1px solid var(--ship-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow);
-}
-
-.kcpl-admin-content .shipments-register .ops-page-heading h1,
 .kcpl-admin-content .shipment-sheet-header h2 {
   font-weight: 600;
   letter-spacing: -0.022em;
   line-height: 1.2;
 }
 
-.kcpl-admin-content .shipments-register .ops-page-description,
 .kcpl-admin-content .shipments-register .shipments-register-table td {
   letter-spacing: -0.011em;
 }
@@ -55,8 +42,6 @@
 
 /* `transform` stays in every transition list below: globals.css and operations-system.css
  * supply the :active press feedback, and a shorthand here would silently drop it. */
-.kcpl-admin-content .shipments-register .ops-button,
-.kcpl-admin-content .shipments-register .shipments-actions .ops-button,
 .kcpl-admin-content .shipments-register .shipments-filter-trigger,
 .kcpl-admin-content .shipments-register .shipments-reset {
   min-height: var(--app-control-height-touch);
@@ -78,65 +63,10 @@
   background: var(--admin-crimson-dark);
 }
 
-.kcpl-admin-content .shipments-register :is(.ops-button, .shipments-filter-trigger, .shipments-reset, .shipments-filter-tab, .shipments-view-toggle button):focus-visible,
+.kcpl-admin-content .shipments-register :is(.shipments-filter-trigger, .shipments-reset, .shipments-filter-tab, .shipments-view-toggle button):focus-visible,
 .kcpl-admin-content :is(.shipment-sheet-close, .shipment-sheet-closebar):focus-visible {
   outline: none;
   box-shadow: var(--ship-focus);
-}
-
-.kcpl-admin-content .shipments-register .ops-kpi-strip {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.kcpl-admin-content .shipments-register .ops-kpi {
-  position: relative;
-  min-height: 88px;
-  padding: 16px;
-  overflow: hidden;
-  border: 1px solid var(--ship-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow);
-  transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
-  animation: ship-card-in var(--app-duration-slow) var(--app-ease-out) both;
-}
-
-/* Matches the dashboard's 30ms cascade rather than running at twice its length. */
-.kcpl-admin-content .shipments-register .ops-kpi:nth-child(2) { animation-delay: 30ms; }
-.kcpl-admin-content .shipments-register .ops-kpi:nth-child(3) { animation-delay: 60ms; }
-.kcpl-admin-content .shipments-register .ops-kpi:nth-child(4) { animation-delay: 90ms; }
-.kcpl-admin-content .shipments-register .ops-kpi:nth-child(5) { animation-delay: 120ms; }
-
-/* Statistics, not controls: flat, and no hover affordance to promise a press
- * that does nothing. Only a button.ops-kpi may lift. */
-.kcpl-admin-content .shipments-register div.ops-kpi {
-  background: var(--ship-canvas);
-  box-shadow: none;
-}
-
-.kcpl-admin-content .shipments-register button.ops-kpi:hover {
-  border-color: var(--ship-line-strong);
-  box-shadow: var(--ship-shadow-raised);
-}
-
-/* A lift that a touch tap cannot leave stuck on. Same gate as the dashboard metric tile. */
-@media (hover: hover) and (pointer: fine) {
-  .kcpl-admin-content .shipments-register button.ops-kpi:hover { transform: translateY(-1px); }
-}
-
-.kcpl-admin-content .shipments-register button.ops-kpi:focus-visible { outline: none; box-shadow: var(--ship-focus); }
-
-.kcpl-admin-content .shipments-register .ops-kpi-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--app-radius);
-  background: var(--ship-canvas);
-}
-
-.kcpl-admin-content .shipments-register .ops-kpi-copy strong {
-  letter-spacing: -0.022em;
 }
 
 .kcpl-admin-content .shipments-register .shipments-toolbar {
@@ -154,22 +84,6 @@
   border-radius: var(--app-surface-radius);
   background: var(--ship-surface);
   box-shadow: var(--ship-shadow);
-}
-
-.kcpl-admin-content .shipments-register .shipments-toolbar .ops-search {
-  width: 100%;
-  max-width: none;
-  min-height: var(--app-control-height-touch);
-  border: 1px solid transparent;
-  border-radius: var(--app-radius);
-  background: var(--ship-canvas);
-  transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out);
-}
-
-.kcpl-admin-content .shipments-register .shipments-toolbar .ops-search:focus-within {
-  border-color: var(--admin-crimson);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-focus);
 }
 
 .kcpl-admin-content .shipments-register .shipments-toolbar-search { grid-area: search; }
@@ -271,15 +185,6 @@
   border-radius: var(--app-radius);
 }
 
-.kcpl-admin-content .shipments-register .ops-surface,
-.kcpl-admin-content .shipments-register .ops-pagination {
-  overflow: hidden;
-  border: 1px solid var(--ship-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow);
-}
-
 .kcpl-admin-content .shipments-register .shipments-register-table {
   border-collapse: separate;
   border-spacing: 0;
@@ -324,11 +229,6 @@
   font-weight: 600;
 }
 
-.kcpl-admin-content .shipments-register .ops-pagination {
-  min-height: 56px;
-  padding: 8px 16px;
-}
-
 .kcpl-admin-content .shipment-sheet-header { border-bottom-color: var(--ship-line); }
 
 /* On a full-width sheet the sections read as cards, not as stacked rules. */
@@ -352,7 +252,6 @@
 }
 
 @media (max-width: 1240px) {
-  .kcpl-admin-content .shipments-register .ops-kpi-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .kcpl-admin-content .shipments-register .shipments-toolbar {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "search actions" "tabs tabs";
@@ -360,8 +259,6 @@
 }
 
 @media (max-width: 900px) {
-  .kcpl-admin-content .shipments-register .ops-page-header { margin-inline: 16px; }
-  .kcpl-admin-content .shipments-register .ops-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kcpl-admin-content .shipments-register .shipments-toolbar {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "search" "actions" "tabs";
@@ -371,12 +268,7 @@
 
 @media (max-width: 760px) {
   .kcpl-admin-content .shipments-register { padding-bottom: 24px; }
-  .kcpl-admin-content .shipments-register .ops-page-header { margin: 8px 8px 0; padding: 16px; }
   .kcpl-admin-content .shipments-register .shipments-actions { width: 100%; justify-content: flex-start; }
-  .kcpl-admin-content .shipments-register .shipments-actions .ops-button { flex: 1 1 auto; justify-content: center; }
-  .kcpl-admin-content .shipments-register .ops-kpi-strip { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
-  .kcpl-admin-content .shipments-register .ops-kpi-strip::-webkit-scrollbar { display: none; }
-  .kcpl-admin-content .shipments-register .ops-kpi { flex: 0 0 min(248px, 78vw); scroll-snap-align: start; }
   .kcpl-admin-content .shipments-register .shipments-view-toggle button { padding-inline: 8px; }
   .kcpl-admin-content .shipments-register .shipments-view-toggle button span,
   .kcpl-admin-content .shipments-register .shipments-result-count { display: none; }
@@ -390,12 +282,4 @@
     animation: none;
     transition: none;
   }
-
-  .kcpl-admin-content .shipments-register .ops-kpi {
-    opacity: 1;
-    transform: none;
-    animation-delay: 0s;
-  }
-
-  .kcpl-admin-content .shipments-register .ops-kpi:hover { transform: none; }
 }
