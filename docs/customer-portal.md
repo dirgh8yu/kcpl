@@ -289,6 +289,87 @@ never handles a customer password regardless of who did the inviting. If the
 invite cannot be sent the login is still created and the response says so, rather
 than leaving the owner believing mail went out.
 
+## Language
+
+The portal ships in English and Nepali. The language is stored on the account rather
+than in a cookie, because the scheduled notification sweep has no browser to read a
+cookie from — and an email arriving in a different language from the portal that sent
+it is worse than one that was never translated. A customer changes it themselves from
+`/portal/settings`.
+
+Three rules, each enforced rather than intended:
+
+- **Completeness is a compile error.** The Nepali dictionary in `portal-i18n.ts` is
+  typed against the English one, so a key added on one side and forgotten on the other
+  fails `tsc`. A test additionally scans every Nepali entry for Devanagari, which is
+  what catches a key copied across untranslated.
+- **Trade vocabulary stays as Nepali freight desks say it.** A Kathmandu clearing
+  office says "bill of lading", so the Nepali reads बिल अफ लेडिङ rather than a coined
+  translation nobody would match against the document in their hand.
+- **Sentences are whole, not assembled.** Nepali puts the place before the subject, so
+  cases like the free-time warning carry a with- and a without-location template rather
+  than one sentence plus a glued-on phrase.
+
+Label helpers (`portalStatusLabel`, `portalDocumentLabel`, …) take a locale and default
+to English, so every staff-side caller is unchanged.
+
+## One login, several customers
+
+A freight agent buying under several KCPL customer records holds one login. The shape
+of the rule matters more than the feature:
+
+- `decidePortalAccess` is untouched. It still decides, from the **primary** customer
+  alone, whether an identity may hold a portal session at all. The linked scope only
+  widens what an already-authorised session reads; it can never be the reason a session
+  exists.
+- The active customer arrives in its own cookie and carries **no authority**. The
+  allowed set is re-derived from Firestore on every request and the cookie intersected
+  with it, so a forged or stale id resolves to the primary customer.
+- Linking is **Management's, never an owner's**. There is no portal route that reaches
+  the writer, and a test asserts it.
+- A linked principal KCPL later archives or blacklists drops out silently: stopping
+  trade with one of an agent's principals must not cost them the others.
+
+The team panel lists logins that reach a customer through a link, because they really
+can read that customer's shipments — but they are another customer's account, so they
+are outside the owner's authority and outside the seat count.
+
+## Document access log
+
+Every customer download of a released document writes a row to the shipment's own
+`document_access` subcollection, and the Job File shows two halves: what has been
+collected, and what has been released but never opened. The second is the half an
+operator can act on.
+
+The record names the **account**, because that is the fact in dispute, and stores no IP
+address or user agent — neither strengthens the answer, and both turn a dispute record
+into a surveillance record. Every download is recorded, not only the first: "downloaded
+three times, most recently on the 4th" is a different answer from "downloaded once".
+
+The write is subordinate to the download. It happens after the bytes are in hand, so the
+row means "this customer received this file", and a failed write returns false rather
+than throwing: the customer has the document either way.
+
+## Push notifications
+
+Push is a second **transport**, not a second policy. Whether a customer hears about a
+fact stays in `portal-notifications.ts`; the push path only carries an already-decided
+message, keyed by the same deterministic notification key, so a phone and a laptop each
+get one notification rather than the same fact twice on both.
+
+Encryption (RFC 8291) and VAPID signing (RFC 8292) are implemented directly on
+`node:crypto` — no dependency, for the same reason invoices print rather than render
+through a PDF library. The tests decrypt a real payload back with an independently
+written reader and verify the VAPID signature with Node's own verifier.
+
+Subscriptions are per **device**: a customer who turns push on at the office has not
+asked for it on the phone they left at home. A push service answering 404 or 410 is
+telling KCPL the subscription is dead, so the row is dropped rather than retried.
+
+The permission prompt is only ever raised from the button. A permission asked for on
+page load is the fastest way to have it denied permanently, and a denied permission
+cannot be re-requested from script.
+
 ## Provisioning (staff runbook)
 
 **Operations → Organisation → Customer Portal Access** (`/admin/portal-access`,
@@ -324,7 +405,18 @@ provision the address against the new customer instead.
 | `role` | `owner` \| `member` (unknown values resolve to `member`) |
 | `active` | false disables sign-in without losing the binding |
 | `uid` | Firebase uid, bound on first successful sign-in |
+| `additional_customer_ids` | further customers this login may read; staff-granted only |
+| `locale` | `en` \| `ne`; the language for both the portal and this account's emails |
 | `created_*`, `updated_*`, `last_sign_in_at` | provenance |
+
+`shipments/{reference}/document_access/{id}`: one row per customer download — the
+document, the account that fetched it, and when. No IP address or user agent.
+
+`portal_push_subscriptions/{sha256(endpoint)}`: one row per browser — endpoint, the
+subscription's public key and auth secret, the owning account and its language.
+
+`portal_push_deliveries/{sha256(key)}`: the same claim-before-send record the email
+transport keeps, so one fact reaches a recipient's devices once.
 
 `firestore.rules` denies all direct client access; the portal reads through the Admin SDK
 in server routes only, exactly like the staff product.
@@ -345,6 +437,9 @@ in server routes only, exactly like the staff product.
 | `POST /api/portal/documents/[reference]` | Customer upload against a shipment; lands unreviewed and unreleased |
 | `POST /api/portal/requests` | Customer-raised enquiry or "ask to proceed" |
 | `POST /api/portal/notifications` | Saves the signed-in account's notification topics |
+| `POST /api/portal/locale` | Saves the signed-in account's language |
+| `POST /api/portal/customer` | Switches which linked customer the session is scoped to |
+| `POST`/`DELETE /api/portal/push` | Registers or removes this browser's push subscription |
 | `GET`/`POST /api/portal/team` | An account owner's own team logins (owners only) |
 | `POST /api/portal/shipments/[reference]/confirm-delivery` | Customer confirmation of receipt, as evidence |
 | `GET`/`POST /api/portal/invoices/[reference]/remittance` | Payment receipts against an invoice |
@@ -380,11 +475,29 @@ excluded from public analytics and from the public site's mobile quote CTA.
   `/api/internal/automation` next runs, not the instant a status changes. If KCPL wants
   near-real-time delivery, the sweep needs to run more often — the dispatcher itself is
   cheap and idempotent, so that is a scheduling decision rather than a code change.
-- **Email only.** WhatsApp is the channel most KCPL customers actually read; the
-  dispatcher is written so a second transport can be added beside the mailer without
-  touching the decision rules.
+- **Email and web push.** WhatsApp is still the channel most KCPL customers actually
+  read; the dispatcher takes a second transport beside the mailer without touching the
+  decision rules, which is how push was added.
+- **Push has never reached a real device.** The encryption round-trips against an
+  independently written reader and the VAPID token verifies with Node's own verifier,
+  but nothing here has been sent to a live push service. The failure modes are loud —
+  a browser that cannot decrypt drops the message, a bad token gets a 401 — rather
+  than silent, but the first real subscription is still the first real test.
+- **Push needs VAPID keys.** `KCPL_VAPID_PUBLIC_KEY`, `KCPL_VAPID_PRIVATE_KEY` and
+  `KCPL_VAPID_SUBJECT` must all be set or the control does not appear and the sweep
+  skips the transport entirely.
 - **Team invites depend on the same mail configuration.** Without a provider, an
   account owner has to pass the one-time link to their colleague themselves, exactly
   as KCPL staff do.
-- **Single customer per login.** A contact who buys through two KCPL customer records
-  needs two portal accounts.
+- **Linked customers are staff-granted only.** An agent can hold one login across
+  several KCPL customer records, but only Management can link them: an account owner
+  who could link customers could grant themselves another company's shipments.
+- **Nepali covers the portal, not the data.** Every screen a signed-in customer sees
+  and all three notification emails are translated. Place names, shipment references,
+  filenames, carrier names and staff notes are records and stay as KCPL holds them.
+  Dates stay Gregorian in both languages, because every carrier document and customs
+  entry the portal reports on is Gregorian. The sign-in page stays English: it renders
+  before anyone has identified themselves.
+- **The portal installs, but stores nothing offline.** The service worker exists to
+  receive push and focus a tab. It has no fetch handler and no cache, because a cached
+  shipment status is a wrong shipment status.

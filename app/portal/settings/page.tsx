@@ -6,6 +6,7 @@ import { PortalLoginPage } from "../portal-login-page";
 import { PortalShell } from "../portal-shell";
 import { PortalUnavailable } from "../portal-frame";
 import { PortalSettingsWorkspace } from "./portal-settings-workspace";
+import { portalPushConfigured, portalPushPublicKey } from "../portal-push.server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Account settings · KCPL Customer Portal", robots: { index: false, follow: false } };
@@ -32,6 +33,7 @@ export default async function PortalSettingsPage() {
         emailConfigured={transactionalEmailConfigured()}
         team={team}
         locale={access.session.locale}
+        pushPublicKey={portalPushConfigured() ? portalPushPublicKey() : ""}
       />
     </PortalShell>
   );

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -6,6 +7,16 @@ const portalFont = Geist({
   display: "swap",
   variable: "--font-portal-geist",
 });
+
+/*
+ * The manifest is declared here rather than in the root layout so only the
+ * portal is installable. The public marketing site is a site, and offering to
+ * install it would be a prompt with nothing behind it.
+ */
+export const metadata: Metadata = {
+  manifest: "/portal.webmanifest",
+  appleWebApp: { capable: true, title: "KCPL Portal", statusBarStyle: "default" },
+};
 
 /*
  * The customer portal renders on the same foundation as the staff product:

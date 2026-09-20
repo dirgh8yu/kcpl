@@ -2309,3 +2309,7 @@
 .kcpl-admin-content .portal-language-choice button { padding: 8px 14px; border: 1px solid var(--admin-border); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-text); font: inherit; font-size: var(--app-text-sm); cursor: pointer; }
 .kcpl-admin-content .portal-language-choice button[data-active="true"] { border-color: var(--admin-accent-line); background: var(--admin-accent-bg); font-weight: 600; }
 .kcpl-admin-content .portal-language-choice button:disabled { opacity: 0.6; cursor: default; }
+
+/* Customer portal -- push notifications on this device. */
+.kcpl-admin-content .portal-push-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--app-space-3); }
+.kcpl-admin-content .portal-push-control [role="alert"] { color: var(--admin-danger); }

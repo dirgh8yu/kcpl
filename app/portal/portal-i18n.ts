@@ -547,6 +547,18 @@ const en = {
   "mail.ft_one_day_at": "1 free day left at {location}",
   "mail.ft_days": "{days} free days left",
   "mail.ft_days_at": "{days} free days left at {location}",
+
+  /* Push notifications on this device */
+  "push.eyebrow": "This device",
+  "push.title": "Notifications on your phone",
+  "push.description": "Get the same alerts on this device without opening your email. Turning it on here affects this browser only, not the rest of your team.",
+  "push.turn_on": "Turn on notifications",
+  "push.turn_off": "Turn off on this device",
+  "push.working": "Working…",
+  "push.on_note": "This device will receive the topics you have switched on above.",
+  "push.unsupported": "This browser cannot receive push notifications. You will still get the emails.",
+  "push.blocked": "Notifications are blocked for this site in your browser settings. Allow them there, then reload this page.",
+  "push.failed": "Notifications could not be switched on for this device.",
 } as const;
 
 export type PortalTextKey = keyof typeof en;
@@ -1036,6 +1048,17 @@ const ne: Record<PortalTextKey, string> = {
   "mail.ft_one_day_at": "{location} मा १ दिन फ्री टाइम बाँकी",
   "mail.ft_days": "{days} दिन फ्री टाइम बाँकी",
   "mail.ft_days_at": "{location} मा {days} दिन फ्री टाइम बाँकी",
+
+  "push.eyebrow": "यो डिभाइस",
+  "push.title": "तपाईंको फोनमा सूचना",
+  "push.description": "इमेल नखोली यही डिभाइसमा उही सूचना पाउनुहोस्। यहाँ खोल्दा यो ब्राउजरमा मात्र लागू हुन्छ, टोलीका अरूलाई असर गर्दैन।",
+  "push.turn_on": "सूचना खोल्नुहोस्",
+  "push.turn_off": "यो डिभाइसमा बन्द गर्नुहोस्",
+  "push.working": "काम हुँदै…",
+  "push.on_note": "माथि खुला गरेका विषयका सूचना यो डिभाइसमा आउनेछन्।",
+  "push.unsupported": "यो ब्राउजरले पुश सूचना लिन सक्दैन। इमेल भने आइरहनेछ।",
+  "push.blocked": "ब्राउजर सेटिङमा यो साइटका सूचना रोकिएका छन्। त्यहाँबाट अनुमति दिई यो पृष्ठ पुनः लोड गर्नुहोस्।",
+  "push.failed": "यो डिभाइसमा सूचना खोल्न सकिएन।",
 };
 
 const dictionaries: Record<PortalLocale, Record<PortalTextKey, string>> = { en, ne };

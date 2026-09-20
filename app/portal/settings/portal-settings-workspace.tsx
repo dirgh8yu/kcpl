@@ -24,6 +24,7 @@ import {
 } from "../portal-i18n";
 import type { PortalRole } from "../portal-access-policy";
 import type { PortalTeamMember } from "../portal-accounts.server";
+import { PortalPushControl } from "../portal-push-control";
 import { PortalTeamPanel } from "./portal-team-panel";
 
 export function PortalSettingsWorkspace({
@@ -34,6 +35,7 @@ export function PortalSettingsWorkspace({
   emailConfigured,
   team,
   locale,
+  pushPublicKey,
 }: {
   email: string;
   customerName: string;
@@ -43,6 +45,8 @@ export function PortalSettingsWorkspace({
   /** Null for anyone who is not an account owner. */
   team: PortalTeamMember[] | null;
   locale: PortalLocale;
+  /** Empty when KCPL has not configured VAPID keys, which hides the control. */
+  pushPublicKey: string;
 }) {
   const t = portalTranslator(locale);
   const [preferences, setPreferences] = useState(initialPreferences);
@@ -162,6 +166,8 @@ export function PortalSettingsWorkspace({
               ))}
             </ul>
           </OpsSurface>
+
+          {pushPublicKey ? <PortalPushControl publicKey={pushPublicKey} locale={locale}/> : null}
 
           {team ? <PortalTeamPanel initialTeam={team} currentEmail={email} locale={locale}/> : null}
 
