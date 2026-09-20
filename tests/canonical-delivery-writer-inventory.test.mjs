@@ -268,6 +268,16 @@ const reviewedClassifications = [
     rationale: "Customer notification sweep. Reads canonical shipment status and writes only its own records: a delivery row per outbound email in portal_email_deliveries, and a per-shipment notification watermark in portal_notification_state. It never writes the shipment document, so it cannot assign or influence canonical status -- reading the result on a schedule is precisely what keeps notifications outside the delivery authority.",
   },
   {
+    file: "app/portal/portal-access-log.ts",
+    category: "F",
+    rationale: "Pure customer document access rollup. No Firebase dependency: it turns download events into per-document summaries and the list of released documents nobody has fetched.",
+  },
+  {
+    file: "app/portal/portal-access-log.server.ts",
+    category: "A",
+    rationale: "Customer document download log. Writes one row per download into the shipment's own document_access subcollection -- shipment-linked evidence about who received a file. It never writes the shipment document, its status, or the document record that was read: observing a read cannot change what was read.",
+  },
+  {
     file: "app/portal/portal-data.server.ts",
     category: "F",
     rationale: "Read model behind the customer portal. Every Firestore call is a get; shipment_status is projected onto a document row for display, and the .set() calls the scan sees are in-memory Map writes used to group balances and de-duplicate quotes.",
@@ -452,6 +462,20 @@ const expectedReviewedSurfaces = [
     rejects: [
       /collection\("shipments"\)\.doc\([^)]*\)\.(?:update|set|create|delete)\(/,
       /status: "delivered"/,
+    ],
+  },
+  {
+    id: "Customer document access log records reads and changes nothing",
+    file: "app/portal/portal-access-log.server.ts",
+    patterns: [
+      /const ACCESS_COLLECTION = "document_access";/,
+      /\.collection\(ACCESS_COLLECTION\)\.doc\(id\)/,
+    ],
+    rejects: [
+      /collection\("shipments"\)\.doc\([^)]*\)\.(?:update|set|create|delete)\(/,
+      /collection\("documents"\)\s*\.doc\([^)]*\)\.(?:update|set|create|delete)\(/,
+      /status:\s*"delivered"/,
+      /customer_safe:\s*(?:true|false)/,
     ],
   },
   {

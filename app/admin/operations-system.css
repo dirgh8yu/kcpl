@@ -2265,3 +2265,15 @@
   .kcpl-admin-content .ops-table { min-width: 0; }
   .kcpl-portal-route { background: #FFFFFF; }
 }
+
+/* Job File -- customer document access.
+ * The "not collected" list is the actionable half: released paperwork the
+ * customer has never opened. It is set apart from the table above it because
+ * it asks the operator to do something rather than merely recording what
+ * happened. */
+.kcpl-admin-content .job-access-pending { margin-top: var(--app-space-4); padding-top: var(--app-space-4); border-top: 1px solid var(--admin-border); }
+.kcpl-admin-content .job-access-pending > p { display: flex; align-items: center; gap: var(--app-space-2); margin: 0 0 var(--app-space-3); color: var(--admin-muted); font-size: var(--app-text-sm); }
+.kcpl-admin-content .job-access-pending ul { display: flex; flex-direction: column; gap: var(--app-space-2); margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-access-pending li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--app-space-2); }
+.kcpl-admin-content .job-access-pending li strong { font-size: var(--app-text-sm); font-weight: 600; }
+.kcpl-admin-content .job-access-pending li span { color: var(--admin-muted); font-size: var(--app-text-sm); }
