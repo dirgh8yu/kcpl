@@ -227,13 +227,39 @@ test("a different endpoint gets a different audience and a different signature",
   assert.notEqual(one.token, two.token);
 });
 
-test("malformed VAPID configuration is refused rather than signed with", () => {
+test("a VAPID value of the wrong shape is refused", () => {
   assert.throws(
     () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, privateKey: base64UrlEncode(randomBytes(16)) } }),
     /private key must be 32 bytes/,
   );
+  // Deterministically not an uncompressed point: the prefix must be 0x04, and
+  // a random first byte would only be one 1 run in 256 of the time -- which is
+  // exactly how this test flaked before it was pinned.
+  const wrongPrefix = Buffer.concat([Buffer.from([0x02]), randomBytes(64)]);
   assert.throws(
-    () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, publicKey: base64UrlEncode(randomBytes(65)) } }),
+    () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, publicKey: base64UrlEncode(wrongPrefix) } }),
     /uncompressed P-256 point/,
+  );
+});
+
+test("a VAPID value of the right shape that is not on the curve says so clearly", () => {
+  // 65 bytes with the correct 0x04 prefix passes the shape check and fails
+  // inside node, which reports only "Invalid JWK EC key" -- no help at all to
+  // whoever is configuring KCPL.
+  const offCurve = Buffer.concat([Buffer.from([0x04]), randomBytes(64)]);
+  assert.throws(
+    () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, publicKey: base64UrlEncode(offCurve) } }),
+    /matching pair/,
+  );
+});
+
+test("a public and private value from different key pairs is refused", () => {
+  const other = createECDH("prime256v1");
+  other.generateKeys();
+  // The likeliest real misconfiguration: two halves of two different runs of
+  // the generator documented in .env.example.
+  assert.throws(
+    () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, privateKey: base64UrlEncode(other.getPrivateKey()) } }),
+    /matching pair/,
   );
 });

@@ -127,16 +127,43 @@ function vapidPrivateKeyObject(keys: VapidKeys) {
   const privateKey = base64UrlDecode(keys.privateKey);
   if (publicKey.length !== 65 || publicKey[0] !== 0x04) throw new Error("VAPID public key is not an uncompressed P-256 point.");
   if (privateKey.length !== 32) throw new Error("VAPID private key must be 32 bytes.");
-  return createPrivateKey({
-    format: "jwk",
-    key: {
-      kty: "EC",
-      crv: "P-256",
-      x: base64UrlEncode(publicKey.subarray(1, 33)),
-      y: base64UrlEncode(publicKey.subarray(33, 65)),
-      d: base64UrlEncode(privateKey),
-    },
-  });
+
+  // Node accepts a JWK whose private scalar does not match its public point,
+  // and signs happily with it -- every push service then answers 401 and the
+  // cause is invisible. Deriving the public point from the private scalar and
+  // comparing catches the likeliest real misconfiguration: two halves of two
+  // different runs of the generator.
+  let derived: Buffer;
+  try {
+    const check = createECDH("prime256v1");
+    check.setPrivateKey(privateKey);
+    derived = check.getPublicKey();
+  } catch (error) {
+    throw new Error("VAPID private key is not a valid P-256 scalar.", { cause: error });
+  }
+  if (!derived.equals(publicKey)) {
+    throw new Error("VAPID key pair is not a valid P-256 key: check that the public and private values are a matching pair.");
+  }
+
+  try {
+    return createPrivateKey({
+      format: "jwk",
+      key: {
+        kty: "EC",
+        crv: "P-256",
+        x: base64UrlEncode(publicKey.subarray(1, 33)),
+        y: base64UrlEncode(publicKey.subarray(33, 65)),
+        d: base64UrlEncode(privateKey),
+      },
+    });
+  } catch (error) {
+    // The length and prefix checks above catch a value of the wrong shape;
+    // this catches one of the right shape that is not actually on the curve,
+    // or a private scalar that does not match the public point. Node reports
+    // both as "Invalid JWK EC key", which tells whoever is configuring KCPL
+    // nothing about which of their two values is wrong.
+    throw new Error("VAPID key pair is not a valid P-256 key: check that the public and private values are a matching pair.", { cause: error });
+  }
 }
 
 /**
