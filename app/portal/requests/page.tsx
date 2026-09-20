@@ -17,9 +17,7 @@ export default async function PortalRequestsPage() {
   const result = await listPortalQuotes(access.session);
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       {result.kind === "ready"
         ? <PortalRequestsWorkspace quotes={result.quotes} requests={result.requests} capabilities={access.session.capabilities}/>

@@ -45,9 +45,7 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
 
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       {result.kind === "ready"
         ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests}/>

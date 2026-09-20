@@ -22,9 +22,7 @@ export default async function PortalSettingsPage() {
   ]);
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       <PortalSettingsWorkspace
         email={access.session.email}

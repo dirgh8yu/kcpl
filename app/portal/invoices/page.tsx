@@ -18,9 +18,7 @@ export default async function PortalInvoicesPage() {
   const result = await listPortalInvoices(access.session);
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       {result.kind === "ready"
         ? <PortalInvoicesWorkspace invoices={result.invoices} summary={result.summary}/>

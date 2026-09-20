@@ -12,13 +12,19 @@ import {
   type PortalTeamDecision,
 } from "./portal-access-policy";
 import {
+  decidePortalAccountLink,
   decidePortalAccess,
+  decidePortalCustomerScope,
+  portalAdditionalCustomerIds,
+  PORTAL_LINKED_CUSTOMER_LIMIT,
   normalizePortalEmail,
   portalAccountKey,
   portalRoleValue,
   type PortalAccessDecision,
   type PortalAccountRecord,
   type PortalCustomerRecord,
+  type PortalAccountLinkAction,
+  type PortalCustomerScope,
   type PortalIdentity,
   type PortalRole,
 } from "./portal-access-policy";
@@ -29,6 +35,7 @@ export type PortalAccountSummary = {
   email: string;
   customer_id: string;
   customer_name: string;
+  additional_customer_ids: string[];
   role: PortalRole;
   active: boolean;
   bound: boolean;
@@ -53,6 +60,7 @@ function accountRecord(data: Record<string, unknown>): PortalAccountRecord {
     role: portalRoleValue(data.role),
     active: data.active === true,
     uid: nullable(data.uid),
+    additional_customer_ids: portalAdditionalCustomerIds(data.additional_customer_ids),
   };
 }
 
@@ -72,7 +80,23 @@ function customerRecord(id: string, data: Record<string, unknown>): PortalCustom
  * compare-and-set: the first sign-in claims the account, and a second Firebase
  * account on the same address is refused rather than inheriting the customer.
  */
-export async function resolvePortalAccount(identity: PortalIdentity): Promise<PortalAccessDecision | { kind: "unavailable" }> {
+export type PortalResolvedAccount =
+  | {
+      kind: "allowed";
+      customerId: string;
+      customerName: string;
+      role: PortalRole;
+      capabilities: Extract<PortalAccessDecision, { kind: "allowed" }>["capabilities"];
+      /** Every customer this login may read, the primary first. */
+      customers: PortalCustomerScope[];
+    }
+  | Extract<PortalAccessDecision, { kind: "denied" }>
+  | { kind: "unavailable" };
+
+export async function resolvePortalAccount(
+  identity: PortalIdentity,
+  requestedCustomerId: string | null = null,
+): Promise<PortalResolvedAccount> {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const email = normalizePortalEmail(identity.email);
   if (!email) return { kind: "denied" as const, reason: "email_missing" as const };
@@ -96,17 +120,27 @@ export async function resolvePortalAccount(identity: PortalIdentity): Promise<Po
   // counts too: KCPL_ADMIN_EMAILS can mint staff authority without a profile.
   const staffPrincipal = Boolean(staffProfile && staffProfile.active !== false) || isAllowedAdminEmail(email);
 
-  let customer: PortalCustomerRecord | null = null;
-  if (account?.customer_id) {
+  // The primary customer and any linked ones are fetched together: an agent
+  // with four principals should cost one round of reads, not four rounds.
+  const linkedIds = account ? account.additional_customer_ids.slice(0, PORTAL_LINKED_CUSTOMER_LIMIT) : [];
+  const wantedIds = account?.customer_id ? [account.customer_id, ...linkedIds.filter((id) => id !== account.customer_id)] : [];
+  let customers: PortalCustomerRecord[] = [];
+  if (wantedIds.length) {
     try {
-      const snapshot = await db.collection("customers").doc(account.customer_id).get();
-      if (snapshot.exists) customer = customerRecord(snapshot.id, snapshot.data() as Record<string, unknown>);
+      const snapshots = await Promise.all(wantedIds.map((id) => db.collection("customers").doc(id).get()));
+      customers = snapshots
+        .filter((snapshot) => snapshot.exists)
+        .map((snapshot) => customerRecord(snapshot.id, snapshot.data() as Record<string, unknown>));
     } catch (error) {
       console.error("KCPL portal customer lookup failed", error);
       return { kind: "unavailable" as const };
     }
   }
+  const customer = customers.find((record) => record.id === account?.customer_id) ?? null;
 
+  // Authorisation is still decided by the primary customer alone. A linked
+  // record can widen what an authorised session reads; it can never be the
+  // reason a session exists.
   const decision = decidePortalAccess({ identity, account, customer, staffPrincipal });
   if (decision.kind !== "allowed") return decision;
 
@@ -114,7 +148,22 @@ export async function resolvePortalAccount(identity: PortalIdentity): Promise<Po
     const bound = await bindPortalAccountUid(email, decision.bindUid);
     if (!bound) return { kind: "denied" as const, reason: "uid_mismatch" as const };
   }
-  return decision;
+
+  const scope = decidePortalCustomerScope({
+    primary: { id: decision.customerId, name: decision.customerName },
+    additionalCustomerIds: linkedIds,
+    customers,
+    requested: requestedCustomerId,
+  });
+
+  return {
+    kind: "allowed" as const,
+    customerId: scope.activeId,
+    customerName: scope.activeName,
+    role: decision.role,
+    capabilities: decision.capabilities,
+    customers: scope.customers,
+  };
 }
 
 /** Compare-and-set uid binding. Returns false when another uid already holds it. */
@@ -142,6 +191,8 @@ export type PortalTeamMember = {
   bound: boolean;
   last_sign_in_at: string | null;
   created_at: string;
+  /** Reaches this customer through a KCPL-granted link, not through membership. */
+  linked: boolean;
 };
 
 /**
@@ -153,23 +204,35 @@ export type PortalTeamMember = {
  */
 export async function listPortalTeam(customerId: string): Promise<PortalTeamMember[] | null> {
   if (!firebaseRuntimeConfigured() || !customerId.trim()) return null;
+  const scoped = customerId.trim();
   try {
-    const snapshot = await firebaseAdminDb().collection(PORTAL_ACCOUNTS)
-      .where("customer_id", "==", customerId.trim())
-      .limit(50)
-      .get();
-    return snapshot.docs
-      .map((document) => {
-        const data = document.data() as Record<string, unknown>;
-        return {
-          email: normalizePortalEmail(data.email) || document.id,
-          role: portalRoleValue(data.role),
-          active: data.active === true,
-          bound: Boolean(nullable(data.uid)),
-          last_sign_in_at: nullable(data.last_sign_in_at),
-          created_at: text(data.created_at),
-        };
-      })
+    // Two queries because Firestore cannot OR across fields. An agent linked to
+    // this customer is genuinely one of the logins that can read it, so leaving
+    // them out would make the team panel claim fewer doors than exist.
+    const collection = firebaseAdminDb().collection(PORTAL_ACCOUNTS);
+    const [owned, linked] = await Promise.all([
+      collection.where("customer_id", "==", scoped).limit(50).get(),
+      collection.where("additional_customer_ids", "array-contains", scoped).limit(50).get(),
+    ]);
+    const members = new Map<string, PortalTeamMember>();
+    for (const document of [...owned.docs, ...linked.docs]) {
+      const data = document.data() as Record<string, unknown>;
+      const email = normalizePortalEmail(data.email) || document.id;
+      if (members.has(email)) continue;
+      members.set(email, {
+        email,
+        role: portalRoleValue(data.role),
+        active: data.active === true,
+        bound: Boolean(nullable(data.uid)),
+        last_sign_in_at: nullable(data.last_sign_in_at),
+        created_at: text(data.created_at),
+        // A linked login belongs to another customer's account. It is shown so
+        // the owner knows it can read their shipments, and it is not theirs to
+        // disable: that is KCPL's to undo.
+        linked: text(data.customer_id).trim() !== scoped,
+      });
+    }
+    return [...members.values()]
       .sort((a, b) => a.role.localeCompare(b.role) || a.email.localeCompare(b.email));
   } catch (error) {
     console.error("KCPL portal team listing failed", error);
@@ -208,7 +271,11 @@ export async function applyPortalTeamChange(input: {
   }
   if (!team) return { kind: "unavailable" };
 
-  const existing = team.find((member) => member.email === targetEmail) ?? null;
+  // A linked login is on this listing but is not this customer's account, so it
+  // must not be treated as one of their members. Leaving it out here sends it
+  // down the direct lookup below, which finds its real customer and has the
+  // decision refuse it -- an owner cannot disable another customer's login.
+  const existing = team.find((member) => member.email === targetEmail && !member.linked) ?? null;
   let target: { email: string; customer_id: string; role: PortalRole } | null = existing
     ? { email: existing.email, customer_id: input.customerId, role: existing.role }
     : null;
@@ -240,7 +307,9 @@ export async function applyPortalTeamChange(input: {
     targetEmail,
     customerId: input.customerId,
     target,
-    activeMemberCount: team.filter((member) => member.role === "member" && member.active).length,
+    // Seats are this customer's own logins. A linked agent occupies a seat on
+    // the account KCPL provisioned them against, not on this one.
+    activeMemberCount: team.filter((member) => member.role === "member" && member.active && !member.linked).length,
   });
   if (decision.kind === "denied") return { kind: "denied", decision };
 
@@ -318,6 +387,7 @@ function summary(id: string, data: Record<string, unknown>): PortalAccountSummar
     email: normalizePortalEmail(data.email) || id,
     customer_id: text(data.customer_id),
     customer_name: text(data.customer_name),
+    additional_customer_ids: portalAdditionalCustomerIds(data.additional_customer_ids),
     role: portalRoleValue(data.role),
     active: data.active === true,
     bound: Boolean(nullable(data.uid)),
@@ -382,6 +452,9 @@ export async function savePortalAccount(input: PortalAccountInput, actor: { name
       role: portalRoleValue(input.role),
       active: true,
       uid: existing.exists ? nullable(existing.get("uid")) : null,
+      // Preserved rather than defaulted: re-saving an account to correct a role
+      // must not silently revoke an agent's linked customers.
+      additional_customer_ids: existing.exists ? portalAdditionalCustomerIds(existing.get("additional_customer_ids")) : [],
       created_at: existing.exists ? text(existing.get("created_at"), now) : now,
       created_by_name: existing.exists ? text(existing.get("created_by_name"), actor.name) : actor.name,
       created_by_email: existing.exists ? text(existing.get("created_by_email"), actor.email) : actor.email,
@@ -409,5 +482,63 @@ export async function setPortalAccountActive(email: string, active: boolean, act
   } catch (error) {
     console.error("KCPL portal account status change failed", error);
     return { kind: "unavailable" as const };
+  }
+}
+
+/**
+ * Link or unlink a further customer on one portal account.
+ *
+ * Management-only by construction: this is exported for the staff portal
+ * access route and has no counterpart on the customer side. Which KCPL records
+ * a login may read is a commercial judgement about entitlement, and an account
+ * owner who could make it could grant themselves another company's shipments.
+ */
+export async function setPortalAccountCustomerLink(input: {
+  email: string;
+  action: PortalAccountLinkAction;
+  customerId: string;
+  actorEmail: string;
+}): Promise<
+  | { kind: "applied"; additionalCustomerIds: string[] }
+  | { kind: "denied"; message: string }
+  | { kind: "missing" }
+  | { kind: "invalid_customer" }
+  | { kind: "unavailable" }
+> {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
+  const key = portalAccountKey(input.email);
+  if (!key) return { kind: "missing" };
+  const targetCustomerId = input.customerId.trim();
+
+  const db = firebaseAdminDb();
+  try {
+    const reference = db.collection(PORTAL_ACCOUNTS).doc(key);
+    const snapshot = await reference.get();
+    if (!snapshot.exists) return { kind: "missing" };
+
+    // Linking to a customer that does not exist, or that KCPL has archived,
+    // would write a scope that silently resolves to nothing at sign-in.
+    if (input.action === "link") {
+      const customer = await db.collection("customers").doc(targetCustomerId).get();
+      if (!customer.exists || customer.get("archived") === true) return { kind: "invalid_customer" };
+    }
+
+    const decision = decidePortalAccountLink({
+      action: input.action,
+      primaryCustomerId: text(snapshot.get("customer_id")).trim(),
+      additionalCustomerIds: portalAdditionalCustomerIds(snapshot.get("additional_customer_ids")),
+      targetCustomerId,
+    });
+    if (decision.kind === "denied") return { kind: "denied", message: decision.message };
+
+    await reference.update({
+      additional_customer_ids: decision.additionalCustomerIds,
+      updated_at: new Date().toISOString(),
+      updated_by_email: input.actorEmail,
+    });
+    return { kind: "applied", additionalCustomerIds: decision.additionalCustomerIds };
+  } catch (error) {
+    console.error("KCPL portal customer link change failed", error);
+    return { kind: "unavailable" };
   }
 }

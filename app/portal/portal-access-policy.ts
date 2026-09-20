@@ -62,6 +62,10 @@ export type PortalAccountRecord = {
   active: boolean;
   /** Bound on first successful sign-in; a later mismatch is a takeover attempt. */
   uid: string | null;
+  /** Further customers this login may read, for an agent or a group buying
+   * under several KCPL records. Staff-provisioned only: see
+   * `decidePortalAccountLink`. The primary `customer_id` is not repeated here. */
+  additional_customer_ids: string[];
 };
 
 export type PortalCustomerRecord = {
@@ -155,6 +159,140 @@ export function decidePortalAccess({
     capabilities: portalCapabilitiesForRole(role),
     bindUid: boundUid ? null : identity.uid,
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Customer scope: one login, several KCPL records
+ * ------------------------------------------------------------------ */
+
+/**
+ * A freight agent buys under several KCPL customer records and wants one
+ * login, not four. The scope below is what makes that safe.
+ *
+ * The shape of the rule matters more than the feature. `decidePortalAccess`
+ * above is untouched: it still decides, from the primary customer alone,
+ * whether this identity may hold a portal session at all. This function only
+ * widens what an already-authorised session may look at, and it can only ever
+ * widen it to customers a KCPL staff member wrote onto the account.
+ *
+ * The requested customer is a preference, not a claim. It arrives from a
+ * cookie the browser controls, so it is intersected with the allowed set on
+ * every request and falls back to the primary customer when it does not
+ * match. Nothing downstream needs to re-check it.
+ */
+
+/** Bounded for the same reason team seats are: each linked record is another
+ * customer's data behind one password. */
+export const PORTAL_LINKED_CUSTOMER_LIMIT = 12;
+
+export type PortalCustomerScope = { id: string; name: string };
+
+export function portalAdditionalCustomerIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  for (const entry of value) {
+    const id = typeof entry === "string" ? entry.trim() : "";
+    if (id) seen.add(id);
+  }
+  return [...seen];
+}
+
+/** A customer record a portal session may be scoped to at all. */
+export function portalCustomerReadable(customer: PortalCustomerRecord) {
+  return !customer.archived && !blockedAccountStatuses.has(customer.account_status);
+}
+
+/**
+ * The customers this session may read, and which one is active.
+ *
+ * The primary is always first and always present: it is the customer the
+ * account was authorised against, so removing it here would contradict the
+ * decision that let the session exist. Linked records that have since been
+ * archived or blacklisted drop out silently -- KCPL stopping trade with one
+ * of an agent's principals must not lock the agent out of the others.
+ */
+export function decidePortalCustomerScope(input: {
+  primary: PortalCustomerScope;
+  additionalCustomerIds: string[];
+  customers: PortalCustomerRecord[];
+  requested: string | null;
+}): { customers: PortalCustomerScope[]; activeId: string; activeName: string } {
+  const byId = new Map(input.customers.map((customer) => [customer.id, customer]));
+  const scoped: PortalCustomerScope[] = [];
+  const seen = new Set<string>([input.primary.id]);
+
+  for (const id of input.additionalCustomerIds.slice(0, PORTAL_LINKED_CUSTOMER_LIMIT)) {
+    if (seen.has(id)) continue;
+    const customer = byId.get(id);
+    if (!customer || !portalCustomerReadable(customer)) continue;
+    seen.add(id);
+    scoped.push({ id: customer.id, name: customer.display_name || customer.id });
+  }
+  scoped.sort((a, b) => a.name.localeCompare(b.name));
+
+  const customers = [input.primary, ...scoped];
+  const requested = typeof input.requested === "string" ? input.requested.trim() : "";
+  // A cookie is a preference. An id that is not in the allowed set is not an
+  // error worth surfacing -- it is a stale or forged value, and the primary
+  // customer is always a correct answer.
+  const active = customers.find((customer) => customer.id === requested) ?? input.primary;
+  return { customers, activeId: active.id, activeName: active.name };
+}
+
+export const portalAccountLinkActions = ["link", "unlink"] as const;
+export type PortalAccountLinkAction = (typeof portalAccountLinkActions)[number];
+
+export const portalAccountLinkDenials = [
+  "invalid_customer",
+  "primary_customer",
+  "already_linked",
+  "not_linked",
+  "limit_reached",
+] as const;
+export type PortalAccountLinkDenial = (typeof portalAccountLinkDenials)[number];
+
+export type PortalAccountLinkDecision =
+  | { kind: "applied"; additionalCustomerIds: string[] }
+  | { kind: "denied"; reason: PortalAccountLinkDenial; message: string };
+
+const linkDenialMessages: Record<PortalAccountLinkDenial, string> = {
+  invalid_customer: "Choose a customer account to link.",
+  primary_customer: "That is already this login's own customer account.",
+  already_linked: "This login can already see that customer.",
+  not_linked: "This login does not have access to that customer.",
+  limit_reached: `A single login can be linked to at most ${PORTAL_LINKED_CUSTOMER_LIMIT} customer accounts.`,
+};
+
+/**
+ * Add or remove a linked customer on one portal account.
+ *
+ * Deliberately not available to account owners, who can manage their own team
+ * but not their own scope: which KCPL records a login may read is a commercial
+ * decision about who is entitled to whose data, and that belongs with KCPL.
+ * An owner who could link customers could grant themselves another company's
+ * shipments.
+ */
+export function decidePortalAccountLink(input: {
+  action: PortalAccountLinkAction;
+  primaryCustomerId: string;
+  additionalCustomerIds: string[];
+  targetCustomerId: string;
+}): PortalAccountLinkDecision {
+  const target = input.targetCustomerId.trim();
+  const current = portalAdditionalCustomerIds(input.additionalCustomerIds);
+  const deny = (reason: PortalAccountLinkDenial) => ({ kind: "denied" as const, reason, message: linkDenialMessages[reason] });
+
+  if (!target) return deny("invalid_customer");
+  if (target === input.primaryCustomerId.trim()) return deny("primary_customer");
+
+  if (input.action === "link") {
+    if (current.includes(target)) return deny("already_linked");
+    if (current.length >= PORTAL_LINKED_CUSTOMER_LIMIT) return deny("limit_reached");
+    return { kind: "applied", additionalCustomerIds: [...current, target] };
+  }
+
+  if (!current.includes(target)) return deny("not_linked");
+  return { kind: "applied", additionalCustomerIds: current.filter((id) => id !== target) };
 }
 
 /* ------------------------------------------------------------------ *

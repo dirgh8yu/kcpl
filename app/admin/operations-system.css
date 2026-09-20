@@ -2277,3 +2277,13 @@
 .kcpl-admin-content .job-access-pending li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--app-space-2); }
 .kcpl-admin-content .job-access-pending li strong { font-size: var(--app-text-sm); font-weight: 600; }
 .kcpl-admin-content .job-access-pending li span { color: var(--admin-muted); font-size: var(--app-text-sm); }
+
+/* Customer portal -- account switcher.
+ * Only rendered for a login linked to more than one KCPL customer record, so
+ * an ordinary account never sees it. It sits inside the account block rather
+ * than the navigation because it changes whose data is shown, not which page. */
+.kcpl-admin-content .portal-customer-switch,
+.kcpl-portal-route .portal-customer-switch { display: inline-flex; align-items: center; gap: var(--app-space-2); padding-right: var(--app-space-3); margin-right: var(--app-space-3); border-right: 1px solid var(--admin-border); color: var(--admin-muted); }
+.kcpl-portal-route .portal-customer-switch select { max-width: 200px; padding: 6px 8px; border: 1px solid var(--admin-border); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-text); font: inherit; font-size: var(--app-text-sm); }
+.kcpl-portal-route .portal-customer-switch select:disabled { opacity: 0.6; }
+.kcpl-portal-route .portal-customer-switch [role="alert"] { color: var(--admin-danger); font-size: var(--app-text-sm); }

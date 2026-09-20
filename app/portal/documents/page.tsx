@@ -17,9 +17,7 @@ export default async function PortalDocumentsPage() {
   const result = await listPortalDocuments(access.session);
   return (
     <PortalShell
-      customerName={access.session.customerName}
-      accountEmail={access.session.email}
-      capabilities={access.session.capabilities}
+      session={access.session}
     >
       {result.kind === "ready"
         ? <PortalDocumentsWorkspace documents={result.documents} scanned={result.scanned} total={result.total}/>
