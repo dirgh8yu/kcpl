@@ -3,8 +3,10 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import { normalizePortalEmail, portalShipmentView } from "./portal-access-policy";
 import { listShipmentDocuments } from "../shipment-documents.server";
+import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
+  portalFreeTimeMessage,
   portalMilestoneMessage,
   portalNotificationKey,
   portalNotificationPreferences,
@@ -152,8 +154,12 @@ export async function dispatchPortalNotifications() {
 
     const documentSubscribers = customerAccounts.filter((account) => account.preferences.documents);
 
+    const freeTimeSubscribers = customerAccounts.filter((account) => account.preferences.free_time);
+    const today = new Date().toISOString().slice(0, 10);
+
     for (const document of shipments.docs) {
-      const shipment = portalShipmentView(document.id, document.data() as Record<string, unknown>);
+      const record = document.data() as Record<string, unknown>;
+      const shipment = portalShipmentView(document.id, record);
       const stateRef = db.collection("portal_notification_state").doc(document.id);
       const state = await stateRef.get();
       const previous = state.exists && typeof state.get("last_status") === "string" ? state.get("last_status") as string : null;
@@ -241,6 +247,44 @@ export async function dispatchPortalNotifications() {
                 topic: "documents",
                 reference: shipment.reference,
                 fact: `document-${String(entry.id ?? "")}`,
+                recipient: account.email,
+              }),
+              to: account.email,
+              subject: message.subject,
+              text: message.text,
+              html: message.html,
+              reference: shipment.reference,
+            });
+            if (result.kind === "sent") sent += 1;
+          }
+        }
+      }
+
+      // Free time rides on the shipment document already read, so the warning
+      // costs nothing extra. Only the thresholds are notified, and each is its
+      // own delivery key, so a sweep running hourly still sends once per step.
+      if (shipment.status !== "delivered" && freeTimeSubscribers.length > 0) {
+        const freeTime = shipmentFreeTimeFromRecord(record);
+        const status = freeTimeStatus(freeTime, today);
+        const threshold = freeTimeReminderThreshold(status);
+        if (threshold !== null) {
+          for (const account of freeTimeSubscribers) {
+            if (sent >= MAX_EMAILS_PER_SWEEP) break;
+            const message = portalFreeTimeMessage({
+              reference: shipment.reference,
+              origin: shipment.origin,
+              destination: shipment.destination,
+              location: freeTime.location,
+              daysRemaining: status.daysRemaining,
+              deadline: status.deadline,
+              customerName: account.customerName,
+              portalUrl: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
+            });
+            const result = await sendOnce({
+              key: portalNotificationKey({
+                topic: "free_time",
+                reference: shipment.reference,
+                fact: `free-time-${threshold}-${status.deadline ?? ""}`,
                 recipient: account.email,
               }),
               to: account.email,

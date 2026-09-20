@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { CircleDot, FileText, Package } from "lucide-react";
+import { AlarmClock, CircleDot, FileText, Package } from "lucide-react";
 import {
   OpsBadge,
+  OpsDetailGrid,
   OpsDetailItem,
   OpsDetailSection,
   OpsEmptyState,
@@ -14,6 +15,9 @@ import {
 } from "../../../admin/operations-ui";
 import { getPortalAccess } from "../../portal-auth";
 import { getPortalShipment, type PortalShipmentDetail } from "../../portal-data.server";
+import { freeTimeSummary } from "../../../shipment-free-time";
+import { portalConfirmableDeliveryStatus } from "../../portal-access-policy";
+import { PortalDeliveryConfirmation } from "./portal-delivery-confirmation";
 import { PortalLoginPage } from "../../portal-login-page";
 import { PortalShell } from "../../portal-shell";
 import { PortalUnavailable, PortalWorkspaceUnavailable } from "../../portal-frame";
@@ -70,7 +74,7 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
 }
 
 function ShipmentDetail({ detail, canSend }: { detail: PortalShipmentDetail; canSend: boolean }) {
-  const { shipment, events, documents, checklist } = detail;
+  const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
 
   return (
     <OpsPage>
@@ -90,6 +94,47 @@ function ShipmentDetail({ detail, canSend }: { detail: PortalShipmentDetail; can
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
+          <PortalDeliveryConfirmation
+            reference={shipment.reference}
+            confirmedAt={confirmation?.confirmed_at ?? null}
+            confirmedBy={confirmation?.received_by ?? null}
+            canConfirm={canSend && portalConfirmableDeliveryStatus(shipment.status)}
+          />
+
+          {freeTime ? (
+            <OpsSurface
+              eyebrow="Free time"
+              title={freeTimeSummary(freeTime.freeTime, freeTime.status)}
+              description={freeTime.status.state === "expired"
+                ? "Storage or demurrage charges may be accruing on this cargo."
+                : "Clearing the cargo before this date avoids storage and demurrage charges."}
+              priority={freeTime.status.state === "expired" ? "danger" : freeTime.status.state === "last_day" ? "warning" : "info"}
+            >
+              <OpsDetailGrid columns={3}>
+                <OpsDetailItem label="Location">{freeTime.freeTime.location ?? "As advised"}</OpsDetailItem>
+                <OpsDetailItem label="Last free day">{portalDate(freeTime.status.deadline)}</OpsDetailItem>
+                <OpsDetailItem label={freeTime.status.state === "expired" ? "Days overdue" : "Days remaining"}>
+                  <strong>{freeTime.status.state === "expired" ? freeTime.status.daysOverdue : freeTime.status.daysRemaining}</strong>
+                </OpsDetailItem>
+                {freeTime.freeTime.daily_charge !== null ? (
+                  <OpsDetailItem label="Charge after expiry">
+                    {freeTime.freeTime.charge_currency ?? ""} {freeTime.freeTime.daily_charge} per day
+                  </OpsDetailItem>
+                ) : null}
+                {freeTime.status.projectedCharge !== null ? (
+                  <OpsDetailItem label="Accrued so far">
+                    {freeTime.freeTime.charge_currency ?? ""} {freeTime.status.projectedCharge}
+                  </OpsDetailItem>
+                ) : null}
+                <OpsDetailItem label="Allowance">{freeTime.freeTime.days} days</OpsDetailItem>
+              </OpsDetailGrid>
+              <p className="portal-footnote">
+                <AlarmClock size={14} aria-hidden="true"/> Free days are granted by the carrier or terminal. Contact your KCPL
+                account manager if you need an extension.
+              </p>
+            </OpsSurface>
+          ) : null}
+
           {shipment.customer_note ? (
             <OpsNotice tone="neutral">{shipment.customer_note}</OpsNotice>
           ) : null}

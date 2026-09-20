@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CalendarClock, FileText, FileUp, Package, Receipt, Truck } from "lucide-react";
+import { AlarmClock, AlertTriangle, ArrowRight, CalendarClock, FileText, FileUp, Package, Receipt, Truck } from "lucide-react";
 import {
   OpsBadge,
   OpsEmptyState,
@@ -14,6 +14,7 @@ import {
   OpsTableWrap,
 } from "../admin/operations-ui";
 import type { PortalOverview as PortalOverviewData } from "./portal-data.server";
+import { freeTimeSummary } from "../shipment-free-time";
 import {
   portalDate,
   portalDateTime,
@@ -50,6 +51,13 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
             <OpsKpiCard label="In transit" value={overview.inTransitCount} icon={<Truck size={16} strokeWidth={1.75}/>} tone="info"/>
             <OpsKpiCard label="Arriving in 7 days" value={overview.arrivingCount} icon={<CalendarClock size={16} strokeWidth={1.75}/>} tone="neutral"/>
             <OpsKpiCard
+              label="Free time running out"
+              value={overview.freeTime.length}
+              icon={<AlarmClock size={16} strokeWidth={1.75}/>}
+              tone={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : overview.freeTime.length ? "warning" : "success"}
+              detail={overview.freeTime.length ? "Clear these to avoid charges" : "No clocks close to expiry"}
+            />
+            <OpsKpiCard
               label="Documents needed"
               value={overview.outstandingCount}
               icon={<FileUp size={16} strokeWidth={1.75}/>}
@@ -64,6 +72,49 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
               detail={overview.attentionCount > 0 ? "KCPL is working on these" : "No exceptions raised"}
             />
           </OpsKpiStrip>
+
+          {overview.freeTime.length ? (
+            <OpsSurface
+              eyebrow="Costing you money"
+              title="Free time running out"
+              description="Storage and demurrage start when the carrier's free days end. Clearing the cargo before then avoids the charge."
+              priority={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : "warning"}
+              flush
+            >
+              <ul className="portal-document-list portal-action-list">
+                {overview.freeTime.map((row) => (
+                  <li key={row.reference}>
+                    <span className="portal-document-icon" aria-hidden="true"><AlarmClock size={15} strokeWidth={1.75}/></span>
+                    <span className="portal-document-main">
+                      <strong>{freeTimeSummary({
+                        location: row.location,
+                        days: null,
+                        started_on: null,
+                        daily_charge: null,
+                        charge_currency: null,
+                        bearer: "undecided",
+                        note: null,
+                        updated_at: null,
+                        updated_by: null,
+                      }, row.status)}</strong>
+                      <span>
+                        <OpsMono>{row.reference}</OpsMono>
+                        {row.origin ? ` · ${row.origin} → ${row.destination}` : ""}
+                      </span>
+                    </span>
+                    <Link
+                      href={`/portal/shipments/${encodeURIComponent(row.reference)}`}
+                      className="ops-button"
+                      data-variant="secondary"
+                      data-size="sm"
+                    >
+                      Open
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </OpsSurface>
+          ) : null}
 
           {overview.outstanding.length ? (
             <OpsSurface

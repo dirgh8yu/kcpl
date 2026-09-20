@@ -196,6 +196,19 @@ export function portalQuoteVisible(quote: Record<string, unknown>) {
   return amount !== null && Number.isFinite(amount);
 }
 
+/**
+ * Statuses at which a customer may confirm receipt.
+ *
+ * Only once the cargo is plausibly with them. Confirming a shipment still in
+ * transit would put a meaningless record on the Job File, and confirming one
+ * in an exception state would paper over the thing KCPL is working on.
+ */
+const confirmableDeliveryStatuses = new Set(["out_for_delivery", "delivered"]);
+
+export function portalConfirmableDeliveryStatus(status: unknown) {
+  return typeof status === "string" && confirmableDeliveryStatuses.has(status);
+}
+
 /* ------------------------------------------------------------------ *
  * Customer-managed team
  * ------------------------------------------------------------------ */

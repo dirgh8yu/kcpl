@@ -2248,3 +2248,20 @@
   .kcpl-admin-content .portal-toggle-list li { flex-wrap: wrap; gap: var(--app-space-2); }
   .kcpl-admin-content .portal-toggle { min-height: var(--app-control-height-touch); }
 }
+
+/* Customer portal -- printable invoice.
+ * KCPL generates no PDF server-side; the customer prints this page instead,
+ * which needs no new dependency and keeps the invoice on the design system.
+ * Printing hides the application chrome and everything that is not the record
+ * itself, so a filed or forwarded copy is the statement and nothing else. */
+@media print {
+  .kcpl-portal-route .portal-topbar,
+  .kcpl-portal-route .portal-footer,
+  .kcpl-portal-route .portal-skip-link,
+  .kcpl-admin-content .ops-page-actions,
+  .kcpl-admin-content .portal-print-note { display: none; }
+  .kcpl-admin-content .portal-stack > *:not(.portal-print-sheet) { display: none; }
+  .kcpl-admin-content .ops-surface { border: 0; box-shadow: none; }
+  .kcpl-admin-content .ops-table { min-width: 0; }
+  .kcpl-portal-route { background: #FFFFFF; }
+}

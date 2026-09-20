@@ -253,6 +253,16 @@ const reviewedClassifications = [
     rationale: "Pure customer-portal decision module with no Firebase dependency at all; the ShipmentStatus set it holds classifies a status as active for a customer-facing count and never assigns one.",
   },
   {
+    file: "app/api/portal/shipments/[reference]/confirm-delivery/route.ts",
+    category: "A",
+    rationale: "Customer confirmation of receipt. Writes a customer_confirmations record and a Job File activity entry, both shipment-linked evidence, and records the status it observed for context. It never writes shipment status, a delivery attempt or POD evidence: canonical Delivered stays with the delivery authority and its verified proof, and a customer saying the cargo arrived is context for the operator closing the file rather than a substitute for it.",
+  },
+  {
+    file: "app/shipment-free-time.server.ts",
+    category: "F",
+    rationale: "Read-only accessor for the free-time block on a shipment. One get, no mutation; writing free time goes through the namespaced admin route.",
+  },
+  {
     file: "app/portal/portal-notifications.server.ts",
     category: "A",
     rationale: "Customer notification sweep. Reads canonical shipment status and writes only its own records: a delivery row per outbound email in portal_email_deliveries, and a per-shipment notification watermark in portal_notification_state. It never writes the shipment document, so it cannot assign or influence canonical status -- reading the result on a schedule is precisely what keeps notifications outside the delivery authority.",
@@ -418,6 +428,19 @@ const expectedReviewedSurfaces = [
       /collection\("customers"\)\.doc\(customerId\)\.set\(\{ active_shipment_count: active, completed_shipment_count: completed/,
     ],
     rejects: [/collection\("shipments"\)\.doc\([^)]*\)\.update\(\{[^}]*\bstatus:/],
+  },
+  {
+    id: "Customer delivery confirmation stays evidence, never canonical state",
+    file: "app/api/portal/shipments/[reference]/confirm-delivery/route.ts",
+    patterns: [
+      /collection\("customer_confirmations"\)/,
+      /shipment_status_at_confirmation: status/,
+    ],
+    rejects: [
+      /pod_evidence|delivery_attempts|delivery_state/,
+      /status:\s*"delivered"/,
+      /shipmentRef\.update\(/,
+    ],
   },
   {
     id: "Customer notification sweep writes only its own delivery and watermark records",

@@ -197,6 +197,63 @@ customers" filter is the backstop. The notification is awaited but never thrown:
 notification failure must not turn a stored upload into an error the customer is asked
 to retry.
 
+## Free time and demurrage
+
+For a landlocked lane the clock at the port or the ICD is where money leaks: a
+container that sits past its free days accrues a daily charge nobody notices
+until the invoice arrives. KCPL records what the carrier granted on the Job File
+(**Free time**, right-hand column); the customer sees a countdown.
+
+`app/shipment-free-time.ts` is pure and shared, so the staff panel, the portal
+and the notification sweep all compute the same number. Dates are calendar days,
+not timestamps — a free-time allowance is counted in days by the carrier, and a
+time zone would make the last day ambiguous exactly when it matters.
+
+The allowance **includes the day it starts**: three days from the 18th covers the
+18th, 19th and 20th. The last day is its own state rather than an expired one, so
+a customer is not told they are safe on the day a charge begins, nor panicked a
+day early.
+
+Customers are warned at **three days, one day and the last day**, and not again.
+A daily countdown is a countdown people stop reading. The warning never states a
+charge amount: the rate KCPL records is what the carrier quoted, not an invoice,
+and a number in an inbox reads as one. The internal note stays internal.
+
+Free time rides on the shipment document the sweep and the overview already read,
+so the countdown costs no extra reads anywhere.
+
+## Delivery confirmation
+
+A consignee can confirm receipt from the shipment page once it is out for
+delivery or delivered. This is **evidence, never authority**: canonical Delivered
+is written by the delivery authority from a verified POD, and the confirmation
+route writes no shipment status, no delivery attempt and no POD evidence. It
+lands in its own `customer_confirmations` subcollection and on the Job File
+activity, and the operator's notification says plainly that it is not a POD.
+
+One confirmation per account per shipment — a deterministic id makes a double
+submit idempotent instead of stacking duplicates on the Job File.
+
+## Invoices: printing and remittances
+
+There is no server-side PDF. `/portal/invoices/<reference>` is a print-optimised
+statement, and the print stylesheet hides the application chrome so a filed or
+forwarded copy is the record and nothing else. That needs no new dependency —
+worth stating plainly, because a PDF library would have to pass the repository's
+`npm audit` gate forever after.
+
+A customer can send a **payment receipt** against an invoice. Like customer
+document uploads it is a claim awaiting review: nothing writes `amount_paid`,
+`balance_due` or the invoice status. Money is applied by KCPL accounts through
+the staff payments path against a bank statement — a customer's own figure is a
+number on a form until somebody checks it. The same file twice is recognised as a
+double submit rather than a second payment, and the invoice's creator is notified.
+
+Remittances live under the invoice rather than in the shipment Document Vault.
+Keeping them apart matters: `customer_safe` governs what KCPL releases *to* a
+customer, and a bank receipt flowing the other way has no business inheriting
+those semantics.
+
 ## What the portal never writes
 
 A customer request (`POST /api/portal/requests`) creates an ordinary enquiry in `quotes`
@@ -281,6 +338,7 @@ in server routes only, exactly like the staff product.
 | `/portal/documents` | Released documents and the customer's own submissions, filterable by direction |
 | `/portal/invoices` | Issued invoices and balances (account owners) |
 | `/portal/requests` | New freight request, issued quotes, open requests |
+| `/portal/invoices/[reference]` | Printable invoice statement and payment receipts |
 | `/portal/settings` | Notification preferences, and team logins for account owners |
 | `POST /api/portal/session` | Mints the session cookie from a fresh, verified Firebase sign-in |
 | `GET /api/portal/documents/[reference]/[id]` | Download; ownership then release are checked before any bytes are read |
@@ -288,6 +346,10 @@ in server routes only, exactly like the staff product.
 | `POST /api/portal/requests` | Customer-raised enquiry or "ask to proceed" |
 | `POST /api/portal/notifications` | Saves the signed-in account's notification topics |
 | `GET`/`POST /api/portal/team` | An account owner's own team logins (owners only) |
+| `POST /api/portal/shipments/[reference]/confirm-delivery` | Customer confirmation of receipt, as evidence |
+| `GET`/`POST /api/portal/invoices/[reference]/remittance` | Payment receipts against an invoice |
+| `GET /api/portal/invoices/[reference]/remittance/[id]` | Re-download of a receipt the customer sent |
+| `GET`/`PUT /api/admin/jobs/[reference]/free-time` | Staff free-time record (Job File) |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |
 
 Portal pages are `force-dynamic`, `no-store` and `robots: noindex`, and `/portal` is
@@ -303,8 +365,13 @@ excluded from public analytics and from the public site's mobile quote CTA.
 - **Document coverage is bounded.** `/portal/documents` scans the 40 most recently
   updated shipments (documents live in a per-shipment subcollection, so a full history
   scan costs one read per shipment). The workspace states the coverage when it is capped.
-- **No payment capture.** Invoices are read-only; bank details, payment references and
+- **No payment capture.** A customer can tell KCPL they paid and attach the receipt,
+  but the portal takes no money and applies none: bank details, payment references and
   credit terms stay with KCPL accounts.
+- **Free time is only as good as what staff record.** Nothing imports carrier free days
+  automatically, so an unrecorded allowance simply shows no countdown rather than a
+  wrong one.
+- **Remittances are not malware-scanned**, on the same terms as customer documents.
 - **Uploads are not malware-scanned.** Type, extension, size and magic bytes are
   checked, and files are served back only through authenticated, force-download routes
   with `X-Content-Type-Options: nosniff` — but no antivirus runs over them. Staff open

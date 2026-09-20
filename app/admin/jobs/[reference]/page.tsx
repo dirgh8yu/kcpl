@@ -10,6 +10,7 @@ import { checkShipmentBranchAccess } from "../../shipment-access.server";
 import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.server";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
+import { readShipmentFreeTime } from "../../../shipment-free-time.server";
 import { DeliveryPodControl } from "./delivery-pod-control";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
@@ -77,6 +78,8 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
           currentUserName={access.user.displayName}
           currentUserEmail={access.user.email}
           nowIso={new Date().toISOString()}
+          freeTime={await readShipmentFreeTime(result.job.reference)}
+          canManageJobFile={staff.permissions.canManageJobFile}
         />
       </div>
 
