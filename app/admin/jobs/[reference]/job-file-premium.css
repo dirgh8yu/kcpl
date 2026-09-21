@@ -1,934 +1,231 @@
 /* Digital Job File presentation.
  *
- * This sheet used to carry its own parallel design system: translucent "glass"
- * surfaces, a warm cream page gradient, 20px radii, 300ms motion and Inter,
- * none of which the rest of the staff product uses any more. The Job File was
- * the one screen that never rendered locally, so it kept the pre-rebuild
- * language while every other workspace moved on.
- *
- * The --job-* tokens below now resolve to the shared admin and app token
- * scale, which is what brings the whole file onto the system without rewriting
- * each of its ~900 declarations. Route-scoped presentation only: workflow,
- * permissions, mutations and record contracts are unchanged. */
+ * The record now uses the same product language as the approved Overview and
+ * Shipments workspaces: an OpsPageHeader band with the record tabs as a sticky
+ * text-tab row beneath it, one readiness rail (OpsKpiRail), hairline panels
+ * (OpsSurface) with fact rows (OpsFacts), dense list rows, quiet badges and
+ * compact empty states. Shared primitives are styled in operations-system.css;
+ * this sheet only lays out what is specific to the record. Route-scoped
+ * presentation only: workflow, permissions, mutations and record contracts are
+ * unchanged. Tab visibility for the original sections stays generated in
+ * shipment-detail-v2.css (tests/shipment-detail-ui-contract.test.mjs). */
 
-.kcpl-admin-content .shipment-detail-v2 {
-  --job-glass: var(--admin-surface);
-  --job-glass-strong: var(--admin-surface);
-  --job-glass-soft: var(--admin-surface-soft);
-  --job-line: var(--admin-line);
-  --job-line-strong: var(--admin-line-strong);
-  --job-shadow: none;
-  --job-shadow-soft: none;
-  --job-focus: 0 0 0 3px rgb(220 20 60 / 20%);
-  --job-motion: var(--app-duration-base) var(--app-ease-out);
+.kcpl-admin-content .job-record {
   min-width: 0;
+  padding-bottom: 40px;
   background: var(--admin-canvas);
   color: var(--admin-ink);
-  font-family: inherit;
 }
 
-.kcpl-admin-content .shipment-detail-v2 *,
-.kcpl-admin-content .shipment-detail-v2 *::before,
-.kcpl-admin-content .shipment-detail-v2 *::after {
-  box-sizing: border-box;
-}
+/* ---- Record header + tabs ---------------------------------------------------
+ * The header band and the tab row read as one white band; the tab row stays
+ * pinned under the top bar so the record never loses its sections. */
+.kcpl-admin-content .job-record > .ops-page-header { border-bottom: 0; }
+.kcpl-admin-content .job-record > .ops-page-header .ops-page-header-main { padding-bottom: 12px; }
+.kcpl-admin-content .job-record-kicker { color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .job-record-title { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.kcpl-admin-content .job-record-title .ops-badge { min-height: 22px; padding: 2px 8px; border-color: transparent; font-size: 12px; font-weight: 550; letter-spacing: 0; line-height: 16px; }
 
-.kcpl-admin-content .app-record-return {
-  width: min(1440px, calc(100% - 48px));
-  margin: 14px auto 0;
-}
-
-.kcpl-admin-content .app-record-return a {
-  display: inline-flex;
-  min-height: 32px;
-  align-items: center;
-  border-radius: var(--app-radius);
-  padding: 0;
-  background: none;
-  color: var(--admin-muted);
-  font-size: 12.5px;
-  font-weight: 500;
-  transition: transform var(--job-motion), background-color var(--job-motion), color var(--job-motion), box-shadow var(--job-motion);
-}
-
-.kcpl-admin-content .app-record-return a:hover {
-  transform: translateY(-1px);
-  background: var(--job-glass-strong);
-  color: var(--admin-ink);
-  box-shadow: var(--job-shadow-soft);
-}
-
-.kcpl-admin-content .app-record-return a:active {
-  transform: scale(0.96);
-}
-
-.kcpl-admin-content .app-record-return a:focus-visible {
-  outline: none;
-  box-shadow: var(--job-focus);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor {
-  width: min(1440px, calc(100% - 48px));
-  margin-inline: auto;
-}
-
-/* Identity shell */
-.kcpl-admin-content .shipment-detail-v2 > .shipment-detail-summary:first-child {
-  border: 0;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 32px;
-  align-items: center;
-  margin-top: 16px;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  padding: 32px;
-  background: var(--job-glass);
-  box-shadow: var(--job-shadow);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-eyebrow,
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > p {
-  color: var(--admin-crimson);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row {
-  gap: 16px;
-  margin-top: 8px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 {
-  max-width: 960px;
-  font-size: var(--app-title-size);
-  font-weight: 620;
-  line-height: 1.2;
-  letter-spacing: -0.022em;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-status {
-  min-height: 32px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0 12px;
-  background: rgba(16, 16, 16, 0.06);
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-success { background: rgba(24, 121, 78, 0.1); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-warning { background: rgba(154, 104, 0, 0.1); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-danger { background: rgba(180, 35, 50, 0.1); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-info { background: rgba(49, 93, 131, 0.1); }
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-subline {
-  margin-top: 16px;
-  color: var(--admin-ink);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-meta {
-  margin-top: 8px;
-  color: var(--admin-muted);
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 24px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts > span {
-  min-width: 0;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-radius);
-  padding: 16px;
-  background: var(--admin-surface);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts strong,
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts small {
-  display: block;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts strong {
-  color: var(--admin-ink);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts small {
-  margin-top: 8px;
-  color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a,
-.kcpl-admin-content .shipment-detail-v2 .ops-button {
-  min-height: 44px;
-  border-radius: var(--app-radius);
-  transition: transform var(--job-motion), background-color var(--job-motion), border-color var(--job-motion), box-shadow var(--job-motion), color var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a {
-  border: 0.5px solid var(--job-line-strong);
-  padding: 0 24px;
-  background: var(--admin-surface);
-  color: var(--admin-ink);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a:hover,
-.kcpl-admin-content .shipment-detail-v2 .ops-button:hover {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: var(--job-shadow-soft);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a:active,
-.kcpl-admin-content .shipment-detail-v2 .ops-button:active {
-  transform: scale(0.96);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a:focus-visible,
-.kcpl-admin-content .shipment-detail-v2 .ops-button:focus-visible {
-  outline: none;
-  box-shadow: var(--job-focus);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a[data-primary] {
-  border-color: #101010;
-  background: #101010;
-  color: #fff;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a[data-primary]:hover {
-  border-color: #000;
-  background: #000;
-}
-
-/* Route context */
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-context {
-  margin-top: 16px;
-  border: 0;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-context .shipment-detail-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 24px;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  padding: 24px;
-  background: var(--job-glass-soft);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-line {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(64px, 0.35fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: center;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-node {
-  min-width: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-node small,
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts small {
-  display: block;
-  color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-node strong,
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts strong {
-  display: block;
-  margin-top: 8px;
-  color: var(--admin-ink);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-connector {
-  align-self: center;
-  height: 1px;
-  background: var(--admin-line-strong);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-/* Persistent local navigation */
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav {
+.kcpl-admin-content .job-record-tabs {
   position: sticky;
-  top: 112px;
-  z-index: 40;
-  margin-top: 16px;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav-inner {
-  gap: 8px;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  padding: 8px;
-  background: var(--admin-surface);
-  box-shadow: var(--job-shadow-soft);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a {
-  min-height: 44px;
-  border: 0;
-  border-radius: var(--app-radius);
-  padding: 0 16px;
-  color: var(--admin-muted);
-  font-size: 11px;
-  font-weight: 650;
-  transition: transform var(--job-motion), background-color var(--job-motion), color var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:first-child {
-  padding-left: 16px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:hover,
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:focus-visible {
-  border: 0;
-  background: rgba(16, 16, 16, 0.055);
-  color: var(--admin-ink);
-  outline: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav a:active {
-  transform: scale(0.96);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-anchor {
-  scroll-margin-top: 184px;
-}
-
-/* Summary decision workspace */
-.kcpl-admin-content .shipment-detail-v2 > .shipment-detail-summary:last-of-type {
-  padding: 24px 0 32px;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 24px;
-  align-items: start;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-overview-main {
-  min-width: 0;
-  padding-right: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-flow-section,
-.kcpl-admin-content .shipment-detail-v2 .shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section) {
-  margin: 0 0 16px;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  padding: 24px;
-  background: var(--job-glass);
-  box-shadow: var(--job-shadow-soft);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-flow-section {
-  border-left: 1px solid var(--admin-line);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: baseline;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading h2 {
-  font-size: 18px;
-  font-weight: 650;
-  letter-spacing: -0.022em;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span {
-  max-width: 440px;
-  color: var(--admin-muted);
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-  gap: 8px;
-  margin-top: 20px;
-  border: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a {
-  min-height: 56px;
-  margin: 0;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-radius);
-  padding: 8px 12px;
-  justify-content: center;
-  background: var(--admin-surface);
-  color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 650;
-  text-align: center;
-  transition: transform var(--job-motion), background-color var(--job-motion), border-color var(--job-motion), color var(--job-motion), box-shadow var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a::after {
-  content: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a:hover {
-  transform: translateY(-1px);
-  border-color: var(--job-line-strong);
-  background: var(--admin-surface);
-  color: var(--admin-ink);
-  box-shadow: var(--job-shadow-soft);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a:active {
-  transform: scale(0.96);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="complete"] {
-  border-color: rgba(24, 121, 78, 0.18);
-  background: rgba(24, 121, 78, 0.08);
-  color: var(--admin-success);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="current"] {
-  border-color: rgba(220, 20, 60, 0.22);
-  background: rgba(220, 20, 60, 0.08);
-  color: var(--admin-ink);
-  box-shadow: inset 0 -2px 0 var(--admin-crimson);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="blocked"] {
-  border-color: rgba(180, 35, 50, 0.22);
-  background: rgba(180, 35, 50, 0.08);
-  color: var(--admin-danger);
-  box-shadow: inset 0 -2px 0 var(--admin-danger);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-summary-grid .shipment-summary-section {
-  margin: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-register {
-  margin-top: 16px;
-  border: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-register-row {
-  grid-template-columns: 152px minmax(0, 1fr);
-  gap: 16px;
-  min-height: 48px;
-  border-bottom: 0.5px solid var(--job-line);
-  font-size: 12px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-register-row:last-child {
-  border-bottom: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid {
-  gap: 8px;
-  margin-top: 16px;
-  border: 0;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div,
-.kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div:first-child {
-  min-height: 88px;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-radius);
-  padding: 16px;
+  top: var(--app-toolbar-height);
+  z-index: 30;
+  border-bottom: 1px solid var(--admin-line);
+  padding: 0 var(--app-page-gap);
   background: var(--admin-surface);
 }
+.kcpl-admin-content .job-record-tabs-inner { display: flex; gap: 2px; overflow-x: auto; padding: 0 0 8px; scrollbar-width: none; }
+.kcpl-admin-content .job-record-tabs-inner::-webkit-scrollbar { display: none; }
 
-/* Decision rail.
- * Was a near-black glass panel with a pink eyebrow, the only dark surface in
- * the entire staff product. It is an ordinary card now; the rail earns
- * attention from its position and its primary action, not from inverting the
- * palette on one screen. */
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
-  position: sticky;
-  top: 184px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-surface-radius);
-  padding: 20px;
-  background: var(--admin-surface);
-  color: var(--admin-ink);
-  box-shadow: none;
+.kcpl-admin-content .job-record-body { display: grid; gap: 12px; min-width: 0; padding: 16px var(--app-page-gap) 0; }
+
+/* Panels use the shared compact density (operations-system.css, "Compact
+ * panels"): the record sets data-surface-density="compact" on its root. */
+
+.kcpl-admin-content .job-quiet-section { padding: 12px 16px; }
+.kcpl-admin-content .job-quiet-section h2 { margin: 0; font-size: 14px; font-weight: 600; line-height: 20px; }
+.kcpl-admin-content .job-quiet-section p { margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+
+/* ---- Summary ------------------------------------------------------------------ */
+.kcpl-admin-content .job-summary { display: grid; gap: 12px; min-width: 0; }
+.kcpl-admin-content .job-summary > .ops-kpi-rail { margin-bottom: 0; }
+.kcpl-admin-content .job-summary-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 12px; }
+.kcpl-admin-content .job-summary-main { display: grid; gap: 12px; min-width: 0; }
+
+/* Workflow stepper: text steps joined by a hairline; state is a 7px dot and
+ * the label weight, never a filled pill. A blocker keeps ink text and marks
+ * itself with a red dot only. */
+.kcpl-admin-content .job-stepper { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-stepper li { display: flex; align-items: center; }
+.kcpl-admin-content .job-stepper li + li::before { content: ""; width: 14px; height: 1px; margin: 0 2px; background: var(--admin-line-strong); }
+.kcpl-admin-content .job-stepper a { display: inline-flex; min-height: 28px; align-items: center; gap: 6px; border-radius: var(--app-radius-sm); padding: 0 8px; color: var(--admin-faint); font-size: 12.5px; font-weight: 500; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .job-stepper a:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .job-stepper-dot { width: 7px; height: 7px; flex: none; border: 1.5px solid var(--admin-line-strong); border-radius: 999px; background: var(--admin-surface); }
+.kcpl-admin-content .job-stepper li[data-state="complete"] a { color: var(--admin-ink); }
+.kcpl-admin-content .job-stepper li[data-state="complete"] .job-stepper-dot { border-color: var(--admin-success); background: var(--admin-success); }
+.kcpl-admin-content .job-stepper li[data-state="current"] a { color: var(--admin-ink); font-weight: 650; }
+.kcpl-admin-content .job-stepper li[data-state="current"] .job-stepper-dot { border-color: var(--admin-ink); background: var(--admin-ink); }
+.kcpl-admin-content .job-stepper li[data-state="blocked"] a { color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .job-stepper li[data-state="blocked"] .job-stepper-dot { border-color: var(--admin-danger); background: var(--admin-danger); }
+
+/* Inline statistics (economics, cost totals): hairline-separated, no cards. */
+.kcpl-admin-content .job-stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin: 0; }
+.kcpl-admin-content .job-stat-row > div { min-width: 0; padding: 2px 16px; border-left: 1px solid var(--admin-line); }
+.kcpl-admin-content .job-stat-row > div:first-child { padding-left: 0; border-left: 0; }
+.kcpl-admin-content .job-stat-row dt { color: var(--admin-muted); font-size: 11px; font-weight: 570; letter-spacing: 0.02em; line-height: 14px; text-transform: uppercase; }
+.kcpl-admin-content .job-stat-row dd { margin: 5px 0 0; color: var(--admin-ink); font-size: 16px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 20px; }
+.kcpl-admin-content .job-stat-row dd span { color: var(--admin-muted); font-size: 13px; font-weight: 500; }
+.kcpl-admin-content .job-stat-row .job-stat-note { margin-top: 2px; color: var(--admin-faint); font-size: 11.5px; font-weight: 500; line-height: 15px; }
+
+/* Next-action panel: the Shipments inspector's "Next action" section. */
+.kcpl-admin-content .job-next { position: sticky; top: calc(var(--app-toolbar-height) + 56px); }
+.kcpl-admin-content .job-next-title { display: block; color: var(--admin-ink); font-size: 14px; font-weight: 600; line-height: 19px; }
+.kcpl-admin-content .job-next-links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.kcpl-admin-content .job-next-links a { color: var(--admin-muted); font-size: 12px; font-weight: 550; text-decoration: none; }
+.kcpl-admin-content .job-next-links a:hover { color: var(--admin-crimson); }
+
+/* ---- Working record ------------------------------------------------------------ */
+.kcpl-admin-content .job-workspace { display: grid; gap: 12px; min-height: 0; background: transparent; }
+.kcpl-admin-content .job-workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: start; gap: 12px; }
+.kcpl-admin-content :is(.job-workspace-main, .job-workspace-side) { display: grid; align-content: start; gap: 12px; min-width: 0; }
+
+/* Only Summary pairs panels side by side. Every other tab shows its own panels
+ * full width in one column, so a tab never leaves half the page empty. */
+.kcpl-admin-content .job-record:not([data-section="summary"]) .job-workspace-grid { display: flex; flex-direction: column; align-items: stretch; }
+.kcpl-admin-content .job-record:not([data-section="summary"]) :is(.job-workspace-main, .job-workspace-side) { display: contents; }
+.kcpl-admin-content .job-record[data-section="movement"] #shipment-movement { order: 1; }
+.kcpl-admin-content .job-record[data-section="movement"] #shipment-free-time { order: 2; }
+.kcpl-admin-content .job-record[data-section="movement"] #shipment-context { order: 3; }
+@media (min-width: 1100px) {
+  .kcpl-admin-content .job-record[data-section="movement"] #shipment-movement .ops-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail .shipment-detail-eyebrow {
-  color: var(--admin-muted);
+/* Panels that belong to one concern stop leaking onto every tab. */
+.kcpl-admin-content .job-record:not([data-section="summary"]):not([data-section="movement"]) :is(#shipment-context, #shipment-free-time) { display: none; }
+.kcpl-admin-content .job-record:not([data-section="documents"]) #shipment-customer-access { display: none; }
+
+/* Closeout checklist: hairline rows, ink text, red only on the marker. */
+.kcpl-admin-content .job-checklist { margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-checklist li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-top: 1px solid var(--admin-line); color: var(--admin-ink); font-size: 12.5px; line-height: 17px; }
+.kcpl-admin-content .job-checklist li:first-child { border-top: 0; padding-top: 0; }
+.kcpl-admin-content .job-checklist svg { flex: none; margin-top: 2px; color: var(--admin-danger); }
+.kcpl-admin-content .job-closeout-override { margin-top: 10px; border-top: 1px solid var(--admin-line); padding-top: 10px; }
+.kcpl-admin-content .job-closeout-override textarea { min-height: 56px; }
+.kcpl-admin-content .job-advisories { margin: 8px 0 0; padding-left: 16px; color: var(--admin-faint); font-size: 12px; line-height: 17px; }
+
+/* Dense list rows: tasks, customs steps, documents, costs, attempts. */
+.kcpl-admin-content .job-rows { margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-rows > li + li { border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .job-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; }
+.kcpl-admin-content .job-row-main { flex: 1 1 auto; min-width: 0; }
+.kcpl-admin-content .job-row-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.kcpl-admin-content .job-row-title { min-width: 0; max-width: 100%; overflow: hidden; color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .job-row[data-done="true"] .job-row-title { color: var(--admin-faint); text-decoration: line-through; }
+.kcpl-admin-content .job-row .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; font-weight: 550; }
+.kcpl-admin-content .job-row .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); font-weight: 500; }
+.kcpl-admin-content .job-row-tag { display: inline-flex; min-height: 18px; align-items: center; border-radius: 4px; padding: 0 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 11px; font-weight: 500; text-decoration: none; }
+.kcpl-admin-content .job-row-tag:hover { color: var(--admin-ink); }
+.kcpl-admin-content .job-row-detail { margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .job-row-detail strong { color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .job-row-danger { color: var(--admin-danger); }
+.kcpl-admin-content .job-row-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 3px; color: var(--admin-faint); font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .job-row-meta strong { color: var(--admin-ink); font-weight: 550; }
+.kcpl-admin-content .job-row-meta a { color: var(--admin-muted); text-decoration: none; }
+.kcpl-admin-content .job-row-meta a:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 3px; }
+.kcpl-admin-content .job-row-meta [data-overdue="true"],
+.kcpl-admin-content .job-overdue { color: var(--admin-danger); font-weight: 550; }
+.kcpl-admin-content .job-row-actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; }
+.kcpl-admin-content .job-row-amount { flex: none; color: var(--admin-ink); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .job-row-icon { flex: none; margin-top: 2px; color: var(--admin-faint); }
+
+/* Completion control: an 18px check, square for checklist steps, round for tasks. */
+.kcpl-admin-content .job-check { display: grid; width: 18px; height: 18px; flex: none; place-items: center; margin-top: 1px; border: 1.5px solid var(--admin-line-strong); border-radius: 5px; background: var(--admin-surface); color: transparent; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .job-check[data-shape="round"] { border-radius: 999px; }
+.kcpl-admin-content .job-check:hover:not(:disabled) { border-color: var(--admin-ink); }
+.kcpl-admin-content .job-check[aria-pressed="true"] { border-color: var(--admin-success); background: var(--admin-success); color: var(--admin-surface); }
+.kcpl-admin-content .job-row[data-overdue="true"] .job-check:not([aria-pressed="true"]) { border-color: var(--admin-danger); }
+
+.kcpl-admin-content .job-progress { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-bottom: 6px; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .job-progress strong { color: var(--admin-ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .job-note { margin: 0; color: var(--admin-ink); font-size: 13px; line-height: 20px; white-space: pre-wrap; }
+.kcpl-admin-content .job-inline-links { display: inline-flex; flex-wrap: wrap; gap: 2px 8px; }
+
+/* Editing areas: one faint canvas block with compact controls. */
+.kcpl-admin-content .job-form { margin-bottom: 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 12px; background: var(--admin-canvas); }
+.kcpl-admin-content .job-form .ops-field { gap: 4px; }
+.kcpl-admin-content .job-form .ops-field-label { font-size: 12px; }
+.kcpl-admin-content .job-form :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) { min-height: 34px; padding: 6px 10px; font-size: 13px; }
+.kcpl-admin-content .job-form textarea { min-height: 64px; padding: 7px 10px; font-size: 13px; }
+.kcpl-admin-content .job-form input[type="file"] { width: 100%; min-height: 34px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 5px 8px; background: var(--admin-surface); font-size: 12.5px; }
+.kcpl-admin-content .job-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 10px 12px; }
+.kcpl-admin-content .job-form-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kcpl-admin-content .job-form-span-2 { grid-column: span 2; }
+.kcpl-admin-content .job-form-span-all { grid-column: 1 / -1; }
+.kcpl-admin-content .job-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.kcpl-admin-content .job-form-static { display: flex; min-height: 34px; align-items: center; color: var(--admin-muted); font-size: 13px; }
+.kcpl-admin-content .job-form-check { display: flex; align-items: center; gap: 8px; color: var(--admin-ink); font-size: 12.5px; }
+.kcpl-admin-content .job-form-money { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; }
+.kcpl-admin-content .job-upload { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; align-items: end; gap: 10px; }
+
+/* Exception cases: one hairline row per case; a live critical case gets a red rule. */
+.kcpl-admin-content .job-inline-rail { margin-bottom: 0; }
+.kcpl-admin-content .job-cases { display: grid; gap: 8px; }
+.kcpl-admin-content .job-case { border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 12px 14px; background: var(--admin-surface); }
+.kcpl-admin-content .job-case[data-severity="critical"]:not([data-exception-status="resolved"]) { border-color: var(--admin-danger-line); }
+.kcpl-admin-content .job-case[data-exception-status="resolved"] { background: var(--admin-canvas); }
+.kcpl-admin-content .job-case-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.kcpl-admin-content .job-case-title { margin: 6px 0 0; color: var(--admin-ink); font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; line-height: 19px; }
+.kcpl-admin-content .job-case-meta { color: var(--admin-muted); font-size: 11.5px; line-height: 17px; text-align: right; }
+.kcpl-admin-content .job-case-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; border-top: 1px solid var(--admin-line); padding-top: 8px; }
+.kcpl-admin-content .job-case-foot .job-row-meta { margin-top: 0; }
+.kcpl-admin-content .job-case .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; font-weight: 550; }
+
+/* Delivery & POD: four controlled facts on one rail, sub-sections by hairline. */
+.kcpl-admin-content .job-state-rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-line); }
+.kcpl-admin-content .job-state-rail > div { display: grid; align-content: start; justify-items: start; gap: 6px; min-width: 0; padding: 10px 12px; background: var(--admin-surface); }
+.kcpl-admin-content .job-state-rail dt { color: var(--admin-muted); font-size: 11px; font-weight: 570; letter-spacing: 0.02em; line-height: 14px; text-transform: uppercase; }
+.kcpl-admin-content .job-state-rail dd { margin: 0; }
+.kcpl-admin-content .job-state-note { color: var(--admin-faint); font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .job-state-text { color: var(--admin-ink); font-size: 12.5px; font-weight: 500; line-height: 17px; }
+.kcpl-admin-content .job-delivery-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 0 20px; }
+.kcpl-admin-content .job-delivery-col { display: grid; align-content: start; min-width: 0; }
+.kcpl-admin-content .job-subpanel { margin-top: 12px; border-top: 1px solid var(--admin-line); padding-top: 12px; }
+.kcpl-admin-content :is(.job-subpanel, .job-subpanel-head) > :is(h3, h4) { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; line-height: 16px; text-transform: uppercase; }
+.kcpl-admin-content .job-subpanel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.kcpl-admin-content .job-subpanel-head :is(h3, h4) { margin: 0; }
+.kcpl-admin-content .job-select-row { display: grid; gap: 2px; width: calc(100% + 20px); margin: 0 -10px; border: 0; border-radius: var(--app-radius-sm); padding: 8px 10px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .job-select-row:hover { background: var(--admin-canvas); }
+.kcpl-admin-content .job-select-row[data-selected="true"] { background: var(--admin-surface-muted); }
+.kcpl-admin-content .job-select-row .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; }
+
+/* Activity + customer access. */
+.kcpl-admin-content .job-record .ops-timeline-title { font-size: 13px; font-weight: 550; }
+.kcpl-admin-content .job-record .ops-timeline .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11px; font-weight: 500; }
+.kcpl-admin-content .job-record .ops-timeline .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); }
+.kcpl-admin-content .job-access-table { min-width: 560px; }
+
+/* ---- Responsive ---------------------------------------------------------------- */
+@media (max-width: 1180px) {
+  .kcpl-admin-content .job-summary-grid { grid-template-columns: minmax(0, 1fr) 280px; }
+  .kcpl-admin-content .job-workspace-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 320px); }
 }
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail h2 {
-  margin-top: 6px;
-  color: var(--admin-ink);
-  font-size: 17px;
-  font-weight: 620;
-  line-height: 1.3;
-  letter-spacing: -0.018em;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-detail {
-  margin-top: 6px;
-  color: var(--admin-muted);
-  font-size: 12.5px;
-  line-height: 1.55;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-link {
-  display: inline-flex;
-  width: 100%;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  margin-top: 24px;
-  border: 0;
-  border-radius: var(--app-radius);
-  padding: 0 24px;
-  background: var(--admin-crimson);
-  color: #fff;
-  box-shadow: none;
-  transition: transform var(--job-motion), background-color var(--job-motion), box-shadow var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-link:hover {
-  background: var(--admin-crimson-dark);
-  color: #fff;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-link:active {
-  transform: scale(0.98);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl {
-  margin-top: 24px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl > div {
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 16px;
-  padding: 13px 0;
-  border-top: 1px solid var(--admin-line);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dt {
-  color: var(--admin-muted);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dd {
-  color: var(--admin-ink);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-links {
-  gap: 16px;
-  padding-top: 18px;
-  border-top: 1px solid var(--admin-line);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-links a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--admin-muted);
-  transition: color var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-links a:hover {
-  color: var(--admin-ink);
-}
-
-/* Working record */
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
-  border: 0;
-  padding: 32px 0 72px;
-  background: var(--admin-canvas);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded {
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  padding: 24px;
-  background: var(--job-glass);
-  box-shadow: var(--job-shadow);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page {
-  min-height: 0;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-header {
-  display: block;
-  border: 0;
-  padding: 0 0 24px;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-header-main {
-  display: flex;
-  min-height: 0;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-heading {
-  display: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-actions > a:first-child,
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page > .ops-stat-strip {
-  display: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-content-wide {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.7fr);
-  gap: 24px;
-  align-items: start;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main > aside {
-  position: sticky;
-  top: 184px;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  border: 0;
-  padding: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-stack {
-  gap: 16px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block > .ops-surface,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block > section {
-  overflow: hidden;
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--admin-surface);
-  box-shadow: var(--job-shadow-soft);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-header,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-header {
-  min-height: 0;
-  border-bottom: 0.5px solid var(--job-line);
-  padding: 24px;
-  background: var(--admin-surface);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-body,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-body {
-  padding: 24px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface h2,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface h2 {
-  font-weight: 650;
-  letter-spacing: -0.011em;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface form {
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-radius);
-  padding: 16px;
-  background: var(--admin-surface-soft);
-  box-shadow: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded :is(input, select, textarea),
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block :is(input, select, textarea) {
-  min-height: 44px;
-  border-radius: var(--app-radius);
-  transition: border-color var(--job-motion), box-shadow var(--job-motion), background-color var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded textarea,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block textarea {
-  min-height: 96px;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded :is(input, select, textarea):focus,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block :is(input, select, textarea):focus {
-  outline: none;
-  border-color: rgba(220, 20, 60, 0.42);
-  box-shadow: var(--job-focus);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-empty {
-  min-height: 0;
-  border: 0;
-  border-radius: var(--app-radius);
-  padding: 24px;
-  background: var(--admin-surface-soft);
-  text-align: left;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-empty-icon {
-  display: none;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded [class*="divide-y"] > * {
-  transition: background-color var(--job-motion), transform var(--job-motion);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded [class*="divide-y"] > *:hover {
-  background: rgba(16, 16, 16, 0.025);
-}
-
-/* Lower record areas */
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block {
-  margin-top: 24px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block + .shipment-detail-block {
-  margin-top: 24px;
-  border-top: 0;
-}
-
-.kcpl-admin-content .shipment-detail-v2 #shipment-exceptions,
-.kcpl-admin-content .shipment-detail-v2 #shipment-delivery,
-.kcpl-admin-content .shipment-detail-v2 #shipment-activity {
-  border-radius: var(--app-surface-radius);
-}
-
-.kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section {
-  border: 0.5px solid var(--job-line);
-  border-radius: var(--app-surface-radius);
-  padding: 24px;
-  background: var(--job-glass);
-  box-shadow: var(--job-shadow-soft);
-}
-
-/* Responsive */
-@media (max-width: 1184px) {
-  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout {
-    grid-template-columns: minmax(0, 1fr) 320px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main {
-    grid-template-columns: minmax(0, 1.3fr) minmax(288px, 0.7fr);
-  }
-}
-
 @media (max-width: 960px) {
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-context .shipment-detail-inner,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main {
-    grid-template-columns: 1fr;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions {
-    justify-content: flex-start;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main > aside {
-    position: static;
-    top: auto;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-summary-grid {
-    grid-template-columns: 1fr;
-  }
+  .kcpl-admin-content :is(.job-summary-grid, .job-workspace-grid, .job-delivery-grid) { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .job-next { position: static; }
+  .kcpl-admin-content .job-state-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
 @media (max-width: 760px) {
-  .kcpl-admin-content .app-record-return,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor {
-    width: min(100% - 32px, 1440px);
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header {
-    gap: 24px;
-    margin-top: 8px;
-    border-radius: var(--app-surface-radius);
-    padding: 24px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 {
-    font-size: clamp(28px, 9vw, 36px);
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-header-facts,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-context-facts {
-    grid-template-columns: 1fr;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-route-line {
-    grid-template-columns: 1fr;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-route-connector {
-    width: 1px;
-    height: 32px;
-    margin-left: 8px;
-    background: linear-gradient(180deg, var(--admin-crimson), rgba(220, 20, 60, 0.18));
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav {
-    top: 88px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav-inner {
-    border-radius: var(--app-radius);
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span {
-    text-align: left;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded {
-    padding: 16px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-header,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-body,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-header,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-body {
-    padding: 16px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
-    padding-top: 24px;
-  }
+  .kcpl-admin-content .job-record-tabs { padding-inline: 16px; }
+  .kcpl-admin-content :is(.job-form-grid, .job-form-grid-2, .job-upload) { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .job-form-span-2 { grid-column: 1 / -1; }
+  .kcpl-admin-content .job-case-meta { text-align: left; }
 }
-
 @media (max-width: 520px) {
-  .kcpl-admin-content .app-record-return,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor {
-    width: min(100% - 16px, 1440px);
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-context .shipment-detail-inner,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-flow-section,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-main > .shipment-summary-section:not(.shipment-flow-section),
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
-    border-radius: var(--app-radius);
-    padding: 16px;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-actions {
-    width: 100%;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-page-actions > * {
-    flex: 1 1 100%;
-    justify-content: center;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
-    grid-template-columns: 1fr;
-  }
-
-  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 16px 0;
-  }
+  .kcpl-admin-content .job-state-rail { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .job-row { flex-wrap: wrap; }
+  .kcpl-admin-content .job-row-main { flex-basis: 0; }
+  .kcpl-admin-content .job-row-actions { justify-content: flex-start; width: 100%; padding-left: 28px; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .kcpl-admin-content .shipment-detail-v2 *,
-  .kcpl-admin-content .shipment-detail-v2 *::before,
-  .kcpl-admin-content .shipment-detail-v2 *::after,
-  .kcpl-admin-content .app-record-return a {
-    scroll-behavior: auto;
-    transition-duration: 0.01ms;
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-  }
+  .kcpl-admin-content :is(.job-stepper a, .job-check, .job-select-row) { transition: none; }
 }

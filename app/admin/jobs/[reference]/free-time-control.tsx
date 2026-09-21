@@ -91,7 +91,7 @@ export function FreeTimeControl({
       title="Free time"
       description="What the carrier or terminal granted. The customer sees this as a countdown."
       priority={status?.state === "expired" ? "danger" : status?.state === "last_day" ? "warning" : "normal"}
-      action={canEdit ? <OpsButton variant="secondary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? "Close" : freeTime?.days === null ? "Record" : "Edit"}</OpsButton> : undefined}
+      action={canEdit ? <OpsButton variant="secondary" size="xs" onClick={() => setOpen((value) => !value)}>{open ? "Close" : freeTime?.days === null ? "Record" : "Edit"}</OpsButton> : undefined}
     >
       {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
@@ -118,7 +118,12 @@ export function FreeTimeControl({
             </p>
           ) : null}
         </div>
-      ) : null}
+      ) : (
+        // No free-time record is reachable here (Firestore deployments return a
+        // record; QA-mock deployments pass null). One quiet line instead of an
+        // empty half-height card.
+        <p className="portal-footnote m-0">No demurrage clock recorded for this shipment{canEdit ? " — record one to start the countdown" : ""}.</p>
+      )}
 
       {open && canEdit ? (
         <form onSubmit={save} className="portal-form" aria-busy={busy}>

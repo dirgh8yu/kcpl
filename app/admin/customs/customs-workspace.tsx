@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Circle, RefreshCw, ShieldAlert, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
+import { customsPulseRows, RegisterPulseStrip } from "../register-pulse-strip";
+import type { CommandCentreData } from "../command-centre/command-centre-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFilterChip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsToolbar } from "../operations-ui";
 import type { CustomsAgentOption } from "./customs-clearance";
 import { CustomsClearanceEditor } from "./customs-clearance-editor";
@@ -154,7 +156,7 @@ function AuthorityNotice({ tone, title, detail }: { tone: "warning" | "success" 
   return <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: `4px solid ${fg}`, background: bg }}><div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><AlertTriangle size={15} style={{ color: fg, flexShrink: 0, marginTop: 2 }}/><div><div style={{ color: fg, fontSize: 13.5, fontWeight: 700 }}>{title}</div><div style={{ marginTop: 3, fontSize: 12.5, lineHeight: 1.45 }}>{detail}</div></div></div></div>;
 }
 
-export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[] }) {
+export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[]; pulseData?: CommandCentreData | null }) {
   const router = useRouter();
   const rows = initialRows;
   const [query, setQuery] = useState("");
@@ -220,6 +222,8 @@ export function CustomsWorkspace({ initialRows, customsAgents }: { initialRows: 
   return <OpsPage className="customs-clearance-register">
     <div className="customs-clearance-page">
       <OpsPageHeader eyebrow="Shipment compliance" title="Customs Clearance" description={`Branch-aware clearance desk · ${rows.length} shipments · ${blockedCount} blocked · ${heldCount} held`} actions={<><Link href="/admin/alerts" className="ops-button" data-variant="secondary" data-size="sm">Tasks & Alerts</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></>}/>
+
+      {pulseData ? <RegisterPulseStrip initialData={pulseData} rows={customsPulseRows} urlParam="pulse"/> : null}
 
       {blockedCount > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger"><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><AlertTriangle size={15}/><strong>{blockedCount} shipment{blockedCount === 1 ? "" : "s"} blocked</strong> · resolve missing documents, checklist dependencies or authority holds.</span></OpsNotice></div> : null}
       {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}

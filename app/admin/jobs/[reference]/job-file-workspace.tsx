@@ -4,28 +4,16 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  ArrowRight,
   BriefcaseBusiness,
-  CalendarDays,
   Check,
-  ClipboardCheck,
   Download,
   FileText,
-  Landmark,
   LockKeyhole,
-  Mail,
-  MapPin,
   PackageCheck,
-  Phone,
   Plus,
-  RefreshCw,
   RotateCcw,
-  ShieldCheck,
   Trash2,
   Upload,
-  UserRound,
-  UsersRound,
-  WalletCards,
 } from "lucide-react";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "../../crm/crm-data";
 import {
@@ -39,12 +27,11 @@ import {
   type JobPriority,
   type JobTask,
 } from "../../job-file";
-import { kcplStaffRoleLabels, type KcplStaffRole } from "../../staff-permissions";
+import { type KcplStaffRole } from "../../staff-permissions";
 import type { ShipmentWorkflowReadiness } from "../../workflow-guard";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
-import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSurface } from "../../operations-ui";
 import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
 
 function dateLabel(value: string | null) {
@@ -70,19 +57,9 @@ function bytes(value: number) {
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "violet" | "success" | "danger" {
-  if (status === "delivered") return "success";
-  if (status === "exception") return "danger";
-  if (status === "customs_clearance") return "violet";
-  if (status === "preparing") return "warning";
-  if (status === "booking_confirmed" || status === "in_transit" || status === "out_for_delivery") return "info";
-  return "neutral";
-}
-
 export function JobFileWorkspace({
   initialJob,
   initialReadiness,
-  returnTo,
   role,
   canManageBranches,
   canOverride,
@@ -94,7 +71,6 @@ export function JobFileWorkspace({
 }: {
   initialJob: DigitalJobFile;
   initialReadiness: ShipmentWorkflowReadiness;
-  returnTo: string;
   role: KcplStaffRole;
   canManageBranches: boolean;
   canOverride: boolean;
@@ -137,6 +113,17 @@ export function JobFileWorkspace({
   const overdueTasks = useMemo(() => openTasks.filter((item) => item.due_at && new Date(item.due_at).getTime() < nowMs), [nowMs, openTasks]);
   const requiredCustoms = useMemo(() => job.customs_steps.filter((item) => item.required), [job.customs_steps]);
   const completedCustoms = requiredCustoms.filter((item) => item.completed).length;
+  // Advisories often restate a closeout blocker already listed above them
+  // (e.g. "2 operational tasks still open" vs the blocker "2 operational tasks
+  // remain open"); show each advisory only when it says something the blocker
+  // checklist does not. Task-count advisories match on the count itself so
+  // wording differences cannot resurrect the duplicate.
+  const taskCountPhrase = (text: string) => text.match(/(\d+)\s+operational task/i)?.[1] ?? null;
+  const closeoutWarnings = useMemo(() => workflow.warnings.filter((warning) => {
+    if (workflow.close_blockers.some((blocker) => blocker.includes(warning))) return false;
+    const warnTasks = taskCountPhrase(warning);
+    return !(warnTasks && workflow.close_blockers.some((blocker) => taskCountPhrase(blocker) === warnTasks));
+  }), [workflow.warnings, workflow.close_blockers]);
 
   async function refresh() {
     const response = await fetch(`/api/admin/jobs/${encodeURIComponent(job.reference)}`, { cache: "no-store" });
@@ -324,129 +311,135 @@ export function JobFileWorkspace({
     finally { setDocumentBusy(false); }
   }
 
+  const setupToggle = <OpsButton variant="secondary" size="xs" onClick={() => setSetupOpen((current) => !current)} aria-expanded={setupOpen}><BriefcaseBusiness size={13} strokeWidth={1.75} aria-hidden="true"/>{setupOpen ? "Close setup" : "Edit handling"}</OpsButton>;
+
   return (
-    <OpsPage>
-      <OpsPageHeader
-        eyebrow="Digital Job File"
-        title={<OpsMono>{job.reference}</OpsMono>}
-        description={<span className="flex flex-wrap items-center gap-2"><strong className="text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span>{job.origin || "Origin"}</span><ArrowRight size={12} className="text-[var(--admin-crimson)]"/><span>{job.destination || "Destination"}</span></span>}
-        meta={<><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge><OpsBadge>{kcplStaffRoleLabels[role]}</OpsBadge><span>Quote <OpsMono>{job.quote_reference}</OpsMono></span><span>Updated {dateTime(job.updated_at)}</span></>}
-        actions={<><Link href={returnTo} className="ops-button" data-variant="secondary" data-size="md">Back to shipments</Link><OpsButton variant="secondary" onClick={() => setSetupOpen((current) => !current)}><BriefcaseBusiness size={13}/>{setupOpen ? "Close setup" : "Edit handling"}</OpsButton><OpsButton variant="primary" onClick={() => refresh().catch((error) => setNotice(error instanceof Error ? error.message : "Refresh failed."))}><RefreshCw size={13}/>Refresh</OpsButton></>}
-      />
+    <OpsPage className="job-workspace">
+      {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("failed") ? "danger" : notice.toLowerCase().includes("unavailable") ? "warning" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
 
-      <OpsKpiStrip>
-        <OpsKpiCard label="Primary branch" value={job.primary_branch} icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} />
-        <OpsKpiCard label="Open tasks" value={openTasks.length} detail={overdueTasks.length ? `${overdueTasks.length} overdue` : "No overdue work"} icon={<ClipboardCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks.length ? "danger" : "neutral"}/>
-        <OpsKpiCard label="Customs" value={`${completedCustoms}/${requiredCustoms.length}`} detail="required steps complete" icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={requiredCustoms.length && completedCustoms < requiredCustoms.length ? "warning" : "success"}/>
-        <OpsKpiCard label="Documents" value={documents.length} icon={<FileText size={18} strokeWidth={1.9} aria-hidden="true"/>} />
-        <OpsKpiCard label="ETA" value={dateLabel(job.eta)} icon={<CalendarDays size={18} strokeWidth={1.9} aria-hidden="true"/>} />
-        <OpsKpiCard label="Priority" value={jobPriorityLabels[job.priority]} icon={<BriefcaseBusiness size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={job.priority === "urgent" ? "danger" : job.priority === "high" ? "warning" : "neutral"}/>
-      </OpsKpiStrip>
-
-      <div className="ops-content-wide ops-stack">
-        {notice ? <OpsNotice tone={notice.toLowerCase().includes("could not") || notice.toLowerCase().includes("failed") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
-
-        {setupOpen ? <OpsSurface eyebrow="Handling setup" title="Ownership, branches & private instructions" description="Edit the operational spine of this file. Changes stay internal to KCPL.">
-          <form onSubmit={saveSetup} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <OpsField label="Primary branch"><select disabled={!canManageBranches} value={draft.primaryBranch} onChange={(event) => setDraft({ ...draft, primaryBranch: event.target.value as KcplBranch })}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
-            <OpsField label="Priority"><select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as JobPriority })}>{jobPriorities.map((priority) => <option key={priority} value={priority}>{jobPriorityLabels[priority]}</option>)}</select></OpsField>
-            <OpsField label="Internal reference"><input value={draft.internalReference} onChange={(event) => setDraft({ ...draft, internalReference: event.target.value })} placeholder="Optional internal file/ref"/></OpsField>
-            <div className="md:col-span-2"><OpsField label="Assigned staff" hint="Choose from People & branches. Identity and contact details stay synchronized automatically."><StaffAssignmentPicker branch={draft.primaryBranch} value={{ uid: draft.assignedToUid, name: draft.assignedToName, email: draft.assignedToEmail, phone: draft.assignedToPhone }} onChange={(staff) => setDraft((current) => ({ ...current, assignedToUid: staff.uid ?? "", assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField></div>
-            <OpsField label="Current handling"><div className="ops-input flex items-center">{job.current_location || "Location not updated"}</div></OpsField>
-            <div className="md:col-span-2 xl:col-span-3"><p className="mb-2 text-[length:var(--app-label-size)] font-bold uppercase tracking-[.09em] text-[var(--admin-muted)]">Handling branches</p><div className="flex flex-wrap gap-2">{kcplBranches.map((branch) => <button type="button" key={branch} disabled={!canManageBranches} onClick={() => toggleHandlingBranch(branch)} className="ops-badge disabled:opacity-60" data-tone={draft.handlingBranches.includes(branch) ? "accent" : "neutral"}>{draft.handlingBranches.includes(branch) ? <Check size={10}/> : null}{branch}</button>)}</div></div>
-            <OpsField label="Internal operating notes" className="md:col-span-2 xl:col-span-3"><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} placeholder="Private handling instructions, counterpart details, exceptions, branch handoff context…"/></OpsField>
-            <div className="flex gap-2 md:col-span-2 xl:col-span-3"><OpsButton type="submit" variant="primary" disabled={busy}>{busy ? "Saving…" : "Save handling"}</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setSetupOpen(false)}>Cancel</OpsButton></div>
-          </form>
-        </OpsSurface> : null}
-
-        <div className="ops-grid-main">
-          <div className="ops-stack">
-            <OpsSurface id="shipment-closeout" eyebrow="Controlled closeout" title="Operational closeout" description="Customs, required documents, POD and open tasks are re-checked before closeout. Closing locks the operational lifecycle and keeps the record for finance, audit and the customer." action={workflow.job_closed
-              ? (canOverride ? <OpsButton variant="secondary" size="sm" disabled={busy} onClick={reopenJob}><RotateCcw size={12}/>{busy ? "Reopening…" : "Reopen job"}</OpsButton> : null)
-              : <OpsButton variant="primary" size="sm" disabled={busy || (!workflow.can_close && !canOverride)} onClick={() => closeJob(workflow.can_close ? "" : closeReason)}><PackageCheck size={12}/>{busy ? "Closing…" : workflow.can_close ? "Close job" : "Close with override"}</OpsButton>}>
-              {workflow.job_closed ? <div className="flex items-start gap-2.5 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-success)]"><LockKeyhole size={13} className="mt-0.5 shrink-0"/><span>Closed{workflow.job_closed_at ? ` ${dateTime(workflow.job_closed_at)}` : ""}{workflow.job_closed_by_name ? ` by ${workflow.job_closed_by_name}` : ""}. The shipment, documents, customs controls and audit trail remain available as the permanent record.{canOverride ? " Management can reopen with an audited reason." : " Only Management can reopen a closed job."}</span></div>
-                : workflow.close_blockers.length ? <div className="grid gap-2">{workflow.close_blockers.map((blocker) => <div key={blocker} className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] p-2.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]"><AlertTriangle size={11} className="mt-0.5 shrink-0"/><span>{blocker}</span></div>)}{canOverride ? <OpsField label="Management override reason" hint="Recorded against the closeout in the shipment activity trail. Minimum 8 characters."><textarea value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being closed before every control is satisfied?"/></OpsField> : <p className="text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Only Management can override a blocked closeout.</p>}</div>
-                  : <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-success)]"><PackageCheck size={12} className="mt-0.5 shrink-0"/><span>All operational closeout controls are satisfied. This job is ready to close.</span></div>}
-              {!workflow.job_closed && workflow.warnings.length ? <div className="mt-3 space-y-1">{workflow.warnings.map((warning) => <p key={warning} className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-faint)]">• {warning}</p>)}</div> : null}
-            </OpsSurface>
-
-            <OpsSurface id="shipment-tasks" eyebrow="Work queue" title="Operational tasks" description="Every unfinished action for this shipment, kept beside the record it belongs to." action={<OpsButton variant="secondary" size="sm" onClick={() => setTaskOpen((value) => !value)}><Plus size={12}/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>
-              {taskOpen ? <form onSubmit={addTask} className="mb-4 grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4 sm:grid-cols-2">
-                <OpsField label="Task"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField>
-                <OpsField label="Branch"><select value={task.branch} onChange={(event) => setTask({ ...task, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
-                <OpsField label="Due"><input type="datetime-local" value={task.dueAt} onChange={(event) => setTask({ ...task, dueAt: event.target.value })}/></OpsField>
-                <div className="sm:col-span-2"><OpsField label="Assigned to" hint="Choose an active staff member. Contact details stay linked to People & branches."><StaffAssignmentPicker branch={task.branch} compact value={{ uid: task.assignedToUid, name: task.assignedToName, email: task.assignedToEmail, phone: task.assignedToPhone }} onChange={(staff) => setTask((current) => ({ ...current, assignedToUid: staff.uid ?? "", assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField></div>
-                <OpsField label="Detail" className="sm:col-span-2"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField>
-                <div className="flex gap-2 sm:col-span-2"><OpsButton type="submit" variant="primary" disabled={busy}>Create task</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div>
-              </form> : null}
-              {job.tasks.length ? <div className="divide-y divide-[var(--admin-line)]">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} nowMs={nowMs} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</div> : <OpsEmptyState icon={<ClipboardCheck size={18}/>} title="No operational tasks yet" description="Add work here when a shipment needs an owner, a due time or a follow-up."/>}
-            </OpsSurface>
-
-            <OpsSurface id="shipment-customs" eyebrow="Clearance workspace" title="Customs & clearance" description="Required steps stay visible until cleared, without turning the job file into a compliance spreadsheet." action={<OpsButton variant="secondary" size="sm" onClick={() => setCustomsOpen((value) => !value)}><Plus size={12}/>{customsOpen ? "Close" : "Add step"}</OpsButton>}>
-              {requiredCustoms.length ? <div className="mb-4 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><div className="flex items-center justify-between gap-3"><span className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-muted)]">Required clearance progress</span><span className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-faint)]">{completedCustoms} of {requiredCustoms.length}</span></div><div className="mt-2"><OpsProgress value={completedCustoms} max={Math.max(requiredCustoms.length, 1)} tone={completedCustoms === requiredCustoms.length ? "success" : "warning"}/></div></div> : null}
-              {customsOpen ? <form onSubmit={addCustoms} className="mb-4 grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4 sm:grid-cols-2">
-                <OpsField label="Clearance step"><input required value={customs.title} onChange={(event) => setCustoms({ ...customs, title: event.target.value })}/></OpsField>
-                <OpsField label="Branch"><select value={customs.branch} onChange={(event) => setCustoms({ ...customs, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
-                <OpsField label="Detail" className="sm:col-span-2"><textarea value={customs.detail} onChange={(event) => setCustoms({ ...customs, detail: event.target.value })}/></OpsField>
-                <label className="flex items-center gap-2 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]"><input type="checkbox" checked={customs.required} onChange={(event) => setCustoms({ ...customs, required: event.target.checked })}/> Required before clearance</label>
-                <div className="flex gap-2 sm:col-span-2"><OpsButton type="submit" variant="primary" disabled={busy}>Add clearance step</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setCustomsOpen(false)}>Cancel</OpsButton></div>
-              </form> : null}
-              {job.customs_steps.length ? <div className="divide-y divide-[var(--admin-line)]">{job.customs_steps.map((item) => <CustomsRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_customs", stepId: item.id, completed: !item.completed })}/>)}</div> : <OpsEmptyState icon={<ShieldCheck size={18}/>} title="No customs checklist yet" description="Add only the clearance steps this movement actually requires."/>}
-            </OpsSurface>
-
-            <OpsSurface eyebrow="Private file note" title="Operating context" description="The running context that should follow this movement from branch to branch.">
-              {job.internal_notes ? <p className="whitespace-pre-wrap text-[11px] leading-6 text-[var(--admin-ink)]">{job.internal_notes}</p> : <OpsEmptyState title="No internal operating note" description="Use Edit handling above to add branch handoff context, counterpart instructions or exceptional handling notes."/>}
-            </OpsSurface>
+      {setupOpen ? <OpsSurface title="Handling setup" description="Ownership, branches and private instructions. Changes stay internal to KCPL." action={<OpsButton variant="ghost" size="xs" onClick={() => setSetupOpen(false)}>Close</OpsButton>}>
+        <form onSubmit={saveSetup} className="job-form job-form-grid">
+          <OpsField label="Primary branch"><select disabled={!canManageBranches} value={draft.primaryBranch} onChange={(event) => setDraft({ ...draft, primaryBranch: event.target.value as KcplBranch })}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+          <OpsField label="Priority"><select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as JobPriority })}>{jobPriorities.map((priority) => <option key={priority} value={priority}>{jobPriorityLabels[priority]}</option>)}</select></OpsField>
+          <OpsField label="Internal reference"><input value={draft.internalReference} onChange={(event) => setDraft({ ...draft, internalReference: event.target.value })} placeholder="Optional internal file/ref"/></OpsField>
+          <OpsField label="Assigned staff" hint="Choose from People & branches. Identity and contact details stay synchronized automatically." className="job-form-span-2"><StaffAssignmentPicker branch={draft.primaryBranch} value={{ uid: draft.assignedToUid, name: draft.assignedToName, email: draft.assignedToEmail, phone: draft.assignedToPhone }} onChange={(staff) => setDraft((current) => ({ ...current, assignedToUid: staff.uid ?? "", assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField>
+          <OpsField label="Current handling"><div className="ops-input job-form-static">{job.current_location || "Location not updated"}</div></OpsField>
+          <div className="job-form-span-all" role="group" aria-label="Handling branches">
+            <span className="ops-filter-menu-label">Handling branches</span>
+            <div className="ops-filter-choices mt-1.5">{kcplBranches.map((branch) => <button type="button" key={branch} disabled={!canManageBranches} onClick={() => toggleHandlingBranch(branch)} className="ops-filter-choice" data-active={draft.handlingBranches.includes(branch) || undefined} aria-pressed={draft.handlingBranches.includes(branch)}>{branch}</button>)}</div>
           </div>
+          <OpsField label="Internal operating notes" className="job-form-span-all"><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} placeholder="Private handling instructions, counterpart details, exceptions, branch handoff context…"/></OpsField>
+          <div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>{busy ? "Saving…" : "Save handling"}</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setSetupOpen(false)}>Cancel</OpsButton></div>
+        </form>
+      </OpsSurface> : null}
 
-          <aside className="ops-stack xl:sticky xl:top-[76px]">
-            <FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/>
-            <OpsSurface id="shipment-movement" eyebrow="Shipment identity" title={job.customer_name || "Unlinked customer"} description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-                <Fact icon={<UserRound size={12}/>} label="Customer" value={job.customer_name || "Not linked"}/><Fact label="Quote" value={job.quote_reference} mono/><Fact label="Mode" value={job.mode || "Not set"}/><Fact label="Carrier" value={job.carrier || "Not assigned"}/><Fact label="Carrier ref" value={job.carrier_reference || "Not assigned"} mono/><Fact icon={<MapPin size={12}/>} label="Current location" value={job.current_location || "Not updated"}/><Fact icon={<Landmark size={12}/>} label="Primary branch" value={<Link href={`/admin/branches/${encodeURIComponent(job.primary_branch)}`} className="hover:text-[var(--admin-crimson)] hover:underline">{job.primary_branch}</Link>}/>
-                <Fact icon={<UsersRound size={12}/>} label="Owner" value={job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`} className="hover:text-[var(--admin-crimson)] hover:underline">{job.assigned_to_name || job.assigned_to_email || "Assigned staff"}</Link> : job.assigned_to_name || job.assigned_to_email || "Unassigned"}/>
-                <Fact icon={<Mail size={11}/>} label="Owner email" value={job.assigned_to_email ? <a href={`mailto:${job.assigned_to_email}`} className="hover:text-[var(--admin-crimson)] hover:underline">{job.assigned_to_email}</a> : "Not set"}/>
-                <Fact icon={<Phone size={11}/>} label="Owner phone" value={job.assigned_to_phone ? <a href={`tel:${job.assigned_to_phone}`} className="hover:text-[var(--admin-crimson)] hover:underline">{job.assigned_to_phone}</a> : "Not set"}/>
-                <Fact label="Role / title" value={job.assigned_to_job_title || "Not recorded"}/>
-                <Fact label="Staff branches" value={job.assigned_to_branches.length ? <span className="flex flex-wrap gap-x-2 gap-y-1">{job.assigned_to_branches.map((branch) => <Link key={branch} href={`/admin/branches/${encodeURIComponent(branch)}`} className="hover:text-[var(--admin-crimson)] hover:underline">{branch}</Link>)}</span> : "Not recorded"}/>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Customer 360</Link> : null}{job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`} className="ops-button" data-variant="secondary" data-size="sm">Open staff workload</Link> : null}<Link href={`/admin/jobs/${encodeURIComponent(job.reference)}/profitability`} className="ops-button" data-variant="ghost" data-size="sm">Profitability</Link></div>
-            </OpsSurface>
+      <div className="ops-grid-main job-workspace-grid">
+        <div className="ops-stack job-workspace-main">
+          <OpsSurface id="shipment-closeout" title="Operational closeout" description="Customs, required documents, POD and open tasks are re-checked before closeout. Closing locks the operational lifecycle and keeps the record for finance, audit and the customer." action={workflow.job_closed
+            ? (canOverride ? <OpsButton variant="secondary" size="xs" disabled={busy} onClick={reopenJob}><RotateCcw size={13} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Reopening…" : "Reopen job"}</OpsButton> : null)
+            : <OpsButton variant={workflow.can_close ? "primary" : "secondary"} size="xs" disabled={busy || (!workflow.can_close && !canOverride)} onClick={() => closeJob(workflow.can_close ? "" : closeReason)}><PackageCheck size={13} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Closing…" : workflow.can_close ? "Close job" : "Close with override"}</OpsButton>}>
+            {workflow.job_closed ? <OpsInspectorNote tone="success" icon={<LockKeyhole size={14} strokeWidth={1.75} aria-hidden="true"/>} title={`Closed${workflow.job_closed_at ? ` ${dateTime(workflow.job_closed_at)}` : ""}${workflow.job_closed_by_name ? ` by ${workflow.job_closed_by_name}` : ""}`}>The shipment, documents, customs controls and audit trail remain available as the permanent record.{canOverride ? " Management can reopen with an audited reason." : " Only Management can reopen a closed job."}</OpsInspectorNote>
+              : workflow.close_blockers.length ? <>
+                <ul className="job-checklist" aria-label="Closeout blockers">{workflow.close_blockers.map((blocker) => <li key={blocker}><AlertTriangle size={13} strokeWidth={1.75} aria-hidden="true"/><span>{blocker}</span></li>)}</ul>
+                {canOverride ? <div className="job-closeout-override"><OpsField label="Management override reason" hint="Recorded against the closeout in the shipment activity trail. Minimum 8 characters."><textarea value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being closed before every control is satisfied?"/></OpsField></div> : <p className="ops-inspector-hint mt-2">Only Management can override a blocked closeout.</p>}
+              </>
+                : <OpsInspectorNote tone="success" icon={<PackageCheck size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Ready to close">All operational closeout controls are satisfied.</OpsInspectorNote>}
+            {workflow.job_closed && canOverride ? <div className="job-closeout-override"><OpsField label="Reopening reason" hint="Management reasons are audited. Minimum 8 characters."><textarea value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being reopened?"/></OpsField></div> : null}
+            {!workflow.job_closed && closeoutWarnings.length ? <ul className="job-advisories">{closeoutWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul> : null}
+          </OpsSurface>
 
-            <OpsSurface id="shipment-documents" eyebrow="Document vault" title="Shipment documents" description="Files are Received on upload. Only verified, unexpired evidence satisfies controlled readiness." action={<Link href={`/admin/documents?q=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="ghost" data-size="sm">Open Document Vault</Link>}>
-              {!storageAvailable ? <OpsNotice tone="warning">Firebase Storage is unavailable for this deployment.</OpsNotice> : null}
-              <form onSubmit={uploadDocument} className="mt-3 grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3">
-                <OpsField label="Document type"><select name="documentType" defaultValue="other">{shipmentDocumentTypes.map((type) => <option key={type} value={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></OpsField>
-                <OpsField label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField>
-                <OpsButton type="submit" variant="primary" size="sm" disabled={documentBusy || !storageAvailable}><Upload size={12}/>{documentBusy ? "Uploading…" : "Upload document"}</OpsButton>
-              </form>
-              <div className="mt-3 divide-y divide-[var(--admin-line)]">{documentsLoading ? <p className="py-4 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Loading documents…</p> : documents.length ? documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} role={role} currentUserEmail={currentUserEmail} onDelete={() => deleteDocument(document)}/>) : <OpsEmptyState icon={<FileText size={17}/>} title="No documents yet" description="Upload AWBs, BLs, invoices, packing lists and clearance documents here."/>}</div>
-            </OpsSurface>
+          <OpsSurface id="shipment-tasks" title="Operational tasks" description={openTasks.length ? <><strong>{openTasks.length} open</strong>{overdueTasks.length ? <> · <span className="job-overdue">{overdueTasks.length} overdue</span></> : null} · every unfinished action for this shipment.</> : "Every unfinished action for this shipment, kept beside the record it belongs to."} action={<OpsButton variant="secondary" size="xs" onClick={() => setTaskOpen((value) => !value)} aria-expanded={taskOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>
+            {taskOpen ? <form onSubmit={addTask} className="job-form job-form-grid job-form-grid-2">
+              <OpsField label="Task"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField>
+              <OpsField label="Branch"><select value={task.branch} onChange={(event) => setTask({ ...task, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+              <OpsField label="Due"><input type="datetime-local" value={task.dueAt} onChange={(event) => setTask({ ...task, dueAt: event.target.value })}/></OpsField>
+              <OpsField label="Assigned to" hint="Choose an active staff member. Contact details stay linked to People & branches." className="job-form-span-all"><StaffAssignmentPicker branch={task.branch} compact value={{ uid: task.assignedToUid, name: task.assignedToName, email: task.assignedToEmail, phone: task.assignedToPhone }} onChange={(staff) => setTask((current) => ({ ...current, assignedToUid: staff.uid ?? "", assignedToName: staff.name, assignedToEmail: staff.email, assignedToPhone: staff.phone }))}/></OpsField>
+              <OpsField label="Detail" className="job-form-span-all"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField>
+              <div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Create task</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div>
+            </form> : null}
+            {job.tasks.length ? <ul className="job-rows">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} nowMs={nowMs} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</ul> : <OpsEmptyState compact title="No operational tasks yet" description="Add work here when a shipment needs an owner, a due time or a follow-up."/>}
+          </OpsSurface>
 
-            {job.can_view_costs ? <OpsSurface id="shipment-commercial" eyebrow="Commercial control" title="Job costs" description="Internal only. Cost data never appears to operations roles without permission." action={<OpsButton variant="secondary" size="sm" onClick={() => setCostOpen((value) => !value)}><Plus size={12}/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
-              {Object.keys(job.cost_totals).length ? <div className="grid grid-cols-2 gap-2">{Object.entries(job.cost_totals).map(([currency, total]) => <div key={currency} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{currency} costs</p><p className="mt-1.5 text-[13px] font-[720] text-[var(--admin-ink)]">{money(total ?? 0, currency)}</p>{job.profit_totals[currency as CrmCurrency] !== undefined ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Profit {money(job.profit_totals[currency as CrmCurrency] ?? 0, currency)}</p> : null}</div>)}</div> : null}
-              {costOpen ? <form onSubmit={addCost} className="mt-3 grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Vendor"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="grid grid-cols-[1fr_.7fr] gap-2"><OpsField label="Amount"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Save cost</OpsButton></form> : null}
-              <div className="mt-3 divide-y divide-[var(--admin-line)]">{job.costs.length ? job.costs.map((item) => <div key={item.id} className="flex items-start justify-between gap-4 py-3"><div className="min-w-0"><p className="truncate text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">{item.label}</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</p></div><strong className="shrink-0 text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(item.amount, item.currency)}</strong></div>) : <OpsEmptyState icon={<WalletCards size={17}/>} title="No costs recorded" description="Add supplier, freight, customs and handling costs here."/>}</div>
-            </OpsSurface> : <OpsSurface id="shipment-commercial" eyebrow="Commercial controls" title="Cost data restricted" description="Your role can operate this shipment, but commercial cost data is intentionally withheld from the browser."><div className="flex items-start gap-3 rounded-[var(--app-radius)] bg-[var(--admin-surface-muted)] p-3 text-[var(--admin-muted)]"><Landmark size={15} className="mt-0.5 shrink-0 text-[var(--admin-crimson)]"/><p className="text-[length:var(--app-label-size)] leading-5">You still have full access to the operational Job File, tasks, customs and documents allowed by your role.</p></div></OpsSurface>}
-          </aside>
+          <OpsSurface id="shipment-customs" title="Customs & clearance" description="Required steps stay visible until cleared." action={<OpsButton variant="secondary" size="xs" onClick={() => setCustomsOpen((value) => !value)} aria-expanded={customsOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{customsOpen ? "Close" : "Add step"}</OpsButton>}>
+            {requiredCustoms.length ? <div className="job-progress"><span>Required clearance</span><OpsProgress value={completedCustoms} max={Math.max(requiredCustoms.length, 1)} tone={completedCustoms === requiredCustoms.length ? "success" : "warning"} label="Required clearance progress"/><strong>{completedCustoms} of {requiredCustoms.length}</strong></div> : null}
+            {customsOpen ? <form onSubmit={addCustoms} className="job-form job-form-grid job-form-grid-2">
+              <OpsField label="Clearance step"><input required value={customs.title} onChange={(event) => setCustoms({ ...customs, title: event.target.value })}/></OpsField>
+              <OpsField label="Branch"><select value={customs.branch} onChange={(event) => setCustoms({ ...customs, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+              <OpsField label="Detail" className="job-form-span-all"><textarea value={customs.detail} onChange={(event) => setCustoms({ ...customs, detail: event.target.value })}/></OpsField>
+              <label className="job-form-check job-form-span-all"><input type="checkbox" checked={customs.required} onChange={(event) => setCustoms({ ...customs, required: event.target.checked })}/> Required before clearance</label>
+              <div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Add clearance step</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setCustomsOpen(false)}>Cancel</OpsButton></div>
+            </form> : null}
+            {job.customs_steps.length ? <ul className="job-rows">{job.customs_steps.map((item) => <CustomsRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_customs", stepId: item.id, completed: !item.completed })}/>)}</ul> : <OpsEmptyState compact title="No customs checklist yet" description="Add only the clearance steps this movement actually requires."/>}
+          </OpsSurface>
+
+          <OpsSurface id="shipment-context" title="Operating context" description="Private file note that follows this movement from branch to branch." action={setupToggle}>
+            {job.internal_notes ? <p className="job-note">{job.internal_notes}</p> : <OpsEmptyState compact title="No internal operating note" description="Use Edit handling to add branch handoff context, counterpart instructions or exceptional handling notes."/>}
+          </OpsSurface>
+        </div>
+
+        <div className="ops-stack job-workspace-side">
+          <div id="shipment-free-time"><FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/></div>
+          <OpsSurface id="shipment-movement" title={job.customer_name || "Unlinked customer"} description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}>
+            <OpsFacts columns={2}>
+              <OpsFact label="Customer">{job.customer_name || "Not linked"}</OpsFact>
+              <OpsFact label="Quote"><OpsMono>{job.quote_reference}</OpsMono></OpsFact>
+              <OpsFact label="Mode">{job.mode || "Not set"}</OpsFact>
+              <OpsFact label="Carrier" warning={!job.carrier}>{job.carrier || "Not assigned"}</OpsFact>
+              <OpsFact label="Carrier ref">{job.carrier_reference ? <OpsMono>{job.carrier_reference}</OpsMono> : "Not assigned"}</OpsFact>
+              <OpsFact label="Location">{job.current_location || "Not updated"}</OpsFact>
+              <OpsFact label="Primary branch"><Link href={`/admin/branches/${encodeURIComponent(job.primary_branch)}`}>{job.primary_branch}</Link></OpsFact>
+              <OpsFact label="Owner" warning={!job.assigned_to_uid && !job.assigned_to_name && !job.assigned_to_email}>{job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`}>{job.assigned_to_name || job.assigned_to_email || "Assigned staff"}</Link> : job.assigned_to_name || job.assigned_to_email || "Unassigned"}</OpsFact>
+              <OpsFact label="Owner email">{job.assigned_to_email ? <a href={`mailto:${job.assigned_to_email}`}>{job.assigned_to_email}</a> : "Not set"}</OpsFact>
+              <OpsFact label="Owner phone">{job.assigned_to_phone ? <a href={`tel:${job.assigned_to_phone}`}>{job.assigned_to_phone}</a> : "Not set"}</OpsFact>
+              <OpsFact label="Role / title">{job.assigned_to_job_title || "Not recorded"}</OpsFact>
+              <OpsFact label="Staff branches">{job.assigned_to_branches.length ? <span className="job-inline-links">{job.assigned_to_branches.map((branch) => <Link key={branch} href={`/admin/branches/${encodeURIComponent(branch)}`}>{branch}</Link>)}</span> : "Not recorded"}</OpsFact>
+            </OpsFacts>
+            <div className="ops-inspector-actions mt-3">{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`} className="ops-button" data-variant="secondary" data-size="xs">Customer 360</Link> : null}{job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`} className="ops-button" data-variant="secondary" data-size="xs">Staff workload</Link> : null}<Link href={`/admin/jobs/${encodeURIComponent(job.reference)}/profitability`} className="ops-button" data-variant="ghost" data-size="xs">Profitability</Link></div>
+          </OpsSurface>
+
+          <OpsSurface id="shipment-documents" title="Shipment documents" description="Files are Received on upload. Only verified, unexpired evidence satisfies controlled readiness." action={<Link href={`/admin/documents?q=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">Open Document Vault</Link>}>
+            {!storageAvailable ? <div className="mb-3"><OpsNotice tone="warning">Firebase Storage is unavailable for this deployment.</OpsNotice></div> : null}
+            <form onSubmit={uploadDocument} className="job-form job-upload">
+              <OpsField label="Document type"><select name="documentType" defaultValue="other">{shipmentDocumentTypes.map((type) => <option key={type} value={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></OpsField>
+              <OpsField label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField>
+              <OpsButton type="submit" variant="secondary" size="sm" disabled={documentBusy || !storageAvailable}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{documentBusy ? "Uploading…" : "Upload"}</OpsButton>
+            </form>
+            {documentsLoading ? <p className="ops-inspector-hint mt-3">Loading documents…</p> : documents.length ? <ul className="job-rows mt-2">{documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} role={role} currentUserEmail={currentUserEmail} onDelete={() => deleteDocument(document)}/>)}</ul> : <OpsEmptyState compact title="No documents yet" description="Upload AWBs, BLs, invoices, packing lists and clearance documents here."/>}
+          </OpsSurface>
+
+          {job.can_view_costs ? <OpsSurface id="shipment-commercial" title="Job costs" description="Internal only. Cost data never appears to operations roles without permission." action={<OpsButton variant="secondary" size="xs" onClick={() => setCostOpen((value) => !value)} aria-expanded={costOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
+            {Object.keys(job.cost_totals).length ? <dl className="job-stat-row">{Object.entries(job.cost_totals).map(([currency, total]) => <div key={currency}><dt>{currency} costs</dt><dd>{money(total ?? 0, currency)}</dd>{job.profit_totals[currency as CrmCurrency] !== undefined ? <dd className="job-stat-note">Profit {money(job.profit_totals[currency as CrmCurrency] ?? 0, currency)}</dd> : null}</div>)}</dl> : null}
+            {costOpen ? <form onSubmit={addCost} className="job-form job-form-grid job-form-grid-2 mt-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Vendor"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="job-form-money"><OpsField label="Amount"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes" className="job-form-span-all"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Save cost</OpsButton></div></form> : null}
+            {job.costs.length ? <ul className="job-rows mt-2">{job.costs.map((item) => <li key={item.id} className="job-row"><div className="job-row-main"><span className="job-row-title">{item.label}</span><span className="job-row-meta">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</span></div><strong className="job-row-amount">{money(item.amount, item.currency)}</strong></li>)}</ul> : <OpsEmptyState compact title="No costs recorded" description="Add supplier, freight, customs and handling costs here."/>}
+          </OpsSurface> : <OpsSurface id="shipment-commercial" title="Cost data restricted" description="Your role can operate this shipment, but commercial cost data is intentionally withheld from the browser."><OpsInspectorNote tone="neutral" title="Operational access unchanged">You still have full access to the operational Job File, tasks, customs and documents allowed by your role.</OpsInspectorNote></OpsSurface>}
         </div>
       </div>
     </OpsPage>
   );
 }
 
-function Fact({ icon, label, value, mono = false }: { icon?: React.ReactNode; label: string; value: React.ReactNode; mono?: boolean }) {
-  return <div><p className="flex items-center gap-1.5 text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{icon}{label}</p><div className="mt-1.5 break-words text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">{mono && typeof value === "string" ? <OpsMono>{value}</OpsMono> : value}</div></div>;
-}
-
 function TaskRow({ item, busy, nowMs, onToggle }: { item: JobTask; busy: boolean; nowMs: number; onToggle: () => void }) {
   const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < nowMs;
   const assigneeName = item.assigned_to_name || item.assigned_to_email || "Unassigned";
-  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${item.completed ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : overdue ? "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-transparent" : "border-[var(--admin-line)] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[length:var(--app-label-size)] ${item.completed ? "text-[var(--admin-faint)] line-through" : "text-[var(--admin-ink)]"}`}>{item.title}</strong>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}<Link href={`/admin/branches/${encodeURIComponent(item.branch)}`}><OpsBadge>{item.branch}</OpsBadge></Link></div>{item.detail ? <p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{item.detail}</p> : null}<div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{item.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(item.assigned_to_uid)}`} className="font-semibold hover:text-[var(--admin-crimson)] hover:underline">{assigneeName}</Link> : <span>{assigneeName}</span>}{item.assigned_to_email ? <a href={`mailto:${item.assigned_to_email}`} className="hover:text-[var(--admin-crimson)] hover:underline">{item.assigned_to_email}</a> : null}{item.assigned_to_phone ? <a href={`tel:${item.assigned_to_phone}`} className="hover:text-[var(--admin-crimson)] hover:underline">{item.assigned_to_phone}</a> : null}<span>{item.due_at ? `due ${dateTime(item.due_at)}` : "no due time"}</span></div></div></div>;
+  return <li className="job-row" data-done={item.completed || undefined} data-overdue={overdue || undefined}>
+    <button type="button" disabled={busy} onClick={onToggle} className="job-check" data-shape="round" aria-pressed={item.completed} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11} strokeWidth={2} aria-hidden="true"/></button>
+    <div className="job-row-main">
+      <div className="job-row-head"><span className="job-row-title">{item.title}</span>{overdue ? <OpsBadge tone="danger">Overdue</OpsBadge> : null}<Link href={`/admin/branches/${encodeURIComponent(item.branch)}`} className="job-row-tag">{item.branch}</Link></div>
+      {item.detail ? <p className="job-row-detail">{item.detail}</p> : null}
+      <div className="job-row-meta">{item.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(item.assigned_to_uid)}`}>{assigneeName}</Link> : <span>{assigneeName}</span>}{item.assigned_to_email ? <a href={`mailto:${item.assigned_to_email}`}>{item.assigned_to_email}</a> : null}{item.assigned_to_phone ? <a href={`tel:${item.assigned_to_phone}`}>{item.assigned_to_phone}</a> : null}<span data-overdue={overdue || undefined}>{item.due_at ? `Due ${dateTime(item.due_at)}` : "No due time"}</span></div>
+    </div>
+  </li>;
 }
 
 function CustomsRow({ item, busy, onToggle }: { item: CustomsStep; busy: boolean; onToggle: () => void }) {
-  return <div className="flex items-start gap-3 py-3.5"><button type="button" disabled={busy} onClick={onToggle} className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[var(--app-radius)] border ${item.completed ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : "border-[var(--admin-line)] bg-white text-transparent"}`} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11}/></button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className={`text-[length:var(--app-label-size)] ${item.completed ? "text-[var(--admin-faint)]" : "text-[var(--admin-ink)]"}`}>{item.title}</strong><OpsBadge tone={item.required ? "warning" : "neutral"}>{item.required ? "Required" : "Optional"}</OpsBadge><Link href={`/admin/branches/${encodeURIComponent(item.branch)}`}><OpsBadge>{item.branch}</OpsBadge></Link></div>{item.detail ? <p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{item.detail}</p> : null}<p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{item.completed ? `Cleared ${dateTime(item.completed_at)}${item.completed_by ? ` by ${item.completed_by}` : ""}` : `Added ${dateTime(item.created_at)}`}</p></div></div>;
+  return <li className="job-row" data-done={item.completed || undefined}>
+    <button type="button" disabled={busy} onClick={onToggle} className="job-check" aria-pressed={item.completed} aria-label={item.completed ? `Reopen ${item.title}` : `Complete ${item.title}`}><Check size={11} strokeWidth={2} aria-hidden="true"/></button>
+    <div className="job-row-main">
+      <div className="job-row-head"><span className="job-row-title">{item.title}</span><OpsBadge tone={item.required && !item.completed ? "warning" : "neutral"}>{item.required ? "Required" : "Optional"}</OpsBadge><Link href={`/admin/branches/${encodeURIComponent(item.branch)}`} className="job-row-tag">{item.branch}</Link></div>
+      {item.detail ? <p className="job-row-detail">{item.detail}</p> : null}
+      <div className="job-row-meta"><span>{item.completed ? `Cleared ${dateTime(item.completed_at)}${item.completed_by ? ` by ${item.completed_by}` : ""}` : `Added ${dateTime(item.created_at)}`}</span></div>
+    </div>
+  </li>;
 }
 
 function DocumentRow({ document, jobReference, documentBusy, role, currentUserEmail, onDelete }: { document: ShipmentDocument; jobReference: string; documentBusy: boolean; role: KcplStaffRole; currentUserEmail: string; onDelete: () => void }) {
@@ -458,5 +451,16 @@ function DocumentRow({ document, jobReference, documentBusy, role, currentUserEm
   const controlLabel = expired ? "Expired" : status.replaceAll("_", " ").replace(/^./, (value) => value.toUpperCase());
   const controlTone: "neutral" | "warning" | "success" | "danger" = expired || status === "rejected" ? "danger" : status === "verified" ? "success" : status === "received" || status === "under_review" ? "warning" : "neutral";
   const canDelete = role === "management" || (role === "operations" && status === "received" && currentUserEmail.trim().toLowerCase() === (document.uploaded_by_email ?? "").trim().toLowerCase());
-  return <div className="flex items-start gap-3 py-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-accent-bg)] text-[var(--admin-crimson)]"><FileText size={14}/></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><p className="min-w-0 truncate text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">{document.filename}</p><OpsBadge tone={controlTone}>{controlLabel}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{shipmentDocumentTypeLabels[document.document_type]} · {bytes(document.size_bytes)} · {dateTime(document.uploaded_at)}{document.expires_on ? ` · expires ${dateLabel(document.expires_on)}` : ""}</p><div className="mt-2 flex flex-wrap gap-1.5"><a href={`/api/admin/shipments/${encodeURIComponent(jobReference)}/documents/${document.id}`} className="ops-button" data-variant="ghost" data-size="sm"><Download size={10}/>Download</a>  <Link href={`/admin/documents?q=${encodeURIComponent(jobReference)}`} className="ops-button" data-variant="secondary" data-size="sm">Review in Vault</Link>{canDelete ? <button type="button" disabled={documentBusy} onClick={onDelete} className="ops-button" data-variant="danger" data-size="sm"><Trash2 size={10}/>Delete</button> : null}</div></div></div>;
+  return <li className="job-row">
+    <FileText size={15} strokeWidth={1.75} className="job-row-icon" aria-hidden="true"/>
+    <div className="job-row-main">
+      <div className="job-row-head"><span className="job-row-title" title={document.filename}>{document.filename}</span><OpsBadge tone={controlTone}>{controlLabel}</OpsBadge></div>
+      <div className="job-row-meta"><span>{shipmentDocumentTypeLabels[document.document_type]}</span><span>{bytes(document.size_bytes)}</span><span>{dateTime(document.uploaded_at)}</span>{document.expires_on ? <span>Expires {dateLabel(document.expires_on)}</span> : null}</div>
+    </div>
+    <div className="job-row-actions">
+      <a href={`/api/admin/shipments/${encodeURIComponent(jobReference)}/documents/${document.id}`} className="ops-button" data-variant="ghost" data-size="xs" aria-label={`Download ${document.filename}`}><Download size={13} strokeWidth={1.75} aria-hidden="true"/>Download</a>
+      <Link href={`/admin/documents?q=${encodeURIComponent(jobReference)}`} className="ops-button" data-variant="ghost" data-size="xs">Review</Link>
+      {canDelete ? <button type="button" disabled={documentBusy} onClick={onDelete} className="ops-button" data-variant="danger" data-size="xs" aria-label={`Delete ${document.filename}`}><Trash2 size={13} strokeWidth={1.75} aria-hidden="true"/>Delete</button> : null}
+    </div>
+  </li>;
 }

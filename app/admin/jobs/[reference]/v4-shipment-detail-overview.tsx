@@ -1,22 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowRight } from "lucide-react";
 import type { DigitalJobFile, JobTask } from "../../job-file";
 import type { ShipmentWorkflowReadiness } from "../../workflow-guard";
 import { shipmentStatusLabels } from "../../../shipment-types";
+import { OpsBadge, OpsFact, OpsFacts, OpsKpiRail, OpsPageHeader, OpsRailMetric, OpsSurface } from "../../operations-ui";
+import { priorityTone, statusTone } from "../../shipments/shipments-views";
 
 type RecordSection =
   | "summary" | "movement" | "tasks" | "customs" | "documents"
   | "exceptions" | "delivery" | "commercial" | "activity";
-
-function statusClass(status: DigitalJobFile["status"]) {
-  if (status === "delivered") return "is-success";
-  if (status === "exception") return "is-danger";
-  if (status === "customs_clearance" || status === "out_for_delivery") return "is-warning";
-  if (status === "in_transit" || status === "booking_confirmed") return "is-info";
-  return "is-neutral";
-}
 
 function shortDate(value: string | null) {
   if (!value) return "Not set";
@@ -146,6 +141,7 @@ export function V4ShipmentDetailOverview({
   const cost = firstCurrency ? job.cost_totals[firstCurrency as keyof typeof job.cost_totals] ?? 0 : 0;
   const profit = firstCurrency ? job.profit_totals[firstCurrency as keyof typeof job.profit_totals] ?? revenue - cost : revenue - cost;
   const margin = firstCurrency ? job.margin_percent[firstCurrency as keyof typeof job.margin_percent] : undefined;
+  const openTaskCount = job.tasks.filter((task) => !task.completed).length;
 
   // These were anchor links into one 7,000px page: the bar looked like tabs but
   // only jump-scrolled, so every section stayed mounted and the record could
@@ -164,144 +160,131 @@ export function V4ShipmentDetailOverview({
     ["Activity", "activity"],
   ] as const;
 
-  return <div className="shipment-detail-v2" data-section={section}>
-    <section className="shipment-detail-summary">
-      <div className="shipment-detail-inner">
-        <header className="shipment-detail-header">
-          <div className="shipment-detail-heading">
-            <p className="shipment-detail-eyebrow">Digital job file · {job.reference}</p>
-            <div className="shipment-detail-title-row">
-              <h1>{job.origin || "Origin"} → {job.destination || "Destination"}</h1>
-              <span className={`shipment-status ${statusClass(job.status)}`}>{shipmentStatusLabels[job.status]}</span>
-            </div>
-            <p className="shipment-detail-subline">{job.customer_name || "Customer not linked"} · {job.carrier || "Carrier not set"} · {job.mode || "Mode not set"}{job.carrier_reference ? ` · ${job.carrier_reference}` : ""}</p>
-            <p className="shipment-detail-meta">ETA {shortDate(job.eta)} · Owner {owner} · {job.primary_branch}</p>
-            <div className="shipment-header-facts" aria-label="Shipment summary facts">
-              <span><strong>{job.current_location || "Location pending"}</strong><small>Current location</small></span>
-              <span><strong>{job.priority}</strong><small>Priority</small></span>
-              <span><strong>{readiness.open_tasks} open</strong><small>Operational work</small></span>
-            </div>
-          </div>
-          <div className="shipment-detail-actions">
-            <Link className="ops-button" data-variant="secondary" data-size="sm" href={`/admin/delivery?shipment=${encodeURIComponent(job.reference)}`}>Delivery & POD</Link>
-            <Link className="ops-button" data-variant="primary" data-size="sm" data-primary href={`/admin/notifications?shipment=${encodeURIComponent(job.reference)}`}>Customer update</Link>
-          </div>
-        </header>
-      </div>
-    </section>
+  // Arrow keys move between record tabs (WAI-ARIA tabs pattern).
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const index = navigation.findIndex(([, key]) => key === section);
+    const nextIndex = event.key === "Home" ? 0
+      : event.key === "End" ? navigation.length - 1
+        : event.key === "ArrowRight" ? (index + 1) % navigation.length
+          : (index - 1 + navigation.length) % navigation.length;
+    event.preventDefault();
+    setSection(navigation[nextIndex][1]);
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role='tab']")[nextIndex]?.focus();
+  }
 
-    <section className="shipment-record-context" aria-label="Shipment route context">
-      <div className="shipment-detail-inner">
-        <div className="shipment-route-line">
-          <span className="shipment-route-node"><small>Origin</small><strong>{job.origin || "Not set"}</strong></span>
-          <span className="shipment-route-connector" aria-hidden="true"/>
-          <span className="shipment-route-node"><small>Destination</small><strong>{job.destination || "Not set"}</strong></span>
-        </div>
-        <div className="shipment-context-facts">
-          <span><small>Carrier</small><strong>{job.carrier || "Not assigned"}</strong></span>
-          <span><small>Mode</small><strong>{job.mode || "Not set"}</strong></span>
-          <span><small>Reference</small><strong className="shipment-context-mono">{job.carrier_reference || job.internal_reference || "Not set"}</strong></span>
-        </div>
-      </div>
-    </section>
+  const delivery = readiness.proof_of_delivery_present ? "POD on file" : job.status === "delivered" ? "POD missing" : "Not reached";
 
-    <nav className="shipment-record-nav" aria-label="Shipment record sections">
-      <div className="shipment-detail-inner shipment-record-nav-inner ops-scroll-x" role="tablist">
+  return <div className="shipment-detail-v2 job-record" data-section={section} data-surface-density="compact">
+    <OpsPageHeader
+      eyebrow={<span className="ops-mono job-record-kicker">{job.reference}{job.quote_reference ? ` · ${job.quote_reference}` : ""}</span>}
+      title={<span className="job-record-title">{job.origin || "Origin"} → {job.destination || "Destination"}<OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
+      description={`${job.customer_name || "Customer not linked"} · ${job.carrier || "Carrier not set"} · ${job.mode || "Mode not set"}${job.carrier_reference ? ` · ${job.carrier_reference}` : ""}`}
+      meta={<><span>ETA {shortDate(job.eta)}</span><span>Owner {owner}</span><span>{job.primary_branch}</span></>}
+      actions={(
+        <>
+          <Link className="ops-button" data-variant="secondary" data-size="md" href={`/admin/delivery?shipment=${encodeURIComponent(job.reference)}`}>Delivery & POD</Link>
+          <Link className="ops-button" data-variant="primary" data-size="md" href={`/admin/notifications?shipment=${encodeURIComponent(job.reference)}`}>Customer update</Link>
+        </>
+      )}
+    />
+
+    <nav className="job-record-tabs" aria-label="Shipment record sections">
+      <div className="job-record-tabs-inner" role="tablist" aria-label="Shipment record sections">
         {navigation.map(([label, key]) => (
           <button
             key={key}
             type="button"
             role="tab"
+            className="ops-scope-tab"
             aria-selected={section === key}
+            tabIndex={section === key ? 0 : -1}
             data-active={section === key || undefined}
             onClick={() => setSection(key)}
+            onKeyDown={onTabKeyDown}
           >
             {label}
+            {key === "tasks" && openTaskCount ? <span className="ops-scope-count">{openTaskCount}</span> : null}
           </button>
         ))}
       </div>
     </nav>
 
-    <section className="shipment-detail-summary">
-      <div id="shipment-overview" className="shipment-detail-inner shipment-overview-layout shipment-detail-anchor">
-        <div className="shipment-overview-main">
-          <section className="shipment-summary-section shipment-flow-section">
-            <div className="shipment-section-heading">
-              <p>Shipment flow</p>
-              <h2>{currentStage ? currentStage.title : shipmentStatusLabels[job.status]}</h2>
-              {currentStage ? <span>{currentStage.detail}</span> : null}
-            </div>
-            <div className="shipment-stage-line" aria-label="Shipment workflow">
-              {readiness.stages.map((stage) => <Link key={stage.id} href={stageHref(stage.id, job.reference)} data-state={stage.state}>{stage.label}</Link>)}
-            </div>
-          </section>
+    <div className="job-record-body">
+      <section id="shipment-overview" className="shipment-detail-anchor job-summary" aria-label="Shipment summary">
+        {/* Readiness as one rail, the same language as the registers. */}
+        <OpsKpiRail label="Record readiness">
+          <OpsRailMetric label="Open tasks" value={readiness.open_tasks} tone={readiness.open_tasks ? "warning" : "neutral"} onClick={() => setSection("tasks")} title="Open the Tasks tab"/>
+          <OpsRailMetric label="Customs" value={customsValue(readiness)} tone={readiness.customs_ready ? "success" : readiness.customs_release_required ? "warning" : "neutral"} onClick={() => setSection("customs")} title="Open the Customs tab"/>
+          <OpsRailMetric label="Documents" value={readiness.document_pack_ready ? "Ready" : `${verifiedDocuments}/${requiredDocuments.length} verified`} tone={readiness.document_pack_ready ? "success" : "warning"} onClick={() => setSection("documents")} title="Open the Documents tab"/>
+          <OpsRailMetric label="Delivery" value={delivery} tone={readiness.proof_of_delivery_present ? "success" : job.status === "delivered" ? "danger" : "neutral"} onClick={() => setSection("delivery")} title="Open the Delivery tab"/>
+          <OpsRailMetric label="Gates" value={readiness.blockers.length ? `${readiness.blockers.length} open` : "Clear"} tone={readiness.blockers.length ? "warning" : "success"}/>
+        </OpsKpiRail>
 
-          <div className="shipment-summary-grid">
-            <section className="shipment-summary-section">
-              <div className="shipment-section-heading"><p>Key details</p><h2>Shipment</h2></div>
-              <div className="shipment-detail-register">
-                <DetailRow label="Mode" value={job.mode || "Not set"}/>
-                <DetailRow label="Current location" value={job.current_location || "Not updated"}/>
-                <DetailRow label="Carrier" value={job.carrier || "Not set"}/>
-                <DetailRow label="Carrier reference" value={job.carrier_reference || "Not set"}/>
-                <DetailRow label="Priority" value={job.priority}/>
-                <DetailRow label="Internal reference" value={job.internal_reference || "Not set"}/>
-              </div>
-            </section>
+        <div className="job-summary-grid">
+          <div className="job-summary-main">
+            <OpsSurface title="Workflow" description={currentStage ? <><strong>{currentStage.title}</strong> · {currentStage.detail}</> : shipmentStatusLabels[job.status]}>
+              <ol className="job-stepper" aria-label="Shipment workflow">
+                {readiness.stages.map((stage) => (
+                  <li key={stage.id} data-state={stage.state}>
+                    <Link href={stageHref(stage.id, job.reference)} aria-current={stage.state === "current" ? "step" : undefined}>
+                      <span className="job-stepper-dot" aria-hidden="true"/>
+                      {stage.label}
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </OpsSurface>
 
-            <section className="shipment-summary-section">
-              <div className="shipment-section-heading"><p>Readiness</p><h2>Open work</h2></div>
-              <div className="shipment-detail-register">
-                <ControlRow label="Tasks" value={readiness.open_tasks ? `${readiness.open_tasks} open` : "Clear"} tone={readiness.open_tasks ? "warning" : "success"}/>
-                <ControlRow label="Customs" value={customsValue(readiness)} tone={readiness.customs_ready ? "success" : readiness.customs_release_required ? "warning" : "neutral"}/>
-                <ControlRow label="Documents" value={readiness.document_pack_ready ? "Ready" : `${verifiedDocuments}/${requiredDocuments.length} verified`} tone={readiness.document_pack_ready ? "success" : "warning"}/>
-                <ControlRow label="Delivery" value={readiness.proof_of_delivery_present ? "POD on file" : job.status === "delivered" ? "POD missing" : "Not reached"} tone={readiness.proof_of_delivery_present ? "success" : job.status === "delivered" ? "danger" : "neutral"}/>
-              </div>
-            </section>
+            <OpsSurface title="Record details">
+              <OpsFacts columns={2}>
+                <OpsFact label="Current location">{job.current_location || "Not updated"}</OpsFact>
+                <OpsFact label="Priority"><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></OpsFact>
+                <OpsFact label="Internal ref">{job.internal_reference || "Not set"}</OpsFact>
+                <OpsFact label="Branch">{job.primary_branch}</OpsFact>
+              </OpsFacts>
+            </OpsSurface>
+
+            {job.can_view_costs ? (
+              <OpsSurface title="Job economics" action={<Link href={`/admin/jobs/${encodeURIComponent(job.reference)}/profitability`} className="ops-button" data-variant="ghost" data-size="xs">Profitability<ArrowRight size={12} strokeWidth={1.75} aria-hidden="true"/></Link>}>
+                {firstCurrency ? (
+                  <dl className="job-stat-row">
+                    <div><dt>Revenue</dt><dd>{money(revenue, firstCurrency)}</dd></div>
+                    <div><dt>Cost</dt><dd>{money(cost, firstCurrency)}</dd></div>
+                    <div><dt>Margin</dt><dd>{money(profit, firstCurrency)}{typeof margin === "number" ? <span> · {margin.toFixed(1)}%</span> : null}</dd></div>
+                  </dl>
+                ) : <p className="ops-inspector-hint">No commercial totals recorded.</p>}
+              </OpsSurface>
+            ) : null}
           </div>
 
-          {job.can_view_costs ? <section className="shipment-summary-section shipment-financial-summary">
-            <div className="shipment-section-heading"><p>Financial snapshot</p><h2>Job economics</h2></div>
-            {firstCurrency ? <div className="shipment-financial-grid"><Metric label="Revenue" value={money(revenue, firstCurrency)}/><Metric label="Cost" value={money(cost, firstCurrency)}/><Metric label="Margin" value={`${money(profit, firstCurrency)}${typeof margin === "number" ? ` · ${margin.toFixed(1)}%` : ""}`}/></div> : <p className="shipment-empty-line">No commercial totals recorded.</p>}
-          </section> : null}
+          <aside className="ops-inspector job-next" aria-label="Next action">
+            <div className="ops-inspector-body">
+              <section className="ops-inspector-section">
+                <div className="ops-inspector-section-head"><h3>Next action</h3></div>
+                <strong className="job-next-title">{next.title}</strong>
+                <p className="ops-inspector-hint mt-1">{next.detail}</p>
+                <a className="ops-button mt-3" data-variant="secondary" data-size="sm" href={next.href}>Open action<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></a>
+              </section>
+              <section className="ops-inspector-section">
+                <OpsFacts>
+                  <OpsFact label="Owner" warning={owner === "Unassigned"}>{owner}</OpsFact>
+                  <OpsFact label="ETA">{shortDate(job.eta)}</OpsFact>
+                  <OpsFact label="Current gates" warning={readiness.blockers.length > 0}>{readiness.blockers.length ? `${readiness.blockers.length} open` : "Clear"}</OpsFact>
+                  <OpsFact label="Status">{shipmentStatusLabels[job.status]}</OpsFact>
+                </OpsFacts>
+              </section>
+              <nav className="job-next-links" aria-label="Related workspaces">
+                <Link href={`/admin/pickups?shipment=${encodeURIComponent(job.reference)}`}>Pickup</Link>
+                <Link href={`/admin/visibility?shipment=${encodeURIComponent(job.reference)}`}>Tracking</Link>
+                <Link href={`/admin/freight-documents?shipment=${encodeURIComponent(job.reference)}`}>Documents</Link>
+              </nav>
+            </div>
+          </aside>
         </div>
+      </section>
 
-        <aside className="shipment-next-rail">
-          <p className="shipment-detail-eyebrow">Next</p>
-          <h2>{next.title}</h2>
-          <p className="shipment-next-detail">{next.detail}</p>
-          <a className="shipment-next-link ops-button" data-variant="primary" href={next.href}>Open action</a>
-          <dl>
-            <RailItem label="Owner" value={owner}/>
-            <RailItem label="ETA" value={shortDate(job.eta)}/>
-            <RailItem label="Current gates" value={readiness.blockers.length ? `${readiness.blockers.length} open` : "Clear"} tone={readiness.blockers.length ? "warning" : "success"}/>
-            <RailItem label="Status" value={shipmentStatusLabels[job.status]}/>
-          </dl>
-          <div className="shipment-next-links">
-            <Link href={`/admin/pickups?shipment=${encodeURIComponent(job.reference)}`}>Pickup</Link>
-            <Link href={`/admin/visibility?shipment=${encodeURIComponent(job.reference)}`}>Tracking</Link>
-            <Link href={`/admin/freight-documents?shipment=${encodeURIComponent(job.reference)}`}>Documents</Link>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <div className="shipment-detail-record">{children}</div>
+      {children}
+    </div>
   </div>;
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return <div className="shipment-register-row"><span>{label}</span><strong>{value}</strong></div>;
-}
-
-function ControlRow({ label, value, tone }: { label: string; value: string; tone: "neutral" | "success" | "warning" | "danger" }) {
-  return <div className="shipment-register-row" data-tone={tone}><span>{label}</span><strong>{value}</strong></div>;
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return <div><span>{label}</span><strong>{value}</strong></div>;
-}
-
-function RailItem({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "success" | "warning" }) {
-  return <div data-tone={tone}><dt>{label}</dt><dd>{value}</dd></div>;
 }

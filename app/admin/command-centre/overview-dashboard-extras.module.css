@@ -15,10 +15,6 @@
   gap: 5px;
 }
 
-.createFieldWide {
-  grid-column: 1 / -1;
-}
-
 .createField label {
   color: var(--admin-muted);
   font-size: 10px;
@@ -76,14 +72,15 @@
 
 .selectionSummary {
   display: inline-flex;
-  min-height: 28px;
+  min-height: 20px;
   align-items: center;
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--admin-surface-soft);
-  padding: 0 9px;
+  padding: 0 7px;
   color: var(--admin-muted);
   font-size: 10px;
   font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 640px) {
@@ -91,8 +88,26 @@
   .createMetrics {
     grid-template-columns: 1fr;
   }
-
-  .createFieldWide {
-    grid-column: auto;
-  }
 }
+
+/* ── Shipments pulse (live register widget) ─────────────────────────── */
+.pulseCard { min-width: 0; }
+.pulseLive { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: var(--admin-success); animation: pulseLive 2.4s var(--app-ease-out) infinite; }
+.pulseBody { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pulseRow { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-right: 1px solid var(--overview-line); color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.pulseRow:last-child { border-right: 0; }
+.pulseRow:hover { background: var(--overview-canvas); }
+.pulseRow:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.pulseLabel { color: var(--overview-muted); font-size: 10.5px; font-weight: 570; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pulseValue { color: var(--overview-ink); font-size: 22px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.pulseValue[data-zero] { color: var(--overview-faint); }
+.pulseValue[data-tone="danger"]:not([data-zero]) { color: var(--overview-danger); }
+.pulseValue[data-tone="warning"]:not([data-zero]) { color: var(--overview-warning); }
+.pulseFoot { display: flex; flex-wrap: wrap; gap: 4px 14px; border-top: 1px solid var(--overview-line); padding: 7px 14px; }
+.pulseChange { display: inline-flex; align-items: center; gap: 6px; color: var(--overview-ink); font-size: 11.5px; font-weight: 500; text-decoration: none; min-width: 0; }
+.pulseChange:hover { text-decoration: underline; }
+.pulseChange .pulseLive { position: static; }
+.pulseQuiet { color: var(--overview-faint); font-size: 11.5px; }
+@keyframes pulseLive { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .pulseLive { animation: none; } }
+@media (max-width: 900px) { .pulseBody { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pulseRow:nth-child(2) { border-right: 0; } .pulseRow:nth-child(-n+2) { border-bottom: 1px solid var(--overview-line); } }

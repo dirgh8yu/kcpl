@@ -1,4 +1,3 @@
-import Link from "next/link";
 import "./job-file-premium.css";
 import { getAdminAccess } from "../../admin-auth";
 import { getDeliveryControl } from "../../delivery/delivery-control.server";
@@ -22,7 +21,7 @@ import { V4ShipmentDetailOverview } from "./v4-shipment-detail-overview";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Shipment Detail | KCPL Operations", robots: { index: false, follow: false } };
 
-export default async function JobFilePage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ returnTo?: string | string[] }> }) {
+export default async function JobFilePage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ returnTo?: string | string[]; a?: string | string[] }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Digital Job Files are available only to authorised KCPL staff."/>;
 
@@ -42,8 +41,9 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>
   );
   const { reference } = await params;
-  const { returnTo: requestedReturn } = await searchParams;
-  const returnTo = typeof requestedReturn === "string" && (requestedReturn === "/admin/shipments" || requestedReturn.startsWith("/admin/shipments?")) ? requestedReturn : "/admin/shipments";
+  const { a: requestedActivity } = await searchParams;
+  // Deep link from the shipments inspector (?a=<activity item id>).
+  const activityHighlight = typeof requestedActivity === "string" ? requestedActivity : null;
   const shipmentAccess = await checkShipmentBranchAccess(reference, staff);
   if (shipmentAccess.kind === "unavailable") return shellGate("Job File unavailable", "Firestore is not available for this deployment.");
   if (shipmentAccess.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
@@ -68,13 +68,11 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     .filter((branch) => staffCanAccessBranch(staff, branch));
 
   return <OperationsShell {...shellProps}>
-    <div className="app-record-return"><Link href={returnTo}>← Back to shipments</Link></div>
     <V4ShipmentDetailOverview job={result.job} readiness={workflow.readiness}>
-      <div id="shipment-work" className="shipment-detail-anchor shipment-job-file-embedded">
+      <div id="shipment-work" className="shipment-detail-anchor job-record-workspace">
         <JobFileWorkspace
           initialJob={result.job}
           initialReadiness={workflow.readiness}
-          returnTo={returnTo}
           role={staff.permissions.role}
           canManageBranches={staff.permissions.role === "management"}
           canOverride={staff.permissions.role === "management"}
@@ -86,7 +84,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
         />
       </div>
 
-      <div id="shipment-exceptions" className="shipment-detail-anchor shipment-detail-block">
+      <div id="shipment-exceptions" className="shipment-detail-anchor job-record-block">
         {exceptionCases.kind === "ready" && exceptionBranches.length ? (
           <ShipmentExceptionControl
             reference={result.job.reference}
@@ -99,7 +97,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
         ) : <QuietSection eyebrow="Exceptions" title="Exception register unavailable" detail="No exception register is available for the branches in your current access scope."/>}
       </div>
 
-      <div id="shipment-delivery" className="shipment-detail-anchor shipment-detail-block">
+      <div id="shipment-delivery" className="shipment-detail-anchor job-record-block">
         {delivery.kind === "ready" ? (
           <DeliveryPodControl
             reference={result.job.reference}
@@ -115,7 +113,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
         ) : <QuietSection eyebrow="Delivery" title="Delivery control unavailable" detail="Delivery and POD state could not be loaded for this shipment."/>}
       </div>
 
-      <div id="shipment-customer-access" className="shipment-detail-anchor shipment-detail-block">
+      <div id="shipment-customer-access" className="shipment-detail-anchor job-record-block">
         {customerAccess.kind === "ready" ? (
           <CustomerAccessPanel
             summaries={customerAccess.summaries}
@@ -125,18 +123,18 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
         ) : <QuietSection eyebrow="Customer portal" title="Document access unavailable" detail="The customer document access log could not be loaded for this shipment."/>}
       </div>
 
-      <div id="shipment-activity" className="shipment-detail-anchor shipment-detail-block shipment-activity-block">
-        {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline}/> : <QuietSection eyebrow="Activity" title="Activity unavailable" detail="The shipment activity timeline could not be loaded."/>}
+      <div id="shipment-activity" className="shipment-detail-anchor job-record-block">
+        {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline} highlightId={activityHighlight}/> : <QuietSection eyebrow="Activity" title="Activity unavailable" detail="The shipment activity timeline could not be loaded."/>}
       </div>
     </V4ShipmentDetailOverview>
   </OperationsShell>;
 }
 
+// Compact unavailable state: a title and one sentence, then stop.
 function QuietSection({ eyebrow, title, detail }: { eyebrow: string; title: string; detail: string }) {
-  return <section className="shipment-quiet-section">
-    <p>{eyebrow}</p>
+  return <section className="ops-surface job-quiet-section" aria-label={eyebrow}>
     <h2>{title}</h2>
-    <span>{detail}</span>
+    <p>{detail}</p>
   </section>;
 }
 

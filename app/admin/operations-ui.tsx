@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNode } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -5,6 +6,25 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { ChevronRight, Search } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
+export {
+  OpsActiveFilters,
+  OpsFact,
+  OpsFacts,
+  OpsFilterChoices,
+  OpsFilterMenu,
+  OpsFilterSelect,
+  OpsInlineAlert,
+  OpsInspectorHeader,
+  OpsInspectorNote,
+  OpsInspectorSection,
+  OpsKpiRail,
+  OpsRailMetric,
+  OpsRegisterToolbar,
+  OpsScopeTabs,
+  type OpsActiveFilter,
+  type OpsFilterOption,
+  type OpsScopeItem,
+} from "./ops-register";
 export { useAdminPortalContainer } from "./use-admin-portal-container";
 export const OpsDialog = DialogPrimitive;
 export const OpsPopover = PopoverPrimitive;
@@ -26,7 +46,7 @@ export function OpsPageHeader({
   actions,
   children,
 }: {
-  eyebrow?: string;
+  eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   meta?: ReactNode;
@@ -60,6 +80,7 @@ export function OpsSurface({
   bodyClassName,
   flush = false,
   priority = "normal",
+  density = "default",
 }: {
   id?: string;
   title?: ReactNode;
@@ -71,9 +92,11 @@ export function OpsSurface({
   bodyClassName?: string;
   flush?: boolean;
   priority?: "normal" | "info" | "success" | "warning" | "danger";
+  /** "compact" is the register-era panel: 14px title, one quiet line, tight body, compact empty state. */
+  density?: "default" | "compact";
 }) {
   return (
-    <section id={id} className={cx("ops-surface", flush && "ops-surface-flush", className)} data-priority={priority}>
+    <section id={id} className={cx("ops-surface", flush && "ops-surface-flush", className)} data-priority={priority} data-density={density === "compact" ? "compact" : undefined}>
       {title || eyebrow || description || action ? (
         <div className="ops-surface-header">
           <div className="min-w-0">
@@ -222,7 +245,8 @@ export function OpsButton({
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   tone?: "primary" | "secondary" | "ghost" | "danger";
-  size?: "sm" | "md";
+  /** "xs" is the in-row size for dense registers (28px). */
+  size?: "xs" | "sm" | "md";
 }) {
   const resolvedVariant = variant ?? tone ?? "secondary";
   return <button {...props} type={type} className={cx("ops-button", className)} data-variant={resolvedVariant} data-size={size}>{children}</button>;
@@ -256,6 +280,11 @@ export type OpsTimelineEntry = {
   body?: ReactNode;
   tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
   icon?: ReactNode;
+  /** Deep-linked entry: rendered with a highlight treatment. */
+  highlight?: boolean;
+  /** This entry is the first NEW one since the viewer's last visit: a "since
+   * your last visit" divider renders immediately above it. */
+  sinceLastVisit?: boolean;
 };
 
 export function OpsTimeline({ entries, empty }: { entries: OpsTimelineEntry[]; empty?: ReactNode }) {
@@ -265,7 +294,9 @@ export function OpsTimeline({ entries, empty }: { entries: OpsTimelineEntry[]; e
   return (
     <ol className="ops-timeline">
       {entries.map((entry) => (
-        <li key={entry.id} className="ops-timeline-item" data-tone={entry.tone ?? "neutral"}>
+        <Fragment key={entry.id}>
+          {entry.sinceLastVisit ? <li className="ops-timeline-visit-divider" aria-hidden="true"><span>Since your last visit</span></li> : null}
+          <li className="ops-timeline-item" data-tone={entry.tone ?? "neutral"} data-highlight={entry.highlight || undefined} data-entry-id={entry.id}>
           <span className="ops-timeline-marker" aria-hidden="true">{entry.icon}</span>
           <div className="ops-timeline-content">
             <div className="ops-timeline-head">
@@ -274,7 +305,8 @@ export function OpsTimeline({ entries, empty }: { entries: OpsTimelineEntry[]; e
             </div>
             {entry.body ? <div className="ops-timeline-body">{entry.body}</div> : null}
           </div>
-        </li>
+          </li>
+        </Fragment>
       ))}
     </ol>
   );

@@ -10,7 +10,6 @@ import {
   ChevronRight,
   CircleAlert,
   Clock3,
-  FileCheck2,
   FileText,
   MoreHorizontal,
   PackageCheck,
@@ -18,9 +17,7 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
-  Truck,
   UserRoundX,
-  Users,
   X,
 } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
@@ -62,16 +59,10 @@ type CreateOrderResponse = {
   order?: { id: string };
 };
 
+type Metric = { href: string; label: string; value: number; tone: Tone };
+
 function owner(job: CommandCentreJob) {
   return job.assigned_to_name || job.assigned_to_email || (job.assigned_to_uid ? "Assigned staff" : "Unassigned");
-}
-
-function initials(value: string) {
-  return value.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "?";
-}
-
-function route(job: Pick<CommandCentreJob, "origin" | "destination">) {
-  return `${job.origin || "Origin"} → ${job.destination || "Destination"}`;
 }
 
 function formatOperationalDate(value: string) {
@@ -94,28 +85,6 @@ function formatNepalTime(value: string) {
     minute: "2-digit",
     timeZone: "Asia/Kathmandu",
   }).format(parsed);
-}
-
-/**
- * The line under the greeting. `critical` is null when the blocker count could
- * not be loaded, which is not the same as zero blockers — say so rather than
- * claiming the board is clear.
- */
-function heroSummary(critical: number | null, attention: number) {
-  const attentionText = `${attention} shipment${attention === 1 ? "" : "s"} need attention`;
-  if (critical === null) return attention > 0 ? `Blocker count unavailable · ${attentionText}` : "Blocker count unavailable.";
-  if (critical > 0) return `${critical} critical blocker${critical === 1 ? "" : "s"} · ${attentionText}`;
-  if (attention > 0) return `No critical blockers · ${attentionText}`;
-  return "Nothing is blocking the board right now.";
-}
-
-function greeting(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Good morning";
-  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Asia/Kathmandu" }).format(parsed));
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
 }
 
 function relativeAge(value: string, anchor: string) {
@@ -165,15 +134,6 @@ function statusTone(status: ShipmentStatus): Tone {
   return "neutral";
 }
 
-function toneIconClass(tone: Tone) {
-  if (tone === "danger") return styles.dangerIcon;
-  if (tone === "warning") return styles.warningIcon;
-  if (tone === "success") return styles.successIcon;
-  if (tone === "info") return styles.infoIcon;
-  if (tone === "violet") return styles.violetIcon;
-  return styles.neutralIcon;
-}
-
 function statusClass(tone: Tone) {
   if (tone === "danger") return styles.statusDanger;
   if (tone === "warning") return styles.statusWarning;
@@ -200,30 +160,109 @@ function money(amount: number, currency: string) {
   }
 }
 
-function Metric({ href, label, value, icon, tone }: { href: string; label: string; value: number; icon: ReactNode; tone: Tone }) {
+const PULSE_POLL_MS = 60_000;
+
+/** Compact live shipments summary for the Overview. Polls the same
+ * register-refresh endpoint the shipments workspace uses — no new backend —
+ * and keeps its own quiet state; failures and hidden tabs leave the last
+ * server-rendered numbers in place. Rows list the shipments that changed
+ * status since the previous snapshot, so the widget earns its "live" label. */
+function ShipmentsPulse({ initialData, returnTo }: { initialData: CommandCentreData; returnTo: string }) {
+  const [snapshot, setSnapshot] = useState(initialData);
+  const [changes, setChanges] = useState<Array<{ reference: string; to: ShipmentStatus }>>([]);
+  const appliedAtRef = useRef(Date.parse(initialData.generated_at) || 0);
+  const knownStatusesRef = useRef(new Map(initialData.jobs.map((job) => [job.reference, job.status])));
+
+  useEffect(() => {
+    let disposed = false;
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetch("/api/admin/shipments/queue", { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const result = await response.json() as { ok?: boolean; data?: CommandCentreData };
+          if (disposed || !result.ok || !result.data) return;
+          const incoming = result.data;
+          const generatedAt = Date.parse(incoming.generated_at) || 0;
+          if (generatedAt <= appliedAtRef.current) return;
+          // A partial snapshot must never replace a complete one.
+          if (!initialData.partial && incoming.partial) return;
+          appliedAtRef.current = generatedAt;
+          const nextChanges: Array<{ reference: string; to: ShipmentStatus }> = [];
+          for (const job of incoming.jobs) {
+            const before = knownStatusesRef.current.get(job.reference);
+            if (before && before !== job.status) nextChanges.push({ reference: job.reference, to: job.status });
+          }
+          knownStatusesRef.current = new Map(incoming.jobs.map((job) => [job.reference, job.status]));
+          setChanges(nextChanges.slice(0, 3));
+          setSnapshot(incoming);
+        })
+        .catch(() => { /* the widget keeps the last good snapshot */ });
+    };
+    const timer = window.setInterval(poll, PULSE_POLL_MS);
+    const onVisible = () => { if (document.visibilityState === "visible") poll(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { disposed = true; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
+  }, [initialData.partial]);
+
+  const active = snapshot.jobs.filter((job) => job.status !== "delivered");
+  const inTransit = active.filter((job) => job.status === "in_transit").length;
+  const outForDelivery = active.filter((job) => job.status === "out_for_delivery").length;
+  const customsHold = active.filter((job) => job.status === "customs_clearance").length;
+  const attention = active.filter(shipmentNeedsAttention).length;
+  const rows: Array<{ label: string; value: number; tone: Tone; href: string }> = [
+    { label: "In transit", value: inTransit, tone: "info", href: "/admin/shipments?status=in_transit" },
+    { label: "Delivery", value: outForDelivery, tone: "violet", href: "/admin/shipments?status=out_for_delivery" },
+    { label: "Customs", value: customsHold, tone: "warning", href: "/admin/shipments?status=customs_clearance" },
+    { label: "Attention", value: attention, tone: "danger", href: "/admin/shipments?attention=1" },
+  ];
+
   return (
-    <Link href={href} className={styles.metric}>
-      <span className={styles.metricLabel}>
-        <span className={`${styles.metricDot} ${toneIconClass(tone)}`}>{icon}</span>
-        <span className={styles.metricLabelText}>{label}</span>
-      </span>
-      <strong className={styles.metricValue}>{value}</strong>
-    </Link>
+    <section className={`${styles.card} ${extras.pulseCard}`} aria-labelledby="pulse-title">
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}><h2 id="pulse-title">Shipments pulse</h2><span className={extras.pulseLive} aria-hidden="true" /></div>
+        <Link className={styles.headAction} href="/admin/shipments">Open register <ArrowRight size={13} strokeWidth={1.8} /></Link>
+      </div>
+      <div className={extras.pulseBody}>
+        {rows.map((row) => (
+          <Link key={row.label} href={row.href} className={extras.pulseRow}>
+            <span className={extras.pulseLabel}>{row.label}</span>
+            <span className={extras.pulseValue} data-tone={row.tone} data-zero={row.value === 0 || undefined}>{row.value}</span>
+          </Link>
+        ))}
+      </div>
+      <div className={extras.pulseFoot}>
+        {changes.length
+          ? changes.map((change) => (
+            <Link key={change.reference} href={jobHref(change.reference, returnTo)} className={extras.pulseChange}>
+              <span className={extras.pulseLive} aria-hidden="true" />
+              <span className={styles.monoRef}>{change.reference}</span> → {shipmentStatusLabels[change.to]}
+            </Link>
+          ))
+          : <span className={extras.pulseQuiet}>{active.length} active · live every minute</span>}
+      </div>
+    </section>
   );
 }
 
-function TodayItem({ href, label, value, icon, tone }: { href: string; label: string; value: number | null; icon: ReactNode; tone: Tone }) {
+function KpiRail({ metrics }: { metrics: Metric[] }) {
   return (
-    <Link href={href} className={styles.todayItem}>
-      <span className={`${styles.todayItemIcon} ${toneIconClass(tone)}`}>{icon}</span>
-      <strong>{label}</strong>
-      <span className={styles.todayItemCount}>{value === null ? "—" : value}</span>
-      <ChevronRight size={13} strokeWidth={1.8} className={styles.metricChevron} aria-hidden="true" />
-    </Link>
+    <section className={styles.kpiRail} aria-label="Operational pulse">
+      {metrics.map((metric) => (
+        <Link key={metric.label} href={metric.href} className={styles.kpiCell} data-tone={metric.tone} data-zero={metric.value === 0 || undefined}>
+          <span className={styles.kpiLabel}>{metric.label}</span>
+          <span className={styles.kpiValue}>{metric.value}</span>
+        </Link>
+      ))}
+    </section>
   );
 }
 
-function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentreJob[]; total: number; returnTo: string; generatedAt: string }) {
+/**
+ * The operational work queue. Rows stay records, not cards; the empty state is
+ * a single quiet line because an empty queue is good news, not a feature.
+ */
+function WorkQueue({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentreJob[]; total: number; returnTo: string; generatedAt: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const allVisibleSelected = jobs.length > 0 && jobs.every((job) => selected.has(job.reference));
 
@@ -246,20 +285,21 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
   }
 
   return (
-    <section className={styles.card} aria-labelledby="attention-title">
-      <div className={styles.cardHeader}>
-        <div>
-          <div className={styles.cardTitleRow}><h2 id="attention-title">Attention required</h2><span className={styles.countBadge}>{total}</span>{selected.size ? <span className={extras.selectionSummary}>{selected.size} selected</span> : null}</div>
-          <p>Shipments that need action</p>
+    <section className={styles.card} aria-label="Attention required">
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}>
+          <h2>Work queue</h2>
+          <span className={`${styles.headCount} ${total ? styles.headCountAlert : undefined}`}>{total}</span>
+          {selected.size ? <span className={extras.selectionSummary}>{selected.size} selected</span> : null}
         </div>
-        <Link className={styles.secondaryButton} href="/admin/shipments?attention=1">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
+        <Link className={styles.headAction} href="/admin/shipments?attention=1">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
       {jobs.length ? (
         <div className={styles.tableWrap}>
           <table className={styles.table} aria-label="Shipments requiring attention">
             <thead><tr>
               <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
-              <th>Reference</th><th>Customer</th><th>Route</th><th>Status</th><th>Blocker / Next action</th><th>Owner</th><th>Age</th><th><span className={styles.srOnly}>Actions</span></th>
+              <th>Reference</th><th>Customer</th><th>Status</th><th>Blocker</th><th>Owner</th><th>Age</th><th><span className={styles.srOnly}>Actions</span></th>
             </tr></thead>
             <tbody>
               {jobs.map((job) => {
@@ -271,13 +311,12 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
                   <tr key={job.reference}>
                     <td><input className={styles.checkbox} type="checkbox" checked={selected.has(job.reference)} onChange={() => toggle(job.reference)} aria-label={`Select ${job.reference}`} /></td>
                     <td><Link className={styles.referenceLink} href={jobHref(job.reference, returnTo)}>{job.reference}</Link></td>
-                    <td>{job.customer_name || "Customer not linked"}</td>
-                    <td className={styles.routeCell}>{route(job)}</td>
+                    <td title={job.customer_name || undefined}>{job.customer_name || "Customer not linked"}</td>
                     <td><span className={`${styles.statusBadge} ${statusClass(tone)}`}>{shipmentStatusLabels[job.status]}</span></td>
-                    <td><Link href={withReturn(issue.href, returnTo)} className={styles.referenceLink}>{issue.label}</Link></td>
-                    <td><span className={styles.owner}><span className={styles.ownerAvatar}>{jobOwner === "Unassigned" ? <UserRoundX size={12} /> : initials(jobOwner)}</span><span className={jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}>{jobOwner}</span></span></td>
+                    <td><Link href={withReturn(issue.href, returnTo)} className={styles.actionLink}>{issue.label}</Link></td>
+                    <td><span className={`${styles.ownerCell} ${jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}`}>{jobOwner === "Unassigned" ? <UserRoundX size={12} strokeWidth={1.8} aria-hidden="true" /> : null}{jobOwner}</span></td>
                     <td className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
-                    <td><Link className={styles.rowAction} href={jobHref(job.reference, returnTo)} aria-label={`Open ${job.reference}`}><MoreHorizontal size={16} strokeWidth={1.8} /></Link></td>
+                    <td><Link className={styles.rowAction} href={jobHref(job.reference, returnTo)} aria-label={`Open ${job.reference}`}><MoreHorizontal size={15} strokeWidth={1.8} /></Link></td>
                   </tr>
                 );
               })}
@@ -285,7 +324,56 @@ function AttentionTable({ jobs, total, returnTo, generatedAt }: { jobs: CommandC
           </table>
         </div>
       ) : (
-        <div className={styles.emptyTable}><div><CheckCircle2 size={22} strokeWidth={1.8} className={styles.successIcon} /><strong>No shipment needs priority attention</strong><span>The current branch scope has no exception, overdue, customs, ownership or urgent queue signal.</span></div></div>
+        <div className={styles.queueEmpty}>
+          <CheckCircle2 size={15} strokeWidth={1.8} aria-hidden="true" />
+          <div><strong>All caught up</strong><span>No shipments currently require action.</span></div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TodayItem({ href, label, value, icon, tone }: { href: string; label: string; value: number | null; icon: ReactNode; tone: Tone }) {
+  const alert = tone === "danger" && value !== null && value > 0;
+  return (
+    <Link href={href} className={styles.todayItem} data-alert={alert || undefined}>
+      <span className={styles.todayItemIcon} aria-hidden="true">{icon}</span>
+      <strong>{label}</strong>
+      <span className={styles.todayItemCount} data-zero={value === 0 || undefined}>{value === null ? "—" : value}</span>
+      <ChevronRight size={13} strokeWidth={1.8} className={styles.rowChevron} aria-hidden="true" />
+    </Link>
+  );
+}
+
+function TodayPanel({ data, workflow, customs, arrivingToday }: { data: CommandCentreData; workflow: WorkflowOverview; customs: number; arrivingToday: number }) {
+  const critical = workflow.critical_blockers;
+  return (
+    <section className={`${styles.card} ${styles.todayCard}`} aria-labelledby="today-title">
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}><h2 id="today-title">Today</h2></div>
+        <Link className={styles.headAction} href="/admin/delivery">View calendar <ArrowRight size={13} strokeWidth={1.8} /></Link>
+      </div>
+      <div className={styles.todayList}>
+        <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="danger" icon={<Plane size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/visibility" label="Departing today" value={workflow.visibility?.departing_today ?? null} tone="info" icon={<Plane size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/customs" label="Customs clearance" value={customs} tone="warning" icon={<ShieldCheck size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/delivery" label="POD overdue" value={workflow.delivery?.pod_overdue ?? null} tone="danger" icon={<CircleAlert size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/tenders" label="Booking approvals" value={workflow.tendering?.accepted_or_countered ?? null} tone="violet" icon={<PackageCheck size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/freight-documents" label="Missing documents" value={workflow.documents?.missing_primary ?? null} tone="danger" icon={<FileText size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/shipments?attention=1" label="Unassigned shipments" value={data.totals.unassigned_jobs} tone="danger" icon={<UserRoundX size={13} strokeWidth={1.8} />} />
+      </div>
+      {critical ? (
+        <Link href="/admin/alerts" className={styles.todayCritical}>
+          <AlertTriangle size={14} strokeWidth={1.8} aria-hidden="true" />
+          <span className={styles.todayFootCopy}><strong>{critical} critical blocker{critical === 1 ? "" : "s"}</strong><span>Require immediate attention</span></span>
+          <ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
+        </Link>
+      ) : (
+        <Link href="/admin/alerts" className={styles.todayClear}>
+          <CheckCircle2 size={14} strokeWidth={1.8} aria-hidden="true" />
+          <span className={styles.todayFootCopy}><strong>{critical === null ? "Critical blockers unavailable" : "No critical blockers"}</strong><span>{critical === null ? "Confirm in Tasks & Alerts" : "No unresolved critical automation alert"}</span></span>
+          <ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
+        </Link>
       )}
     </section>
   );
@@ -296,19 +384,28 @@ function Workload({ data, workflow }: { data: CommandCentreData; workflow: Workf
   const weekStart = Date.parse(`${data.operational_date}T00:00:00Z`) - 6 * DAY_MS;
   const deliveredThisWeek = data.jobs.filter((job) => job.status === "delivered" && (Date.parse(job.updated_at) || 0) >= weekStart).length;
   const rows = [
-    { label: "In transit", count: active.filter((job) => job.status === "in_transit").length, tone: "transit", href: "/admin/shipments?status=in_transit" },
-    { label: "Customs", count: active.filter((job) => job.status === "customs_clearance").length, tone: "customs", href: "/admin/customs" },
-    { label: "Booking", count: active.filter((job) => job.status === "booking_confirmed").length, tone: "booking", href: "/admin/shipments?status=booking_confirmed" },
-    { label: "Awaiting pickup", count: Math.max(active.filter((job) => job.status === "preparing").length, (workflow.pickup?.unscheduled ?? 0) + (workflow.pickup?.requested ?? 0)), tone: "pickup", href: "/admin/pickups" },
-    { label: "Out for delivery", count: active.filter((job) => job.status === "out_for_delivery").length, tone: "delivery", href: "/admin/delivery" },
-    { label: "Delivered (this week)", count: deliveredThisWeek, tone: "delivered", href: "/admin/shipments?status=delivered" },
+    { label: "In transit", count: active.filter((job) => job.status === "in_transit").length, tone: "info", href: "/admin/shipments?status=in_transit" },
+    { label: "Customs", count: active.filter((job) => job.status === "customs_clearance").length, tone: "warning", href: "/admin/customs" },
+    { label: "Booking", count: active.filter((job) => job.status === "booking_confirmed").length, tone: "neutral", href: "/admin/shipments?status=booking_confirmed" },
+    { label: "Awaiting pickup", count: Math.max(active.filter((job) => job.status === "preparing").length, (workflow.pickup?.unscheduled ?? 0) + (workflow.pickup?.requested ?? 0)), tone: "neutral", href: "/admin/pickups" },
+    { label: "Out for delivery", count: active.filter((job) => job.status === "out_for_delivery").length, tone: "violet", href: "/admin/delivery" },
+    { label: "Delivered (this week)", count: deliveredThisWeek, tone: "success", href: "/admin/shipments?status=delivered" },
   ];
   const max = Math.max(...rows.map((row) => row.count), 1);
   return (
     <section className={styles.card} aria-labelledby="workload-title">
-      <div className={styles.cardHeader}><div><h2 id="workload-title">Shipment workload</h2><p>Total shipments by operational status</p></div></div>
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}><h2 id="workload-title">Shipment workload</h2></div>
+        <span className={styles.headMeta}>{data.totals.active_jobs} active</span>
+      </div>
       <div className={styles.workloadBody}>
-        {rows.map((row) => <Link key={row.label} href={row.href} className={styles.workloadRow}><span>{row.label}</span><span className={styles.workloadTrack}><span className={styles.workloadFill} data-tone={row.tone} style={{ width: `${Math.max(3, (row.count / max) * 100)}%` }} /></span><span className={styles.workloadCount}>{row.count}</span></Link>)}
+        {rows.map((row) => (
+          <Link key={row.label} href={row.href} className={styles.workloadRow}>
+            <span className={styles.workloadLabel}>{row.label}</span>
+            <span className={styles.workloadTrack} aria-hidden="true"><span className={styles.workloadFill} data-tone={row.tone} data-zero={row.count === 0 || undefined} style={{ width: `${Math.max(row.count ? 4 : 0, (row.count / max) * 100)}%` }} /></span>
+            <span className={styles.workloadCount} data-zero={row.count === 0 || undefined}>{row.count}</span>
+          </Link>
+        ))}
       </div>
     </section>
   );
@@ -319,52 +416,76 @@ function Workload({ data, workflow }: { data: CommandCentreData; workflow: Workf
 // pseudo-geography that told the reader nothing. "Live movement" is a question
 // about where each shipment is right now and when it lands, so it answers that.
 function LiveMovement({ movements, generatedAt, returnTo }: { movements: OverviewMovement[]; generatedAt: string; returnTo: string }) {
-  const rows = movements.slice(0, 6);
+  const rows = movements.slice(0, 8);
   return (
     <section className={styles.card} aria-labelledby="movement-title">
-      <div className={styles.cardHeader}><div><h2 id="movement-title">Live movement</h2><p>Where active shipments are now</p></div><Link className={styles.secondaryButton} href="/admin/visibility">View live <ArrowRight size={13} /></Link></div>
-      <div className={styles.movementBody}>
-        {rows.length ? rows.map((row) => {
-          const eta = etaShort(row.eta, generatedAt);
-          return (
-            <Link key={row.reference} href={jobHref(row.reference, returnTo)} className={styles.movementRow}>
-              <span className={styles.movementWhere}>
-                <strong>{row.current_location || row.origin}</strong>
-                <span>{row.reference} · {row.last_milestone || row.status}</span>
-              </span>
-              <span className={styles.movementEta} data-late={eta.late || undefined}>{eta.label}</span>
-            </Link>
-          );
-        }) : <div className={styles.financeEmpty}>No active movement in this scope.</div>}
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}><h2 id="movement-title">Live movement</h2>{movements.length ? <span className={styles.headCount}>{movements.length}</span> : null}</div>
+        <Link className={styles.headAction} href="/admin/visibility">View live <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
-      <div className={styles.movementFoot}>{movements.length} active visibility record{movements.length === 1 ? "" : "s"}</div>
+      {rows.length ? (
+        <div className={styles.movementList}>
+          {rows.map((row) => {
+            const eta = etaShort(row.eta, generatedAt);
+            return (
+              <Link key={row.reference} href={jobHref(row.reference, returnTo)} className={styles.movementRow}>
+                <span className={styles.movementMain}>
+                  <strong>{row.current_location || row.origin}</strong>
+                  <span><span className={styles.monoRef}>{row.reference}</span> · {row.last_milestone || row.status}</span>
+                </span>
+                <span className={styles.movementEta} data-late={eta.late || undefined}>{eta.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : <p className={styles.quietEmpty}>No active movement in this scope.</p>}
     </section>
   );
 }
 
 function activityIcon(item: OverviewActivity) {
   const value = `${item.type} ${item.title}`.toLowerCase();
-  if (value.includes("track") || value.includes("depart") || value.includes("arriv")) return <Plane size={14} strokeWidth={1.8} />;
-  if (value.includes("customs")) return <ShieldCheck size={14} strokeWidth={1.8} />;
-  if (value.includes("document") || value.includes("pod")) return <FileText size={14} strokeWidth={1.8} />;
-  if (value.includes("assign") || value.includes("owner")) return <Users size={14} strokeWidth={1.8} />;
-  if (item.tone === "success") return <CheckCircle2 size={14} strokeWidth={1.8} />;
-  if (item.tone === "danger") return <CircleAlert size={14} strokeWidth={1.8} />;
-  return <Clock3 size={14} strokeWidth={1.8} />;
+  if (value.includes("track") || value.includes("depart") || value.includes("arriv")) return <Plane size={13} strokeWidth={1.8} />;
+  if (value.includes("customs")) return <ShieldCheck size={13} strokeWidth={1.8} />;
+  if (value.includes("document") || value.includes("pod")) return <FileText size={13} strokeWidth={1.8} />;
+  if (value.includes("assign") || value.includes("owner")) return <UserRoundX size={13} strokeWidth={1.8} />;
+  if (item.tone === "success") return <CheckCircle2 size={13} strokeWidth={1.8} />;
+  if (item.tone === "danger") return <CircleAlert size={13} strokeWidth={1.8} />;
+  return <Clock3 size={13} strokeWidth={1.8} />;
 }
 
 function RecentActivity({ activity, generatedAt, returnTo }: { activity: OverviewActivity[]; generatedAt: string; returnTo: string }) {
   return (
     <section className={styles.card} aria-labelledby="activity-title">
-      <div className={styles.cardHeader}><div><h2 id="activity-title">Recent activity</h2></div><Link className={styles.secondaryButton} href="/admin/notifications">View all <ArrowRight size={13} /></Link></div>
-      <div className={styles.activityBody}>
-        {activity.length ? activity.slice(0, 6).map((item) => <Link key={`${item.reference}-${item.id}`} href={jobHref(item.reference, returnTo)} className={styles.activityItem}><span className={`${styles.activityIcon} ${toneIconClass(item.tone === "neutral" ? "neutral" : item.tone)}`}>{activityIcon(item)}</span><span className={styles.activityCopy}><strong>{item.title}</strong><span>{item.reference}{item.detail ? ` · ${item.detail}` : ""}</span><small>{relativeAge(item.occurred_at, generatedAt)}{item.actor_name ? ` · ${item.actor_name}` : ""}</small></span></Link>) : <div className={styles.financeEmpty}>No recent operational activity in this scope.</div>}
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}><h2 id="activity-title">Recent activity</h2>{activity.length ? <span className={styles.headCount}>{activity.length}</span> : null}</div>
+        <Link className={styles.headAction} href="/admin/notifications">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
+      {activity.length ? (
+        <ol className={styles.activityFeed}>
+          {activity.slice(0, 8).map((item) => (
+            <li key={`${item.reference}-${item.id}`}>
+              <Link href={jobHref(item.reference, returnTo)} className={styles.activityRow} title={item.detail ?? undefined}>
+                <span className={styles.activityMark} data-tone={item.tone} aria-hidden="true">{activityIcon(item)}</span>
+                <span className={styles.activityMain}>
+                  <span className={styles.activityTitle}>{item.title}</span>
+                  {item.reference ? <span className={styles.monoRef}>{item.reference}</span> : null}
+                </span>
+                <span className={styles.activityTime}>{relativeAge(item.occurred_at, generatedAt)}{item.actor_name ? ` · ${item.actor_name}` : ""}</span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      ) : <p className={styles.quietEmpty}>No recent operational activity in this scope.</p>}
     </section>
   );
 }
 
-function changeLabel(value: number | null, suffix = "%") {
+function changeLabel(value: number | null, suffix = "%", emptyPeriod = false) {
+  // A period with nothing recorded yet is not a collapse: "-100%" beside NPR 0
+  // reads as an error, so an empty current period is presented neutrally. The
+  // server-side percentageChange calculation itself is untouched.
+  if (emptyPeriod && value !== null) return { label: "No activity", className: styles.changeNeutral };
   if (value === null) return { label: "—", className: styles.changeNeutral };
   const sign = value > 0 ? "+" : "";
   return { label: `${sign}${value.toFixed(value % 1 === 0 ? 0 : 1)}${suffix}`, className: value > 0 ? styles.changePositive : value < 0 ? styles.changeNegative : styles.changeNeutral };
@@ -375,9 +496,9 @@ function FinanceSnapshot({ finance }: { finance: OverviewFinanceSnapshot | null 
   const selected = finance?.currencies.find((item) => item.currency === currency) ?? finance?.currencies[0] ?? null;
   const maxBar = selected ? Math.max(...selected.trend.map((point) => Math.max(point.revenue, point.cost, 0)), 1) : 1;
   const rows = selected ? [
-    { label: "Total revenue", value: money(selected.revenue, selected.currency), change: changeLabel(selected.revenue_change_percent) },
-    { label: "Total cost", value: money(selected.cost, selected.currency), change: changeLabel(selected.cost_change_percent) },
-    { label: "Gross margin", value: money(selected.profit, selected.currency), change: changeLabel(selected.profit_change_percent) },
+    { label: "Total revenue", value: money(selected.revenue, selected.currency), change: changeLabel(selected.revenue_change_percent, "%", selected.revenue === 0) },
+    { label: "Total cost", value: money(selected.cost, selected.currency), change: changeLabel(selected.cost_change_percent, "%", selected.cost === 0) },
+    { label: "Gross margin", value: money(selected.profit, selected.currency), change: changeLabel(selected.profit_change_percent, "%", selected.profit === 0) },
     { label: "Margin %", value: selected.margin_percent === null ? "—" : `${selected.margin_percent.toFixed(1)}%`, change: changeLabel(selected.margin_change_points, "pp") },
   ] : [];
   const firstTrendDate = selected?.trend[0]?.date ?? finance?.generated_at.slice(0, 10) ?? "";
@@ -386,11 +507,11 @@ function FinanceSnapshot({ finance }: { finance: OverviewFinanceSnapshot | null 
 
   return (
     <section className={styles.card} aria-labelledby="finance-title">
-      <div className={styles.cardHeader}>
-        <div><h2 id="finance-title">Finance snapshot</h2></div>
+      <div className={styles.cardHead}>
+        <div className={styles.cardTitleRow}><h2 id="finance-title">Finance snapshot</h2></div>
         <div className={styles.financeControls}>
           {finance?.currencies.length && finance.currencies.length > 1 ? <select className={styles.financeSelect} value={selected?.currency ?? ""} onChange={(event) => setCurrency(event.target.value)} aria-label="Finance currency">{finance.currencies.map((item) => <option key={item.currency} value={item.currency}>{item.currency}</option>)}</select> : null}
-          <select className={styles.financeSelect} value="current" aria-label="Finance period" onChange={() => undefined}><option value="current">{finance?.period_label ?? "This month"}</option></select>
+          <span className={styles.financePeriod}>{finance?.period_label ?? "This month"}</span>
         </div>
       </div>
       {selected ? <div className={styles.financeBody}>
@@ -430,11 +551,11 @@ function OperationalNotes({ note, selectedBranch, canPostNotes, generatedAt }: {
   }
 
   return (
-    <section className={styles.notes} aria-label="Operational notes">
-      <span className={styles.noteIcon}><FileText size={16} strokeWidth={1.8} /></span>
-      <div><span className={styles.noteLabel}>Operational notes</span><span className={styles.noteText}> · {note?.message ?? "No operational note posted for this scope."}</span></div>
+    <section className={styles.notes} data-noted={note ? "true" : undefined} aria-label="Operational notes">
+      <span className={styles.noteIcon} aria-hidden="true"><FileText size={15} strokeWidth={1.8} /></span>
+      <div className={styles.noteBody}><span className={styles.noteLabel}>Operational notes</span><span className={styles.noteText}><span aria-hidden="true"> · </span>{note?.message ?? "No operational note posted for this scope."}</span></div>
       <span className={styles.noteMeta}>{note ? `Posted ${relativeAge(note.created_at, generatedAt)} by ${note.created_by_name}` : selectedBranch === "all" ? "All branches" : selectedBranch}</span>
-      {canPostNotes ? <button type="button" className={styles.rowAction} onClick={() => setEditing((current) => !current)} aria-label="Edit operational note"><MoreHorizontal size={16} /></button> : <span />}
+      {canPostNotes ? <button type="button" className={styles.rowAction} onClick={() => setEditing((current) => !current)} aria-label="Edit operational note"><MoreHorizontal size={15} strokeWidth={1.8} /></button> : <span />}
       {editing ? <div className={styles.noteEditor}><textarea value={message} maxLength={500} onChange={(event) => setMessage(event.target.value)} aria-label="Operational note" /> <div className={styles.noteEditorActions}><button type="button" className={styles.secondaryButton} onClick={() => setEditing(false)}>Cancel</button><button type="button" className={styles.blackButton} disabled={busy || message.trim().length < 3} onClick={() => void submit()}>{busy ? "Posting…" : "Post note"}</button></div>{error ? <span className={styles.ageDanger}>{error}</span> : null}</div> : null}
     </section>
   );
@@ -498,7 +619,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
       <section className={styles.launcher} data-closing={closing ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="new-shipment-title">
         <div className={styles.launcherHeader}>
           <div><h2 id="new-shipment-title">New shipment</h2><p>Start a new movement through KCPL’s controlled transport-order, tender and booking chain. The shipment record is still created only by the existing server-authoritative workflow.</p></div>
-          <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close new shipment"><X size={15} /></button>
+          <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close new shipment"><X size={14} strokeWidth={1.8} /></button>
         </div>
         {canViewCommercial ? (
           <form className={extras.createForm} onSubmit={create}>
@@ -521,8 +642,8 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
           </form>
         ) : (
           <div className={styles.launcherBody}>
-            <Link href="/admin/enquiries" className={styles.launcherChoice}><span><strong>Open enquiries</strong><span>Your Operations role cannot originate a commercial transport order. Continue from an authorised enquiry or commercial handoff.</span></span><ArrowRight size={15} /></Link>
-            <Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its Digital Job File.</span></span><ArrowRight size={15} /></Link>
+            <Link href="/admin/enquiries" className={styles.launcherChoice}><span><strong>Open enquiries</strong><span>Your Operations role cannot originate a commercial transport order. Continue from an authorised enquiry or commercial handoff.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
+            <Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its Digital Job File.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
           </div>
         )}
       </section>
@@ -530,7 +651,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
   );
 }
 
-export function V4OperationsOverview({ data, workflow, finance, note, userName, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
+export function V4OperationsOverview({ data, workflow, finance, note, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -564,55 +685,56 @@ export function V4OperationsOverview({ data, workflow, finance, note, userName, 
   const activeShipments = useMemo(() => data.jobs.filter((job) => job.status !== "delivered"), [data.jobs]);
   const attentionShipments = useMemo(() => activeShipments.filter(shipmentNeedsAttention).sort(compareShipmentPriority), [activeShipments]);
   const attentionQueue = attentionShipments.slice(0, 6);
-  const firstName = userName.trim().split(/\s+/)[0] || "team";
   const arrivingToday = activeShipments.filter((job) => job.eta?.slice(0, 10) === data.operational_date).length;
   const inTransit = activeShipments.filter((job) => job.status === "in_transit").length;
   const customs = workflow.visibility?.customs ?? activeShipments.filter((job) => job.status === "customs_clearance").length;
-  const critical = workflow.critical_blockers;
+
+  const metrics: Metric[] = [
+    { href: "/admin/shipments?attention=1", label: "Requires attention", value: attentionShipments.length, tone: "danger" },
+    { href: "/admin/customs", label: "Customs pending", value: data.totals.customs_blockers, tone: "warning" },
+    { href: "/admin/alerts", label: "Overdue", value: data.totals.overdue_tasks, tone: "danger" },
+    { href: "/admin/delivery", label: "Due today", value: data.totals.deliveries_today, tone: "info" },
+    { href: "/admin/shipments?attention=1", label: "Unassigned", value: data.totals.unassigned_jobs, tone: "neutral" },
+    { href: "/admin/shipments?status=in_transit", label: "In transit", value: inTransit, tone: "info" },
+  ];
 
   return (
     <div className={styles.dashboard}>
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}><h1>{greeting(data.generated_at)}, {firstName}</h1><p>{heroSummary(critical, attentionShipments.length)}</p></div>
-        <div className={styles.heroActions}>
-          <div className={styles.timeBlock}><strong>{formatOperationalDate(data.operational_date)}</strong><span>Local time {formatNepalTime(data.generated_at)} (NPT)</span></div>
-          <button type="button" className={styles.secondaryButton} onClick={() => startRefresh(() => router.refresh())} disabled={refreshing}><RefreshCw size={14} className={refreshing ? "app-refreshing" : undefined} />{refreshing ? "Refreshing" : "Refresh"}</button>
-          <button type="button" className={styles.blackButton} onClick={openLauncher}><Plus size={15} strokeWidth={2} /> New shipment</button>
+      <header className={styles.pageHead}>
+        <div className={styles.pageHeadCopy}>
+          <h1>Overview</h1>
+          <p className={styles.pageHeadMeta}>
+            <span>{selectedBranch === "all" ? "All branches" : selectedBranch} operations</span>
+            <span className={styles.metaDot} aria-hidden="true" />
+            <span>{formatOperationalDate(data.operational_date)}</span>
+            <span className={styles.metaDot} aria-hidden="true" />
+            <span>Updated {formatNepalTime(data.generated_at)} NPT</span>
+          </p>
         </div>
-      </section>
+        <div className={styles.pageHeadActions}>
+          <button type="button" className={styles.secondaryButton} onClick={() => startRefresh(() => router.refresh())} disabled={refreshing}>
+            <RefreshCw size={14} strokeWidth={1.8} className={refreshing ? "app-refreshing" : undefined} />{refreshing ? "Refreshing" : "Refresh"}
+          </button>
+          <button type="button" className={styles.blackButton} onClick={openLauncher}>
+            <Plus size={14} strokeWidth={2} /> New shipment
+          </button>
+        </div>
+      </header>
 
-      {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={16} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the Digital Job File before acting.</span></div> : null}
+      {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={15} strokeWidth={1.8} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the Digital Job File before acting.</span></div> : null}
 
-      <section className={styles.metrics} aria-label="Operational pulse">
-        <Metric href="/admin/shipments?attention=1" label="Requires attention" value={attentionShipments.length} tone="danger" icon={<AlertTriangle size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/customs" label="Customs pending" value={data.totals.customs_blockers} tone="warning" icon={<CircleAlert size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/alerts" label="Overdue" value={data.totals.overdue_tasks} tone="danger" icon={<Clock3 size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/delivery" label="Due today" value={data.totals.deliveries_today} tone="success" icon={<Truck size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/shipments?attention=1" label="Unassigned" value={data.totals.unassigned_jobs} tone="neutral" icon={<Users size={16} strokeWidth={1.9} />} />
-        <Metric href="/admin/shipments?status=in_transit" label="In transit" value={inTransit} tone="success" icon={<CheckCircle2 size={16} strokeWidth={1.9} />} />
-      </section>
+      <KpiRail metrics={metrics} />
 
       <div className={styles.primaryGrid}>
-        <AttentionTable jobs={attentionQueue} total={attentionShipments.length} returnTo={returnTo} generatedAt={data.generated_at} />
-        <section className={`${styles.card} ${styles.todayCard}`} aria-labelledby="today-title">
-          <div className={styles.cardHeader}><div><h2 id="today-title">Today</h2></div><Link className={styles.textButton} href="/admin/delivery">View calendar <ArrowRight size={13} /></Link></div>
-          <div className={styles.todayList}>
-            <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="danger" icon={<Plane size={14} />} />
-            <TodayItem href="/admin/visibility" label="Departing today" value={workflow.visibility?.departing_today ?? null} tone="info" icon={<Plane size={14} />} />
-            <TodayItem href="/admin/customs" label="Customs clearance" value={customs} tone="success" icon={<FileCheck2 size={14} />} />
-            <TodayItem href="/admin/delivery" label="POD overdue" value={workflow.delivery?.pod_overdue ?? null} tone="danger" icon={<CircleAlert size={14} />} />
-            <TodayItem href="/admin/tenders" label="Booking approvals" value={workflow.tendering?.accepted_or_countered ?? null} tone="violet" icon={<PackageCheck size={14} />} />
-            <TodayItem href="/admin/freight-documents" label="Missing documents" value={workflow.documents?.missing_primary ?? null} tone="danger" icon={<FileText size={14} />} />
-            <TodayItem href="/admin/shipments?attention=1" label="Unassigned shipments" value={data.totals.unassigned_jobs} tone="danger" icon={<UserRoundX size={14} />} />
-          </div>
-          <Link href="/admin/alerts" className={styles.todayCritical}><span className={`${styles.todayItemIcon} ${styles.dangerIcon}`}><AlertTriangle size={15} /></span><span><strong>{critical === null ? "Critical blockers unavailable" : `${critical} critical blocker${critical === 1 ? "" : "s"}`}</strong><span>{critical ? "Require immediate attention" : "No unresolved critical automation alert"}</span></span><ChevronRight size={15} /></Link>
-        </section>
+        <WorkQueue jobs={attentionQueue} total={attentionShipments.length} returnTo={returnTo} generatedAt={data.generated_at} />
+        <TodayPanel data={data} workflow={workflow} customs={customs} arrivingToday={arrivingToday} />
       </div>
 
       <div className={styles.lowerGrid}>
-        <Workload data={data} workflow={workflow} />
-        <LiveMovement movements={workflow.movements} generatedAt={data.generated_at} returnTo={returnTo} />
         <RecentActivity activity={workflow.recent_activity} generatedAt={data.generated_at} returnTo={returnTo} />
+        <LiveMovement movements={workflow.movements} generatedAt={data.generated_at} returnTo={returnTo} />
+        <Workload data={data} workflow={workflow} />
+        <ShipmentsPulse initialData={data} returnTo={returnTo} />
         <FinanceSnapshot finance={finance} />
       </div>
 

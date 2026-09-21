@@ -58,7 +58,7 @@ const workspaceIcons: Record<WorkspaceIconName, LucideIcon> = {
   Users2,
 };
 
-export function WorkspaceIcon({ name, size = 17 }: { name: WorkspaceIconName; size?: number }) {
+export function WorkspaceIcon({ name, size = 16 }: { name: WorkspaceIconName; size?: number }) {
   const Icon = workspaceIcons[name];
   return <Icon size={size} strokeWidth={1.75} aria-hidden="true"/>;
 }

@@ -10,12 +10,10 @@
  * deliberately not repeated here.
  */
 
-.kcpl-admin-content :is(.shipments-register, .shipment-sheet) {
+.kcpl-admin-content :is(.shipments-register, .shipment-sheet, .shipments-filter-menu) {
   --ship-surface: var(--admin-surface);
   --ship-canvas: var(--admin-canvas);
   --ship-line: var(--admin-line);
-  /* Matches the dashboard card shadow so the two pages sit at the same elevation. */
-  --ship-shadow: 0 1px 2px rgb(16 24 40 / 4%);
   --ship-focus: 0 0 0 3px color-mix(in srgb, var(--admin-crimson) 18%, transparent);
 }
 
@@ -40,11 +38,74 @@
   gap: 8px;
 }
 
+/* ---- Register KPI rail ----------------------------------------------------
+ * One shared surface with hairline separators -- the same treatment the
+ * Overview dashboard uses -- instead of five floating metric cards. */
+/* ---- Register KPI rail ----------------------------------------------------
+ * Mirrors the Overview dashboard's KPI rail exactly: one hairline panel,
+ * label over a strong tabular value, zeros recede, semantic tones on values
+ * only. Purely informational -- the status tabs above the table are the
+ * single filter surface. */
+.kcpl-admin-content .shipments-register .shipments-kpi-rail {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  border: 1px solid var(--ship-line);
+  border-radius: 8px;
+  background: var(--ship-line);
+}
+
+.kcpl-admin-content .shipments-register .shipments-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 14px 12px;
+  background: var(--admin-surface);
+}
+
+.kcpl-admin-content .shipments-register .shipments-kpi .shipments-kpi-label {
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 570;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .shipments-register .shipments-kpi .shipments-kpi-value {
+  color: var(--admin-ink);
+  font-size: 24px;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Zeros recede; live signals take their semantic colour -- value only. */
+.kcpl-admin-content .shipments-register .shipments-kpi[data-zero="true"] .shipments-kpi-value { color: var(--admin-faint); }
+.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="info"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-info); }
+.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="success"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-success); }
+.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="warning"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-warning); }
+.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="danger"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-danger); }
+
+/* Collapse to 3 / 2 columns like the Overview rail. */
+@media (max-width: 1160px) {
+  .kcpl-admin-content .shipments-register .shipments-kpi-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .kcpl-admin-content .shipments-register .shipments-kpi-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kcpl-admin-content .shipments-register .shipments-kpi { padding: 10px 12px 11px; }
+}
+
 /* `transform` stays in every transition list below: globals.css and operations-system.css
  * supply the :active press feedback, and a shorthand here would silently drop it. */
-.kcpl-admin-content .shipments-register .shipments-filter-trigger,
-.kcpl-admin-content .shipments-register .shipments-reset {
-  min-height: var(--app-control-height-touch);
+.kcpl-admin-content .shipments-filter-trigger {
+  min-height: 32px;
   border-radius: var(--app-radius);
   transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
 }
@@ -63,66 +124,91 @@
   background: var(--admin-crimson-dark);
 }
 
-.kcpl-admin-content .shipments-register :is(.shipments-filter-trigger, .shipments-reset, .shipments-filter-tab, .shipments-view-toggle button):focus-visible,
-.kcpl-admin-content :is(.shipment-sheet-close, .shipment-sheet-closebar):focus-visible {
+.kcpl-admin-content :is(.shipments-filter-trigger, .shipments-filter-tab, .shipments-view-toggle button, .shipments-filter-chip, .shipments-chip-clear):focus-visible,
+.kcpl-admin-content .shipment-sheet-close:focus-visible {
   outline: none;
   box-shadow: var(--ship-focus);
 }
 
+/* ---- Register toolbar -----------------------------------------------------
+ * One flat operating row, not a floating control card: search left, status
+ * scopes as text tabs, view + filter controls right. */
 .kcpl-admin-content .shipments-register .shipments-toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 380px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr) auto;
   grid-template-areas:
     "search .    actions"
     "tabs   tabs tabs";
   align-items: center;
-  row-gap: 10px;
+  row-gap: 8px;
   column-gap: 16px;
-  margin-bottom: 16px;
-  padding: 8px;
-  border: 1px solid var(--ship-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow);
+  margin-bottom: 12px;
+  padding: 2px 0 8px;
+  border-bottom: 1px solid var(--ship-line);
 }
 
 .kcpl-admin-content .shipments-register .shipments-toolbar-search { grid-area: search; }
-.kcpl-admin-content .shipments-register .shipments-toolbar-actions { grid-area: actions; }
+
+.kcpl-admin-content .shipments-register .shipments-toolbar-search .ops-search {
+  min-height: 32px;
+  border-color: transparent;
+  background: var(--admin-surface-muted);
+}
+
+.kcpl-admin-content .shipments-register .shipments-toolbar-search .ops-search:hover { border-color: var(--ship-line); }
 
 .kcpl-admin-content .shipments-register .shipments-status-filters {
   grid-area: tabs;
   display: flex;
   min-width: 0;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
 .kcpl-admin-content .shipments-register .shipments-status-filters::-webkit-scrollbar { display: none; }
 
-.kcpl-admin-content .shipments-register .shipments-filter-tab {
+/* Status scopes behave like workspace tabs, not buttons: text-first, a quiet
+ * surface for the active scope, crimson reserved for the record itself. */
+.kcpl-admin-content .shipments-filter-tab {
+  display: inline-flex;
   flex: 0 0 auto;
-  min-height: var(--app-control-height-touch);
-  padding: 0 16px;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
   border: 0;
   border-radius: var(--app-radius);
   background: transparent;
   color: var(--admin-muted);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipments-register .shipments-filter-tab:hover {
-  background: var(--admin-surface-muted);
+.kcpl-admin-content .shipments-filter-tab:hover {
   color: var(--admin-ink);
+  background: var(--admin-surface-muted);
 }
 
-.kcpl-admin-content .shipments-register .shipments-filter-tab[data-active="true"],
-.kcpl-admin-content .shipments-register .shipments-filter-tab[data-state="active"] {
-  background: var(--admin-crimson);
-  color: var(--admin-surface);
+.kcpl-admin-content .shipments-filter-tab[data-active="true"],
+.kcpl-admin-content .shipments-filter-tab[data-state="active"] {
+  background: var(--admin-surface-muted);
+  color: var(--admin-ink);
+  font-weight: 600;
+}
+
+.kcpl-admin-content .shipments-register .shipments-tab-count {
+  color: var(--admin-faint);
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kcpl-admin-content .shipments-filter-tab[data-active="true"] .shipments-tab-count {
+  color: var(--admin-crimson);
+  font-weight: 600;
 }
 
 .kcpl-admin-content .shipments-register .shipments-toolbar-actions {
@@ -131,59 +217,278 @@
   justify-content: flex-end;
   gap: 8px;
   min-width: max-content;
-}
-
+}/* View switch sits straight on the canvas: no well, just grouped controls with a
+ * shared hairline. Selected view = ink + soft surface; no floating chrome. */
 .kcpl-admin-content .shipments-register .shipments-view-toggle {
   display: inline-flex;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--ship-line);
+  gap: 2px;
+  padding: 0;
+  border: 0;
   border-radius: var(--app-radius);
-  background: var(--ship-canvas);
+  background: transparent;
 }
 
 .kcpl-admin-content .shipments-register .shipments-view-toggle button {
-  min-width: var(--app-control-height-touch);
-  min-height: var(--app-control-height-touch);
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--app-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius);
   background: transparent;
   color: var(--admin-muted);
-  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
 }
 
+.kcpl-admin-content .shipments-register .shipments-view-toggle button:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
+
 .kcpl-admin-content .shipments-register .shipments-view-toggle button[data-active="true"] {
-  background: var(--ship-surface);
+  border-color: transparent;
+  background: var(--admin-surface-muted);
   color: var(--admin-ink);
-  box-shadow: var(--ship-shadow);
+  font-weight: 550;
 }
 
 .kcpl-admin-content .shipments-register .shipments-result-count {
   display: inline-flex;
-  min-height: 32px;
+  min-height: 24px;
   align-items: center;
-  padding: 0 8px;
-  border-radius: var(--app-radius-sm);
-  background: var(--ship-canvas);
+  padding: 0 2px;
   color: var(--admin-muted);
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
-.kcpl-admin-content .shipments-register .shipments-filter-menu {
-  min-width: 280px;
-  padding: 16px;
+/* ---- Filter menu -----------------------------------------------------------
+ * A compact command surface, not a settings form: label-in-line rows for the
+ * selects, checkbox toggles for booleans, Clear/Done anchored to the footer. */
+.kcpl-admin-content .shipments-filter-menu {
+  width: 264px;
+  padding: 8px 10px 10px;
   border: 1px solid var(--ship-line);
   border-radius: var(--app-dialog-radius);
   background: var(--ship-surface);
   box-shadow: 0 20px 50px rgb(16 24 40 / 18%);
 }
 
-.kcpl-admin-content .shipments-register .shipments-filter-menu select,
-.kcpl-admin-content .shipments-register .shipments-attention-filter {
-  min-height: var(--app-control-height-touch);
-  border-radius: var(--app-radius);
+.kcpl-admin-content .shipments-filter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 2px 2px 7px;
+  border-bottom: 1px solid var(--ship-line);
 }
+
+.kcpl-admin-content .shipments-filter-head strong {
+  color: var(--admin-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kcpl-admin-content .shipments-filter-clear,
+.kcpl-admin-content .shipments-filter-done {
+  border: 0;
+  border-radius: var(--app-radius);
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipments-filter-clear {
+  min-height: 22px;
+  padding: 0 6px;
+  color: var(--admin-crimson);
+}
+
+.kcpl-admin-content .shipments-filter-clear:hover { background: color-mix(in srgb, var(--admin-crimson) 8%, transparent); }
+
+.kcpl-admin-content .shipments-filter-done {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ship-line);
+  color: var(--admin-ink);
+}
+
+.kcpl-admin-content .shipments-filter-done:hover { background: var(--admin-surface-muted); }
+
+.kcpl-admin-content .shipments-filter-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.kcpl-admin-content .shipments-filter-label {
+  color: var(--admin-muted);
+  font-size: 11.5px;
+}
+
+.kcpl-admin-content .shipments-filter-row select {
+  min-height: 28px;
+  padding: 4px 24px 4px 8px;
+  border: 1px solid var(--ship-line);
+  border-radius: var(--app-radius);
+  background-color: var(--admin-surface);
+  color: var(--admin-ink);
+  font-size: 12.5px;
+}
+
+.kcpl-admin-content .shipments-filter-row select:focus { outline: 2px solid var(--app-focus); outline-offset: 1px; }
+
+.kcpl-admin-content .shipments-filter-toggles {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ship-line);
+}
+
+.kcpl-admin-content .shipments-filter-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  row-gap: 1px;
+  align-items: center;
+  margin: 0 -4px;
+  padding: 6px 8px;
+  border-radius: var(--app-radius);
+  cursor: pointer;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipments-filter-toggle:hover { background: var(--admin-surface-muted); }
+
+.kcpl-admin-content .shipments-filter-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kcpl-admin-content .shipments-filter-toggle strong {
+  color: var(--admin-ink);
+  font-size: 12.5px;
+  font-weight: 550;
+  line-height: 16px;
+}
+
+.kcpl-admin-content .shipments-filter-toggle small {
+  grid-column: 2;
+  color: var(--admin-muted);
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.kcpl-admin-content .shipments-filter-check {
+  display: inline-flex;
+  grid-row: 1;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--admin-line);
+  border-radius: 4px;
+  background: var(--admin-surface);
+  color: transparent;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipments-filter-toggle input:checked ~ .shipments-filter-check {
+  border-color: var(--admin-crimson);
+  background: var(--admin-crimson);
+  color: var(--admin-surface);
+}
+
+.kcpl-admin-content .shipments-filter-toggle input:focus-visible ~ .shipments-filter-check { box-shadow: var(--ship-focus); }
+
+.kcpl-admin-content .shipments-filter-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* ---- Live activity badge ---------------------------------------------------
+ * A 6px crimson pulse beside the reference: this shipment gained job_activity
+ * within the last 15 minutes. Quiet by design; no row background change. */
+.kcpl-admin-content .shipments-register .shipments-live-activity {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: 1px;
+  border-radius: 999px;
+  background: var(--admin-crimson);
+  animation: shipments-live-activity-pulse 2.4s var(--app-ease-out) infinite;
+}
+
+@keyframes shipments-live-activity-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--admin-crimson) 35%, transparent); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 3px transparent; }
+}
+
+/* ---- Active filter chips --------------------------------------------------- */
+
+.kcpl-admin-content .shipments-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.kcpl-admin-content .shipments-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--ship-line);
+  border-radius: 999px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipments-filter-chip svg { color: var(--admin-faint); transition: color var(--app-duration-fast) var(--app-ease-out); }
+
+.kcpl-admin-content .shipments-filter-chip:hover { border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+
+.kcpl-admin-content .shipments-filter-chip:hover svg { color: var(--admin-danger); }
+
+.kcpl-admin-content .shipments-chip-clear {
+  min-height: 24px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--app-radius);
+  background: transparent;
+  color: var(--admin-muted);
+  font-size: 11.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipments-chip-clear:hover { color: var(--admin-danger); background: var(--admin-surface-muted); }
+
+/* ---- Register table ------------------------------------------------------- */
 
 .kcpl-admin-content .shipments-register .shipments-register-table {
   border-collapse: separate;
@@ -197,8 +502,8 @@
 }
 
 .kcpl-admin-content .shipments-register .shipments-register-table th {
-  height: var(--app-control-height-touch);
-  padding: 8px 16px;
+  height: 34px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--ship-line);
   background: var(--ship-canvas);
   color: var(--admin-muted);
@@ -208,9 +513,10 @@
   text-transform: uppercase;
 }
 
+/* A dense operating register: 42px records, quiet badges, scannable columns. */
 .kcpl-admin-content .shipments-register .shipments-register-table td {
-  height: 56px;
-  padding: 8px 16px;
+  height: 42px;
+  padding: 5px 12px;
   border-bottom-color: var(--ship-line);
 }
 
@@ -221,29 +527,322 @@
 .kcpl-admin-content .shipments-register .shipments-register-table tbody tr:focus-visible { box-shadow: inset var(--ship-focus); }
 
 .kcpl-admin-content .shipments-register .shipments-register-table tbody tr[data-selected="true"] {
-  background: color-mix(in srgb, var(--admin-crimson) 5%, transparent);
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
+  background: var(--admin-surface-muted);
 }
 
+/* Status pills recede inside the register: tint + tone text, no border ring,
+ * so the strongest treatment in a row is its data, not its chrome. */
+.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge {
+  min-height: 20px;
+  border-color: transparent;
+  padding: 2px 8px;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 550;
+  letter-spacing: 0;
+}
+
+.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); font-weight: 500; }
+.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="info"] { background: var(--admin-info-bg); color: var(--admin-info); }
+.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="success"] { background: var(--admin-success-bg); color: var(--admin-success); }
+.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="warning"] { background: var(--admin-warning-bg); color: var(--admin-warning); }
+.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="danger"] { background: var(--admin-danger-bg); color: var(--admin-danger); }
+
+/* Next action reads as plain high-contrast work language; red is reserved for
+ * genuine blockers (tone comes from shipmentNextAction). */
 .kcpl-admin-content .shipments-register .shipment-next-action-cell {
-  font-weight: 600;
+  color: var(--admin-ink);
+  font-weight: 500;
 }
 
 .kcpl-admin-content .shipment-sheet-header { border-bottom-color: var(--ship-line); }
-
-/* On a full-width sheet the sections read as cards, not as stacked rules. */
-.kcpl-admin-content .shipment-sheet-card {
-  border: 1px solid var(--ship-line);
-  border-radius: var(--app-surface-radius);
-  padding: 16px 20px;
-  background: var(--ship-surface);
-  box-shadow: var(--ship-shadow);
-}
-
 .kcpl-admin-content .shipment-sheet-footer {
   gap: 8px;
   border-top-color: var(--ship-line);
   background: var(--admin-surface);
+}
+
+/* Non-blocking inspector: no scrim on desktop (the register stays live).
+ * Below 900px the inspector is a modal bottom sheet, so a real scrim closes
+ * it on tap — restored by media query, not by JS width sniffing. */
+.kcpl-admin-content .shipment-sheet-scrim { display: none; }
+
+/* ---- Inspector drawer sections -------------------------------------------- */
+
+.kcpl-admin-content .shipment-sheet-exception {
+  display: flex;
+  gap: 8px;
+  border-radius: var(--app-radius);
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--admin-danger) 5%, transparent);
+  color: var(--admin-danger);
+}
+
+.kcpl-admin-content .shipment-sheet-exception strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 17px;
+}
+
+.kcpl-admin-content .shipment-sheet-exception span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 16px;
+}
+
+.kcpl-admin-content .shipment-sheet-section {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ship-line);
+}
+
+.kcpl-admin-content .shipment-sheet-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.kcpl-admin-content .shipment-sheet-section h3 {
+  margin: 0 0 8px;
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.kcpl-admin-content .shipment-sheet-facts {
+  display: grid;
+  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+
+.kcpl-admin-content .shipment-sheet-facts > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 3.5px 0;
+}
+
+.kcpl-admin-content .shipment-sheet-facts dt {
+  color: var(--admin-muted);
+  font-size: 11.5px;
+  line-height: 16px;
+}
+
+.kcpl-admin-content .shipment-sheet-facts dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--admin-ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.kcpl-admin-content .shipment-sheet-facts dd[data-warning] { color: var(--admin-danger); }
+.kcpl-admin-content .shipment-sheet-facts .ops-badge { min-height: 20px; padding: 1px 7px; font-size: 11px; }
+
+.kcpl-admin-content .shipment-sheet-next {
+  padding-top: 12px;
+}
+
+.kcpl-admin-content .shipment-sheet-next-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--ship-line);
+  border-radius: var(--app-radius);
+  color: var(--admin-ink);
+  font-size: 12px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipment-sheet-next-link:hover { background: var(--admin-surface-muted); }
+
+.kcpl-admin-content .shipment-sheet-ready-row { padding: 0; }
+
+.kcpl-admin-content .shipment-sheet-ready-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding-block: 2.5px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipment-sheet-ready-link:hover strong { color: var(--admin-crimson); }
+.kcpl-admin-content .shipment-sheet-ready-link:hover svg { color: var(--admin-crimson); }
+
+/* Recent activity: a few quiet rows from the existing jobs activity API. */
+.kcpl-admin-content .shipment-sheet-activity:last-child { border-bottom: 0; }
+
+.kcpl-admin-content .shipment-sheet-activity-note {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-list li {
+  border-bottom: 1px solid var(--ship-line);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-list li:last-child { border-bottom: 0; }
+
+.kcpl-admin-content .shipment-sheet-activity-row {
+  display: flex;
+  width: 100%;
+  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-row:not(:disabled) { cursor: pointer; }
+.kcpl-admin-content .shipment-sheet-activity-row:disabled { cursor: default; }
+
+.kcpl-admin-content .shipment-sheet-activity-row:not(:disabled):hover .shipment-sheet-activity-title { color: var(--admin-crimson); }
+
+.kcpl-admin-content .shipment-sheet-activity-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--admin-crimson) 35%, transparent);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--admin-faint);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-list li[data-tone="info"] .shipment-sheet-activity-dot { background: var(--admin-info); }
+.kcpl-admin-content .shipment-sheet-activity-list li[data-tone="success"] .shipment-sheet-activity-dot { background: var(--admin-success); }
+.kcpl-admin-content .shipment-sheet-activity-list li[data-tone="warning"] .shipment-sheet-activity-dot { background: var(--admin-warning); }
+.kcpl-admin-content .shipment-sheet-activity-list li[data-tone="danger"] .shipment-sheet-activity-dot { background: var(--admin-danger); }
+.kcpl-admin-content .shipment-sheet-activity-list li[data-tone="violet"] .shipment-sheet-activity-dot { background: var(--admin-accent, var(--admin-crimson)); }
+
+.kcpl-admin-content .shipment-sheet-activity-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--admin-ink);
+  font-size: 12.5px;
+  font-weight: 450;
+  line-height: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-age {
+  flex: none;
+  color: var(--admin-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 15px;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-chevron {
+  flex: none;
+  color: var(--admin-faint);
+  transition: transform var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-list li[data-expanded="true"] .shipment-sheet-activity-chevron { transform: rotate(180deg); }
+
+/* Deep-linked entry (?a=itemId): expands via state, highlighted until dismissed. */
+.kcpl-admin-content .shipment-sheet-activity-list li[data-highlight="true"] {
+  background: var(--admin-surface-muted);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-list li[data-highlight="true"] .shipment-sheet-activity-title { font-weight: 550; }
+
+.kcpl-admin-content .shipment-sheet-activity-detail {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 8px 14px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--ship-line);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-detail p {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-detail .shipment-sheet-activity-actor {
+  color: var(--admin-faint);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.kcpl-admin-content .shipment-sheet-activity-more {
+  display: inline-flex;
+  margin-top: 7px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: color var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-more:hover { color: var(--admin-crimson); }
+
+/* Copy deep link inside an expanded activity row. */
+.kcpl-admin-content .shipment-sheet-activity-copy {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: color var(--app-duration-fast) var(--app-ease-out);
+}
+
+.kcpl-admin-content .shipment-sheet-activity-copy:hover { color: var(--admin-crimson); }
+
+/* Quiet "updated just now" cue after a poll surfaces new rows. */
+.kcpl-admin-content .shipment-sheet-activity[data-flash] h3 {
+  color: var(--admin-success);
+}
+
+@keyframes shipment-activity-flash {
+  from { background-color: color-mix(in srgb, var(--admin-success) 10%, transparent); }
+  to { background-color: transparent; }
+}
+
+.kcpl-admin-content .shipment-sheet-activity[data-flash] .shipment-sheet-activity-list li:not([data-expanded]) {
+  animation: shipment-activity-flash 1.6s var(--app-ease-out) 1;
 }
 
 @keyframes ship-card-in {
@@ -269,7 +868,6 @@
 @media (max-width: 760px) {
   .kcpl-admin-content .shipments-register { padding-bottom: 24px; }
   .kcpl-admin-content .shipments-register .shipments-actions { width: 100%; justify-content: flex-start; }
-  .kcpl-admin-content .shipments-register .shipments-view-toggle button { padding-inline: 8px; }
   .kcpl-admin-content .shipments-register .shipments-view-toggle button span,
   .kcpl-admin-content .shipments-register .shipments-result-count { display: none; }
 }
@@ -282,4 +880,66 @@
     animation: none;
     transition: none;
   }
+}
+
+/* ── Live freshness + status-change toast ───────────────────────────────
+   The register polls every 60s; these two surface that liveness quietly. */
+.kcpl-admin-content .shipments-register .shipments-freshness {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--admin-faint);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.kcpl-admin-content .shipments-register .shipments-freshness::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--admin-success);
+}
+.kcpl-admin-content .shipments-register .shipments-freshness[data-stale]::before { background: var(--admin-warning); }
+.kcpl-admin-content .shipments-register .shipments-freshness[data-stale] { color: var(--admin-muted); }
+
+.kcpl-admin-content .shipments-register .shipments-status-toast {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 10px;
+  padding: 7px 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font-size: 12px;
+  animation: shipments-toast-in 160ms var(--app-ease-out);
+}
+.kcpl-admin-content .shipments-register .shipments-status-toast strong {
+  color: var(--admin-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.kcpl-admin-content .shipments-register .shipments-status-toast-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--admin-ink);
+  font-weight: 500;
+}
+.kcpl-admin-content .shipments-register .shipments-status-toast-change .shipments-live-activity {
+  position: static;
+}
+@keyframes shipments-toast-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 760px) {
+  .kcpl-admin-content .shipments-register .shipments-freshness { display: none; }
 }
