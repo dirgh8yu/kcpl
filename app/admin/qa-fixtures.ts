@@ -128,6 +128,10 @@ function buildJob(seed: JobSeed, now: number, index: number): CommandCentreJob {
     required_customs_open: seed.customsOpen,
     required_customs_total: seed.customsTotal,
     updated_at: iso(now, -seed.updatedMinutesAgo * MINUTE),
+    // Mock activity mirror: the newest job_activity entry is the invoice at
+    // -2h for seeded jobs, so a couple of them land inside the register's
+    // 15-minute live-activity window and demonstrate the badge.
+    latest_activity_at: index < 2 ? iso(now, -(5 + index * 3) * MINUTE) : iso(now, -2 * HOUR),
   };
 }
 

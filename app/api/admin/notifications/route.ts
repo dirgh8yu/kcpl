@@ -10,6 +10,7 @@ import {
 import {
   notificationCategories,
   notificationEmailModes,
+  transitionDesks,
   type NotificationPreferences,
   type OperationsNotification,
 } from "../../../admin/notifications/notification-data";
@@ -109,9 +110,11 @@ export async function POST(request: Request) {
     if (!notificationEmailModes.includes(rawMode as NotificationPreferences["email_mode"])) return json({ ok: false, error: "Choose a valid email notification mode." }, 400);
     const existing = await getNotificationPreferences(auth.staff.profile.uid);
     const rawCategories = typeof body.categories === "object" && body.categories !== null ? body.categories as Record<string, unknown> : {};
+    const rawDesks = typeof body.transitionDesks === "object" && body.transitionDesks !== null ? body.transitionDesks as Record<string, unknown> : {};
     const preferences: NotificationPreferences = {
       email_mode: rawMode as NotificationPreferences["email_mode"],
       categories: Object.fromEntries(notificationCategories.map((category) => [category, typeof rawCategories[category] === "boolean" ? rawCategories[category] : existing.categories[category]])) as NotificationPreferences["categories"],
+      transition_desks: Object.fromEntries(transitionDesks.map((desk) => [desk, typeof rawDesks[desk] === "boolean" ? rawDesks[desk] : existing.transition_desks[desk]])) as NotificationPreferences["transition_desks"],
     };
     const result = await saveNotificationPreferences(auth.staff.profile.uid, preferences);
     if (result.kind !== "updated") return json({ ok: false, error: "Notification preferences could not be saved." }, 503);

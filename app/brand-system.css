@@ -44,8 +44,8 @@ body {
 }
 
 ::selection {
-  background: var(--kcpl-crimson);
-  color: var(--kcpl-white);
+  background: rgb(220 20 60 / 18%);
+  color: inherit;
 }
 
 a:focus-visible,

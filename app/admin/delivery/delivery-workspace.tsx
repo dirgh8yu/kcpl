@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Truck, X } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFilterChip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsToolbar } from "../operations-ui";
+import { deliveryPulseRows, RegisterPulseStrip } from "../register-pulse-strip";
+import type { CommandCentreData } from "../command-centre/command-centre-data";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
@@ -87,7 +89,7 @@ function Inspector({ row, onClose }: { row: DeliveryQueueRow; onClose: () => voi
   </aside>;
 }
 
-export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "" }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string }) {
+export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "", pulseData = null }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string; pulseData?: CommandCentreData | null }) {
   const { params, update } = useWorkspaceQuery();
   const requestedFocus = params.get("view");
   const focus: Focus = requestedFocus === "active" || requestedFocus === "failed" || requestedFocus === "pod_pending" || requestedFocus === "verified" ? requestedFocus : "all";
@@ -118,6 +120,8 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   return <OpsPage>
     <div className="delivery-control-page">
       <OpsPageHeader eyebrow="Shipment execution" title="Delivery & POD" description={`Last-mile execution queue · ${initialRows.length} deliveries · POD evidence received ≠ POD verified`} actions={<><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="sm">Shipments</Link></>}/>
+
+      {pulseData ? <RegisterPulseStrip initialData={pulseData} rows={deliveryPulseRows} urlParam="dpulse"/> : null}
 
       {initialSummary.delivered_pod_pending > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertTriangle size={15}/><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></span></OpsNotice></div> : null}
 

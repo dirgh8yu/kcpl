@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -10,22 +10,41 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Circle,
-  Clock3,
   ExternalLink,
-  MapPin,
   MoreHorizontal,
   PackageCheck,
   Pencil,
   Plus,
   RefreshCw,
-  SlidersHorizontal,
   Truck,
   UserRound,
-  Users,
   X,
 } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsNotice, OpsPage, OpsPageHeader, OpsSearch } from "../operations-ui";
+import {
+  OpsActiveFilters,
+  OpsBadge,
+  OpsButton,
+  OpsEmptyState,
+  OpsFact,
+  OpsFacts,
+  OpsField,
+  OpsFilterChoices,
+  OpsFilterMenu,
+  OpsFilterSelect,
+  OpsInspectorHeader,
+  OpsInspectorNote,
+  OpsInspectorSection,
+  OpsKpiRail,
+  OpsNotice,
+  OpsPage,
+  OpsPageHeader,
+  OpsRailMetric,
+  OpsRegisterToolbar,
+  OpsScopeTabs,
+  OpsSearch,
+  OpsTableWrap,
+  type OpsActiveFilter,
+} from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
   pickupAppointmentStatuses,
@@ -54,8 +73,23 @@ const STATUS_TABS: Array<{ label: string; value: Focus }> = [
   { label: "Cancelled", value: "cancelled" },
 ];
 
-const filterControlClass = "min-h-10 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-sm text-[var(--admin-ink)] outline-none transition-colors hover:border-[var(--admin-line-strong)] focus:border-[var(--app-focus)]";
-const iconButtonClass = "inline-grid min-h-10 min-w-10 place-items-center rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)] transition-colors hover:border-[var(--admin-line-strong)] hover:text-[var(--admin-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-focus)] disabled:cursor-not-allowed disabled:opacity-50";
+const DATE_OPTIONS: Array<{ value: Exclude<DateFilter, "all">; label: string }> = [
+  { value: "today", label: "Today" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "overdue", label: "Overdue" },
+  { value: "unscheduled", label: "No date set" },
+];
+
+const DRIVER_OPTIONS: Array<{ value: DriverFilter; label: string }> = [
+  { value: "all", label: "Any" },
+  { value: "assigned", label: "Assigned" },
+  { value: "unassigned", label: "Unassigned" },
+];
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50].map((size) => ({ value: String(size), label: `${size} / page` }));
+
+/** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
+const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
 function dateTime(value: string | null) {
   if (!value) return "Not set";
@@ -143,11 +177,12 @@ function windowDayLabel(value: string | null, todayKey: string, tomorrowKey: str
   return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone: "Asia/Kathmandu" }).format(new Date(value));
 }
 
-function statusTone(row: PickupQueueRow): "neutral" | "info" | "warning" | "success" | "danger" | "violet" {
+// Presentation only: colour follows urgency. Planned movement is blue, pending
+// confirmation amber, completion green, a missed pickup red; the rest neutral.
+function statusTone(row: PickupQueueRow): "neutral" | "info" | "warning" | "success" | "danger" {
   if (row.status === "picked_up") return "success";
   if (row.status === "missed") return "danger";
-  if (row.status === "confirmed") return "info";
-  if (row.status === "driver_assigned") return "violet";
+  if (row.status === "confirmed" || row.status === "driver_assigned") return "info";
   if (row.status === "requested") return "warning";
   return "neutral";
 }
@@ -200,7 +235,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const [selectedReferenceState, setSelectedReferenceState] = useState(initialSelected?.shipment_reference ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [editor, setEditor] = useState<EditorPanel>("details");
   const [windowStart, setWindowStart] = useState(toLocalInput(initialSelected?.confirmed_window_start ?? initialSelected?.requested_window_start ?? null));
   const [windowEnd, setWindowEnd] = useState(toLocalInput(initialSelected?.confirmed_window_end ?? initialSelected?.requested_window_end ?? null));
@@ -214,6 +248,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const [vehicleReference, setVehicleReference] = useState(initialSelected?.vehicle_reference ?? "");
   const [notes, setNotes] = useState(initialSelected?.notes ?? "");
   const [missedReason, setMissedReason] = useState("");
+  const inspectorRef = useRef<HTMLElement>(null);
 
   const params = workspace.params;
   const query = params.get("q") ?? "";
@@ -290,11 +325,40 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const page = Math.min(requestedPage, pageCount);
   const pageStart = (page - 1) * pageSize;
   const visibleRows = filtered.slice(pageStart, pageStart + pageSize);
-  const activeFilterCount = [originFilter, partnerFilter, branchFilter, dateFilter, statusFilter, driverFilter].filter((value) => value !== "all").length;
+  const menuFilterCount = [statusFilter, driverFilter].filter((value) => value !== "all").length;
+  // Up to three page numbers, windowed around the current page.
+  const pageWindowStart = Math.max(1, Math.min(page - 1, pageCount - 2));
+  const pageWindow = Array.from({ length: Math.min(pageCount, 3) }, (_, index) => pageWindowStart + index);
+  const activeFilters: OpsActiveFilter[] = [];
+  if (originFilter !== "all") activeFilters.push({ key: "origin", label: originFilter, title: `Origin: ${originFilter}`, onRemove: () => updateFilters({ origin: null }) });
+  if (dateFilter !== "all") activeFilters.push({ key: "date", label: DATE_OPTIONS.find((option) => option.value === dateFilter)?.label ?? dateFilter, title: `Date: ${dateFilter}`, onRemove: () => updateFilters({ date: null }) });
+  if (partnerFilter !== "all") activeFilters.push({ key: "partner", label: partnerFilter, title: `Carrier: ${partnerFilter}`, onRemove: () => updateFilters({ partner: null }) });
+  if (branchFilter !== "all") activeFilters.push({ key: "branch", label: branchFilter, title: `Branch: ${branchFilter}`, onRemove: () => updateFilters({ branch: null }) });
+  if (statusFilter !== "all") activeFilters.push({ key: "status", label: statusLabel(statusFilter), title: `Status: ${statusLabel(statusFilter)}`, onRemove: () => updateFilters({ status: null }) });
+  if (driverFilter !== "all") activeFilters.push({ key: "driver", label: driverFilter === "assigned" ? "Driver assigned" : "No driver", title: `Driver: ${driverFilter}`, onRemove: () => updateFilters({ driver: null }) });
 
   useEffect(() => {
     if (requestedPage > pageCount) workspace.update({ page: pageCount === 1 ? null : String(pageCount) });
   }, [pageCount, requestedPage, workspace]);
+
+  // Escape closes an open editor first, then the inspector. Popovers and
+  // dialogs handle their own Escape and mark the event, so they win.
+  const hasSelection = selected !== null;
+  const editorOpen = editor !== "details";
+  useEffect(() => {
+    if (!hasSelection) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
+      if (editorOpen) setEditor("details");
+      else {
+        setSelectedReferenceState("");
+        workspace.update({ shipment: null });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editorOpen, hasSelection, workspace]);
 
   function loadSelectedFields(row: PickupQueueRow) {
     setWindowStart(toLocalInput(row.confirmed_window_start ?? row.requested_window_start));
@@ -315,12 +379,23 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     workspace.update({ ...values, page: null });
   }
 
+  function resetFilters() {
+    workspace.update({ q: null, view: null, origin: null, partner: null, branch: null, date: null, status: null, driver: null, page: null });
+  }
+
   function choose(row: PickupQueueRow, nextEditor: EditorPanel = "details") {
     setSelectedReferenceState(row.shipment_reference);
     loadSelectedFields(row);
     setEditor(nextEditor);
     setNotice(null);
     workspace.update({ shipment: row.shipment_reference });
+    // When the inspector stacks under the register, bring it into view so the
+    // selection visibly lands somewhere.
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia(SIDE_BY_SIDE_QUERY).matches) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      inspectorRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+    });
   }
 
   function openEditor(nextEditor: EditorPanel) {
@@ -401,7 +476,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
         actions={(
           <div className="pickups-actions">
             <OpsButton variant="secondary" onClick={handleRefresh} disabled={busy}>
-              <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/> Refresh
+              <RefreshCw size={16} strokeWidth={1.75} className={busy ? "app-refreshing" : undefined} aria-hidden="true"/> Refresh
             </OpsButton>
             <OpsButton variant="primary" type="button" disabled={!hasSchedulable || busy} onClick={scheduleNext}>
               <Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Schedule pickup
@@ -410,106 +485,62 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
         )}
       />
 
-      <div className="px-4 pt-4 md:px-6">
-        <OpsKpiStrip>
-          <OpsKpiCard icon={<CalendarClock size={18} strokeWidth={1.9} aria-hidden="true"/>} label="To schedule" value={tabCounts.pending} tone="info" active={focus === "pending"} onClick={() => updateFilters({ view: "pending", date: null })}/>
-          <OpsKpiCard icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Scheduled today" value={scheduledToday} tone="warning" active={focus === "scheduled" && dateFilter === "today"} onClick={() => updateFilters({ view: "scheduled", date: "today" })}/>
-          <OpsKpiCard icon={<Users size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Driver assigned" value={summary.driver_assigned} tone="accent" active={focus === "assigned"} onClick={() => updateFilters({ view: "assigned", date: null })}/>
-          <OpsKpiCard icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Picked up" value={tabCounts.completed} tone="success" active={focus === "completed"} onClick={() => updateFilters({ view: "completed", date: null })}/>
-          <OpsKpiCard icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>} label="Needs attention" value={tabCounts.attention} tone="danger" active={focus === "attention"} onClick={() => updateFilters({ view: "attention", date: null })}/>
-        </OpsKpiStrip>
+      {/* One flat rail, not five metric cards. Each segment activates the scope
+          it already mapped to; no new filtering logic. */}
+      <div className="px-4 pt-3 md:px-6">
+        <OpsKpiRail label="Pickup summary">
+          <OpsRailMetric label="To schedule" value={tabCounts.pending} tone="warning" active={focus === "pending"} onClick={() => updateFilters({ view: "pending", date: null })}/>
+          <OpsRailMetric label="Scheduled today" value={scheduledToday} tone="info" active={focus === "scheduled" && dateFilter === "today"} onClick={() => updateFilters({ view: "scheduled", date: "today" })}/>
+          <OpsRailMetric label="Driver assigned" value={summary.driver_assigned} active={focus === "assigned"} onClick={() => updateFilters({ view: "assigned", date: null })}/>
+          <OpsRailMetric label="Picked up" value={tabCounts.completed} tone="success" active={focus === "completed"} onClick={() => updateFilters({ view: "completed", date: null })}/>
+          <OpsRailMetric label="Attention" value={tabCounts.attention} tone="danger" active={focus === "attention"} onClick={() => updateFilters({ view: "attention", date: null })} title="Missed or overdue pickups"/>
+        </OpsKpiRail>
       </div>
 
-      <div className="px-4 py-4 md:px-6">
-        {notice ? <div className="mb-4"><OpsNotice tone={notice.tone}>{notice.text}</OpsNotice></div> : null}
+      <div className="px-4 pb-8 pt-4 md:px-6">
+        {notice ? <div className="mb-3"><OpsNotice tone={notice.tone}>{notice.text}</OpsNotice></div> : null}
 
-        <div className={`grid min-h-0 gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_minmax(330px,390px)]" : "grid-cols-1"}`}>
-          <section className="min-w-0 overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)]" aria-label="Pickup register">
-            <div className="ops-scroll-x overflow-x-auto border-b border-[var(--admin-line)]" role="group" aria-label="Pickup status views">
-              <div className="flex min-w-max items-stretch px-2">
-                {STATUS_TABS.map((item) => {
-                  const active = focus === item.value;
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => updateFilters({ view: item.value === "all" ? null : item.value })}
-                      aria-pressed={active}
-                      className={`relative inline-flex min-h-12 items-center gap-2 px-4 text-sm font-medium transition-colors ${active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}
-                    >
-                      {item.label}
-                      <span className="inline-flex min-w-5 justify-center rounded-md bg-[var(--admin-surface-muted)] px-1.5 py-0.5 text-xs text-[var(--admin-muted)]">{tabCounts[item.value]}</span>
-                      {active ? <span className="absolute inset-x-3 bottom-0 h-0.5 bg-[var(--admin-crimson)]" aria-hidden="true"/> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        <OpsRegisterToolbar
+          search={<OpsSearch value={query} onChange={(event) => updateFilters({ q: event.target.value || null })} placeholder="Search customer, address, reference…" aria-label="Search pickups"/>}
+          actions={(
+            <>
+              <OpsFilterSelect label="Origin" value={originFilter} allLabel="All origins" options={origins.map((origin) => ({ value: origin, label: origin }))} onChange={(value) => updateFilters({ origin: value === "all" ? null : value })}/>
+              <OpsFilterSelect label="Date" value={dateFilter} allLabel="Any date" options={DATE_OPTIONS} onChange={(value) => updateFilters({ date: value === "all" ? null : value })}/>
+              <OpsFilterSelect label="Carrier" value={partnerFilter} allLabel="All carriers" options={partners.map((partner) => ({ value: partner, label: partner }))} onChange={(value) => updateFilters({ partner: value === "all" ? null : value })}/>
+              <OpsFilterSelect label="Branch" value={branchFilter} allLabel="All branches" options={branches.map((branch) => ({ value: branch, label: branch }))} onChange={(value) => updateFilters({ branch: value === "all" ? null : value })}/>
+              <OpsFilterMenu count={menuFilterCount} onClear={() => updateFilters({ status: null, driver: null })}>
+                <OpsFilterChoices label="Status" value={statusFilter} options={[{ value: "all", label: "Any" }, ...pickupAppointmentStatuses.map((status) => ({ value: status, label: statusLabel(status) }))]} onChange={(value) => updateFilters({ status: value === "all" ? null : value })}/>
+                <OpsFilterChoices label="Driver assignment" value={driverFilter} options={DRIVER_OPTIONS} onChange={(value) => updateFilters({ driver: value === "all" ? null : value })}/>
+              </OpsFilterMenu>
+              <span className="ops-toolbar-divider" aria-hidden="true"/>
+              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} pickups` : `${filtered.length} of ${rows.length}`}</span>
+            </>
+          )}
+          tabs={<OpsScopeTabs label="Pickup status views" items={STATUS_TABS.map((item) => ({ ...item, count: tabCounts[item.value] }))} value={focus} onChange={(value) => updateFilters({ view: value === "all" ? null : value })}/>}
+        />
 
-            <div className="border-b border-[var(--admin-line)] p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="min-w-56 flex-1 basis-64">
-                  <OpsSearch value={query} onChange={(event) => updateFilters({ q: event.target.value || null })} placeholder="Search by customer, address, reference…" aria-label="Search pickups"/>
-                </div>
-                <FilterSelect value={originFilter} ariaLabel="Filter by origin" onChange={(value) => updateFilters({ origin: value === "all" ? null : value })}>
-                  <option value="all">Origin</option>
-                  {origins.map((origin) => <option key={origin} value={origin}>{origin}</option>)}
-                </FilterSelect>
-                <FilterSelect value={dateFilter} ariaLabel="Filter by date" onChange={(value) => updateFilters({ date: value === "all" ? null : value })}>
-                  <option value="all">Date range</option>
-                  <option value="today">Today</option>
-                  <option value="upcoming">Upcoming</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="unscheduled">No date set</option>
-                </FilterSelect>
-                <FilterSelect value={statusFilter} ariaLabel="Filter by status" onChange={(value) => updateFilters({ status: value === "all" ? null : value })}>
-                  <option value="all">Status</option>
-                  {pickupAppointmentStatuses.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}
-                </FilterSelect>
-                <FilterSelect value={partnerFilter} ariaLabel="Filter by carrier or partner" onChange={(value) => updateFilters({ partner: value === "all" ? null : value })}>
-                  <option value="all">Carrier</option>
-                  {partners.map((partner) => <option key={partner} value={partner}>{partner}</option>)}
-                </FilterSelect>
-                <FilterSelect value={branchFilter} ariaLabel="Filter by branch" onChange={(value) => updateFilters({ branch: value === "all" ? null : value })}>
-                  <option value="all">Branch</option>
-                  {branches.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
-                </FilterSelect>
-                <button type="button" className={`${filterControlClass} inline-flex items-center gap-2`} onClick={() => setShowMoreFilters((value) => !value)} aria-expanded={showMoreFilters}>
-                  <SlidersHorizontal size={15} strokeWidth={1.75} aria-hidden="true"/>More filters{activeFilterCount ? ` · ${activeFilterCount}` : ""}
-                </button>
-              </div>
-              {showMoreFilters ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--admin-line)] pt-3">
-                  <FilterSelect value={driverFilter} ariaLabel="Filter by driver assignment" onChange={(value) => updateFilters({ driver: value === "all" ? null : value })}>
-                    <option value="all">Driver assignment</option>
-                    <option value="assigned">Assigned</option>
-                    <option value="unassigned">Unassigned</option>
-                  </FilterSelect>
-                  <OpsButton type="button" variant="ghost" size="sm" onClick={() => workspace.update({ q: null, view: null, origin: null, partner: null, branch: null, date: null, status: null, driver: null, page: null })}>Reset filters</OpsButton>
-                  <span className="ml-auto text-xs text-[var(--admin-muted)]">{filtered.length} pickup{filtered.length === 1 ? "" : "s"} in this view</span>
-                </div>
-              ) : null}
-            </div>
+        <OpsActiveFilters chips={activeFilters} onReset={resetFilters}/>
 
+        <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
+          <section className="ops-surface" aria-label="Pickup register">
             {filtered.length ? (
-              <div className="ops-scroll-x overflow-x-auto">
-                <table className="w-full border-collapse text-left text-sm">
-                  <thead className="bg-[var(--admin-surface-muted)] text-xs font-medium text-[var(--admin-muted)]">
+              <OpsTableWrap>
+                <table className="ops-table ops-register-table pickups-table" data-compact={compact || undefined} aria-label="Pickup appointments">
+                  <thead>
                     <tr>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup / Reference</th>
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Customer</th>
-                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Pickup address</th>}
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">
-                        <button type="button" className="inline-flex items-center gap-1 text-inherit" onClick={() => updateFilters({ sort: sortDirection === "asc" ? "desc" : "asc" })} aria-label={`Sort pickup window ${sortDirection === "asc" ? "descending" : "ascending"}`}>
-                          Pickup window{sortDirection === "asc" ? <ArrowUp size={13} strokeWidth={1.75} aria-hidden="true"/> : <ArrowDown size={13} strokeWidth={1.75} aria-hidden="true"/>}
+                      <th>Pickup</th>
+                      <th>Customer · Pickup address</th>
+                      <th aria-sort={sortDirection === "asc" ? "ascending" : "descending"}>
+                        <button type="button" className="ops-sort-button" onClick={() => updateFilters({ sort: sortDirection === "asc" ? "desc" : "asc" })} aria-label={`Sort pickup window ${sortDirection === "asc" ? "descending" : "ascending"}`}>
+                          Window{sortDirection === "asc" ? <ArrowUp size={12} strokeWidth={1.75} aria-hidden="true"/> : <ArrowDown size={12} strokeWidth={1.75} aria-hidden="true"/>}
                         </button>
                       </th>
-                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Carrier</th>}
-                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Driver</th>}
-                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Linked shipment</th>}
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Status</th>
-                      {compact ? null : <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3">Updated</th>}
-                      <th className="whitespace-nowrap border-b border-[var(--admin-line)] px-4 py-3 text-right"><span className="sr-only">Actions</span></th>
+                      {compact ? null : <th>Carrier</th>}
+                      {compact ? null : <th>Driver</th>}
+                      {compact ? null : <th>Shipment</th>}
+                      <th>Status</th>
+                      {compact ? null : <th>Updated</th>}
+                      <th className="ops-cell-open"><span className="sr-only">Open</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -519,39 +550,42 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       const attention = row.status !== "cancelled" && row.status !== "picked_up" && pickupNeedsAttention(row, nowIso);
                       const rowSelected = row.shipment_reference === selectedReference;
                       return (
-                        <tr key={row.id} tabIndex={0} className={`cursor-pointer border-b border-[var(--admin-line)] transition-colors last:border-b-0 ${rowSelected ? "bg-[var(--admin-surface-muted)]" : "hover:bg-[var(--admin-canvas)]"}`} aria-selected={rowSelected || undefined} onClick={() => choose(row)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(row); } }}>
-                          <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <span className="block font-medium text-[var(--admin-ink)]">{row.id}</span>
-                            <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.booking_reference || row.provider_reference || "—"}</span>
+                        <tr
+                          key={row.id}
+                          tabIndex={0}
+                          data-selected={rowSelected || undefined}
+                          aria-current={rowSelected || undefined}
+                          aria-label={`Open pickup ${row.id}, ${row.customer_name}, ${statusLabel(row.status)}${attention ? ", needs attention" : ""}`}
+                          onClick={() => choose(row)}
+                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(row); } }}
+                        >
+                          <td>
+                            <span className="ops-cell-primary ops-mono ops-cell-id">{row.id}</span>
+                            <span className="ops-cell-secondary ops-mono">{row.booking_reference || row.provider_reference || "—"}</span>
                           </td>
-                          <td className="px-4 py-3 align-top text-[var(--admin-ink)]">{row.customer_name}</td>
-                          {compact ? null : (
-                            <td className="px-4 py-3 align-top">
-                              <span className="block text-[var(--admin-ink)]">{row.pickup_location || row.origin}</span>
-                              {row.pickup_location && row.origin && row.pickup_location !== row.origin ? <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{row.origin}</span> : null}
-                            </td>
-                          )}
-                          <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <span className="block text-[var(--admin-ink)]">{windowDayLabel(start, todayKey, tomorrowKey)}</span>
-                            <span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{start ? `${timeLabel(start)}${end ? ` – ${timeLabel(end)}` : ""}` : "Awaiting appointment"}</span>
+                          <td>
+                            <span className="ops-cell-primary ops-cell-clamp">{row.customer_name}</span>
+                            <span className="ops-cell-secondary ops-cell-clamp">{row.pickup_location || row.origin}{row.pickup_location && row.origin && row.pickup_location !== row.origin ? ` · ${row.origin}` : ""}</span>
                           </td>
-                          {compact ? null : <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{row.partner_name || "—"}</td>}
-                          {compact ? null : <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-ink)]">{row.driver_name || "—"}</td>}
+                          <td>
+                            <span className="ops-cell-primary">{windowDayLabel(start, todayKey, tomorrowKey)}</span>
+                            <span className="ops-cell-secondary">{start ? `${timeLabel(start)}${end ? `–${timeLabel(end)}` : ""} NPT` : "Awaiting appointment"}</span>
+                          </td>
+                          {compact ? null : <td><span className="ops-cell-muted">{row.partner_name || "—"}</span></td>}
+                          {compact ? null : <td>{row.driver_name ? <span className="ops-cell-primary ops-cell-clamp">{row.driver_name}</span> : <span className="ops-cell-muted">—</span>}</td>}
                           {compact ? null : (
-                            <td className="whitespace-nowrap px-4 py-3 align-top">
-                              <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="font-medium text-[var(--admin-info)] hover:underline" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link>
-                            </td>
+                            <td><Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-cell-ref ops-mono" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link></td>
                           )}
-                          <td className="whitespace-nowrap px-4 py-3 align-top">
-                            <div className="flex items-center gap-2">
+                          <td>
+                            <span className="pickups-status">
                               <OpsBadge tone={statusTone(row)}>{statusLabel(row.status)}</OpsBadge>
-                              {attention ? <span title="Needs attention"><AlertTriangle size={15} strokeWidth={1.75} className="text-[var(--admin-danger)]" aria-label="Needs attention"/></span> : null}
-                            </div>
+                              {attention ? <span className="pickups-attention" title="Needs attention"><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/><span className="sr-only">Needs attention</span></span> : null}
+                            </span>
                           </td>
-                          {compact ? null : <td className="whitespace-nowrap px-4 py-3 align-top text-[var(--admin-muted)]">{relativeAge(row.updated_at, nowIso)}</td>}
-                          <td className="px-4 py-3 text-right align-top">
-                            <button type="button" className="inline-grid min-h-9 min-w-9 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={(event) => { event.stopPropagation(); choose(row); }} aria-label={`Open pickup ${row.id}`}>
-                              <MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true"/>
+                          {compact ? null : <td><span className="ops-cell-muted">{relativeAge(row.updated_at, nowIso)}</span></td>}
+                          <td className="ops-cell-open">
+                            <button type="button" className="ops-row-open" onClick={(event) => { event.stopPropagation(); choose(row); }} aria-label={`Open pickup ${row.id}`} tabIndex={-1}>
+                              <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
                             </button>
                           </td>
                         </tr>
@@ -559,155 +593,147 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                     })}
                   </tbody>
                 </table>
-              </div>
+              </OpsTableWrap>
             ) : (
-              <OpsEmptyState compact kind="search" title="No pickups" description="No pickups match the current search and filters." action={<OpsButton type="button" variant="secondary" onClick={() => workspace.update({ q: null, view: null, origin: null, partner: null, branch: null, date: null, status: null, driver: null, page: null })}>Clear filters</OpsButton>}/>
+              <OpsEmptyState compact kind="search" title="No pickups" description="No pickups match the current search and filters." action={<OpsButton type="button" variant="secondary" size="sm" onClick={resetFilters}>Clear filters</OpsButton>}/>
             )}
 
-            <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--admin-line)] px-4 py-3 text-xs text-[var(--admin-muted)]">
-              <span>{filtered.length ? `Showing ${pageStart + 1}–${Math.min(pageStart + pageSize, filtered.length)} of ${filtered.length} pickups` : "No pickups to show"}</span>
-              <div className="flex items-center gap-2">
-                <button type="button" className={iconButtonClass} disabled={page <= 1} onClick={() => workspace.update({ page: page - 1 <= 1 ? null : String(page - 1) })} aria-label="Previous page"><ChevronLeft size={15} strokeWidth={1.75} aria-hidden="true"/></button>
-                {Array.from({ length: Math.min(pageCount, 3) }, (_, index) => index + 1).map((pageNumber) => (
-                  <button key={pageNumber} type="button" className={`min-h-10 min-w-10 rounded-md border px-3 text-sm font-medium ${pageNumber === page ? "border-[var(--admin-crimson)] bg-[var(--admin-crimson)] text-white" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]"}`} onClick={() => workspace.update({ page: pageNumber === 1 ? null : String(pageNumber) })} aria-current={pageNumber === page ? "page" : undefined}>{pageNumber}</button>
+            <footer className="ops-register-footer">
+              <span>{filtered.length ? `${pageStart + 1}–${Math.min(pageStart + pageSize, filtered.length)} of ${filtered.length} pickups` : "No pickups to show"}</span>
+              <nav className="ops-pager" aria-label="Pickup pages">
+                <button type="button" className="ops-pager-button" disabled={page <= 1} onClick={() => workspace.update({ page: page - 1 <= 1 ? null : String(page - 1) })} aria-label="Previous page"><ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true"/></button>
+                {pageWindow.map((pageNumber) => (
+                  <button key={pageNumber} type="button" className="ops-pager-button" onClick={() => workspace.update({ page: pageNumber === 1 ? null : String(pageNumber) })} aria-current={pageNumber === page ? "page" : undefined} aria-label={`Page ${pageNumber}`}>{pageNumber}</button>
                 ))}
-                <button type="button" className={iconButtonClass} disabled={page >= pageCount} onClick={() => workspace.update({ page: String(page + 1) })} aria-label="Next page"><ChevronRight size={15} strokeWidth={1.75} aria-hidden="true"/></button>
-                <FilterSelect value={String(pageSize)} ariaLabel="Rows per page" onChange={(value) => workspace.update({ pageSize: value === "10" ? null : value, page: null })}>
-                  <option value="10">10 / page</option>
-                  <option value="20">20 / page</option>
-                  <option value="50">50 / page</option>
-                </FilterSelect>
-              </div>
+                <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => workspace.update({ page: String(page + 1) })} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
+                <OpsFilterSelect label="Rows per page" value={String(pageSize)} allValue={null} showValue align="end" options={PAGE_SIZE_OPTIONS} onChange={(value) => workspace.update({ pageSize: value === "10" ? null : value, page: null })}/>
+              </nav>
             </footer>
           </section>
 
           {selected ? (
-            <aside className="min-w-0 self-start overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-surface)] xl:sticky xl:top-4" aria-label={`Pickup ${selected.id}`}>
-              <header className="flex items-start justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold text-[var(--admin-ink)]">{selected.id}</h2>
+            <aside ref={inspectorRef} className="ops-inspector" aria-label={`Pickup ${selected.id}`}>
+              <OpsInspectorHeader
+                kicker={`${selected.id} · ${selected.shipment_reference}`}
+                title={selected.customer_name}
+                subtitle={`${selected.pickup_location || selected.origin} → ${selected.destination}`}
+                actions={(
+                  <>
                     <OpsBadge tone={statusTone(selected)}>{statusLabel(selected.status)}</OpsBadge>
-                  </div>
-                  <p className="mt-1 text-sm text-[var(--admin-muted)]">For shipment <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="font-medium text-[var(--admin-ink)] hover:underline">{selected.shipment_reference}</Link></p>
+                    <button type="button" className="ops-inspector-close" onClick={closeInspector} aria-label="Close pickup details"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+                  </>
+                )}
+              />
+
+              <div className="ops-inspector-scroll">
+                <div className="ops-inspector-body">
+                  {selected.status !== "picked_up" && selected.status !== "cancelled" ? (
+                    <div className="ops-inspector-actions">
+                      <OpsButton type="button" variant="secondary" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
+                      {selected.status === "confirmed" || selected.status === "requested" ? (
+                        <OpsButton variant="primary" type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</OpsButton>
+                      ) : selected.status === "driver_assigned" ? (
+                        <OpsButton variant="primary" type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</OpsButton>
+                      ) : (
+                        <OpsButton variant="primary" type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</OpsButton>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {selected.status === "missed" || (pickupNeedsAttention(selected, nowIso) && selected.status !== "picked_up" && selected.status !== "cancelled") ? (
+                    <OpsInspectorNote icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Attention required">
+                      {selected.status === "missed" ? selected.missed_reason || "This pickup was recorded as missed." : "The collection window is missing or overdue."}
+                    </OpsInspectorNote>
+                  ) : null}
+
+                  {selected.status === "picked_up" || selected.status === "cancelled" ? (
+                    <OpsInspectorNote tone={selected.status === "picked_up" ? "success" : "neutral"} icon={selected.status === "picked_up" ? <Check size={14} strokeWidth={1.75} aria-hidden="true"/> : undefined} title={selected.status === "picked_up" ? "Pickup completed" : "Pickup cancelled"}>
+                      {selected.status === "picked_up" ? `${dateTime(selected.picked_up_at)}. Live Visibility now owns the movement timeline.` : "This pickup appointment is cancelled."}
+                    </OpsInspectorNote>
+                  ) : null}
+
+                  {editor === "appointment" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
+                    <OpsInspectorSection tinted title="Appointment" action={<EditorClose label="appointment" onClose={() => setEditor("details")}/>}>
+                      <p className="ops-inspector-hint mb-3">Request or confirm the collection window. Times are saved and shown in Nepal time (NPT).</p>
+                      <div className="ops-inspector-form">
+                        <OpsField label="Window start" className="col-span-full"><input name="pickup-window-start" type="datetime-local" value={windowStart} onChange={(event) => setWindowStart(event.target.value)}/></OpsField>
+                        <OpsField label="Window end" className="col-span-full"><input name="pickup-window-end" type="datetime-local" value={windowEnd} onChange={(event) => setWindowEnd(event.target.value)}/></OpsField>
+                        <OpsField label="Pickup location"><input value={pickupLocation} onChange={(event) => setPickupLocation(event.target.value)} placeholder="Warehouse, factory, terminal…"/></OpsField>
+                        <OpsField label="Request channel"><select value={channel} onChange={(event) => setChannel(event.target.value as PickupChannel)}>{pickupChannels.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></OpsField>
+                        <OpsField label="Contact name"><input value={contactName} onChange={(event) => setContactName(event.target.value)}/></OpsField>
+                        <OpsField label="Contact phone"><input value={contactPhone} onChange={(event) => setContactPhone(event.target.value)}/></OpsField>
+                        <OpsField label="Carrier reference"><input value={providerReference} onChange={(event) => setProviderReference(event.target.value)} placeholder="Appointment reference"/></OpsField>
+                        <OpsField label="Instructions"><input value={notes} onChange={(event) => setNotes(event.target.value)}/></OpsField>
+                      </div>
+                      <div className="ops-inspector-actions mt-3">
+                        <OpsButton type="button" variant="secondary" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act("schedule", schedulePayload(false))}>Request pickup</OpsButton>
+                        <OpsButton variant="primary" type="button" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</OpsButton>
+                      </div>
+                    </OpsInspectorSection>
+                  ) : null}
+
+                  {editor === "driver" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
+                    <OpsInspectorSection tinted title="Vehicle & driver" action={<EditorClose label="vehicle & driver" onClose={() => setEditor("details")}/>}>
+                      <p className="ops-inspector-hint mb-3">Assign the collection resource once the appointment is ready.</p>
+                      <div className="ops-inspector-form">
+                        <OpsField label="Driver name"><input value={driverName} onChange={(event) => setDriverName(event.target.value)}/></OpsField>
+                        <OpsField label="Driver phone"><input value={driverPhone} onChange={(event) => setDriverPhone(event.target.value)}/></OpsField>
+                        <OpsField label="Vehicle reference"><input value={vehicleReference} onChange={(event) => setVehicleReference(event.target.value)} placeholder="Truck / plate / vehicle"/></OpsField>
+                      </div>
+                      <div className="ops-inspector-actions mt-3"><OpsButton variant="primary" type="button" disabled={busy || driverName.trim().length < 2 || selected.status === "unscheduled"} onClick={() => act("assign_driver", { driverName, driverPhone, vehicleReference, notes })}><Truck size={15} strokeWidth={1.75} aria-hidden="true"/>Save driver assignment</OpsButton></div>
+                    </OpsInspectorSection>
+                  ) : null}
+
+                  {editor === "outcome" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
+                    <OpsInspectorSection tinted title="Pickup outcome" action={<EditorClose label="pickup outcome" onClose={() => setEditor("details")}/>}>
+                      <p className="ops-inspector-hint mb-3">Complete the collection or record the operational exception.</p>
+                      <div className="ops-inspector-actions">
+                        <OpsButton variant="primary" type="button" disabled={busy || selected.status === "unscheduled"} onClick={() => act("picked_up", { eventTime: new Date().toISOString(), location: pickupLocation })}><Check size={15} strokeWidth={1.75} aria-hidden="true"/>Cargo picked up</OpsButton>
+                        <OpsButton type="button" variant="danger" disabled={busy || selected.status === "unscheduled" || missedReason.trim().length < 6} onClick={() => act("missed", { reason: missedReason })}><AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>Mark missed</OpsButton>
+                        <OpsButton type="button" variant="ghost" disabled={busy || selected.status === "unscheduled"} onClick={() => act("cancel", { note: notes })}>Cancel pickup</OpsButton>
+                      </div>
+                      <div className="ops-inspector-form mt-3"><OpsField label="Missed-pickup reason" className="col-span-full"><textarea className="ops-textarea" value={missedReason} onChange={(event) => setMissedReason(event.target.value)} placeholder="Carrier no-show, cargo not ready, warehouse closed, documents incomplete…"/></OpsField></div>
+                    </OpsInspectorSection>
+                  ) : null}
+
+                  <OpsInspectorSection title="Location & route">
+                    <OpsFacts>
+                      <OpsFact label="Pickup">{selected.pickup_location || selected.origin}</OpsFact>
+                      {selected.pickup_location && selected.origin && selected.pickup_location !== selected.origin ? <OpsFact label="Origin">{selected.origin}</OpsFact> : null}
+                      <OpsFact label="Destination">{selected.destination}</OpsFact>
+                    </OpsFacts>
+                  </OpsInspectorSection>
+
+                  <OpsInspectorSection
+                    title="Pickup details"
+                    action={<OpsButton type="button" size="xs" variant="ghost" onClick={() => openEditor("appointment")}><Pencil size={13} strokeWidth={1.75} aria-hidden="true"/>Edit</OpsButton>}
+                  >
+                    <OpsFacts>
+                      <OpsFact label="Customer">{selected.customer_name}</OpsFact>
+                      <OpsFact label="Date & time" warning={!selectedWindowStart}>{selectedWindowStart ? `${dateLabel(selectedWindowStart)} · ${timeLabel(selectedWindowStart)}${selectedWindowEnd ? `–${timeLabel(selectedWindowEnd)}` : ""} NPT` : "Not scheduled"}</OpsFact>
+                      <OpsFact label="Carrier">{selected.partner_name || selected.channel.replaceAll("_", " ")}</OpsFact>
+                      <OpsFact label="Driver / vehicle">{selected.driver_name ? `${selected.driver_name}${selected.vehicle_reference ? ` · ${selected.vehicle_reference}` : ""}` : "Not assigned"}</OpsFact>
+                      <OpsFact label="Contact">{[selected.contact_name, selected.contact_phone].filter(Boolean).join(" · ") || "Not provided"}</OpsFact>
+                      <OpsFact label="Reference">{selected.provider_reference || "—"}</OpsFact>
+                      <OpsFact label="Instructions">{selected.notes || "—"}</OpsFact>
+                      <OpsFact label="Shipment"><Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="ops-mono">{selected.shipment_reference}</Link></OpsFact>
+                    </OpsFacts>
+                  </OpsInspectorSection>
+
+                  <OpsInspectorSection title="Pickup timeline">
+                    <ol className="ops-steps">
+                      <PickupStep state={selected.status === "unscheduled" ? "current" : "done"} title="Appointment" detail={selectedWindowStart ? `${shortDateTime(selectedWindowStart)} NPT` : "Awaiting pickup window"}/>
+                      <PickupStep state={selected.status === "confirmed" || selected.status === "requested" ? "current" : selected.driver_name || selected.status === "driver_assigned" || selected.status === "picked_up" ? "done" : "future"} title="Driver assigned" detail={selected.driver_name ? [selected.driver_name, selected.vehicle_reference].filter(Boolean).join(" · ") : "—"}/>
+                      <PickupStep state={selected.status === "picked_up" ? "done" : selected.status === "missed" ? "danger" : selected.status === "driver_assigned" ? "current" : "future"} title="Cargo picked up" detail={selected.picked_up_at ? dateTime(selected.picked_up_at) : selected.status === "missed" ? selected.missed_reason || "Pickup missed" : "—"}/>
+                      <PickupStep state={selected.status === "picked_up" ? "done" : "future"} title="Handoff to Live Visibility" detail={selected.status === "picked_up" ? "Movement milestone recorded" : "Begins after pickup completion"}/>
+                    </ol>
+                  </OpsInspectorSection>
                 </div>
-                <button type="button" className="inline-grid min-h-9 min-w-9 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={closeInspector} aria-label="Close pickup details"><X size={17} strokeWidth={1.75} aria-hidden="true"/></button>
-              </header>
-
-              <div className="max-h-[calc(100dvh-150px)] overflow-y-auto">
-                {selected.status !== "picked_up" && selected.status !== "cancelled" ? (
-                  <div className="grid grid-cols-2 gap-2 border-b border-[var(--admin-line)] p-4">
-                    <OpsButton type="button" variant="secondary" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
-                    {selected.status === "confirmed" || selected.status === "requested" ? (
-                      <OpsButton variant="primary" type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</OpsButton>
-                    ) : selected.status === "driver_assigned" ? (
-                      <OpsButton variant="primary" type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</OpsButton>
-                    ) : (
-                      <OpsButton variant="primary" type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</OpsButton>
-                    )}
-                  </div>
-                ) : null}
-
-                {selected.status === "missed" || (pickupNeedsAttention(selected, nowIso) && selected.status !== "picked_up" && selected.status !== "cancelled") ? (
-                  <div className="border-b border-[var(--admin-line)] px-4 py-3">
-                    <div className="flex items-start gap-2 rounded-md bg-[var(--admin-danger-bg)] px-3 py-2.5 text-[var(--admin-danger)]">
-                      <AlertTriangle size={15} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true"/>
-                      <div><strong className="block text-sm">Attention required</strong><span className="mt-0.5 block text-xs">{selected.status === "missed" ? selected.missed_reason || "This pickup was recorded as missed." : "The collection window is missing or overdue."}</span></div>
-                    </div>
-                  </div>
-                ) : null}
-
-                <section className="border-b border-[var(--admin-line)] px-4 py-4">
-                  <h3 className="text-sm font-semibold text-[var(--admin-ink)]">Location &amp; route</h3>
-                  <div className="mt-3 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-canvas)] p-4">
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-                      <RoutePoint icon={<MapPin size={15} strokeWidth={1.75}/>} label="Pickup" value={selected.pickup_location || selected.origin}/>
-                      <div className="flex items-center gap-1 text-[var(--admin-line-strong)]" aria-hidden="true"><span className="h-px w-6 bg-[var(--admin-line-strong)]"/><Truck size={16} strokeWidth={1.75}/><span className="h-px w-6 bg-[var(--admin-line-strong)]"/></div>
-                      <RoutePoint align="right" icon={<MapPin size={15} strokeWidth={1.75}/>} label="Destination" value={selected.destination}/>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="border-b border-[var(--admin-line)] px-4 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold text-[var(--admin-ink)]">Pickup details</h3>
-                    <button type="button" className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-[var(--admin-line)] px-2.5 text-xs font-medium text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]" onClick={() => openEditor("appointment")}><Pencil size={13} strokeWidth={1.75} aria-hidden="true"/>Edit</button>
-                  </div>
-                  <dl className="mt-3 grid grid-cols-[110px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-                    <DetailRow label="Customer">{selected.customer_name}</DetailRow>
-                    <DetailRow label="Pickup address">{selected.pickup_location || selected.origin}</DetailRow>
-                    <DetailRow label="Date & time">{selectedWindowStart ? `${dateLabel(selectedWindowStart)} · ${timeLabel(selectedWindowStart)}${selectedWindowEnd ? ` – ${timeLabel(selectedWindowEnd)}` : ""}` : "Not scheduled"}</DetailRow>
-                    <DetailRow label="Carrier">{selected.partner_name || selected.channel.replaceAll("_", " ")}</DetailRow>
-                    <DetailRow label="Driver / vehicle">{selected.driver_name ? `${selected.driver_name}${selected.vehicle_reference ? ` · ${selected.vehicle_reference}` : ""}` : "Not assigned"}</DetailRow>
-                    <DetailRow label="Contact">{[selected.contact_name, selected.contact_phone].filter(Boolean).join(" · ") || "Not provided"}</DetailRow>
-                    <DetailRow label="Reference">{selected.provider_reference || "—"}</DetailRow>
-                    <DetailRow label="Instructions">{selected.notes || "—"}</DetailRow>
-                  </dl>
-                </section>
-
-                {editor === "appointment" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
-                  <section className="border-b border-[var(--admin-line)] bg-[var(--admin-canvas)] px-4 py-4">
-                    <EditorHeading title="Appointment" detail="Request or confirm the collection window." onClose={() => setEditor("details")}/>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <OpsField label="Window start"><input name="pickup-window-start" type="datetime-local" value={windowStart} onChange={(event) => setWindowStart(event.target.value)}/></OpsField>
-                      <OpsField label="Window end"><input name="pickup-window-end" type="datetime-local" value={windowEnd} onChange={(event) => setWindowEnd(event.target.value)}/></OpsField>
-                      <OpsField label="Pickup location"><input value={pickupLocation} onChange={(event) => setPickupLocation(event.target.value)} placeholder="Warehouse, factory, terminal…"/></OpsField>
-                      <OpsField label="Request channel"><select value={channel} onChange={(event) => setChannel(event.target.value as PickupChannel)}>{pickupChannels.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></OpsField>
-                      <OpsField label="Contact name"><input value={contactName} onChange={(event) => setContactName(event.target.value)}/></OpsField>
-                      <OpsField label="Contact phone"><input value={contactPhone} onChange={(event) => setContactPhone(event.target.value)}/></OpsField>
-                      <OpsField label="Carrier reference"><input value={providerReference} onChange={(event) => setProviderReference(event.target.value)} placeholder="Appointment reference"/></OpsField>
-                      <OpsField label="Instructions"><input value={notes} onChange={(event) => setNotes(event.target.value)}/></OpsField>
-                    </div>
-                    <p className="mt-3 text-xs text-[var(--admin-muted)]">Times are saved and displayed in Nepal time (NPT).</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <OpsButton type="button" variant="secondary" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act("schedule", schedulePayload(false))}>Request pickup</OpsButton>
-                      <OpsButton variant="primary" type="button" disabled={busy || !nepalInputToIso(windowStart) || !nepalInputToIso(windowEnd)} onClick={() => act(selected.status === "unscheduled" || selected.status === "missed" ? "schedule" : "confirm", selected.status === "unscheduled" || selected.status === "missed" ? schedulePayload(true) : { windowStart: nepalInputToIso(windowStart), windowEnd: nepalInputToIso(windowEnd), providerReference, notes })}>{selected.status === "confirmed" ? "Update appointment" : "Confirm appointment"}</OpsButton>
-                    </div>
-                  </section>
-                ) : null}
-
-                {editor === "driver" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
-                  <section className="border-b border-[var(--admin-line)] bg-[var(--admin-canvas)] px-4 py-4">
-                    <EditorHeading title="Vehicle & driver" detail="Assign the collection resource once the appointment is ready." onClose={() => setEditor("details")}/>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <OpsField label="Driver name"><input value={driverName} onChange={(event) => setDriverName(event.target.value)}/></OpsField>
-                      <OpsField label="Driver phone"><input value={driverPhone} onChange={(event) => setDriverPhone(event.target.value)}/></OpsField>
-                      <OpsField label="Vehicle reference"><input value={vehicleReference} onChange={(event) => setVehicleReference(event.target.value)} placeholder="Truck / plate / vehicle"/></OpsField>
-                    </div>
-                    <div className="mt-4"><OpsButton variant="primary" type="button" disabled={busy || driverName.trim().length < 2 || selected.status === "unscheduled"} onClick={() => act("assign_driver", { driverName, driverPhone, vehicleReference, notes })}><Truck size={15} strokeWidth={1.75} aria-hidden="true"/>Save driver assignment</OpsButton></div>
-                  </section>
-                ) : null}
-
-                {editor === "outcome" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
-                  <section className="border-b border-[var(--admin-line)] bg-[var(--admin-canvas)] px-4 py-4">
-                    <EditorHeading title="Pickup outcome" detail="Complete the collection or record the operational exception." onClose={() => setEditor("details")}/>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <OpsButton variant="primary" type="button" disabled={busy || selected.status === "unscheduled"} onClick={() => act("picked_up", { eventTime: new Date().toISOString(), location: pickupLocation })}><Check size={15} strokeWidth={1.75} aria-hidden="true"/>Cargo picked up</OpsButton>
-                      <OpsButton type="button" variant="danger" disabled={busy || selected.status === "unscheduled" || missedReason.trim().length < 6} onClick={() => act("missed", { reason: missedReason })}><AlertTriangle size={15} strokeWidth={1.75} aria-hidden="true"/>Mark missed</OpsButton>
-                      <OpsButton type="button" variant="ghost" disabled={busy || selected.status === "unscheduled"} onClick={() => act("cancel", { note: notes })}>Cancel pickup</OpsButton>
-                    </div>
-                    <div className="mt-4"><OpsField label="Missed-pickup reason"><textarea className="ops-textarea min-h-20" value={missedReason} onChange={(event) => setMissedReason(event.target.value)} placeholder="Carrier no-show, cargo not ready, warehouse closed, documents incomplete…"/></OpsField></div>
-                  </section>
-                ) : null}
-
-                <section className="border-b border-[var(--admin-line)] px-4 py-4">
-                  <h3 className="text-sm font-semibold text-[var(--admin-ink)]">Pickup timeline</h3>
-                  <div className="mt-4 space-y-0">
-                    <TimelineItem state={selected.status === "unscheduled" ? "current" : "done"} title="Appointment" detail={selectedWindowStart ? shortDateTime(selectedWindowStart) : "Awaiting pickup window"}/>
-                    <TimelineItem state={selected.status === "confirmed" || selected.status === "requested" ? "current" : selected.driver_name || selected.status === "driver_assigned" || selected.status === "picked_up" ? "done" : "future"} title="Driver assigned" detail={selected.driver_name ? [selected.driver_name, selected.vehicle_reference].filter(Boolean).join(" · ") : "—"}/>
-                    <TimelineItem state={selected.status === "picked_up" ? "done" : selected.status === "missed" ? "danger" : selected.status === "driver_assigned" ? "current" : "future"} title="Cargo picked up" detail={selected.picked_up_at ? dateTime(selected.picked_up_at) : selected.status === "missed" ? selected.missed_reason || "Pickup missed" : "—"}/>
-                    <TimelineItem state={selected.status === "picked_up" ? "done" : "future"} title="Handoff to Live Visibility" detail={selected.status === "picked_up" ? "Movement milestone recorded" : "Begins after pickup completion"} last/>
-                  </div>
-                </section>
-
-                {selected.status === "picked_up" || selected.status === "cancelled" ? (
-                  <div className="border-b border-[var(--admin-line)] px-4 py-4"><OpsNotice tone={selected.status === "picked_up" ? "success" : "warning"}>{selected.status === "picked_up" ? `Pickup completed ${dateTime(selected.picked_up_at)}. Live Visibility now owns the movement timeline.` : "This pickup appointment is cancelled."}</OpsNotice></div>
-                ) : null}
               </div>
 
-              <footer className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 p-4">
-                <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[var(--admin-line)] px-3 text-sm font-medium text-[var(--admin-ink)] hover:border-[var(--admin-line-strong)]"><ExternalLink size={15} strokeWidth={1.75} aria-hidden="true"/>View shipment</Link>
-                <button type="button" className={iconButtonClass} onClick={() => editor === "outcome" ? setEditor("details") : openEditor("outcome")} aria-label="More pickup actions"><MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true"/></button>
+              <footer className="ops-inspector-footer">
+                <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="md"><ExternalLink size={15} strokeWidth={1.75} aria-hidden="true"/>View shipment</Link>
+                <button type="button" className="ops-inspector-close" onClick={() => editor === "outcome" ? setEditor("details") : openEditor("outcome")} aria-label="More pickup actions" aria-expanded={editor === "outcome"}><MoreHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/></button>
               </footer>
             </aside>
           ) : null}
@@ -717,25 +743,19 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   );
 }
 
-
-function FilterSelect({ value, ariaLabel, onChange, children }: { value: string; ariaLabel: string; onChange: (value: string) => void; children: ReactNode }) {
-  return <select className={filterControlClass} value={value} onChange={(event) => onChange(event.target.value)} aria-label={ariaLabel}>{children}</select>;
+function EditorClose({ label, onClose }: { label: string; onClose: () => void }) {
+  return <button type="button" className="ops-inspector-close" onClick={onClose} aria-label={`Close ${label} editor`}><X size={14} strokeWidth={1.75} aria-hidden="true"/></button>;
 }
 
-function DetailRow({ label, children }: { label: string; children: ReactNode }) {
-  return <><dt className="text-[var(--admin-muted)]">{label}</dt><dd className="m-0 min-w-0 text-[var(--admin-ink)]">{children}</dd></>;
-}
+const STEP_STATE_LABELS = { done: "Done", current: "Next", future: "", danger: "Missed" } as const;
 
-function RoutePoint({ icon, label, value, align = "left" }: { icon: ReactNode; label: string; value: string; align?: "left" | "right" }) {
-  return <div className={align === "right" ? "text-right" : "text-left"}><span className={`inline-flex items-center gap-1.5 text-xs font-medium text-[var(--admin-muted)] ${align === "right" ? "flex-row-reverse" : ""}`}>{icon}{label}</span><strong className="mt-1 block text-sm font-medium text-[var(--admin-ink)]">{value}</strong></div>;
-}
-
-function EditorHeading({ title, detail, onClose }: { title: string; detail: string; onClose: () => void }) {
-  return <div className="flex items-start justify-between gap-3"><div><h3 className="text-sm font-semibold text-[var(--admin-ink)]">{title}</h3><p className="mt-1 text-xs text-[var(--admin-muted)]">{detail}</p></div><button type="button" className="inline-grid min-h-8 min-w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" onClick={onClose} aria-label={`Close ${title.toLowerCase()} editor`}><X size={15} strokeWidth={1.75} aria-hidden="true"/></button></div>;
-}
-
-function TimelineItem({ state, title, detail, last = false }: { state: "done" | "current" | "future" | "danger"; title: string; detail: string; last?: boolean }) {
-  const icon = state === "done" ? <Check size={14} strokeWidth={2} aria-hidden="true"/> : state === "danger" ? <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/> : state === "current" ? <Clock3 size={14} strokeWidth={1.75} aria-hidden="true"/> : <Circle size={10} strokeWidth={1.75} aria-hidden="true"/>;
-  const iconClass = state === "done" ? "bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : state === "danger" ? "bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]" : state === "current" ? "bg-[var(--admin-ink)] text-white" : "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
-  return <div className="grid grid-cols-[34px_minmax(0,1fr)] gap-3"><div className="flex flex-col items-center"><span className={`grid h-8 w-8 place-items-center rounded-[var(--app-dialog-radius)] ${iconClass}`}>{icon}</span>{!last ? <span className="min-h-7 w-px flex-1 bg-[var(--admin-line)]" aria-hidden="true"/> : null}</div><div className="pb-4 pt-1"><strong className="block text-sm font-medium text-[var(--admin-ink)]">{title}</strong><span className="mt-0.5 block text-xs text-[var(--admin-muted)]">{detail}</span></div></div>;
+function PickupStep({ state, title, detail }: { state: "done" | "current" | "future" | "danger"; title: string; detail: string }) {
+  return (
+    <li className="ops-step" data-state={state}>
+      <span className="ops-step-dot" aria-hidden="true"/>
+      <span className="ops-step-title">{title}</span>
+      <span className="ops-step-state">{STEP_STATE_LABELS[state]}</span>
+      <span className="ops-step-detail">{detail}</span>
+    </li>
+  );
 }

@@ -261,3 +261,57 @@ export async function getShipmentActivityTimeline(reference: string, context: Kc
   };
   return { kind: "ready" as const, timeline };
 }
+
+/** Newest raw job_activity timestamp for a shipment — feeds the server-side
+ * last-visit divider so "new since" anchors follow the staff member across
+ * devices. Firestore-only: QA mock timelines have no cross-device meaning. */
+/** Tone derivation shared with the live activity-alert feed, which reads raw
+ * job_activity docs (type/title) that do not carry a stored tone. */
+export function activityToneFor(type: string, title: string): ShipmentActivityTone {
+  return activityTone(type, title);
+}
+
+export async function getShipmentLatestActivity(reference: string): Promise<string | null> {
+  if (!firebaseRuntimeConfigured()) return null;
+  const snapshot = await firebaseAdminDb()
+    .collection("shipments").doc(reference.trim().toUpperCase())
+    .collection("job_activity")
+    .orderBy("created_at", "desc")
+    .limit(1)
+    .get();
+  return text(snapshot.docs[0]?.get("created_at")) || null;
+}
+
+/** Per-staff, per-shipment last-visit anchor, persisted server-side so the
+ * "since your last visit" divider follows the user across devices. Falls back
+ * to null (no divider) when Firestore is unavailable — the timeline then
+ * behaves like a first visit rather than blocking the page. */
+export async function readShipmentLastVisit(uid: string, reference: string): Promise<{ seenThroughAt: string | null; kind: "stored" | "unavailable" }> {
+  if (!firebaseRuntimeConfigured()) return { seenThroughAt: null, kind: "unavailable" };
+  const doc = await firebaseAdminDb()
+    .collection("staff_activity_visits").doc(uid)
+    .collection("shipments").doc(reference.trim().toUpperCase())
+    .get();
+  const value = text(doc.get("seen_through_at"));
+  return { seenThroughAt: value || null, kind: doc.exists ? "stored" : "unavailable" };
+}
+
+export async function recordShipmentVisit(uid: string, reference: string, seenThroughAt: string) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  await firebaseAdminDb()
+    .collection("staff_activity_visits").doc(uid)
+    .collection("shipments").doc(reference.trim().toUpperCase())
+    .set({ seen_through_at: seenThroughAt, visited_at: seenThroughAt }, { merge: true });
+  return { kind: "stored" as const };
+}
+
+/** Seen-receipt for the live activity alert feed, so a danger-tone poll only
+ * rings the bell once per staff member per activity entry. */
+export async function recordActivityAlertReceipt(uid: string, reference: string, activityId: string) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  await firebaseAdminDb()
+    .collection("staff_activity_alert_receipts").doc(uid)
+    .collection("items").doc(`${reference.trim().toUpperCase()}__${activityId}`)
+    .set({ activity_id: activityId, reference: reference.trim().toUpperCase(), seen_at: new Date().toISOString() }, { merge: true });
+  return { kind: "stored" as const };
+}

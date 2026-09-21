@@ -1,5 +1,4 @@
-import { FileCheck2 } from "lucide-react";
-import { OpsBadge, OpsEmptyState, OpsSurface, OpsTableWrap } from "../../operations-ui";
+import { OpsBadge, OpsSurface, OpsTableWrap } from "../../operations-ui";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../../shipment-document-types";
 import type { PortalAccessSummary } from "../../../portal/portal-access-log";
 
@@ -50,7 +49,7 @@ export function CustomerAccessPanel({
     >
       {summaries.length ? (
         <OpsTableWrap>
-          <table className="ops-table">
+          <table className="ops-table ops-register-table job-access-table">
             <thead>
               <tr>
                 <th scope="col">Document</th>
@@ -82,17 +81,17 @@ export function CustomerAccessPanel({
           </table>
         </OpsTableWrap>
       ) : (
-        <OpsEmptyState
-          kind={releasedCount ? "neutral" : "setup"}
-          compact
-          icon={<FileCheck2 size={18} strokeWidth={1.75} aria-hidden="true"/>}
-          title={releasedCount ? "Nothing downloaded yet" : "Nothing released yet"}
-          description={
-            releasedCount
+        // Quiet empty state: one left-aligned line. The surface description
+        // already carries the context sentence, so no icon panel or reserved
+        // height is needed here.
+        <p className="job-access-quiet-empty">
+          {releasedCount ? "Nothing downloaded yet" : "Nothing released yet"}
+          <span>
+            {releasedCount
               ? "The customer has not downloaded any of the documents released to them."
-              : "Once a document is marked customer-safe, downloads from the portal are recorded here."
-          }
-        />
+              : "Once a document is marked customer-safe, downloads from the portal are recorded here."}
+          </span>
+        </p>
       )}
 
       {pending.length ? (

@@ -4,31 +4,41 @@ import Link from "next/link";
 import {
   Activity,
   AlertTriangle,
-  Box,
   CheckCircle2,
-  Clock3,
-  MapPin,
-  Plane,
-  RadioTower,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
-  Truck,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  OpsActiveFilters,
   OpsBadge,
   OpsButton,
   OpsDialog,
   OpsEmptyState,
+  OpsFact,
+  OpsFacts,
   OpsField,
+  OpsFilterSelect,
+  OpsInspectorHeader,
+  OpsInspectorNote,
+  OpsInspectorSection,
+  OpsKpiRail,
   OpsMono,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
+  OpsRailMetric,
+  OpsRegisterToolbar,
+  OpsScopeTabs,
   OpsSearch,
+  OpsSurface,
   OpsTableWrap,
   useAdminPortalContainer,
+  type OpsActiveFilter,
 } from "../operations-ui";
+import { statusTone as shipmentStatusTone } from "../shipments/shipments-views";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { shipmentStatusLabels } from "../../shipment-types";
 import {
@@ -112,16 +122,6 @@ function delayText(hours: number | null) {
   return hours > 0
     ? `+${Math.round(hours)}h`
     : `-${Math.abs(Math.round(hours))}h`;
-}
-
-function statusTone(
-  row: VisibilityShipment,
-): "neutral" | "info" | "warning" | "success" | "danger" {
-  if (row.status === "delivered") return "success";
-  if (row.stale || row.status === "exception") return "danger";
-  if ((row.eta_delta_hours ?? 0) >= 24 || row.status === "customs_clearance")
-    return "warning";
-  return "info";
 }
 
 function sourceLabel(source: VisibilityShipment["last_source"]) {
@@ -379,17 +379,17 @@ export function TrackingVisibilityWorkspace({
       previousFocusRef.current = null;
       return;
     }
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // The inspector is non-modal (as on Shipments), so the register keeps
+    // scrolling behind it; Escape still dismisses it.
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      // Popovers and the sheet's own dismiss layer mark the event they handle.
+      if (event.key === "Escape" && !event.defaultPrevented) {
         setAllowInitialSelection(false);
         update({ selected: null, shipment: null });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [selectedKey, update]);
@@ -477,688 +477,209 @@ export function TrackingVisibilityWorkspace({
     originFilter !== "all" ||
     destinationFilter !== "all";
 
+  const setFocus = (next: Focus) => update({ view: next === "all" ? null : next, page: null, selected: null });
+  const activeFilters: OpsActiveFilter[] = [];
+  if (modeFilter !== "all") activeFilters.push({ key: "mode", label: modeFilter, title: `Mode: ${modeFilter}`, onRemove: () => update({ mode: null, page: null, selected: null }) });
+  if (originFilter !== "all") activeFilters.push({ key: "origin", label: originFilter, title: `Origin: ${originFilter}`, onRemove: () => update({ origin: null, page: null, selected: null }) });
+  if (destinationFilter !== "all") activeFilters.push({ key: "destination", label: destinationFilter, title: `Destination: ${destinationFilter}`, onRemove: () => update({ destination: null, page: null, selected: null }) });
+  const resetFilters = () => update({ q: null, view: null, mode: null, origin: null, destination: null, page: null, selected: null, shipment: null });
+
   return (
     <OpsPage className="visibility-v2">
-      <div className="visibility-page">
-        {/* HEADER */}
-        <OpsPageHeader
-          eyebrow="Operate"
-          title="Live Visibility"
-          description="Monitor shipment feeds, ETA movement and the latest carrier or counterpart events from one operational register."
-          meta={
-            <span className="visibility-last-updated">
-              Last updated{" "}
-              <strong>
-                {lastUpdated ? dateTime(lastUpdated) : "No tracking signal"}
-              </strong>
-            </span>
-          }
-          actions={
-            <>
-              <OpsButton
-                variant="secondary"
-                disabled={refreshing || sweeping}
-                onClick={() => {
-                  void refresh();
-                }}
-              >
-                <RefreshCw
-                  size={15}
-                  strokeWidth={1.75}
-                  className={refreshing ? "app-refreshing" : ""}
-                />
-                Refresh
+      <OpsPageHeader
+        title="Live Visibility"
+        description="Monitor shipment feeds, ETA movement and the latest carrier or counterpart events from one operational register."
+        meta={<span className="visibility-last-updated">Last updated <strong>{lastUpdated ? dateTime(lastUpdated) : "No tracking signal"}</strong></span>}
+        actions={(
+          <>
+            <OpsButton variant="secondary" disabled={refreshing || sweeping} onClick={() => { void refresh(); }}>
+              <RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>
+              Refresh
+            </OpsButton>
+            {canSweep ? (
+              <OpsButton variant="primary" disabled={sweeping || refreshing} onClick={sweep}>
+                <Activity size={16} strokeWidth={1.75} aria-hidden="true"/>
+                {sweeping ? "Sweeping…" : "Run health sweep"}
               </OpsButton>
+            ) : null}
+          </>
+        )}
+      />
 
-              {canSweep ? (
-                <OpsButton
-                  variant="primary"
-                  disabled={sweeping || refreshing}
-                  onClick={sweep}
-                >
-                  <Activity size={15} strokeWidth={1.75} />
+      {/* One rail instead of six icon cards. Segments that already mapped to a
+          visibility scope keep exactly that behaviour; the rest are statistics. */}
+      <div className="px-4 pt-3 md:px-6">
+        <OpsKpiRail label="Live visibility summary">
+          <OpsRailMetric label="Active shipments" value={summary.active} active={focus === "all"} onClick={() => update({ view: null, page: null, selected: null })}/>
+          <OpsRailMetric label="Fresh feeds" value={freshFeeds} tone="success"/>
+          <OpsRailMetric label="ETA delayed" value={summary.delayed} tone="warning" active={focus === "delayed"} onClick={() => update({ view: focus === "delayed" ? null : "delayed", page: null, selected: null })}/>
+          <OpsRailMetric label="Stale feeds" value={summary.stale} tone="danger" active={focus === "stale"} onClick={() => update({ view: focus === "stale" ? null : "stale", page: null, selected: null })}/>
+          <OpsRailMetric label="At destination" value={atDestination}/>
+          <OpsRailMetric label="Out for delivery" value={summary.out_for_delivery} tone="info" active={focus === "delivery"} onClick={() => update({ view: focus === "delivery" ? null : "delivery", page: null, selected: null })}/>
+        </OpsKpiRail>
+      </div>
 
-                  {sweeping ? "Sweeping…" : "Run health sweep"}
-                </OpsButton>
-              ) : null}
+      <div className="px-4 pb-8 pt-4 md:px-6">
+        {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
+
+        <OpsRegisterToolbar
+          search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null, page: null, selected: null, shipment: null })} placeholder="Search reference, customer, carrier, location…" aria-label="Search live visibility"/>}
+          actions={(
+            <>
+              <OpsFilterSelect label="Mode" value={modeFilter} allLabel="All modes" options={modes.map((mode) => ({ value: mode, label: mode }))} onChange={(value) => update({ mode: value === "all" ? null : value, page: null, selected: null })}/>
+              <OpsFilterSelect label="Origin" value={originFilter} allLabel="All origins" options={origins.map((origin) => ({ value: origin, label: origin }))} onChange={(value) => update({ origin: value === "all" ? null : value, page: null, selected: null })}/>
+              <OpsFilterSelect label="Destination" value={destinationFilter} allLabel="All destinations" options={destinations.map((destination) => ({ value: destination, label: destination }))} onChange={(value) => update({ destination: value === "all" ? null : value, page: null, selected: null })}/>
+              {hasFilters ? <OpsButton size="xs" variant="ghost" onClick={resetFilters}>Reset</OpsButton> : null}
+              <span className="ops-toolbar-divider" aria-hidden="true"/>
+              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} shipments` : `${filtered.length} of ${rows.length}`}</span>
             </>
-          }
+          )}
+          tabs={<OpsScopeTabs label="Shipment visibility state" items={FOCUS_OPTIONS.map((option) => ({ ...option, count: focusCounts[option.value] }))} value={focus} onChange={setFocus}/>}
         />
 
-        {/* SUMMARY STRIP */}
-        <section
-          className="visibility-summary-grid"
-          aria-label="Live visibility summary"
-        >
-          <VisibilityMetric
-            label="Active shipments"
-            value={summary.active}
-            icon={<Truck size={18} />}
-            active={focus === "all"}
-            onClick={() =>
-              update({
-                view: null,
-                page: null,
-                selected: null,
-              })
-            }
-          />
+        <OpsActiveFilters chips={activeFilters} onReset={resetFilters}/>
 
-          <VisibilityMetric
-            label="Fresh feeds"
-            value={freshFeeds}
-            tone="success"
-            icon={<RadioTower size={18} />}
-          />
-
-          <VisibilityMetric
-            label="ETA delayed"
-            value={summary.delayed}
-            tone={summary.delayed ? "warning" : "neutral"}
-            icon={<Clock3 size={18} />}
-            active={focus === "delayed"}
-            onClick={() =>
-              update({
-                view: focus === "delayed" ? null : "delayed",
-                page: null,
-                selected: null,
-              })
-            }
-          />
-
-          <VisibilityMetric
-            label="Stale feeds"
-            value={summary.stale}
-            tone={summary.stale ? "danger" : "neutral"}
-            icon={<AlertTriangle size={18} />}
-            active={focus === "stale"}
-            onClick={() =>
-              update({
-                view: focus === "stale" ? null : "stale",
-                page: null,
-                selected: null,
-              })
-            }
-          />
-
-          <VisibilityMetric
-            label="At destination"
-            value={atDestination}
-            icon={<Box size={18} />}
-          />
-
-          <VisibilityMetric
-            label="Out for delivery"
-            value={summary.out_for_delivery}
-            icon={<Truck size={18} />}
-            active={focus === "delivery"}
-            onClick={() =>
-              update({
-                view: focus === "delivery" ? null : "delivery",
-                page: null,
-                selected: null,
-              })
-            }
-          />
+        <section className="ops-surface" aria-label="Live shipments">
+          {filtered.length ? (
+            <>
+              <OpsTableWrap>
+                <table className="ops-table ops-register-table visibility-table" aria-label="Live shipment visibility">
+                  <thead>
+                    <tr>
+                      <th>Reference</th>
+                      <th>Customer · Route</th>
+                      <th>Mode</th>
+                      <th>Last signal</th>
+                      <th>ETA</th>
+                      <th>Status</th>
+                      <th>Latest milestone</th>
+                      <th className="ops-cell-open"><span className="sr-only">Inspect</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((row) => {
+                      const chosen = selected?.reference === row.reference;
+                      const delayed = (row.eta_delta_hours ?? 0) >= 24;
+                      return (
+                        <tr
+                          key={row.reference}
+                          data-selected={chosen || undefined}
+                          aria-current={chosen || undefined}
+                          tabIndex={0}
+                          onClick={() => openInspector(row)}
+                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openInspector(row); } }}
+                        >
+                          <td><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-cell-ref ops-mono" onClick={(event) => event.stopPropagation()}>{row.reference}</Link></td>
+                          <td>
+                            <span className="ops-cell-primary ops-cell-clamp">{row.customer_name || "Customer not linked"}</span>
+                            <span className="ops-cell-secondary ops-cell-clamp">{row.origin} → {row.destination}</span>
+                          </td>
+                          <td><span className="ops-cell-muted">{row.mode || "Not set"}</span></td>
+                          <td>
+                            <span className="ops-cell-primary">{shortDateTime(row.last_event_at)}</span>
+                            <span className="ops-cell-secondary ops-cell-clamp">{row.current_location || "Location unknown"}</span>
+                          </td>
+                          <td>
+                            <span className="ops-cell-primary" data-delayed={delayed || undefined}>{shortDateTime(row.eta)}</span>
+                            {delayed ? <span className="ops-cell-secondary visibility-delayed">{delayText(row.eta_delta_hours)} vs baseline</span> : null}
+                          </td>
+                          <td>
+                            <span className="visibility-status">
+                              <OpsBadge tone={shipmentStatusTone(row.status)}>{shipmentStatusLabels[row.status]}</OpsBadge>
+                              {row.stale ? <OpsBadge tone="danger" dot>Stale</OpsBadge> : null}
+                            </span>
+                          </td>
+                          <td><span className="ops-cell-muted">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Awaiting feed"}</span></td>
+                          <td className="ops-cell-open">
+                            <button type="button" className="ops-row-open" tabIndex={-1} aria-label={`Inspect ${row.reference}`} onClick={(event) => { event.stopPropagation(); openInspector(row); }}>
+                              <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </OpsTableWrap>
+              <footer className="ops-register-footer">
+                <span>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length} shipments</span>
+                {pageCount > 1 ? (
+                  <nav className="ops-pager" aria-label="Live visibility pages">
+                    <button type="button" className="ops-pager-button" disabled={page <= 1} onClick={() => update({ page: String(page - 1), selected: null })} aria-label="Previous page"><ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true"/></button>
+                    <span className="px-1">Page {page} of {pageCount}</span>
+                    <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1), selected: null })} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
+                  </nav>
+                ) : null}
+              </footer>
+            </>
+          ) : (
+            <OpsEmptyState compact kind={hasFilters ? "search" : "neutral"} title="No visible shipments" description={hasFilters ? "No shipments match the current visibility filters." : "Tracking feeds will appear when active shipments produce visibility events."} action={hasFilters ? <OpsButton size="sm" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
+          )}
         </section>
 
-        {notice ? (
-          <div className="visibility-notice">
-            <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>
-              {notice.text}
-            </OpsNotice>
-          </div>
-        ) : null}
-
-        {/* MAIN CONTROL TOWER */}
-        <div className="visibility-control-tower">
-          <main className="visibility-main">
-            {/* MOVEMENT */}
-            <section className="visibility-panel visibility-movement-panel">
-              <header className="visibility-panel-heading">
-                <div>
-                  <h2>Shipment movements</h2>
-
-                  <p>
-                    Latest normalized movement and location context from current
-                    feeds.
-                  </p>
+        {/* Context below the register: the most urgent movement, provider
+            health and the newest signals. */}
+        <div className="visibility-context">
+          <OpsSurface density="compact" title="Priority movement" description="The most urgent visible movement: stale feeds first, then the largest ETA slip." action={featured ? <OpsButton size="xs" variant="secondary" onClick={() => openInspector(featured)}>Inspect<ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/></OpsButton> : undefined}>
+            {featured ? (
+              <>
+                <div className="visibility-spotlight-head">
+                  <OpsMono>{featured.reference}</OpsMono>
+                  <OpsBadge tone={shipmentStatusTone(featured.status)}>{shipmentStatusLabels[featured.status]}</OpsBadge>
+                  {featured.stale ? <OpsBadge tone="danger" dot>Stale feed</OpsBadge> : null}
                 </div>
+                <p className="visibility-spotlight-customer">{featured.customer_name || "Customer not linked"}</p>
+                <OpsFacts>
+                  <OpsFact label="Route">{featured.origin} → {featured.destination}</OpsFact>
+                  <OpsFact label="Carrier" warning={!featured.carrier}>{featured.carrier || "Not assigned"}</OpsFact>
+                  <OpsFact label="Last signal">{shortDateTime(featured.last_event_at)} · {featured.current_location || "Location unknown"}</OpsFact>
+                  <OpsFact label="Milestone">{featured.last_milestone ? trackingMilestoneLabels[featured.last_milestone] : "Awaiting normalized event"}</OpsFact>
+                  <OpsFact label="ETA">{shortDateTime(featured.eta)}</OpsFact>
+                  <OpsFact label="Movement" warning={(featured.eta_delta_hours ?? 0) >= 24}>{delayText(featured.eta_delta_hours)}</OpsFact>
+                  <OpsFact label="Provider">{featured.last_provider || sourceLabel(featured.last_source) || "Not reported"}</OpsFact>
+                </OpsFacts>
+              </>
+            ) : <OpsEmptyState compact title="No active movement" description="Tracking movement will appear here when shipment visibility becomes available."/>}
+          </OpsSurface>
 
-                <Link
-                  href="/admin/shipments"
-                  className="visibility-text-action"
-                >
-                  View all shipments →
-                </Link>
-              </header>
-
-              {featured ? (
-                <div className="visibility-movement-layout">
-                  <VisibilityRouteBoard row={featured} />
-
-                  <div className="visibility-featured-shipment">
-                    <div className="visibility-featured-title">
-                      <div>
-                        <OpsMono>{featured.reference}</OpsMono>
-
-                        <p>{featured.customer_name || "Customer not linked"}</p>
+          <OpsSurface density="compact" title="Feed health" description="Providers currently represented in shipment feeds." action={<Link href="/admin/carrier-integrations" className="ops-button" data-variant="ghost" data-size="xs">Manage integrations</Link>}>
+            {providerHealth.length ? (
+              <ul className="visibility-list">
+                {providerHealth.map((provider) => {
+                  const degraded = provider.stale > 0;
+                  return (
+                    <li key={provider.provider}>
+                      <div className="visibility-list-main">
+                        <span className="visibility-list-title">{provider.provider}</span>
+                        <span className="visibility-list-meta">{provider.shipments} shipment{provider.shipments === 1 ? "" : "s"} · {relativeSignal(provider.lastReceivedAt)}</span>
                       </div>
+                      <span className="visibility-state" data-tone={degraded ? "danger" : "success"}>{degraded ? `${provider.stale} stale` : "Fresh"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : <OpsEmptyState compact title="No provider signals yet" description="Feeds appear here once a carrier, EDI or counterpart update is received."/>}
+            <div className="visibility-links"><Link href="/admin/edi">EDI 214 Gateway</Link><Link href="/admin/carrier-integrations">Carrier integrations</Link></div>
+          </OpsSurface>
 
-                      <OpsBadge tone={statusTone(featured)}>
-                        {shipmentStatusLabels[featured.status]}
-                      </OpsBadge>
-                    </div>
-
-                    <dl className="visibility-facts">
-                      <VisibilityFact
-                        label="Route"
-                        value={`${featured.origin} → ${featured.destination}`}
-                      />
-
-                      <VisibilityFact
-                        label="Carrier"
-                        value={featured.carrier || "Not assigned"}
-                      />
-
-                      <VisibilityFact
-                        label="Last signal"
-                        value={shortDateTime(featured.last_event_at)}
-                        detail={featured.current_location || "Location unknown"}
-                      />
-
-                      <VisibilityFact
-                        label="Estimated arrival"
-                        value={shortDateTime(featured.eta)}
-                      />
-
-                      <VisibilityFact
-                        label="Movement"
-                        value={delayText(featured.eta_delta_hours)}
-                        danger={(featured.eta_delta_hours ?? 0) >= 24}
-                      />
-
-                      <VisibilityFact
-                        label="Provider"
-                        value={
-                          featured.last_provider ||
-                          sourceLabel(featured.last_source) ||
-                          "Not reported"
-                        }
-                      />
-                    </dl>
-
-                    <button
-                      type="button"
-                      className="visibility-featured-action"
-                      onClick={() => openInspector(featured)}
-                    >
-                      Inspect visibility
-                      <span>→</span>
+          <OpsSurface density="compact" title="Recent signals" description="Latest shipment-level tracking state.">
+            {recentSignals.length ? (
+              <ul className="visibility-list">
+                {recentSignals.map((row) => (
+                  <li key={row.reference}>
+                    <button type="button" className="visibility-list-button" onClick={() => openInspector(row)} aria-label={`Inspect ${row.reference}: ${row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Tracking signal"}${row.stale ? ", stale feed" : ""}`}>
+                      <span className="visibility-signal-dot" data-tone={signalTone(row)} aria-hidden="true"/>
+                      <span className="visibility-list-main">
+                        <span className="visibility-list-title">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Tracking signal"}</span>
+                        <span className="visibility-list-meta ops-mono">{row.reference}</span>
+                      </span>
+                      <time className="visibility-list-time">{relativeSignal(row.last_event_at)}</time>
                     </button>
-                  </div>
-                </div>
-              ) : (
-                <OpsEmptyState
-                  compact
-                  title="No active movement"
-                  description="Tracking movement will appear here when shipment visibility becomes available."
-                />
-              )}
-            </section>
-
-            {/* REGISTER */}
-            <section className="visibility-panel visibility-register-v2">
-              <header className="visibility-register-header">
-                <div>
-                  <h2>Live shipments</h2>
-
-                  <p>
-                    Shipments with current carrier or counterpart visibility.
-                  </p>
-                </div>
-              </header>
-
-              <div className="visibility-filterbar">
-                <div className="visibility-search">
-                  <OpsSearch
-                    value={query}
-                    onChange={(event) =>
-                      update({
-                        q: event.target.value || null,
-                        page: null,
-                        selected: null,
-                        shipment: null,
-                      })
-                    }
-                    placeholder="Search shipments…"
-                    aria-label="Search live visibility"
-                  />
-                </div>
-
-                <select
-                  aria-label="Shipment visibility state"
-                  value={focus}
-                  onChange={(event) =>
-                    update({
-                      view:
-                        event.target.value === "all"
-                          ? null
-                          : event.target.value,
-                      page: null,
-                      selected: null,
-                    })
-                  }
-                >
-                  {FOCUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label} ({focusCounts[option.value]})
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  aria-label="Shipment mode"
-                  value={modeFilter}
-                  onChange={(event) =>
-                    update({
-                      mode:
-                        event.target.value === "all"
-                          ? null
-                          : event.target.value,
-                      page: null,
-                      selected: null,
-                    })
-                  }
-                >
-                  <option value="all">All modes</option>
-
-                  {modes.map((mode) => (
-                    <option key={mode} value={mode}>
-                      {mode}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  aria-label="Origin"
-                  value={originFilter}
-                  onChange={(event) =>
-                    update({
-                      origin:
-                        event.target.value === "all"
-                          ? null
-                          : event.target.value,
-                      page: null,
-                      selected: null,
-                    })
-                  }
-                >
-                  <option value="all">All origins</option>
-
-                  {origins.map((origin) => (
-                    <option key={origin} value={origin}>
-                      {origin}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  aria-label="Destination"
-                  value={destinationFilter}
-                  onChange={(event) =>
-                    update({
-                      destination:
-                        event.target.value === "all"
-                          ? null
-                          : event.target.value,
-                      page: null,
-                      selected: null,
-                    })
-                  }
-                >
-                  <option value="all">All destinations</option>
-
-                  {destinations.map((destination) => (
-                    <option key={destination} value={destination}>
-                      {destination}
-                    </option>
-                  ))}
-                </select>
-
-                {hasFilters ? (
-                  <OpsButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      update({
-                        q: null,
-                        view: null,
-                        mode: null,
-                        origin: null,
-                        destination: null,
-                        page: null,
-                        selected: null,
-                        shipment: null,
-                      })
-                    }
-                  >
-                    Reset
-                  </OpsButton>
-                ) : null}
-              </div>
-
-              {filtered.length ? (
-                <>
-                  <OpsTableWrap className="visibility-table-wrap">
-                    <table
-                      className="ops-table visibility-table-v2"
-                      aria-label="Live shipment visibility"
-                    >
-                      <thead>
-                        <tr>
-                          <th>Reference</th>
-                          <th>Customer</th>
-                          <th>Route</th>
-                          <th>Mode</th>
-                          <th>Last signal</th>
-                          <th>ETA</th>
-                          <th>Status</th>
-                          <th>Next signal</th>
-                          <th>
-                            <span className="sr-only">Actions</span>
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {pageRows.map((row) => {
-                          const chosen = selected?.reference === row.reference;
-
-                          const delayed = (row.eta_delta_hours ?? 0) >= 24;
-
-                          return (
-                            <tr
-                              key={row.reference}
-                              data-selected={chosen || undefined}
-                              tabIndex={0}
-                              onClick={() => openInspector(row)}
-                              onKeyDown={(event) => {
-                                if (
-                                  event.key === "Enter" ||
-                                  event.key === " "
-                                ) {
-                                  event.preventDefault();
-                                  openInspector(row);
-                                }
-                              }}
-                            >
-                              <td>
-                                <Link
-                                  href={`/admin/jobs/${encodeURIComponent(
-                                    row.reference,
-                                  )}?returnTo=${encodeURIComponent(returnTo)}`}
-                                  className="visibility-reference"
-                                  onClick={(event) => event.stopPropagation()}
-                                >
-                                  {row.reference}
-                                </Link>
-                              </td>
-
-                              <td>
-                                <strong className="visibility-customer">
-                                  {row.customer_name || "Customer not linked"}
-                                </strong>
-                              </td>
-
-                              <td>
-                                <span className="visibility-route">
-                                  {row.origin}
-                                  <span>→</span>
-                                  {row.destination}
-                                </span>
-                              </td>
-
-                              <td>
-                                <span className="visibility-mode">
-                                  {row.mode || "Not set"}
-                                </span>
-                              </td>
-
-                              <td>
-                                <div className="visibility-signal-cell">
-                                  <strong>
-                                    {shortDateTime(row.last_event_at)}
-                                  </strong>
-
-                                  <small>
-                                    {row.current_location || "Location unknown"}
-                                  </small>
-                                </div>
-                              </td>
-
-                              <td>
-                                <span
-                                  className={
-                                    delayed
-                                      ? "visibility-delay is-delayed"
-                                      : "visibility-delay"
-                                  }
-                                >
-                                  {shortDateTime(row.eta)}
-                                </span>
-                              </td>
-
-                              <td>
-                                <div className="visibility-status-cell">
-                                  <OpsBadge tone={statusTone(row)}>
-                                    {shipmentStatusLabels[row.status]}
-                                  </OpsBadge>
-
-                                  {row.stale ? (
-                                    <OpsBadge tone="danger">Stale</OpsBadge>
-                                  ) : null}
-                                </div>
-                              </td>
-
-                              <td>
-                                <span className="visibility-next-event">
-                                  {row.last_milestone
-                                    ? trackingMilestoneLabels[
-                                        row.last_milestone
-                                      ]
-                                    : "Awaiting feed"}
-                                </span>
-                              </td>
-
-                              <td className="visibility-row-action">
-                                <button
-                                  type="button"
-                                  aria-label={`Inspect ${row.reference}`}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    openInspector(row);
-                                  }}
-                                >
-                                  •••
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </OpsTableWrap>
-
-                  <footer className="visibility-pagination">
-                    <span>
-                      Showing {(page - 1) * pageSize + 1}–
-                      {Math.min(page * pageSize, filtered.length)} of{" "}
-                      {filtered.length}
-                    </span>
-
-                    <div>
-                      <OpsButton
-                        size="sm"
-                        variant="secondary"
-                        disabled={page <= 1}
-                        onClick={() =>
-                          update({
-                            page: String(page - 1),
-                            selected: null,
-                          })
-                        }
-                      >
-                        Previous
-                      </OpsButton>
-
-                      <span className="visibility-page-number">{page}</span>
-
-                      <OpsButton
-                        size="sm"
-                        variant="secondary"
-                        disabled={page >= pageCount}
-                        onClick={() =>
-                          update({
-                            page: String(page + 1),
-                            selected: null,
-                          })
-                        }
-                      >
-                        Next
-                      </OpsButton>
-                    </div>
-                  </footer>
-                </>
-              ) : (
-                <OpsEmptyState
-                  compact
-                  kind={hasFilters ? "search" : "neutral"}
-                  title="No visible shipments"
-                  description={
-                    hasFilters
-                      ? "No shipments match the current visibility filters."
-                      : "Tracking feeds will appear when active shipments produce visibility events."
-                  }
-                />
-              )}
-            </section>
-          </main>
-
-          {/* RIGHT RAIL */}
-          <aside className="visibility-right-rail">
-            <section className="visibility-panel visibility-feed-health">
-              <header className="visibility-panel-heading">
-                <div>
-                  <h2>Feed health</h2>
-
-                  <p>
-                    Health of providers currently represented in shipment feeds.
-                  </p>
-                </div>
-
-                <Link
-                  href="/admin/carrier-integrations"
-                  className="visibility-text-action"
-                >
-                  Manage integrations
-                </Link>
-              </header>
-
-              <div className="visibility-provider-list">
-                {providerHealth.length ? (
-                  providerHealth.map((provider) => {
-                    const degraded = provider.stale > 0;
-
-                    return (
-                      <div
-                        key={provider.provider}
-                        className="visibility-provider"
-                      >
-                        <span className="visibility-provider-icon">
-                          <RadioTower size={15} />
-                        </span>
-
-                        <div>
-                          <strong>{provider.provider}</strong>
-
-                          <small>
-                            {provider.shipments} shipment
-                            {provider.shipments === 1 ? "" : "s"}
-                          </small>
-                        </div>
-
-                        <span
-                          className={
-                            degraded
-                              ? "visibility-provider-state is-degraded"
-                              : "visibility-provider-state"
-                          }
-                        >
-                          <i />
-                          {degraded ? `${provider.stale} stale` : "Fresh"}
-                        </span>
-
-                        <time>{relativeSignal(provider.lastReceivedAt)}</time>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="visibility-provider-empty">
-                    No provider signals yet.
-                  </div>
-                )}
-              </div>
-
-              <div className="visibility-feed-links">
-                <Link href="/admin/edi">EDI 214 Gateway</Link>
-
-                <Link href="/admin/carrier-integrations">
-                  Carrier integrations
-                </Link>
-              </div>
-            </section>
-
-            <section className="visibility-panel visibility-recent-signals">
-              <header className="visibility-panel-heading">
-                <div>
-                  <h2>Recent signals</h2>
-
-                  <p>Latest shipment-level tracking state.</p>
-                </div>
-              </header>
-
-              <div className="visibility-signal-list">
-                {recentSignals.length ? (
-                  recentSignals.map((row) => (
-                    <button
-                      key={row.reference}
-                      type="button"
-                      onClick={() => openInspector(row)}
-                    >
-                      <SignalIcon row={row} />
-
-                      <div>
-                        <strong>
-                          {row.last_milestone
-                            ? trackingMilestoneLabels[row.last_milestone]
-                            : "Tracking signal"}
-                        </strong>
-
-                        <span>{row.reference}</span>
-                      </div>
-
-                      <time>{relativeSignal(row.last_event_at)}</time>
-                    </button>
-                  ))
-                ) : (
-                  <div className="visibility-provider-empty">
-                    No recent tracking signals.
-                  </div>
-                )}
-              </div>
-            </section>
-          </aside>
+                  </li>
+                ))}
+              </ul>
+            ) : <OpsEmptyState compact title="No recent tracking signals" description="Signals appear as carriers and counterparts report movement."/>}
+          </OpsSurface>
         </div>
       </div>
 
@@ -1176,159 +697,14 @@ export function TrackingVisibilityWorkspace({
   );
 }
 
-function VisibilityMetric({
-  label,
-  value,
-  icon,
-  tone = "neutral",
-  active = false,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  icon: ReactNode;
-  tone?: "neutral" | "success" | "warning" | "danger";
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const Component = onClick ? "button" : "div";
-
-  return (
-    <Component
-      className="visibility-metric"
-      data-tone={tone}
-      data-active={active || undefined}
-      onClick={onClick}
-      type={onClick ? "button" : undefined}
-    >
-      <span className="visibility-metric-icon">{icon}</span>
-
-      <div>
-        <strong>{value.toLocaleString("en-AU")}</strong>
-
-        <span>{label}</span>
-      </div>
-
-      {onClick ? <span className="visibility-metric-arrow">›</span> : null}
-    </Component>
-  );
+/** A state dot for signal rows: red stale, green delivered, amber out for delivery, blue otherwise. */
+function signalTone(row: VisibilityShipment) {
+  if (row.stale) return "danger";
+  if (row.status === "delivered") return "success";
+  if (row.status === "out_for_delivery") return "warning";
+  return "info";
 }
 
-function VisibilityFact({
-  label,
-  value,
-  detail,
-  danger = false,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-  danger?: boolean;
-}) {
-  return (
-    <div className="visibility-fact">
-      <dt>{label}</dt>
-
-      <dd data-danger={danger || undefined}>{value}</dd>
-
-      {detail ? <small>{detail}</small> : null}
-    </div>
-  );
-}
-
-function SignalIcon({ row }: { row: VisibilityShipment }) {
-  if (row.stale) {
-    return (
-      <span className="visibility-signal-icon" data-tone="danger">
-        <AlertTriangle size={15} />
-      </span>
-    );
-  }
-
-  if (row.status === "delivered") {
-    return (
-      <span className="visibility-signal-icon" data-tone="success">
-        <CheckCircle2 size={15} />
-      </span>
-    );
-  }
-
-  if (row.status === "out_for_delivery") {
-    return (
-      <span className="visibility-signal-icon" data-tone="warning">
-        <Truck size={15} />
-      </span>
-    );
-  }
-
-  return (
-    <span className="visibility-signal-icon" data-tone="info">
-      <RadioTower size={15} />
-    </span>
-  );
-}
-
-function VisibilityRouteBoard({ row }: { row: VisibilityShipment }) {
-  return (
-    <div
-      className="visibility-route-board"
-      aria-label={`Operational route overview from ${row.origin} to ${row.destination}. Not geographic scale.`}
-    >
-      <div className="visibility-route-board-label">
-        <MapPin size={13} />
-        Operational route
-      </div>
-
-      <div className="visibility-route-track">
-        <span className="visibility-route-origin">
-          <i />
-          <strong>{row.origin}</strong>
-          <small>Origin</small>
-        </span>
-
-        <span className="visibility-route-line-graphic">
-          <span
-            className="visibility-route-progress"
-            data-stale={row.stale || undefined}
-          />
-
-          <span className="visibility-route-vehicle">
-            {row.mode.toLowerCase().includes("air") ? (
-              <Plane size={17} />
-            ) : (
-              <Truck size={17} />
-            )}
-          </span>
-        </span>
-
-        <span className="visibility-route-destination">
-          <i />
-          <strong>{row.destination}</strong>
-          <small>Destination</small>
-        </span>
-      </div>
-
-      <div className="visibility-route-current">
-        <span>Current signal</span>
-
-        <strong>{row.current_location || "Location not reported"}</strong>
-
-        <small>
-          {row.last_milestone
-            ? trackingMilestoneLabels[row.last_milestone]
-            : "Awaiting normalized tracking event"}
-        </small>
-      </div>
-
-      {row.stale ? (
-        <div className="visibility-route-warning">
-          <AlertTriangle size={14} />
-          Tracking feed is stale
-        </div>
-      ) : null}
-    </div>
-  );
-}
 function TrackingVisibilityPanel({
   row,
   returnTo,
@@ -1466,341 +842,96 @@ function TrackingVisibilityPanel({
   }
 
   return (
-    <OpsDialog.Root
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
+    // Non-blocking slide-over, like the Shipments inspector: the register stays
+    // visible and live behind it (modal={false}); Escape and Close dismiss it.
+    <OpsDialog.Root open modal={false} onOpenChange={(open) => { if (!open) onClose(); }}>
       <OpsDialog.Portal container={container ?? undefined}>
-        <OpsDialog.Overlay className="ops-dialog-overlay fixed inset-0 z-[70] cursor-default bg-black/15" />
-        <OpsDialog.Content
-          className="visibility-inspector fixed inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden border-l border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-xl md:w-[640px]"
-          aria-label={`Live visibility for ${row.reference}`}
-        >
-          <OpsDialog.Title className="sr-only">
-            {row.reference} live visibility
-          </OpsDialog.Title>
-          <OpsDialog.Description className="sr-only">
-            Movement timeline, tracking events and manual event recording for
-            this shipment.
-          </OpsDialog.Description>
-        <header className="visibility-panel-header flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-          <div className="min-w-0">
-            <p className="m-0 text-xs text-[var(--admin-muted)]">
-              <OpsMono>{row.reference}</OpsMono>
-              {row.carrier_reference ? ` · ${row.carrier_reference}` : ""}
-            </p>
-            <h2
-              id={`visibility-panel-title-${row.reference}`}
-              className="mt-1 text-base font-semibold leading-6"
-            >
-              Movement timeline
-            </h2>
-            <p className="mt-0.5 text-sm text-[var(--admin-muted)]">
-              {row.customer_name} · {row.origin} → {row.destination}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <OpsBadge tone={statusTone(row)}>
-              {shipmentStatusLabels[row.status]}
-            </OpsBadge>
-            <OpsDialog.Close asChild>
-              <button
-                type="button"
-                className="grid h-8 w-8 place-items-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]"
-                aria-label="Close live visibility panel"
-              >
-                <X size={16} strokeWidth={1.75} aria-hidden="true" />
-              </button>
-            </OpsDialog.Close>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="visibility-panel-summary border-b border-[var(--admin-line)] px-5 py-4">
-            {panelNotice ? (
-              <OpsNotice
-                tone={panelNotice.tone}
-                onDismiss={() => setPanelNotice(null)}
-              >
-                {panelNotice.text}
-              </OpsNotice>
-            ) : null}
-            <div
-              className={`${panelNotice ? "mt-3 " : ""}flex flex-wrap items-center gap-2`}
-            >
-              <Link
-                href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`}
-                className="ops-button"
-                data-variant="secondary"
-                data-size="sm"
-              >
-                Open Job File
-              </Link>
-              {row.stale ? (
-                <OpsBadge tone="danger">Stale feed</OpsBadge>
-              ) : (
-                <OpsBadge tone="success">Feed current</OpsBadge>
-              )}
-              <span className="text-xs text-[var(--admin-muted)]">
-                {row.last_source
-                  ? row.last_source.replaceAll("_", " ")
-                  : "No source recorded"}
-              </span>
-            </div>
-          </div>
-
-          <PanelSection
-            title="Latest position"
-            description="The newest normalized tracking state visible to KCPL operations."
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Detail
-                label="Location"
-                value={row.current_location || "Location unknown"}
-              />
-              <Detail
-                label="Milestone"
-                value={
-                  row.last_milestone
-                    ? trackingMilestoneLabels[row.last_milestone]
-                    : "No normalized milestone"
-                }
-              />
-              <Detail label="Carrier" value={row.carrier || "Not set"} />
-              <Detail
-                label="Provider"
-                value={row.last_provider || "Not recorded"}
-              />
-              <Detail label="Latest ETA" value={dateTime(row.eta)} />
-              <Detail
-                label="ETA movement"
-                value={delayText(row.eta_delta_hours)}
-                danger={(row.eta_delta_hours ?? 0) >= 24}
-              />
-            </div>
-            <div className="mt-4 flex items-start gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
-              {row.stale ? (
-                <AlertTriangle
-                  size={16}
-                  strokeWidth={1.75}
-                  className="mt-0.5 shrink-0 text-[var(--admin-danger)]"
-                  aria-hidden="true"
-                />
-              ) : (
-                <CheckCircle2
-                  size={16}
-                  strokeWidth={1.75}
-                  className="mt-0.5 shrink-0 text-[var(--admin-success)]"
-                  aria-hidden="true"
-                />
-              )}
-              <span>
-                {row.stale
-                  ? `No fresh tracking signal within the expected window. Last event: ${dateTime(row.last_event_at)}.`
-                  : `Latest tracking event: ${dateTime(row.last_event_at)}.`}
-              </span>
-            </div>
-          </PanelSection>
-
-          <PanelSection
-            title="Event timeline"
-            description="Normalized carrier, EDI, GPS, counterpart and manual updates."
-          >
-            {loadingEvents ? (
-              <div className="flex items-center gap-2 rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-sm text-[var(--admin-muted)]">
-                <RadioTower size={16} strokeWidth={1.75} aria-hidden="true" />{" "}
-                Loading tracking history…
-              </div>
-            ) : events.length ? (
-              <div className="divide-y divide-[var(--admin-line)] border-y border-[var(--admin-line)]">
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="grid gap-2 py-3 sm:grid-cols-[110px_minmax(0,1fr)]"
-                  >
-                    <span className="text-xs text-[var(--admin-muted)]">
-                      {shortDateTime(event.event_time)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <OpsBadge
-                          tone={
-                            event.milestone === "delivery_refused" ||
-                            event.milestone === "exception"
-                              ? "danger"
-                              : event.milestone === "delivered"
-                                ? "success"
-                                : "info"
-                          }
-                        >
-                          {trackingMilestoneLabels[event.milestone]}
-                        </OpsBadge>
-                        <strong className="text-sm font-medium">
-                          {event.title}
-                        </strong>
-                      </div>
-                      <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">
-                        {event.location || "Location not supplied"}
-                        {event.details ? ` · ${event.details}` : ""}
-                      </p>
-                      <p className="mt-1 text-xs text-[var(--admin-muted)]">
-                        {event.provider || event.source.replaceAll("_", " ")}
-                        {event.eta ? ` · ETA ${dateTime(event.eta)}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <OpsEmptyState
-                compact
-                title="No normalized tracking events yet"
-                description="Carrier, counterpart or manual events will appear here when recorded."
-              />
+        {/* Scrim only materialises below 900px, where the sheet is a modal bottom sheet. */}
+        <div className="ops-sheet-scrim" onClick={onClose} aria-hidden="true"/>
+        <OpsDialog.Content className="ops-sheet visibility-sheet" aria-label={`Live visibility for ${row.reference}`} onInteractOutside={(event) => event.preventDefault()}>
+          <OpsDialog.Title className="sr-only">{row.reference} live visibility</OpsDialog.Title>
+          <OpsDialog.Description className="sr-only">Movement timeline, tracking events and manual event recording for this shipment.</OpsDialog.Description>
+          <OpsInspectorHeader
+            kicker={`${row.reference}${row.carrier_reference ? ` · ${row.carrier_reference}` : ""}`}
+            title={row.customer_name || "Customer not linked"}
+            subtitle={`${row.origin} → ${row.destination} · ${row.mode || "Mode not set"}`}
+            actions={(
+              <>
+                <OpsBadge tone={shipmentStatusTone(row.status)}>{shipmentStatusLabels[row.status]}</OpsBadge>
+                <OpsDialog.Close asChild>
+                  <button type="button" className="ops-inspector-close" aria-label="Close live visibility panel"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+                </OpsDialog.Close>
+              </>
             )}
-          </PanelSection>
+          />
 
-          <PanelSection
-            title="Manual fallback"
-            description="Record an operational update when the provider has no live integration."
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <OpsField label="Raw carrier status">
-                <input
-                  value={rawStatus}
-                  onChange={(event) => setRawStatus(event.target.value)}
-                  placeholder="e.g. Vessel departed Singapore"
-                />
-              </OpsField>
-              <OpsField label="Milestone override">
-                <select
-                  value={milestone}
-                  onChange={(event) =>
-                    setMilestone(event.target.value as TrackingMilestone | "")
-                  }
-                >
-                  <option value="">Auto-detect</option>
-                  {trackingMilestones
-                    .filter((value) => value !== "unknown")
-                    .map((value) => (
-                      <option key={value} value={value}>
-                        {trackingMilestoneLabels[value]}
-                      </option>
+          <div className="ops-inspector-scroll">
+            <div className="ops-inspector-body">
+              {panelNotice ? <OpsNotice tone={panelNotice.tone} onDismiss={() => setPanelNotice(null)}>{panelNotice.text}</OpsNotice> : null}
+
+              {row.stale
+                ? <OpsInspectorNote tone="danger" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Stale feed">No fresh tracking signal within the expected window. Last event {dateTime(row.last_event_at)}.</OpsInspectorNote>
+                : <OpsInspectorNote tone="success" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Feed current">Latest tracking event {dateTime(row.last_event_at)}.</OpsInspectorNote>}
+
+              <OpsInspectorSection title="Latest position" action={<Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="ghost" data-size="xs">Open Job File</Link>}>
+                <OpsFacts columns={2}>
+                  <OpsFact label="Location">{row.current_location || "Location unknown"}</OpsFact>
+                  <OpsFact label="Milestone">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "No normalized milestone"}</OpsFact>
+                  <OpsFact label="Carrier" warning={!row.carrier}>{row.carrier || "Not set"}</OpsFact>
+                  <OpsFact label="Provider">{row.last_provider || "Not recorded"}</OpsFact>
+                  <OpsFact label="Latest ETA">{dateTime(row.eta)}</OpsFact>
+                  <OpsFact label="ETA movement" warning={(row.eta_delta_hours ?? 0) >= 24}>{delayText(row.eta_delta_hours)}</OpsFact>
+                  <OpsFact label="Source">{row.last_source ? row.last_source.replaceAll("_", " ") : "No source recorded"}</OpsFact>
+                </OpsFacts>
+              </OpsInspectorSection>
+
+              <OpsInspectorSection title="Event timeline">
+                {loadingEvents ? <p className="ops-inspector-hint">Loading tracking history…</p> : events.length ? (
+                  <ol className="visibility-events">
+                    {events.map((event) => (
+                      <li key={event.id} data-tone={event.milestone === "delivery_refused" || event.milestone === "exception" ? "danger" : event.milestone === "delivered" ? "success" : "info"}>
+                        <time>{shortDateTime(event.event_time)}</time>
+                        <div className="min-w-0">
+                          <div className="visibility-event-head"><span className="visibility-event-title">{event.title}</span><span className="visibility-event-milestone">{trackingMilestoneLabels[event.milestone]}</span></div>
+                          <p className="visibility-event-detail">{event.location || "Location not supplied"}{event.details ? ` · ${event.details}` : ""}</p>
+                          <p className="visibility-event-meta">{event.provider || event.source.replaceAll("_", " ")}{event.eta ? ` · ETA ${dateTime(event.eta)}` : ""}</p>
+                        </div>
+                      </li>
                     ))}
-                </select>
-              </OpsField>
-              <OpsField label="Location">
-                <input
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                  placeholder="Port, airport, border, city…"
-                />
-              </OpsField>
-              <OpsField label="Provider / counterpart">
-                <input
-                  value={provider}
-                  onChange={(event) => setProvider(event.target.value)}
-                  placeholder="Carrier, airline, overseas agent…"
-                />
-              </OpsField>
-              <OpsField label="Event time">
-                <input
-                  name="visibility-event-time"
-                  type="datetime-local"
-                  value={eventTime}
-                  onChange={(event) => setEventTime(event.target.value)}
-                  aria-describedby="visibility-timezone-note"
-                />
-              </OpsField>
-              <OpsField label="New ETA">
-                <input
-                  name="visibility-new-eta"
-                  type="datetime-local"
-                  value={eta}
-                  onChange={(event) => setEta(event.target.value)}
-                  aria-describedby="visibility-timezone-note"
-                />
-              </OpsField>
-              <OpsField label="Details" className="sm:col-span-2">
-                <textarea
-                  rows={3}
-                  value={details}
-                  onChange={(event) => setDetails(event.target.value)}
-                  placeholder="Operational context, reason, vehicle, vessel or flight details…"
-                />
-              </OpsField>
-            </div>
-            <p
-              id="visibility-timezone-note"
-              className="mt-3 text-xs text-[var(--admin-muted)]"
-            >
-              Times are saved and displayed in Nepal time (NPT).
-            </p>
-          </PanelSection>
-        </div>
+                  </ol>
+                ) : <p className="ops-inspector-hint">No normalized tracking events yet. Carrier, counterpart or manual events will appear here when recorded.</p>}
+              </OpsInspectorSection>
 
-        <footer className="shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)] px-5 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs text-[var(--admin-muted)]">
-              Manual updates are added to the same normalized tracking timeline.
-            </span>
-            <OpsButton
-              variant="primary"
-              disabled={busy || !rawStatus.trim()}
-              onClick={recordEvent}
-            >
-              <Activity size={16} strokeWidth={1.75} aria-hidden="true" />
+              <OpsInspectorSection tinted title="Manual fallback">
+                <p className="ops-inspector-hint mb-3">Record an operational update when the provider has no live integration.</p>
+                <div className="ops-inspector-form">
+                  <OpsField label="Raw carrier status"><input value={rawStatus} onChange={(event) => setRawStatus(event.target.value)} placeholder="e.g. Vessel departed Singapore"/></OpsField>
+                  <OpsField label="Milestone override">
+                    <select value={milestone} onChange={(event) => setMilestone(event.target.value as TrackingMilestone | "")}>
+                      <option value="">Auto-detect</option>
+                      {trackingMilestones.filter((value) => value !== "unknown").map((value) => <option key={value} value={value}>{trackingMilestoneLabels[value]}</option>)}
+                    </select>
+                  </OpsField>
+                  <OpsField label="Location"><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Port, airport, border, city…"/></OpsField>
+                  <OpsField label="Provider / counterpart"><input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Carrier, airline, overseas agent…"/></OpsField>
+                  <OpsField label="Event time"><input name="visibility-event-time" type="datetime-local" value={eventTime} onChange={(event) => setEventTime(event.target.value)} aria-describedby="visibility-timezone-note"/></OpsField>
+                  <OpsField label="New ETA"><input name="visibility-new-eta" type="datetime-local" value={eta} onChange={(event) => setEta(event.target.value)} aria-describedby="visibility-timezone-note"/></OpsField>
+                  <OpsField label="Details" className="col-span-full"><textarea rows={3} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Operational context, reason, vehicle, vessel or flight details…"/></OpsField>
+                </div>
+                <p id="visibility-timezone-note" className="ops-inspector-hint mt-2">Times are saved and displayed in Nepal time (NPT).</p>
+              </OpsInspectorSection>
+            </div>
+          </div>
+
+          <footer className="ops-inspector-footer visibility-sheet-footer">
+            <span className="ops-inspector-hint">Manual updates join the same normalized tracking timeline.</span>
+            <OpsButton variant="primary" disabled={busy || !rawStatus.trim()} onClick={recordEvent}>
+              <Activity size={16} strokeWidth={1.75} aria-hidden="true"/>
               {busy ? "Recording…" : "Record tracking event"}
             </OpsButton>
-          </div>
-        </footer>
+          </footer>
         </OpsDialog.Content>
       </OpsDialog.Portal>
     </OpsDialog.Root>
-  );
-}
-
-function PanelSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border-b border-[var(--admin-line)] px-5 py-5 last:border-b-0">
-      <h3 className="text-base font-semibold">{title}</h3>
-      <p className="mt-1 text-sm leading-5 text-[var(--admin-muted)]">
-        {description}
-      </p>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-function Detail({
-  label,
-  value,
-  danger = false,
-}: {
-  label: string;
-  value: string;
-  danger?: boolean;
-}) {
-  return (
-    <div className="rounded-md border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 py-3">
-      <p className="m-0 text-xs font-medium text-[var(--admin-muted)]">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-sm font-medium ${danger ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}
-      >
-        {value}
-      </p>
-    </div>
   );
 }

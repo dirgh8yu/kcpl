@@ -1,14 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Download, FileCheck2, Folder, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Folder, RefreshCw, ShieldCheck, Trash2, X } from "lucide-react";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shipment-document-policy";
 import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { KcplStaffRole } from "../staff-permissions";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFilterChip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsToolbar } from "../operations-ui";
+import {
+  OpsActiveFilters,
+  OpsBadge,
+  OpsButton,
+  OpsEmptyState,
+  OpsFact,
+  OpsFacts,
+  OpsField,
+  OpsFilterSelect,
+  OpsInlineAlert,
+  OpsInspectorHeader,
+  OpsInspectorNote,
+  OpsInspectorSection,
+  OpsNotice,
+  OpsPage,
+  OpsPageHeader,
+  OpsRegisterToolbar,
+  OpsScopeTabs,
+  OpsSearch,
+  OpsTableWrap,
+  type OpsActiveFilter,
+} from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import type { DocumentVaultDashboard, DocumentVaultRow } from "./documents-data.server";
 
@@ -25,6 +46,12 @@ function dateOnly(value: string | null) {
   if (!value) return "No expiry";
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "Asia/Kathmandu" }).format(date);
+}
+
+function shortDateTime(value: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" }).format(date);
 }
 
 function bytes(value: number) {
@@ -53,16 +80,31 @@ function nextAction(row: DocumentVaultRow) {
   return "Open record";
 }
 
-const selectStyle: React.CSSProperties = {
-  minHeight: "var(--app-control-height)",
-  padding: "0 30px 0 10px",
-  border: "1px solid var(--admin-line)",
-  borderRadius: "var(--app-radius)",
-  background: "var(--admin-surface)",
-  color: "var(--admin-ink)",
-  font: "inherit",
-  fontSize: 13,
-};
+function matchesStatus(row: DocumentVaultRow, status: StatusFilter) {
+  if (status === "all") return true;
+  if (status === "active") return !["deleted", "superseded"].includes(row.review_status);
+  if (status === "pending") return row.review_status === "received" || row.review_status === "under_review";
+  return row.effective_status === status;
+}
+
+const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "pending", label: "Pending review" },
+  { value: "verified", label: "Verified" },
+  { value: "rejected", label: "Rejected" },
+  { value: "expired", label: "Expired" },
+  { value: "superseded", label: "Superseded" },
+  { value: "deleted", label: "Deleted" },
+];
+
+const SOURCE_OPTIONS = [
+  { value: "customer", label: "From customers" },
+  { value: "staff", label: "Staff uploads" },
+];
+
+/** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
+const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
 function Inspector({
   row,
@@ -73,6 +115,7 @@ function Inspector({
   onClose,
   onDelete,
   onSaveReview,
+  inspectorRef,
 }: {
   row: DocumentVaultRow;
   role: KcplStaffRole;
@@ -82,66 +125,74 @@ function Inspector({
   onClose: () => void;
   onDelete: (row: DocumentVaultRow) => Promise<void>;
   onSaveReview: (event: FormEvent<HTMLFormElement>, row: DocumentVaultRow) => Promise<void>;
+  inspectorRef: RefObject<HTMLElement | null>;
 }) {
   const canReview = canReviewShipmentDocuments(role) && !["deleted", "superseded"].includes(row.review_status);
   const canDelete = canDeleteShipmentDocument({ role, actorEmail: currentUserEmail, uploadedByEmail: row.uploaded_by_email, status: row.review_status });
   const canSelfVerify = role === "management" || currentUserEmail.trim().toLowerCase() !== (row.uploaded_by_email ?? "").trim().toLowerCase();
   const inactive = row.review_status === "deleted" || row.review_status === "superseded";
 
-  return <aside style={{ width: 380, flexShrink: 0, border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: 16, borderBottom: "1px solid var(--admin-line)" }}>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ marginBottom: 2, fontSize: 12, color: "var(--admin-muted)" }}><OpsMono>{row.shipment_reference}</OpsMono></div>
-        <div style={{ fontSize: 14, fontWeight: 600 }}>{shipmentDocumentTypeLabels[row.document_type]}</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}><OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge>{inactive ? <OpsBadge>{row.review_status === "deleted" ? "Tombstoned" : "Superseded"}</OpsBadge> : null}{row.customer_safe ? <OpsBadge tone="info">Customer-safe</OpsBadge> : null}</div>
+  return <aside ref={inspectorRef} className="ops-inspector" aria-label={`Document ${row.filename}`}>
+    <OpsInspectorHeader
+      kicker={row.shipment_reference}
+      title={shipmentDocumentTypeLabels[row.document_type]}
+      subtitle={row.filename}
+      actions={<button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close document inspector"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+    />
+    <div className="ops-inspector-scroll">
+      <div className="ops-inspector-body">
+        <div className="flex flex-wrap gap-1.5">
+          <OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge>
+          {inactive ? <OpsBadge>{row.review_status === "deleted" ? "Tombstoned" : "Superseded"}</OpsBadge> : null}
+          {row.customer_safe ? <OpsBadge tone="success">Customer-safe</OpsBadge> : null}
+        </div>
+
+        {row.review_status === "deleted" ? <OpsInspectorNote tone="neutral" title="Tombstoned · audit record only">Removed {dateTime(row.deleted_at)} by {row.deleted_by || row.deleted_by_email || "recorded operator"}. It no longer counts toward readiness.</OpsInspectorNote> : null}
+        {row.review_status === "superseded" ? <OpsInspectorNote tone="warning" title="Superseded evidence">This revision is retained for history but no longer counts as the current readiness evidence.</OpsInspectorNote> : null}
+        {row.review_status === "received" || row.review_status === "under_review" ? <OpsInspectorNote tone="warning" icon={<AlertCircle size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Upload ≠ verification">This file remains under evidence review until an authorised reviewer verifies or rejects it.</OpsInspectorNote> : null}
+
+        <OpsInspectorSection title="Evidence">
+          <OpsFacts>
+            <OpsFact label="Document">{row.filename}</OpsFact>
+            <OpsFact label="Customer">{row.customer_name}</OpsFact>
+            <OpsFact label="Route">{`${row.origin} → ${row.destination} · ${row.mode}`}</OpsFact>
+            <OpsFact label="File size">{bytes(row.size_bytes)}</OpsFact>
+            <OpsFact label="Uploaded">{`${dateTime(row.uploaded_at)} · ${row.uploaded_by}`}</OpsFact>
+            <OpsFact label="Reviewed by">{row.reviewed_by || row.reviewed_by_email || "Not reviewed"}</OpsFact>
+            <OpsFact label="Review time">{dateTime(row.reviewed_at)}</OpsFact>
+            <OpsFact label="Expires">{dateOnly(row.expires_on)}</OpsFact>
+            <OpsFact label="Branch" warning={!row.branch}>{row.branch || "Branch repair needed"}</OpsFact>
+          </OpsFacts>
+        </OpsInspectorSection>
+
+        <OpsInspectorSection title="Integrity fingerprint · SHA-256">
+          <div className="document-vault-fingerprint">{row.sha256 || "Unavailable"}</div>
+        </OpsInspectorSection>
+
+        {row.review_note ? <OpsInspectorSection title="Review note"><p className="document-vault-note">{row.review_note}</p></OpsInspectorSection> : null}
+
+        <div className="ops-inspector-actions">
+          {row.review_status !== "deleted" ? <a href={`/api/admin/shipments/${encodeURIComponent(row.shipment_reference)}/documents/${row.id}`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download</a> : null}
+          <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Job File</Link>
+          {row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-button" data-variant="ghost" data-size="sm">Customer 360</Link> : null}
+          {canDelete ? <OpsButton variant="danger" size="sm" disabled={busyId === row.id} onClick={() => void onDelete(row)}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>{busyId === row.id ? "Deleting…" : "Delete"}</OpsButton> : null}
+        </div>
+
+        {canReview ? (
+          <OpsInspectorSection tinted title="Review evidence">
+            <form key={`${row.shipment_reference}:${row.id}:${row.review_status}`} onSubmit={(event) => void onSaveReview(event, row)} className="ops-inspector-form">
+              <OpsField label="Review state" className="col-span-full"><select name="status" defaultValue={row.review_status}><option value="received">Received</option><option value="under_review">Under review</option><option value="verified" disabled={!canSelfVerify}>Verified</option><option value="rejected">Rejected</option></select></OpsField>
+              {!canSelfVerify ? <p className="ops-inspector-hint col-span-full">The uploader cannot verify their own document unless they hold management authority.</p> : null}
+              <OpsField label="Expiry date" className="col-span-full"><input name="expiresOn" type="date" defaultValue={row.expires_on || ""}/></OpsField>
+              <OpsField label="Review note" className="col-span-full"><textarea name="reviewNote" defaultValue={row.review_note || ""} rows={2}/></OpsField>
+              <label className="document-vault-check col-span-full"><input name="customerSafe" type="checkbox" defaultChecked={row.customer_safe}/>Customer-safe evidence</label>
+              <div className="col-span-full"><OpsButton type="submit" variant="primary" disabled={reviewBusy}>{reviewBusy ? "Saving…" : "Save review"}</OpsButton></div>
+            </form>
+          </OpsInspectorSection>
+        ) : row.effective_status === "verified" && !inactive ? <OpsInspectorNote tone="success" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Verified">No further review required.</OpsInspectorNote> : null}
       </div>
-      <button type="button" onClick={onClose} aria-label="Close document inspector" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: "var(--app-radius)", background: "transparent", color: "var(--admin-muted)", cursor: "pointer" }}><X size={16}/></button>
     </div>
-
-    {row.review_status === "deleted" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-line-strong)", background: "var(--admin-surface-muted)" }}><div style={{ fontWeight: 600, fontSize: 13 }}>Tombstoned · audit record only</div><div style={{ marginTop: 4, fontSize: 12.5, color: "var(--admin-muted)" }}>Removed {dateTime(row.deleted_at)} by {row.deleted_by || row.deleted_by_email || "recorded operator"}. It no longer counts toward readiness.</div></div> : null}
-    {row.review_status === "superseded" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-warning)", background: "var(--admin-warning-bg)" }}><div style={{ fontWeight: 600, fontSize: 13, color: "var(--admin-warning)" }}>Superseded evidence</div><div style={{ marginTop: 4, fontSize: 12.5 }}>This revision is retained for history but no longer counts as the current readiness evidence.</div></div> : null}
-    {row.review_status === "received" || row.review_status === "under_review" ? <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--admin-line)", borderLeft: "4px solid var(--admin-warning)", background: "var(--admin-warning-bg)" }}><div style={{ fontWeight: 600, fontSize: 13, color: "var(--admin-warning)" }}>Upload ≠ verification</div><div style={{ marginTop: 4, fontSize: 12.5 }}>This file remains under evidence review until an authorised reviewer verifies or rejects it.</div></div> : null}
-
-    <div style={{ display: "grid", gap: 10, padding: "12px 16px" }}>
-      <Detail label="Document" value={row.filename}/>
-      <Detail label="Customer" value={row.customer_name}/>
-      <Detail label="Route" value={`${row.origin} → ${row.destination} · ${row.mode}`}/>
-      <Detail label="File size" value={bytes(row.size_bytes)}/>
-      <Detail label="Uploaded" value={`${dateTime(row.uploaded_at)} · ${row.uploaded_by}`}/>
-      <Detail label="Reviewed by" value={row.reviewed_by || row.reviewed_by_email || "Not reviewed"}/>
-      <Detail label="Review time" value={dateTime(row.reviewed_at)}/>
-      <Detail label="Expires" value={dateOnly(row.expires_on)}/>
-      <Detail label="Branch" value={row.branch || "Branch repair needed"}/>
-    </div>
-
-    <div style={{ padding: "0 16px 12px" }}>
-      <div style={{ marginBottom: 4, fontSize: 11.5, fontWeight: 600, color: "var(--admin-muted)", textTransform: "uppercase", letterSpacing: ".07em" }}>Integrity fingerprint · SHA-256</div>
-      <div style={{ padding: "6px 8px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface-muted)", fontFamily: "monospace", fontSize: 11, wordBreak: "break-all" }}>{row.sha256 || "Unavailable"}</div>
-    </div>
-
-    {row.review_note ? <div style={{ padding: "0 16px 12px" }}><div style={{ marginBottom: 4, fontSize: 11.5, fontWeight: 600, color: "var(--admin-muted)", textTransform: "uppercase", letterSpacing: ".07em" }}>Review note</div><div style={{ padding: "6px 8px", border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", background: "var(--admin-surface-muted)", fontSize: 13 }}>{row.review_note}</div></div> : null}
-
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 16px 14px" }}>
-      {row.review_status !== "deleted" ? <a href={`/api/admin/shipments/${encodeURIComponent(row.shipment_reference)}/documents/${row.id}`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={12}/>Download</a> : null}
-      <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Job File</Link>
-      {row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-button" data-variant="ghost" data-size="sm">Customer 360</Link> : null}
-      {canDelete ? <OpsButton variant="danger" size="sm" disabled={busyId === row.id} onClick={() => void onDelete(row)}><Trash2 size={12}/>{busyId === row.id ? "Deleting…" : "Delete"}</OpsButton> : null}
-    </div>
-
-    {canReview ? <form key={`${row.shipment_reference}:${row.id}:${row.review_status}`} onSubmit={(event) => void onSaveReview(event, row)} style={{ display: "grid", gap: 10, padding: "12px 16px 14px", borderTop: "1px solid var(--admin-line)" }}>
-      <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, color: "var(--admin-muted)" }}><FileCheck2 size={14}/>Review evidence</div>
-      <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Review state<select name="status" defaultValue={row.review_status} style={selectStyle}><option value="received">Received</option><option value="under_review">Under review</option><option value="verified" disabled={!canSelfVerify}>Verified</option><option value="rejected">Rejected</option></select></label>
-      {!canSelfVerify ? <div style={{ fontSize: 12, color: "var(--admin-muted)" }}>The uploader cannot verify their own document unless they hold management authority.</div> : null}
-      <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Expiry date<input name="expiresOn" type="date" defaultValue={row.expires_on || ""} style={{ minHeight: 38, border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", padding: "0 10px" }}/></label>
-      <label style={{ display: "grid", gap: 5, fontSize: 12.5, color: "var(--admin-muted)" }}>Review note<textarea name="reviewNote" defaultValue={row.review_note || ""} rows={2} style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-radius)", padding: "7px 8px", resize: "vertical", font: "inherit" }}/></label>
-      <label style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 12.5 }}><input name="customerSafe" type="checkbox" defaultChecked={row.customer_safe}/>Customer-safe evidence</label>
-      <OpsButton type="submit" variant="primary" disabled={reviewBusy}>{reviewBusy ? "Saving…" : "Save review"}</OpsButton>
-    </form> : row.effective_status === "verified" && !inactive ? <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 16px 14px", borderTop: "1px solid var(--admin-line)", color: "var(--admin-success)", fontSize: 12.5 }}><CheckCircle2 size={14}/>Verified · no further review required.</div> : null}
   </aside>;
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return <div><div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--admin-muted)" }}>{label}</div><div style={{ marginTop: 2, fontSize: 13 }}>{value}</div></div>;
 }
 
 export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dashboard: DocumentVaultDashboard; role: KcplStaffRole; currentUserEmail: string }) {
@@ -169,9 +220,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const visible = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return dashboard.rows.filter((row) => {
-      if (status === "active" && ["deleted", "superseded"].includes(row.review_status)) return false;
-      if (status === "pending" && row.review_status !== "received" && row.review_status !== "under_review") return false;
-      if (status !== "active" && status !== "all" && status !== "pending" && row.effective_status !== status) return false;
+      if (!matchesStatus(row, status)) return false;
       if (type !== "all" && row.document_type !== type) return false;
       if (origin !== "all" && row.uploaded_by_source !== (origin === "customer" ? "customer_portal" : "staff")) return false;
       if (branch !== "all" && !row.handling_branches.includes(branch)) return false;
@@ -213,56 +262,133 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
     update({ q: null, status: null, type: null, branch: null, selected: null });
   }
 
+  const inspectorRef = useRef<HTMLElement>(null);
+  const hasSelection = selected !== null;
+  // Escape closes the inspector, as it does on the other registers.
+  useEffect(() => {
+    if (!hasSelection) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
+      update({ selected: null });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hasSelection, update]);
+
+  function openRow(key: string) {
+    update({ selected: key }, "push");
+    // Stacked layouts put the inspector under the queue; bring it into view.
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia(SIDE_BY_SIDE_QUERY).matches) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      inspectorRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+    });
+  }
+
+  const statusCounts = useMemo(() => Object.fromEntries(STATUS_TABS.map((tab) => [tab.value, dashboard.rows.filter((row) => matchesStatus(row, tab.value)).length])) as Record<StatusFilter, number>, [dashboard.rows]);
   const filtersActive = Boolean(query.trim()) || status !== "all" || type !== "all" || branch !== "all";
+  const compact = selected !== null;
+  const activeFilters: OpsActiveFilter[] = [];
+  if (type !== "all") activeFilters.push({ key: "type", label: shipmentDocumentTypeLabels[type], title: `Type: ${shipmentDocumentTypeLabels[type]}`, onRemove: () => update({ type: null }) });
+  if (branch !== "all") activeFilters.push({ key: "branch", label: branch, title: `Branch: ${branch}`, onRemove: () => update({ branch: null }) });
+  if (origin !== "all") activeFilters.push({ key: "origin", label: origin === "customer" ? "From customers" : "Staff uploads", title: `Source: ${origin}`, onRemove: () => update({ origin: null, selected: null }) });
 
   return <OpsPage className="document-vault-register">
-    <div className="document-vault-page">
-      <OpsPageHeader eyebrow="Evidence control" title="Document Vault" description={`Evidence-control workspace · upload ≠ verification · ${dashboard.rows.length} documents · ${pendingReview} awaiting review · snapshot ${dateTime(dashboard.generated_at)}`} actions={<><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="sm">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="sm">Customs</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></>}/>
+    <OpsPageHeader
+      title="Document Vault"
+      description={`Evidence control · upload ≠ verification · ${dashboard.rows.length} documents · snapshot ${dateTime(dashboard.generated_at)}`}
+      actions={<><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="md">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="md">Customs</Link><OpsButton variant="secondary" onClick={() => router.refresh()}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton></>}
+    />
 
-      {pendingReview > 0 ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning"><span style={{ display: "inline-flex", gap: 7, alignItems: "center" }}><AlertCircle size={15}/><strong>{pendingReview} document{pendingReview === 1 ? "" : "s"} awaiting review.</strong> Upload alone does not constitute verification.</span></OpsNotice></div> : null}
-      {dashboard.cleanup_pending_count ? <div style={{ marginBottom: 16 }}><OpsNotice tone="warning">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsNotice></div> : null}
-      {notice ? <div style={{ marginBottom: 16 }}><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-
-      <div className="document-vault-workspace">
-        <div className="document-vault-queue">
-          <OpsToolbar className="document-vault-toolbar">
-            <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, filename, reviewer…" aria-label="Search document vault"/>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Status filter">
-              <OpsFilterChip active={status === "all"} onClick={() => setStatusFilter("all")}>All</OpsFilterChip>
-              <OpsFilterChip active={status === "active"} onClick={() => setStatusFilter("active")}>Active</OpsFilterChip>
-              <OpsFilterChip active={status === "pending"} onClick={() => setStatusFilter("pending")}>Pending review</OpsFilterChip>
-              <OpsFilterChip active={status === "verified"} onClick={() => setStatusFilter("verified")}>Verified</OpsFilterChip>
-              <OpsFilterChip active={status === "rejected"} onClick={() => setStatusFilter("rejected")}>Rejected</OpsFilterChip>
-              <OpsFilterChip active={status === "expired"} onClick={() => setStatusFilter("expired")}>Expired</OpsFilterChip>
-              <OpsFilterChip active={status === "superseded"} onClick={() => setStatusFilter("superseded")}>Superseded</OpsFilterChip>
-              <OpsFilterChip active={status === "deleted"} onClick={() => setStatusFilter("deleted")}>Deleted</OpsFilterChip>
-              <OpsFilterChip active={origin === "customer"} onClick={() => update({ origin: origin === "customer" ? null : "customer", selected: null })}>From customers{customerInbound ? ` · ${customerInbound}` : ""}</OpsFilterChip>
-            </div>
-            <select value={type} onChange={(event) => update({ type: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by document type" style={selectStyle}><option value="all">All document types</option>{shipmentDocumentTypes.map((item) => <option key={item} value={item}>{shipmentDocumentTypeLabels[item]}</option>)}</select>
-            <select value={branch} onChange={(event) => update({ branch: event.target.value === "all" ? null : event.target.value })} aria-label="Filter by branch" style={selectStyle}><option value="all">All branches</option>{kcplBranches.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-            {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
-            <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{visible.length} documents</span>
-          </OpsToolbar>
-
-          <section className="document-vault-table">
-          {visible.length ? <div style={{ overflowX: "auto" }}><table className="ops-table" style={{ minWidth: 980 }}><thead><tr><th>Document</th><th>Type</th><th>Shipment</th><th>Uploaded</th><th>Expiry</th><th>Customer-safe</th><th>Review status</th><th>Next action</th></tr></thead><tbody>{visible.map((row) => {
-              const key = `${row.shipment_reference}:${row.id}`;
-              const inactive = row.review_status === "deleted" || row.review_status === "superseded";
-              return <tr key={key} data-selected={selectedKey === key ? "true" : undefined} aria-selected={selectedKey === key} tabIndex={0} onClick={() => update({ selected: key }, "push")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); update({ selected: key }, "push"); } }} style={{ cursor: "pointer", opacity: inactive ? .55 : 1 }}>
-                <td><div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>{row.filename}{row.uploaded_by_source === "customer_portal" ? <OpsBadge tone="info">From customer</OpsBadge> : null}</div><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>by {row.uploaded_by} · {bytes(row.size_bytes)}</div></td>
-                <td>{shipmentDocumentTypeLabels[row.document_type]}</td>
-                <td><OpsMono>{row.shipment_reference}</OpsMono><div style={{ marginTop: 2, fontSize: 12, color: "var(--admin-muted)" }}>{row.customer_name}</div></td>
-                <td style={{ color: "var(--admin-muted)", whiteSpace: "nowrap" }}>{dateTime(row.uploaded_at)}</td>
-                <td style={{ color: row.expires_on ? "var(--admin-warning)" : "var(--admin-muted)" }}>{row.expires_on ? dateOnly(row.expires_on) : "—"}</td>
-                <td>{row.customer_safe ? <CheckCircle2 size={14} style={{ color: "var(--admin-success)" }} aria-label="Customer-safe"/> : <span style={{ fontSize: 12, color: "var(--admin-muted)" }}>Internal</span>}</td>
-                <td><OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge></td>
-                <td><span className={`document-vault-next-action${row.effective_status === "verified" ? " is-complete" : row.effective_status === "rejected" || row.effective_status === "expired" ? " is-attention" : ""}`}>{nextAction(row)}</span></td>
-              </tr>;
-            })}</tbody></table></div> : <OpsEmptyState kind="search" icon={<Folder size={18}/>} title={filtersActive ? "No results" : "No documents"} description={filtersActive ? "Try changing or resetting the current filters." : "No documents are available in the vault."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>} 
-          </section>
+    <div className="px-4 pb-8 pt-4 md:px-6">
+      {pendingReview > 0 ? (
+        <div className="mb-3">
+          <OpsInlineAlert
+            icon={<AlertCircle size={14} strokeWidth={1.75} aria-hidden="true"/>}
+            actions={(
+              <>
+                <button type="button" className="ops-inline-alert-action" aria-pressed={status === "pending"} onClick={() => setStatusFilter("pending")}>Show pending</button>
+                {customerInbound ? <button type="button" className="ops-inline-alert-action" aria-pressed={origin === "customer"} onClick={() => update({ origin: origin === "customer" ? null : "customer", selected: null })}>From customers · {customerInbound}</button> : null}
+              </>
+            )}
+          >
+            <strong>{pendingReview}</strong> document{pendingReview === 1 ? "" : "s"} awaiting review. Upload alone does not constitute verification.
+          </OpsInlineAlert>
         </div>
+      ) : null}
+      {dashboard.cleanup_pending_count ? <div className="mb-3"><OpsInlineAlert tone="info">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsInlineAlert></div> : null}
+      {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-        {selected ? <Inspector row={selected} role={role} currentUserEmail={currentUserEmail} busyId={busyId} reviewBusy={reviewBusy} onClose={() => update({ selected: null })} onDelete={deleteDocument} onSaveReview={saveReview}/> : null}
+      <OpsRegisterToolbar
+        search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, filename, reviewer…" aria-label="Search document vault"/>}
+        actions={(
+          <>
+            <OpsFilterSelect label="Type" value={type} allLabel="All document types" options={shipmentDocumentTypes.map((item) => ({ value: item, label: shipmentDocumentTypeLabels[item] }))} onChange={(value) => update({ type: value === "all" ? null : value })}/>
+            <OpsFilterSelect label="Branch" value={branch} allLabel="All branches" options={kcplBranches.map((item) => ({ value: item, label: item }))} onChange={(value) => update({ branch: value === "all" ? null : value })}/>
+            <OpsFilterSelect label="Source" value={origin} allLabel="All sources" options={SOURCE_OPTIONS} onChange={(value) => update({ origin: value === "all" ? null : value, selected: null })}/>
+            {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
+            <span className="ops-toolbar-divider" aria-hidden="true"/>
+            <span className="ops-result-count" aria-live="polite">{visible.length === dashboard.rows.length ? `${dashboard.rows.length} documents` : `${visible.length} of ${dashboard.rows.length}`}</span>
+          </>
+        )}
+        tabs={<OpsScopeTabs label="Status filter" items={STATUS_TABS.map((tab) => ({ ...tab, count: statusCounts[tab.value] }))} value={status} onChange={setStatusFilter}/>}
+      />
+
+      <OpsActiveFilters chips={activeFilters}/>
+
+      <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
+        <section className="ops-surface document-vault-surface" aria-label="Document evidence queue">
+          {visible.length ? (
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table document-vault-table" data-compact={compact || undefined} aria-label="Document Vault">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Shipment</th>
+                    {compact ? null : <th>Uploaded</th>}
+                    {compact ? null : <th>Expiry</th>}
+                    <th>Review · Access</th>
+                    {compact ? null : <th>Next action</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((row) => {
+                    const key = `${row.shipment_reference}:${row.id}`;
+                    const inactive = row.review_status === "deleted" || row.review_status === "superseded";
+                    const rowSelected = selectedKey === key;
+                    return (
+                      <tr key={key} data-selected={rowSelected || undefined} data-inactive={inactive || undefined} aria-current={rowSelected || undefined} tabIndex={0} onClick={() => openRow(key)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openRow(key); } }}>
+                        <td>
+                          <span className="ops-cell-primary ops-cell-clamp" title={row.filename}>{row.filename}</span>
+                          <span className="ops-cell-secondary ops-cell-clamp">{row.uploaded_by_source === "customer_portal" ? <span className="document-vault-source">From customer · </span> : null}by {row.uploaded_by} · {bytes(row.size_bytes)}</span>
+                        </td>
+                        <td><span className="ops-cell-primary document-vault-type">{shipmentDocumentTypeLabels[row.document_type]}</span></td>
+                        <td>
+                          <span className="ops-cell-primary ops-mono ops-cell-id">{row.shipment_reference}</span>
+                          <span className="ops-cell-secondary document-vault-customer">{row.customer_name}</span>
+                        </td>
+                        {compact ? null : <td><span className="ops-cell-muted" title={dateTime(row.uploaded_at)}>{shortDateTime(row.uploaded_at)}</span></td>}
+                        {compact ? null : <td>{row.expires_on ? <span className="document-vault-expiry">{dateOnly(row.expires_on)}</span> : <span className="ops-cell-muted">—</span>}</td>}
+                        <td>
+                          <div className="freight-documents-review">
+                            <OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge>
+                            {row.customer_safe ? <span className="freight-documents-safety" data-safe="true"><ShieldCheck size={12} strokeWidth={1.75} aria-hidden="true"/>Customer-safe</span> : <span className="freight-documents-safety">Internal</span>}
+                          </div>
+                        </td>
+                        {compact ? null : <td><span className={`document-vault-next-action${row.effective_status === "verified" ? " is-complete" : row.effective_status === "rejected" || row.effective_status === "expired" ? " is-attention" : ""}`}>{nextAction(row)}</span></td>}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          ) : <OpsEmptyState compact kind="search" icon={<Folder size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No results" : "No documents"} description={filtersActive ? "Try changing or resetting the current filters." : "No documents are available in the vault."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>}
+          {visible.length ? <footer className="ops-register-footer"><span>{visible.length} document{visible.length === 1 ? "" : "s"} in this view</span></footer> : null}
+        </section>
+
+        {selected ? <Inspector row={selected} role={role} currentUserEmail={currentUserEmail} busyId={busyId} reviewBusy={reviewBusy} onClose={() => update({ selected: null })} onDelete={deleteDocument} onSaveReview={saveReview} inspectorRef={inspectorRef}/> : null}
       </div>
     </div>
   </OpsPage>;

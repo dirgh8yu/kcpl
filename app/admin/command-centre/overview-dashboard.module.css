@@ -2,10 +2,9 @@
 
 /* Aliased to the shared --admin-* tokens (operations-system.css) so this page
  * can't drift from the rest of /admin. Brand crimson/ink stay pinned there;
- * --overview-violet and the pickup-tone amber (#f5b83b, workloadFill[data-tone="pickup"])
- * have no --admin-* equivalent — they are categorical hues distinguishing the six
- * workload-chart bars, not semantic status colors, so they keep their own literal
- * values instead of borrowing --admin-warning and colliding with a real warning state. */
+ * --overview-violet is a categorical hue distinguishing workload-chart bars,
+ * not a semantic status color, so it keeps its literal value instead of
+ * borrowing a semantic token. */
 .dashboard {
   --overview-canvas: var(--admin-canvas);
   --overview-surface: var(--admin-surface);
@@ -25,249 +24,301 @@
   --overview-info: var(--admin-info);
   --overview-info-soft: var(--admin-info-bg);
   --overview-violet: #7c3aed;
-  --overview-violet-soft: #f5f3ff;
   --overview-brand-crimson: var(--admin-crimson);
   max-width: 1600px;
   margin: 0 auto;
-  padding: 20px 24px 32px;
+  padding: 16px 20px 28px;
 }
-.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
-.heroCopy h1 { margin: 0; color: var(--overview-ink); font-size: 20px; font-weight: 620; letter-spacing: -0.018em; line-height: 1.2; }
-.heroCopy p { margin: 3px 0 0; color: var(--overview-muted); font-size: 13px; }
-.heroActions { display: flex; align-items: center; gap: 18px; }
-.timeBlock { text-align: right; }
-.timeBlock strong { display: block; font-size: 13px; font-weight: 650; }
-.timeBlock span { display: block; margin-top: 3px; color: var(--overview-faint); font-size: 11px; }
-.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 7px; padding: 0 15px; font: inherit; font-size: 13px; font-weight: 650; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+
+.pageHead { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; margin-bottom: 14px; }
+.pageHeadCopy { min-width: 0; }
+.pageHeadCopy h1 { margin: 0; color: var(--overview-ink); font-size: 20px; font-weight: 650; letter-spacing: -0.018em; line-height: 26px; }
+.pageHeadMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 3px 0 0; color: var(--overview-muted); font-size: 12px; line-height: 16px; }
+.metaDot { width: 3px; height: 3px; flex: none; border-radius: 50%; background: var(--overview-faint); }
+.pageHeadActions { display: flex; flex: none; align-items: center; gap: 8px; }
+
+/* ── Compact controls: 34px, 6px radius, no chrome beyond the border ─────── */
+
+.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; border-radius: 6px; padding: 0 12px; font: inherit; font-size: 12.5px; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 .blackButton { border: 1px solid var(--overview-action); background: var(--overview-action); color: var(--overview-surface); }
 .blackButton:hover { border-color: var(--overview-action-hover); background: var(--overview-action-hover); }
 .blackButton:disabled { cursor: default; opacity: 0.45; }
 .secondaryButton { border: 1px solid var(--overview-line); background: var(--overview-surface); color: var(--overview-ink); }
 .secondaryButton:hover { border-color: var(--overview-line-strong); background: var(--overview-canvas); }
-.iconButton { width: 36px; padding: 0; border: 1px solid var(--overview-line); background: var(--overview-surface); color: var(--overview-muted); }
+.iconButton { width: 32px; min-height: 32px; padding: 0; border: 1px solid var(--overview-line); background: var(--overview-surface); color: var(--overview-muted); }
 .iconButton:hover { color: var(--overview-ink); background: var(--overview-canvas); }
-.textButton { min-height: 34px; border: 0; background: transparent; color: var(--overview-muted); padding: 0 6px; font-size: 13px; }
+.textButton { min-height: 28px; border: 0; background: transparent; color: var(--overview-muted); padding: 0 6px; font-size: 12.5px; }
 .textButton:hover { color: var(--overview-ink); }
 
-.warningBanner { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; border: 1px solid var(--admin-warning-line); border-radius: 7px; background: var(--overview-warning-soft); padding: 10px 12px; color: var(--overview-warning); font-size: 12px; line-height: 18px; }
+.warningBanner { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; border: 1px solid var(--admin-warning-line); border-radius: 6px; background: var(--overview-warning-soft); padding: 9px 12px; color: var(--overview-warning); font-size: 12px; line-height: 17px; }
+.warningBanner svg { flex: none; margin-top: 1px; }
 
-.metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
-.metric { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; gap: 10px; min-height: 74px; border: 1px solid var(--overview-line); border-radius: var(--app-radius, 8px); background: var(--overview-surface); padding: 12px 14px; color: inherit; text-decoration: none; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
-.metric:hover { border-color: var(--overview-line-strong); background: var(--overview-canvas); }
-@media (hover: hover) and (pointer: fine) { .metric:hover { transform: translateY(-1px); } }
-.metricLabel { display: flex; min-width: 0; align-items: center; gap: 7px; }
-.metricLabelText { overflow: hidden; color: var(--overview-muted); font-size: 12px; font-weight: 500; letter-spacing: -0.005em; text-overflow: ellipsis; white-space: nowrap; }
-.metricDot { display: grid; width: 20px; height: 20px; flex: none; place-items: center; border-radius: var(--app-radius-sm, 6px); }
-.metricDot svg { width: 12px; height: 12px; }
-.metricValue { display: block; color: var(--overview-ink); font-size: 26px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
-.metricChevron { color: var(--overview-faint); }
-.dangerIcon { background: var(--overview-danger-soft); color: var(--overview-danger); }
-.warningIcon { background: var(--overview-warning-soft); color: var(--overview-warning); }
-.successIcon { background: var(--overview-success-soft); color: var(--overview-success); }
-.infoIcon { background: var(--overview-info-soft); color: var(--overview-info); }
-.neutralIcon { background: var(--admin-surface-soft); color: var(--overview-muted); }
-.violetIcon { background: var(--overview-violet-soft); color: var(--overview-violet); }
+/* ── KPI rail: one shared surface, hairline separators, no six floating cards ── */
 
-.primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(272px, 0.86fr); gap: 12px; align-items: start; }
-/* The first track holds the workload chart, whose longest label ("Delivered
- * (this week)") plus a readable bar and the count needs ~328px. At the old
- * 220px it could not reach its own min-content, so the row overflowed the card
- * and .card's overflow:hidden cut the counts off. */
-.lowerGrid { display: grid; grid-template-columns: minmax(328px, 0.9fr) minmax(360px, 1.45fr) minmax(260px, 0.9fr) minmax(280px, 1fr); gap: 12px; margin-top: 12px; align-items: start; }
-.card { min-width: 0; overflow: hidden; border: 1px solid var(--overview-line); border-radius: var(--app-radius, 8px); background: var(--overview-surface); opacity: 0; transform: translateY(6px); animation: overview-card-in var(--app-duration-slow) var(--app-ease-out) forwards; }
-@keyframes overview-card-in { to { opacity: 1; transform: none; } }
-/* Cascade the entrance per grid region; 30ms reads as sequence without feeling slow. */
-.card:nth-child(2) { animation-delay: 30ms; }
-.card:nth-child(3) { animation-delay: 60ms; }
-.card:nth-child(4) { animation-delay: 90ms; }
-.cardHeader { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; padding: 14px 16px 10px; }
-.cardHeader h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.012em; white-space: nowrap; }
-.cardHeader p { margin: 3px 0 0; color: var(--overview-muted); font-size: 12px; line-height: 16px; }
-.cardTitleRow { display: flex; align-items: center; gap: 8px; }
-.countBadge { display: inline-flex; min-width: 26px; height: 22px; align-items: center; justify-content: center; border-radius: 999px; background: var(--overview-danger-soft); padding: 0 8px; color: var(--overview-danger); font-size: 12px; font-weight: 720; }
+.kpiRail { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; margin-bottom: 12px; overflow: hidden; border: 1px solid var(--overview-line); border-radius: 8px; background: var(--overview-line); }
+.kpiCell { display: flex; min-width: 0; flex-direction: column; gap: 5px; padding: 11px 14px 12px; background: var(--overview-surface); color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kpiCell:hover { background: var(--overview-canvas); }
+.kpiCell:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kpiLabel { overflow: hidden; color: var(--overview-muted); font-size: 11px; font-weight: 570; letter-spacing: 0.02em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.kpiValue { color: var(--overview-ink); font-size: 24px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+/* Zeros recede; live danger/warning numbers carry their meaning. */
+.kpiCell[data-zero] .kpiValue { color: var(--overview-faint); }
+.kpiCell[data-tone="danger"]:not([data-zero]) .kpiValue { color: var(--overview-danger); }
+.kpiCell[data-tone="warning"]:not([data-zero]) .kpiValue { color: var(--overview-warning); }
 
-.tableWrap { border-top: 1px solid var(--overview-line); }
-/* Fixed layout so nine columns fit the card exactly. Auto layout let long
- * customer names and routes push the table past its container, which the
- * card's overflow:hidden then clipped mid-column. */
-.table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+/* ── Grids ────────────────────────────────────────────────────────────────── */
+
+.primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 0.86fr); gap: 12px; align-items: start; margin-bottom: 12px; }
+.lowerGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+
+/* ── Shared surface: 8px panel, hairline border, no shadow ───────────────── */
+
+.card { min-width: 0; border: 1px solid var(--overview-line); border-radius: 8px; background: var(--overview-surface); }
+.cardHead { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 8px 12px; border-bottom: 1px solid var(--overview-line); padding: 5px 12px 5px 14px; }
+.cardHead h2 { margin: 0; font-size: 13px; font-weight: 620; letter-spacing: -0.01em; white-space: nowrap; }
+.cardTitleRow { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.headCount { display: inline-flex; min-width: 20px; height: 17px; align-items: center; justify-content: center; border-radius: 999px; background: var(--admin-surface-soft); padding: 0 6px; color: var(--overview-muted); font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.headCountAlert { background: var(--overview-danger-soft); color: var(--overview-danger); }
+.headMeta { color: var(--overview-faint); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.headAction { display: inline-flex; flex: none; align-items: center; gap: 4px; border-radius: 4px; color: var(--overview-muted); font-size: 12px; font-weight: 600; text-decoration: none; transition: color var(--app-duration-fast) var(--app-ease-out); }
+.headAction svg { color: var(--overview-faint); }
+.headAction:hover { color: var(--overview-ink); }
+.rowChevron { color: var(--overview-faint); }
+
+/* ── Work queue ──────────────────────────────────────────────────────────── */
+
+.queueEmpty { display: flex; align-items: center; gap: 10px; padding: 13px 16px; }
+.queueEmpty svg { flex: none; color: var(--overview-success); }
+.queueEmpty strong { display: block; color: var(--overview-ink); font-size: 13px; font-weight: 600; }
+.queueEmpty span { display: block; margin-top: 1px; color: var(--overview-muted); font-size: 12px; line-height: 16px; }
+
+.tableWrap { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+/* Fixed layout so the columns fit the card exactly. Auto layout let long
+ * customer names push the table past its container, which the card border
+ * then clipped mid-column. */
+.table { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .table th, .table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Customer is the only column allowed to ellipsis: a truncated reference or a
  * clipped status pill costs the reader the thing they came for, a shortened
- * company name does not. Everything else is sized to its longest real value. */
-.table th:nth-child(1), .table td:nth-child(1) { width: 40px; }
-.table th:nth-child(2), .table td:nth-child(2) { width: 150px; }
-.table th:nth-child(4), .table td:nth-child(4) { width: 182px; }
-.table th:nth-child(5), .table td:nth-child(5) { width: 148px; }
-.table th:nth-child(6), .table td:nth-child(6) { width: 104px; }
-.table th:nth-child(7), .table td:nth-child(7) { width: 146px; }
-.table th:nth-child(8), .table td:nth-child(8) { width: 48px; }
-.table th:nth-child(9), .table td:nth-child(9) { width: 36px; }
-.table th { height: 34px; border-bottom: 1px solid var(--overview-line); background: var(--overview-canvas); padding: 0 12px; color: var(--overview-faint); font-size: 11px; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-.table td { height: 44px; border-bottom: 1px solid var(--overview-line); padding: 8px 12px; color: var(--overview-ink); font-size: 13px; vertical-align: middle; }
+ * company name does not. Everything else is sized to its longest real value
+ * plus the 20px of cell padding; the sum (674px) keeps a squeezed card's
+ * customer track alive instead of collapsing it to zero and scrolling. */
+.table th:nth-child(1), .table td:nth-child(1) { width: 36px; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 140px; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 152px; }
+.table th:nth-child(5), .table td:nth-child(5) { width: 132px; }
+.table th:nth-child(6), .table td:nth-child(6) { width: 128px; }
+.table th:nth-child(7), .table td:nth-child(7) { width: 52px; }
+.table th:nth-child(8), .table td:nth-child(8) { width: 34px; }
+.table th { height: 30px; border-bottom: 1px solid var(--overview-line); background: var(--overview-canvas); padding: 0 10px; color: var(--overview-faint); font-size: 10.5px; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; }
+/* The action column is exactly its 30px button; the generic 20px of cell padding would clip it into an ellipsis. */
+.table th:last-child, .table td:last-child { padding-left: 2px; padding-right: 2px; }
+.table td { height: 40px; border-bottom: 1px solid var(--overview-line); padding: 8px 10px; color: var(--overview-ink); font-size: 12.5px; vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover td { background: var(--overview-canvas); }
-.checkbox { width: 15px; height: 15px; accent-color: var(--overview-action); }
-.referenceLink { color: var(--overview-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; font-weight: 700; text-decoration: none; }
+.checkbox { width: 14px; height: 14px; accent-color: var(--overview-action); }
+.referenceLink { color: var(--overview-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; font-weight: 650; text-decoration: none; }
 .referenceLink:hover { color: var(--overview-brand-crimson); text-decoration: underline; }
-.routeCell { color: var(--overview-muted); white-space: nowrap; }
-.statusBadge { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; border-radius: 999px; padding: 0 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.statusBadge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.actionLink { color: var(--overview-muted); font-size: 12px; font-weight: 550; text-decoration: none; }
+.actionLink:hover { color: var(--overview-ink); text-decoration: underline; }
+.statusBadge { display: inline-flex; align-items: center; gap: 6px; min-height: 20px; border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.statusBadge::before { content: ""; width: 5px; height: 5px; flex: none; border-radius: 50%; background: currentColor; }
 .statusDanger { background: var(--overview-danger-soft); color: var(--overview-danger); }
 .statusWarning { background: var(--overview-warning-soft); color: var(--overview-warning); }
 .statusSuccess { background: var(--overview-success-soft); color: var(--overview-success); }
 .statusInfo { background: var(--overview-info-soft); color: var(--overview-info); }
 .statusNeutral { background: var(--admin-surface-soft); color: var(--overview-muted); }
-.owner { display: flex; min-width: 118px; align-items: center; gap: 8px; }
-.ownerAvatar { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 50%; background: var(--admin-surface-muted); color: var(--overview-muted); font-size: 10px; font-weight: 700; }
-.ownerUnassigned { color: var(--overview-muted); }
-.ageDanger { color: var(--overview-danger); font-weight: 700; }
-.rowAction { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--overview-muted); cursor: pointer; }
+.ownerCell { display: inline-flex; min-width: 0; align-items: center; gap: 5px; color: var(--overview-muted); font-size: 12px; }
+.ownerUnassigned { color: var(--overview-faint); }
+.ageDanger { color: var(--overview-danger); font-weight: 650; }
+.rowAction { display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--overview-faint); cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
 .rowAction:hover { background: var(--admin-surface-soft); color: var(--overview-ink); }
-.emptyTable { display: grid; min-height: 240px; place-items: center; border-top: 1px solid var(--overview-line); padding: 28px; text-align: center; }
-.emptyTable strong { display: block; font-size: 14.5px; }
-.emptyTable span { display: block; max-width: 480px; margin-top: 6px; color: var(--overview-muted); font-size: 12.5px; line-height: 18px; }
+
+/* ── Today ───────────────────────────────────────────────────────────────── */
 
 .todayCard { display: flex; flex-direction: column; }
-.todayList { flex: 1; border-top: 1px solid var(--overview-line); }
-.todayItem { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto 16px; min-height: 50px; align-items: center; gap: 10px; border-bottom: 1px solid var(--overview-line); padding: 6px 16px; color: inherit; text-decoration: none; }
+.todayList { flex: 1; }
+.todayItem { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto 14px; min-height: 34px; align-items: center; gap: 10px; border-bottom: 1px solid var(--overview-line); padding: 0 12px 0 14px; color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.todayItem:last-of-type { border-bottom: 0; }
 .todayItem:hover { background: var(--overview-canvas); }
-.todayItemIcon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; }
-.todayItem strong { font-size: 13px; font-weight: 550; }
-.todayItemCount { color: var(--overview-ink); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.todayCritical { display: grid; grid-template-columns: 32px minmax(0, 1fr) 16px; align-items: center; gap: 12px; margin: 12px; border: 1px solid var(--admin-danger-line); border-radius: 8px; background: var(--overview-danger-soft); padding: 12px; color: var(--overview-danger); text-decoration: none; }
-.todayCritical strong { display: block; font-size: 13px; }
-.todayCritical span { display: block; margin-top: 3px; color: var(--overview-danger); font-size: 12px; }
+.todayItemIcon { display: grid; place-items: center; color: var(--overview-faint); }
+/* Colour only where it means something: an alerting row earns its red, the
+ * rest stay quiet so zero-state rows never shout. */
+.todayItem[data-alert] .todayItemIcon { color: var(--overview-danger); }
+.todayItem strong { overflow: hidden; font-size: 12.5px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.todayItemCount { color: var(--overview-ink); font-size: 12.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.todayItemCount[data-zero] { color: var(--overview-faint); font-weight: 600; }
+.todayItem[data-alert] .todayItemCount { color: var(--overview-danger); }
+.todayFootCopy { min-width: 0; }
+.todayFootCopy strong { display: block; font-size: 12.5px; font-weight: 620; }
+.todayFootCopy > span { display: block; margin-top: 1px; font-size: 11.5px; line-height: 15px; opacity: 0.85; }
+.todayCritical { display: grid; grid-template-columns: 20px minmax(0, 1fr) 14px; align-items: center; gap: 10px; border-top: 1px solid var(--admin-danger-line); border-radius: 0 0 8px 8px; background: var(--overview-danger-soft); padding: 10px 12px 10px 14px; color: var(--overview-danger); text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.todayCritical:hover { background: color-mix(in srgb, var(--admin-danger-line) 40%, var(--admin-danger-bg)); }
+.todayCritical .todayFootCopy > span { opacity: 0.9; }
+.todayClear { display: grid; grid-template-columns: 20px minmax(0, 1fr) 14px; align-items: center; gap: 10px; border-top: 1px solid var(--overview-line); border-radius: 0 0 8px 8px; padding: 10px 12px 10px 14px; color: var(--overview-muted); text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.todayClear:hover { background: var(--overview-canvas); }
+.todayClear svg:first-child { color: var(--overview-success); }
+.todayClear .todayFootCopy strong { color: var(--overview-ink); }
+.todayClear .todayFootCopy > span { color: var(--overview-muted); opacity: 1; }
 
-.workloadBody { padding: 4px 16px 14px; }
+/* ── Shipment workload ───────────────────────────────────────────────────── */
+
+.workloadBody { padding: 6px 8px 10px; }
 /* The label track floors at 0 so a narrow card ellipsizes the label instead of
  * forcing the row wider than the card, and the count track is wide enough for a
  * three-digit total. Both stay in fr rather than auto so every row's bar track
  * is the same width -- the bars are only comparable if they share a scale. */
-.workloadRow { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(48px, 1fr) 28px; align-items: center; gap: 10px; min-height: 34px; color: inherit; text-decoration: none; }
-.workloadRow span:first-child { overflow: hidden; color: var(--overview-muted); font-size: 12.5px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.workloadTrack { height: 6px; overflow: hidden; border-radius: 999px; background: var(--admin-surface-muted); }
+.workloadRow { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(48px, 1fr) 32px; align-items: center; gap: 10px; min-height: 32px; border-radius: 5px; margin: 0 -6px; padding: 0 6px; color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.workloadRow:hover { background: var(--overview-canvas); }
+.workloadLabel { overflow: hidden; color: var(--overview-muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.workloadTrack { height: 4px; overflow: hidden; border-radius: 999px; background: var(--admin-surface-muted); }
 /* The fill is a <span> inside the track, so it is not a grid item and is not
  * blockified: without display:block its width and height are ignored and the
  * chart renders as a row of empty tracks. */
-.workloadFill { display: block; height: 100%; min-width: 3px; border-radius: inherit; background: var(--overview-faint); }
-.workloadFill[data-tone="transit"] { background: var(--overview-success); }
-.workloadFill[data-tone="customs"] { background: var(--overview-danger); }
-.workloadFill[data-tone="booking"] { background: var(--overview-info); }
-.workloadFill[data-tone="pickup"] { background: #f5b83b; }
-.workloadFill[data-tone="delivery"] { background: var(--overview-violet); }
-.workloadFill[data-tone="delivered"] { background: var(--overview-faint); }
-.workloadCount { text-align: right; color: var(--overview-ink); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.workloadFill { display: block; height: 100%; border-radius: inherit; background: var(--overview-line-strong); }
+.workloadFill[data-tone="info"] { background: var(--overview-info); }
+.workloadFill[data-tone="warning"] { background: var(--overview-warning); }
+.workloadFill[data-tone="success"] { background: var(--overview-success); }
+.workloadFill[data-tone="violet"] { background: var(--overview-violet); }
+.workloadFill[data-zero] { background: transparent; }
+.workloadCount { text-align: right; color: var(--overview-ink); font-size: 12.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.workloadCount[data-zero] { color: var(--overview-faint); font-weight: 600; }
 
-.movementBody { padding: 2px 8px 6px; }
+/* ── Live movement ───────────────────────────────────────────────────────── */
+
+.movementList { min-width: 0; }
+.movementRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 40px; border-bottom: 1px solid var(--overview-line); padding: 4px 14px; color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.movementRow:last-child { border-bottom: 0; }
 .movementRow:hover { background: var(--overview-canvas); }
-.movementRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 8px; border-radius: var(--app-radius-sm, 6px); color: inherit; text-decoration: none; }
-.movementWhere { display: grid; min-width: 0; gap: 2px; }
-.movementWhere strong { overflow: hidden; color: var(--overview-ink); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.movementWhere span { overflow: hidden; color: var(--overview-muted); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
-.movementEta { flex: none; color: var(--overview-muted); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.movementMain { display: grid; min-width: 0; gap: 1px; }
+.movementMain strong { overflow: hidden; color: var(--overview-ink); font-size: 12.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.movementMain > span { overflow: hidden; color: var(--overview-muted); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+.monoRef { color: var(--overview-faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em; }
+.movementEta { flex: none; color: var(--overview-muted); font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .movementEta[data-late] { color: var(--overview-danger); }
-.movementFoot { padding: 8px 16px 14px; color: var(--overview-faint); font-size: 11px; }
 
-.activityBody { padding: 4px 16px 14px; }
-.activityItem { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 11px; min-height: 60px; color: inherit; text-decoration: none; }
-.activityItem:not(:last-child)::after { content: ""; position: absolute; left: 16px; top: 34px; bottom: -4px; width: 1px; background: var(--overview-line); }
-.activityIcon { z-index: 1; display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; }
-.activityCopy { padding: 2px 0 10px; }
-.activityCopy strong { display: block; overflow: hidden; color: var(--overview-ink); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.activityCopy span { display: block; margin-top: 3px; overflow: hidden; color: var(--overview-muted); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.activityCopy small { display: block; margin-top: 2px; color: var(--overview-faint); font-size: 11px; }
+/* ── Recent activity ─────────────────────────────────────────────────────── */
+
+.activityFeed { margin: 0; padding: 0; list-style: none; }
+.activityRow { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 36px; border-bottom: 1px solid var(--overview-line); padding: 4px 14px; color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.activityFeed li:last-child .activityRow { border-bottom: 0; }
+.activityRow:hover { background: var(--overview-canvas); }
+.activityMark { display: grid; place-items: center; color: var(--overview-faint); }
+.activityMark[data-tone="danger"] { color: var(--overview-danger); }
+.activityMark[data-tone="warning"] { color: var(--overview-warning); }
+.activityMark[data-tone="success"] { color: var(--overview-success); }
+.activityMark[data-tone="info"] { color: var(--overview-info); }
+.activityMain { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
+.activityTitle { overflow: hidden; color: var(--overview-ink); font-size: 12.5px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.activityTime { overflow: hidden; color: var(--overview-faint); font-size: 11px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+
+.quietEmpty { margin: 0; padding: 14px 16px; color: var(--overview-muted); font-size: 12.5px; line-height: 17px; }
+
+/* ── Finance snapshot: a secondary management strip, not a headline act ──── */
 
 .financeControls { display: flex; align-items: center; gap: 6px; }
-.financeSelect { height: 28px; max-width: 108px; border: 1px solid var(--overview-line); border-radius: 6px; background: var(--overview-surface); color: var(--overview-muted); padding: 0 22px 0 10px; font: inherit; font-size: 12px; font-weight: 600; }
-.financeBody { padding: 0 18px 14px; }
-.financeRow { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--overview-line); }
+.financePeriod { display: inline-flex; height: 24px; align-items: center; border-radius: 5px; background: var(--admin-surface-soft); padding: 0 8px; color: var(--overview-muted); font-size: 11.5px; font-weight: 600; }
+.financeSelect { height: 26px; max-width: 96px; border: 1px solid var(--overview-line); border-radius: 5px; background: var(--overview-surface); color: var(--overview-muted); padding: 0 20px 0 8px; font: inherit; font-size: 11.5px; font-weight: 600; }
+.financeBody { padding: 2px 14px 12px; }
+.financeRow { display: flex; min-height: 35px; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--overview-line); }
 .financeRow > span:first-child { color: var(--overview-muted); font-size: 12.5px; }
 .financeValue { display: flex; align-items: center; gap: 8px; }
-.financeValue strong { color: var(--overview-ink); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.change { display: inline-flex; min-height: 20px; align-items: center; border-radius: 999px; padding: 0 7px; font-size: 11px; font-weight: 700; }
+.financeValue strong { color: var(--overview-ink); font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.change { display: inline-flex; min-height: 18px; align-items: center; border-radius: 999px; padding: 0 6px; font-size: 10.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .changePositive { background: var(--overview-success-soft); color: var(--overview-success); }
 .changeNegative { background: var(--overview-danger-soft); color: var(--overview-danger); }
 .changeNeutral { background: var(--admin-surface-soft); color: var(--overview-muted); }
-.financeChart { display: flex; height: 84px; align-items: end; gap: 3px; padding-top: 14px; }
-.financeBar { flex: 1; min-width: 3px; border-radius: 2px 2px 0 0; background: var(--overview-line); }
+.financeChart { display: flex; height: 56px; align-items: end; gap: 2px; padding-top: 12px; }
+.financeBar { flex: 1; min-width: 2px; border-radius: 1px 1px 0 0; background: var(--overview-line); }
 .financeBar:last-child { background: var(--overview-action); }
-.financeAxis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--overview-faint); font-size: 11px; }
-.financeEmpty { display: grid; min-height: 220px; place-items: center; color: var(--overview-muted); font-size: 12.5px; line-height: 18px; text-align: center; padding: 20px; }
+.financeAxis { display: flex; justify-content: space-between; margin-top: 5px; color: var(--overview-faint); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.financeEmpty { display: grid; min-height: 84px; place-items: center; padding: 16px 20px; color: var(--overview-muted); font-size: 12px; line-height: 17px; text-align: center; }
 
-.notes { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 14px; margin-top: 16px; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); padding: 14px 18px; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
-.noteIcon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 8px; background: var(--admin-surface-soft); color: var(--overview-ink); }
-.noteLabel { color: var(--overview-ink); font-size: 13px; font-weight: 700; white-space: nowrap; }
+/* ── Operational notes ───────────────────────────────────────────────────── */
+
+.notes { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; margin-top: 12px; border: 1px solid var(--overview-line); border-radius: 8px; background: var(--overview-surface); padding: 10px 12px 10px 14px; }
+.noteIcon { display: grid; place-items: center; color: var(--overview-faint); }
+.notes[data-noted] .noteIcon { color: var(--overview-ink); }
+.noteBody { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
+.noteLabel { flex: none; color: var(--overview-ink); font-size: 12.5px; font-weight: 650; white-space: nowrap; }
 .noteText { overflow: hidden; color: var(--overview-muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.notes[data-noted] .noteText { color: var(--overview-ink); }
 .noteMeta { color: var(--overview-faint); font-size: 11px; white-space: nowrap; }
 .noteEditor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; border-top: 1px solid var(--overview-line); padding-top: 10px; }
-.noteEditor textarea { min-height: 64px; resize: vertical; border: 1px solid var(--overview-line); border-radius: 6px; background: var(--overview-surface); padding: 9px 10px; color: var(--overview-ink); font: inherit; font-size: 11px; outline: none; }
+.noteEditor textarea { min-height: 60px; resize: vertical; border: 1px solid var(--overview-line); border-radius: 5px; background: var(--overview-surface); padding: 8px 10px; color: var(--overview-ink); font: inherit; font-size: 12px; outline: none; }
 .noteEditor textarea:focus { border-color: var(--overview-ink); box-shadow: 0 0 0 2px rgba(16, 17, 20, 0.06); }
 .noteEditorActions { display: flex; align-items: end; gap: 6px; }
 
+/* ── New shipment launcher (true floating UI keeps its shadow) ───────────── */
+
 .launcherBackdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(16, 17, 20, 0.36); padding: 20px; opacity: 1; transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 @starting-style { .launcherBackdrop { opacity: 0; } }
-.launcher { width: min(520px, 100%); border: 1px solid var(--overview-line); border-radius: 9px; background: var(--overview-surface); box-shadow: 0 20px 50px rgba(16, 24, 40, 0.18); opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+.launcher { width: min(520px, 100%); border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); box-shadow: 0 20px 50px rgba(16, 24, 40, 0.18); opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 @starting-style { .launcher { opacity: 0; transform: scale(.98) translateY(-8px); } }
 /* Exit mirrors the entrance and runs faster -- the decision to leave is already made. */
 .launcherBackdrop[data-closing] { opacity: 0; transition-duration: var(--app-duration-fast, 120ms); }
 .launcher[data-closing] { opacity: 0; transform: scale(.98) translateY(-8px); transition-duration: var(--app-duration-fast, 120ms); }
-.launcherHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--overview-line); padding: 16px; }
-.launcherHeader h2 { margin: 0; font-size: 17px; font-weight: 730; }
-.launcherHeader p { margin: 6px 0 0; color: var(--overview-muted); font-size: 12.5px; line-height: 18px; }
+.launcherHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--overview-line); padding: 14px 16px; }
+.launcherHeader h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.launcherHeader p { margin: 5px 0 0; color: var(--overview-muted); font-size: 12px; line-height: 17px; }
 .launcherBody { display: grid; gap: 8px; padding: 14px 16px 16px; }
-.launcherChoice { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--overview-line); border-radius: 7px; padding: 12px; color: inherit; text-decoration: none; }
+.launcherChoice { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--overview-line); border-radius: 6px; padding: 11px 12px; color: inherit; text-decoration: none; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out); }
 .launcherChoice:hover { border-color: var(--overview-line-strong); background: var(--overview-canvas); }
-.launcherChoice strong { display: block; font-size: 13.5px; }
-.launcherChoice span { display: block; margin-top: 4px; color: var(--overview-muted); font-size: 12px; line-height: 17px; }
+.launcherChoice strong { display: block; font-size: 13px; }
+.launcherChoice span { display: block; margin-top: 3px; color: var(--overview-muted); font-size: 12px; line-height: 16px; }
 
-/* These queries read the viewport, but the admin shell parks a fixed 240px
- * sidebar beside this page and clips what spills past it (operations-system.css,
- * .kcpl-admin-content), so the viewport overstates the room by that 240px plus
- * this page's 48px of padding. The four lower cards need 1264px of track and gap
- * at their minimums, so the row only fits from 1552px of viewport up. */
-@media (max-width: 1551px) {
-  .lowerGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+/* These queries read the viewport, but the admin shell parks a fixed sidebar
+ * beside this page and clips what spills past it (operations-system.css,
+ * .kcpl-admin-content), so the viewport overstates the room by the sidebar
+ * width plus this page's padding. */
+@media (max-width: 1360px) {
+  .kpiRail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 1260px) {
-  .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@media (max-width: 900px) {
-  .dashboard { padding: 16px; }
-  .hero { align-items: flex-start; }
-  .heroActions { align-items: flex-end; flex-direction: column; gap: 8px; }
+/* Below this width a side-by-side queue + Today row leaves the queue card
+ * (~750px at best) too narrow for its fixed columns plus a readable customer
+ * track, so Today drops under the queue instead. */
+@media (max-width: 1400px) {
   .primaryGrid { grid-template-columns: 1fr; }
   .todayCard { min-height: auto; }
 }
 
-@media (max-width: 640px) {
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric { min-height: 72px; padding: 10px; }
-  .hero { flex-direction: column; }
-  .heroActions { width: 100%; align-items: stretch; flex-direction: row; justify-content: space-between; }
-  .timeBlock { text-align: left; }
+@media (max-width: 900px) {
+  .dashboard { padding: 14px 16px 24px; }
   .lowerGrid { grid-template-columns: 1fr; }
+  .pageHead { align-items: flex-start; }
+  .pageHeadActions { flex-wrap: wrap; }
+}
+
+@media (max-width: 640px) {
+  .kpiRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpiCell { padding: 10px 12px 11px; }
+  .kpiValue { font-size: 22px; }
+  .pageHead { flex-direction: column; align-items: stretch; }
+  .pageHeadActions { justify-content: space-between; }
+  .pageHeadActions .blackButton, .pageHeadActions .secondaryButton { flex: 1; }
   .notes { grid-template-columns: auto minmax(0, 1fr) auto; }
   .noteMeta { grid-column: 2 / -1; }
   .noteEditor { grid-template-columns: 1fr; }
   .noteEditorActions { justify-content: flex-end; }
 }
 
-/* The row overflow action is a 32px square, which a cursor hits easily and a
+/* The row overflow action is a 30px square, which a cursor hits easily and a
  * finger does not. Scoped to coarse pointers so the desktop row keeps its
  * proportions. */
 @media (pointer: coarse) {
   .rowAction { width: 44px; height: 44px; }
   .workloadRow,
+  .todayItem,
   .textButton { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .metric { transition: none; }
-  .metric:hover { transform: none; }
-  .card { animation: none; opacity: 1; transform: none; animation-delay: 0s; }
   .blackButton, .secondaryButton, .iconButton, .textButton { transition-property: background-color, border-color, color; }
+  .kpiCell, .todayItem, .todayCritical, .todayClear, .workloadRow, .movementRow, .activityRow, .rowAction, .launcherChoice { transition: none; }
   .launcherBackdrop, .launcher { transition: none; }
 }

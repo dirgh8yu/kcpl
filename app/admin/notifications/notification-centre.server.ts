@@ -4,10 +4,12 @@ import { listAutomationAlerts } from "../alerts/alert-engine.server";
 import type { AutomationAlert, AutomationAlertType } from "../alerts/alert-data";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
+import { transitionTouchesDesk } from "../shipments/register-transition-notifications";
 import {
   defaultNotificationPreferences,
   notificationCategories,
   notificationEmailModes,
+  transitionDesks,
   type NotificationCategory,
   type NotificationPreferences,
   type OperationsNotification,
@@ -72,9 +74,13 @@ function prefsFromData(data: Record<string, unknown> | undefined): NotificationP
   const rawCategories = typeof data.categories === "object" && data.categories !== null
     ? data.categories as Record<string, unknown>
     : {};
+  const rawDesks = typeof data.transition_desks === "object" && data.transition_desks !== null
+    ? data.transition_desks as Record<string, unknown>
+    : {};
   return {
     email_mode: emailMode,
     categories: Object.fromEntries(notificationCategories.map((category) => [category, rawCategories[category] !== false])) as NotificationPreferences["categories"],
+    transition_desks: Object.fromEntries(transitionDesks.map((desk) => [desk, rawDesks[desk] !== false])) as NotificationPreferences["transition_desks"],
   };
 }
 
@@ -90,6 +96,7 @@ export async function saveNotificationPreferences(uid: string, preferences: Noti
   await firebaseAdminDb().collection("staff_notification_settings").doc(uid).set({
     email_mode: preferences.email_mode,
     categories: preferences.categories,
+    transition_desks: preferences.transition_desks,
     updated_at: now,
   }, { merge: true });
   return { kind: "updated" as const, preferences };
@@ -120,10 +127,17 @@ export async function createDirectNotification(input: DirectNotificationInput) {
 
 function directFromDoc(id: string, data: Record<string, unknown>): OperationsNotification {
   const severity = data.severity === "critical" ? "critical" : data.severity === "warning" ? "warning" : "info";
+  const sourceId = text(data.source_id) || id;
+  // Register transitions store their endpoints in source_id as "<ref>:<from>:<to>"
+  // so clients can display real from/to columns without parsing the title.
+  const parts = sourceId.split(":");
+  const isTransition = (text(data.source_type) || "") === "register-transition" && parts.length === 3;
   return {
     id: `direct:${id}`,
     source: "direct",
-    source_id: id,
+    source_id: sourceId,
+    source_type: text(data.source_type) || null,
+    ...(isTransition ? { transition_from: parts[1], transition_to: parts[2] } : {}),
     category: categoryValue(data.category),
     severity,
     title: text(data.title, "KCPL notification"),
@@ -168,7 +182,14 @@ export async function listOperationsNotifications(context: KcplStaffContext, ema
   const direct = directSnapshot.docs
     .map((doc) => directFromDoc(doc.id, doc.data() as Record<string, unknown>))
     .filter((item) => !item.branch || staffCanAccessBranch(context, item.branch));
-  const combined = [...alerts.map(alertNotification), ...direct]
+  // Per-workspace transition subscriptions: a staff member who has narrowed
+  // their register feed to the customs/delivery desks stops receiving
+  // unrelated status churn. Applied server-side so the mute follows the
+  // account across devices and never renders in the first place.
+  const desks = preferences.transition_desks;
+  const deskFiltered = direct.filter((item) =>
+    item.source_type !== "register-transition" || transitionTouchesDesk(item.transition_from ?? "", item.transition_to ?? "", desks));
+  const combined = [...alerts.map(alertNotification), ...deskFiltered]
     .filter((item) => preferences.categories[item.category])
     .map((item) => ({ ...item, read_at: receipts.get(item.id) || item.read_at }))
     .sort((a, b) => b.created_at.localeCompare(a.created_at))

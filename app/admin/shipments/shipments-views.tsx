@@ -157,15 +157,18 @@ type ViewProps = {
   jobs: CommandCentreJob[];
   selectedReference: string | null;
   onSelect: (reference: string) => void;
+  /** References whose newest job_activity entry is inside the live window. */
+  liveActivityRefs?: Set<string>;
 };
 
-export function ShipmentCards({ jobs, selectedReference, onSelect }: ViewProps) {
+export function ShipmentCards({ jobs, selectedReference, onSelect, liveActivityRefs }: ViewProps) {
   if (!jobs.length) return null;
   return (
     <div className="shipments-cards" role="list" aria-label="Shipment cards">
       {jobs.map((job) => {
         const action = shipmentNextAction(job);
         const owner = ownerLabel(job);
+        const live = liveActivityRefs?.has(job.reference) ?? false;
         return (
           <div key={job.reference} role="listitem" style={{ display: "contents" }}>
             <button
@@ -173,10 +176,10 @@ export function ShipmentCards({ jobs, selectedReference, onSelect }: ViewProps) 
               className="ship-card"
               data-selected={selectedReference === job.reference || undefined}
               onClick={() => onSelect(job.reference)}
-              aria-label={`Open ${job.reference}, ${job.customer_name || "unlinked customer"}, ${shipmentStatusLabels[job.status]}`}
+              aria-label={`Open ${job.reference}, ${job.customer_name || "unlinked customer"}, ${shipmentStatusLabels[job.status]}${live ? ", new activity in the last 15 minutes" : ""}`}
             >
               <span className="ship-card-head">
-                <span className="ops-mono ship-card-ref">{job.reference}</span>
+                <span className="ops-mono ship-card-ref">{job.reference}{live ? <span className="shipments-live-activity" title="New activity in the last 15 minutes"/> : null}</span>
                 <span className="ops-badge" data-tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</span>
               </span>
               <strong className="ship-card-customer">{job.customer_name || "Customer not linked"}</strong>

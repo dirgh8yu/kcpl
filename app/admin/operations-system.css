@@ -45,7 +45,7 @@
   --admin-info-line: #B2DDFF;
   --admin-accent-bg: #FFF1F3;
   --admin-accent-line: #FECDD6;
-  --app-sidebar-width: 240px;
+  --app-sidebar-width: 226px;
   --app-toolbar-height: 58px;
   --app-control-height: 40px;
   --app-control-height-touch: 44px;
@@ -127,20 +127,20 @@
 .app-scope { display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 6px 16px; border-bottom: 1px solid var(--admin-line); color: var(--admin-muted); font-size: 11px; font-weight: 500; }
 .app-scope > span:last-child { margin-left: auto; color: var(--admin-faint); font-size: 10px; font-weight: 400; }
 .app-scope-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--admin-crimson); }
-.app-workspaces { overflow-y: auto; flex: 1; min-height: 0; padding: 12px 8px; scrollbar-width: thin; }
+.app-workspaces { overflow-y: auto; flex: 1; min-height: 0; padding: 10px 8px; scrollbar-width: thin; }
 .app-nav-group { margin-bottom: 2px; }
-.app-nav-group summary { min-height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 4px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.app-nav-group summary { min-height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 4px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .app-nav-group summary::-webkit-details-marker { display: none; }
 .app-nav-group summary:hover { color: var(--admin-muted); background: transparent; }
-.app-nav-group a { position: relative; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-left: 2px solid transparent; border-radius: var(--app-radius); padding: 0 10px 0 12px; color: var(--admin-muted); font-size: 14px; font-weight: 400; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
+.app-nav-group a { position: relative; min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: 6px; padding: 0 8px 0 10px; color: var(--admin-muted); font-size: 13.5px; font-weight: 450; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
 .app-nav-group a:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
-.app-nav-group a[aria-current="page"] { color: var(--admin-ink); background: var(--admin-surface-muted); font-weight: 500; }
+.app-nav-group a[aria-current="page"] { color: var(--admin-ink); background: var(--admin-surface-muted); font-weight: 550; }
 .app-nav-group a[aria-current="page"] svg { color: currentColor; opacity: 1; }
 .app-nav-item-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .app-nav-item-main > svg { flex: none; color: currentColor; opacity: .72; }
 .app-nav-item-main > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
-.app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
+.app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
 .app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); color: var(--admin-ink); }
 .app-nav-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
 .app-account { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--app-radius); }
@@ -265,7 +265,18 @@
 .kcpl-admin-content :where(table td) { height: var(--app-row-height); padding: 10px 12px; border-bottom: 1px solid var(--admin-line); color: var(--admin-ink); font-size: 13px; font-weight: 400; line-height: 20px; vertical-align: middle; }
 .kcpl-admin-content :where(table tbody tr) { transition: background-color 120ms ease; }
 .kcpl-admin-content :where(table tbody tr:hover) { background: var(--admin-canvas); }
-.kcpl-admin-content :where(table tbody tr[data-selected="true"]) { background: var(--admin-surface-muted); box-shadow: inset 2px 0 0 var(--admin-crimson); }
+.kcpl-admin-content :where(table tbody tr[data-selected="true"]) { background: var(--admin-surface-muted); }
+/* Selection is a quiet fill, never a coloured edge bar: legacy sheets drew one
+ * on selected and focused rows, surfaces and notices. */
+.kcpl-admin-content .ops-table tbody tr[data-selected="true"],
+.kcpl-admin-content .ops-table tbody tr:focus-within { box-shadow: none; }
+.kcpl-admin-content .ops-table tbody tr[data-selected="true"] { background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-record-row[data-selected="true"] { box-shadow: none; }
+.kcpl-admin-content .ops-surface[data-priority] { border-left-width: 1px; }
+.kcpl-admin-content :is(.ops-notice, .ops-error-state) { border-width: 1px; border-color: var(--admin-line); }
+.kcpl-admin-content :is(.ops-notice, .ops-error-state)[data-tone="success"] { border-color: var(--admin-success-line); }
+.kcpl-admin-content :is(.ops-notice, .ops-error-state)[data-tone="warning"] { border-color: var(--admin-warning-line); }
+.kcpl-admin-content :is(.ops-notice, .ops-error-state)[data-tone="danger"] { border-color: var(--admin-danger-line); }
 .kcpl-admin-content :where(table tbody tr:focus-visible) { outline: 2px solid var(--app-focus); outline-offset: -2px; }
 .kcpl-admin-shell :where(a,button,input,select,textarea):focus-visible { outline: 2px solid var(--app-focus); outline-offset: 2px; }
 .kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 8px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
@@ -403,36 +414,6 @@
   font-weight: 500;
 }
 .kcpl-admin-content .shipments-filter-menu select { width: 100%; }
-.kcpl-admin-content .shipments-attention-filter {
-  display: inline-flex;
-  min-height: var(--app-control-height);
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-radius);
-  background: var(--admin-surface);
-  color: var(--admin-muted);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.kcpl-admin-content .shipments-attention-filter[data-active="true"] {
-  border-color: var(--admin-danger);
-  background: var(--admin-danger-bg);
-  color: var(--admin-danger);
-}
-.kcpl-admin-content .shipments-reset {
-  min-height: var(--app-control-height);
-  border: 0;
-  background: transparent;
-  padding: 0 4px;
-  color: var(--admin-muted);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.kcpl-admin-content .shipments-reset:hover { color: var(--admin-ink); }
 .kcpl-admin-content .shipments-result-count {
   color: var(--admin-muted);
   font-size: 12px;
@@ -571,75 +552,33 @@
 .kcpl-admin-content .tender-workspace-page .ops-button {
   min-height: 36px;
 }
-/* The shipment inspector is a bottom sheet, not a side drawer: it rises over the
- * full page width and is dismissed from the close bar at its top edge. */
+/* The shipment inspector is a right-side slideover on desktop: the register
+ * stays visible and scannable behind it. Below 900px it drops to a full-width
+ * bottom sheet, which suits one-handed triage on small screens. */
 .kcpl-admin-content .shipment-sheet {
-  height: min(92dvh, 100%);
+  height: 100dvh;
   overscroll-behavior: contain;
-  border-top-color: var(--admin-line-strong);
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -18px 48px rgb(16 16 16 / 14%);
+  border-left: 1px solid var(--admin-line-strong);
+  box-shadow: -18px 0 48px rgb(16 16 16 / 14%);
 }
 .kcpl-admin-content .shipment-sheet-inner {
   width: 100%;
-  max-width: 1180px;
-  margin-inline: auto;
+  max-width: none;
+  margin-inline: 0;
 }
-.kcpl-admin-content .shipment-sheet-closebar {
-  display: flex;
-  min-height: 34px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border: 0;
-  border-radius: 16px 16px 0 0;
-  padding: 12px 0 6px;
-  background: transparent;
-  color: var(--admin-muted);
-  cursor: pointer;
-}
-.kcpl-admin-content .shipment-sheet-closebar-grip {
-  display: block;
-  width: 48px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--admin-line-strong);
-  transition: background-color var(--app-duration-fast) var(--app-ease-out), width var(--app-duration-fast) var(--app-ease-out);
-}
-.kcpl-admin-content .shipment-sheet-closebar-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  opacity: 0;
-  transition: opacity var(--app-duration-fast) var(--app-ease-out);
-}
-.kcpl-admin-content .shipment-sheet-closebar:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
-.kcpl-admin-content .shipment-sheet-closebar:hover .shipment-sheet-closebar-grip { width: 64px; background: var(--admin-crimson); }
-.kcpl-admin-content .shipment-sheet-closebar:is(:hover, :focus-visible) .shipment-sheet-closebar-hint { opacity: 1; }
 .kcpl-admin-content .shipment-sheet-header {
-  padding: 4px 24px 16px;
+  padding: 10px 20px 9px;
 }
 .kcpl-admin-content .shipment-sheet-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px 24px 28px;
-}
-.kcpl-admin-content .shipment-sheet-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  align-items: start;
-  gap: 16px;
+  gap: 14px;
+  padding: 14px 20px 20px;
 }
 .kcpl-admin-content .shipment-sheet-close {
   display: inline-grid;
-  width: var(--app-control-height-touch);
-  min-height: var(--app-control-height-touch);
+  width: 30px;
+  min-height: 30px;
   flex: none;
   place-items: center;
   border: 1px solid transparent;
@@ -653,31 +592,37 @@
   color: var(--admin-ink);
 }
 .kcpl-admin-content .shipment-sheet-footer {
-  padding: 16px 24px 20px;
+  padding: 12px 20px 14px;
 }
 .kcpl-admin-content .shipment-sheet-footer .ops-button {
-  min-height: var(--app-control-height-touch);
+  min-height: var(--app-control-height);
+}
+@media (max-width: 900px) {
+  .kcpl-admin-content .shipment-sheet {
+    inset: auto 0 0 0;
+    max-width: none;
+    height: min(92dvh, 100%);
+    border-top: 1px solid var(--admin-line-strong);
+    border-left: 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -18px 48px rgb(16 16 16 / 14%);
+  }
+  .kcpl-admin-content .shipment-sheet-header,
+  .kcpl-admin-content .shipment-sheet-body,
+  .kcpl-admin-content .shipment-sheet-footer {
+    padding-inline: 16px;
+  }
+  .kcpl-admin-content .shipment-sheet-scrim {
+    display: block;
+    background: rgb(16 16 16 / 24%);
+  }
 }
 .ops-pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 10px; border: 1px solid var(--admin-line); border-top: 0; padding: 10px 12px; background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; line-height: 16px; }
 .ops-pagination-actions { display: flex; align-items: center; gap: 8px; }
 
-/* Existing bespoke workspaces use the same scale without changing their information structure. */
-.kcpl-admin-content .shipment-detail-inner { width: calc(100% - var(--app-page-gap) * 2); max-width: none; }
-.kcpl-admin-content .shipment-detail-header { padding: 20px 0; gap: 16px; }
-.kcpl-admin-content .shipment-detail-title-row { margin-top: 5px; gap: 10px; }
-.kcpl-admin-content .shipment-detail-title-row h1 { font-size: var(--app-title-size); font-weight: 600; line-height: 32px; }
-.kcpl-admin-content .shipment-detail-subline { margin-top: 6px; font-size: 13px; }
-.kcpl-admin-content .shipment-record-nav { top: var(--app-toolbar-height); box-shadow: none; background: var(--admin-surface); }
-.kcpl-admin-content .shipment-detail-v2 > .shipment-detail-summary:last-of-type { padding: 16px 0; }
-.kcpl-admin-content .shipment-overview-layout { gap: 16px; }
-.kcpl-admin-content .shipment-summary-section { padding: 16px; margin-top: 12px; box-shadow: none; }
-.kcpl-admin-content .shipment-flow-section { padding: 16px; margin: 0 0 12px; box-shadow: none; }
-.kcpl-admin-content .shipment-next-rail { top: calc(var(--app-toolbar-height) + 54px); padding: 16px; box-shadow: none; }
 .kcpl-admin-content .ops-filter-pill, .kcpl-admin-content .ops-segmented { border-radius: var(--app-radius); }
 .kcpl-admin-content .ops-filter-pill { font-size: 12px; }
 
-@media (max-width: 1200px) {
-}
 @media (max-width: 1023px) {
   .kcpl-admin-route .kcpl-admin-content { padding-left: 0; }
   .app-sidebar { display: none; width: min(300px,calc(100vw - 48px)); }
@@ -712,285 +657,7 @@
     color: var(--admin-ink);
     font-family: inherit;
   }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor {
-    width: min(1320px, calc(100% - 48px));
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header {
-    gap: 20px;
-    align-items: center;
-    padding: 24px 0 20px;
-    border-bottom-color: var(--admin-line);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-eyebrow,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > p,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section p {
-    color: var(--admin-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0;
-    line-height: 16px;
-    text-transform: none;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row {
-    gap: 10px;
-    margin-top: 6px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 {
-    max-width: 760px;
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 32px;
-    letter-spacing: -.02em;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-status {
-    min-height: 24px;
-    border-radius: 4px;
-    padding-inline: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-subline {
-    margin-top: 6px;
-    color: var(--admin-muted);
-    font-size: 14px;
-    line-height: 20px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-meta {
-    margin-top: 3px;
-    color: var(--admin-faint);
-    font-size: 12px;
-    line-height: 16px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions {
-    gap: 8px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a {
-    min-height: var(--app-control-height);
-    border-color: var(--admin-line-strong);
-    border-radius: var(--app-radius);
-    background: var(--admin-surface);
-    color: var(--admin-ink);
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions a[data-primary] {
-    border-color: var(--admin-crimson);
-    background: var(--admin-crimson);
-    color: #fff;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav {
-    top: var(--app-toolbar-height);
-    border-bottom-color: var(--admin-line);
-    background: rgb(255 255 255 / 96%);
-    box-shadow: 0 1px 0 rgb(16 16 16 / 4%);
-    backdrop-filter: blur(8px);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button) {
-    min-height: 44px;
-    padding-inline: 14px;
-    color: var(--admin-muted);
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button):first-child { padding-left: 0; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button):hover,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button):focus-visible {
-    color: var(--admin-ink);
-    border-bottom-color: var(--admin-crimson);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout {
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 24px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-main { padding-right: 0; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-summary-section {
-    padding: 20px 0;
-    border-bottom-color: var(--admin-line);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-flow-section {
-    margin: 0 0 16px;
-    padding: 18px 20px;
-    border: 1px solid var(--admin-line);
-    border-left: 3px solid var(--admin-crimson);
-    border-radius: var(--app-surface-radius);
-    background: var(--admin-surface);
-    box-shadow: none;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
-    grid-template-columns: 120px minmax(0, 1fr) auto;
-    gap: 12px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading h2 {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 24px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span {
-    color: var(--admin-muted);
-    font-size: 13px;
-    line-height: 20px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line {
-    margin-top: 14px;
-    border-top-color: var(--admin-line);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a {
-    min-height: 42px;
-    color: var(--admin-muted);
-    font-size: 13px;
-    font-weight: 500;
-    transition: color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="complete"] { color: var(--admin-success); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="current"] { color: var(--admin-ink); box-shadow: inset 0 -2px 0 var(--admin-crimson); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a[data-state="blocked"] { color: var(--admin-danger); box-shadow: inset 0 -2px 0 var(--admin-danger); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-register {
-    margin-top: 12px;
-    border-top-color: var(--admin-line-strong);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row {
-    min-height: 48px;
-    font-size: 14px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row > span { color: var(--admin-muted); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-register-row > strong { font-weight: 500; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-summary {
-    margin-top: 16px;
-    padding: 18px 20px;
-    border: 1px solid var(--admin-line);
-    border-radius: var(--app-surface-radius);
-    background: var(--admin-surface-muted);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid {
-    margin-top: 12px;
-    border-color: var(--admin-line);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid > div:first-child {
-    min-height: 76px;
-    padding: 14px 16px;
-    background: var(--admin-surface);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid span {
-    color: var(--admin-muted);
-    font-size: 12px;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid strong {
-    margin-top: 5px;
-    font-size: 16px;
-    font-weight: 600;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
-    top: 106px;
-    border: 1px solid var(--admin-line);
-    border-left: 3px solid var(--admin-crimson);
-    border-radius: var(--app-surface-radius);
-    padding: 18px;
-    background: var(--admin-surface);
-    color: var(--admin-ink);
-    box-shadow: none;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail .shipment-detail-eyebrow { color: var(--admin-muted); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail h2,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dd { color: var(--admin-ink); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-detail { color: var(--admin-muted); font-size: 13px; line-height: 20px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-link {
-    width: 100%;
-    min-height: var(--app-control-height);
-    justify-content: space-between;
-    margin-top: 14px;
-    border: 1px solid var(--admin-crimson);
-    border-radius: var(--app-radius);
-    padding-inline: 12px;
-    background: var(--admin-crimson);
-    color: #fff;
-    font-size: 14px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl { margin-top: 18px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dl > div { border-top-color: var(--admin-line); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dt { color: var(--admin-muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail dd { font-size: 13px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-links { border-top-color: var(--admin-line); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-links a { color: var(--admin-muted); font-size: 13px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
-    border-top-color: var(--admin-line-strong);
-    padding-bottom: 48px;
-    background: var(--admin-canvas);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block {
-    padding: 20px;
-    border: 1px solid var(--admin-line);
-    border-radius: var(--app-surface-radius);
-    background: var(--admin-surface);
-    box-shadow: none;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block + .shipment-detail-block { margin-top: 16px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block > .ops-surface,
-  .kcpl-admin-content .shipment-detail-v2 #shipment-delivery #delivery-pod > .ops-surface,
-  .kcpl-admin-content .shipment-detail-v2 #shipment-activity .ops-content-wide > .ops-surface {
-    border-top-color: var(--admin-line);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-header,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-header {
-    padding: 14px 0 12px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface-body,
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block .ops-surface-body {
-    padding: 14px 0 2px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 #shipment-exceptions { border-left: 3px solid var(--admin-danger); }
-  .kcpl-admin-content .shipment-detail-v2 #shipment-delivery { border-left: 3px solid var(--admin-info); }
-  .kcpl-admin-content .shipment-detail-v2 #shipment-activity { border-left: 3px solid var(--admin-line-strong); }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section {
-    padding: 18px 0;
-    border-block-color: var(--admin-line);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section h2 {
-    margin-top: 4px;
-    font-size: 16px;
-    font-weight: 600;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-quiet-section span {
-    margin-top: 4px;
-    color: var(--admin-muted);
-    font-size: 13px;
-    line-height: 20px;
-  }
-  .kcpl-admin-content .app-record-return {
-    padding: 10px 24px;
-    border-bottom: 1px solid var(--admin-line);
-    background: var(--admin-surface);
-  }
-  .kcpl-admin-content .app-record-return a {
-    color: var(--admin-muted);
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-  }
-  .kcpl-admin-content .app-record-return a:hover { color: var(--admin-crimson); }
-  @media (max-width: 900px) {
-    .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout { grid-template-columns: 1fr; }
-    .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail { position: static; margin-top: 16px; }
-  }
-  @media (max-width: 760px) {
-    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-inner,
-    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record > .shipment-detail-anchor { width: calc(100% - 32px); }
-    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-header { padding: 18px 0 16px; }
-    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 { font-size: 22px; line-height: 30px; }
-    .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading { grid-template-columns: 1fr; gap: 4px; }
-    .kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span { text-align: left; }
-    .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded,
-    .kcpl-admin-content .shipment-detail-v2 .shipment-detail-block { padding: 16px; }
-    .kcpl-admin-content .app-record-return { padding-inline: 16px; }
-  }
-@media (max-width: 760px) {
+    @media (max-width: 760px) {
   .app-topbar { gap: 5px; padding-inline: 10px; }
   .app-breadcrumb > span:first-child, .app-breadcrumb > svg:first-of-type { display: none; }
   .app-icon-button { min-height: 44px; width: 40px; }
@@ -1003,13 +670,12 @@
   .kcpl-admin-content .ops-toolbar > :where(.ops-search,select) { flex: 1 1 180px; width: auto; max-width: none; }
   .kcpl-admin-content .ops-toolbar > .ops-button { flex: 0 0 auto; width: auto; }
   .kcpl-admin-content :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea), .kcpl-admin-content .ops-search input { font-size: 16px; }
-  .kcpl-admin-content .shipment-next-rail { position: static; }
   .kcpl-admin-content :where(.ops-grid-2,.ops-grid-main) { grid-template-columns: minmax(0,1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-shell *, .kcpl-admin-shell *::before, .kcpl-admin-shell *::after { animation: none; transition: none; scroll-behavior: auto; }
 }
-
+.app-search-error { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--admin-line); color: var(--admin-warning); font-size: 13px; line-height: 20px; }
 /* Motion v2 — shell overlays and primitive feedback.
  * Sourced from plans/admin-motion-audit.md. Everything here is transform/opacity
  * (or a fast color transition) only, sub-300ms, and disabled wholesale by the
@@ -1039,10 +705,10 @@
  * so both directions play in full — no component changes needed). */
 .kcpl-admin-content .ops-action-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
 .kcpl-admin-content .ops-action-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
-.kcpl-admin-content .shipments-filter-menu[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
-.kcpl-admin-content .shipments-filter-menu[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
-.kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
-.kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+.kcpl-admin-content :is(.shipments-filter-menu, .ops-filter-menu, .ops-filter-options)[data-state="open"] { animation: ops-pop-in var(--app-duration-base) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
+.kcpl-admin-content :is(.shipments-filter-menu, .ops-filter-menu, .ops-filter-options)[data-state="closed"] { animation: ops-pop-out var(--app-duration-fast) var(--app-ease-out); transform-origin: var(--radix-popover-content-transform-origin); }
+.kcpl-admin-content :is(.ops-drawer, .freight-document-inspector)[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content :is(.ops-drawer, .freight-document-inspector)[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
 .kcpl-admin-content .ops-dialog-overlay[data-state="open"] { animation: ops-fade-in-overlay var(--app-duration-base) var(--app-ease-out); }
 .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: ops-fade-out-overlay var(--app-duration-fast) var(--app-ease-out); }
 @keyframes ops-pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
@@ -1099,10 +765,10 @@
   .kcpl-admin-content .ops-empty { animation: none; opacity: 1; transform: none; }
   .kcpl-admin-content .ops-action-menu[data-state="open"],
   .kcpl-admin-content .ops-action-menu[data-state="closed"],
-  .kcpl-admin-content .shipments-filter-menu[data-state="open"],
-  .kcpl-admin-content .shipments-filter-menu[data-state="closed"],
-  .kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="open"],
-  .kcpl-admin-content :is(.ops-drawer, .freight-document-inspector, .visibility-inspector)[data-state="closed"],
+  .kcpl-admin-content :is(.shipments-filter-menu, .ops-filter-menu, .ops-filter-options)[data-state="open"],
+  .kcpl-admin-content :is(.shipments-filter-menu, .ops-filter-menu, .ops-filter-options)[data-state="closed"],
+  .kcpl-admin-content :is(.ops-drawer, .freight-document-inspector)[data-state="open"],
+  .kcpl-admin-content :is(.ops-drawer, .freight-document-inspector)[data-state="closed"],
   .kcpl-admin-content .shipment-sheet[data-state="open"],
   .kcpl-admin-content .shipment-sheet[data-state="closed"],
   .kcpl-admin-content .shipment-sheet-closebar-grip,
@@ -1110,7 +776,6 @@
   .kcpl-admin-content .ops-dialog-overlay[data-state="open"],
   .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: none; }
   .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-stage-line a { transition: none; }
   .kcpl-admin-content .ops-filter-chip:active { transform: none; transition: none; }
   .kcpl-admin-content .ops-action-menu-item { transition: none; }
   .kcpl-admin-content .ops-notice { transition: none; }
@@ -1129,324 +794,81 @@
   .kcpl-admin-content .ops-table-wrap { overflow: visible; max-height: none; }
 }
 
-/* Shipment detail v3: decision-first hierarchy with one calm working canvas. */
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-header {
-  align-items: start;
-  padding-block: 18px 16px;
+/* Freight Documents: a dense document operations queue on the shared register
+ * primitives. Only what is specific to document production lives here. */
+.kcpl-admin-content .freight-documents-register { min-width: 0; }
+.kcpl-admin-content .freight-documents-table { min-width: 1040px; }
+.kcpl-admin-content .ops-register-table.freight-documents-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .ops-register-table.freight-documents-table td { padding-block: 5px; }
+.kcpl-admin-content .freight-documents-table .ops-cell-clamp { max-width: 140px; }
+.kcpl-admin-content .freight-documents-route { max-width: 156px; }
+.kcpl-admin-content .freight-documents-doc { max-width: 168px; }
+.kcpl-admin-content .freight-documents-review { display: grid; justify-items: start; gap: 2px; }
+.kcpl-admin-content .freight-documents-none { color: var(--admin-muted); font-weight: 450; }
+.kcpl-admin-content .freight-documents-required { color: var(--admin-warning); font-weight: 500; }
+.kcpl-admin-content .freight-documents-table .freight-documents-filename { max-width: 164px; font-size: 12px; font-weight: 450; }
+/* Narrower laptops drop the filename column (the inspector's Details tab and
+ * the PDF action still carry it); anything narrower scrolls with the row
+ * actions pinned. */
+@media (max-width: 1399px) {
+  .kcpl-admin-content .freight-documents-table { min-width: 880px; }
+  .kcpl-admin-content .freight-documents-table .freight-documents-col-file { display: none; }
 }
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-title-row h1 {
-  max-width: 680px;
-  font-size: 22px;
-  line-height: 30px;
+@media (max-width: 1279px) {
+  .kcpl-admin-content .freight-documents-table :is(th, td):last-child { position: sticky; right: 0; z-index: 1; background: var(--admin-surface); box-shadow: -10px 0 10px -10px rgb(16 24 40 / 18%); }
+  .kcpl-admin-content .freight-documents-table th:last-child { z-index: 3; background: var(--admin-canvas); }
+  .kcpl-admin-content .freight-documents-table tbody tr:hover td:last-child { background: var(--admin-canvas); }
+  .kcpl-admin-content .freight-documents-table tbody tr[data-selected="true"] td:last-child { background: color-mix(in srgb, var(--admin-crimson) 5%, var(--admin-surface)); }
 }
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-subline { margin-top: 4px; }
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-meta { margin-top: 2px; }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status {
-  border-color: var(--admin-line-strong);
-  background: var(--admin-surface);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-success { border-color: var(--admin-success); color: var(--admin-success); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-danger { border-color: var(--admin-danger); color: var(--admin-danger); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-warning { border-color: var(--admin-warning); color: var(--admin-warning); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-status.is-info { border-color: var(--admin-info); color: var(--admin-info); }
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav {
-  background: var(--admin-canvas);
-  box-shadow: none;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout {
-  grid-template-columns: minmax(0, 1fr) 296px;
-  gap: 32px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-overview-main {
-  display: grid;
-  gap: 18px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-summary-section {
-  margin: 0;
-  padding: 0 0 18px;
-  border-bottom: 1px solid var(--admin-line);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-flow-section {
-  margin: 0;
-  padding: 16px;
-  border-left-width: 3px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-summary-grid .shipment-summary-section {
-  padding-top: 2px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading {
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > p {
-  grid-column: 1 / -1;
-  margin-bottom: 1px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading h2 {
-  font-size: 15px;
-  line-height: 22px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-section-heading > span {
-  grid-column: 1 / -1;
-  max-width: none;
-  text-align: left;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-register {
-  margin-top: 8px;
-  border-top: 1px solid var(--admin-line-strong);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-register-row {
-  min-height: 42px;
-  grid-template-columns: minmax(100px, 0.7fr) minmax(0, 1.3fr);
-  gap: 12px;
-  font-size: 13px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-financial-summary {
-  margin-top: 0;
-  padding: 14px 16px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-financial-grid {
-  margin-top: 8px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
-  top: 104px;
-  align-self: start;
-  border: 1px solid var(--admin-line);
-  border-left: 3px solid var(--admin-crimson);
-  padding: 16px;
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail h2 {
-  font-size: 16px;
-  line-height: 22px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-link {
-  min-height: 40px;
-  margin-top: 12px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
-  padding-top: 24px;
-  background: var(--admin-canvas);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded,
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-block {
-  padding: 16px;
-}
-@media (max-width: 900px) {
-  .kcpl-admin-content .shipment-detail-v2 .shipment-overview-layout { grid-template-columns: 1fr; gap: 20px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-next-rail { position: static; margin: 0; }
-}
-@media (max-width: 640px) {
-  .kcpl-admin-content .shipment-detail-v2 .shipment-summary-grid { grid-template-columns: 1fr; gap: 18px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-actions { justify-content: flex-start; }
-}
-
-@media (max-width: 760px) {
-}
-.kcpl-admin-content .freight-documents-register {
-  min-width: 0;
-}
-.kcpl-admin-content .freight-documents-page {
-  min-height: calc(100dvh - var(--app-toolbar-height));
-  padding-bottom: 32px;
-}
-.kcpl-admin-content .freight-documents-summary {
-  margin: 24px var(--app-page-gap) 16px;
-}
-.kcpl-admin-content .freight-documents-summary .ops-kpi {
-  min-height: 96px;
-}
-.kcpl-admin-content .freight-documents-message,
-.kcpl-admin-content .freight-documents-alert {
-  margin: 0 var(--app-page-gap) 16px;
-}
-.kcpl-admin-content .freight-documents-toolbar {
-  margin: 0 var(--app-page-gap) 16px;
-}
-.kcpl-admin-content .freight-documents-search {
-  width: min(420px, 100%);
-  flex: 1 1 320px;
-}
-.kcpl-admin-content .freight-documents-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.kcpl-admin-content .freight-documents-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-.kcpl-admin-content .freight-documents-surface {
-  margin: 0 var(--app-page-gap);
-}
-.kcpl-admin-content .freight-document-job-link {
-  color: var(--admin-info);
-  text-decoration: none;
-}
-.kcpl-admin-content .freight-document-job-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.kcpl-admin-content .freight-documents-register > .freight-documents-page > .ops-page-header {
-  margin: 0;
-}
-.kcpl-admin-content .freight-documents-register > div > header {
-  margin-bottom: 16px;
-}
-.kcpl-admin-content .freight-documents-register .ops-table-wrap {
-  border: 0;
-}
-.kcpl-admin-content .freight-documents-register .ops-table tbody tr:hover {
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .freight-documents-register .ops-table tbody tr[data-selected="true"] {
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
-}
-.kcpl-admin-content .freight-documents-register .ops-table td {
-  vertical-align: middle;
-}
-.kcpl-admin-content .freight-documents-page {
-  color: var(--admin-ink);
-}
-.kcpl-admin-content .freight-documents-toolbar {
-  align-items: center;
-}
-.kcpl-admin-content .freight-documents-filter {
-  display: inline-flex;
-  min-height: var(--app-control-height);
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-radius);
-  background: var(--admin-surface);
-  padding-inline: 12px;
-  color: var(--admin-muted);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 20px;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
-  touch-action: manipulation;
-}
-.kcpl-admin-content .freight-documents-filter:hover {
-  border-color: var(--admin-line-strong);
-  color: var(--admin-ink);
-}
-.kcpl-admin-content .freight-documents-filter[data-active="true"] {
-  border-color: var(--admin-crimson);
-  background: var(--admin-crimson);
-  color: white;
-}
-.kcpl-admin-content .freight-documents-filter:focus-visible,
-.kcpl-admin-content .freight-document-inspector-close:focus-visible,
-.kcpl-admin-content .freight-documents-page tr:focus-visible {
-  outline: 2px solid var(--app-focus);
-  outline-offset: 2px;
-}
-.kcpl-admin-content .freight-documents-result-count {
-  font-variant-numeric: tabular-nums;
-  color: var(--admin-muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.kcpl-admin-content .freight-documents-surface .ops-table tbody tr {
-  min-height: var(--app-row-height);
-  cursor: pointer;
-}
-.kcpl-admin-content .freight-documents-surface .ops-table tbody tr[data-selected="true"] {
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
-}
+.kcpl-admin-content .freight-documents-safety { display: flex; align-items: center; gap: 4px; color: var(--admin-muted); font-size: 11.5px; font-weight: 500; line-height: 15px; white-space: nowrap; }
+.kcpl-admin-content .freight-documents-safety[data-safe="true"] { color: var(--admin-success); }
+.kcpl-admin-content .freight-documents-action { min-width: 76px; }
+.kcpl-admin-content .freight-documents-action[data-variant="secondary"] { border-color: var(--admin-line-strong); font-weight: 600; }
 .kcpl-admin-content .freight-document-inspector {
-  width: min(640px, 100vw);
+  width: min(600px, 100vw);
   border-left-color: var(--admin-line-strong);
   box-shadow: -16px 0 40px rgb(16 16 16 / 10%);
   overscroll-behavior: contain;
 }
-.kcpl-admin-content .freight-document-inspector-header {
-  min-height: 88px;
-  padding: 20px 24px 16px;
-}
-.kcpl-admin-content .freight-document-inspector-close {
-  display: inline-grid;
-  width: var(--app-control-height-touch);
-  min-height: var(--app-control-height-touch);
-  flex: none;
-  place-items: center;
-  border: 1px solid transparent;
-  border-radius: var(--app-radius);
-  background: transparent;
-  color: var(--admin-muted);
-  cursor: pointer;
-}
-.kcpl-admin-content .freight-document-inspector-close:hover {
-  background: var(--admin-surface-muted);
-  color: var(--admin-ink);
-}
-.kcpl-admin-content .freight-document-inspector-footer {
-  padding: 16px 24px 20px;
-}
-.kcpl-admin-content .freight-document-inspector-footer .ops-button {
-  min-height: var(--app-control-height-touch);
-}
-.kcpl-admin-content .freight-documents-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--app-space-3);
-  margin: var(--app-space-3) var(--app-page-gap) 0;
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.kcpl-admin-content .freight-documents-pagination > div {
-  display: flex;
-  gap: var(--app-space-2);
-}
+.kcpl-admin-content .freight-document-inspector .ops-inspector-header { padding-inline: 20px; }
 .kcpl-admin-content .freight-document-tabs {
   display: flex;
-  gap: var(--app-space-1);
+  flex: none;
+  gap: 2px;
   overflow-x: auto;
   border-bottom: 1px solid var(--admin-line);
-  padding: var(--app-space-2) var(--app-space-4) 0;
+  padding: 0 14px;
   background: var(--admin-surface);
+  scrollbar-width: none;
 }
 .kcpl-admin-content .freight-document-tab {
   display: inline-flex;
-  min-height: var(--app-control-height-touch);
+  min-height: 38px;
   align-items: center;
   gap: 6px;
   flex: none;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  padding: 0 var(--app-space-2);
+  padding: 0 8px;
   color: var(--admin-muted);
-  font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
+  transition: color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out);
 }
 .kcpl-admin-content .freight-document-tab:hover,
-.kcpl-admin-content .freight-document-tab[data-active="true"] {
-  color: var(--admin-ink);
-}
-.kcpl-admin-content .freight-document-tab[data-active="true"] {
-  border-bottom-color: var(--admin-crimson);
-}
+.kcpl-admin-content .freight-document-tab[data-active="true"] { color: var(--admin-ink); }
+.kcpl-admin-content .freight-document-tab[data-active="true"] { border-bottom-color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .freight-document-tab:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kcpl-admin-content .freight-document-section { padding: 14px 20px 16px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .freight-document-section:last-child { border-bottom: 0; }
 .kcpl-admin-content .freight-document-preview {
-  min-height: 520px;
+  min-height: 480px;
   overflow: hidden;
   border: 1px solid var(--admin-line);
   border-radius: var(--app-radius);
-  background: var(--admin-surface-muted);
+  background: var(--admin-canvas);
 }
 .kcpl-admin-content .freight-document-preview iframe {
   display: block;
@@ -1457,60 +879,36 @@
 }
 .kcpl-admin-content .freight-document-preview-empty {
   display: grid;
-  min-height: 520px;
+  min-height: 480px;
   place-items: center;
   align-content: center;
   gap: var(--app-space-3);
   padding: var(--app-space-5);
   color: var(--admin-muted);
+  font-size: 13px;
   text-align: center;
 }
 .kcpl-admin-content .freight-document-preview-empty p {
   max-width: 280px;
   margin: 0;
 }
+.kcpl-admin-content .freight-document-revisions { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .freight-document-revisions li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .freight-document-revisions li[data-superseded="true"] .freight-document-revision-title { color: var(--admin-muted); font-weight: 500; }
+.kcpl-admin-content .freight-document-revisions .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11px; }
+.kcpl-admin-content .freight-document-revision-title { color: var(--admin-ink); font-size: 12.5px; font-weight: 600; }
+.kcpl-admin-content .freight-document-revision-meta { max-width: 420px; margin: 2px 0 0; overflow: hidden; color: var(--admin-muted); font-size: 11.5px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .freight-document-inspector-footer { padding: 10px 20px 12px; }
+.kcpl-admin-content .freight-document-inspector-footer .ops-button { min-height: 36px; }
+.kcpl-admin-content .freight-document-safe-toggle { display: flex; align-items: flex-start; gap: 8px; color: var(--admin-muted); font-size: 12.5px; line-height: 18px; }
+.kcpl-admin-content .freight-document-safe-toggle input { margin-top: 2px; }
+.kcpl-admin-content .freight-document-primary-state { display: inline-flex; align-items: center; gap: 6px; color: var(--admin-success); font-size: 12px; font-weight: 500; }
+.kcpl-admin-content .freight-document-primary-state[data-missing="true"] { color: var(--admin-warning); }
 @media (max-width: 760px) {
-  .kcpl-admin-content .freight-documents-summary,
-  .kcpl-admin-content .freight-documents-message,
-  .kcpl-admin-content .freight-documents-alert,
-  .kcpl-admin-content .freight-documents-toolbar,
-  .kcpl-admin-content .freight-documents-surface {
-    margin-inline: 16px;
-  }
-  .kcpl-admin-content .freight-documents-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 16px;
-  }
-  .kcpl-admin-content .freight-documents-toolbar {
-    align-items: stretch;
-  }
-  .kcpl-admin-content .freight-documents-search {
-    width: 100%;
-    flex-basis: 100%;
-  }
-  .kcpl-admin-content .freight-documents-filters {
-    width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-  .kcpl-admin-content .freight-documents-filter {
-    flex: none;
-    min-height: var(--app-control-height-touch);
-  }
-  .kcpl-admin-content .freight-documents-toolbar-actions {
-    width: 100%;
-    margin-left: 0;
-  }
-  .kcpl-admin-content .freight-documents-toolbar-actions .ops-button {
-    flex: 1;
-  }
-  .kcpl-admin-content .freight-document-inspector-header,
+  .kcpl-admin-content .freight-document-inspector .ops-inspector-header,
+  .kcpl-admin-content .freight-document-section,
   .kcpl-admin-content .freight-document-inspector-footer {
     padding-inline: 16px;
-  }
-  .kcpl-admin-content .freight-documents-pagination {
-    margin-inline: 16px;
   }
   .kcpl-admin-content .freight-document-preview,
   .kcpl-admin-content .freight-document-preview-empty {
@@ -1542,7 +940,7 @@
   overflow: auto;
 }
 .kcpl-admin-content .customs-clearance-register .ops-table tbody tr[data-selected="true"] {
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
+  background: var(--admin-surface-muted);
 }
 .kcpl-admin-content .customs-clearance-register .ops-table tbody tr:hover {
   background: var(--admin-surface-muted);
@@ -1590,7 +988,7 @@
   background: var(--admin-surface-muted);
 }
 .kcpl-admin-content .delivery-control-queue .ops-table tbody tr[data-selected="true"] {
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
+  background: var(--admin-surface-muted);
 }
 @media (max-width: 1040px) {
   .kcpl-admin-content .delivery-control-workspace {
@@ -1636,316 +1034,126 @@
   }
 }
 
-/* Document Vault: make evidence review the primary queue, not a metadata wall. */
-.kcpl-admin-content .document-vault-page {
-  min-height: calc(100dvh - var(--app-toolbar-height));
-  padding: var(--app-page-gap);
+/* Quiet panel empty state (Job File document access): one left-aligned line
+ * instead of a centred icon panel. The surface description already carries
+ * the context sentence. */
+.kcpl-admin-content .job-access-quiet-empty {
+  margin: 0;
+  padding: 10px 0 4px;
+  color: var(--admin-ink);
+  font-size: 12.5px;
+  font-weight: 620;
+  line-height: 20px;
 }
-.kcpl-admin-content .document-vault-workspace {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-.kcpl-admin-content .document-vault-queue {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.kcpl-admin-content .document-vault-queue > section {
-  overflow: hidden;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--admin-surface);
-}
-.kcpl-admin-content .document-vault-workspace > aside {
-  position: sticky;
-  top: calc(var(--app-toolbar-height) + 16px);
-  width: 380px;
-  max-height: calc(100dvh - var(--app-toolbar-height) - 32px);
-  overflow: auto;
-}
-.kcpl-admin-content .document-vault-next-action {
+.kcpl-admin-content .job-access-quiet-empty span {
+  display: block;
+  margin-top: 2px;
   color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-.kcpl-admin-content .document-vault-next-action.is-attention {
-  color: var(--admin-warning);
-}
-.kcpl-admin-content .document-vault-next-action.is-complete {
-  color: var(--admin-success);
-}
-.kcpl-admin-content .document-vault-table {
-  overflow: hidden;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--admin-surface);
-}
-.kcpl-admin-content .document-vault-register .ops-table tbody tr:hover {
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .document-vault-register .ops-table tbody tr[data-selected="true"] {
-  box-shadow: inset 3px 0 0 var(--admin-crimson);
-}
-.kcpl-admin-content .document-vault-register .ops-table tbody tr:focus-visible {
-  outline: 2px solid var(--app-focus);
-  outline-offset: -2px;
-}
-.kcpl-admin-content .document-vault-page .ops-button {
-  min-height: 36px;
-}
-.kcpl-admin-content .document-vault-page :where(input,select,textarea):focus-visible {
-  border-color: var(--admin-crimson);
-  box-shadow: 0 0 0 3px rgb(220 20 60 / 12%);
-  outline: none;
-}
-@media (max-width: 1040px) {
-  .kcpl-admin-content .document-vault-workspace {
-    display: block;
-  }
-  .kcpl-admin-content .document-vault-workspace > aside {
-    position: relative;
-    top: auto;
-    width: 100%;
-    max-height: none;
-    margin-top: 16px;
-  }
-}
-@media (max-width: 760px) {
-  .kcpl-admin-content .document-vault-page {
-    padding: 16px;
-  }
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
-.kcpl-admin-content .visibility-table-wrap {
-  border: 0;
+/* 7-day transitions sparkline: quiet volume context above the history list. */
+.kcpl-admin-content .notifications-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--app-surface-radius);
+  background: var(--admin-surface);
 }
-.kcpl-admin-content .visibility-panel-header {
-  min-height: 80px;
+.kcpl-admin-content .notifications-sparkline-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--admin-muted);
 }
-.kcpl-admin-content .visibility-panel-summary {
-  background: var(--admin-surface-muted);
+.kcpl-admin-content .notifications-sparkline-head svg { align-self: center; color: var(--admin-faint); }
+.kcpl-admin-content .notifications-sparkline-head strong { font-size: 13px; font-weight: 600; color: var(--admin-ink); }
+.kcpl-admin-content .notifications-sparkline-head span { font-size: 12px; }
+.kcpl-admin-content .notifications-sparkline-total {
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-ink);
+  margin-left: 4px;
 }
-.kcpl-admin-content .visibility-panel-summary .ops-button {
-  min-height: 40px;
+.kcpl-admin-content .notifications-sparkline-bars {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  max-width: 280px;
+  margin-left: auto;
 }
-.kcpl-admin-content .visibility-panel-summary + section {
-  padding-top: 18px;
+.kcpl-admin-content .notifications-sparkline-col { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.kcpl-admin-content .notifications-sparkline-track { display: flex; align-items: flex-end; height: 28px; width: 100%; }
+.kcpl-admin-content .notifications-sparkline-bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: var(--admin-info);
+  opacity: 0.55;
+  transition: height 160ms ease;
 }
-.kcpl-admin-content .visibility-panel-summary + section > h3,
-.kcpl-admin-content .visibility-panel-summary + section > p {
-  max-width: 520px;
+.kcpl-admin-content .notifications-sparkline-col[data-today] .notifications-sparkline-bar { background: var(--admin-crimson); opacity: 0.75; }
+.kcpl-admin-content .notifications-sparkline-day { font-size: 10px; color: var(--admin-faint); }
+.kcpl-admin-content .notifications-sparkline-col[data-today] .notifications-sparkline-day { color: var(--admin-muted); font-weight: 600; }
+@media (max-width: 760px) {
+  .kcpl-admin-content .notifications-sparkline { flex-wrap: wrap; gap: 10px; }
+  .kcpl-admin-content .notifications-sparkline-bars { max-width: none; width: 100%; margin-left: 0; }
 }
+
+/* Document Vault: the evidence review queue on the shared register primitives. */
+.kcpl-admin-content .document-vault-table { min-width: 900px; }
+.kcpl-admin-content .document-vault-table[data-compact="true"] { min-width: 560px; }
+.kcpl-admin-content .ops-register-table.document-vault-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .ops-register-table.document-vault-table td { padding-block: 5px; }
+.kcpl-admin-content .document-vault-table .ops-cell-clamp { max-width: 200px; }
+.kcpl-admin-content .document-vault-table[data-compact="true"] .ops-cell-clamp { max-width: 160px; }
+.kcpl-admin-content .document-vault-table[data-compact="true"] :is(.document-vault-type, .document-vault-customer) { max-width: 116px; }
+.kcpl-admin-content .document-vault-table tbody tr[data-inactive="true"] td { opacity: 0.55; }
+.kcpl-admin-content .document-vault-type { max-width: 130px; font-weight: 450; }
+.kcpl-admin-content .document-vault-customer { max-width: 150px; }
+.kcpl-admin-content .document-vault-source { color: var(--admin-info); font-weight: 500; }
+.kcpl-admin-content .document-vault-expiry { color: var(--admin-warning); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.kcpl-admin-content .document-vault-next-action { color: var(--admin-ink); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.kcpl-admin-content .document-vault-next-action.is-attention { color: var(--admin-warning); }
+.kcpl-admin-content .document-vault-next-action.is-complete { color: var(--admin-success); }
+.kcpl-admin-content .document-vault-fingerprint { padding: 6px 8px; border: 1px solid var(--admin-line); border-radius: var(--app-radius-sm); background: var(--admin-canvas); color: var(--admin-muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 16px; word-break: break-all; }
+.kcpl-admin-content .document-vault-note { margin: 0; color: var(--admin-ink); font-size: 12.5px; line-height: 18px; }
+.kcpl-admin-content .document-vault-check { display: flex; align-items: center; gap: 7px; color: var(--admin-ink); font-size: 12.5px; }
+
 /* Record navigation and command palette are part of the shared shell. */
-.app-record-return { padding: 10px var(--app-page-gap); background: none; font-size: 12px; line-height: 16px; }
-.app-record-return a { color: var(--admin-muted); text-decoration: none; }
-.app-record-return a:hover { color: var(--admin-ink); text-decoration: underline; }
-.app-search-error { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--admin-line); color: var(--admin-warning); font-size: 13px; line-height: 20px; }
 .app-command-dialog { border-color: var(--admin-line-strong); border-radius: var(--app-dialog-radius); background: var(--admin-surface); }
 .app-notification-toggle { position: relative; }
+/* Danger-activity cue fired by operational surfaces (kcpl:activity-danger). */
+.app-notification-toggle.app-notification-ring svg { color: var(--admin-danger); }
+.app-notification-toggle.app-notification-ring::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  border: 2px solid var(--admin-danger);
+  animation: app-notification-ring-pulse 1.6s var(--app-ease-out) infinite;
+}
+@keyframes app-notification-ring-pulse {
+  0% { opacity: 1; transform: scale(0.85); }
+  70% { opacity: 0; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
 .app-notification-count { position: absolute; top: -1px; right: -1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 4px; background: var(--admin-crimson); color: white; font-size: 9px; line-height: 15px; text-align: center; }
 .app-notification-panel { position: absolute; top: 40px; right: 0; z-index: 80; width: min(390px,calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--admin-line-strong); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: 0 12px 32px rgb(16 16 16 / 12%); }
 .ops-saved-views { margin: 12px 0; }
 .ops-saved-view-list, .ops-save-view-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .ops-saved-view { display: inline-flex; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); }
 .ops-saved-view button { min-height: 34px; padding: 4px 9px; border: 0; background: transparent; color: var(--admin-muted); font-size: 12px; }
-.ops-saved-view button:hover, .ops-saved-view button[aria-pressed="true"] { background: var(--admin-surface-muted); color: var(--admin-ink); }
-.ops-save-view-editor { margin-top: 8px; align-items: flex-end; }
-.ops-save-view-editor label { display: grid; gap: 4px; color: var(--admin-muted); font-size: 12px; }
-@media (max-width: 760px) { .ops-saved-view button { min-height: 44px; } }
-/* Embedded job tools must not repeat the parent record's heading or metrics. */
-.kcpl-admin-content .shipment-job-file-embedded .ops-page-header { padding: 0; border: 0; background: transparent; }
-.kcpl-admin-content .shipment-job-file-embedded .ops-page-heading,
-.kcpl-admin-content .shipment-job-file-embedded .ops-page > .ops-kpi-strip { display: none; }
-.kcpl-admin-content .shipment-job-file-embedded .ops-grid-main { grid-template-columns: minmax(0,1fr); }
-.kcpl-admin-content .shipment-job-file-embedded .ops-content { padding: 0; }
-.kcpl-admin-content #shipment-delivery #delivery-pod .ops-surface-body > .grid.gap-5 { display: block; }
-
-/* Digital Job File — persistent record context and decision-first hierarchy. */
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-summary:first-child {
-  border-bottom: 1px solid var(--admin-line);
-  background: var(--admin-surface);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 14px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts span {
-  display: grid;
-  gap: 2px;
-  min-width: 120px;
-  padding-left: 12px;
-  border-left: 2px solid var(--admin-line);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts strong {
-  overflow: hidden;
-  color: var(--admin-ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-header-facts small,
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts small,
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-node small {
-  color: var(--admin-muted);
-  font-size: 11px;
-  line-height: 16px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-context {
-  border-bottom: 1px solid var(--admin-line);
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-context > .shipment-detail-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding-block: 14px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-line {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 14px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-node {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-node strong {
-  overflow: hidden;
-  max-width: 260px;
-  color: var(--admin-ink);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-route-connector {
-  width: 72px;
-  height: 1px;
-  background: var(--admin-line-strong);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 18px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts span {
-  display: grid;
-  gap: 1px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-facts strong {
-  color: var(--admin-ink);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 18px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-context-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav {
-  z-index: 30;
-  border-bottom-color: var(--admin-line-strong);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav-inner {
-  gap: 2px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button) {
-  position: relative;
-  padding-inline: 12px;
-  font-size: 12px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button)::after {
-  content: "";
-  position: absolute;
-  right: 12px;
-  bottom: -1px;
-  left: 12px;
-  height: 2px;
-  background: transparent;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button):hover::after,
-.kcpl-admin-content .shipment-detail-v2 .shipment-record-nav :is(a, button):focus-visible::after {
-  background: var(--admin-crimson);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail {
-  position: sticky;
-  top: calc(var(--app-toolbar-height) + 62px);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-next-rail::before {
-  content: "Decision support";
-  display: block;
-  margin: -2px 0 12px;
-  color: var(--admin-muted);
-  font-size: 11px;
-  font-weight: 500;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-detail-record {
-  padding-top: 32px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded {
-  border-top: 2px solid var(--admin-ink);
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  align-items: start;
-  gap: 20px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-surface {
-  border-radius: var(--app-radius);
-  box-shadow: none;
-}
-@media (max-width: 900px) {
-  .kcpl-admin-content .shipment-detail-v2 .shipment-record-context > .shipment-detail-inner {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-context-facts { justify-content: flex-start; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-job-file-embedded .ops-grid-main { grid-template-columns: 1fr; }
-}
-@media (max-width: 760px) {
-  .kcpl-admin-content .shipment-detail-v2 .shipment-header-facts {
-    gap: 10px;
-    margin-top: 12px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-header-facts span {
-    min-width: calc(50% - 10px);
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-route-line {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-route-connector { flex: 1; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-route-node strong { max-width: 40vw; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-context-facts {
-    width: 100%;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-context-facts strong { font-size: 12px; }
-  .kcpl-admin-content .shipment-detail-v2 .shipment-detail-record { padding-top: 20px; }
-}
-
+/* The boxed pill toolbar owns tab selection now; the legacy bar's floating
+ * 2px crimson underline only ever showed as a stray line poking out from the
+ * active pill. */
 @keyframes overview-loading-sweep { to { transform: translateX(100%); } }
 
-@media (max-width: 1180px) {
-}
-@media (max-width: 900px) {
-}
 @media (max-width: 760px) {
   .kcpl-admin-route {
     --app-control-height: var(--app-control-height-touch);
@@ -1983,9 +1191,31 @@
 /* Shared operational primitives: timeline, detail grids, action menu, skeleton. */
 .kcpl-admin-content .ops-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .kcpl-admin-content .ops-timeline-item { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 0 0 18px; }
+/* "Since your last visit" divider between previously-seen and new entries. */
+.kcpl-admin-content .ops-timeline-visit-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 14px;
+  color: var(--admin-faint);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.kcpl-admin-content .ops-timeline-visit-divider::before,
+.kcpl-admin-content .ops-timeline-visit-divider::after { content: ""; flex: 1; height: 1px; background: var(--admin-line); }
+.kcpl-admin-content .ops-timeline-visit-divider + .ops-timeline-item { padding-top: 2px; }
 .kcpl-admin-content .ops-timeline-item::before { content: ""; position: absolute; left: 13px; top: 22px; bottom: -4px; width: 2px; background: var(--admin-line); }
 .kcpl-admin-content .ops-timeline-item:last-child { padding-bottom: 0; }
 .kcpl-admin-content .ops-timeline-item:last-child::before { display: none; }
+/* Deep-linked entry (?a=<id> from the shipments inspector). */
+.kcpl-admin-content .ops-timeline-item[data-highlight] {
+  background: var(--admin-surface-muted);
+  border-radius: var(--app-radius);
+  padding-inline: 8px;
+  margin-inline: -8px;
+}
 .kcpl-admin-content .ops-timeline-marker { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--admin-line); background: var(--admin-surface); color: var(--admin-muted); }
 .kcpl-admin-content .ops-timeline-item[data-tone="accent"] .ops-timeline-marker { border-color: var(--admin-accent-line); background: var(--admin-accent-bg); color: var(--admin-crimson-deep); }
 .kcpl-admin-content .ops-timeline-item[data-tone="success"] .ops-timeline-marker { border-color: var(--admin-success-line); background: var(--admin-success-bg); color: var(--admin-success); }
@@ -2106,7 +1336,6 @@
   .kcpl-admin-content .ops-detail-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-.kcpl-admin-content .ops-activity-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .kcpl-admin-content .ops-activity-title { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .kcpl-admin-content .ops-activity-detail { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--admin-muted); }
 .kcpl-admin-content .ops-activity-actor { display: block; font-size: 12px; font-weight: 500; color: var(--admin-faint); }
@@ -2379,3 +1608,351 @@
 /* Customer portal -- push notifications on this device. */
 .kcpl-admin-content .portal-push-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--app-space-3); }
 .kcpl-admin-content .portal-push-control [role="alert"] { color: var(--admin-danger); }
+
+/* ── Register pulse strip (Customs / Delivery live shipments) ───────────
+   Reuses the register poll architecture; purely presentational here. */
+.kcpl-admin-content .register-pulse-strip { margin-bottom: 14px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-surface); overflow: hidden; }
+.kcpl-admin-content .register-pulse-strip-cells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: center; }
+.kcpl-admin-content .register-pulse-cell { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-right: 1px solid var(--admin-line); color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .register-pulse-cell:hover { background: var(--admin-surface-muted); }
+.kcpl-admin-content .register-pulse-cell:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kcpl-admin-content .register-pulse-label { color: var(--admin-muted); font-size: 10.5px; font-weight: 570; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kcpl-admin-content .register-pulse-value { color: var(--admin-ink); font-size: 20px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.kcpl-admin-content .register-pulse-cell[data-zero] .register-pulse-value { color: var(--admin-faint); }
+.kcpl-admin-content .register-pulse-cell[data-tone="danger"]:not([data-zero]) .register-pulse-value { color: var(--admin-danger); }
+.kcpl-admin-content .register-pulse-cell[data-tone="warning"]:not([data-zero]) .register-pulse-value { color: var(--admin-warning); }
+.kcpl-admin-content .register-pulse-freshness { display: inline-flex; align-items: center; gap: 5px; padding: 0 14px; color: var(--admin-faint); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kcpl-admin-content .register-pulse-freshness::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--admin-success); }
+.kcpl-admin-content .register-pulse-freshness[data-stale]::before { background: var(--admin-warning); }
+.kcpl-admin-content .register-pulse-changes { display: flex; flex-wrap: wrap; gap: 4px 14px; border-top: 1px solid var(--admin-line); padding: 6px 14px; background: var(--admin-surface-muted); }
+.kcpl-admin-content .register-pulse-change { display: inline-flex; align-items: center; gap: 6px; color: var(--admin-ink); font-size: 11.5px; font-weight: 500; text-decoration: none; min-width: 0; }
+.kcpl-admin-content .register-pulse-change:hover { text-decoration: underline; }
+.kcpl-admin-content .register-pulse-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--admin-crimson); }
+@media (max-width: 900px) {
+  .kcpl-admin-content .register-pulse-strip-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kcpl-admin-content .register-pulse-freshness { display: none; }
+}
+.kcpl-admin-content .register-pulse-configure { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin-right: 8px; border: 0; border-radius: 6px; background: transparent; color: var(--admin-faint); cursor: pointer; }
+.kcpl-admin-content .register-pulse-configure:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .register-pulse-configure:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
+.kcpl-admin-content .register-pulse-configure svg[data-active="true"] { color: var(--admin-crimson); }
+.kcpl-admin-content .register-pulse-picker { width: 240px; padding: 10px; }
+.kcpl-admin-content .register-pulse-picker-head { margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--admin-muted); }
+.kcpl-admin-content .register-pulse-picker-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 6px; font-size: 12.5px; font-weight: 500; color: var(--admin-ink); cursor: pointer; }
+.kcpl-admin-content .register-pulse-picker-row:hover { background: var(--admin-surface-muted); }
+.kcpl-admin-content .register-pulse-picker-row span { flex: 1; min-width: 0; }
+.kcpl-admin-content .register-pulse-picker-row svg { color: var(--admin-success); flex-shrink: 0; }
+.kcpl-admin-content .register-pulse-picker-note { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--admin-line); font-size: 11px; line-height: 1.45; color: var(--admin-faint); }
+
+/* ── Register primitives (app/admin/ops-register.tsx) ────────────────────
+ * The approved Shipments register, extracted so every operational workspace
+ * draws the same KPI rail, toolbar, scope tabs, filter controls, register
+ * table and record inspector. Values mirror shipments/shipments-premium.css;
+ * change them together. Presentation only -- no workspace behaviour lives here. */
+
+/* In-row button size for dense registers. */
+.kcpl-admin-shell .ops-button[data-size="xs"] { min-height: 28px; gap: 5px; padding-inline: 9px; border-radius: var(--app-radius-sm); font-size: 12px; font-weight: 550; line-height: 16px; }
+.kcpl-admin-shell .ops-button[data-size="xs"][data-variant="ghost"] { padding-inline: 7px; }
+.kcpl-admin-shell .ops-button[data-size="xs"] svg { flex: none; }
+
+/* KPI rail: one hairline panel; label over a strong tabular value; zeros
+ * recede; tone colours the value only. Flex (not grid) so a wrapped last row
+ * stretches instead of leaving an empty grey cell. */
+.kcpl-admin-content .ops-kpi-rail { display: flex; flex-wrap: wrap; gap: 1px; margin-bottom: 14px; overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-line); }
+.kcpl-admin-content .ops-rail-metric { position: relative; display: flex; flex: 1 1 150px; flex-direction: column; gap: 5px; min-width: 0; margin: 0; padding: 11px 14px 12px; border: 0; background: var(--admin-surface); color: inherit; font: inherit; text-align: left; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content button.ops-rail-metric { cursor: pointer; }
+.kcpl-admin-content button.ops-rail-metric:hover { background: var(--admin-canvas); }
+.kcpl-admin-content button.ops-rail-metric:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+/* The active scope is a 2px ink rule along the segment's foot: present, not loud. */
+.kcpl-admin-content .ops-rail-metric[data-active="true"] { background: var(--admin-canvas); box-shadow: inset 0 -2px 0 var(--admin-ink); }
+.kcpl-admin-content .ops-rail-metric[data-active="true"] .ops-rail-label { color: var(--admin-ink); }
+.kcpl-admin-content .ops-rail-label { overflow: hidden; color: var(--admin-muted); font-size: 11px; font-weight: 570; letter-spacing: 0.02em; line-height: 14px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.kcpl-admin-content .ops-rail-value-row { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.kcpl-admin-content .ops-rail-value { color: var(--admin-ink); font-size: 24px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.kcpl-admin-content .ops-rail-detail { overflow: hidden; color: var(--admin-faint); font-size: 11.5px; font-weight: 500; line-height: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-rail-metric[data-text="true"] .ops-rail-value { overflow: hidden; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-rail-metric[data-zero="true"] .ops-rail-value { color: var(--admin-faint); }
+.kcpl-admin-content .ops-rail-metric[data-tone="info"]:not([data-zero]) .ops-rail-value { color: var(--admin-info); }
+.kcpl-admin-content .ops-rail-metric[data-tone="success"]:not([data-zero]) .ops-rail-value { color: var(--admin-success); }
+.kcpl-admin-content .ops-rail-metric[data-tone="warning"]:not([data-zero]) .ops-rail-value { color: var(--admin-warning); }
+.kcpl-admin-content .ops-rail-metric[data-tone="danger"]:not([data-zero]) .ops-rail-value { color: var(--admin-danger); }
+
+/* Register toolbar: search left, controls right, scopes on the row below. */
+.kcpl-admin-content .ops-register-toolbar { display: grid; grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); grid-template-areas: "search actions" "tabs tabs"; align-items: center; row-gap: 8px; column-gap: 16px; margin-bottom: 12px; padding: 2px 0 8px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .ops-register-toolbar-search { grid-area: search; min-width: 0; }
+.kcpl-admin-content .ops-register-toolbar-search .ops-search { min-height: 32px; border-color: transparent; background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-register-toolbar-search .ops-search:hover { border-color: var(--admin-line); }
+.kcpl-admin-content .ops-register-toolbar-search .ops-search input { font-size: 13px; }
+.kcpl-admin-content .ops-register-toolbar-actions { grid-area: actions; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+.kcpl-admin-content .ops-register-toolbar-tabs { grid-area: tabs; min-width: 0; }
+.kcpl-admin-content .ops-register-toolbar-actions .ops-button[data-size="md"] { min-height: 32px; gap: 6px; padding-inline: 10px; font-size: 12px; font-weight: 500; }
+.kcpl-admin-content .ops-toolbar-divider { width: 1px; height: 18px; margin-inline: 2px; background: var(--admin-line); }
+.kcpl-admin-content .ops-result-count { display: inline-flex; min-height: 24px; align-items: center; padding: 0 2px; color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Scope tabs behave like workspace tabs, not buttons. */
+.kcpl-admin-content .ops-scope-tabs { display: flex; min-width: 0; flex-wrap: nowrap; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.kcpl-admin-content .ops-scope-tabs::-webkit-scrollbar { display: none; }
+.kcpl-admin-content .ops-scope-tab { display: inline-flex; flex: 0 0 auto; min-height: 28px; align-items: center; gap: 6px; padding: 0 9px; border: 0; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-scope-tab:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .ops-scope-tab:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kcpl-admin-content .ops-scope-tab[data-active="true"] { background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .ops-scope-count { color: var(--admin-faint); font-size: 11px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .ops-scope-tab[data-active="true"] .ops-scope-count { color: var(--admin-crimson); font-weight: 600; }
+
+/* Filter triggers: 32px, quiet until active; an active filter gains ink and a
+ * crimson dot, and its value is spelled out in the chip row below. */
+.kcpl-admin-content .ops-filter-trigger { display: inline-flex; flex: none; min-height: 32px; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-filter-trigger:hover,
+.kcpl-admin-content .ops-filter-trigger[data-state="open"] { border-color: var(--admin-line-strong); color: var(--admin-ink); }
+.kcpl-admin-content .ops-filter-trigger[data-active="true"] { border-color: var(--admin-line-strong); color: var(--admin-ink); font-weight: 550; }
+.kcpl-admin-content .ops-filter-trigger-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-filter-trigger-chevron { color: var(--admin-faint); }
+.kcpl-admin-content .ops-filter-trigger-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--admin-crimson); }
+.kcpl-admin-content .ops-filter-count { display: inline-grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border-radius: 4px; background: var(--admin-crimson); color: var(--admin-surface); font-size: 11px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* Option list for OpsFilterSelect. */
+.kcpl-admin-content .ops-filter-options { z-index: 90; min-width: 180px; max-width: 280px; max-height: min(320px, var(--radix-popover-content-available-height, 320px)); overflow-y: auto; padding: 4px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); box-shadow: var(--app-shadow-lg); }
+.kcpl-admin-content .ops-filter-option { display: flex; width: 100%; min-height: 30px; align-items: center; gap: 8px; padding: 0 8px; border: 0; border-radius: var(--app-radius-sm); background: transparent; color: var(--admin-ink); font-size: 12.5px; font-weight: 450; line-height: 16px; text-align: left; cursor: pointer; }
+.kcpl-admin-content .ops-filter-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-filter-option:hover,
+.kcpl-admin-content .ops-filter-option:focus-visible { background: var(--admin-surface-muted); outline: none; }
+.kcpl-admin-content .ops-filter-option-check { flex: none; color: transparent; }
+.kcpl-admin-content .ops-filter-option[aria-checked="true"] { font-weight: 550; }
+.kcpl-admin-content .ops-filter-option[aria-checked="true"] .ops-filter-option-check { color: var(--admin-crimson); }
+
+/* The "Filters" command surface. */
+.kcpl-admin-content .ops-filter-menu { z-index: 90; width: 288px; padding: 8px 10px 10px; border: 1px solid var(--admin-line); border-radius: var(--app-dialog-radius); background: var(--admin-surface); box-shadow: 0 20px 50px rgb(16 24 40 / 18%); }
+.kcpl-admin-content .ops-filter-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; padding: 2px 2px 7px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .ops-filter-menu-head strong { color: var(--admin-ink); font-size: 12px; font-weight: 600; }
+.kcpl-admin-content .ops-filter-menu-clear,
+.kcpl-admin-content .ops-filter-menu-done { border: 0; border-radius: var(--app-radius); background: transparent; font-size: 12px; font-weight: 550; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-filter-menu-clear { min-height: 22px; padding: 0 6px; color: var(--admin-crimson); }
+.kcpl-admin-content .ops-filter-menu-clear:hover { background: color-mix(in srgb, var(--admin-crimson) 8%, transparent); }
+.kcpl-admin-content .ops-filter-menu-done { display: inline-flex; min-height: 24px; align-items: center; padding: 0 10px; border: 1px solid var(--admin-line); color: var(--admin-ink); }
+.kcpl-admin-content .ops-filter-menu-done:hover { background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-filter-menu-field { display: grid; gap: 5px; padding: 6px 2px; }
+.kcpl-admin-content .ops-filter-menu-field + .ops-filter-menu-field { border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .ops-filter-menu-label { color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.kcpl-admin-content .ops-filter-choices { display: flex; flex-wrap: wrap; gap: 4px; }
+.kcpl-admin-content .ops-filter-choice { min-height: 26px; padding: 0 9px; border: 1px solid var(--admin-line); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-filter-choice:hover { border-color: var(--admin-line-strong); color: var(--admin-ink); }
+.kcpl-admin-content .ops-filter-choice[data-active="true"] { border-color: var(--admin-ink); background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .ops-filter-menu-foot { display: flex; align-items: center; justify-content: flex-end; margin-top: 8px; }
+
+/* Active filter chips. */
+.kcpl-admin-content .ops-active-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; }
+.kcpl-admin-content .ops-active-chip { display: inline-flex; min-height: 24px; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface); color: var(--admin-ink); font-size: 11.5px; font-weight: 500; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-active-chip svg { color: var(--admin-faint); }
+.kcpl-admin-content .ops-active-chip:hover { border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-active-chip:hover svg { color: var(--admin-danger); }
+.kcpl-admin-content .ops-active-reset { min-height: 24px; padding: 0 7px; border: 0; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); font-size: 11.5px; font-weight: 550; cursor: pointer; }
+.kcpl-admin-content .ops-active-reset:hover { background: var(--admin-surface-muted); color: var(--admin-danger); }
+
+/* Compact attention summary: a ruled line, not a warning card. */
+.kcpl-admin-content .ops-inline-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-muted); font-size: 12.5px; line-height: 18px; }
+.kcpl-admin-content .ops-inline-alert[data-tone="info"] .ops-inline-alert-icon { color: var(--admin-info); }
+.kcpl-admin-content .ops-inline-alert-icon { display: inline-flex; flex: none; color: var(--admin-warning); }
+.kcpl-admin-content .ops-inline-alert[data-tone="danger"] .ops-inline-alert-icon { color: var(--admin-danger); }
+.kcpl-admin-content .ops-inline-alert-copy { flex: 1 1 280px; min-width: 0; }
+.kcpl-admin-content .ops-inline-alert-copy strong { color: var(--admin-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .ops-inline-alert-actions { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.kcpl-admin-content .ops-inline-alert-action { min-height: 24px; padding: 0 8px; border: 1px solid var(--admin-line); border-radius: var(--app-radius-sm); background: var(--admin-surface); color: var(--admin-ink); font-size: 12px; font-weight: 550; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-inline-alert-action:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-inline-alert-action[aria-pressed="true"] { border-color: var(--admin-line-strong); background: var(--admin-surface-muted); }
+
+/* Register table: 42px records, uppercase quiet headers, quiet badges. */
+.kcpl-admin-content .ops-register-table { border-collapse: separate; border-spacing: 0; }
+.kcpl-admin-content .ops-register-table thead { position: sticky; top: 0; z-index: 2; }
+.kcpl-admin-content .ops-register-table th { height: 34px; padding: 6px 12px; border-bottom: 1px solid var(--admin-line); background: var(--admin-canvas); color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; line-height: 14px; text-transform: uppercase; }
+.kcpl-admin-content .ops-register-table td { height: 42px; padding: 6px 12px; border-bottom: 1px solid var(--admin-line); font-size: 13px; letter-spacing: -0.011em; line-height: 18px; }
+.kcpl-admin-content .ops-register-table tbody tr:last-child td { border-bottom: 0; }
+.kcpl-admin-content .ops-register-table tbody tr { outline: none; }
+.kcpl-admin-content .ops-register-table tbody tr[tabindex] { cursor: pointer; }
+.kcpl-admin-content .ops-register-table tbody tr:hover { background: var(--admin-canvas); }
+.kcpl-admin-content .ops-register-table tbody tr:focus-visible { box-shadow: inset 0 0 0 2px var(--app-focus); }
+.kcpl-admin-content .ops-register-table tbody tr[data-selected="true"] { background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-register-table .ops-badge { min-height: 20px; padding: 2px 8px; border-color: transparent; font-size: 11.5px; font-weight: 550; letter-spacing: 0; white-space: nowrap; }
+.kcpl-admin-content .ops-register-table .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); font-weight: 500; }
+.kcpl-admin-content .ops-register-table .ops-badge > i { width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
+.kcpl-admin-content .ops-register-table .ops-sort-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.kcpl-admin-content .ops-register-table .ops-sort-button:hover { color: var(--admin-ink); }
+/* Cell text roles: one strong line, one quiet line. */
+.kcpl-admin-content .ops-cell-primary { display: block; overflow: hidden; color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-cell-secondary { display: block; overflow: hidden; margin-top: 1px; color: var(--admin-muted); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-cell-id { color: var(--admin-ink); font-size: 12px; font-weight: 600; }
+.kcpl-admin-content .ops-cell-secondary.ops-mono { font-size: 11.5px; }
+.kcpl-admin-content .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .ops-cell-ref { color: var(--admin-info); font-size: 12px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.kcpl-admin-content a.ops-cell-ref:hover { text-decoration: underline; text-underline-offset: 3px; }
+.kcpl-admin-content .ops-cell-muted { color: var(--admin-muted); font-size: 12.5px; white-space: nowrap; }
+.kcpl-admin-content .ops-cell-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap; }
+.kcpl-admin-content .ops-register-table .ops-cell-open { width: 40px; padding-inline: 2px 8px; text-align: right; }
+.kcpl-admin-content .ops-row-open { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: var(--app-radius-sm); background: transparent; color: var(--admin-faint); cursor: pointer; }
+.kcpl-admin-content .ops-row-open:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+
+/* Register footer: count left, pagination right. */
+.kcpl-admin-content .ops-register-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 7px 12px; border-top: 1px solid var(--admin-line); color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .ops-pager { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.kcpl-admin-content .ops-pager-button { display: inline-grid; min-width: 28px; height: 28px; place-items: center; padding: 0 6px; border: 1px solid transparent; border-radius: var(--app-radius-sm); background: transparent; color: var(--admin-muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; }
+.kcpl-admin-content .ops-pager-button:hover:not(:disabled) { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .ops-pager-button[aria-current="page"] { border-color: var(--admin-line); background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .ops-pager-button:disabled { color: var(--admin-line-strong); cursor: not-allowed; }
+.kcpl-admin-content .ops-pager .ops-filter-trigger { min-height: 28px; margin-left: 4px; }
+
+/* Record inspector: compact header, hairline sections, fact rows, sticky footer.
+ * Mirrors the Shipments inspector (.shipment-sheet-*). */
+.kcpl-admin-content .ops-inspector { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); }
+.kcpl-admin-content .ops-inspector-header { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 16px 9px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .ops-inspector-heading { min-width: 0; }
+.kcpl-admin-content .ops-inspector-kicker { margin: 0; overflow: hidden; color: var(--admin-muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-inspector-heading h2 { margin: 3px 0 0; color: var(--admin-ink); font-size: 17px; font-weight: 600; letter-spacing: -0.022em; line-height: 1.25; }
+.kcpl-admin-content .ops-inspector-subtitle { margin: 2px 0 0; color: var(--admin-muted); font-size: 12.5px; line-height: 18px; }
+.kcpl-admin-content .ops-inspector-header-actions { display: flex; flex: none; align-items: center; gap: 6px; }
+.kcpl-admin-content .ops-inspector-close { display: inline-grid; width: 30px; height: 30px; flex: none; place-items: center; border: 1px solid transparent; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); cursor: pointer; }
+.kcpl-admin-content .ops-inspector-close:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .ops-inspector-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.kcpl-admin-content .ops-inspector-body { display: flex; flex-direction: column; gap: 14px; padding: 14px 16px 18px; }
+.kcpl-admin-content .ops-inspector-section { padding-bottom: 14px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .ops-inspector-section:last-child { padding-bottom: 0; border-bottom: 0; }
+/* An open editor sits on a faint canvas so it reads as a working area. */
+.kcpl-admin-content .ops-inspector-section[data-tinted="true"] { margin-inline: -16px; padding: 12px 16px 14px; background: var(--admin-canvas); }
+.kcpl-admin-content .ops-inspector-section-head { display: flex; min-height: 22px; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.kcpl-admin-content .ops-inspector-section-head h3 { margin: 0; color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; line-height: 16px; text-transform: uppercase; }
+.kcpl-admin-content .ops-inspector-section-action { display: flex; align-items: center; gap: 4px; }
+.kcpl-admin-content .ops-inspector-hint { margin: 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .ops-inspector-footer { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px 12px; border-top: 1px solid var(--admin-line); background: var(--admin-surface); }
+.kcpl-admin-content .ops-inspector-footer .ops-button { min-height: 34px; font-size: 13px; }
+.kcpl-admin-content .ops-inspector-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.kcpl-admin-content .ops-inspector-actions .ops-button { min-height: 32px; padding-inline: 11px; font-size: 12.5px; }
+.kcpl-admin-content .ops-inspector-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.kcpl-admin-content .ops-inspector-form .ops-field { gap: 4px; }
+.kcpl-admin-content .ops-inspector-form .ops-field-label { font-size: 11.5px; }
+.kcpl-admin-content .ops-inspector-form :where(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: 32px; padding: 5px 9px; font-size: 13px; }
+.kcpl-admin-content .ops-inspector-form textarea { min-height: 64px; padding: 7px 9px; font-size: 13px; }
+
+.kcpl-admin-content .ops-facts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 20px; margin: 0; }
+.kcpl-admin-content .ops-facts[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kcpl-admin-content .ops-fact { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: baseline; gap: 10px; padding: 3.5px 0; }
+.kcpl-admin-content .ops-fact dt { color: var(--admin-muted); font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .ops-fact dd { min-width: 0; margin: 0; color: var(--admin-ink); font-size: 12.5px; font-weight: 500; line-height: 17px; overflow-wrap: anywhere; }
+.kcpl-admin-content .ops-fact dd[data-warning] { color: var(--admin-danger); }
+.kcpl-admin-content .ops-fact dd a { color: inherit; text-decoration: underline; text-decoration-color: var(--admin-line-strong); text-underline-offset: 3px; }
+.kcpl-admin-content .ops-fact dd a:hover { color: var(--admin-crimson); }
+
+.kcpl-admin-content .ops-inspector-note { display: flex; gap: 8px; padding: 8px 10px; border-radius: var(--app-radius); background: color-mix(in srgb, var(--admin-danger) 5%, transparent); color: var(--admin-danger); }
+.kcpl-admin-content .ops-inspector-note > svg { flex: none; margin-top: 2px; }
+.kcpl-admin-content .ops-inspector-note strong { display: block; font-size: 12.5px; font-weight: 600; line-height: 17px; }
+.kcpl-admin-content .ops-inspector-note span { display: block; margin-top: 2px; font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .ops-inspector-note[data-tone="warning"] { background: color-mix(in srgb, var(--admin-warning) 6%, transparent); color: var(--admin-warning); }
+.kcpl-admin-content .ops-inspector-note[data-tone="success"] { background: color-mix(in srgb, var(--admin-success) 5%, transparent); color: var(--admin-success); }
+.kcpl-admin-content .ops-inspector-note[data-tone="neutral"],
+.kcpl-admin-content .ops-inspector-note[data-tone="info"] { background: var(--admin-canvas); color: var(--admin-muted); }
+.kcpl-admin-content .ops-inspector-note[data-tone="neutral"] strong,
+.kcpl-admin-content .ops-inspector-note[data-tone="info"] strong { color: var(--admin-ink); }
+
+/* Step list inside an inspector: a 6px state dot per milestone, no icon tiles. */
+.kcpl-admin-content .ops-steps { display: grid; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .ops-step { position: relative; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: baseline; gap: 8px; padding: 4px 0; }
+.kcpl-admin-content .ops-step::before { content: ""; position: absolute; top: 17px; bottom: -5px; left: 3px; width: 1px; background: var(--admin-line); }
+.kcpl-admin-content .ops-step:last-child::before { display: none; }
+.kcpl-admin-content .ops-step-dot { width: 7px; height: 7px; border: 1.5px solid var(--admin-line-strong); border-radius: 999px; background: var(--admin-surface); transform: translateY(-1px); }
+.kcpl-admin-content .ops-step[data-state="done"] .ops-step-dot { border-color: var(--admin-success); background: var(--admin-success); }
+.kcpl-admin-content .ops-step[data-state="current"] .ops-step-dot { border-color: var(--admin-ink); background: var(--admin-ink); box-shadow: 0 0 0 3px var(--admin-surface-muted); }
+.kcpl-admin-content .ops-step[data-state="danger"] .ops-step-dot { border-color: var(--admin-danger); background: var(--admin-danger); }
+.kcpl-admin-content .ops-step-title { color: var(--admin-ink); font-size: 12.5px; font-weight: 500; line-height: 17px; }
+.kcpl-admin-content .ops-step[data-state="future"] .ops-step-title { color: var(--admin-muted); font-weight: 450; }
+.kcpl-admin-content .ops-step-detail { grid-column: 2 / -1; margin-top: -2px; color: var(--admin-muted); font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .ops-step-state { color: var(--admin-faint); font-size: 11px; line-height: 16px; white-space: nowrap; }
+.kcpl-admin-content .ops-step[data-state="current"] .ops-step-state { color: var(--admin-ink); font-weight: 550; }
+.kcpl-admin-content .ops-step[data-state="danger"] .ops-step-state { color: var(--admin-danger); font-weight: 550; }
+
+@media (max-width: 1240px) {
+  .kcpl-admin-content .ops-register-toolbar { grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .kcpl-admin-content .ops-register-toolbar { grid-template-columns: minmax(0, 1fr); grid-template-areas: "search" "actions" "tabs"; }
+  .kcpl-admin-content .ops-toolbar-divider { display: none; }
+  .kcpl-admin-content .ops-register-toolbar-actions { justify-content: flex-start; }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .ops-rail-metric { flex-basis: 40%; padding: 10px 12px 11px; }
+  .kcpl-admin-content .ops-rail-value { font-size: 22px; }
+  .kcpl-admin-content .ops-filter-trigger,
+  .kcpl-admin-content .ops-scope-tab { min-height: 36px; }
+  .kcpl-admin-shell .ops-button[data-size="xs"] { min-height: 36px; }
+  .kcpl-admin-content .ops-inspector-form { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .ops-facts[data-columns="2"] { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content :is(.ops-rail-metric, .ops-scope-tab, .ops-filter-trigger, .ops-filter-choice, .ops-active-chip, .ops-filter-menu-clear, .ops-filter-menu-done) { transition: none; }
+}
+
+/* ── Compact panels ──────────────────────────────────────────────────────
+ * OpsSurface density="compact", or every surface inside a container marked
+ * data-surface-density="compact" (the Digital Job File). One hairline panel,
+ * 14px title, one quiet line, no eyebrow, no shadow, compact empty state.
+ * Priority never paints a coloured edge; the content carries it. */
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) { border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: none; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-header { min-height: 0; flex-wrap: nowrap; align-items: flex-start; gap: 8px 12px; border-bottom: 0; padding: 12px 16px 0; background: transparent; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-header > .min-w-0 { flex: 1 1 auto; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) .ops-surface-action { display: flex; flex: none; align-items: center; gap: 6px; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) .ops-surface-header .ops-eyebrow { display: none; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) .ops-surface-header h2 { margin: 0; color: var(--admin-ink); font-size: 14px; font-weight: 600; letter-spacing: -0.01em; line-height: 20px; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) .ops-surface-description { max-width: 760px; margin-top: 1px; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) .ops-surface-description strong { color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-body { padding: 10px 16px 14px; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty { display: block; min-height: 0; place-items: normal; align-content: normal; border: 0; padding: 4px 0 2px; background: transparent; text-align: left; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty-icon { display: none; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty h3 { margin: 0; color: var(--admin-ink); font-size: 12.5px; font-weight: 600; line-height: 18px; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty p { max-width: 640px; margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; font-weight: 400; line-height: 17px; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty-action { display: flex; justify-content: flex-start; margin-top: 8px; }
+.kcpl-admin-content .ops-fact .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; font-weight: 550; }
+@media (max-width: 760px) {
+  .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > :is(.ops-surface-header, .ops-surface-body) { padding-inline: 14px; }
+  .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-header { flex-wrap: wrap; }
+}
+
+/* ── Record slide-over (OpsDialog, modal={false}) ───────────────────────────
+ * The Shipments inspector shell as a shared primitive: a right-side sheet that
+ * leaves the register visible and live, no scrim on desktop; below 900px a
+ * modal bottom sheet with a real scrim. Content uses the ops-inspector-*
+ * header, scroll, body, section and footer primitives. */
+.kcpl-admin-content .ops-sheet { position: fixed; inset: 0 0 0 auto; z-index: 80; display: flex; width: min(560px, 100vw); height: 100dvh; flex-direction: column; overflow: hidden; overscroll-behavior: contain; border-left: 1px solid var(--admin-line-strong); background: var(--admin-surface); box-shadow: -18px 0 48px rgb(16 16 16 / 14%); }
+.kcpl-admin-content .ops-sheet .ops-inspector-header { padding-inline: 20px; }
+.kcpl-admin-content .ops-sheet .ops-inspector-body { padding: 14px 20px 20px; }
+.kcpl-admin-content .ops-sheet .ops-inspector-footer { padding: 12px 20px 14px; }
+.kcpl-admin-content .ops-sheet .ops-inspector-section[data-tinted="true"] { margin-inline: -20px; padding-inline: 20px; }
+.kcpl-admin-content .ops-sheet-scrim { position: fixed; inset: 0; z-index: 70; display: none; border: 0; background: rgb(16 16 16 / 24%); cursor: default; }
+.kcpl-admin-content .ops-sheet[data-state="open"] { animation: ops-drawer-in var(--app-duration-slow) var(--app-ease-drawer); }
+.kcpl-admin-content .ops-sheet[data-state="closed"] { animation: ops-drawer-out var(--app-duration-base) var(--app-ease-out); }
+@media (max-width: 900px) {
+  .kcpl-admin-content .ops-sheet { inset: auto 0 0 0; width: auto; height: min(92dvh, 100%); border-top: 1px solid var(--admin-line-strong); border-left: 0; border-radius: 12px 12px 0 0; box-shadow: 0 -18px 48px rgb(16 16 16 / 14%); }
+  .kcpl-admin-content .ops-sheet[data-state="open"] { animation: ops-sheet-in var(--app-duration-slow) var(--app-ease-drawer); }
+  .kcpl-admin-content .ops-sheet[data-state="closed"] { animation: ops-sheet-out var(--app-duration-base) var(--app-ease-out); }
+  .kcpl-admin-content .ops-sheet-scrim { display: block; }
+  .kcpl-admin-content .ops-sheet :is(.ops-inspector-header, .ops-inspector-body, .ops-inspector-footer) { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content .ops-sheet[data-state] { animation: none; }
+}
+
+/* Docked record inspector: register and inspector side by side while there is
+ * room for both (the query mirrors SIDE_BY_SIDE_QUERY in the workspaces that
+ * dock one), stacked below that. The inspector stays in the page -- no scrim,
+ * no dimming -- so the register keeps its context. */
+.kcpl-admin-content .ops-register-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
+.kcpl-admin-content .ops-register-layout > .ops-surface { min-width: 0; }
+.kcpl-admin-content .ops-register-layout > .ops-inspector { scroll-margin-top: calc(var(--app-toolbar-height) + 12px); }
+@media (min-width: 1180px), (min-width: 900px) and (max-width: 1023px) {
+  .kcpl-admin-content .ops-register-layout[data-inspector="open"] { grid-template-columns: minmax(0, 1fr) clamp(340px, 29vw, 400px); }
+  .kcpl-admin-content .ops-register-layout > .ops-inspector { position: sticky; top: calc(var(--app-toolbar-height) + 16px); max-height: calc(100dvh - var(--app-toolbar-height) - 32px); }
+}
+
+/* Pickup Scheduling. */
+.kcpl-admin-content .pickups-table { min-width: 900px; }
+.kcpl-admin-content .pickups-table td { padding-block: 5px; }
+.kcpl-admin-content .pickups-table .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .pickups-table[data-compact="true"] { min-width: 540px; }
+.kcpl-admin-content .pickups-table[data-compact="true"] .ops-cell-clamp { max-width: 180px; }
+.kcpl-admin-content .pickups-status { display: inline-flex; align-items: center; gap: 6px; }
+.kcpl-admin-content .pickups-attention { display: inline-flex; color: var(--admin-danger); }

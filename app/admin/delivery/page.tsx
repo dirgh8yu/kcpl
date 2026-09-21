@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../admin-auth";
+import { loadCommandCentre } from "../command-centre/command-centre.server";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
@@ -33,7 +34,10 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
   if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Delivery backend unavailable" detail="Firebase delivery data is not available for this deployment."/></OperationsShell>;
   const { shipment } = await searchParams;
   const initialQuery = shipment?.trim().toUpperCase() ?? "";
-  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary} initialQuery={initialQuery}/></OperationsShell>;
+  // The pulse strip is additive: a snapshot failure must not take down the
+  // delivery queue, so it loads independently of the workspace above.
+  const pulseData = await loadCommandCentre(staff, { includeDelivered: true }).catch(() => null);
+  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary} initialQuery={initialQuery} pulseData={pulseData}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

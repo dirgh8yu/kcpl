@@ -26,6 +26,8 @@ export type CommandCentreJob = {
   required_customs_open: number;
   required_customs_total: number;
   updated_at: string;
+  /** Newest job_activity created_at for this shipment (null when none is recorded). */
+  latest_activity_at: string | null;
 };
 
 export type CommandCentreBranchLoad = {

@@ -151,6 +151,21 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
     customsStats.set(shipmentId, stats);
   }
 
+  // Newest job_activity timestamp per shipment: drives the register's live
+  // activity badges ("movement in the last 15 minutes"). One bounded read.
+  const latestActivity = new Map<string, string>();
+  try {
+    const activitySnapshot = await db.collectionGroup("job_activity").orderBy("created_at", "desc").limit(500).get();
+    for (const doc of activitySnapshot.docs) {
+      const shipmentId = shipmentIdFromChild(doc.ref);
+      if (!shipmentId || !accessibleShipmentIds.has(shipmentId)) continue;
+      const createdAt = text(doc.data().created_at);
+      if (createdAt && !latestActivity.has(shipmentId)) latestActivity.set(shipmentId, createdAt);
+    }
+  } catch (error) {
+    console.error("Failed to load KCPL register activity timestamps", error);
+  }
+
   const quoteReferences = accessibleShipmentRows.map((row) => text(row.data.quote_reference));
   const customerIds = accessibleShipmentRows.flatMap((row) => {
     const id = nullable(row.data.customer_id);
@@ -198,6 +213,7 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
       required_customs_open: customs.open,
       required_customs_total: customs.total,
       updated_at: text(data.updated_at),
+      latest_activity_at: latestActivity.get(id) ?? null,
     };
   });
 
