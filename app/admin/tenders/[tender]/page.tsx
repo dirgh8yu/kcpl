@@ -4,6 +4,7 @@ import { OperationsShell } from "../../operations-shell";
 import { listTmsOrders } from "../../rating/tms-rating.server";
 import type { TmsOrder } from "../../rating/tms-rating";
 import { getStaffContext } from "../../staff-directory.server";
+import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { listTmsTenders } from "../tms-tendering.server";
 import type { TmsTender } from "../tms-tendering";
 
@@ -114,4 +115,15 @@ function Datum({ label, value }: { label: string; value: string }) { return <div
 function ConnectedRow({ label, value, meta, state }: { label: string; value: string; meta: string; state: "complete" | "pending" }) { return <div className="grid gap-2 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 sm:grid-cols-[150px_1fr_auto]"><p className="text-[12px] font-medium text-[var(--admin-muted)]">{label}</p><div><p className="text-[13px] font-semibold">{value}</p><p className="mt-0.5 text-[11px] text-[var(--admin-muted)]">{meta}</p></div><span className={`self-start rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium ${state === "complete" ? "bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : "bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]"}`}>{state === "complete" ? "Created" : "Pending"}</span></div>; }
 function DetailRow({ label, value }: { label: string; value: string }) { return <div className="grid grid-cols-[88px_1fr] gap-3 py-[5px] text-[12px]"><span className="text-[var(--admin-muted)]">{label}</span><span className="break-words font-medium">{value}</span></div>; }
 function LinkRow({ label, value, href }: { label: string; value: string; href: string }) { return <div className="grid grid-cols-[88px_1fr] gap-3 py-[5px] text-[12px]"><span className="text-[var(--admin-muted)]">{label}</span><Link href={href} className="break-words font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-crimson)]">{value}</Link></div>; }
-function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) { return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-white p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">KCPL Booking</p><h1 className="mt-3 text-[22px] font-semibold">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Tender Workspace</Link><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Transport Orders</Link></div></section></main>; }
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate
+    eyebrow="KCPL Booking"
+    title={title}
+    detail={detail}
+    embedded={embedded}
+    actions={[
+      { href: "/admin/tenders", label: "Tender Workspace", primary: true },
+      { href: "/admin/rating", label: "Transport Orders" },
+    ]}
+  />;
+}
