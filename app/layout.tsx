@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
@@ -43,6 +43,9 @@ const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subset
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
 // The identity file records Noto Sans Devanagari for Nepali, so the public site sets
 // Nepali in the sans to match the Manrope wordmark rather than the portal's serif.
+// The public site sets all metadata, labels and navigation in mono: on an
+// operational board those are readings, not prose.
+const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"] });
 const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"] });
 
 const defaultTitle = "Kapileshwor Cargo | Freight & Logistics in Nepal";
@@ -103,7 +106,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} antialiased`}>
+      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} ${plexMono.variable} antialiased`}>
         <StructuredData data={organizationSchema}/>
         {children}
         <Suspense fallback={null}><Analytics/></Suspense>
