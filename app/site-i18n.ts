@@ -127,6 +127,66 @@ const en = {
   "home.cta_copy": "Send the origin, destination, mode, weight and dimensions, and KCPL will come back on how the movement should be planned.",
   "home.cta_primary": "Request a quote",
   "home.cta_secondary": "Contact the team",
+
+  /* Services */
+  "services.meta_title": "Freight Services",
+  "services.meta_description": "Air, ocean and road freight, customs and documentation, project cargo, warehousing and delivery, coordinated from Kathmandu for Nepalese importers and exporters.",
+  "services.title": "Services",
+  "services.intro": "Seven services that make up one movement. Most shipments use several, planned together rather than handed between desks.",
+  "services.detail_link": "Service detail",
+  "services.covers": "What it covers",
+  "services.ask": "Useful to tell us",
+  "services.back": "All services",
+  "services.related": "Often planned with",
+
+  "svc.air.title": "Air freight",
+  "svc.air.summary": "Airport-to-airport and door movements out of Kathmandu, and inbound air cargo where a deadline decides the mode.",
+  "svc.air.p1": "Export bookings from Kathmandu to North America, Europe, Australia and Asian markets.",
+  "svc.air.p2": "Airway bill preparation, carting, pre-alert and arrival follow-up.",
+  "svc.air.p3": "Rerouting when a carrier network is disrupted, with the consignee kept informed.",
+  "svc.air.ask": "Gross weight, dimensions, commodity, ready date, airport or door delivery.",
+
+  "svc.ocean.title": "Ocean freight",
+  "svc.ocean.summary": "FCL and LCL through Indian gateways, planned as one movement from origin port to the Nepal delivery point.",
+  "svc.ocean.p1": "20ft, 40ft and 40HQ containers, plus LCL consolidations.",
+  "svc.ocean.p2": "Gateway handling at Kolkata, Visakhapatnam and Haldia, with rail-linked movement to ICD Birgunj.",
+  "svc.ocean.p3": "Bill of lading review, endorsement, delivery orders and de-stuffing coordination.",
+  "svc.ocean.ask": "Container type and count or CBM, origin port, incoterm, final delivery address.",
+
+  "svc.road.title": "Road freight",
+  "svc.road.summary": "Cross-border and domestic trucking, including the inland half that every ocean movement into Nepal depends on.",
+  "svc.road.p1": "India to Nepal movements through Raxaul and other border points.",
+  "svc.road.p2": "Domestic distribution from Birgunj and Kathmandu to project sites and western Nepal.",
+  "svc.road.p3": "Trailers and special equipment where the cargo will not travel on a standard bed.",
+  "svc.road.ask": "Weight, dimensions, collection point, delivery point, access at both ends.",
+
+  "svc.customs.title": "Customs and documentation",
+  "svc.customs.summary": "Document preparation and clearance support at Nepal's entry points, and for exports leaving through Indian gateways.",
+  "svc.customs.p1": "Invoices, packing lists, certificates of origin, permits and duty-exemption paperwork.",
+  "svc.customs.p2": "Transit documentation for rail-linked and road movements into Nepal.",
+  "svc.customs.p3": "Follow-up until the entry is cleared, rather than filing and waiting.",
+  "svc.customs.ask": "Commodity, HS code if known, value, any licence or exemption already held.",
+
+  "svc.project.title": "Project and specialist cargo",
+  "svc.project.summary": "Breakbulk, open-top, over-height and oversized units, planned around the route before anything is booked.",
+  "svc.project.p1": "Route and trailer survey, handling method and lifting requirements.",
+  "svc.project.p2": "Transmission and substation equipment moved to inland project sites.",
+  "svc.project.p3": "Phased delivery with records at site, where a single drop is not practical.",
+  "svc.project.ask": "Piece dimensions and weights, total packages, site access, required completion date.",
+
+  "svc.warehouse.title": "Warehousing and packaging",
+  "svc.warehouse.summary": "Secured storage arrangements and cargo preparation, used as part of a movement rather than sold on their own.",
+  "svc.warehouse.p1": "Over 1,000 sqm for air cargo and over 6,000 sqm for road cargo.",
+  "svc.warehouse.p2": "Consolidation and deconsolidation before onward dispatch.",
+  "svc.warehouse.p3": "Packing and preparation for export handling.",
+  "svc.warehouse.ask": "Volume, duration, whether the cargo needs handling or only storage.",
+
+  "svc.delivery.title": "Delivery and proof",
+  "svc.delivery.summary": "Final delivery coordination and the evidence that a movement actually closed.",
+  "svc.delivery.p1": "Delivery scheduling with the consignee and the site.",
+  "svc.delivery.p2": "Unloading evidence and signed delivery receipts.",
+  "svc.delivery.p3": "Status updates through the movement, and a record at the end of it.",
+  "svc.delivery.ask": "Delivery address, site contact, unloading equipment available, receiving hours.",
 } as const;
 
 export type SiteTextKey = keyof typeof en;
@@ -217,6 +277,66 @@ const ne: Record<SiteTextKey, string> = {
   "home.cta_copy": "मूल, गन्तव्य, मोड, तौल र नाप पठाउनुहोस्। मुभमेन्ट कसरी योजना गर्ने भनेर KCPL जवाफ दिन्छ।",
   "home.cta_primary": "कोटेसन माग्नुहोस्",
   "home.cta_secondary": "टोलीसँग सम्पर्क",
+
+  /* Services */
+  "services.meta_title": "फ्रेट सेवाहरू",
+  "services.meta_description": "एयर, ओसन र रोड फ्रेट, भन्सार र कागजात, प्रोजेक्ट कार्गो, भण्डारण र डेलिभरी, काठमाडौँबाट नेपाली आयातकर्ता र निर्यातकर्ताका लागि समन्वय गरिन्छ।",
+  "services.title": "सेवाहरू",
+  "services.intro": "सात सेवा मिलेर एउटा मुभमेन्ट बन्छ। धेरैजसो शिपमेन्टमा कैयौँ सेवा सँगै चाहिन्छ, र ती एकै ठाउँबाट योजना गरिन्छ।",
+  "services.detail_link": "सेवा विवरण",
+  "services.covers": "यसमा के पर्छ",
+  "services.ask": "हामीलाई भन्दा राम्रो",
+  "services.back": "सबै सेवाहरू",
+  "services.related": "प्रायः सँगै",
+
+  "svc.air.title": "एयर फ्रेट",
+  "svc.air.summary": "काठमाडौँबाट एयरपोर्ट-टु-एयरपोर्ट र डोर मुभमेन्ट, र समयसीमाले मोड तय गर्दा भित्रिने एयर कार्गो।",
+  "svc.air.p1": "काठमाडौँबाट उत्तर अमेरिका, युरोप, अस्ट्रेलिया र एसियाली बजारसम्म निर्यात बुकिङ।",
+  "svc.air.p2": "एयरवे बिल तयारी, कार्टिङ, प्रि-अलर्ट र आगमन फलोअप।",
+  "svc.air.p3": "क्यारियर नेटवर्क अवरुद्ध हुँदा अर्को रुट, र प्राप्तकर्तालाई निरन्तर जानकारी।",
+  "svc.air.ask": "ग्रस तौल, नाप, वस्तु, तयार मिति, एयरपोर्ट कि डोर डेलिभरी।",
+
+  "svc.ocean.title": "ओसन फ्रेट",
+  "svc.ocean.summary": "भारतीय गेटवे हुँदै FCL र LCL, मूल बन्दरगाहदेखि नेपालको डेलिभरी बिन्दुसम्म एउटै मुभमेन्टका रूपमा।",
+  "svc.ocean.p1": "२०ft, ४०ft र ४०HQ कन्टेनर, साथै LCL कन्सोलिडेसन।",
+  "svc.ocean.p2": "कोलकाता, विशाखापट्टनम र हल्दियामा गेटवे ह्यान्डलिङ, र ICD वीरगन्जसम्म रेल-जोडिएको मुभमेन्ट।",
+  "svc.ocean.p3": "बिल अफ लेडिङ जाँच, इन्डोर्समेन्ट, डेलिभरी अर्डर र डि-स्टफिङ समन्वय।",
+  "svc.ocean.ask": "कन्टेनर प्रकार र सङ्ख्या वा CBM, मूल बन्दरगाह, इन्कोटर्म, अन्तिम ठेगाना।",
+
+  "svc.road.title": "रोड फ्रेट",
+  "svc.road.summary": "सीमापार र आन्तरिक ट्रकिङ, जसमा नेपाल भित्रिने हरेक ओसन मुभमेन्टको भित्री खण्ड पनि पर्छ।",
+  "svc.road.p1": "रक्सौल र अन्य नाका हुँदै भारतबाट नेपाल मुभमेन्ट।",
+  "svc.road.p2": "वीरगन्ज र काठमाडौँबाट परियोजना साइट र पश्चिम नेपालसम्म वितरण।",
+  "svc.road.p3": "सामान्य बेडमा नअट्ने कार्गोका लागि ट्रेलर र विशेष उपकरण।",
+  "svc.road.ask": "तौल, नाप, उठाउने ठाउँ, पुर्‍याउने ठाउँ, दुवैतर्फको पहुँच।",
+
+  "svc.customs.title": "भन्सार र कागजात",
+  "svc.customs.summary": "नेपालका प्रवेश नाकामा कागजात तयारी र क्लियरेन्स सहयोग, र भारतीय गेटवे हुँदै जाने निर्यातका लागि पनि।",
+  "svc.customs.p1": "इनभ्वाइस, प्याकिङ लिस्ट, सर्टिफिकेट अफ ओरिजिन, परमिट र छुटसम्बन्धी कागजात।",
+  "svc.customs.p2": "रेल-जोडिएको र सडक मुभमेन्टका लागि ट्रान्जिट कागजात।",
+  "svc.customs.p3": "दर्ता गरेर पर्खने होइन, क्लियर नभएसम्म फलोअप।",
+  "svc.customs.ask": "वस्तु, थाहा भए HS कोड, मूल्य, पहिले नै लिएको लाइसेन्स वा छुट।",
+
+  "svc.project.title": "प्रोजेक्ट र विशेष कार्गो",
+  "svc.project.summary": "ब्रेकबल्क, ओपन-टप, अग्लो र ओभरसाइज युनिट, बुकिङअघि नै रुट हेरेर योजना गरिन्छ।",
+  "svc.project.p1": "रुट र ट्रेलर सर्वे, ह्यान्डलिङ विधि र लिफ्टिङ आवश्यकता।",
+  "svc.project.p2": "प्रसारण र सबस्टेसन उपकरण भित्री परियोजना साइटसम्म।",
+  "svc.project.p3": "एकैपटक पुर्‍याउन नमिल्दा चरणबद्ध डेलिभरी, साइटमै रेकर्डसहित।",
+  "svc.project.ask": "प्रति पिस नाप र तौल, कुल प्याकेज, साइट पहुँच, सम्पन्न गर्नुपर्ने मिति।",
+
+  "svc.warehouse.title": "भण्डारण र प्याकेजिङ",
+  "svc.warehouse.summary": "सुरक्षित भण्डारण व्यवस्था र कार्गो तयारी, छुट्टै सेवा होइन, मुभमेन्टकै अंश।",
+  "svc.warehouse.p1": "एयर कार्गोका लागि १,०००+ वर्गमिटर र रोड कार्गोका लागि ६,०००+ वर्गमिटर।",
+  "svc.warehouse.p2": "अगाडि पठाउनुअघि कन्सोलिडेसन र डिकन्सोलिडेसन।",
+  "svc.warehouse.p3": "निर्यात ह्यान्डलिङका लागि प्याकिङ र तयारी।",
+  "svc.warehouse.ask": "परिमाण, अवधि, कार्गोलाई ह्यान्डलिङ चाहिन्छ कि भण्डारण मात्र।",
+
+  "svc.delivery.title": "डेलिभरी र प्रमाण",
+  "svc.delivery.summary": "अन्तिम डेलिभरी समन्वय, र मुभमेन्ट साँच्चै टुङ्गियो भन्ने प्रमाण।",
+  "svc.delivery.p1": "प्राप्तकर्ता र साइटसँग मिलाएर डेलिभरी तालिका।",
+  "svc.delivery.p2": "अनलोडिङ प्रमाण र हस्ताक्षरित डेलिभरी रसिद।",
+  "svc.delivery.p3": "मुभमेन्टभरि स्थिति अपडेट, र अन्त्यमा एउटा रेकर्ड।",
+  "svc.delivery.ask": "डेलिभरी ठेगाना, साइट सम्पर्क, उपलब्ध अनलोडिङ उपकरण, बुझ्ने समय।",
 };
 
 const dictionaries: Record<SiteLocale, Record<SiteTextKey, string>> = { en, ne };

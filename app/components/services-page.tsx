@@ -1,0 +1,91 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
+import { SiteShell } from "./site-chrome";
+
+/* One service list drives the overview, the seven detail pages and the routing,
+ * so a service cannot exist in the navigation and be missing as a page. */
+export const services = [
+  { slug: "air-freight", key: "air" },
+  { slug: "ocean-freight", key: "ocean" },
+  { slug: "road-freight", key: "road" },
+  { slug: "customs-clearance", key: "customs" },
+  { slug: "project-cargo", key: "project" },
+  { slug: "warehousing", key: "warehouse" },
+  { slug: "delivery", key: "delivery" },
+] as const;
+
+export type ServiceKey = (typeof services)[number]["key"];
+export type ServiceSlug = (typeof services)[number]["slug"];
+
+const text = (key: ServiceKey, part: string) => `svc.${key}.${part}` as SiteTextKey;
+
+export function ServicesPage({ locale }: { locale: SiteLocale }) {
+  const t = siteTranslator(locale);
+  return (
+    <SiteShell locale={locale} path="/services">
+      <section className="section page-head">
+        <h1 className="section-title">{t("services.title")}</h1>
+        <p className="section-intro">{t("services.intro")}</p>
+      </section>
+      <section className="section service-index reveal-group">
+        {services.map((service) => (
+          <article key={service.slug} className="service-row reveal">
+            <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
+            <p className="service-row-copy">{t(text(service.key, "summary"))}</p>
+            <Link href={sitePath(locale, `/services/${service.slug}`)} className="section-link">{t("services.detail_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+          </article>
+        ))}
+      </section>
+      <section className="section section-cta">
+        <h2 className="cta-title">{t("home.cta_title")}</h2>
+        <p className="cta-copy">{t("home.cta_copy")}</p>
+        <div className="hero-actions">
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/contact")} className="button-ghost">{t("home.cta_secondary")}</Link>
+        </div>
+      </section>
+    </SiteShell>
+  );
+}
+
+export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: ServiceSlug }) {
+  const t = siteTranslator(locale);
+  const service = services.find((entry) => entry.slug === slug);
+  if (!service) return null;
+  const others = services.filter((entry) => entry.slug !== slug).slice(0, 3);
+  return (
+    <SiteShell locale={locale} path={`/services/${slug}`}>
+      <section className="section page-head">
+        <p className="eyebrow">{t("services.title")}</p>
+        <h1 className="section-title">{t(text(service.key, "title"))}</h1>
+        <p className="section-intro">{t(text(service.key, "summary"))}</p>
+      </section>
+      <section className="section service-detail">
+        <div className="service-detail-main">
+          <h2 className="service-block-title">{t("services.covers")}</h2>
+          <ul className="service-points">
+            {["p1", "p2", "p3"].map((part) => <li key={part} className="service-point">{t(text(service.key, part))}</li>)}
+          </ul>
+        </div>
+        <aside className="service-detail-aside">
+          <h2 className="service-block-title">{t("services.ask")}</h2>
+          <p className="service-ask">{t(text(service.key, "ask"))}</p>
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+        </aside>
+      </section>
+      <section className="section service-related">
+        <h2 className="service-block-title">{t("services.related")}</h2>
+        <div className="service-related-grid">
+          {others.map((entry) => (
+            <Link key={entry.slug} href={sitePath(locale, `/services/${entry.slug}`)} className="service-related-link">
+              <span className="service-related-name">{t(text(entry.key, "title"))}</span>
+              <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/>
+            </Link>
+          ))}
+        </div>
+        <Link href={sitePath(locale, "/services")} className="section-link">{t("services.back")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+      </section>
+    </SiteShell>
+  );
+}
