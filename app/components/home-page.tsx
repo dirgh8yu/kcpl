@@ -20,11 +20,15 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
     { title: t("home.cap_4_title"), copy: t("home.cap_4_copy") },
   ];
   const rail = [
-    { value: t("company.established_short"), detail: t("company.established_where") },
-    { value: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
-    { value: t("home.credibility_member_detail"), detail: t("home.credibility_member") },
+    { value: t("stats.clients_value"), detail: t("stats.clients_label") },
+    { value: t("stats.projects_value"), detail: t("stats.projects_label") },
+    { value: t("stats.exports_value"), detail: t("stats.exports_label") },
+    { value: t("stats.imports_value"), detail: t("stats.imports_label") },
   ];
   const credibility = [
+    { label: t("company.established_short"), detail: t("company.established_where") },
+    { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
+    { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
     { label: t("home.credibility_projects"), detail: t("home.credibility_projects_detail") },
   ];

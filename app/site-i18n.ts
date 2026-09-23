@@ -61,6 +61,15 @@ const en = {
   "chrome.footer_company": "Company",
   "chrome.footer_contact": "Contact",
 
+  "stats.clients_value": "500+",
+  "stats.clients_label": "Unique clients served since 2015",
+  "stats.projects_value": "10+",
+  "stats.projects_label": "Hydropower infrastructure projects supported",
+  "stats.exports_value": "Regular",
+  "stats.exports_label": "Export movements out of Nepal",
+  "stats.imports_value": "Regular",
+  "stats.imports_label": "Import movements into Nepal",
+
   /* Company constants that read as copy */
   "company.tagline": "From Nepal. To the world.",
   "company.established": "Established 2015, Kathmandu, Nepal",
@@ -322,6 +331,14 @@ const ne: Record<SiteTextKey, string> = {
   "chrome.footer_company": "कम्पनी",
   "chrome.footer_contact": "सम्पर्क",
 
+  "stats.clients_value": "५००+",
+  "stats.clients_label": "२०१५ देखि सेवा पुर्‍याइएका अद्वितीय ग्राहक",
+  "stats.projects_value": "१०+",
+  "stats.projects_label": "जलविद्युत् पूर्वाधार परियोजनामा सहयोग",
+  "stats.exports_value": "नियमित",
+  "stats.exports_label": "नेपालबाहिर निर्यात मुभमेन्ट",
+  "stats.imports_value": "नियमित",
+  "stats.imports_label": "नेपालभित्र आयात मुभमेन्ट",
   "company.tagline": "नेपालबाट। विश्वभर।",
   "company.established": "स्थापना २०१५, काठमाडौँ, नेपाल",
   "company.established_short": "स्थापना २०१५",

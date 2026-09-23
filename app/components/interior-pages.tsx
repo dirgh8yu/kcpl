@@ -125,6 +125,8 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
     copy: t(`about.desk_${n}_copy` as "about.desk_1_copy"),
   }));
   const credentials = [
+    { label: t("stats.clients_value"), detail: t("stats.clients_label") },
+    { label: t("stats.projects_value"), detail: t("stats.projects_label") },
     { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
