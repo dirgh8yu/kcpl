@@ -85,10 +85,12 @@
 .site-portal-link { display: inline-flex; align-items: center; gap: 4px; color: var(--site-ink); text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .site-lang { position: relative; font-size: 12px; font-weight: 600; color: var(--site-muted); border-left: 1px solid var(--site-line); padding-inline-start: 16px; }
 .site-lang-button { display: inline-flex; align-items: center; gap: 7px; list-style: none; cursor: pointer; white-space: nowrap; }
-/* The three words are stacked in one box sized by the longest, so the header
- * never reflows as they swap. */
-.site-lang-rotator { position: relative; display: inline-grid; min-width: 4.5em; height: 1.25em; overflow: hidden; }
-.site-lang-word { grid-area: 1 / 1; align-self: center; opacity: 0; }
+/* The three words share one grid cell, so the box takes the width of the
+ * longest and the height of the tallest on its own. No fixed height: Devanagari
+ * ascenders and the descender on "Language" both need more room than the Latin
+ * line box, and clipping them is what a fixed height does. */
+.site-lang-rotator { display: inline-grid; line-height: 1.45; }
+.site-lang-word { grid-area: 1 / 1; place-self: center start; opacity: 0; }
 .site-lang-word:first-child { opacity: 1; }
 .site-lang-option[aria-current] { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--site-crimson); cursor: default; }
 
