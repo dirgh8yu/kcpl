@@ -41,6 +41,10 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
           </article>
         ))}
       </section>
+      <section className="section cargo-types">
+        <h2 className="service-block-title">{t("services.cargo_title")}</h2>
+        <p className="section-intro">{t("services.cargo_copy")}</p>
+      </section>
       <section className="section section-cta">
         <h2 className="cta-title">{t("home.cta_title")}</h2>
         <p className="cta-copy">{t("home.cta_copy")}</p>

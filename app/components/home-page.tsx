@@ -111,6 +111,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <p className="proof-kicker">{t("home.proof_1_kicker")}</p>
             <h3 className="proof-lead-title">{t("home.proof_1_title")}</h3>
             <p className="proof-copy">{t("home.proof_1_copy")}</p>
+            <p className="proof-meta">{t("home.proof_1_meta")}</p>
           </div>
         </article>
         <div className="proof-more reveal-group">
@@ -118,11 +119,13 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <p className="proof-kicker">{t("home.proof_2_kicker")}</p>
             <h3 className="proof-title">{t("home.proof_2_title")}</h3>
             <p className="proof-copy">{t("home.proof_2_copy")}</p>
+            <p className="proof-meta">{t("home.proof_2_meta")}</p>
           </article>
           <article className="reveal">
             <p className="proof-kicker">{t("home.proof_3_kicker")}</p>
             <h3 className="proof-title">{t("home.proof_3_title")}</h3>
             <p className="proof-copy">{t("home.proof_3_copy")}</p>
+            <p className="proof-meta">{t("home.proof_3_meta")}</p>
           </article>
         </div>
         <Link href={sitePath(locale, "/sectors")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>

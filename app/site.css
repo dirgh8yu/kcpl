@@ -94,7 +94,7 @@
 .site-root-ne .site-cta, .site-root-ne .button-primary, .site-root-ne .button-ghost,
 .site-root-ne .hero-title, .site-root-ne .section-title, .site-root-ne .cta-title,
 .site-root-ne .proof-lead-title, .site-root-ne .corridor-title, .site-root-ne .proof-title,
-.site-root-ne .site-footer-tagline, .site-root-ne .hero-rail-item, .site-root-ne .site-menu-link,
+.site-root-ne .proof-meta, .site-root-ne .site-footer-tagline, .site-root-ne .hero-rail-item, .site-root-ne .site-menu-link,
 .site-root-ne .hero-rail-value {
   font-family: inherit;
   text-transform: none;
@@ -208,6 +208,7 @@
 .proof-kicker { margin: 0; font-size: 10px; font-weight: 600; color: var(--site-crimson); }
 .proof-lead-title { margin: 10px 0 0; font-size: clamp(19px, 2.1vw, 27px); }
 .proof-copy { margin: 14px 0 0; max-width: 48ch; font-size: 15px; line-height: 1.7; color: var(--site-muted); }
+.proof-meta { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--site-line-soft); font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .06em; line-height: 1.9; text-transform: uppercase; color: var(--site-ink); }
 .proof-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); margin-top: clamp(32px, 4vw, 56px); padding-top: 26px; border-top: 2px solid var(--site-ink); }
 .proof-title { margin: 10px 0 0; font-size: 16px; }
 
@@ -294,6 +295,7 @@
 .contact-link { text-decoration: none; }
 .contact-second { margin-top: 16px; }
 .quote-section { padding-top: 0; border-top: 0; }
+.cargo-types { display: grid; gap: 12px; background: var(--site-canvas); }
 
 
 /* Page imagery ------------------------------------------------------------- */
