@@ -299,7 +299,7 @@ export const hi: Record<SiteTextKey, string> = {
   "contact.phone_label": "टेलीफ़ोन",
   "contact.email_label": "ईमेल",
   "contact.hours_label": "समय",
-  "contact.hours_value": "रविवार से शुक्रवार, कार्यालय समय, नेपाल समय",
+  "contact.hours_value": "रविवार से शुक्रवार, सुबह 9 बजे से शाम 5 बजे तक, नेपाल समय",
   "contact.quote_title": "पूछताछ भेजना",
   "contact.quote_copy": "कोटेशन फ़ॉर्म रूट, मोड, वज़न और माप पूछता है, जो सही कीमत निकालने के लिए न्यूनतम ज़रूरी है।",
   "contact.existing_title": "पहले से चल रहा शिपमेंट",

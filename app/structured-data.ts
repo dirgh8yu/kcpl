@@ -29,9 +29,26 @@ export const organizationNode = {
     "@type": "PostalAddress",
     streetAddress: "Pragatipath Finance Complex, 2nd Floor, Mhepi Road, Sorakhutte",
     addressLocality: "Kathmandu",
+    addressRegion: "Bagmati Province",
+    postalCode: "44600",
     addressCountry: "NP",
   },
   areaServed: { "@type": "Country", name: "Nepal" },
+  /* Coordinates read off KCPL's own Google Business listing, which carries the
+   * same telephone number as this site. hasMap points back at that listing so
+   * the two records can be reconciled rather than drifting. */
+  geo: { "@type": "GeoCoordinates", latitude: 27.7198068, longitude: 85.3096891 },
+  hasMap: "https://maps.google.com/?cid=8562049527884594447",
+  /* Sunday to Friday is the Nepali working week; Saturday is stated by its
+   * absence. Times are explicit because a specification without opens/closes
+   * reads to some parsers as open around the clock. */
+  openingHoursSpecification: {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    opens: "09:00",
+    closes: "17:00",
+  },
+  sameAs: [company.instagram],
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer service",
