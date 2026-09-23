@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { services } from "./components/services-page";
+import { services } from "./services-data";
 import { absoluteUrl, languageAlternates } from "./seo";
 import { siteLocales, sitePath } from "./site-i18n";
 

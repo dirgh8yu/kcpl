@@ -4,10 +4,14 @@ import { siteLocales, sitePath, type SiteLocale } from "./site-i18n";
 export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://kapileshworcargo.com.np").replace(/\/$/, "");
 
 export const siteName = "Kapileshwor Cargo Pvt. Ltd.";
+/* 1200x630 is the size every social scraper crops to, and JPEG keeps the card
+ * under 100KB: the 1.7MB PNG this replaced was above WhatsApp's preview ceiling,
+ * so the link shared in Nepal most often was the one that showed no image. */
 export const socialImage = {
-  url: `${siteUrl}/og.png`,
-  width: 1729,
-  height: 910,
+  url: `${siteUrl}/og.jpg`,
+  width: 1200,
+  height: 630,
+  type: "image/jpeg",
   alt: "KCPL — Moving Nepal. Connecting the World.",
 };
 
