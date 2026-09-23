@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import "../product.css";
 import type { ReactNode } from "react";
 
 const portalFont = Geist({

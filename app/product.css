@@ -1,0 +1,27 @@
+/*
+ * Stylesheets for the staff product: the operations console and the customer
+ * portal. They used to sit in the root layout, which meant every marketing page
+ * downloaded the whole console before it could paint -- 659KB of render-blocking
+ * CSS on a page that uses none of it.
+ *
+ * The order is the order the root layout had, brand-system.css included at the
+ * position it occupied. That position is load-bearing: operations-theme.css and
+ * operations-polish.css set --ops-* tokens that brand-system.css is meant to win
+ * against, so it has to come after them and before the editorial layers.
+ */
+@import "./admin/operations-theme.css";
+@import "./admin/operations-polish.css";
+@import "./admin/operations-hotfix.css";
+@import "./admin/operations-v4-compat.css";
+@import "./brand-system.css";
+@import "./admin/operations-editorial.css";
+@import "./admin/operations-mobile.css";
+@import "./admin/operations-action-hierarchy.css";
+@import "./admin/operations-detail-refinement.css";
+@import "./admin/commercial-v4-compat.css";
+@import "./admin/commercial-detail-refinement.css";
+@import "./admin/admin-design-system.css";
+@import "./admin/shipment-detail-v2.css";
+@import "./admin/admin-typography.css";
+@import "./admin/shipment-detail-hierarchy.css";
+@import "./admin/operations-system.css";

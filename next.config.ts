@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
    * logs a different blocked hostname, add it here.
    */
   allowedDevOrigins: ["*.daytonaproxy01.net"],
+  /* Next serves WebP by default. AVIF is typically 20-30% smaller again on the
+   * freight photography, which is what the hero LCP is waiting on; WebP stays
+   * in the list for anything that cannot take AVIF. */
+  images: { formats: ["image/avif", "image/webp"] },
   async redirects() {
     return [
       { source: "/tracking", destination: "/track", permanent: true },

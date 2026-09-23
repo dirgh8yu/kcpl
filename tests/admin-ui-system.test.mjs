@@ -10,6 +10,7 @@ import test from "node:test";
 const layoutPath = new URL("../app/layout.tsx", import.meta.url);
 const shellPath = new URL("../app/admin/operations-shell.tsx", import.meta.url);
 const uiPath = new URL("../app/admin/operations-ui.tsx", import.meta.url);
+const productCssPath = new URL("../app/product.css", import.meta.url);
 const systemCssPath = new URL("../app/admin/operations-system.css", import.meta.url);
 const navigationPath = new URL("../app/admin/workflow-navigation.ts", import.meta.url);
 const shipmentsPath = new URL("../app/admin/shipments/shipments-workspace.tsx", import.meta.url);
@@ -37,9 +38,17 @@ test("admin shell derives grouped navigation from the canonical workspace regist
 });
 
 test("operations-system.css is the final staff stylesheet and keeps KCPL identity + accessibility", async () => {
-  const [layout, css] = await Promise.all([readFile(layoutPath, "utf8"), readFile(systemCssPath, "utf8")]);
-  const imports = [...layout.matchAll(/import\s+["'](\.\/admin\/[^"']+\.css)["']/g)].map((match) => match[1]);
+  // The staff sheets moved out of the root layout into product.css so the public
+  // pages stop downloading them; the cascade they rely on did not move.
+  const [product, css] = await Promise.all([readFile(productCssPath, "utf8"), readFile(systemCssPath, "utf8")]);
+  const imports = [...product.matchAll(/@import\s+["'](\.\/[^"']+\.css)["']/g)].map((match) => match[1]);
   assert.equal(imports.at(-1), "./admin/operations-system.css", "operations-system.css must load last so it owns the final cascade");
+  assert.ok(
+    imports.indexOf("./brand-system.css") > imports.indexOf("./admin/operations-polish.css"),
+    "brand-system.css must stay after the operations compatibility layers whose tokens it overrides",
+  );
+  const rootLayout = await readFile(layoutPath, "utf8");
+  assert.doesNotMatch(rootLayout, /import\s+["']\.\/admin\/[^"']+\.css["']/, "staff stylesheets must not return to the root layout: every public page pays for them there");
   // Brand anchors.
   assert.match(css, /--admin-crimson:\s*#DC143C/i);
   assert.match(css, /--admin-ink:\s*#101010/i);

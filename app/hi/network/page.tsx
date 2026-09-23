@@ -1,4 +1,4 @@
-import { NetworkPage } from "../../components/interior-pages";
+import { NetworkPage } from "../../components/network-page";
 import { createPageMetadata } from "../../seo";
 import { siteText } from "../../site-i18n";
 import "../../site.css";
