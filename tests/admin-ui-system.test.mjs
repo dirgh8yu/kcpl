@@ -7,7 +7,7 @@ import test from "node:test";
 // safeguards) rather than a specific legacy appearance. Structure, layout and copy
 // are free to evolve as the product is redesigned.
 
-const layoutPath = new URL("../app/layout.tsx", import.meta.url);
+const documentPath = new URL("../app/site-document.tsx", import.meta.url);
 const shellPath = new URL("../app/admin/operations-shell.tsx", import.meta.url);
 const uiPath = new URL("../app/admin/operations-ui.tsx", import.meta.url);
 const productCssPath = new URL("../app/product.css", import.meta.url);
@@ -47,8 +47,8 @@ test("operations-system.css is the final staff stylesheet and keeps KCPL identit
     imports.indexOf("./brand-system.css") > imports.indexOf("./admin/operations-polish.css"),
     "brand-system.css must stay after the operations compatibility layers whose tokens it overrides",
   );
-  const rootLayout = await readFile(layoutPath, "utf8");
-  assert.doesNotMatch(rootLayout, /import\s+["']\.\/admin\/[^"']+\.css["']/, "staff stylesheets must not return to the root layout: every public page pays for them there");
+  const sharedDocument = await readFile(documentPath, "utf8");
+  assert.doesNotMatch(sharedDocument, /import\s+["']\.\/admin\/[^"']+\.css["']/, "staff stylesheets must not return to the shared document: every public page pays for them there");
   // Brand anchors.
   assert.match(css, /--admin-crimson:\s*#DC143C/i);
   assert.match(css, /--admin-ink:\s*#101010/i);

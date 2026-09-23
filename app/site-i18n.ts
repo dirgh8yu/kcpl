@@ -15,8 +15,8 @@
  *      name and the Managing Director's name are never translated.
  */
 
-import { hi } from "./site-i18n-hi";
-import { zh } from "./site-i18n-zh";
+import { hi } from "./site-i18n-hi.ts";
+import { zh } from "./site-i18n-zh.ts";
 
 export const siteLocales = ["en", "ne", "zh", "hi"] as const;
 export type SiteLocale = (typeof siteLocales)[number];
@@ -703,6 +703,12 @@ const ne: Record<SiteTextKey, string> = {
 };
 
 const dictionaries: Record<SiteLocale, Record<SiteTextKey, string>> = { en, ne, zh, hi };
+
+/** The whole dictionary for one language. Used to fingerprint a page's copy for
+ * the sitemap; pages themselves read through siteText and siteTranslator. */
+export function siteDictionary(locale: SiteLocale) {
+  return dictionaries[locale];
+}
 
 export function siteText(locale: SiteLocale, key: SiteTextKey) {
   return dictionaries[locale][key];

@@ -127,9 +127,11 @@ test("the manifest is declared on the portal only", async () => {
   const portalLayout = await readFile(repo("app/portal/layout.tsx"), "utf8");
   assert.match(portalLayout, /manifest: "\/portal\.webmanifest"/);
   // Offering to install the marketing site would be a prompt with nothing
-  // behind it.
-  const rootLayout = await readFile(repo("app/layout.tsx"), "utf8");
-  assert.doesNotMatch(rootLayout, /webmanifest/);
+  // behind it. Each language has its own root layout now, so every public root
+  // and the document they share has to stay clear of the manifest.
+  for (const root of ["app/site-document.tsx", "app/(en)/layout.tsx", "app/ne/layout.tsx", "app/zh/layout.tsx", "app/hi/layout.tsx"]) {
+    assert.doesNotMatch(await readFile(repo(root), "utf8"), /webmanifest/, `${root} must not declare the portal manifest`);
+  }
 });
 
 test("the service worker caches nothing", async () => {
