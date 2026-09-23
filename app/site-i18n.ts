@@ -15,29 +15,34 @@
  *      name and the Managing Director's name are never translated.
  */
 
-export const siteLocales = ["en", "ne"] as const;
+import { zh } from "./site-i18n-zh";
+
+export const siteLocales = ["en", "ne", "zh"] as const;
 export type SiteLocale = (typeof siteLocales)[number];
 
 export const siteLocaleLabels: Record<SiteLocale, string> = {
   en: "English",
   ne: "नेपाली",
+  zh: "中文",
 };
 
 /** BCP 47 for the `lang` attribute, so screen readers and hyphenation follow. */
 export const siteLocaleTags: Record<SiteLocale, string> = {
   en: "en",
   ne: "ne-NP",
+  zh: "zh-Hans",
 };
 
-/** English sits at the root; Nepali is prefixed. One helper owns that rule. */
+/** English sits at the root; every other language is prefixed with its code.
+ * One helper owns that rule, so adding a language does not touch any page. */
 export function sitePath(locale: SiteLocale, path: string) {
   const clean = path === "/" ? "" : path;
-  return locale === "en" ? clean || "/" : `/ne${clean}`;
+  return locale === "en" ? clean || "/" : `/${locale}${clean}`;
 }
 
-/** The same page in the other language, for the switch in the header. */
-export function siteAlternatePath(locale: SiteLocale, path: string) {
-  return sitePath(locale === "en" ? "ne" : "en", path);
+/** The same page in every other language, for the switch in the header. */
+export function siteAlternates(locale: SiteLocale, path: string) {
+  return siteLocales.filter((entry) => entry !== locale).map((entry) => ({ locale: entry, href: sitePath(entry, path), label: siteLocaleLabels[entry], tag: siteLocaleTags[entry] }));
 }
 
 const en = {
@@ -305,6 +310,12 @@ const en = {
   "network.meta_description": "Nepal operations and gateway connectivity across Kathmandu, Birgunj, Nepalgunj, Surkhet, Raxaul and Kolkata, with counterpart agents abroad.",
   "network.title": "Network and coverage",
   "network.intro": "Nepal is landlocked, so a movement is only as good as its weakest handover. These are the points KCPL works through.",
+  "network.map_title": "Explore the network",
+  "network.map_all": "All points",
+  "network.map_operations": "KCPL points",
+  "network.map_note": "Points indicate operating connections, gateways and frequent markets. Country markers are approximate; not every point is a staffed KCPL facility.",
+  "network.map_unavailable": "Map unavailable. The locations below remain available.",
+  "network.map_aria": "Interactive map of KCPL network points",
   "network.places_title": "Where KCPL operates",
   "network.places_note": "Operations and connectivity associated with these points. Not every point is a staffed KCPL facility.",
   "network.gateways_title": "Gateways",
@@ -626,6 +637,12 @@ const ne: Record<SiteTextKey, string> = {
   "network.meta_description": "काठमाडौँ, वीरगन्ज, नेपालगन्ज, सुर्खेत, रक्सौल र कोलकातामा नेपाल सञ्चालन र गेटवे जडान, विदेशमा समकक्षी एजेन्टसहित।",
   "network.title": "सञ्जाल र कभरेज",
   "network.intro": "नेपाल भूपरिवेष्टित छ, त्यसैले मुभमेन्ट आफ्नो सबैभन्दा कमजोर ह्यान्डओभर जत्तिकै हुन्छ। KCPL यी बिन्दुहरू हुँदै काम गर्छ।",
+  "network.map_title": "सञ्जाल हेर्नुहोस्",
+  "network.map_all": "सबै स्थान",
+  "network.map_operations": "KCPL का स्थान",
+  "network.map_note": "बिन्दुहरूले सञ्चालन जडान, गेटवे र नियमित बजार देखाउँछन्। देशका चिन्ह अनुमानित हुन्; हरेक स्थान KCPL को कार्यालय होइन।",
+  "network.map_unavailable": "नक्सा उपलब्ध छैन। तलका स्थानहरू हेर्न सकिन्छ।",
+  "network.map_aria": "KCPL सञ्जालका स्थानहरूको अन्तरक्रियात्मक नक्सा",
   "network.places_title": "KCPL कहाँ सक्रिय छ",
   "network.places_note": "यी बिन्दुसँग सम्बन्धित सञ्चालन र जडान। हरेक बिन्दु KCPL को कर्मचारीसहितको कार्यालय होइन।",
   "network.gateways_title": "गेटवे",
@@ -682,7 +699,7 @@ const ne: Record<SiteTextKey, string> = {
   "track.ask_copy": "शिपमेन्ट, बुकिङ, बिल अफ लेडिङ वा एयरवे बिल सन्दर्भ सञ्चालन डेस्कमा पठाउनुहोस्; हालको अवस्था पुष्टि भएको मितिसहित आउँछ।",
 };
 
-const dictionaries: Record<SiteLocale, Record<SiteTextKey, string>> = { en, ne };
+const dictionaries: Record<SiteLocale, Record<SiteTextKey, string>> = { en, ne, zh };
 
 export function siteText(locale: SiteLocale, key: SiteTextKey) {
   return dictionaries[locale][key];

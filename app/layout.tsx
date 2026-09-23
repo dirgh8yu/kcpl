@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Sans_SC, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
@@ -46,6 +46,7 @@ const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", su
 // The public site sets all metadata, labels and navigation in mono: on an
 // operational board those are readings, not prose.
 const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"] });
+const notoSansSC = Noto_Sans_SC({ variable: "--font-sc", subsets: ["latin"], weight: ["400", "500", "700"] });
 const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"] });
 
 const defaultTitle = "Kapileshwor Cargo | Freight & Logistics in Nepal";
@@ -106,7 +107,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} ${plexMono.variable} antialiased`}>
+      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} ${plexMono.variable} ${notoSansSC.variable} antialiased`}>
         <StructuredData data={organizationSchema}/>
         {children}
         <Suspense fallback={null}><Analytics/></Suspense>

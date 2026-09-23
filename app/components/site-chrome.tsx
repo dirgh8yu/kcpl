@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, List } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, List, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
-import { siteAlternatePath, siteLocaleLabels, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { siteAlternates, siteLocaleLabels, siteLocaleTags, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
 /** Nav is declared once: the header, the mobile disclosure and the footer all read it. */
 const navigation = [
@@ -51,18 +51,23 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
         </nav>
         <div className="site-header-actions">
           <Link href="/portal" className="site-portal-link">{t("chrome.portal")}<ArrowUpRight size={15} aria-hidden="true"/></Link>
-          {/* A plain link, not a client-side toggle: the other language is a different
-            * URL, and search engines and a shared link should both land on it. */}
-          <Link href={siteAlternatePath(locale, path)} className="site-lang" hrefLang={locale === "en" ? "ne" : "en"} lang={locale === "en" ? "ne" : "en"}>
-            {siteLocaleLabels[locale === "en" ? "ne" : "en"]}
-          </Link>
+          {/* Three languages now, so the toggle becomes a list. A native
+            * disclosure again: it is a handful of links, not an app. */}
+          <details className="site-lang">
+            <summary className="site-lang-button">{siteLocaleLabels[locale]}</summary>
+            <div className="site-lang-panel">
+              {siteAlternates(locale, path).map((entry) => (
+                <Link key={entry.locale} href={entry.href} className="site-lang-option" hrefLang={entry.tag} lang={entry.tag}>{entry.label}</Link>
+              ))}
+            </div>
+          </details>
           <Link href={sitePath(locale, "/quote")} className="site-cta">{t("chrome.quote")}</Link>
         </div>
         {/* A native disclosure rather than a client component: it is keyboard
           * accessible on its own, ships no JavaScript, and a navigation renders
           * the header again already closed. */}
         <details className="site-menu">
-          <summary className="site-menu-button"><List size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
+          <summary className="site-menu-button" aria-label={t("chrome.menu")}><List className="site-menu-open-icon" size={19} aria-hidden="true"/><X className="site-menu-close-icon" size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
           <div className="site-menu-panel">
             {navigation.map((item) => (
               <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
@@ -118,10 +123,14 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
   );
 }
 
+/* Written out rather than interpolated: the dead-CSS audit reads class literals
+ * from source, and a built-up name is invisible to it. */
+const localeClass: Record<SiteLocale, string> = { en: "", ne: "site-root-ne", zh: "site-root-zh" };
+
 /** Every marketing page is this sandwich, so the chrome can never drift between them. */
 export function SiteShell({ locale, path, children }: { locale: SiteLocale; path: string; children: ReactNode }) {
   return (
-    <div className={`site-root${locale === "ne" ? " site-root-ne" : ""}`} lang={locale === "ne" ? "ne-NP" : undefined}>
+    <div className={`site-root ${localeClass[locale]}`.trim()} lang={locale === "en" ? undefined : siteLocaleTags[locale]}>
       <SiteHeader locale={locale} path={path}/>
       <main id="main">{children}</main>
       <SiteFooter locale={locale} path={path}/>
