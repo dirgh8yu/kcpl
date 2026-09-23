@@ -72,7 +72,9 @@ test("Overview preserves server authority, branch scope and return context with 
   const notes = await readFile(notesPath, "utf8");
 
   assert.match(overview, /shipmentNeedsAttention/);
-  assert.match(overview, /compareShipmentPriority/);
+  // Presentation order is the impact ranking (work-queue-impact) or the legacy
+  // severity sort; both come from the shared queue policy, never invented here.
+  assert.match(overview, /compareShipmentPriority|compareWorkQueueImpact/);
   assert.match(overview, /shipmentNextAction/);
   assert.match(overview, /returnTo/);
   assert.match(overview, /router\.refresh/);

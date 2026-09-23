@@ -7,13 +7,13 @@ export function AdminLoginPage() {
   return (
     <main className="kcpl-admin-shell min-h-screen bg-[var(--admin-canvas)] text-[var(--admin-ink)]">
       <div className="grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
-        <section className="relative hidden overflow-hidden border-r border-black/10 bg-[var(--admin-ink)] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
+        <section className="relative hidden overflow-hidden border-r border-black/10 bg-[var(--admin-ink)] p-10 text-[var(--admin-on-dark)] lg:flex lg:flex-col lg:justify-between xl:p-14">
           <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,.09)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.09)_1px,transparent_1px)] [background-size:44px_44px]" />
           <div className="absolute -right-24 top-20 h-72 w-72 rounded-full bg-[var(--admin-crimson)]/25 blur-3xl" />
           <div className="absolute -bottom-20 left-16 h-72 w-72 rounded-full bg-[var(--admin-crimson)]/10 blur-3xl" />
 
           <div className="relative z-10 flex items-center gap-4">
-            <div className="grid h-14 w-14 place-items-center rounded-[var(--app-radius)] bg-white p-3 shadow-[0_16px_38px_rgba(0,0,0,0.28)]">
+            <div className="grid h-14 w-14 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-surface)] p-3 shadow-[0_16px_38px_rgba(0,0,0,0.28)]">
               <Image src="/images/brand/kcpl-gateway-k.svg" alt="KCPL Gateway K" width={36} height={36} priority />
             </div>
             <div>
@@ -41,7 +41,7 @@ export function AdminLoginPage() {
         <section className="flex min-h-screen items-center justify-center px-6 py-10 sm:px-10 lg:px-12 xl:px-16">
           <div className="w-full max-w-[480px]">
             <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="grid h-11 w-11 place-items-center rounded-[var(--app-radius)] bg-white p-2.5 shadow-[0_10px_28px_rgba(16,16,16,0.08)] ring-1 ring-black/5">
+              <div className="grid h-11 w-11 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-surface)] p-2.5 shadow-[0_10px_28px_rgba(16,16,16,0.08)] ring-1 ring-black/5">
                 <Image src="/images/brand/kcpl-gateway-k.svg" alt="KCPL Gateway K" width={28} height={28} priority />
               </div>
               <div>
@@ -50,7 +50,7 @@ export function AdminLoginPage() {
               </div>
             </div>
 
-            <div className="rounded-[var(--app-radius)] border border-black/[0.08] bg-white p-6 shadow-[0_24px_70px_rgba(16,16,16,0.08)] sm:p-8 xl:p-10">
+            <div className="rounded-[var(--app-radius)] border border-black/[0.08] bg-[var(--admin-surface)] p-6 shadow-[0_24px_70px_rgba(16,16,16,0.08)] sm:p-8 xl:p-10">
               <div className="flex items-center justify-between gap-6">
                 <span className="inline-flex items-center gap-2 rounded-full bg-[var(--admin-canvas)] px-3 py-1.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                   <LockKeyhole size={12} /> Private access

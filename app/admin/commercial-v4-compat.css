@@ -200,35 +200,6 @@
   box-shadow: 0 5px 14px rgba(220,20,60,.14);
 }
 
-/* Filters and tabs stay quiet so actions remain obvious. */
-.kcpl-admin-shell[data-commercial-context] .ops-filter-pills {
-  gap: 3px;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-filter-pill {
-  min-height: 30px;
-  border: 0;
-  border-bottom: 1px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--commercial-muted);
-  font-family: var(--font-manrope), sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  box-shadow: none;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-filter-pill:hover {
-  color: var(--commercial-ink);
-  background: var(--commercial-soft);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-filter-pill[data-active] {
-  border-bottom-color: var(--commercial-crimson);
-  background: transparent;
-  color: var(--commercial-ink);
-  font-weight: 700;
-}
 
 .kcpl-admin-shell[data-commercial-context] .ops-segmented {
   gap: 22px;
@@ -335,38 +306,6 @@
   line-height: 1.4;
 }
 
-/* Enquiry + customer split workspaces */
-.kcpl-admin-shell[data-commercial-context] .ops-split {
-  min-width: 0;
-  background: var(--commercial-white);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-split-list {
-  border-color: var(--commercial-line);
-  background: var(--commercial-canvas);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-split-detail {
-  min-width: 0;
-  background: var(--commercial-white);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-record-row {
-  position: relative;
-  border-color: var(--commercial-line);
-  background: var(--commercial-white);
-  color: var(--commercial-ink);
-  transition: background-color 120ms ease;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-record-row:hover {
-  background: var(--commercial-canvas);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-record-row[data-selected] {
-  background: var(--commercial-soft);
-  box-shadow: inset 3px 0 0 var(--commercial-crimson);
-}
 
 .kcpl-admin-shell[data-commercial-context] .ops-route,
 .kcpl-admin-shell[data-commercial-context] .ops-record-row strong {
@@ -612,19 +551,6 @@
   }
 
 
-  .kcpl-admin-shell[data-commercial-context] .ops-split {
-    display: block;
-  }
-
-  .kcpl-admin-shell[data-commercial-context] .ops-split-list {
-    max-height: 46vh;
-    border-right: 0;
-    border-bottom: 1px solid var(--commercial-ink);
-  }
-
-  .kcpl-admin-shell[data-commercial-context] .ops-split-detail {
-    overflow: visible;
-  }
 
   .kcpl-admin-shell[data-commercial-context] header[class*="sticky"] {
     position: relative;

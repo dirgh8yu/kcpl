@@ -1,0 +1,73 @@
+.ops-arrange-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.ops-arrange-grid[data-arrange-workspace="shipments"],
+.ops-arrange-grid[data-arrange-workspace="customs"],
+.ops-arrange-grid[data-arrange-workspace="delivery"],
+.ops-arrange-grid[data-arrange-workspace="freight-documents"],
+.ops-arrange-grid[data-arrange-workspace="pickups"],
+.ops-arrange-grid[data-arrange-workspace="alerts"],
+.ops-arrange-grid[data-arrange-workspace="finance"],
+.ops-arrange-grid[data-arrange-workspace="payables"] { grid-template-columns: minmax(0, 1fr); }
+.ops-arrange-item { position: relative; min-width: 0; }
+.ops-arrange-item[data-hidden] { display: none; }
+
+.ops-arrange-item[data-dragging] { opacity: 0.5; }
+.ops-arrange-item[data-dragging] .ops-arrange-handle { opacity: 1; cursor: grabbing; }
+
+/* Drop indicator: a thin crimson needle at the insertion edge. The target
+   brightens it on hover so the user knows the drop will land there. */
+.ops-arrange-item[data-drop-target]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--admin-crimson, #dc143c);
+  opacity: 0.55;
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.ops-arrange-item[data-drop-target]:hover::before { opacity: 1; }
+.ops-arrange-item[data-drop-target][data-drop-before="true"]::before { top: -8px; }
+.ops-arrange-item[data-drop-target][data-drop-before="false"]::before { bottom: -8px; }
+
+.ops-arrange-handle {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--overview-faint, var(--admin-faint, #98a2b3));
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+.ops-arrange-item:hover .ops-arrange-handle,
+.ops-arrange-handle:focus-visible { opacity: 1; }
+.ops-arrange-handle:hover { background: var(--admin-surface-soft, #f2f4f7); color: var(--admin-ink, #101828); }
+.ops-arrange-handle:active { cursor: grabbing; }
+.ops-arrange-handle:focus-visible { outline: 2px solid var(--app-focus, #2e90fa); outline-offset: 2px; }
+.ops-arrange-item[data-dragging] .ops-arrange-handle { opacity: 1; cursor: grabbing; }
+[data-arranging] .ops-arrange-item { transition: none; }
+
+.ops-arrange-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--overview-muted, var(--admin-muted, #667085));
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .ops-arrange-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-arrange-handle,
+  .ops-arrange-item[data-drop-target]::before { transition: none; }
+}

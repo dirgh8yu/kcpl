@@ -6,6 +6,18 @@ import { CheckCircle2, Pencil, ShieldAlert, X } from "lucide-react";
 import { OpsBadge, OpsButton, OpsField, OpsNotice } from "../operations-ui";
 import type { CustomsAgentOption } from "./customs-clearance";
 import { customsClearanceStatuses, customsClearanceStatusLabels, type CustomsClearanceStatus } from "./customs-policy";
+
+/** The single clearance-status → badge-tone mapping for the customs surfaces.
+ * Lives here (next to the editor that persists the status) and is imported by
+ * the workspace so the inspector, the register rows and the editor can never
+ * disagree about what a clearance state looks like. */
+export function clearanceTone(status: CustomsClearanceStatus): "neutral" | "info" | "warning" | "danger" | "success" {
+  if (status === "released") return "success";
+  if (status === "held") return "danger";
+  if (status === "lodged") return "info";
+  if (status === "preparing") return "warning";
+  return "neutral";
+}
 import type { CustomsDeskRow } from "./customs-data.server";
 
 function timeLabel(value: string | null) {
@@ -16,14 +28,6 @@ function timeLabel(value: string | null) {
     timeStyle: "short",
     timeZone: "Asia/Kathmandu",
   }).format(date) + " NPT";
-}
-
-function clearanceTone(status: CustomsClearanceStatus): "neutral" | "info" | "warning" | "danger" | "success" {
-  if (status === "released") return "success";
-  if (status === "held") return "danger";
-  if (status === "lodged") return "info";
-  if (status === "preparing") return "warning";
-  return "neutral";
 }
 
 export function CustomsClearanceEditor({ row, agents }: { row: CustomsDeskRow; agents: CustomsAgentOption[] }) {

@@ -56,3 +56,13 @@ yarn-error.log*
 
 # Graphify knowledge graph output (local only).
 /graphify-out/
+
+# Generated MapLibre worker files (copied from the installed package at build time).
+/public/maplibre/
+
+# Agent scratch output and a stray local copy of the global skills folder.
+/.freebuff/
+/skills/
+/data/
+
+/.graphifyignore

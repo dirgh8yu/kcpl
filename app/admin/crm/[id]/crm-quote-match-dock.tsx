@@ -54,18 +54,18 @@ export function CrmQuoteMatchDock({
 
   return (
     <div className="fixed bottom-5 right-5 z-[80] w-[min(430px,calc(100vw-2.5rem))] text-[var(--admin-ink)]">
-      {open ? <div className="mb-3 max-h-[70vh] overflow-y-auto rounded-[var(--app-radius)] border border-black/10 bg-white shadow-2xl">
-        <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-black/10 bg-[var(--admin-crimson)] p-5 text-white">
+      {open ? <div className="mb-3 max-h-[70vh] overflow-y-auto rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-2xl">
+        <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-black/10 bg-[var(--admin-crimson)] p-5 text-[var(--admin-on-crimson)]">
           <div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.16em] text-[#d4ad62]">Quote relationship</p><h3 className="mt-1 text-base font-semibold">CRM enquiry links</h3></div>
           <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-[var(--app-radius)] border border-white/15 text-white/60 hover:bg-white/10" aria-label="Close quote links"><X size={14} /></button>
         </div>
         <div className="p-4">
           {notice ? <div className="mb-3 rounded-[var(--app-radius)] bg-[#fff8e8] p-3 text-xs font-bold text-[#6d5427]">{notice}</div> : null}
-          {suggested.length ? <section><p className="mb-2 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-amber-700">Needs confirmation · {suggested.length}</p><div className="space-y-2">{suggested.map((item) => <QuoteRow key={item.reference} item={item} action={<button type="button" disabled={busy === item.reference} onClick={() => confirm(item)} className="flex shrink-0 items-center gap-1 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-2.5 py-2 text-[length:var(--app-label-size)] font-semibold text-white disabled:opacity-50"><Link2 size={11} />{busy === item.reference ? "Linking" : "Confirm"}</button>} />)}</div></section> : null}
+          {suggested.length ? <section><p className="mb-2 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-amber-700">Needs confirmation · {suggested.length}</p><div className="space-y-2">{suggested.map((item) => <QuoteRow key={item.reference} item={item} action={<button type="button" disabled={busy === item.reference} onClick={() => confirm(item)} className="flex shrink-0 items-center gap-1 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-2.5 py-2 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-on-crimson)] disabled:opacity-50"><Link2 size={11} />{busy === item.reference ? "Linking" : "Confirm"}</button>} />)}</div></section> : null}
           {linked.length ? <section className={suggested.length ? "mt-5" : ""}><p className="mb-2 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-emerald-700">Linked quotes · {linked.length}</p><div className="space-y-2">{linked.slice(0, 12).map((item) => <QuoteRow key={item.reference} item={item} action={<span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700"><Check size={13} /></span>} />)}</div></section> : null}
         </div>
       </div> : null}
-      <button type="button" onClick={() => setOpen((value) => !value)} className="ml-auto flex items-center gap-3 rounded-[var(--app-radius)] bg-[#0b1724] px-4 py-3 text-left text-white shadow-xl">
+      <button type="button" onClick={() => setOpen((value) => !value)} className="ml-auto flex items-center gap-3 rounded-[var(--app-radius)] bg-[var(--admin-navy)] px-4 py-3 text-left text-[var(--admin-on-dark)] shadow-xl">
         <span className="grid h-9 w-9 place-items-center rounded-[var(--app-radius)] bg-[#d4ad62] text-[var(--admin-ink)]"><Link2 size={16} /></span>
         <span><span className="block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-white/45">Customer enquiries</span><strong className="mt-0.5 block text-xs">{suggested.length ? `${suggested.length} match${suggested.length === 1 ? "" : "es"} to confirm` : `${linked.length} linked quote${linked.length === 1 ? "" : "s"}`}</strong></span>
       </button>

@@ -25,20 +25,23 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   return (
     <SiteShell locale={locale} path="/services">
-      <section className="section page-head">
+      <section className="section page-head services-overview-head">
         <h1 className="section-title">{t("services.title")}</h1>
         <p className="section-intro">{t("services.intro")}</p>
       </section>
       <section className="section service-index reveal-group">
-        {services.map((service) => (
-          <article key={service.slug} className="service-row reveal">
+        {services.map((service, index) => (
+          <Link key={service.slug} href={sitePath(locale, `/services/${service.slug}`)} className="service-row reveal">
+            <span className="service-row-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            <div className="service-row-body">
+              <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
+              <p className="service-row-copy">{t(text(service.key, "summary"))}</p>
+            </div>
             {/* Illustrative freight photography, not KCPL's own cargo, so it carries
               * no caption and is marked decorative. */}
-            <figure className="service-figure"><Image src={service.image} alt="" width={900} height={600} sizes="(max-width: 860px) 100vw, 50vw" className="service-photo"/></figure>
-            <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
-            <p className="service-row-copy">{t(text(service.key, "summary"))}</p>
-            <Link href={sitePath(locale, `/services/${service.slug}`)} className="section-link">{t("services.detail_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-          </article>
+            <figure className="service-figure"><Image src={service.image} alt="" width={480} height={320} sizes="(max-width: 700px) 100vw, 220px" className={`service-photo service-photo-${service.key}`}/></figure>
+            <span className="service-row-arrow" aria-hidden="true"><ArrowRight size={20} weight="regular"/></span>
+          </Link>
         ))}
       </section>
       <section className="section cargo-types">
@@ -65,12 +68,12 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
   return (
     <SiteShell locale={locale} path={`/services/${slug}`}>
       <section className="service-banner">
-        <Image src={service.image} alt="" fill sizes="100vw" priority className="service-banner-image"/>
-      </section>
-      <section className="section page-head">
-        <p className="eyebrow">{t("services.title")}</p>
-        <h1 className="section-title">{t(text(service.key, "title"))}</h1>
-        <p className="section-intro">{t(text(service.key, "summary"))}</p>
+        <Image src={service.image} alt="" fill sizes="100vw" priority className={`service-banner-image service-photo-${service.key}`}/>
+        <div className="service-banner-copy">
+          <p className="eyebrow">{t("services.title")}</p>
+          <h1 className="section-title">{t(text(service.key, "title"))}</h1>
+          <p className="section-intro">{t(text(service.key, "summary"))}</p>
+        </div>
       </section>
       <section className="section service-detail">
         <div className="service-detail-main">

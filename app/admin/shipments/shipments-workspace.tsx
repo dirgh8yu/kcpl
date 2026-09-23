@@ -2,14 +2,25 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, GripVertical, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, Upload, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { ShipmentActivityItem, ShipmentActivityTimeline } from "../shipment-activity";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
-import type { CommandCentreData, CommandCentreJob } from "../command-centre/command-centre-data";
-import { compareShipmentPriority, shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
+import type { CommandCentreData, CommandCentreJob, CommandCentreStaffLoad } from "../command-centre/command-centre-data";
+import { shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
+import { compareWorkQueueImpact, type ReceivableExposure } from "../command-centre/work-queue-impact";
+import { suggestOwner, laneKey, type OwnerCandidateEvidence, type OwnerSuggestion } from "../command-centre/owner-recommender";
 import { useFreshnessLabel, useRegisterSnapshot } from "../use-register-poll";
 import { useWorkspaceQuery } from "../use-workspace-query";
+import { ArrangeableGrid } from "../arrangeable-grid";
+import "../arrangeable-grid.css";
+import {
+  presetForStateIn,
+  savedLayoutForState,
+  WORKSPACE_PRESETS,
+} from "../operations-arrangeable";
+import { useStaffArrangement } from "../use-staff-arrangement";
+import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, useAdminPortalContainer } from "../operations-ui";
 import {
   ModeIcon,
@@ -47,6 +58,9 @@ const VIEW_OPTIONS: Array<{ value: RegisterView; label: string; icon: typeof Tab
   { value: "map", label: "Map", icon: MapIcon },
 ];
 
+type ShipmentSectionId = "rail" | "register";
+const SHIPMENT_SECTION_LABELS: Record<ShipmentSectionId, string> = { rail: "Summary rail", register: "Shipment register" };
+
 function formatNepalClock(value: string) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { timeZone: "Asia/Kathmandu", hour: "numeric", minute: "2-digit" }).format(parsed);
@@ -56,7 +70,7 @@ function modeOptions(jobs: CommandCentreJob[]) {
   return [...new Set(jobs.map((job) => job.mode.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-export function ShipmentsWorkspace({ data: initialData, canStartShipment = false }: { data: CommandCentreData; canStartShipment?: boolean }) {
+export function ShipmentsWorkspace({ data: initialData, canStartShipment = false, exposureByCustomer, laneCompletionsByStaff }: { data: CommandCentreData; canStartShipment?: boolean; exposureByCustomer: Map<string, ReceivableExposure>; laneCompletionsByStaff: Map<string, Map<string, OwnerCandidateEvidence>>; }) {
   const { params, search, update } = useWorkspaceQuery();
   // Quiet 60s live refresh shared with the Overview pulse and the Customs and
   // Delivery strips; changes power the toast below.
@@ -127,6 +141,13 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
     }
     return refs;
   }, [data.jobs, data.generated_at]);
+  // The register's priority sort shares the Overview's impact ranking: same
+  // severity ladder, same exposure/SLA/dwell multipliers, computed against the
+  // snapshot's operational date so both surfaces agree.
+  const impactContext = useMemo(
+    () => ({ exposureByCustomer, operationalDate: data.operational_date, now: new Date(data.generated_at) }),
+    [exposureByCustomer, data.operational_date, data.generated_at],
+  );
   const filtered = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return data.jobs.filter((job) => {
@@ -153,9 +174,9 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
       ].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     }).sort(sort === "priority"
-      ? compareShipmentPriority
+      ? (a, b) => compareWorkQueueImpact(a, b, impactContext)
       : (a, b) => (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0) || a.reference.localeCompare(b.reference));
-  }, [attention, branch, data.jobs, live, liveActivityRefs, mode, overdue, ownerFilter, query, sort, status]);
+  }, [attention, branch, data.jobs, impactContext, live, liveActivityRefs, mode, overdue, ownerFilter, query, sort, status]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
@@ -195,6 +216,42 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
 
   const handleExport = useCallback(() => exportShipmentsCsv(filtered), [filtered]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Per-staff workspace layout: the summary rail and the register are arrangeable
+  // sections persisted server-side (same primitive as the Overview).
+  const {
+    state: arrangement,
+    status: arrangeStatus,
+    applyState: setArrangement,
+    toggleHidden,
+    moveSectionToward,
+    resetArrangement,
+    saved,
+    saveCurrentAs,
+    deleteSaved,
+  } = useStaffArrangement("shipments");
+  const [arranging, setArranging] = useState(false);
+  const [arrangeMenu, setArrangeMenu] = useState(false);
+  const activePreset = presetForStateIn("shipments", arrangement);
+  const savedMatch = savedLayoutForState(saved, arrangement);
+  const onSectionKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>, id: ShipmentSectionId) => {
+      if (!arranging || event.defaultPrevented) return;
+      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+        // Never steal arrows from text editing inside a section.
+        const target = event.target as HTMLElement | null;
+        if (target && target.closest("input, textarea, select")) return;
+        event.preventDefault();
+        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
+        return;
+      }
+      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
+        event.preventDefault();
+        toggleHidden(id);
+      }
+    },
+    [arranging, moveSectionToward, toggleHidden],
+  );
 
   // "Refreshed Xs ago": ticks once a minute alongside the poll so staff can
   // trust the register is live. Turns quiet-stale past 90s (hidden tab, or a
@@ -240,13 +297,25 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           below is the actual working surface, so the summary stays quiet. Segments
           reuse the existing status scopes — no new filtering logic. */}
       <div className="px-4 pt-3 md:px-6">
-        <div className="shipments-kpi-rail" role="list" aria-label="Register volume summary">
-          <RailMetric label="Total" value={overview.total}/>
-          <RailMetric label="In transit" value={overview.inTransit} tone="info"/>
-          <RailMetric label="Delivery" value={overview.outForDelivery} tone="success"/>
-          <RailMetric label="Customs" value={overview.customs} tone="warning"/>
-          <RailMetric label="Attention" value={overview.attention} tone={overview.attention ? "danger" : "neutral"}/>
-        </div>
+        <CustomiseRow
+          arranging={arranging}
+          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
+          arrangeMenu={arrangeMenu}
+          onToggleMenu={() => setArrangeMenu(v => !v)}
+          arrangement={arrangement}
+          presets={WORKSPACE_PRESETS.shipments}
+          activePreset={activePreset}
+          applyPreset={preset => setArrangement(preset.layout)}
+          onReset={resetArrangement}
+          status={arrangeStatus}
+          sectionLabels={SHIPMENT_SECTION_LABELS}
+          saved={saved}
+          onSaveCurrent={saveCurrentAs}
+          onDeleteSaved={deleteSaved}
+          savedMatchId={savedMatch?.id ?? null}
+          onApplySaved={(layout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
+        />
+        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={SHIPMENT_SECTION_LABELS}/>
       </div>
 
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
@@ -371,6 +440,30 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           </div>
         ) : null}
 
+        <ArrangeableGrid
+          workspace="shipments"
+          state={arrangement}
+          onChange={setArrangement}
+          arranging={arranging}
+        >
+          {(id: ShipmentSectionId, { handleProps, hidden }) => {
+            if (hidden) return null;
+            const handle = (
+              <button
+                type="button"
+                className="ops-arrange-handle"
+                {...handleProps}
+                aria-label={`Move ${SHIPMENT_SECTION_LABELS[id]}`}
+                tabIndex={arranging ? 0 : -1}
+                onKeyDown={(event) => onSectionKeyDown(event, id)}
+              >
+                <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
+              </button>
+            );
+            if (id === "register") {
+              return (
+            <>
+              {handle}
         {!filtered.length ? (
           <section className="ops-surface p-4" aria-label="Shipment register">
             <OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
@@ -441,9 +534,25 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
             <div className="ops-pagination-actions"><OpsButton size="sm" disabled={page <= 1} onClick={() => update({ page: String(page - 1), selected: null }, "push")}>Previous</OpsButton><span>Page {page} of {pageCount}</span><OpsButton size="sm" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1), selected: null }, "push")}>Next</OpsButton></div>
           </div>
         ) : null}
+            </>
+          );
+            }
+            // id === "rail": the summary rail section.
+            return (
+              <section className="shipments-kpi-rail" role="list" aria-label="Register volume summary" style={{ position: "relative" }}>
+                {handle}
+                <RailMetric label="Total" value={overview.total}/>
+                <RailMetric label="In transit" value={overview.inTransit} tone="info"/>
+                <RailMetric label="Delivery" value={overview.outForDelivery} tone="success"/>
+                <RailMetric label="Customs" value={overview.customs} tone="warning"/>
+                <RailMetric label="Attention" value={overview.attention} tone={overview.attention ? "danger" : "neutral"}/>
+              </section>
+            );
+          }}
+        </ArrangeableGrid>
       </div>
 
-      {selected ? <ShipmentPanel job={selected} returnTo={returnTo} container={portalContainer} onClose={() => setSelectedReference(null)} highlightId={activityHighlightId} update={update}/> : null}
+      {selected ? <ShipmentPanel job={selected} returnTo={returnTo} container={portalContainer} onClose={() => setSelectedReference(null)} highlightId={activityHighlightId} update={update} generatedAt={data.generated_at} laneCompletionsByStaff={laneCompletionsByStaff} staffDirectory={data.staff_load}/> : null}
     </OpsPage>
   );
 }
@@ -457,7 +566,7 @@ function RailMetric({ label, value, tone = "neutral" }: { label: string; value: 
  );
 }
 
-function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update }: { job: CommandCentreJob; returnTo: string; container: HTMLElement | null; onClose: () => void; highlightId: string | null; update: (values: Record<string, string | null>) => void }) {
+function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update, generatedAt, laneCompletionsByStaff, staffDirectory }: { job: CommandCentreJob; returnTo: string; container: HTMLElement | null; onClose: () => void; highlightId: string | null; update: (values: Record<string, string | null>) => void; generatedAt: string; laneCompletionsByStaff: Map<string, Map<string, OwnerCandidateEvidence>>; staffDirectory: CommandCentreStaffLoad[] }) {
   const action = shipmentNextAction(job);
   const jobOwner = owner(job);
   const openException = job.status === "exception";
@@ -547,7 +656,9 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update 
                 <ReadinessRow label="Owner" value={jobOwner} warning={jobOwner === "Unassigned"}/>
               </section>
 
-              <ShipmentInspectorActivity reference={job.reference} highlightId={highlightId} update={update}/>
+              <SuggestedOwners job={job} staffDirectory={staffDirectory} laneCompletionsByStaff={laneCompletionsByStaff}/>
+
+              <ShipmentInspectorActivity reference={job.reference} highlightId={highlightId} update={update} generatedAt={generatedAt}/>
             </div>
           </div>
 
@@ -561,6 +672,48 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update 
       </OpsDialog.Portal>
     </OpsDialog.Root>
   );
+}
+
+/**
+ * Owner suggestions for an unassigned shipment, drawn from live workload and
+ * completed lane history. The recommender is pure and the data arrives with
+ * the snapshot; nothing is invented and nothing is auto-assigned — the
+ * operator opens the Job File and decides.
+ */
+function SuggestedOwners({ job, staffDirectory, laneCompletionsByStaff }: { job: CommandCentreJob; staffDirectory: CommandCentreStaffLoad[]; laneCompletionsByStaff: Map<string, Map<string, OwnerCandidateEvidence>> }) {
+  const isUnassigned = !job.assigned_to_uid && !job.assigned_to_name && !job.assigned_to_email;
+  if (!isUnassigned) return null;
+  const suggestion: OwnerSuggestion = suggestOwner({
+    job,
+    candidates: staffDirectory,
+    laneEvidence: laneEvidenceFor(laneCompletionsByStaff, laneKey(job.origin, job.destination)),
+  });
+  if (!suggestion.available) {
+    return <section className="shipment-sheet-section"><h3>Suggested owners</h3><p className="text-sm text-[var(--admin-muted)]">{suggestion.reason}</p></section>;
+  }
+  return (
+    <section className="shipment-sheet-section">
+      <h3>Suggested owners</h3>
+      <ol className="shipments-owner-suggest">
+        {suggestion.recommendations.map((candidate, index) => (
+          <li key={candidate.email || candidate.name} data-lead={index === 0 || undefined}>
+            <span className="shipments-owner-suggest-name">{candidate.name}</span>
+            <span className="shipments-owner-suggest-reason">{candidate.reason}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="shipments-owner-suggest-note">Ranked by current workload and completed shipments on {job.origin} → {job.destination}. Assign the owner in the Job File.</p>
+    </section>
+  );
+}
+
+function laneEvidenceFor(map: Map<string, Map<string, OwnerCandidateEvidence>>, lane: string): Map<string, OwnerCandidateEvidence> {
+  const evidence = new Map<string, OwnerCandidateEvidence>();
+  for (const [staffKey, lanes] of map) {
+    const hit = lanes.get(lane);
+    if (hit) evidence.set(staffKey, hit);
+  }
+  return evidence;
 }
 
 function ReadinessRow({ label, value, warning = false, href }: { label: string; value: string; warning?: boolean; href?: string }) {
@@ -596,7 +749,7 @@ type InspectorActivityState =
  * shows at most a few quiet rows, and never blocks the drawer on failure.
  * Rows expand in place to reveal the entry's detail, actor and exact NPT time.
  * `highlightId` (the `a=` deep link) expands and marks that entry. */
-function ShipmentInspectorActivity({ reference, highlightId, update }: { reference: string; highlightId: string | null; update: (values: Record<string, string | null>) => void }) {
+function ShipmentInspectorActivity({ reference, highlightId, update, generatedAt }: { reference: string; highlightId: string | null; update: (values: Record<string, string | null>) => void; generatedAt: string }) {
   const [state, setState] = useState<InspectorActivityState>({ kind: "loading" });
   const [expandedId, setExpandedId] = useState<string | null>(highlightId);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -694,7 +847,7 @@ function ShipmentInspectorActivity({ reference, highlightId, update }: { referen
                     >
                       <span className="shipment-sheet-activity-dot" aria-hidden="true"/>
                       <span className="shipment-sheet-activity-title">{item.title}</span>
-                      <span className="shipment-sheet-activity-age">{relativeAge(item.occurred_at, item.occurred_at)}</span>
+                      <span className="shipment-sheet-activity-age">{relativeAge(item.occurred_at, generatedAt)}</span>
                       {hasMore ? <ChevronDown size={12} strokeWidth={1.75} className="shipment-sheet-activity-chevron" aria-hidden="true"/> : null}
                     </button>
                     {expanded ? (

@@ -1,32 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bell, Check, CheckCheck, Activity, ChevronDown, ChevronRight, Mail, Settings2, X } from "lucide-react";
+import { ArrowRight, Bell, Check, CheckCheck, ChevronDown, ChevronRight, Settings2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OpsButton } from "./operations-ui";
 import {
-  notificationCategories,
   notificationCategoryLabels,
-  notificationEmailModeLabels,
-  notificationEmailModes,
-  transitionDeskLabels,
-  transitionDesks,
-  type NotificationPreferences,
   type OperationsNotification,
-  type TransitionDesk,
 } from "./notifications/notification-data";
-
-const transitionDeskHints: Record<TransitionDesk, string> = {
-  register: "Every register status change",
-  customs: "Shipments entering or leaving customs clearance",
-  delivery: "Shipments going out for delivery or completing",
-};
 
 type NotificationResponse = {
   notifications: OperationsNotification[];
   unread_count: number;
-  preferences: NotificationPreferences;
-  email_configured: boolean;
 };
 
 function timeLabel(value: string) {
@@ -60,9 +45,7 @@ export function OperationsNotificationCentre() {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [data, setData] = useState<NotificationResponse | null>(null);
-  const [draft, setDraft] = useState<NotificationPreferences | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ring, setRing] = useState(false);
@@ -78,7 +61,6 @@ export function OperationsNotificationCentre() {
       const result = await response.json() as NotificationResponse & { error?: string };
       if (!response.ok) throw new Error(result.error || "Could not load notifications.");
       setData(result);
-      setDraft((current) => current ?? result.preferences);
       setError("");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load notifications.");
@@ -97,11 +79,10 @@ export function OperationsNotificationCentre() {
     function outside(event: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setOpen(false);
-        setSettingsOpen(false);
       }
     }
     function escape(event: KeyboardEvent) {
-      if (event.key === "Escape") { setOpen(false); setSettingsOpen(false); }
+      if (event.key === "Escape") { setOpen(false); }
     }
     document.addEventListener("mousedown", outside);
     document.addEventListener("keydown", escape);
@@ -161,7 +142,6 @@ export function OperationsNotificationCentre() {
       // Session-local bridge entry: nothing to mark read server-side.
       setLiveAlert(null);
       setOpen(false);
-      setSettingsOpen(false);
       router.push(item.action_path || "/admin/alerts");
       return;
     }
@@ -169,7 +149,6 @@ export function OperationsNotificationCentre() {
       try { await post({ action: "mark_read", notificationId: item.id }); } catch { /* Navigation is still useful if read tracking fails. */ }
     }
     setOpen(false);
-    setSettingsOpen(false);
     router.push(item.action_path || "/admin/alerts");
     void load();
   }
@@ -184,24 +163,12 @@ export function OperationsNotificationCentre() {
     } finally { setBusy(false); }
   }
 
-  async function savePreferences() {
-    if (!draft) return;
-    setBusy(true);
-    try {
-      await post({ action: "save_preferences", emailMode: draft.email_mode, categories: draft.categories, transitionDesks: draft.transition_desks });
-      await load();
-      setSettingsOpen(false);
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "Could not save notification preferences.");
-    } finally { setBusy(false); }
-  }
-
   return (
     <div ref={rootRef} className="relative">
       <button
         type="button"
         title={ring ? `Operational alert: ${ringHint ?? "new danger activity"}` : undefined}
-        onClick={() => { setOpen((current) => !current); setRing(false); setSettingsOpen(false); if (!open) void load(); }}
+        onClick={() => { setOpen((current) => !current); setRing(false); if (!open) void load(); }}
         className={`app-icon-button app-notification-toggle ${ring ? "app-notification-ring" : ""}`}
         aria-label={ring ? `Operational alert: ${ringHint ?? "new danger activity"} — open notifications, ${unread} unread` : unread ? `Open notifications, ${unread} unread` : "Open notifications"}
         aria-expanded={open}
@@ -214,20 +181,16 @@ export function OperationsNotificationCentre() {
         <div className="flex items-center gap-3 border-b border-[var(--admin-line)] px-4 py-3.5">
           <div className="min-w-0 flex-1"><p className="text-[length:var(--app-font-size)] font-semibold text-[var(--admin-ink)]">Notifications</p><p className="mt-0.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{error ? "Could not refresh notifications" : !data ? "Loading notifications…" : unread ? `${unread} unread` : "You’re caught up"}</p></div>
           {unread ? <OpsButton size="sm" variant="ghost" disabled={busy} onClick={() => void markAllRead()}><CheckCheck size={13} strokeWidth={1.75}/>Mark all read</OpsButton> : null}
-          <button type="button" onClick={() => setSettingsOpen((current) => !current)} className={`app-icon-button ${settingsOpen ? "bg-[var(--admin-surface-muted)] text-[var(--admin-crimson)]" : ""}`} aria-label="Notification preferences"><Settings2 size={14} strokeWidth={1.75}/></button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("kcpl:open-account-notifications")); }}
+            className="app-icon-button"
+            aria-haspopup="dialog"
+            aria-label="Open notification settings"
+            title="Notification settings live in your account panel"
+          ><Settings2 size={14} strokeWidth={1.75}/></button>
           <button type="button" onClick={() => setOpen(false)} className="app-icon-button" aria-label="Close notifications"><X size={14} strokeWidth={1.75}/></button>
         </div>
-
-        {settingsOpen && draft ? <div className="border-b border-[var(--admin-line)] bg-[var(--admin-canvas)] p-4">
-          <div className="flex items-start gap-2.5"><Mail size={14} strokeWidth={1.75} className="mt-0.5 text-[var(--admin-crimson)]"/><div className="min-w-0 flex-1"><p className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">Delivery preferences</p><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Choose when KCPL should email you in addition to in-app notifications.</p></div></div>
-          <select className="mt-3 h-10 w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-2.5 text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)]" value={draft.email_mode} onChange={(event) => setDraft({ ...draft, email_mode: event.target.value as NotificationPreferences["email_mode"] })}>
-            {notificationEmailModes.map((mode) => <option key={mode} value={mode}>{notificationEmailModeLabels[mode]}</option>)}
-          </select>
-          <div className="mt-3 grid grid-cols-2 gap-2">{notificationCategories.map((category) => <label key={category} className="flex items-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-2.5 py-2 text-[length:var(--app-label-size)] font-medium text-[var(--admin-ink)]"><input type="checkbox" checked={draft.categories[category]} onChange={(event) => setDraft({ ...draft, categories: { ...draft.categories, [category]: event.target.checked } })}/>{notificationCategoryLabels[category]}</label>)}</div>
-          <div className="mt-4 flex items-start gap-2.5"><Activity size={14} strokeWidth={1.75} className="mt-0.5 text-[var(--admin-crimson)]"/><div className="min-w-0 flex-1"><p className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">Transition subscriptions</p><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Choose which workspaces send you live register status-change alerts. Unsubscribed desks stop both the bell ring and their notification history.</p></div></div>
-          <div className="mt-3 grid grid-cols-3 gap-2">{transitionDesks.map((desk) => <label key={desk} className="flex items-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-2.5 py-2 text-[length:var(--app-label-size)] font-medium text-[var(--admin-ink)]" title={transitionDeskHints[desk]}><input type="checkbox" checked={draft.transition_desks[desk]} onChange={(event) => setDraft({ ...draft, transition_desks: { ...draft.transition_desks, [desk]: event.target.checked } })}/>{transitionDeskLabels[desk]}</label>)}</div>
-          <div className="mt-3 flex items-center justify-between gap-3"><span className={`text-[length:var(--app-label-size)] font-medium ${data?.email_configured ? "text-[var(--admin-success)]" : "text-[var(--admin-warning)]"}`}>{data?.email_configured ? "SendGrid connected" : "SendGrid not configured"}</span><OpsButton size="sm" variant="primary" disabled={busy} onClick={() => void savePreferences()}>{busy ? "Saving…" : "Save preferences"}</OpsButton></div>
-        </div> : null}
 
         {error ? <div className="border-b border-[var(--admin-danger)] bg-[var(--admin-danger-bg)] px-4 py-2.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{error}</div> : null}
 

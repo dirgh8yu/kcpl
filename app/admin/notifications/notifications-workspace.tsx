@@ -5,69 +5,39 @@ import { Activity, AlertTriangle, Bell, CheckCheck, Download, FileText, Link2, R
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
+import { isRegisterTransition, nptDayStart as dayStart, sparklineBuckets } from "./transition-metrics";
 import { csvRow } from "../management/csv-export-policy";
-import { OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsSearch } from "../operations-ui";
+import {
+  OpsButton,
+  OpsEmptyState,
+  OpsFilterSelect,
+  OpsKpiRail,
+  OpsMono,
+  OpsNotice,
+  OpsPage,
+  OpsPageHeader,
+  OpsRailMetric,
+  OpsRegisterToolbar,
+  OpsScopeTabs,
+  OpsSearch,
+} from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 
 type NotificationResponse = { notifications: OperationsNotification[]; unread_count: number; preferences: NotificationPreferences; email_configured: boolean };
 type StateFilter = "all" | "unread" | "read" | "resolved";
 type SeverityFilter = "all" | OperationsNotification["severity"];
+type ViewFilter = "all" | "transitions";
 type TypeIconProps = { category: NotificationCategory; severity: OperationsNotification["severity"] };
 
-/** Register transitions emitted by the live register poll. They carry
- * source_type "register-transition" and land in the "activity" category. */
-const TRANSITION_SOURCE_TYPE = "register-transition";
-
-function isRegisterTransition(item: OperationsNotification): boolean {
-  return item.source_type === TRANSITION_SOURCE_TYPE || (item.category === "activity" && item.source_id.startsWith("notification-"));
-}
-
-const DAY_START_CACHE = new Map<string, number>();
-function dayStart(value: string): number {
-  // NPT (UTC+5:45) day boundary for "today's" history.
-  const cached = DAY_START_CACHE.get(value);
-  if (cached !== undefined) return cached;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return Number.NEGATIVE_INFINITY;
-  const npt = new Date(date.getTime() + 5.75 * 3_600_000);
-  const start = Date.UTC(npt.getUTCFullYear(), npt.getUTCMonth(), npt.getUTCDate()) - 5.75 * 3_600_000;
-  DAY_START_CACHE.set(value, start);
-  return start;
-}
-
-function chipStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    height: "var(--app-control-height)",
-    padding: "0 12px",
-    border: `1px solid ${active ? "var(--admin-crimson)" : "var(--admin-line)"}`,
-    borderRadius: "var(--app-radius)",
-    background: active ? "var(--admin-crimson)" : "var(--admin-surface)",
-    color: active ? "white" : "var(--admin-muted)",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-  };
-}
-
-const selectStyle: React.CSSProperties = {
-  minHeight: "var(--app-control-height)",
-  padding: "0 30px 0 10px",
-  border: "1px solid var(--admin-line)",
-  borderRadius: "var(--app-radius)",
-  background: "var(--admin-surface)",
-  color: "var(--admin-ink)",
-  font: "inherit",
-  fontSize: 13,
-};
+/** Shared with the ops wallboard so every surface buckets "today" the same way. */
+export { isRegisterTransition, nptDayStart as dayStart, sparklineBuckets } from "./transition-metrics";
 
 function TypeIcon({ category, severity }: TypeIconProps) {
   const color = severity === "critical" ? "var(--admin-danger)" : severity === "warning" ? "var(--admin-warning)" : "var(--admin-info)";
-  if (category === "documents") return <FileText size={14} style={{ color }}/>;
-  if (category === "assignments") return <UserRound size={14} style={{ color }}/>;
-  if (category === "quotes") return <Link2 size={14} style={{ color }}/>;
-  return <AlertTriangle size={14} style={{ color }}/>;
+  if (category === "documents") return <FileText size={14} strokeWidth={1.75} style={{ color }}/>;
+  if (category === "assignments") return <UserRound size={14} strokeWidth={1.75} style={{ color }}/>;
+  if (category === "quotes") return <Link2 size={14} strokeWidth={1.75} style={{ color }}/>;
+  return <AlertTriangle size={14} strokeWidth={1.75} style={{ color }}/>;
 }
 
 /** Shift-handover export: the exact rows currently shown in the transitions
@@ -100,21 +70,7 @@ function exportTransitionsCsv(items: OperationsNotification[]) {
   URL.revokeObjectURL(url);
 }
 
-/** Columns for the 7-day sparkline: NPT day boundaries, oldest → newest
- * (today first when rendered). Pure so tests can pin the bucketing. */
-export function sparklineBuckets(items: OperationsNotification[], now: Date): number[] {
-  const todayStart = dayStart(now.toISOString());
-  const dayMs = 86_400_000;
-  const buckets = new Array<number>(7).fill(0);
-  for (const item of items) {
-    if (!isRegisterTransition(item)) continue;
-    const created = Date.parse(item.created_at);
-    if (!Number.isFinite(created)) continue;
-    const offset = Math.floor((todayStart - dayStart(item.created_at)) / dayMs);
-    if (offset >= 0 && offset < 7) buckets[6 - offset] += 1;
-  }
-  return buckets;
-}
+
 
 function ageLabel(value: string) {
   const stamp = Date.parse(value);
@@ -125,6 +81,13 @@ function ageLabel(value: string) {
   if (hours < 48) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
+
+const STATE_TABS: Array<{ value: StateFilter; label: string }> = [
+  { value: "all", label: "All states" },
+  { value: "unread", label: "Unread" },
+  { value: "read", label: "Read" },
+  { value: "resolved", label: "Resolved" },
+];
 
 export function NotificationsWorkspace() {
   const router = useRouter();
@@ -137,7 +100,7 @@ export function NotificationsWorkspace() {
   const state: StateFilter = stateValue === "unread" || stateValue === "read" || stateValue === "resolved" ? stateValue : "all";
   const severityValue = params.get("severity");
   // Transitions tab: a dedicated view over today's register status history.
-  const view = params.get("view") === "transitions" ? "transitions" : "all";
+  const view: ViewFilter = params.get("view") === "transitions" ? "transitions" : "all";
   // The NPT day boundary anchors "today"; derived lazily inside the counts
   // memo so no impure Date.now call happens during render.
   const severity: SeverityFilter = severityValue === "critical" || severityValue === "warning" || severityValue === "info" ? severityValue : "all";
@@ -262,79 +225,92 @@ export function NotificationsWorkspace() {
 
   return <OpsPage>
     <div className="notifications-workspace-page">
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, lineHeight: "32px", letterSpacing: "-.02em" }}>Notifications</h1>
-          <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--admin-muted)" }}>{view === "transitions" ? `Register status history · ${counts.transitions} transition${counts.transitions === 1 ? "" : "s"} today (NPT)` : `Activity log · ${counts.unread} unread of ${notifications.length} total · auto-refresh every 30 seconds`}</p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          {view === "transitions" ? <OpsButton variant="secondary" size="sm" onClick={() => exportTransitionsCsv(filtered)} disabled={!filtered.length} title="Download today's transition history for shift handover"><Download size={13} strokeWidth={1.75}/>Export CSV</OpsButton> : null}
-          <OpsButton variant="secondary" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={13} className={loading ? "app-refreshing" : ""}/>Refresh</OpsButton>
-          {counts.unread > 0 ? <OpsButton variant="secondary" size="sm" onClick={() => void markAllRead()} disabled={busy}><CheckCheck size={13}/>{busy ? "Updating…" : "Mark all read"}</OpsButton> : null}
-        </div>
-      </header>
+      <OpsPageHeader
+        eyebrow="Operational control"
+        title="Notifications"
+        description={view === "transitions" ? `Register status history · ${counts.transitions} transition${counts.transitions === 1 ? "" : "s"} today (NPT)` : `Activity log · ${counts.unread} unread of ${notifications.length} total · auto-refresh every 30 seconds`}
+        actions={(
+          <>
+            {view === "transitions" ? <OpsButton variant="secondary" size="sm" onClick={() => exportTransitionsCsv(filtered)} disabled={!filtered.length} title="Download today's transition history for shift handover"><Download size={13} strokeWidth={1.75}/>Export CSV</OpsButton> : null}
+            <OpsButton variant="secondary" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={13} strokeWidth={1.75} className={loading ? "app-refreshing" : ""}/>Refresh</OpsButton>
+            {counts.unread > 0 ? <OpsButton variant="secondary" size="sm" onClick={() => void markAllRead()} disabled={busy}><CheckCheck size={13} strokeWidth={1.75}/>{busy ? "Updating…" : "Mark all read"}</OpsButton> : null}
+          </>
+        )}
+      />
 
-      {error ? <div style={{ marginBottom: 16 }}><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
-
-      <div className="notifications-workspace-toolbar">
-        <OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search notification, branch, reference…" aria-label="Search notifications"/>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Notification category filters">
-          <button type="button" style={chipStyle(category === "all")} onClick={() => setCategory("all")}>All categories</button>
-          {notificationCategories.map((item) => <button key={item} type="button" style={chipStyle(category === item)} onClick={() => setCategory(item)}>{notificationCategoryLabels[item]}</button>)}
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Notification view tabs">
-          <button type="button" style={chipStyle(view === "all")} onClick={() => update({ view: null })}>All notifications</button>
-          <button type="button" style={chipStyle(view === "transitions")} onClick={() => update({ view: "transitions" })}>{`Today’s transitions ${counts.transitions}`}</button>
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Notification state filters">
-          <button type="button" style={chipStyle(state === "all")} onClick={() => setState("all")}>All states</button>
-          <button type="button" style={chipStyle(state === "unread")} onClick={() => setState("unread")}>Unread {counts.unread}</button>
-          <button type="button" style={chipStyle(state === "read")} onClick={() => setState("read")}>Read</button>
-          <button type="button" style={chipStyle(state === "resolved")} onClick={() => setState("resolved")}>Resolved {counts.resolved}</button>
-        </div>
-        <select value={severity} onChange={(event) => setSeverity(event.target.value as SeverityFilter)} aria-label="Filter by notification severity" style={selectStyle}><option value="all">All severities</option><option value="critical">Critical ({counts.critical})</option><option value="warning">Warning ({counts.warning})</option><option value="info">Info</option></select>
-        {filtersActive ? <OpsButton size="sm" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
-        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--admin-muted)" }}>{filtered.length} shown</span>
+      <div className="px-4 pt-3 md:px-6">
+        <OpsKpiRail label="Notification summary">
+          <OpsRailMetric label="Unread" value={counts.unread} tone="info" active={state === "unread"} onClick={() => setState(state === "unread" ? "all" : "unread")}/>
+          <OpsRailMetric label="Critical" value={counts.critical} tone="danger" active={severity === "critical"} onClick={() => setSeverity(severity === "critical" ? "all" : "critical")} title="Critical severity, unresolved"/>
+          <OpsRailMetric label="Warning" value={counts.warning} tone="warning" active={severity === "warning"} onClick={() => setSeverity(severity === "warning" ? "all" : "warning")} title="Warning severity, unresolved"/>
+          <OpsRailMetric label="Today's transitions" value={counts.transitions} active={view === "transitions"} onClick={() => update({ view: view === "transitions" ? null : "transitions" })} title="Register status changes today (NPT)"/>
+          <OpsRailMetric label="Resolved" value={counts.resolved} tone="success" active={state === "resolved"} onClick={() => setState(state === "resolved" ? "all" : "resolved")}/>
+        </OpsKpiRail>
       </div>
 
-      <section className="notifications-sparkline" aria-label="Register transitions, last 7 days">
-        <div className="notifications-sparkline-head">
-          <Activity size={14} strokeWidth={1.75} aria-hidden="true"/>
-          <strong>Register transitions</strong>
-          <span>Last 7 days (NPT)</span>
-          <span className="notifications-sparkline-total">{sparklineTotal}</span>
-        </div>
-        <div className="notifications-sparkline-bars" role="img" aria-label={`Transitions per day: ${sparkline.days.map((day, index) => `${day} ${sparkline.buckets[index]}`).join(", ")}`}>
-          {sparkline.buckets.map((count, index) => (
-            <div key={index} className="notifications-sparkline-col" data-today={index === 6 || undefined} title={`${count} transition${count === 1 ? "" : "s"} · ${sparkline.days[index]}`}>
-              <div className="notifications-sparkline-track">
-                <div className="notifications-sparkline-bar" style={{ height: count ? `${Math.max(12, Math.round((count / sparklineMax) * 100))}%` : undefined }}/>
-              </div>
-              <span className="notifications-sparkline-day" aria-hidden="true">{sparkline.days[index]}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <div className="px-4 pb-8 md:px-6">
+        {error ? <div className="mb-3"><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
 
-      <section style={{ border: "1px solid var(--admin-line)", borderRadius: "var(--app-surface-radius)", background: "var(--admin-surface)", overflow: "hidden" }}>
-        {loading && !data ? <OpsEmptyState icon={<Bell size={18}/>} title="Loading notifications" description="Retrieving retained operational signals."/> : filtered.length ? filtered.map((item, index) => {
-          const unread = !item.read_at && !item.resolved;
-          return <button key={item.id} type="button" onClick={() => void openNotification(item)} style={{ display: "flex", width: "100%", gap: 12, padding: "14px 16px", border: 0, borderBottom: index < filtered.length - 1 ? "1px solid var(--admin-line)" : "none", background: unread ? "var(--admin-canvas)" : "transparent", textAlign: "left", cursor: "pointer", color: "inherit", font: "inherit" }}>
-            <div style={{ marginTop: 1 }}><TypeIcon category={item.category} severity={item.severity}/></div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                <span style={{ fontWeight: unread ? 600 : 400, fontSize: 13.5 }}>{item.title}</span>
-                {unread ? <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--admin-crimson)", flexShrink: 0 }}/>: null}
-                <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: "var(--admin-muted)" }}>{ageLabel(item.created_at)}</span>
-              </div>
-              <div style={{ fontSize: 13, color: unread ? "var(--admin-ink)" : "var(--admin-muted)", lineHeight: 1.4 }}>{item.detail}</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4, fontSize: 11.5, color: "var(--admin-faint)" }}><span>{notificationCategoryLabels[item.category]}</span><span>{item.severity}</span><span>{item.branch || "No branch"}</span><OpsMono>{item.source_id}</OpsMono>{item.resolved ? <span>Resolved</span> : item.read_at ? <span>Read</span> : <span>Unread</span>}</div>
+        <OpsRegisterToolbar
+          search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search notification, branch, reference…" aria-label="Search notifications"/>}
+          actions={(
+            <>
+              <OpsFilterSelect label="Severity" value={severity} allLabel="All severities" options={[{ value: "critical", label: `Critical (${counts.critical})` }, { value: "warning", label: `Warning (${counts.warning})` }, { value: "info", label: "Info" }]} onChange={(value) => setSeverity(value as SeverityFilter)}/>
+              {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
+              <span className="ops-toolbar-divider" aria-hidden="true"/>
+              <span className="ops-result-count" aria-live="polite">{filtered.length} shown</span>
+            </>
+          )}
+          tabs={(
+            <div className="notifications-toolbar-tabs">
+              <OpsScopeTabs label="Notification view" items={[{ value: "all", label: "All notifications" }, { value: "transitions", label: "Today’s transitions", count: counts.transitions }]} value={view} onChange={(value) => update({ view: value === "all" ? null : value })}/>
+              <span className="ops-toolbar-divider" aria-hidden="true"/>
+              <OpsScopeTabs label="Notification category filters" items={notificationCategories.map((item) => ({ value: item, label: notificationCategoryLabels[item] }))} value={category} onChange={(value) => setCategory(value as "all" | NotificationCategory)}/>
+              <span className="ops-toolbar-divider" aria-hidden="true"/>
+              <OpsScopeTabs label="Notification state filters" items={STATE_TABS.map((tab) => ({ value: tab.value, label: tab.label, count: tab.value === "unread" ? counts.unread : tab.value === "resolved" ? counts.resolved : undefined }))} value={state} onChange={(value) => setState(value as StateFilter)}/>
             </div>
-          </button>;
-        }) : <OpsEmptyState kind={notifications.length ? "search" : "healthy"} icon={<Bell size={18}/>} title={notifications.length ? "No notifications match" : "No notifications yet"} description={notifications.length ? "Change the search or filters to widen the retained history." : "Assignment notices and automation alerts will appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>} 
-      </section>
+          )}
+        />
 
-      <div style={{ marginTop: 16 }}><OpsNotice tone="neutral">{data?.email_configured ? "In-app and email notification channels are configured." : "In-app notification history is active. Email delivery is not configured in this deployment."}</OpsNotice></div>
+        <section className="notifications-sparkline" aria-label="Register transitions, last 7 days">
+          <div className="notifications-sparkline-head">
+            <Activity size={14} strokeWidth={1.75} aria-hidden="true"/>
+            <strong>Register transitions</strong>
+            <span>Last 7 days (NPT)</span>
+            <span className="notifications-sparkline-total">{sparklineTotal}</span>
+          </div>
+          <div className="notifications-sparkline-bars" role="img" aria-label={`Transitions per day: ${sparkline.days.map((day, index) => `${day} ${sparkline.buckets[index]}`).join(", ")}`}>
+            {sparkline.buckets.map((count, index) => (
+              <div key={index} className="notifications-sparkline-col" data-today={index === 6 || undefined} title={`${count} transition${count === 1 ? "" : "s"} · ${sparkline.days[index]}`}>
+                <div className="notifications-sparkline-track">
+                  <div className="notifications-sparkline-bar" style={{ height: count ? `${Math.max(12, Math.round((count / sparklineMax) * 100))}%` : undefined }}/>
+                </div>
+                <span className="notifications-sparkline-day" aria-hidden="true">{sparkline.days[index]}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="ops-surface" aria-label="Notification history">
+          {loading && !data ? <OpsEmptyState compact icon={<Bell size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Loading notifications" description="Retrieving retained operational signals."/> : filtered.length ? filtered.map((item) => {
+            const unread = !item.read_at && !item.resolved;
+            return <button key={item.id} type="button" onClick={() => void openNotification(item)} className="notifications-row" data-unread={unread || undefined} data-severity={item.severity}>
+              <span className="notifications-row-icon"><TypeIcon category={item.category} severity={item.severity}/></span>
+              <span className="notifications-row-main">
+                <span className="notifications-row-head">
+                  <span className="notifications-row-title">{item.title}</span>
+                  {unread ? <span className="notifications-row-unread" aria-label="Unread"/> : null}
+                  <span className="notifications-row-age">{ageLabel(item.created_at)}</span>
+                </span>
+                <span className="notifications-row-detail" data-unread={unread || undefined}>{item.detail}</span>
+                <span className="notifications-row-context"><span>{notificationCategoryLabels[item.category]}</span><span>{item.severity}</span><span>{item.branch || "No branch"}</span><OpsMono>{item.source_id}</OpsMono>{item.resolved ? <span>Resolved</span> : item.read_at ? <span>Read</span> : <span>Unread</span>}</span>
+              </span>
+            </button>;
+          }) : <OpsEmptyState compact kind={notifications.length ? "search" : "healthy"} icon={<Bell size={16} strokeWidth={1.75} aria-hidden="true"/>} title={notifications.length ? "No notifications match" : "No notifications yet"} description={notifications.length ? "Change the search or filters to widen the retained history." : "Assignment notices and automation alerts will appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>}
+        </section>
+
+        <div className="mt-4"><OpsNotice tone="neutral">{data?.email_configured ? "In-app and email notification channels are configured." : "In-app notification history is active. Email delivery is not configured in this deployment."}</OpsNotice></div>
+      </div>
     </div>
   </OpsPage>;
 }

@@ -5,6 +5,7 @@ import { affiliations } from "../company-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
 import { ClientRail } from "./client-rail";
+import { CapacityCount } from "./capacity-count";
 
 /* Places are records, not copy: the same spellings appear on the documents, so
  * they are not translated and not re-ordered per language. */
@@ -34,7 +35,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/">
       <section className="hero">
-        <Image src="/images/unsplash/ship-aerial.jpg" alt="" fill sizes="100vw" priority className="hero-image"/>
+        <Image src="/images/unsplash/ship-dusk.jpg" alt="" fill sizes="100vw" priority className="hero-image"/>
         <div className="hero-plate">
           <p className="hero-overline">Kapileshwor Cargo · Kathmandu, Nepal</p>
           <h1 className="hero-title">{t("home.hero_title")}</h1>
@@ -44,12 +45,12 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <Link href={sitePath(locale, "/services")} className="button-ghost">{t("home.hero_secondary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
           </div>
         </div>
+        <div className="hero-rail">
+          {rail.map((item) => (
+            <span key={item.detail} className="hero-rail-item"><span className="hero-rail-value">{item.value}</span>{item.detail}</span>
+          ))}
+        </div>
       </section>
-      <div className="hero-rail">
-        {rail.map((item) => (
-          <span key={item.detail} className="hero-rail-item"><span className="hero-rail-value">{item.value}</span>{item.detail}</span>
-        ))}
-      </div>
       <ClientRail locale={locale}/>
 
       <section className="section section-capability">
@@ -76,7 +77,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("home.corridor_intro")}</p>
         <div className="corridor-band">
           <article className="corridor-leg">
-            <figure className="corridor-figure"><Image src="/images/unsplash/ship-dusk.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
+            <figure className="corridor-figure"><Image src="/images/unsplash/ship-aerial.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
             <h3 className="corridor-title">{t("home.corridor_in_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_in_copy")}</p>
             <p className="corridor-label">{t("home.corridor_origins")}</p>
@@ -142,8 +143,8 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           </div>
           <div className="credibility-capacity reveal">
             <p className="credibility-label">{t("home.credibility_storage")}</p>
-            <div className="capacity-metric"><strong>{t("home.storage_air_value")}</strong><span>{t("home.storage_air_label")}</span></div>
-            <div className="capacity-metric"><strong>{t("home.storage_road_value")}</strong><span>{t("home.storage_road_label")}</span></div>
+            <div className="capacity-metric"><CapacityCount value={1000} locale={locale}/><span>{t("home.storage_air_label")}</span></div>
+            <div className="capacity-metric"><CapacityCount value={6000} locale={locale}/><span>{t("home.storage_road_label")}</span></div>
           </div>
         </div>
         <dl className="credibility-facts reveal-group">

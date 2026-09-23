@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Fingerprint, Link2, TriangleAlert, UserSearch } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { payableStatusLabels } from "../../payables/payables-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSearch, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface } from "../../operations-ui";
 import type { SupplierReconciliationBill, SupplierReconciliationSnapshot } from "./supplier-reconciliation";
 
 function money(amount: number, currency: string) {
@@ -18,6 +18,13 @@ function dateLabel(value: string) {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "Asia/Kathmandu" }).format(date);
 }
+
+const FILTER_TABS: Array<{ value: "all" | "suggested" | "manual" | "customer_reference"; label: string }> = [
+  { value: "all", label: "All unresolved" },
+  { value: "suggested", label: "Suggestions" },
+  { value: "manual", label: "Needs manual match" },
+  { value: "customer_reference", label: "Legacy Customer IDs" },
+];
 
 function identityLabel(bill: SupplierReconciliationBill) {
   if (bill.identity_kind === "customer_reference") return "Legacy Customer ID";
@@ -88,28 +95,31 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
       actions={<><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Accounts Payable</Link></>}
     />
 
-    <OpsKpiStrip>
-      <OpsKpiCard label="Unresolved bills" value={snapshot.unresolved_count} icon={<TriangleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={snapshot.unresolved_count ? "warning" : "success"}/>
-      <OpsKpiCard label="Exact-name suggestions" value={snapshot.exact_match_count} icon={<Link2 size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info" active={filter === "suggested"} onClick={() => setFilter(filter === "suggested" ? "all" : "suggested")}/>
-      <OpsKpiCard label="Legacy Customer IDs" value={snapshot.customer_reference_count} icon={<Fingerprint size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={snapshot.customer_reference_count ? "warning" : "neutral"} active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
-      <OpsKpiCard label="Needs manual match" value={snapshot.no_suggestion_count} icon={<UserSearch size={18} strokeWidth={1.9} aria-hidden="true"/>} active={filter === "manual"} onClick={() => setFilter(filter === "manual" ? "all" : "manual")}/>
-    </OpsKpiStrip>
+    <div className="px-4 pt-3 md:px-6">
+      <OpsKpiRail label="Reconciliation summary">
+        <OpsRailMetric label="Unresolved bills" value={snapshot.unresolved_count} tone={snapshot.unresolved_count ? "warning" : "success"}/>
+        <OpsRailMetric label="Exact-name suggestions" value={snapshot.exact_match_count} tone="info" active={filter === "suggested"} onClick={() => setFilter(filter === "suggested" ? "all" : "suggested")}/>
+        <OpsRailMetric label="Legacy Customer IDs" value={snapshot.customer_reference_count} tone="warning" active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
+        <OpsRailMetric label="Needs manual match" value={snapshot.no_suggestion_count} active={filter === "manual"} onClick={() => setFilter(filter === "manual" ? "all" : "manual")}/>
+      </OpsKpiRail>
+    </div>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
-      <OpsNotice tone="warning">Exact-name suggestions are not automatic matches. Review the supplier name, bill reference, branch and job before confirming. Reconciliation never changes amounts, payment history, bill status or currency.</OpsNotice>
+      <div className="mb-3"><OpsInlineAlert tone="warning" icon={<TriangleAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Exact-name suggestions are not automatic matches.</strong> Review the supplier name, bill reference, branch and job before confirming. Reconciliation never changes amounts, payment history, bill status or currency.</OpsInlineAlert></div>
 
       <OpsSurface eyebrow="Legacy supplier identity" title="Bills requiring Partner linkage" description={`${filtered.length} of ${snapshot.bills.length} unresolved supplier bills shown.`} flush>
-        <div className="ops-toolbar">
-          <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search bill, supplier, old ID, Partner, shipment or branch"/>
-          <select className="ops-select" value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
-            <option value="all">All unresolved</option>
-            <option value="suggested">Exact-name suggestions</option>
-            <option value="manual">Needs manual match</option>
-            <option value="customer_reference">Legacy Customer IDs</option>
-          </select>
-          <OpsButton variant="ghost" size="sm" onClick={() => { setQuery(""); setFilter("all"); }}>Reset</OpsButton>
-        </div>
+        <OpsRegisterToolbar
+          search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search bill, supplier, old ID, Partner, shipment or branch"/>}
+          actions={(
+            <>
+              {query.trim() || filter !== "all" ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Reset</OpsButton> : null}
+              <span className="ops-toolbar-divider" aria-hidden="true"/>
+              <span className="ops-result-count" aria-live="polite">{filtered.length === snapshot.bills.length ? `${snapshot.bills.length} bills` : `${filtered.length} of ${snapshot.bills.length}`}</span>
+            </>
+          )}
+          tabs={<OpsScopeTabs label="Reconciliation filters" items={FILTER_TABS} value={filter} onChange={(value) => setFilter(value)}/>}
+        />
 
         <div className="ops-table-wrap"><table className="ops-table min-w-[1320px]"><thead><tr><th>Supplier bill</th><th>Current supplier identity</th><th>Job / branch</th><th>Amount</th><th>Due / status</th><th>Partner match</th><th></th></tr></thead><tbody>
           {filtered.length ? filtered.map((bill) => {
@@ -125,7 +135,7 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
                 <td><select className="ops-select min-w-[250px]" value={partnerId} onChange={(event) => { setSelections((current) => ({ ...current, [bill.reference]: event.target.value })); setConfirming(null); }} aria-label={`Partner for ${bill.reference}`}><option value="">Choose Partner…</option>{snapshot.partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name} · {partner.owner_branch || "owner repair"}</option>)}</select>{bill.suggestion ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Suggested from exact saved name match.</p> : <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-warning)]">No unique exact-name match. Review manually.</p>}</td>
                 <td><OpsButton variant="secondary" size="sm" disabled={!partnerId || busy} onClick={() => setConfirming(confirming === bill.reference ? null : bill.reference)}>Review link</OpsButton></td>
               </tr>
-              {confirming === bill.reference && selectedPartner ? <tr><td colSpan={7} className="bg-[var(--admin-surface-soft)] p-0"><div className="m-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-4"><p className="text-[11px] font-bold text-[var(--admin-ink)]">Confirm accounting identity change</p><div className="mt-3 grid gap-3 md:grid-cols-3"><Review label="Before" value={`${bill.supplier_name}${bill.supplier_id ? ` · ${bill.supplier_id}` : " · no supplier ID"}`}/><Review label="After" value={`${selectedPartner.name} · ${selectedPartner.id}`}/><Review label="Bill values" value={`${money(bill.total, bill.currency)} · ${payableStatusLabels[bill.status]} · amounts unchanged`}/></div><p className="mt-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">This writes the Partner ID to the supplier bill and updates the linked Job File cost identity if one exists. It does not change the bill amount, payments, status, currency or due date.</p><div className="mt-4 flex gap-2"><OpsButton variant="primary" size="sm" disabled={busy} onClick={() => void confirmLink(bill)}>{busy ? "Linking…" : "Confirm Partner link"}</OpsButton><OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(null)}>Cancel</OpsButton></div></div></td></tr> : null}
+              {confirming === bill.reference && selectedPartner ? <tr><td colSpan={7} className="bg-[var(--admin-surface-soft)] p-0"><div className="m-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><p className="text-[11px] font-bold text-[var(--admin-ink)]">Confirm accounting identity change</p><div className="mt-3 grid gap-3 md:grid-cols-3"><Review label="Before" value={`${bill.supplier_name}${bill.supplier_id ? ` · ${bill.supplier_id}` : " · no supplier ID"}`}/><Review label="After" value={`${selectedPartner.name} · ${selectedPartner.id}`}/><Review label="Bill values" value={`${money(bill.total, bill.currency)} · ${payableStatusLabels[bill.status]} · amounts unchanged`}/></div><p className="mt-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">This writes the Partner ID to the supplier bill and updates the linked Job File cost identity if one exists. It does not change the bill amount, payments, status, currency or due date.</p><div className="mt-4 flex gap-2"><OpsButton variant="primary" size="sm" disabled={busy} onClick={() => void confirmLink(bill)}>{busy ? "Linking…" : "Confirm Partner link"}</OpsButton><OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(null)}>Cancel</OpsButton></div></div></td></tr> : null}
             </Fragment>;
           }) : <tr><td colSpan={7}><OpsEmptyState title={snapshot.bills.length ? "No reconciliation records match" : "Supplier identities are reconciled"} description={snapshot.bills.length ? "Change the search or filter to see other unresolved supplier bills." : "There are no accessible non-void supplier bills with legacy or broken Partner identities."}/></td></tr>}
         </tbody></table></div>

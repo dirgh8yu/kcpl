@@ -182,10 +182,6 @@
 .ops-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 13px 15px; border-bottom: 1px solid var(--ops-line-soft); background: rgba(255,253,250,.78); }
 .ops-toolbar .ops-search { min-width: min(360px, 100%); flex: 1 1 280px; }
 .ops-select { min-height: 40px; border: 1px solid var(--ops-line); border-radius: 11px; background: white; padding: 0 30px 0 11px; color: #615850; font-size: 10px; font-weight: 700; outline: none; }
-.ops-filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.ops-filter-pill { min-height: 32px; border: 1px solid transparent; border-radius: 999px; background: transparent; padding: 0 11px; color: #80766e; font-size: 9px; font-weight: 700; cursor: pointer; }
-.ops-filter-pill:hover { background: #f7f1ed; }
-.ops-filter-pill[data-active="true"] { border-color: #efc8bc; background: var(--ops-accent-soft); color: #ad5944; }
 
 .ops-table-wrap { overflow-x: auto; }
 .ops-table { min-width: 960px; width: 100%; text-align: left; font-size: 11px; }
@@ -197,12 +193,6 @@
 .ops-table a { color: inherit; }
 .ops-table a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-.ops-record-row { cursor: pointer; }
-.ops-record-row[data-selected="true"] { background: #fff7f3; box-shadow: inset 3px 0 0 var(--ops-accent); }
-
-.ops-split { display: grid; grid-template-columns: minmax(280px, 350px) minmax(0, 1fr); min-height: calc(100vh - 58px); }
-.ops-split-list { min-width: 0; border-right: 1px solid var(--ops-line); background: var(--admin-surface); }
-.ops-split-detail { min-width: 0; background: var(--ops-canvas); }
 
 
 .ops-segmented { display: inline-flex; gap: 2px; border: 1px solid var(--ops-line); border-radius: 11px; background: #f3eeea; padding: 3px; }
@@ -213,15 +203,11 @@
 @media (max-width: 1180px) {
   .ops-grid-main { grid-template-columns: 1fr; }
   .ops-grid-2 { grid-template-columns: 1fr; }
-  .ops-split { grid-template-columns: 300px minmax(0,1fr); }
 }
 
 @media (max-width: 900px) {
   .ops-page-header-main { align-items: flex-start; flex-direction: column; }
   .ops-page-actions { justify-content: flex-start; }
-  .ops-split { grid-template-columns: 1fr; }
-  .ops-split-list { border-right: 0; border-bottom: 1px solid var(--ops-line); }
-  .ops-split-detail { min-height: 480px; }
 }
 
 @media (max-width: 640px) {

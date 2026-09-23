@@ -18,6 +18,7 @@ export type WorkspaceIconName =
   | "CheckSquare"
   | "Bell"
   | "BellRing"
+  | "Monitor"
   | "MessageSquare"
   | "Users"
   | "TrendingUp"
@@ -67,6 +68,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "delivery", href: "/admin/delivery", label: "Delivery & POD", group: "Operate", hint: "Final-mile attempts, proof of delivery and redelivery", keywords: ["delivery", "pod", "proof", "recipient", "redelivery"], permission: "job_file", icon: "CheckSquare", prefixes: ["/admin/delivery"] },
   { id: "alerts", href: "/admin/alerts", label: "Tasks & Alerts", group: "Operate", hint: "Exceptions, ownership and follow-up", keywords: ["alerts", "tasks", "exceptions", "follow up"], permission: "all", icon: "Bell", prefixes: ["/admin/alerts"] },
   { id: "notifications", href: "/admin/notifications", label: "Notifications", group: "Operate", hint: "Assignment and automation notification history", keywords: ["notifications", "history", "automation"], permission: "all", icon: "BellRing", prefixes: ["/admin/notifications"] },
+  { id: "wallboard", href: "/admin/wallboard", label: "Ops Wallboard", group: "Operate", hint: "Fullscreen live display for the office wall — pulse, today, blockers, transitions", keywords: ["wallboard", "tv", "display", "board", "office", "screen"], permission: "job_file", icon: "Monitor", prefixes: ["/admin/wallboard"] },
 
   { id: "enquiries", href: "/admin/enquiries", label: "Enquiries", group: "Plan & Sell", hint: "Incoming freight requests and quote pipeline", keywords: ["enquiry", "quote", "request", "lead"], permission: "all", icon: "MessageSquare", prefixes: ["/admin/enquiries"] },
   { id: "customers", href: "/admin/crm", label: "Customers", group: "Plan & Sell", hint: "Customer accounts and Customer 360", keywords: ["customer", "crm", "account"], permission: "all", icon: "Users", prefixes: ["/admin/crm"] },
@@ -126,6 +128,18 @@ export function groupedWorkspaces(capabilities: NavigationCapabilities) {
   return workflowGroupOrder
     .map((group) => ({ group, items: visible.filter((workspace) => workspace.group === group) }))
     .filter((entry) => entry.items.length > 0);
+}
+
+/**
+ * Context-first navigation: which group headers should render collapsed so that
+ * only the active workspace's group is expanded. Falls back to the first group
+ * when nothing (or an unknown group) is active so the nav never loads with
+ * every group closed.
+ */
+export function collapsedGroupIds(groups: { group: WorkflowWorkspace["group"] }[], activeGroupId: string | undefined) {
+  const activeIndex = activeGroupId ? groups.findIndex((entry) => entry.group === activeGroupId) : -1;
+  const openIndex = activeIndex === -1 ? 0 : activeIndex;
+  return new Set(groups.filter((_, index) => index !== openIndex).map((entry) => entry.group));
 }
 
 export function workspaceSearchText(workspace: WorkflowWorkspace) {

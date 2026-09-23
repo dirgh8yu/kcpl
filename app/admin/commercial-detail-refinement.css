@@ -279,7 +279,7 @@
   font-weight: 600;
 }
 
-.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-[var(--admin-surface)]"] {
   min-height: 0;
   border-left: 1px solid var(--kcpl-line);
   background: var(--kcpl-white);
@@ -287,7 +287,7 @@
 }
 
 @media (min-width: 1024px) {
-  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-[var(--admin-surface)]"] {
     position: sticky;
     top: 132px;
     align-self: start;
@@ -328,30 +328,18 @@
 }
 
 /* Booking execution lineage becomes a compact register. */
-.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-white"] {
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-[var(--admin-surface)]"] {
   border-color: var(--kcpl-line);
   background: var(--kcpl-white);
 }
 
-.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-white"] > div {
+.kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] [class*="border-y"][class*="bg-[var(--admin-surface)]"] > div {
   min-height: 58px;
   border-color: var(--kcpl-line);
 }
 
 /* ---- Workbench lists, tables and dense controls ------------------------- */
 
-.kcpl-admin-shell[data-commercial-context] .ops-record-row {
-  transition: background-color 120ms ease, box-shadow 120ms ease;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-record-row:hover {
-  background: var(--kcpl-canvas);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-record-row[data-selected] {
-  background: var(--kcpl-canvas);
-  box-shadow: inset 3px 0 0 var(--kcpl-c);
-}
 
 .kcpl-admin-shell[data-commercial-context] table {
   background: var(--kcpl-white);
@@ -447,7 +435,7 @@
     padding-right: 0;
   }
 
-  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-[var(--admin-surface)]"] {
     position: static;
     margin-top: 0;
     border-top: 1px solid var(--kcpl-ink);
@@ -539,7 +527,7 @@
     gap: 16px 18px;
   }
 
-  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-white"] {
+  .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] aside[class*="bg-[var(--admin-surface)]"] {
     margin-inline: -14px;
     padding: 18px 14px;
   }
@@ -559,13 +547,6 @@
     font-size: 16px;
   }
 
-  .kcpl-admin-shell[data-commercial-context] .ops-record-row {
-    min-height: 72px;
-  }
-
-  .kcpl-admin-shell[data-commercial-context] .ops-split-list {
-    max-height: 42vh;
-  }
 
   .kcpl-admin-shell[data-commercial-context] table {
     min-width: 760px;

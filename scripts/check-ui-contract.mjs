@@ -4,7 +4,7 @@ import { join, relative } from "node:path";
 
 const root = process.cwd();
 const baselinePath = "docs/ui-contract-baseline.json";
-const literalPattern = /#[0-9a-fA-F]{3,8}\b|(?:text|rounded|shadow|font)-\[(?![^\]]*var\(--)[^\]]+\]|rounded-(?:xl|2xl|3xl|full)\b|<style\b/g;
+const literalPattern = /#[0-9a-fA-F]{3,8}\b|(?:text|rounded|shadow|font)-\[(?![^\]]*var\(--)[^\]]+\]|rounded-(?:xl|2xl|3xl|full)\b|<style\b|(?<![\w-])bg-(?:white|black)(?![\w/])/g;
 function files(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);
 }
@@ -38,7 +38,7 @@ const styles = [...layout.matchAll(/import\s+["']([^"']+\.css)["']/g)].map((matc
 if (styles.at(-1) !== "./admin/operations-system.css") failures.push("operations-system.css must be the final root stylesheet.");
 const systemCss = readFileSync("app/admin/operations-system.css", "utf8");
 if (/!important|\[class[*~^$]?=/.test(systemCss)) failures.push("Shared UI cannot use !important or utility-class substring overrides.");
-for (const token of ["--app-title-size", "--app-control-height", "--app-radius", "--admin-crimson"]) {
+for (const token of ["--app-title-size", "--app-control-height", "--app-radius", "--admin-crimson", "--admin-on-crimson", "--admin-navy", "--admin-navy-steel", "--admin-on-dark"]) {
   if (!systemCss.includes(token)) failures.push(`Missing application token: ${token}`);
 }
 for (const file of ["app/layout.tsx", "app/admin/layout.tsx", "app/admin/operations-shell.tsx"]) {

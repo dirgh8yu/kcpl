@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Eye, FilePlus2, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Eye, FilePlus2, FileText, GripVertical, History, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
   OpsButton,
@@ -26,6 +26,11 @@ import {
   useAdminPortalContainer,
 } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
+import { ArrangeableGrid } from "../arrangeable-grid";
+import "../arrangeable-grid.css";
+import { presetForStateIn, savedLayoutForState, WORKSPACE_PRESETS } from "../operations-arrangeable";
+import { useStaffArrangement } from "../use-staff-arrangement";
+import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import {
   generatedFreightDocumentKinds,
   generatedFreightDocumentLabels,
@@ -38,6 +43,8 @@ import {
 
 type Summary = { eligible: number; missing_primary: number; generated_current: number; review_pending: number };
 type Focus = "all" | "missing" | "generated" | "review";
+type FreightDocSectionId = "rail" | "queue";
+const FREIGHT_DOC_SECTION_LABELS: Record<FreightDocSectionId, string> = { rail: "Production summary", queue: "Document queue" };
 type InspectorTab = "preview" | "details" | "revisions" | "generate";
 type FormState = {
   kind: GeneratedFreightDocumentKind;
@@ -173,6 +180,41 @@ export function FreightDocumentsWorkspace({
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "warning" | "danger">("success");
 
+  // Per-staff workspace layout: the production rail and document queue are
+  // arrangeable sections persisted server-side (same primitive as Overview).
+  const {
+    state: arrangement,
+    status: arrangeStatus,
+    applyState: setArrangement,
+    toggleHidden,
+    moveSectionToward,
+    resetArrangement,
+    saved,
+    saveCurrentAs,
+    deleteSaved,
+  } = useStaffArrangement("freight-documents");
+  const [arranging, setArranging] = useState(false);
+  const [arrangeMenu, setArrangeMenu] = useState(false);
+  const activePreset = presetForStateIn("freight-documents", arrangement);
+  const savedMatch = savedLayoutForState(saved, arrangement);
+  const onSectionKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>, id: FreightDocSectionId) => {
+      if (!arranging || event.defaultPrevented) return;
+      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+        const target = event.target as HTMLElement | null;
+        if (target && target.closest("input, textarea, select")) return;
+        event.preventDefault();
+        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
+        return;
+      }
+      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
+        event.preventDefault();
+        toggleHidden(id);
+      }
+    },
+    [arranging, moveSectionToward, toggleHidden],
+  );
+
   const filtered = useMemo(() => {
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     return rows.filter((row) => {
@@ -280,19 +322,60 @@ export function FreightDocumentsWorkspace({
         actions={<Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={16} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>}
       />
 
-      {/* One rail instead of five cards. Segments that already mapped to a
-          queue scope keep that behaviour; the rest are plain statistics. */}
       <div className="px-4 pt-3 md:px-6">
-        <OpsKpiRail label="Document production summary">
-          <OpsRailMetric label="Primary draft" value={summary.missing_primary} detail="missing" tone="warning" active={focus === "missing"} onClick={() => setFocus(focus === "missing" ? "all" : "missing")} title="Job Files without the mode-specific KCPL carriage draft"/>
-          <OpsRailMetric label="Awaiting review" value={summary.review_pending} detail="revisions" tone="warning" active={focus === "review"} onClick={() => setFocus(focus === "review" ? "all" : "review")} title="Generated revisions waiting for staff review"/>
-          <OpsRailMetric label="Current drafts" value={documentStats.current} detail={`${documentStats.customerSafe} customer-safe`} active={focus === "generated"} onClick={() => setFocus(focus === "generated" ? "all" : "generated")}/>
-          <OpsRailMetric label="Revisions" value={documentStats.revisions} detail="incl. superseded" title="Current and superseded PDFs"/>
-          <OpsRailMetric label="Job files" value={summary.eligible} detail="eligible" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} title="Accessible, non-cancelled shipments in this snapshot"/>
-        </OpsKpiRail>
+        <CustomiseRow
+          arranging={arranging}
+          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
+          arrangeMenu={arrangeMenu}
+          onToggleMenu={() => setArrangeMenu(v => !v)}
+          arrangement={arrangement}
+          presets={WORKSPACE_PRESETS["freight-documents"]}
+          activePreset={activePreset}
+          applyPreset={preset => setArrangement(preset.layout)}
+          onReset={resetArrangement}
+          status={arrangeStatus}
+          sectionLabels={FREIGHT_DOC_SECTION_LABELS}
+          saved={saved}
+          onSaveCurrent={saveCurrentAs}
+          onDeleteSaved={deleteSaved}
+          savedMatchId={savedMatch?.id ?? null}
+          onApplySaved={(layout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
+        />
+        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={FREIGHT_DOC_SECTION_LABELS}/>
       </div>
 
+      <ArrangeableGrid
+        workspace="freight-documents"
+        state={arrangement}
+        onChange={setArrangement}
+        arranging={arranging}
+      >
+        {(id: FreightDocSectionId, { handleProps, hidden }) => {
+          if (hidden) return null;
+          const handle = (
+            <button type="button" className="ops-arrange-handle" {...handleProps} aria-label={`Move ${FREIGHT_DOC_SECTION_LABELS[id]}`} tabIndex={arranging ? 0 : -1} onKeyDown={(event) => onSectionKeyDown(event, id)}>
+              <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
+            </button>
+          );
+          if (id === "rail") {
+            return (
+              <div className="px-4 pt-3 md:px-6">
+                {handle}
+                {/* One rail instead of five cards. Segments that already mapped to a
+                    queue scope keep that behaviour; the rest are plain statistics. */}
+                <OpsKpiRail label="Document production summary">
+                  <OpsRailMetric label="Primary draft" value={summary.missing_primary} detail="missing" tone="warning" active={focus === "missing"} onClick={() => setFocus(focus === "missing" ? "all" : "missing")} title="Job Files without the mode-specific KCPL carriage draft"/>
+                  <OpsRailMetric label="Awaiting review" value={summary.review_pending} detail="revisions" tone="warning" active={focus === "review"} onClick={() => setFocus(focus === "review" ? "all" : "review")} title="Generated revisions waiting for staff review"/>
+                  <OpsRailMetric label="Current drafts" value={documentStats.current} detail={`${documentStats.customerSafe} customer-safe`} active={focus === "generated"} onClick={() => setFocus(focus === "generated" ? "all" : "generated")}/>
+                  <OpsRailMetric label="Revisions" value={documentStats.revisions} detail="incl. superseded" title="Current and superseded PDFs"/>
+                  <OpsRailMetric label="Job files" value={summary.eligible} detail="eligible" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} title="Accessible, non-cancelled shipments in this snapshot"/>
+                </OpsKpiRail>
+              </div>
+            );
+          }
+          return (
       <div className="px-4 pb-8 pt-4 md:px-6">
+        {handle}
         {message ? <div className="mb-3"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
         {summary.missing_primary > 0 || summary.review_pending > 0 ? (
           <div className="mb-3">
@@ -432,10 +515,12 @@ export function FreightDocumentsWorkspace({
                   <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1) })} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
                 </nav>
               ) : null}
-            </footer>
-          ) : null}
+            </footer>          ) : null}
         </section>
       </div>
+          );
+        }}
+      </ArrangeableGrid>
 
       {selected ? (
         <FreightDocumentPanel

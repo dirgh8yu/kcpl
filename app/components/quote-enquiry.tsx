@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { requestChallengeToken, turnstileSiteKey } from "./turnstile-challenge";
 import { ArrowUpRight, CheckCircle, Envelope, MapPin, Ruler, Scales } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
+import type { SiteLocale } from "../site-i18n";
 import { trackAnalyticsEvent } from "./analytics";
+import { quoteCopy } from "./quote-copy";
 
 export type QuoteValues = {
   origin?: string;
@@ -32,7 +34,8 @@ type SubmitState =
   | { status: "success"; reference: string }
   | { status: "error"; message: string };
 
-export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
+export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues; locale?: SiteLocale }) {
+  const c = quoteCopy[locale];
   const [values, setValues] = useState({
     origin: initial.origin ?? "",
     destination: initial.destination ?? "",
@@ -53,6 +56,11 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
     website: "",
   });
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  const confirmationHeading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (submitState.status === "success") confirmationHeading.current?.focus();
+  }, [submitState.status]);
 
   const setField = (field: keyof typeof values, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -61,8 +69,10 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
 
   const dimensions = [values.length, values.width, values.height].some(Boolean)
     ? `${values.length || "—"} × ${values.width || "—"} × ${values.height || "—"} ${values.dimensionUnit}`
-    : "Not provided";
-  const weight = values.weight ? `${values.weight} ${values.weightUnit}` : "Not provided";
+    : c.notProvided;
+  const weight = values.weight ? `${values.weight} ${values.weightUnit}` : c.notProvided;
+  const essentialCount = [values.origin, values.destination, values.mode, values.contactName, values.contactEmail]
+    .filter((value) => value.trim()).length;
 
   const mailtoHref = useMemo(() => {
     const subjectRoute = values.origin && values.destination ? `: ${values.origin} to ${values.destination}` : "";
@@ -99,6 +109,7 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
     event.preventDefault();
     if (submitState.status === "submitting") return;
     setSubmitState({ status: "submitting" });
+    let failureMessage = c.error;
 
     try {
       // Only when a site key is configured; otherwise this is a no-op and the
@@ -113,7 +124,12 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
       });
       const result = await response.json() as { ok?: boolean; reference?: string; error?: string };
       if (!response.ok || !result.ok || !result.reference) {
-        throw new Error(result.error || "The enquiry could not be submitted.");
+        failureMessage = locale === "en" ? result.error || c.error
+          : response.status === 503 ? c.unavailable
+          : response.status === 429 ? c.rateLimited
+          : response.status === 403 ? c.verification
+          : response.status === 400 ? c.invalid : c.error;
+        throw new Error(failureMessage);
       }
 
       setSubmitState({ status: "success", reference: result.reference });
@@ -121,61 +137,66 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
     } catch (error) {
       setSubmitState({
         status: "error",
-        message: error instanceof Error ? error.message : "The enquiry could not be submitted.",
+        message: locale === "en" && error instanceof Error ? error.message : failureMessage,
       });
       trackAnalyticsEvent("quote_submission_failed");
     }
   }
 
-  return <form className="quote-enquiry" onSubmit={submitEnquiry}>
+  return <form className="quote-enquiry" onSubmit={submitEnquiry} aria-busy={submitState.status === "submitting"}>
+    <div className="quote-progress">
+      <div><span>{c.essentials}</span><strong>{c.progress(essentialCount)}</strong></div>
+      <progress max={5} value={essentialCount} aria-label={c.essentials}/>
+    </div>
     <div className="quote-enquiry-main">
       <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><MapPin size={18}/><span>Route</span></legend>
+        <legend><MapPin size={18}/><span>{c.route}</span><small>{c.required}</small></legend>
         <div className="quote-form-grid quote-form-grid-route">
-          <label><span>Origin</span><input value={values.origin} onChange={(event) => setField("origin", event.target.value)} placeholder="City, country" autoComplete="address-level2" maxLength={120} required/></label>
-          <label><span>Destination</span><input value={values.destination} onChange={(event) => setField("destination", event.target.value)} placeholder="City, country" autoComplete="address-level2" maxLength={120} required/></label>
-          <label><span>Freight mode</span><select value={values.mode} onChange={(event) => setField("mode", event.target.value)} required><option value="">Select mode</option><option value="air">Air freight</option><option value="sea">Sea freight</option><option value="road">Road freight</option><option value="unsure">Not sure yet</option></select></label>
+          <label><span>{c.origin}</span><input value={values.origin} onChange={(event) => setField("origin", event.target.value)} placeholder={c.cityCountry} autoComplete="address-level2" maxLength={120} required/></label>
+          <label><span>{c.destination}</span><input value={values.destination} onChange={(event) => setField("destination", event.target.value)} placeholder={c.cityCountry} autoComplete="address-level2" maxLength={120} required/></label>
+          <label><span>{c.mode}</span><select value={values.mode} onChange={(event) => setField("mode", event.target.value)} required><option value="">{c.selectMode}</option><option value="air">{c.air}</option><option value="sea">{c.sea}</option><option value="road">{c.road}</option><option value="unsure">{c.unsure}</option></select></label>
         </div>
       </fieldset>
 
       <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><Scales size={18}/><span>Cargo profile</span></legend>
+        <legend><Scales size={18}/><span>{c.cargo}</span><small>{c.available}</small></legend>
+        <a className="quote-skip" href="#quote-contact">{c.skipCargo}</a>
         <div className="quote-form-grid quote-form-grid-cargo">
-          <label className="quote-field-wide"><span>Cargo type</span><input value={values.cargoType} onChange={(event) => setField("cargoType", event.target.value)} placeholder="e.g. machinery, cartons, personal effects" maxLength={160}/></label>
-          <label><span>Weight</span><div className="quote-form-compound"><input value={values.weight} onChange={(event) => setField("weight", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="0"/><select value={values.weightUnit} onChange={(event) => setField("weightUnit", event.target.value)} aria-label="Weight unit"><option value="kg">kg</option><option value="tonnes">tonnes</option><option value="lb">lb</option></select></div></label>
-          <div className="quote-field-dimensions"><span>Dimensions</span><div><label><span className="sr-only">Length</span><input value={values.length} onChange={(event) => setField("length", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="L"/></label><i>×</i><label><span className="sr-only">Width</span><input value={values.width} onChange={(event) => setField("width", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="W"/></label><i>×</i><label><span className="sr-only">Height</span><input value={values.height} onChange={(event) => setField("height", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="H"/></label><select value={values.dimensionUnit} onChange={(event) => setField("dimensionUnit", event.target.value)} aria-label="Dimension unit"><option value="cm">cm</option><option value="m">m</option><option value="in">in</option></select></div></div>
-          <label><span>Preferred timing</span><input value={values.timing} onChange={(event) => setField("timing", event.target.value)} placeholder="Date or timeframe" maxLength={120}/></label>
-          <label className="quote-field-wide"><span>Special handling or notes</span><textarea value={values.requirements} onChange={(event) => setField("requirements", event.target.value)} rows={4} placeholder="Handling requirements, packaging notes, or other relevant details" maxLength={3000}/></label>
+          <label className="quote-field-wide"><span>{c.cargoType}</span><input value={values.cargoType} onChange={(event) => setField("cargoType", event.target.value)} placeholder={c.cargoExample} maxLength={160}/></label>
+          <label><span>{c.weight}</span><div className="quote-form-compound"><input value={values.weight} onChange={(event) => setField("weight", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="0"/><select value={values.weightUnit} onChange={(event) => setField("weightUnit", event.target.value)} aria-label={c.weight}><option value="kg">kg</option><option value="tonnes">tonnes</option><option value="lb">lb</option></select></div></label>
+          <div className="quote-field-dimensions"><span>{c.dimensions}</span><div><label><span className="sr-only">{c.length}</span><input value={values.length} onChange={(event) => setField("length", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="L"/></label><i>×</i><label><span className="sr-only">{c.width}</span><input value={values.width} onChange={(event) => setField("width", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="W"/></label><i>×</i><label><span className="sr-only">{c.height}</span><input value={values.height} onChange={(event) => setField("height", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="H"/></label><select value={values.dimensionUnit} onChange={(event) => setField("dimensionUnit", event.target.value)} aria-label={c.dimensions}><option value="cm">cm</option><option value="m">m</option><option value="in">in</option></select></div></div>
+          <label><span>{c.timing}</span><input value={values.timing} onChange={(event) => setField("timing", event.target.value)} placeholder={c.timingExample} maxLength={120}/></label>
+          <label className="quote-field-wide"><span>{c.notes}</span><textarea value={values.requirements} onChange={(event) => setField("requirements", event.target.value)} rows={4} placeholder={c.notesExample} maxLength={3000}/></label>
         </div>
       </fieldset>
 
-      <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><Ruler size={18}/><span>Your details</span></legend>
+      <fieldset id="quote-contact" className="quote-form-section" disabled={submitState.status === "submitting"}>
+        <legend><Ruler size={18}/><span>{c.contact}</span><small>{c.contactRequired}</small></legend>
         <div className="quote-form-grid quote-form-grid-contact">
-          <label><span>Name</span><input value={values.contactName} onChange={(event) => setField("contactName", event.target.value)} autoComplete="name" placeholder="Your name" maxLength={120} required/></label>
-          <label><span>Email</span><input value={values.contactEmail} onChange={(event) => setField("contactEmail", event.target.value)} type="email" autoComplete="email" placeholder="you@company.com" maxLength={254} required/></label>
-          <label><span>Company</span><input value={values.companyName} onChange={(event) => setField("companyName", event.target.value)} autoComplete="organization" placeholder="Company name" maxLength={160}/></label>
-          <label><span>Phone</span><input value={values.phone} onChange={(event) => setField("phone", event.target.value)} autoComplete="tel" placeholder="Contact number" maxLength={80}/></label>
+          <label><span>{c.name}</span><input value={values.contactName} onChange={(event) => setField("contactName", event.target.value)} autoComplete="name" placeholder={c.nameExample} maxLength={120} required/></label>
+          <label><span>{c.email}</span><input value={values.contactEmail} onChange={(event) => setField("contactEmail", event.target.value)} type="email" autoComplete="email" placeholder={c.emailExample} maxLength={254} required/></label>
+          <label><span>{c.company}</span><input value={values.companyName} onChange={(event) => setField("companyName", event.target.value)} autoComplete="organization" placeholder={c.companyExample} maxLength={160}/></label>
+          <label><span>{c.phone}</span><input value={values.phone} onChange={(event) => setField("phone", event.target.value)} type="tel" autoComplete="tel" placeholder={c.phoneExample} maxLength={80}/></label>
           <label className="sr-only" aria-hidden="true"><span>Website</span><input value={values.website} onChange={(event) => setField("website", event.target.value)} tabIndex={-1} autoComplete="off"/></label>
         </div>
       </fieldset>
     </div>
 
     <aside className="quote-email-panel">
-      <div className="quote-email-panel-index">Review and send</div>
+      <div className="quote-email-panel-index">{c.review}</div>
       {submitState.status === "success" ? <CheckCircle size={30} strokeWidth={1.5}/> : <Envelope size={28} strokeWidth={1.25}/>} 
-      <h2>{submitState.status === "success" ? "Enquiry received." : "Send to KCPL."}</h2>
-      <p>{submitState.status === "success" ? "KCPL has received your freight enquiry. Keep the reference below for follow-up." : "Your route, cargo and contact details will be securely submitted to KCPL for review."}</p>
+      <h2 ref={confirmationHeading} tabIndex={submitState.status === "success" ? -1 : undefined}>{submitState.status === "success" ? c.received : c.sendTo}</h2>
+      <p>{submitState.status === "success" ? c.receivedCopy : c.reviewCopy}</p>
       <div className="quote-email-summary">
-        <span><small>Route</small><strong>{values.origin || "Origin"} <i>→</i> {values.destination || "Destination"}</strong></span>
-        <span><small>Weight</small><strong>{weight}</strong></span>
-        <span><small>Dimensions</small><strong>{dimensions}</strong></span>
-        {submitState.status === "success" && <span><small>KCPL reference</small><strong>{submitState.reference}</strong></span>}
+        <span><small>{c.route}</small><strong>{values.origin || c.origin} <i>→</i> {values.destination || c.destination}</strong></span>
+        <span><small>{c.weight}</small><strong>{weight}</strong></span>
+        <span><small>{c.dimensions}</small><strong>{dimensions}</strong></span>
+        {submitState.status === "success" && <span><small>{c.reference}</small><strong>{submitState.reference}</strong></span>}
       </div>
-      {submitState.status !== "success" && <button type="submit" disabled={submitState.status === "submitting"}>{submitState.status === "submitting" ? "Submitting…" : "Submit quote request"} <ArrowUpRight size={18}/></button>}
-      {submitState.status === "success" && <p className="quote-email-handoff" role="status" aria-live="polite">Quote request {submitState.reference} has been stored for KCPL review.</p>}
-      {submitState.status === "error" && <p className="quote-email-handoff" role="alert">{submitState.message} You can still <a href={mailtoHref}>send the same details by email</a>.</p>}
-      <small className="quote-email-note">KCPL will use the information you submit only to review and respond to this freight enquiry.</small>
+      {submitState.status !== "success" && <button type="submit" disabled={submitState.status === "submitting"}>{submitState.status === "submitting" ? c.submitting : c.submit} <ArrowUpRight size={18}/></button>}
+      {submitState.status === "success" && <p className="quote-email-handoff" role="status" aria-live="polite">{c.success(submitState.reference)}</p>}
+      {submitState.status === "error" && <p className="quote-email-handoff" role="alert">{submitState.message} {c.emailFallback} <a href={mailtoHref}>{c.emailAction}</a>.</p>}
+      <small className="quote-email-note">{c.privacy}</small>
       <a href={`mailto:${company.email}`} className="quote-email-address">{company.email}</a>
     </aside>
   </form>;

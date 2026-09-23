@@ -159,7 +159,7 @@ const en = {
   "home.cta_secondary": "Contact the team",
 
   /* Services */
-  "services.meta_title": "Freight Services",
+  "services.meta_title": "Freight Forwarding Services in Nepal",
   "services.meta_description": "Air, ocean and road freight, customs and documentation, project cargo, warehousing and delivery, coordinated from Kathmandu for Nepalese importers and exporters.",
   "services.title": "Services",
   "services.intro": "Seven services that make up one movement. Most shipments use several, planned together rather than handed between desks.",
@@ -239,7 +239,7 @@ const en = {
   "svc.delivery.p6": "Exceptions reported when they happen, with the next action named.",
   "svc.delivery.ask": "Delivery address, site contact, unloading equipment available, receiving hours.",
 
-  "quote.meta_title": "Request a Freight Quote",
+  "quote.meta_title": "Request a Freight Quote in Nepal",
   "quote.meta_description": "Send your route, mode, weight and dimensions to Kapileshwor Cargo and the operations desk will come back on how the movement should be planned.",
   "quote.title": "Request a quote",
   "quote.intro": "Route, mode, weight and dimensions are what it takes to price a movement properly. Anything you already know about the deadline helps.",
@@ -291,7 +291,7 @@ const en = {
   "cookies.more": "Privacy",
 
   /* Sectors and projects */
-  "sectors.meta_title": "Sectors & Projects",
+  "sectors.meta_title": "Project Cargo & Trade Sectors in Nepal",
   "sectors.meta_description": "Infrastructure and substation logistics, textile and handicraft exports, and import movements for Nepalese traders and distributors.",
   "sectors.title": "Sectors and projects",
   "sectors.intro": "Three kinds of work recur. Each has its own failure points, which is what the planning is really for.",
@@ -309,7 +309,7 @@ const en = {
   "sectors.outcome": "Outcome",
 
   /* Network */
-  "network.meta_title": "Network & Coverage",
+  "network.meta_title": "Nepal Freight Network & Gateways",
   "network.meta_description": "Nepal operations and gateway connectivity across Kathmandu, Birgunj, Nepalgunj, Surkhet, Raxaul and Kolkata, with counterpart agents abroad.",
   "network.title": "Network and coverage",
   "network.intro": "Nepal is landlocked, so a movement is only as good as its weakest handover. These are the points KCPL works through.",
@@ -329,7 +329,7 @@ const en = {
   "network.storage_title": "Storage",
 
   /* About */
-  "about.meta_title": "About KCPL",
+  "about.meta_title": "About Kapileshwor Cargo",
   "about.meta_description": "Kapileshwor Cargo Pvt. Ltd., a Kathmandu freight and logistics company established in 2015, led by Managing Director Ramesh Mishra.",
   "about.title": "About KCPL",
   "about.intro": "Kapileshwor Cargo Pvt. Ltd. is a freight and logistics company in Kathmandu, established in 2015, working for businesses importing into Nepal and exporting to international markets.",
@@ -349,7 +349,7 @@ const en = {
   "about.credentials_title": "Credentials",
 
   /* Contact */
-  "contact.meta_title": "Contact",
+  "contact.meta_title": "Contact KCPL in Kathmandu",
   "contact.meta_description": "Contact Kapileshwor Cargo in Kathmandu by phone or email, or send shipment details for a quotation.",
   "contact.title": "Contact",
   "contact.intro": "For a quotation, send the cargo details. For anything on a live shipment, the reference moves faster than a description.",
