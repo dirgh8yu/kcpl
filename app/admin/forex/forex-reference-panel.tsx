@@ -3,7 +3,7 @@
 import { ArrowRightLeft, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
-import { OpsButton, OpsErrorState, OpsSurface, OpsBadge } from "../operations-ui";
+import { OpsButton, OpsErrorState, OpsSurface } from "../operations-ui";
 
 type Rate = {
   currency: string;
@@ -171,23 +171,40 @@ export function ForexReferencePanel({ compact = false }: { compact?: boolean }) 
 
   return (
     <OpsSurface
+      density="compact"
       title="Nepal Rastra Bank reference rates"
-      eyebrow="Forex reference"
-      description="Official reference rates normalised to NPR per one foreign-currency unit. These rates are informational and never overwrite historical transaction rates."
-      action={<div className="flex items-center gap-2">{snapshot ? <OpsBadge tone="info">Rate date {snapshot.date}</OpsBadge> : null}<OpsButton tone="ghost" onClick={() => void refresh()} disabled={loading}><RefreshCw size={12} className={loading ? "animate-spin" : ""}/><span className={compact ? "sr-only" : ""}>Refresh</span></OpsButton></div>}
+      description="Official reference rates normalised to NPR per one foreign-currency unit. Informational only; they never overwrite historical transaction rates."
+      action={<>{snapshot ? <span className="fx-rate-date">Rate date {snapshot.date}</span> : null}<OpsButton variant="ghost" size="xs" onClick={() => void refresh()} disabled={loading} aria-label="Refresh NRB reference rates"><RefreshCw size={14} strokeWidth={1.75} className={loading ? "animate-spin" : undefined} aria-hidden="true"/>{compact ? null : "Refresh"}</OpsButton></>}
+      flush
     >
-      {error ? <OpsErrorState tone="warning" title="Reference rates are temporarily unavailable" detail="Existing KCPL data is unaffected. Retry when the Nepal Rastra Bank service is available." action={<OpsButton onClick={() => void refresh()} disabled={loading}>Retry</OpsButton>}/> : null}
+      {error ? <div className="fx-pad"><OpsErrorState tone="warning" title="Reference rates are temporarily unavailable" detail="Existing KCPL data is unaffected. Retry when the Nepal Rastra Bank service is available." action={<OpsButton size="sm" onClick={() => void refresh()} disabled={loading}>Retry</OpsButton>}/></div> : null}
 
-      {loading && !snapshot ? <div className="grid gap-px bg-[var(--admin-surface-muted)] sm:grid-cols-3 lg:grid-cols-5">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="bg-white p-3"><div className="h-3 w-10 animate-pulse rounded bg-[var(--admin-surface-muted)]"/><div className="mt-3 h-4 w-24 animate-pulse rounded bg-[var(--admin-surface-muted)]"/><div className="mt-2 h-2.5 w-32 animate-pulse rounded bg-[var(--admin-surface-soft)]"/></div>)}</div> : null}
+      {loading && !snapshot ? <p className="fx-loading" role="status">Loading NRB reference rates…</p> : null}
 
       {snapshot ? <>
-        <div className={`grid gap-px bg-[var(--admin-surface-muted)] ${compact ? "sm:grid-cols-3 xl:grid-cols-5" : "sm:grid-cols-3 lg:grid-cols-5"}`}>
-          {featured.map((item) => <div key={item.currency} className="bg-white px-3.5 py-3"><div className="flex items-center justify-between gap-2"><strong className="text-[11px] font-semibold text-[var(--admin-ink)]">{item.currency}</strong><span className="text-[length:var(--app-label-size)] text-[var(--admin-faint)]">unit {item.unit}</span></div><p className="mt-1.5 text-[15px] font-semibold tracking-[-.025em] text-[var(--admin-ink)]">{rateNumber(item.midpoint_per_unit)} <span className="text-[length:var(--app-label-size)] font-medium text-[var(--admin-muted)]">NPR</span></p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Buy {rateNumber(item.buy_per_unit)} · Sell {rateNumber(item.sell_per_unit)}</p></div>)}
-        </div>
+        <ul className="fx-rates" aria-label="Featured NRB reference rates">
+          {featured.map((item) => <li key={item.currency}>
+            <span className="fx-rate-head"><strong>{item.currency}</strong><span>unit {item.unit}</span></span>
+            <span className="fx-rate-value">{rateNumber(item.midpoint_per_unit)} <span>NPR</span></span>
+            <span className="fx-rate-meta">Buy {rateNumber(item.buy_per_unit)} · Sell {rateNumber(item.sell_per_unit)}</span>
+          </li>)}
+        </ul>
 
-        <div className="grid gap-4 border-t border-[var(--admin-line)] p-3.5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-end">
-          <div><div className="flex items-center gap-2 text-[length:var(--app-label-size)] font-medium text-[var(--admin-muted)]"><ArrowRightLeft size={12}/>Indicative converter</div><div className="mt-2 flex flex-wrap items-center gap-2"><select className="h-9 min-w-[100px] px-2.5" value={currency} onChange={(event) => setCurrency(event.target.value as CrmCurrency)}>{supportedCurrencies.map((item) => <option key={item}>{item}</option>)}</select><input min="0" step="0.01" type="number" className="h-9 min-w-[150px] flex-1 px-3" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Amount"/><span className="text-[11px] text-[var(--admin-muted)]">≈</span><strong className="text-[15px] font-semibold tracking-[-.02em] text-[var(--admin-ink)]">{midpointNpr === null ? "—" : npr(midpointNpr)}</strong></div></div>
-          <div className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><p><strong className="font-medium text-[var(--admin-muted)]">Source:</strong> {snapshot.provider} · {snapshot.source}</p><p className="mt-1"><strong className="font-medium text-[var(--admin-muted)]">Fetched:</strong> {fetchedLabel(snapshot.fetched_at)}</p>{disclaimer ? <p className="mt-1">{disclaimer}</p> : null}</div>
+        <div className="fx-converter">
+          <div>
+            <p className="fx-converter-label"><ArrowRightLeft size={14} strokeWidth={1.75} aria-hidden="true"/>Indicative converter</p>
+            <div className="fx-converter-row">
+              <select className="ops-input" value={currency} onChange={(event) => setCurrency(event.target.value as CrmCurrency)} aria-label="Foreign currency">{supportedCurrencies.map((item) => <option key={item}>{item}</option>)}</select>
+              <input min="0" step="0.01" type="number" className="ops-input" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Amount" aria-label="Amount"/>
+              <span aria-hidden="true">≈</span>
+              <strong>{midpointNpr === null ? "—" : npr(midpointNpr)}</strong>
+            </div>
+          </div>
+          <div className="fx-source">
+            <p><strong>Source</strong> {snapshot.provider} · {snapshot.source}</p>
+            <p><strong>Fetched</strong> {fetchedLabel(snapshot.fetched_at)}</p>
+            {disclaimer ? <p>{disclaimer}</p> : null}
+          </div>
         </div>
       </> : null}
     </OpsSurface>

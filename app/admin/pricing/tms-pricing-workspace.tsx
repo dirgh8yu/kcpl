@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { BadgeDollarSign, CheckCircle2, CircleAlert, FilePlus2, RefreshCw, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Calculator, CheckCircle2, CircleAlert, FilePlus2, RefreshCw, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import {
   deriveNrbMidpointFxRate,
@@ -38,6 +38,25 @@ function money(value: number, currency: string) {
 }
 function numberOrNull(value: string) { if (!value.trim()) return null; const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 function title(value: string) { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+function pricingTone(status: PricingOrderCandidate["pricing_status"]): "neutral" | "info" | "warning" | "success" {
+  return status === "quoted" ? "success" : status === "approval_required" ? "warning" : status === "priced" ? "info" : "neutral";
+}
+function ruleMatch(rule: PricingRule) {
+  const parts = [rule.branch, rule.mode ? title(rule.mode) : null, rule.customer_id ? `Customer ${rule.customer_id}` : null, rule.origin && rule.destination ? `${rule.origin} → ${rule.destination}` : null].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "Any branch, mode, customer and lane";
+}
+
+type PricingScope = "all" | PricingOrderCandidate["pricing_status"];
+const PRICING_SCOPES: Array<{ value: PricingScope; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "unpriced", label: "Unpriced" },
+  { value: "priced", label: "Priced" },
+  { value: "approval_required", label: "Approval required" },
+  { value: "quoted", label: "Quoted" },
+];
+
+/** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
+const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
 export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRules, canManageRules, canApprove }: {
   initialOrders: PricingOrderCandidate[];
@@ -68,6 +87,9 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
   const [fxSource, setFxSource] = useState<string | null>(null);
   const [showRuleForm, setShowRuleForm] = useState(false);
+  const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<PricingScope>("all");
+  const inspectorRef = useRef<HTMLElement>(null);
 
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? null;
   const customer = customers.find((item) => item.id === selectedOrder?.customer_id) ?? null;
@@ -98,6 +120,29 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
     setFxSource(null);
     setNotice(null);
   }
+
+  function openOrder(order: PricingOrderCandidate) {
+    if (order.id !== selectedOrderId) loadDefaults(order);
+    // Stacked layouts put the inspector under the register; bring it into view.
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia(SIDE_BY_SIDE_QUERY).matches) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      inspectorRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+    });
+  }
+
+  // Escape closes the inspector, as it does on the other registers.
+  const hasSelection = selectedOrder !== null;
+  useEffect(() => {
+    if (!hasSelection) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
+      setSelectedOrderId("");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hasSelection]);
 
   async function refresh() {
     setBusy(true); setNotice(null);
@@ -176,67 +221,155 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
     finally { setBusy(false); }
   }
 
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const visible = orders.filter((order) => {
+    if (scope !== "all" && order.pricing_status !== scope) return false;
+    if (!terms.length) return true;
+    const haystack = [order.id, order.origin, order.destination, order.customer_name ?? "", order.customer_id ?? "", order.branch, order.mode, order.quoted_reference ?? "", title(order.pricing_status)].join(" ").toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+  const scopeCounts = Object.fromEntries(PRICING_SCOPES.map((item) => [item.value, item.value === "all" ? orders.length : orders.filter((order) => order.pricing_status === item.value).length])) as Record<PricingScope, number>;
+  const filtersActive = Boolean(query.trim()) || scope !== "all";
+  const compact = selectedOrder !== null;
+  function resetFilters() { setQuery(""); setScope("all"); }
+
   return <OpsPage>
-    <OpsPageHeader eyebrow="Commercial pricing" title="Pricing Desk" description="Turn selected partner buy costs into governed customer sell prices using customer markups, lane rules, margin floors, NRB FX references and Management approval thresholds." actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={12}/> Refresh</OpsButton>{canManageRules ? <OpsButton size="sm" onClick={() => setShowRuleForm((value) => !value)}><SlidersHorizontal size={12}/> Pricing rules</OpsButton> : null}<Link href="/admin/rating" className="ops-button" data-size="sm" data-variant="secondary">Rate Desk</Link></div>}/>
+    <OpsPageHeader
+      title="Pricing Desk"
+      description="Governed customer sell prices from selected partner buy costs, margin floors and NRB FX."
+      actions={<>
+        <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
+        {canManageRules ? <OpsButton variant="secondary" onClick={() => setShowRuleForm((value) => !value)} aria-expanded={showRuleForm}><SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/>Pricing rules</OpsButton> : null}
+        <Link href="/admin/rating" className="ops-button" data-size="md" data-variant="secondary">Rate Desk</Link>
+      </>}
+    />
 
-    <OpsKpiStrip>
-      <OpsKpiCard label="Priceable orders" value={orders.length} icon={<BadgeDollarSign size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-      <OpsKpiCard label="Priced" value={pricedCount} tone="success" icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-      <OpsKpiCard label="Approval queue" value={approvalCount} tone="warning" icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-      <OpsKpiCard label="Quotes released" value={quotedCount} tone="info" icon={<FilePlus2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-    </OpsKpiStrip>
+    <div className="px-4 pb-8 pt-4 md:px-6">
+      <OpsKpiRail label="Pricing Desk summary">
+        <OpsRailMetric label="Priceable orders" value={orders.length}/>
+        <OpsRailMetric label="Priced" value={pricedCount}/>
+        <OpsRailMetric label="Approval queue" value={approvalCount} tone={approvalCount ? "warning" : "neutral"} active={scope === "approval_required"} onClick={() => setScope(scope === "approval_required" ? "all" : "approval_required")} title="Show orders awaiting Management approval"/>
+        <OpsRailMetric label="Quotes released" value={quotedCount} active={scope === "quoted"} onClick={() => setScope(scope === "quoted" ? "all" : "quoted")} title="Show orders with a released customer quote"/>
+      </OpsKpiRail>
 
-    {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-    {showRuleForm && canManageRules ? <div className="mt-4"><PricingRuleForm customers={customers} rules={rules} onCreated={async () => { await refresh(); setShowRuleForm(false); }} /></div> : null}
+      {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
+      {showRuleForm && canManageRules ? <div className="plan-panel"><PricingRuleForm customers={customers} rules={rules} onClose={() => setShowRuleForm(false)} onCreated={async () => { await refresh(); setShowRuleForm(false); }} /></div> : null}
 
-    <div className="mt-4 grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-      <OpsSurface eyebrow="Transport orders" title="Buy costs ready for sell pricing" description="Only non-master orders with a selected procurement cost appear here.">
-        <div className="grid max-h-[720px] gap-2 overflow-auto">
-          {orders.length ? orders.map((order) => <button key={order.id} type="button" onClick={() => loadDefaults(order)} className={`rounded-[var(--app-radius)] border p-3 text-left ${selectedOrderId === order.id ? "border-[var(--admin-accent-line)] bg-[var(--admin-accent-bg)]" : "border-[var(--admin-line)] bg-white hover:border-[var(--admin-line-strong)]"}`}>
-            <div className="flex items-center justify-between gap-2"><OpsMono>{order.id}</OpsMono><OpsBadge tone={order.pricing_status === "quoted" ? "success" : order.pricing_status === "approval_required" ? "warning" : order.pricing_status === "priced" ? "info" : "neutral"}>{title(order.pricing_status)}</OpsBadge></div>
-            <strong className="mt-2 block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{order.origin} → {order.destination}</strong>
-            <span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{order.customer_name || order.customer_id || "Customer not linked"} · {order.branch} · {title(order.mode)}</span>
-            <span className="mt-1 block text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">Buy {money(order.buy_cost, order.buy_currency)}</span>
-          </button>) : <OpsEmptyState title="No orders ready for sell pricing" description="Select a partner buy rate in Rate Desk first."/>}
-        </div>
-      </OpsSurface>
+      <OpsRegisterToolbar
+        search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order, lane, customer, quote…" aria-label="Search priceable orders"/>}
+        actions={<>
+          {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={resetFilters}>Reset</OpsButton> : null}
+          <span className="ops-result-count" aria-live="polite">{visible.length === orders.length ? `${orders.length} orders` : `${visible.length} of ${orders.length}`}</span>
+        </>}
+        tabs={<OpsScopeTabs label="Pricing status" items={PRICING_SCOPES.map((item) => ({ ...item, count: scopeCounts[item.value] }))} value={scope} onChange={setScope}/>}
+      />
 
-      {selectedOrder ? <div className="grid gap-4">
-        <OpsSurface eyebrow="Sell calculation" title={`${selectedOrder.origin} → ${selectedOrder.destination}`} description="Pricing uses the most specific active rule. Customer markup is the fallback, followed by KCPL default controls.">
-          <div className="flex flex-wrap gap-2"><OpsBadge tone="neutral">Buy {money(selectedOrder.buy_cost, selectedOrder.buy_currency)}</OpsBadge><OpsBadge tone={customer ? "info" : "warning"}>{customer?.display_name || "Customer required"}</OpsBadge>{matchedRule ? <OpsBadge tone="success">Rule: {matchedRule.name}</OpsBadge> : <OpsBadge tone="neutral">Customer/default pricing</OpsBadge>}</div>
-          {customer?.pricing_notes ? <p className="mt-3 rounded-[var(--app-radius)] bg-[var(--admin-surface-soft)] p-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Customer pricing note: {customer.pricing_notes}</p> : null}
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <OpsField label="Sell currency"><select value={sellCurrency} onChange={(event) => { const next = event.target.value as CrmCurrency; setSellCurrency(next); setFxRate(selectedOrder.buy_currency === next ? "1" : ""); setFxSource(null); }}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></OpsField>
-            <OpsField label={`FX ${selectedOrder.buy_currency} → ${sellCurrency}`} hint={fxSource || (selectedOrder.buy_currency === sellCurrency ? "1.0" : "NRB midpoint auto-filled on calculate; manual override allowed")}><input type="number" min="0" step="0.000001" value={fxRate} onChange={(event) => { setFxRate(event.target.value); setFxSource(event.target.value ? "Manual FX override" : null); }} placeholder={selectedOrder.buy_currency === sellCurrency ? "1" : "Auto / manual"}/></OpsField>
-            <OpsField label="Markup %" hint={`Rule/customer default: ${defaults.markup_percent}%`}><input type="number" min="0" step="0.01" value={markupPercent} onChange={(event) => setMarkupPercent(event.target.value)} placeholder={String(defaults.markup_percent)}/></OpsField>
-            <OpsField label="Target margin %" hint="Optional. Engine uses the higher sell price of markup or target margin."><input type="number" min="0" max="99.99" step="0.01" value={targetMarginPercent} onChange={(event) => setTargetMarginPercent(event.target.value)} placeholder="Optional"/></OpsField>
-            <OpsField label="Minimum margin %"><input type="number" min="0" max="99.99" step="0.01" value={minimumMarginPercent} onChange={(event) => setMinimumMarginPercent(event.target.value)} placeholder={String(defaults.minimum_margin_percent)}/></OpsField>
-            <OpsField label="Approval below margin %"><input type="number" min="0" max="99.99" step="0.01" value={approvalBelowMarginPercent} onChange={(event) => setApprovalBelowMarginPercent(event.target.value)} placeholder={String(defaults.approval_below_margin_percent)}/></OpsField>
-            <OpsField label={`Accessorial cost (${sellCurrency})`} hint="Local sell-currency costs such as handling, documentation or clearance."><input type="number" min="0" step="0.01" value={accessorialCost} onChange={(event) => setAccessorialCost(event.target.value)} placeholder="0"/></OpsField>
-            <OpsField label="Accessorial markup %"><input type="number" min="0" step="0.01" value={accessorialMarkupPercent} onChange={(event) => setAccessorialMarkupPercent(event.target.value)} placeholder={String(defaults.accessorial_markup_percent)}/></OpsField>
-            <OpsField label={`Fixed markup (${sellCurrency})`}><input type="number" min="0" step="0.01" value={fixedMarkup} onChange={(event) => setFixedMarkup(event.target.value)} placeholder={String(defaults.fixed_markup)}/></OpsField>
-            <OpsField label={`Manual discount (${sellCurrency})`} hint="Discounts are explicitly audited and can trigger approval."><input type="number" min="0" step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} placeholder="0"/></OpsField>
+      <div className="ops-register-layout" data-inspector={selectedOrder ? "open" : undefined}>
+        <section className="ops-surface" aria-label="Buy costs ready for sell pricing">
+          {visible.length ? <OpsTableWrap>
+            <table className="ops-table ops-register-table pricing-table" data-compact={compact || undefined} aria-label="Transport orders ready for sell pricing">
+              <thead><tr><th>Order</th><th>Lane</th><th className="ops-col-num">Buy cost</th><th>Status</th>{compact ? null : <th>Quote</th>}</tr></thead>
+              <tbody>{visible.map((order) => {
+                const chosen = selectedOrderId === order.id;
+                return <tr key={order.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => openOrder(order)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openOrder(order); } }}>
+                  <td><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span><span className="ops-cell-secondary">{order.branch} · {title(order.mode)}</span></td>
+                  <td><span className="ops-cell-primary ops-cell-clamp" title={`${order.origin} → ${order.destination}`}>{order.origin} → {order.destination}</span><span className="ops-cell-secondary ops-cell-clamp">{order.customer_name || order.customer_id || "Customer not linked"}</span></td>
+                  <td className="ops-col-num"><span className="ops-num">{money(order.buy_cost, order.buy_currency)}</span></td>
+                  <td><OpsBadge tone={pricingTone(order.pricing_status)}>{title(order.pricing_status)}</OpsBadge></td>
+                  {compact ? null : <td>{order.quoted_reference ? <span className="ops-mono ops-cell-muted">{order.quoted_reference}</span> : <span className="ops-cell-muted">—</span>}</td>}
+                </tr>;
+              })}</tbody>
+            </table>
+          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No orders match" : "No orders ready for sell pricing"} description={filtersActive ? "Change or reset the filters." : "Select a partner buy rate in Rate Desk first. Only non-master orders with a selected procurement cost appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={resetFilters}>Reset filters</OpsButton> : undefined}/>}
+          {visible.length ? <footer className="ops-register-footer"><span>Only non-master orders with a selected procurement cost appear here.</span></footer> : null}
+        </section>
+
+        {selectedOrder ? <aside ref={inspectorRef} className="ops-inspector" aria-label={`Sell pricing for ${selectedOrder.id}`}>
+          <OpsInspectorHeader
+            kicker={selectedOrder.id}
+            title={`${selectedOrder.origin} → ${selectedOrder.destination}`}
+            subtitle={`${selectedOrder.customer_name || "Customer not linked"} · ${selectedOrder.branch} · ${title(selectedOrder.mode)}`}
+            actions={<button type="button" className="ops-inspector-close" onClick={() => setSelectedOrderId("")} aria-label="Close sell pricing"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+          />
+          <div className="ops-inspector-scroll">
+            <div className="ops-inspector-body">
+              <OpsFacts>
+                <OpsFact label="Buy cost">{money(selectedOrder.buy_cost, selectedOrder.buy_currency)}</OpsFact>
+                <OpsFact label="Customer" warning={!customer}>{customer?.display_name || "Customer required"}</OpsFact>
+                <OpsFact label="Pricing basis">{matchedRule ? `Rule: ${matchedRule.name}` : "Customer / default pricing"}</OpsFact>
+              </OpsFacts>
+              {customer?.pricing_notes ? <OpsInspectorNote tone="info" title="Customer pricing note">{customer.pricing_notes}</OpsInspectorNote> : null}
+
+              <OpsInspectorSection title="Sell calculation">
+                <p className="ops-inspector-hint plan-hint">The most specific active rule applies. Customer markup is the fallback, then KCPL default controls.</p>
+                <div className="ops-inspector-form">
+                  <OpsField label="Sell currency"><select value={sellCurrency} onChange={(event) => { const next = event.target.value as CrmCurrency; setSellCurrency(next); setFxRate(selectedOrder.buy_currency === next ? "1" : ""); setFxSource(null); }}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></OpsField>
+                  <OpsField label={`FX ${selectedOrder.buy_currency} → ${sellCurrency}`} hint={fxSource || (selectedOrder.buy_currency === sellCurrency ? "1.0" : "NRB midpoint on calculate; manual override allowed")}><input type="number" min="0" step="0.000001" value={fxRate} onChange={(event) => { setFxRate(event.target.value); setFxSource(event.target.value ? "Manual FX override" : null); }} placeholder={selectedOrder.buy_currency === sellCurrency ? "1" : "Auto / manual"}/></OpsField>
+                  <OpsField label="Markup %" hint={`Default ${defaults.markup_percent}%`}><input type="number" min="0" step="0.01" value={markupPercent} onChange={(event) => setMarkupPercent(event.target.value)} placeholder={String(defaults.markup_percent)}/></OpsField>
+                  <OpsField label="Target margin %" hint="Higher of markup or target margin"><input type="number" min="0" max="99.99" step="0.01" value={targetMarginPercent} onChange={(event) => setTargetMarginPercent(event.target.value)} placeholder="Optional"/></OpsField>
+                  <OpsField label="Minimum margin %"><input type="number" min="0" max="99.99" step="0.01" value={minimumMarginPercent} onChange={(event) => setMinimumMarginPercent(event.target.value)} placeholder={String(defaults.minimum_margin_percent)}/></OpsField>
+                  <OpsField label="Approval below margin %"><input type="number" min="0" max="99.99" step="0.01" value={approvalBelowMarginPercent} onChange={(event) => setApprovalBelowMarginPercent(event.target.value)} placeholder={String(defaults.approval_below_margin_percent)}/></OpsField>
+                  <OpsField label={`Accessorial cost (${sellCurrency})`} hint="Handling, documentation or clearance"><input type="number" min="0" step="0.01" value={accessorialCost} onChange={(event) => setAccessorialCost(event.target.value)} placeholder="0"/></OpsField>
+                  <OpsField label="Accessorial markup %"><input type="number" min="0" step="0.01" value={accessorialMarkupPercent} onChange={(event) => setAccessorialMarkupPercent(event.target.value)} placeholder={String(defaults.accessorial_markup_percent)}/></OpsField>
+                  <OpsField label={`Fixed markup (${sellCurrency})`}><input type="number" min="0" step="0.01" value={fixedMarkup} onChange={(event) => setFixedMarkup(event.target.value)} placeholder={String(defaults.fixed_markup)}/></OpsField>
+                  <OpsField label={`Manual discount (${sellCurrency})`} hint="Audited; can trigger approval"><input type="number" min="0" step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} placeholder="0"/></OpsField>
+                </div>
+                <div className="ops-inspector-actions plan-section-actions"><OpsButton variant="primary" size="sm" onClick={calculate} disabled={busy || !customer}><Calculator size={14} strokeWidth={1.75} aria-hidden="true"/>Calculate governed sell price</OpsButton></div>
+              </OpsInspectorSection>
+
+              {preview ? <OpsInspectorSection title="Price result">
+                <p className="plan-result">{money(preview.result.sell_price, preview.input.sell_currency)}</p>
+                <p className="ops-inspector-hint plan-hint">This snapshot freezes the cost, FX, rule and margin decision used for approval and quote release.</p>
+                <OpsFacts columns={2}>
+                  <OpsFact label="Converted buy">{money(preview.result.converted_buy_cost, preview.input.sell_currency)}</OpsFact>
+                  <OpsFact label="Gross profit">{money(preview.result.gross_profit, preview.input.sell_currency)}</OpsFact>
+                  <OpsFact label="Gross margin">{`${preview.result.gross_margin_percent.toFixed(2)}%`}</OpsFact>
+                  <OpsFact label="Minimum sell">{money(preview.result.minimum_sell_price, preview.input.sell_currency)}</OpsFact>
+                </OpsFacts>
+                <div className="plan-subform">
+                  {preview.result.approval_required ? <OpsInspectorNote tone="warning" icon={<CircleAlert size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Management approval required">
+                    <ul className="plan-reasons">{preview.result.approval_reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+                    {preview.approval_status === "approved" ? <strong className="plan-approved">Approved by Management.</strong> : canApprove ? null : "Quote release is locked until Management approves this exact snapshot."}
+                  </OpsInspectorNote> : <OpsInspectorNote tone="success" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Margin controls passed">This snapshot is cleared for quote release.</OpsInspectorNote>}
+                </div>
+                {preview.result.approval_required && preview.approval_status !== "approved" && canApprove ? <div className="ops-inspector-actions plan-section-actions"><OpsButton size="sm" onClick={approve} disabled={busy}><ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>Approve this snapshot</OpsButton></div> : null}
+              </OpsInspectorSection> : null}
+
+              {preview && (!preview.result.approval_required || preview.approval_status === "approved") ? <OpsInspectorSection title="Customer quote">
+                <div className="ops-inspector-form">
+                  <OpsField label="Valid until"><input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)}/></OpsField>
+                  <OpsField label="Customer quote note" className="col-span-full"><input value={customerNote} onChange={(event) => setCustomerNote(event.target.value)} placeholder="Service assumptions, inclusions, exclusions…"/></OpsField>
+                </div>
+                <div className="ops-inspector-actions plan-section-actions"><OpsButton variant="primary" size="sm" onClick={createQuote} disabled={busy}><FilePlus2 size={14} strokeWidth={1.75} aria-hidden="true"/>Create customer quote</OpsButton></div>
+              </OpsInspectorSection> : null}
+
+              {quoteReference ? <OpsInspectorNote tone="success" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>} title={quoteReference}>
+                Now a standard KCPL quote with the pricing snapshot attached. <Link href="/admin" className="plan-inline-link">Open enquiries</Link>
+              </OpsInspectorNote> : null}
+            </div>
           </div>
-          <div className="mt-4 flex justify-end"><OpsButton variant="primary" onClick={calculate} disabled={busy || !customer}>Calculate governed sell price</OpsButton></div>
-        </OpsSurface>
+        </aside> : null}
+      </div>
 
-        {preview ? <OpsSurface eyebrow="Price result" title={money(preview.result.sell_price, preview.input.sell_currency)} description="This snapshot freezes the cost, FX, rule and margin decision used for approval and quote release.">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><Mini label="Converted buy" value={money(preview.result.converted_buy_cost, preview.input.sell_currency)}/><Mini label="Gross profit" value={money(preview.result.gross_profit, preview.input.sell_currency)}/><Mini label="Gross margin" value={`${preview.result.gross_margin_percent.toFixed(2)}%`}/><Mini label="Minimum sell" value={money(preview.result.minimum_sell_price, preview.input.sell_currency)}/></div>
-          {preview.result.approval_required ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-warning)]"><div className="flex items-center gap-2 font-bold"><CircleAlert size={13}/> Management approval required</div><ul className="mt-2 list-disc space-y-1 pl-5">{preview.result.approval_reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{preview.approval_status === "approved" ? <p className="mt-2 font-bold text-[var(--admin-success)]">Approved by Management.</p> : canApprove ? <div className="mt-3"><OpsButton size="sm" onClick={approve} disabled={busy}><ShieldCheck size={12}/> Approve this snapshot</OpsButton></div> : <p className="mt-2">Quote release is locked until Management approves this exact snapshot.</p>}</div> : <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-success)]"><strong>Margin controls passed.</strong> This snapshot is cleared for quote release.</div>}
-
-          {(!preview.result.approval_required || preview.approval_status === "approved") ? <div className="mt-4 grid gap-3 md:grid-cols-[200px_1fr_auto]"><OpsField label="Valid until"><input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)}/></OpsField><OpsField label="Customer quote note"><input value={customerNote} onChange={(event) => setCustomerNote(event.target.value)} placeholder="Service assumptions, inclusions, exclusions…"/></OpsField><div className="flex items-end"><OpsButton variant="primary" onClick={createQuote} disabled={busy}><FilePlus2 size={12}/> Create customer quote</OpsButton></div></div> : null}
-          {quoteReference ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-success)]"><CheckCircle2 size={13} className="mr-2 inline"/><strong>{quoteReference}</strong> is now a standard KCPL quote with the pricing snapshot attached. <Link href="/admin" className="ml-2 font-bold underline">Open enquiries</Link></div> : null}
-        </OpsSurface> : null}
-      </div> : <OpsSurface><OpsEmptyState title="Select a transport order" description="Choose an order with a selected buy rate to calculate its customer sell price."/></OpsSurface>}
+      <OpsSurface className="plan-section" density="compact" title="Pricing governance" description={`${rules.length} active and retained pricing rules. Customer and lane rules outrank broad branch or global rules; priority breaks ties.`} flush>
+        {rules.length ? <OpsTableWrap>
+          <table className="ops-table ops-register-table pricing-rules-table" aria-label="Pricing rules">
+            <thead><tr><th>Rule</th><th>Match</th><th>Sell basis</th><th>Floor</th><th>Status</th></tr></thead>
+            <tbody>{rules.map((rule) => <tr key={rule.id}>
+              <td><span className="ops-cell-primary ops-cell-clamp" title={rule.name}>{rule.name}</span><span className="ops-cell-secondary">{title(rule.scope)} · priority {rule.priority}</span></td>
+              <td><span className="ops-cell-clamp" title={ruleMatch(rule)}>{ruleMatch(rule)}</span></td>
+              <td>{rule.markup_percent !== null ? `${rule.markup_percent}% markup` : rule.target_margin_percent !== null ? `${rule.target_margin_percent}% target margin` : "Default markup"}</td>
+              <td><span className="ops-num">{rule.minimum_margin_percent}%</span></td>
+              <td><OpsBadge tone={rule.active ? "success" : "neutral"}>{rule.active ? "Active" : "Inactive"}</OpsBadge></td>
+            </tr>)}</tbody>
+          </table>
+        </OpsTableWrap> : <OpsEmptyState compact title="No custom pricing rules" description="KCPL uses each customer's markup percentage, then the system defaults."/>}
+      </OpsSurface>
     </div>
-
-    <div className="mt-4"><OpsSurface eyebrow="Pricing governance" title={`${rules.length} active and retained pricing rules`} description="More specific customer/lane rules outrank broad branch/global rules. Priority breaks ties between otherwise equally specific matches.">
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{rules.length ? rules.map((rule) => <div key={rule.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3"><div className="flex items-center justify-between gap-2"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{rule.name}</strong><OpsBadge tone={rule.active ? "success" : "neutral"}>{rule.active ? "Active" : "Inactive"}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{title(rule.scope)} · priority {rule.priority}{rule.branch ? ` · ${rule.branch}` : ""}{rule.mode ? ` · ${title(rule.mode)}` : ""}</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{rule.customer_id ? `Customer ${rule.customer_id} · ` : ""}{rule.origin && rule.destination ? `${rule.origin} → ${rule.destination} · ` : ""}{rule.markup_percent !== null ? `${rule.markup_percent}% markup` : rule.target_margin_percent !== null ? `${rule.target_margin_percent}% target margin` : "default markup"} · floor {rule.minimum_margin_percent}%</p></div>) : <OpsEmptyState title="No custom pricing rules" description="KCPL will use each customer's markup percentage, then the system defaults."/>}</div>
-    </OpsSurface></div>
   </OpsPage>;
 }
 
-function PricingRuleForm({ customers, rules, onCreated }: { customers: CustomerPricingProfile[]; rules: PricingRule[]; onCreated: () => Promise<void> }) {
+function PricingRuleForm({ customers, rules, onCreated, onClose }: { customers: CustomerPricingProfile[]; rules: PricingRule[]; onCreated: () => Promise<void>; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -267,30 +400,36 @@ function PricingRuleForm({ customers, rules, onCreated }: { customers: CustomerP
     finally { setBusy(false); }
   }
 
-  return <OpsSurface eyebrow="Pricing administration" title="Create pricing rule" description={`Rules currently stored: ${rules.length}. Customer and lane specificity outrank broad rules; priority breaks ties.`}>
-    {error ? <div className="mb-3"><OpsNotice tone="danger">{error}</OpsNotice></div> : null}
-    <form onSubmit={submit} className="grid gap-3 md:grid-cols-3">
-      <OpsField label="Rule name"><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Kathmandu road standard"/></OpsField>
-      <OpsField label="Scope"><select value={scope} onChange={(event) => setScope(event.target.value as PricingRuleScope)}>{pricingRuleScopes.map((value) => <option key={value} value={value}>{title(value)}</option>)}</select></OpsField>
-      <OpsField label="Priority"><input type="number" step="1" value={priority} onChange={(event) => setPriority(event.target.value)}/></OpsField>
-      <OpsField label="Branch"><select value={branch} onChange={(event) => setBranch(event.target.value as "" | KcplBranch)}><option value="">Any branch</option>{kcplBranches.map((value) => <option key={value} value={value}>{value}</option>)}</select></OpsField>
-      <OpsField label="Customer"><select value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Any customer</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.display_name} · {item.id}</option>)}</select></OpsField>
-      <OpsField label="Mode"><select value={mode} onChange={(event) => setMode(event.target.value as "" | TmsMode)}><option value="">Any mode</option>{tmsModes.map((value) => <option key={value} value={value}>{title(value)}</option>)}</select></OpsField>
-      <OpsField label="Origin"><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Exact lane or blank"/></OpsField>
-      <OpsField label="Destination"><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Exact lane or blank"/></OpsField>
-      <OpsField label="Sell currency"><select value={sellCurrency} onChange={(event) => setSellCurrency(event.target.value as "" | CrmCurrency)}><option value="">Customer preferred</option>{crmCurrencies.map((value) => <option key={value} value={value}>{value}</option>)}</select></OpsField>
-      <OpsField label="Markup %"><input type="number" min="0" max="99.99" step="0.01" value={markup} onChange={(event) => setMarkup(event.target.value)}/></OpsField>
-      <OpsField label="Target margin %"><input type="number" min="0" max="99.99" step="0.01" value={targetMargin} onChange={(event) => setTargetMargin(event.target.value)} placeholder="Optional"/></OpsField>
-      <OpsField label="Minimum margin %"><input type="number" min="0" max="99.99" step="0.01" value={minimumMargin} onChange={(event) => setMinimumMargin(event.target.value)}/></OpsField>
-      <OpsField label="Accessorial markup %"><input type="number" min="0" max="99.99" step="0.01" value={accessorialMarkup} onChange={(event) => setAccessorialMarkup(event.target.value)}/></OpsField>
-      <OpsField label="Fixed markup"><input type="number" min="0" step="0.01" value={fixedMarkup} onChange={(event) => setFixedMarkup(event.target.value)}/></OpsField>
-      <OpsField label="Approval below margin %"><input type="number" min="0" max="99.99" step="0.01" value={approvalBelow} onChange={(event) => setApprovalBelow(event.target.value)}/></OpsField>
-      <div className="md:col-span-3"><OpsField label="Internal pricing note"><input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Contract exception, seasonal rule, account agreement…"/></OpsField></div>
-      <div className="md:col-span-3 flex justify-end"><OpsButton type="submit" variant="primary" disabled={busy}>Create pricing rule</OpsButton></div>
+  return <OpsSurface
+    density="compact"
+    title="Create pricing rule"
+    description={`Rules currently stored: ${rules.length}. Customer and lane specificity outrank broad rules; priority breaks ties.`}
+    action={<button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close pricing rule form"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+  >
+    {error ? <div className="plan-notice"><OpsNotice tone="danger">{error}</OpsNotice></div> : null}
+    <form onSubmit={submit}>
+      <div className="ops-form-grid">
+        <OpsField label="Rule name" className="ops-form-wide"><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Kathmandu road standard"/></OpsField>
+        <OpsField label="Scope"><select value={scope} onChange={(event) => setScope(event.target.value as PricingRuleScope)}>{pricingRuleScopes.map((value) => <option key={value} value={value}>{title(value)}</option>)}</select></OpsField>
+        <OpsField label="Priority"><input type="number" step="1" value={priority} onChange={(event) => setPriority(event.target.value)}/></OpsField>
+        <OpsField label="Branch"><select value={branch} onChange={(event) => setBranch(event.target.value as "" | KcplBranch)}><option value="">Any branch</option>{kcplBranches.map((value) => <option key={value} value={value}>{value}</option>)}</select></OpsField>
+        <OpsField label="Customer"><select value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Any customer</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.display_name} · {item.id}</option>)}</select></OpsField>
+        <OpsField label="Mode"><select value={mode} onChange={(event) => setMode(event.target.value as "" | TmsMode)}><option value="">Any mode</option>{tmsModes.map((value) => <option key={value} value={value}>{title(value)}</option>)}</select></OpsField>
+        <OpsField label="Sell currency"><select value={sellCurrency} onChange={(event) => setSellCurrency(event.target.value as "" | CrmCurrency)}><option value="">Customer preferred</option>{crmCurrencies.map((value) => <option key={value} value={value}>{value}</option>)}</select></OpsField>
+        <OpsField label="Origin"><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Exact lane or blank"/></OpsField>
+        <OpsField label="Destination"><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Exact lane or blank"/></OpsField>
+        <OpsField label="Markup %"><input type="number" min="0" max="99.99" step="0.01" value={markup} onChange={(event) => setMarkup(event.target.value)}/></OpsField>
+        <OpsField label="Target margin %"><input type="number" min="0" max="99.99" step="0.01" value={targetMargin} onChange={(event) => setTargetMargin(event.target.value)} placeholder="Optional"/></OpsField>
+        <OpsField label="Minimum margin %"><input type="number" min="0" max="99.99" step="0.01" value={minimumMargin} onChange={(event) => setMinimumMargin(event.target.value)}/></OpsField>
+        <OpsField label="Accessorial markup %"><input type="number" min="0" max="99.99" step="0.01" value={accessorialMarkup} onChange={(event) => setAccessorialMarkup(event.target.value)}/></OpsField>
+        <OpsField label="Fixed markup"><input type="number" min="0" step="0.01" value={fixedMarkup} onChange={(event) => setFixedMarkup(event.target.value)}/></OpsField>
+        <OpsField label="Approval below margin %"><input type="number" min="0" max="99.99" step="0.01" value={approvalBelow} onChange={(event) => setApprovalBelow(event.target.value)}/></OpsField>
+        <OpsField label="Internal pricing note" className="ops-form-full"><input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Contract exception, seasonal rule, account agreement…"/></OpsField>
+      </div>
+      <div className="ops-form-actions">
+        <OpsButton type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</OpsButton>
+        <OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Create pricing rule</OpsButton>
+      </div>
     </form>
   </OpsSurface>;
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-faint)]">{label}</p><strong className="mt-1 block text-[12px] text-[var(--admin-ink)]">{value}</strong></div>;
 }

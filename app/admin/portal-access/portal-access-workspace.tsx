@@ -7,14 +7,14 @@ import {
   OpsButton,
   OpsEmptyState,
   OpsField,
-  OpsMono,
+  OpsKpiRail,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
+  OpsRailMetric,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
-  OpsToolbar,
 } from "../operations-ui";
 import { portalRoleLabels, portalRoles, type PortalRole } from "../../portal/portal-access-policy";
 import type { PortalAccountSummary } from "../../portal/portal-accounts.server";
@@ -144,43 +144,41 @@ export function PortalAccessWorkspace({
     }
   }
 
+  const activeAccounts = accounts.filter((account) => account.active).length;
+  const neverSignedIn = accounts.filter((account) => !account.bound).length;
+
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow="Organisation"
         title="Customer Portal Access"
-        description="Give a customer contact a read-only login to their own shipments, released documents and invoices. Portal accounts are separate from staff accounts and can never hold both."
-        meta={<><span>{accounts.length} portal account{accounts.length === 1 ? "" : "s"}</span><span>{accounts.filter((account) => account.active).length} active</span></>}
+        description="Read-only customer logins for their own shipments, released documents and invoices. Portal accounts are separate from staff accounts."
+        meta={<span>{accounts.length} portal account{accounts.length === 1 ? "" : "s"} · {activeAccounts} active</span>}
       />
 
-      <div className="ops-content">
-        <div className="ops-stack">
+      <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
+        <OpsKpiRail label="Portal account summary">
+          <OpsRailMetric label="Portal accounts" value={accounts.length}/>
+          <OpsRailMetric label="Active" value={activeAccounts}/>
+          <OpsRailMetric label="Disabled" value={accounts.length - activeAccounts}/>
+          <OpsRailMetric label="Never signed in" value={neverSignedIn} tone={neverSignedIn ? "warning" : "neutral"}/>
+        </OpsKpiRail>
+
+        {notice || error || inviteLink ? <div className="org-stack org-notices">
           {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
           {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
-          {inviteLink ? <OpsNotice tone="warning" onDismiss={() => setInviteLink("")}><OpsMono>{inviteLink}</OpsMono></OpsNotice> : null}
+          {inviteLink ? <OpsNotice tone="warning" onDismiss={() => setInviteLink("")}><span className="ops-mono portal-invite">{inviteLink}</span></OpsNotice> : null}
+        </div> : null}
 
-          <OpsSurface
-            eyebrow="Provision"
-            title="Grant portal access"
-            description="The contact receives a Firebase link to set their own password. KCPL never sets or holds a customer password."
-          >
-            <form onSubmit={submit} className="portal-form" aria-busy={Boolean(busy)}>
-              <div className="portal-form-grid">
-                <OpsField label="Customer contact email">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="contact@customer.com"
-                    disabled={busy === "save"}
-                  />
+        <div className="org-grid">
+          <OpsSurface density="compact" title="Grant portal access" description="The contact receives a Firebase link to set their own password. KCPL never sets or holds a customer password.">
+            <form onSubmit={submit} aria-busy={Boolean(busy)}>
+              <div className="ops-form-grid portal-grid">
+                <OpsField label="Customer contact email" className="ops-form-full">
+                  <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="contact@customer.com" disabled={busy === "save"}/>
                 </OpsField>
                 <OpsField label="Customer account">
                   <select value={customerId} onChange={(event) => setCustomerId(event.target.value)} disabled={busy === "save"} required>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>
-                    ))}
+                    {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>)}
                   </select>
                 </OpsField>
                 <OpsField label="Access level" hint="Account owners also see invoices and can raise requests.">
@@ -189,123 +187,71 @@ export function PortalAccessWorkspace({
                   </select>
                 </OpsField>
               </div>
-              <div className="portal-form-actions">
-                <OpsButton type="submit" variant="primary" disabled={busy === "save" || !customers.length}>
-                  <UserPlus size={15} strokeWidth={1.75} aria-hidden="true"/>
-                  <span>{busy === "save" ? "Saving…" : "Grant access"}</span>
+              <div className="ops-form-actions">
+                <OpsButton type="submit" variant="primary" size="sm" disabled={busy === "save" || !customers.length}>
+                  <UserPlus size={14} strokeWidth={1.75} aria-hidden="true"/>{busy === "save" ? "Saving…" : "Grant access"}
                 </OpsButton>
               </div>
             </form>
           </OpsSurface>
 
-          <OpsSurface
-            eyebrow="Linked accounts"
-            title="Let one login see several customers"
-            description="For a freight agent or a group buying under more than one KCPL customer record. The login keeps its own account; a linked customer is read alongside it and is chosen from a switcher in the portal. Only Management can grant this — an account owner cannot link themselves to another company."
-          >
-            <form className="portal-form" onSubmit={(event) => { event.preventDefault(); void changeLink("link"); }} aria-busy={busy === "link"}>
-              <div className="portal-form-grid">
-                <OpsField label="Portal login">
+          <OpsSurface density="compact" title="Linked customer accounts" description="Let one login see several KCPL customers, for an agent or group. Only Management can grant this; an account owner cannot link themselves to another company.">
+            <form onSubmit={(event) => { event.preventDefault(); void changeLink("link"); }} aria-busy={busy === "link"}>
+              <div className="ops-form-grid portal-grid">
+                <OpsField label="Portal login" className="ops-form-full">
                   <select value={linkEmail} onChange={(event) => setLinkEmail(event.target.value)} disabled={busy === "link"} required>
                     <option value="">Choose a login…</option>
-                    {accounts.map((account) => (
-                      <option key={account.email} value={account.email}>{account.email}</option>
-                    ))}
+                    {accounts.map((account) => <option key={account.email} value={account.email}>{account.email}</option>)}
                   </select>
                 </OpsField>
-                <OpsField label="Customer account to link">
+                <OpsField label="Customer account to link" className="ops-form-full">
                   <select value={linkCustomerId} onChange={(event) => setLinkCustomerId(event.target.value)} disabled={busy === "link"} required>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>
-                    ))}
+                    {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>)}
                   </select>
                 </OpsField>
               </div>
-              <div className="portal-form-actions">
-                <OpsButton type="submit" variant="primary" disabled={busy === "link" || !linkEmail || !linkCustomerId}>
-                  <Building2 size={15} strokeWidth={1.75} aria-hidden="true"/>
-                  <span>{busy === "link" ? "Saving…" : "Link customer"}</span>
-                </OpsButton>
-                <OpsButton type="button" variant="secondary" disabled={busy === "link" || !linkEmail || !linkCustomerId} onClick={() => void changeLink("unlink")}>
-                  Remove link
+              <div className="ops-form-actions">
+                <OpsButton type="button" variant="ghost" size="sm" disabled={busy === "link" || !linkEmail || !linkCustomerId} onClick={() => void changeLink("unlink")}>Remove link</OpsButton>
+                <OpsButton type="submit" variant="primary" size="sm" disabled={busy === "link" || !linkEmail || !linkCustomerId}>
+                  <Building2 size={14} strokeWidth={1.75} aria-hidden="true"/>{busy === "link" ? "Saving…" : "Link customer"}
                 </OpsButton>
               </div>
             </form>
           </OpsSurface>
-
-          <OpsSurface eyebrow="Accounts" title="Provisioned portal logins" flush>
-            <OpsToolbar>
-              <OpsSearch
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search email or customer…"
-                aria-label="Search portal accounts"
-              />
-              <span className="portal-toolbar-count">{rows.length} shown</span>
-            </OpsToolbar>
-
-            {rows.length ? (
-              <OpsTableWrap>
-                <table className="ops-table">
-                  <thead>
-                    <tr>
-                      <th>Contact</th>
-                      <th>Customer</th>
-                      <th>Access</th>
-                      <th>State</th>
-                      <th>Last sign-in</th>
-                      <th><span className="portal-sr-only">Actions</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((account) => (
-                      <tr key={account.email}>
-                        <td>
-                          <OpsMono>{account.email}</OpsMono>
-                          {account.created_by_email ? <span className="portal-cell-detail">Added by {account.created_by_email}</span> : null}
-                        </td>
-                        <td>
-                          {account.customer_name || account.customer_id}
-                          {account.additional_customer_ids.length ? (
-                            <span className="portal-cell-detail">
-                              Also sees {account.additional_customer_ids.map((id) => customerNames.get(id) ?? id).join(", ")}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td>{portalRoleLabels[account.role]}</td>
-                        <td>
-                          <OpsBadge tone={account.active ? "success" : "neutral"} dot>{account.active ? "Active" : "Disabled"}</OpsBadge>
-                          <span className="portal-cell-detail">{account.bound ? "Signed in before" : "Never signed in"}</span>
-                        </td>
-                        <td>{account.last_sign_in_at ? new Date(account.last_sign_in_at).toLocaleString("en-GB") : "—"}</td>
-                        <td>
-                          <OpsButton size="sm" variant="secondary" disabled={busy === account.email} onClick={() => invite(account)}>
-                            <KeyRound size={14} strokeWidth={1.75} aria-hidden="true"/>
-                            <span>Send invite</span>
-                          </OpsButton>
-                          <OpsButton size="sm" variant={account.active ? "danger" : "secondary"} disabled={busy === account.email} onClick={() => toggle(account)}>
-                            {account.active ? "Disable" : "Enable"}
-                          </OpsButton>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </OpsTableWrap>
-            ) : (
-              <div className="portal-empty-wrap">
-                <OpsEmptyState
-                  kind={query ? "search" : "setup"}
-                  icon={<Users2 size={18}/>}
-                  title={query ? "No matching portal accounts" : "No customer portal accounts yet"}
-                  description={query
-                    ? "Try a different email or customer name."
-                    : "Grant access above to let a customer contact track their own shipments without calling the operations team."}
-                />
-              </div>
-            )}
-          </OpsSurface>
         </div>
+
+        <OpsSurface
+          density="compact"
+          title="Provisioned portal logins"
+          description={`${rows.length} of ${accounts.length} shown.`}
+          action={<OpsSearch className="org-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search email or customer…" aria-label="Search portal accounts"/>}
+          flush
+        >
+          {rows.length ? (
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table portal-table" aria-label="Portal accounts">
+                <thead><tr><th>Contact</th><th>Customer</th><th>Access</th><th>State</th><th>Last sign-in</th><th><span className="sr-only">Actions</span></th></tr></thead>
+                <tbody>
+                  {rows.map((account) => (
+                    <tr key={account.email}>
+                      <td><span className="ops-cell-primary ops-mono ops-cell-clamp" title={account.email}>{account.email}</span>{account.created_by_email ? <span className="ops-cell-secondary ops-cell-clamp">Added by {account.created_by_email}</span> : null}</td>
+                      <td><span className="ops-cell-primary ops-cell-clamp">{account.customer_name || account.customer_id}</span>{account.additional_customer_ids.length ? <span className="ops-cell-secondary ops-cell-clamp" title={account.additional_customer_ids.map((id) => customerNames.get(id) ?? id).join(", ")}>Also sees {account.additional_customer_ids.map((id) => customerNames.get(id) ?? id).join(", ")}</span> : null}</td>
+                      <td>{portalRoleLabels[account.role]}</td>
+                      <td><OpsBadge tone={account.active ? "success" : "neutral"}>{account.active ? "Active" : "Disabled"}</OpsBadge><span className="ops-cell-secondary">{account.bound ? "Signed in before" : "Never signed in"}</span></td>
+                      <td><span className="ops-cell-muted org-nowrap">{account.last_sign_in_at ? new Date(account.last_sign_in_at).toLocaleString("en-GB") : "—"}</span></td>
+                      <td className="ops-cell-actions">
+                        <OpsButton size="xs" variant="secondary" disabled={busy === account.email} onClick={() => invite(account)}><KeyRound size={14} strokeWidth={1.75} aria-hidden="true"/>Send invite</OpsButton>
+                        <OpsButton size="xs" variant={account.active ? "danger" : "secondary"} disabled={busy === account.email} onClick={() => toggle(account)}>{account.active ? "Disable" : "Enable"}</OpsButton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          ) : (
+            <OpsEmptyState compact kind={query ? "search" : "setup"} icon={<Users2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={query ? "No matching portal accounts" : "No customer portal accounts yet"} description={query ? "Try a different email or customer name." : "Grant access above to let a customer contact track their own shipments without calling the operations team."}/>
+          )}
+        </OpsSurface>
       </div>
     </OpsPage>
   );

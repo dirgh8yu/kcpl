@@ -1,8 +1,9 @@
+import "../../organisation-premium.css";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, RotateCcw, ShieldCheck } from "lucide-react";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
-import { OpsBadge, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../../operations-ui";
 import { getStaffContext } from "../../staff-directory.server";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { listMigrationBatches } from "../migration-batches.server";
@@ -29,34 +30,50 @@ export default async function RecoveryPage() {
   return <OperationsShell {...shellProps}>
     <OpsPage>
       <OpsPageHeader
-        eyebrow="Organisation · Migration Hub · Recovery"
         title="Controlled rollback & recovery"
-        description="Recovery is batch-scoped, dry-run-first and deliberately conservative. KCPL will refuse automatic rollback when imported records have been edited, used, paid, progressed or otherwise gained post-migration business history."
-        meta={<><span>Management + finance authority</span><span>No force-delete mode</span><span>Paper Archive preserved</span></>}
-        actions={<div className="flex flex-wrap gap-2"><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link></div>}
+        description="Batch-scoped and dry-run first. KCPL refuses rollback once imported records gain post-migration history."
+        meta={<span>Management + finance authority · no force-delete mode · Paper Archive preserved</span>}
+        actions={<>
+          <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link>
+          <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link>
+        </>}
       />
 
-      <div className="ops-content-wide ops-stack">
-        <div className="grid gap-3 md:grid-cols-3">
-          <Rule icon={<ShieldCheck size={15}/>} title="1 · Dry run" detail="Every created record is revalidated against its batch ID, dependencies and post-import activity."/>
-          <Rule icon={<AlertTriangle size={15}/>} title="2 · Exact confirmation" detail="Plans expire after 15 minutes, bind to one Management user and require the exact batch rollback phrase."/>
-          <Rule icon={<RotateCcw size={15}/>} title="3 · Recheck before delete" detail="Each eligible record is inspected again immediately before reversal. Any state drift stops recovery."/>
-        </div>
+      <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
+        <OpsSurface density="compact" title="Recovery safeguards" description="Every rollback passes three checks, in order." flush>
+          <ol className="migration-stages recovery-rules">
+            <Rule icon={<ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>} step="1" title="Dry run" detail="Every created record is revalidated against its batch ID, dependencies and post-import activity."/>
+            <Rule icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} step="2" title="Exact confirmation" detail="Plans expire after 15 minutes, bind to one Management user and require the exact batch rollback phrase."/>
+            <Rule icon={<RotateCcw size={14} strokeWidth={1.75} aria-hidden="true"/>} step="3" title="Recheck before delete" detail="Each eligible record is inspected again immediately before reversal. Any state drift stops recovery."/>
+          </ol>
+        </OpsSurface>
 
-        <OpsSurface eyebrow="Recovery queue" title="Migration batches" description="Open a batch to generate its live recovery dry run. Completed recoveries remain visible as permanent migration evidence." flush>
-          {dashboard?.batches.length ? <div className="ops-table-wrap"><table className="ops-table min-w-[900px]"><thead><tr><th>Batch</th><th>Stage</th><th>Migration state</th><th>Imported</th><th>Recovery</th><th>Action</th></tr></thead><tbody>{dashboard.batches.map((batch) => {
+        <OpsSurface density="compact" title="Recovery queue" description="Open a batch to generate its live recovery dry run. Completed recoveries remain visible as permanent migration evidence." flush>
+          {dashboard?.batches.length ? <OpsTableWrap><table className="ops-table ops-register-table recovery-table" aria-label="Migration batches for recovery"><thead><tr><th>Batch</th><th>Stage</th><th>Migration state</th><th className="ops-col-num">Imported</th><th>Recovery</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>{dashboard.batches.map((batch) => {
             const recoverable = batch.status === "completed" || batch.status === "partial_failure" || batch.status === "interrupted";
             const recoveryTone = batch.rollback_status === "completed" ? "success" : batch.rollback_status === "partial_failure" ? "warning" : batch.rollback_status === "running" ? "info" : "neutral";
-            return <tr key={batch.id}><td><OpsMono>{batch.id}</OpsMono><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.source_filename || "No source filename"}</p></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{batch.stage_label}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.type_label}</p></td><td><OpsBadge tone={batch.status === "completed" ? "success" : batch.status === "partial_failure" ? "danger" : batch.status === "interrupted" ? "warning" : "info"}>{batch.status.replaceAll("_", " ")}</OpsBadge></td><td>{batch.imported_count}</td><td>{batch.rollback_status ? <OpsBadge tone={recoveryTone}>{batch.rollback_status.replaceAll("_", " ")}</OpsBadge> : <span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Not started</span>}</td><td>{recoverable ? <Link href={`/admin/migration/batches/${encodeURIComponent(batch.id)}`} className="ops-button" data-variant={batch.rollback_status === "completed" ? "secondary" : "primary"} data-size="sm">{batch.rollback_status === "completed" ? <><CheckCircle2 size={11}/>View evidence</> : <>Open dry run</>}</Link> : <span className="text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Not recoverable while running</span>}</td></tr>;
-          })}</tbody></table></div> : <div className="p-6"><OpsEmptyState icon={<RotateCcw size={17}/>} title="No migration batches" description="There are no migration batches available for recovery."/></div>}
+            return <tr key={batch.id}>
+              <td><span className="ops-cell-primary ops-mono ops-cell-id">{batch.id}</span><span className="ops-cell-secondary ops-cell-clamp" title={batch.source_filename || undefined}>{batch.source_filename || "No source filename"}</span></td>
+              <td><span className="ops-cell-primary">{batch.stage_label}</span><span className="ops-cell-secondary">{batch.type_label}</span></td>
+              <td><OpsBadge tone={batch.status === "completed" ? "success" : batch.status === "partial_failure" ? "danger" : batch.status === "interrupted" ? "warning" : "info"}>{sentence(batch.status)}</OpsBadge></td>
+              <td className="ops-col-num"><span className="ops-num">{batch.imported_count}</span></td>
+              <td>{batch.rollback_status ? <OpsBadge tone={recoveryTone}>{sentence(batch.rollback_status)}</OpsBadge> : <span className="ops-cell-muted">Not started</span>}</td>
+              <td className="ops-cell-actions">{recoverable ? <Link href={`/admin/migration/batches/${encodeURIComponent(batch.id)}`} className="ops-button" data-variant={batch.rollback_status === "completed" ? "ghost" : "secondary"} data-size="xs">{batch.rollback_status === "completed" ? <><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>View evidence</> : <>Open dry run</>}</Link> : <span className="ops-cell-muted">Not recoverable while running</span>}</td>
+            </tr>;
+          })}</tbody></table></OpsTableWrap> : <OpsEmptyState compact icon={<RotateCcw size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No migration batches" description="There are no migration batches available for recovery."/>}
         </OpsSurface>
       </div>
     </OpsPage>
   </OperationsShell>;
 }
 
-function Rule({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{icon}{title}</strong><p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{detail}</p></div>;
+function sentence(value: string) {
+  const words = value.replaceAll("_", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function Rule({ icon, step, title, detail }: { icon: React.ReactNode; step: string; title: string; detail: string }) {
+  return <li className="migration-stage"><span className="migration-stage-head recovery-rule-head">{icon}<span className="ops-mono">Step {step}</span></span><strong>{title}</strong><span className="migration-stage-detail">{detail}</span></li>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

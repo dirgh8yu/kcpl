@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsInspectorNote, OpsNotice, OpsSurface, OpsTableWrap } from "../operations-ui";
 import type { ConsolidationAllocationView } from "./tms-consolidation-allocation";
 import type { TmsConsolidationLoad } from "./tms-consolidation";
 
@@ -87,36 +87,69 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
     finally { setBusy(false); }
   }
 
-  return <OpsSurface className="mb-4" eyebrow="Commercial allocation" title="Prepare → approve exact versions → book" description="Released consolidation membership and source commercials are frozen first. This stage persists the exact derived house economics before any final booking artifacts are created.">
-    {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-    {eligible.length ? <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-      <div className="grid content-start gap-2">
-        {eligible.map((load) => {
-          const view = allocations[load.id];
-          return <button key={load.id} type="button" onClick={() => setSelectedLoadId(load.id)} className={`rounded-[var(--app-radius)] border p-3 text-left ${selectedLoadId === load.id ? "border-[var(--admin-accent-line)] bg-[var(--admin-accent-bg)]" : "border-[var(--admin-line)] bg-white"}`}>
-            <div className="flex items-center justify-between gap-2"><OpsMono>{load.reference}</OpsMono><OpsBadge tone={allocationTone(view)}>{allocationLabel(view)}</OpsBadge></div>
-            <strong className="mt-2 block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{load.name}</strong>
-            <span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{load.members.length} houses · {load.branch}</span>
-          </button>;
-        })}
+  async function refreshAllocations() {
+    setBusy(true); setNotice(null);
+    try { await refresh(); }
+    catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Allocation could not be refreshed." }); }
+    finally { setBusy(false); }
+  }
+
+  return <OpsSurface
+    density="compact"
+    title="Commercial allocation"
+    description="Prepare → approve exact versions → book. Released membership and source commercials are frozen first; this stage persists the exact derived house economics before any booking artifacts are created."
+  >
+    {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
+    {eligible.length ? <div className="allocation-grid">
+      <div className="allocation-list">
+        <OpsTableWrap>
+          <table className="ops-table ops-register-table allocation-table" aria-label="Released consolidation loads">
+            <thead><tr><th>Load</th><th>Allocation</th></tr></thead>
+            <tbody>{eligible.map((load) => {
+              const view = allocations[load.id];
+              const chosen = selectedLoadId === load.id;
+              return <tr key={load.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => setSelectedLoadId(load.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedLoadId(load.id); } }}>
+                <td><span className="ops-cell-primary ops-mono ops-cell-id">{load.reference}</span><span className="ops-cell-secondary ops-cell-clamp" title={load.name}>{load.name} · {load.members.length} houses · {load.branch}</span></td>
+                <td><OpsBadge tone={allocationTone(view)}>{allocationLabel(view)}</OpsBadge></td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </OpsTableWrap>
       </div>
-      {selectedLoad ? <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{selectedLoad.reference}</p><div className="mt-1 flex items-center gap-2"><strong className="text-[13px] text-[var(--admin-ink)]">{allocationLabel(allocation)}</strong><OpsBadge tone={allocationTone(allocation)}>{allocation?.status ?? "not_prepared"}</OpsBadge></div></div>
-          <div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={async () => { setBusy(true); setNotice(null); try { await refresh(); } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Allocation could not be refreshed." }); } finally { setBusy(false); } }} disabled={busy}><RefreshCw size={12}/> Refresh</OpsButton>{canPrepare && selectedLoad.status !== "booked" ? <OpsButton size="sm" variant="primary" onClick={prepare} disabled={busy}><ShieldCheck size={12}/> {allocation ? "Re-prepare exact allocation" : "Prepare allocation"}</OpsButton> : null}</div>
+      {selectedLoad ? <div className="allocation-detail">
+        <div className="allocation-detail-head">
+          <div className="min-w-0">
+            <p className="ops-inspector-kicker">{selectedLoad.reference}</p>
+            <div className="allocation-detail-title"><strong>{selectedLoad.name}</strong><OpsBadge tone={allocationTone(allocation)}>{allocationLabel(allocation)}</OpsBadge></div>
+          </div>
+          <div className="ops-inspector-actions">
+            <OpsButton size="sm" onClick={refreshAllocations} disabled={busy}><RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
+            {canPrepare && selectedLoad.status !== "booked" ? <OpsButton size="sm" variant="primary" onClick={prepare} disabled={busy}><ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>{allocation ? "Re-prepare exact allocation" : "Prepare allocation"}</OpsButton> : null}
+          </div>
         </div>
-        {!allocation ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">After the master tender is accepted or countered, prepare the commercial allocation here. Booking will fail closed until this exact package exists.</div> : <>
-          <div className="mt-4 grid gap-2 sm:grid-cols-4"><Mini label="Master procurement" value={money(allocation.total, allocation.currency)}/><Mini label="Allocation basis" value={allocation.allocation_basis.replaceAll("_", " ")}/><Mini label="Approvals" value={`${allocation.approved_approvals}/${allocation.required_approvals}`}/><Mini label="Package" value={allocation.package_id}/></div>
-          {allocation.approvals.some((item) => item.approval_required) ? <div className="mt-4 grid gap-2">
-            {allocation.approvals.filter((item) => item.approval_required).map((item) => <div key={item.commercial_version_id} className="flex flex-wrap items-start justify-between gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3"><div><div className="flex items-center gap-2"><OpsMono>{item.order_id}</OpsMono><OpsBadge tone={item.approval_status === "approved" ? "success" : "warning"}>{item.approval_status}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Version <OpsMono>{item.commercial_version_id}</OpsMono>{item.gross_margin_percent !== null ? ` · margin ${item.gross_margin_percent.toFixed(2)}%` : ""}</p>{item.approval_reasons.length ? <p className="mt-1 max-w-2xl text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{item.approval_reasons.join(" ")}</p> : null}</div>{item.approval_status === "pending" && canApprove ? <OpsButton size="sm" variant="primary" onClick={() => approve(item.commercial_version_id)} disabled={busy}><CheckCircle2 size={12}/> Approve exact version</OpsButton> : null}</div>)}
-          </div> : <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-success)]">No new Management approval is required for the staged house economics.</div>}
-          {allocation.status === "ready" ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-success)]"><span><strong>Ready to book.</strong> Final booking will consume these same derived version IDs and fingerprints.</span><Link href="/admin/tenders" className="ops-button" data-size="sm" data-variant="primary">Tender Desk <ArrowRight size={11}/></Link></div> : null}
+        {!allocation ? <p className="ops-inspector-hint">After the master tender is accepted or countered, prepare the commercial allocation here. Booking will fail closed until this exact package exists.</p> : <>
+          <OpsFacts columns={2}>
+            <OpsFact label="Master procurement">{money(allocation.total, allocation.currency)}</OpsFact>
+            <OpsFact label="Allocation basis">{allocation.allocation_basis.replaceAll("_", " ")}</OpsFact>
+            <OpsFact label="Approvals">{`${allocation.approved_approvals}/${allocation.required_approvals}`}</OpsFact>
+            <OpsFact label="Package"><span className="ops-mono allocation-package" title={allocation.package_id}>{allocation.package_id}</span></OpsFact>
+          </OpsFacts>
+          {allocation.approvals.some((item) => item.approval_required) ? <ul className="allocation-approvals">
+            {allocation.approvals.filter((item) => item.approval_required).map((item) => <li key={item.commercial_version_id}>
+              <div className="min-w-0">
+                <div className="allocation-approval-head"><span className="ops-mono">{item.order_id}</span><OpsBadge tone={item.approval_status === "approved" ? "success" : "warning"}>{item.approval_status === "approved" ? "Approved" : "Pending approval"}</OpsBadge></div>
+                <p className="allocation-approval-meta">Version <span className="ops-mono">{item.commercial_version_id}</span>{item.gross_margin_percent !== null ? ` · margin ${item.gross_margin_percent.toFixed(2)}%` : ""}</p>
+                {item.approval_reasons.length ? <p className="allocation-approval-meta">{item.approval_reasons.join(" ")}</p> : null}
+              </div>
+              {item.approval_status === "pending" && canApprove ? <OpsButton size="sm" variant="primary" onClick={() => approve(item.commercial_version_id)} disabled={busy}><CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>Approve exact version</OpsButton> : null}
+            </li>)}
+          </ul> : <div className="plan-subform"><OpsInspectorNote tone="success" title="No new Management approval required">The staged house economics are within policy.</OpsInspectorNote></div>}
+          {allocation.status === "ready" ? <div className="plan-subform"><OpsInspectorNote tone="success" title="Ready to book">
+            Final booking will consume these same derived version IDs and fingerprints.
+            <span className="load-note-actions"><Link href="/admin/tenders" className="ops-button" data-size="xs" data-variant="secondary">Tender Desk<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></Link></span>
+          </OpsInspectorNote></div> : null}
         </>}
       </div> : null}
-    </div> : <OpsEmptyState title="No released consolidation loads" description="Release a draft load to procurement before preparing its commercial allocation."/>}
+    </div> : <OpsEmptyState compact title="No released consolidation loads" description="Release a draft load to procurement before preparing its commercial allocation."/>}
   </OpsSurface>;
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-2"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{label}</p><p className="mt-1 truncate text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]" title={value}>{value}</p></div>;
 }

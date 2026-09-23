@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, Boxes, CheckCircle2, PackagePlus, RefreshCw, Route, Trash2, Truck } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
+import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ArrowDown, ArrowRight, ArrowUp, PackagePlus, RefreshCw, Trash2, X } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import {
   consolidationSavings,
@@ -44,13 +44,26 @@ function statusTone(status: TmsConsolidationLoad["status"]): "neutral" | "info" 
   return "warning";
 }
 function statusLabel(status: TmsConsolidationLoad["status"]) {
-  return status.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const words = status.replaceAll("_", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canManage }: {
+type LoadScope = "all" | TmsConsolidationLoad["status"];
+const LOAD_SCOPES: Array<{ value: LoadScope; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "draft", label: "Draft" },
+  { value: "ready_for_procurement", label: "Ready for procurement" },
+  { value: "tendering", label: "Tendering" },
+  { value: "booked", label: "Booked" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canManage, allocation }: {
   initialLoads: TmsConsolidationLoad[];
   initialOrders: TmsOrder[];
   canManage: boolean;
+  /** The commercial allocation desk, rendered in the page flow under the load workspace. */
+  allocation?: ReactNode;
 }) {
   const [loads, setLoads] = useState(initialLoads);
   const [orders, setOrders] = useState(initialOrders);
@@ -68,6 +81,9 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [addOrderId, setAddOrderId] = useState("");
   const [stopDrafts, setStopDrafts] = useState<Record<string, StopDraft>>({});
+  const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<LoadScope>("all");
+  const detailRef = useRef<HTMLElement>(null);
 
   const selectedLoad = useMemo(() => loads.find((load) => load.id === selectedLoadId) ?? null, [loads, selectedLoadId]);
   const eligibleOrders = useMemo(() => orders.filter((order) => orderEligibleForConsolidation(order)), [orders]);
@@ -82,6 +98,15 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
   function replaceLoad(next: TmsConsolidationLoad) {
     setLoads((current) => current.map((load) => load.id === next.id ? next : load));
     setSelectedLoadId(next.id);
+  }
+
+  // The load workspace sits under the register; bring it into view on selection.
+  function selectLoad(id: string) {
+    setSelectedLoadId(id);
+    window.requestAnimationFrame(() => {
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      detailRef.current?.scrollIntoView({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+    });
   }
 
   async function refresh() {
@@ -192,83 +217,207 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
     finally { setBusy(false); }
   }
 
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const visibleLoads = loads.filter((load) => {
+    if (scope !== "all" && load.status !== scope) return false;
+    if (!terms.length) return true;
+    const haystack = [load.reference, load.name, load.branch, load.mode, load.equipment ?? "", statusLabel(load.status), ...load.members.map((member) => `${member.order_id} ${member.origin} ${member.destination} ${member.customer_name ?? ""}`)].join(" ").toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+  const scopeItems = LOAD_SCOPES.map((item) => ({ ...item, count: item.value === "all" ? loads.length : loads.filter((load) => load.status === item.value).length }));
+  const filtersActive = Boolean(query.trim()) || scope !== "all";
+  const sortedStops = selectedLoad ? [...selectedLoad.stops].sort((a, b) => a.sequence - b.sequence) : [];
+  const editable = Boolean(selectedLoad && selectedLoad.status === "draft" && canManage);
+
   return (
     <OpsPage>
-      <OpsPageHeader eyebrow="Transportation management" title="Load Planner" description="Combine compatible transport orders into master movements, sequence multi-stop pickup/delivery plans, enforce capacity, then procure the consolidated load while retaining separate house shipments and Digital Job Files." actions={<div className="flex flex-wrap gap-2"><OpsButton size="sm" onClick={refresh} disabled={busy}><RefreshCw size={13}/> Refresh</OpsButton>{canManage ? <OpsButton size="sm" variant="primary" onClick={() => setShowCreate((value) => !value)}><PackagePlus size={13}/> New load</OpsButton> : null}<Link href="/admin/rating" className="ops-button" data-size="sm" data-variant="secondary">Rate Desk <ArrowRight size={12}/></Link><Link href="/admin/tenders" className="ops-button" data-size="sm" data-variant="secondary">Tender Desk <ArrowRight size={12}/></Link></div>} />
+      <OpsPageHeader
+        title="Load Planner"
+        description="Consolidate transport orders into master loads and sequence their stops."
+        actions={<>
+          <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
+          <Link href="/admin/rating" className="ops-button" data-size="md" data-variant="secondary">Rate Desk</Link>
+          <Link href="/admin/tenders" className="ops-button" data-size="md" data-variant="secondary">Tender Desk</Link>
+          {canManage ? <OpsButton variant="primary" onClick={() => setShowCreate((value) => !value)} aria-expanded={showCreate}><PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>New load</OpsButton> : null}
+        </>}
+      />
 
-      <OpsKpiStrip>
-        <OpsKpiCard label="Loads" value={loads.length} icon={<Boxes size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-        <OpsKpiCard label="Draft planning" value={draftLoads} tone="warning" icon={<Route size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-        <OpsKpiCard label="Booked masters" value={bookedLoads} tone="success" icon={<CheckCircle2 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-        <OpsKpiCard label="Unassigned orders" value={eligibleOrders.length} tone="info" icon={<Truck size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-      </OpsKpiStrip>
+      <div className="px-4 pb-8 pt-4 md:px-6">
+        <OpsKpiRail label="Load planner summary">
+          <OpsRailMetric label="Loads" value={loads.length}/>
+          <OpsRailMetric label="Draft planning" value={draftLoads} tone={draftLoads ? "warning" : "neutral"} active={scope === "draft"} onClick={() => setScope(scope === "draft" ? "all" : "draft")} title="Show loads still in draft planning"/>
+          <OpsRailMetric label="Booked masters" value={bookedLoads} active={scope === "booked"} onClick={() => setScope(scope === "booked" ? "all" : "booked")} title="Show booked master loads"/>
+          <OpsRailMetric label="Unassigned orders" value={eligibleOrders.length}/>
+        </OpsKpiRail>
 
-      {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
+        {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-      {showCreate && canManage ? <OpsSurface className="mt-4" eyebrow="Consolidation planning" title="Create master load" description="Choose at least two compatible orders. Same-branch, mode, equipment, temperature and capacity rules are enforced server-side.">
-        <form onSubmit={createLoad} className="grid gap-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <OpsField label="Load name"><input value={name} onChange={(event) => setName(event.target.value)} placeholder="KTM-Kolkata groupage 22 Aug"/></OpsField>
-            <OpsField label="Master mode"><select value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></OpsField>
-            <OpsField label="Equipment"><input value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="Truck, 40HC, ULD…"/></OpsField>
-            <OpsField label="Weight capacity kg"><input type="number" min="0" step="0.01" value={capacityWeight} onChange={(event) => setCapacityWeight(event.target.value)} placeholder="Optional"/></OpsField>
-            <OpsField label="Volume capacity CBM"><input type="number" min="0" step="0.001" value={capacityVolume} onChange={(event) => setCapacityVolume(event.target.value)} placeholder="Optional"/></OpsField>
-            <OpsField label="Piece capacity"><input type="number" min="0" step="1" value={capacityPieces} onChange={(event) => setCapacityPieces(event.target.value)} placeholder="Optional"/></OpsField>
-            <OpsField label="Container capacity"><input type="number" min="0" step="1" value={capacityContainers} onChange={(event) => setCapacityContainers(event.target.value)} placeholder="Optional"/></OpsField>
-          </div>
-          <div>
-            <p className="mb-2 text-[length:var(--app-label-size)] font-bold uppercase tracking-[.09em] text-[var(--admin-muted)]">House orders</p>
-            <div className="grid max-h-[280px] gap-2 overflow-auto rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-3 md:grid-cols-2">
-              {eligibleOrders.length ? eligibleOrders.map((order) => <div key={order.id} className="flex items-start gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3 text-[length:var(--app-label-size)]"><input type="checkbox" aria-label={`Select ${order.id} for consolidation`} checked={selectedOrderIds.includes(order.id)} onChange={(event) => setSelectedOrderIds((current) => event.target.checked ? [...current, order.id] : current.filter((id) => id !== order.id))}/><span><OpsMono>{order.id}</OpsMono><strong className="mt-1 block text-[var(--admin-ink)]">{order.origin} → {order.destination}</strong><span className="mt-1 block text-[var(--admin-muted)]">{order.branch} · {modeLabel(order.mode)} · {order.weight_kg.toFixed(1)} kg · {order.volume_cbm.toFixed(3)} CBM{order.customer_name ? ` · ${order.customer_name}` : " · customer not linked"}</span></span></div>) : <OpsEmptyState title="No eligible orders" description="Create transport orders or resolve their current tender/booking state before consolidating."/>}
-            </div>
-          </div>
-          <div className="flex justify-end gap-2"><OpsButton type="button" onClick={() => setShowCreate(false)}>Cancel</OpsButton><OpsButton type="submit" variant="primary" disabled={busy || selectedOrderIds.length < 2}>Create load ({selectedOrderIds.length})</OpsButton></div>
-        </form>
-      </OpsSurface> : null}
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[330px_minmax(0,1fr)]">
-        <OpsSurface eyebrow="Master loads" title="Consolidation register" description="Select a load to plan its house orders and stop sequence.">
-          <div className="grid gap-2">
-            {loads.length ? loads.map((load) => <button key={load.id} type="button" onClick={() => setSelectedLoadId(load.id)} className={`rounded-[var(--app-radius)] border p-3 text-left transition ${selectedLoadId === load.id ? "border-[var(--admin-accent-line)] bg-[var(--admin-accent-bg)]" : "border-[var(--admin-line)] bg-white hover:border-[var(--admin-line-strong)]"}`}>
-              <div className="flex items-center justify-between gap-2"><OpsMono>{load.reference}</OpsMono><OpsBadge tone={statusTone(load.status)}>{statusLabel(load.status)}</OpsBadge></div>
-              <strong className="mt-2 block text-[11px] text-[var(--admin-ink)]">{load.name}</strong>
-              <span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{load.members.length} orders · {load.stops.length} stops · {load.branch} · {modeLabel(load.mode)}</span>
-            </button>) : <OpsEmptyState title="No consolidation loads" description="Create a load from compatible transport orders to begin multi-stop planning."/>}
-          </div>
-        </OpsSurface>
-
-        {selectedLoad ? <div className="grid gap-4">
-          <OpsSurface eyebrow={selectedLoad.reference} title={selectedLoad.name} description="Master movement plan with house-level commercial and shipment traceability.">
-            <div className="flex flex-wrap items-center gap-2"><OpsBadge tone={statusTone(selectedLoad.status)}>{statusLabel(selectedLoad.status)}</OpsBadge><OpsBadge tone="neutral">{selectedLoad.branch}</OpsBadge><OpsBadge tone="neutral">{modeLabel(selectedLoad.mode)}</OpsBadge>{selectedLoad.equipment ? <OpsBadge tone="info">{selectedLoad.equipment}</OpsBadge> : null}</div>
-            {totals ? <div className="mt-4 grid gap-2 sm:grid-cols-4"><Mini label="Weight" value={`${totals.weight_kg.toFixed(2)} kg`} sub={selectedLoad.capacity_weight_kg ? `of ${selectedLoad.capacity_weight_kg} kg` : "No cap set"}/><Mini label="Volume" value={`${totals.volume_cbm.toFixed(3)} CBM`} sub={selectedLoad.capacity_volume_cbm ? `of ${selectedLoad.capacity_volume_cbm} CBM` : "No cap set"}/><Mini label="Pieces" value={String(totals.pieces)} sub={selectedLoad.capacity_pieces ? `of ${selectedLoad.capacity_pieces}` : "No cap set"}/><Mini label="Containers" value={String(totals.containers)} sub={selectedLoad.capacity_containers ? `of ${selectedLoad.capacity_containers}` : "No cap set"}/></div> : null}
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">Pre-consolidation selected cost baseline</p>{Object.entries(baselines).length ? Object.entries(baselines).map(([currency, value]) => <strong key={currency} className="mt-1 block text-[12px] text-[var(--admin-ink)]">{money(value ?? 0, currency)}</strong>) : <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">No comparable individual selected costs yet.</p>}</div>
-              <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">Consolidation result</p>{savings && selectedLoad.procurement_currency ? <><strong className="mt-1 block text-[12px] text-[var(--admin-ink)]">{money(savings.savings, selectedLoad.procurement_currency)} savings</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Baseline {money(savings.baseline, selectedLoad.procurement_currency)} → master {money(savings.consolidated, selectedLoad.procurement_currency)}</p></> : selectedLoad.procurement_cost !== null && selectedLoad.procurement_currency ? <strong className="mt-1 block text-[12px] text-[var(--admin-ink)]">Master procurement {money(selectedLoad.procurement_cost, selectedLoad.procurement_currency)}</strong> : <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Calculated after the master tender is booked.</p>}</div>
-            </div>
-            {selectedLoad.status === "ready_for_procurement" && selectedLoad.master_order_id ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-success)]"><strong>Master procurement order:</strong> <OpsMono>{selectedLoad.master_order_id}</OpsMono><div className="mt-2 flex flex-wrap gap-2"><Link href="/admin/rating" className="ops-button" data-size="sm" data-variant="primary">Rate master order <ArrowRight size={11}/></Link><Link href="/admin/tenders" className="ops-button" data-size="sm" data-variant="secondary">Tender Desk <ArrowRight size={11}/></Link></div></div> : null}
-            {selectedLoad.status === "booked" ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] p-3 text-[length:var(--app-label-size)] text-[var(--admin-success)]"><strong>Master booking:</strong> {selectedLoad.master_booking_reference || "Recorded"} · {selectedLoad.procurement_partner_name || "Partner"}<p className="mt-1">Each house order below has its own Digital Job File while remaining linked to this master movement.</p></div> : null}
+        {showCreate && canManage ? <div className="plan-panel">
+          <OpsSurface
+            density="compact"
+            title="Create master load"
+            description="Choose at least two compatible orders. Same-branch, mode, equipment, temperature and capacity rules are enforced server-side."
+            action={<button type="button" className="ops-inspector-close" onClick={() => setShowCreate(false)} aria-label="Close create load"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+          >
+            <form onSubmit={createLoad}>
+              <div className="ops-form-grid">
+                <OpsField label="Load name" className="ops-form-wide"><input value={name} onChange={(event) => setName(event.target.value)} placeholder="KTM-Kolkata groupage 22 Aug"/></OpsField>
+                <OpsField label="Master mode"><select value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></OpsField>
+                <OpsField label="Equipment"><input value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="Truck, 40HC, ULD…"/></OpsField>
+                <OpsField label="Weight capacity kg"><input type="number" min="0" step="0.01" value={capacityWeight} onChange={(event) => setCapacityWeight(event.target.value)} placeholder="Optional"/></OpsField>
+                <OpsField label="Volume capacity CBM"><input type="number" min="0" step="0.001" value={capacityVolume} onChange={(event) => setCapacityVolume(event.target.value)} placeholder="Optional"/></OpsField>
+                <OpsField label="Piece capacity"><input type="number" min="0" step="1" value={capacityPieces} onChange={(event) => setCapacityPieces(event.target.value)} placeholder="Optional"/></OpsField>
+                <OpsField label="Container capacity"><input type="number" min="0" step="1" value={capacityContainers} onChange={(event) => setCapacityContainers(event.target.value)} placeholder="Optional"/></OpsField>
+              </div>
+              <div className="load-picker">
+                <p className="load-picker-label">House orders · {selectedOrderIds.length} selected</p>
+                {eligibleOrders.length ? <div className="load-picker-list"><OpsTableWrap>
+                  <table className="ops-table ops-register-table load-picker-table" aria-label="Eligible house orders">
+                    <thead><tr><th><span className="sr-only">Select</span></th><th>Order</th><th>Lane</th><th>Customer</th><th className="ops-col-num">Weight · volume</th></tr></thead>
+                    <tbody>{eligibleOrders.map((order) => {
+                      const checked = selectedOrderIds.includes(order.id);
+                      return <tr key={order.id} data-selected={checked || undefined}>
+                        <td className="load-picker-check"><input type="checkbox" aria-label={`Select ${order.id} for consolidation`} checked={checked} onChange={(event) => setSelectedOrderIds((current) => event.target.checked ? [...current, order.id] : current.filter((id) => id !== order.id))}/></td>
+                        <td><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span><span className="ops-cell-secondary">{order.branch} · {modeLabel(order.mode)}</span></td>
+                        <td><span className="ops-cell-clamp" title={`${order.origin} → ${order.destination}`}>{order.origin} → {order.destination}</span></td>
+                        <td>{order.customer_name ? <span className="ops-cell-clamp">{order.customer_name}</span> : <span className="ops-cell-muted">Customer not linked</span>}</td>
+                        <td className="ops-col-num"><span className="ops-num">{order.weight_kg.toFixed(1)} kg · {order.volume_cbm.toFixed(3)} CBM</span></td>
+                      </tr>;
+                    })}</tbody>
+                  </table>
+                </OpsTableWrap></div> : <OpsEmptyState compact title="No eligible orders" description="Create transport orders or resolve their current tender/booking state before consolidating."/>}
+              </div>
+              <div className="ops-form-actions">
+                <OpsButton type="button" variant="ghost" size="sm" onClick={() => setShowCreate(false)}>Cancel</OpsButton>
+                <OpsButton type="submit" variant="primary" size="sm" disabled={busy || selectedOrderIds.length < 2}>Create load ({selectedOrderIds.length})</OpsButton>
+              </div>
+            </form>
           </OpsSurface>
+        </div> : null}
 
-          <OpsSurface eyebrow="House orders" title={`${selectedLoad.members.length} orders in master load`} description={selectedLoad.status === "draft" ? "Membership can be adjusted until the load is released to procurement. Adding/removing an order regenerates the default route." : "House membership is locked to preserve procurement and shipment truth."}>
-            <div className="grid gap-2">
-              {selectedLoad.members.map((member) => <div key={member.order_id} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3"><div><OpsMono>{member.order_id}</OpsMono><strong className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{member.origin} → {member.destination}</strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{member.customer_name || member.customer_id || "Customer not linked"} · {member.weight_kg.toFixed(1)} kg · {member.volume_cbm.toFixed(3)} CBM{member.allocated_cost !== null && member.allocated_currency ? ` · allocated ${money(member.allocated_cost, member.allocated_currency)}` : ""}</span></div><div className="flex items-center gap-2">{member.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(member.shipment_reference)}`} className="ops-button" data-size="sm" data-variant="secondary">Job File <ArrowRight size={11}/></Link> : null}{selectedLoad.status === "draft" && canManage ? <OpsButton size="sm" onClick={() => removeOrder(member.order_id)} disabled={busy}><Trash2 size={11}/> Remove</OpsButton> : null}</div></div>)}
+        <OpsRegisterToolbar
+          search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search load, order, lane, customer…" aria-label="Search master loads"/>}
+          actions={<>
+            {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setScope("all"); }}>Reset</OpsButton> : null}
+            <span className="ops-result-count" aria-live="polite">{visibleLoads.length === loads.length ? `${loads.length} loads` : `${visibleLoads.length} of ${loads.length}`}</span>
+          </>}
+          tabs={<OpsScopeTabs label="Load status" items={scopeItems} value={scope} onChange={setScope}/>}
+        />
+
+        <section className="ops-surface load-register" aria-label="Consolidation register">
+          {visibleLoads.length ? <OpsTableWrap>
+            <table className="ops-table ops-register-table load-table" aria-label="Master loads">
+              <thead><tr><th>Load</th><th>Branch · mode</th><th>Orders · stops</th><th>Capacity</th><th>Status</th></tr></thead>
+              <tbody>{visibleLoads.map((load) => {
+                const chosen = selectedLoadId === load.id;
+                const loadWeight = load.members.reduce((sum, member) => sum + member.weight_kg, 0);
+                return <tr key={load.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => selectLoad(load.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectLoad(load.id); } }}>
+                  <td><span className="ops-cell-primary ops-mono ops-cell-id">{load.reference}</span><span className="ops-cell-secondary ops-cell-clamp" title={load.name}>{load.name}</span></td>
+                  <td><span className="ops-cell-primary">{load.branch}</span><span className="ops-cell-secondary">{modeLabel(load.mode)}{load.equipment ? ` · ${load.equipment}` : ""}</span></td>
+                  <td><span className="ops-num">{load.members.length} · {load.stops.length}</span></td>
+                  <td><span className="ops-cell-muted plan-nowrap">{loadWeight.toFixed(1)} kg{load.capacity_weight_kg ? ` of ${load.capacity_weight_kg}` : ""}</span></td>
+                  <td><OpsBadge tone={statusTone(load.status)}>{statusLabel(load.status)}</OpsBadge></td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No loads match" : "No consolidation loads"} description={filtersActive ? "Change or reset the filters." : "Create a load from compatible transport orders to begin multi-stop planning."}/>}
+        </section>
+
+        {selectedLoad ? <section ref={detailRef} className="load-detail" aria-label={`Load ${selectedLoad.reference}`}>
+          <header className="load-detail-head">
+            <div className="min-w-0">
+              <p className="ops-inspector-kicker">{selectedLoad.reference}</p>
+              <h2>{selectedLoad.name}</h2>
+              <p className="load-detail-meta">{selectedLoad.branch} · {modeLabel(selectedLoad.mode)}{selectedLoad.equipment ? ` · ${selectedLoad.equipment}` : ""} · master movement with house-level commercial and shipment traceability</p>
             </div>
-            {selectedLoad.status === "draft" && canManage ? <div className="mt-3 flex flex-wrap items-end gap-2"><OpsField label="Add compatible order"><select value={addOrderId} onChange={(event) => setAddOrderId(event.target.value)}><option value="">Choose order</option>{addableOrders.map((order) => <option key={order.id} value={order.id}>{order.id} · {order.origin} → {order.destination}</option>)}</select></OpsField><OpsButton onClick={addOrder} disabled={!addOrderId || busy}>Add order</OpsButton></div> : null}
-          </OpsSurface>
+            <OpsBadge tone={statusTone(selectedLoad.status)}>{statusLabel(selectedLoad.status)}</OpsBadge>
+          </header>
 
-          <OpsSurface eyebrow="Multi-stop route" title={`${selectedLoad.stops.length} planned stops`} description={selectedLoad.status === "draft" ? "Sequence the route. The server blocks any plan that delivers an order before its pickup." : "Stop sequence is locked because procurement now references this route."}>
-            <div className="grid gap-2">
-              {[...selectedLoad.stops].sort((a, b) => a.sequence - b.sequence).map((stop, index, sorted) => { const draft = stopDraft(stop); return <div key={stop.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex items-start gap-3"><span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--admin-accent-bg)] text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]">{stop.sequence}</span><div><div className="flex flex-wrap items-center gap-2"><strong className="text-[11px] text-[var(--admin-ink)]">{stop.location}</strong><OpsBadge tone={stop.kind === "pickup" ? "info" : stop.kind === "delivery" ? "success" : "neutral"}>{modeLabel(stop.kind)}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Orders: {stop.order_ids.join(", ")}</p></div></div>{selectedLoad.status === "draft" && canManage ? <div className="flex gap-1"><OpsButton size="sm" onClick={() => moveStop(index, -1)} disabled={busy || index === 0}><ArrowUp size={11}/></OpsButton><OpsButton size="sm" onClick={() => moveStop(index, 1)} disabled={busy || index === sorted.length - 1}><ArrowDown size={11}/></OpsButton></div> : null}</div>{selectedLoad.status === "draft" && canManage ? <div className="mt-3 grid gap-2 md:grid-cols-[220px_1fr_auto]"><OpsField label="Planned time"><input type="datetime-local" value={draft.plannedAt} onChange={(event) => setStopDrafts((current) => ({ ...current, [stop.id]: { ...draft, plannedAt: event.target.value } }))}/></OpsField><OpsField label="Stop instructions"><input value={draft.instructions} onChange={(event) => setStopDrafts((current) => ({ ...current, [stop.id]: { ...draft, instructions: event.target.value } }))} placeholder="Dock, contact, customs handoff, time window…"/></OpsField><div className="flex items-end"><OpsButton size="sm" onClick={() => saveStop(stop)} disabled={busy}>Save stop</OpsButton></div></div> : stop.planned_at || stop.instructions ? <p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{stop.planned_at ? new Date(stop.planned_at).toLocaleString("en-AU") : "Time not fixed"}{stop.instructions ? ` · ${stop.instructions}` : ""}</p> : null}</div>; })}
+          <div className="load-detail-grid">
+            <div className="load-detail-main">
+              <OpsSurface density="compact" title={`${selectedLoad.members.length} house orders`} description={selectedLoad.status === "draft" ? "Membership can change until the load is released. Adding or removing an order regenerates the default route." : "House membership is locked to preserve procurement and shipment truth."} flush>
+                <OpsTableWrap>
+                  <table className="ops-table ops-register-table load-members-table" aria-label="House orders in this load">
+                    <thead><tr><th>Order</th><th>Customer</th><th className="ops-col-num">Weight · volume</th><th className="ops-col-num">Allocated</th><th><span className="sr-only">Actions</span></th></tr></thead>
+                    <tbody>{selectedLoad.members.map((member) => <tr key={member.order_id}>
+                      <td><span className="ops-cell-primary ops-mono ops-cell-id">{member.order_id}</span><span className="ops-cell-secondary ops-cell-clamp" title={`${member.origin} → ${member.destination}`}>{member.origin} → {member.destination}</span></td>
+                      <td>{member.customer_name || member.customer_id ? <span className="ops-cell-clamp">{member.customer_name || member.customer_id}</span> : <span className="ops-cell-muted">Customer not linked</span>}</td>
+                      <td className="ops-col-num"><span className="ops-num">{member.weight_kg.toFixed(1)} kg · {member.volume_cbm.toFixed(3)} CBM</span></td>
+                      <td className="ops-col-num">{member.allocated_cost !== null && member.allocated_currency ? <span className="ops-num">{money(member.allocated_cost, member.allocated_currency)}</span> : <span className="ops-cell-muted">—</span>}</td>
+                      <td className="ops-cell-actions">
+                        {member.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(member.shipment_reference)}`} className="ops-button" data-size="xs" data-variant="ghost">Job File</Link> : null}
+                        {editable ? <OpsButton size="xs" variant="ghost" onClick={() => removeOrder(member.order_id)} disabled={busy} aria-label={`Remove ${member.order_id}`}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>Remove</OpsButton> : null}
+                      </td>
+                    </tr>)}</tbody>
+                  </table>
+                </OpsTableWrap>
+                {editable ? <div className="load-add-order">
+                  <OpsField label="Add compatible order"><select value={addOrderId} onChange={(event) => setAddOrderId(event.target.value)}><option value="">Choose order</option>{addableOrders.map((order) => <option key={order.id} value={order.id}>{order.id} · {order.origin} → {order.destination}</option>)}</select></OpsField>
+                  <OpsButton size="sm" onClick={addOrder} disabled={!addOrderId || busy}>Add order</OpsButton>
+                </div> : null}
+              </OpsSurface>
+
+              <OpsSurface className="load-route" density="compact" title={`${selectedLoad.stops.length} planned stops`} description={selectedLoad.status === "draft" ? "Sequence the route. The server blocks any plan that delivers an order before its pickup." : "Stop sequence is locked because procurement now references this route."} flush>
+                <ol className="load-stops">
+                  {sortedStops.map((stop, index) => {
+                    const draft = stopDraft(stop);
+                    return <li key={stop.id} className="load-stop">
+                      <div className="load-stop-head">
+                        <span className="load-stop-seq" aria-label={`Stop ${stop.sequence}`}>{stop.sequence}</span>
+                        <div className="min-w-0">
+                          <div className="load-stop-title"><strong>{stop.location}</strong><OpsBadge tone={stop.kind === "pickup" ? "info" : stop.kind === "delivery" ? "success" : "neutral"}>{modeLabel(stop.kind)}</OpsBadge></div>
+                          <p className="load-stop-meta">Orders: {stop.order_ids.join(", ")}</p>
+                          {!editable && (stop.planned_at || stop.instructions) ? <p className="load-stop-meta">{stop.planned_at ? new Date(stop.planned_at).toLocaleString("en-AU") : "Time not fixed"}{stop.instructions ? ` · ${stop.instructions}` : ""}</p> : null}
+                        </div>
+                        {editable ? <div className="load-stop-move">
+                          <OpsButton size="xs" variant="ghost" onClick={() => moveStop(index, -1)} disabled={busy || index === 0} aria-label={`Move stop ${stop.sequence} up`}><ArrowUp size={14} strokeWidth={1.75} aria-hidden="true"/></OpsButton>
+                          <OpsButton size="xs" variant="ghost" onClick={() => moveStop(index, 1)} disabled={busy || index === sortedStops.length - 1} aria-label={`Move stop ${stop.sequence} down`}><ArrowDown size={14} strokeWidth={1.75} aria-hidden="true"/></OpsButton>
+                        </div> : null}
+                      </div>
+                      {editable ? <div className="load-stop-edit">
+                        <OpsField label="Planned time"><input type="datetime-local" value={draft.plannedAt} onChange={(event) => setStopDrafts((current) => ({ ...current, [stop.id]: { ...draft, plannedAt: event.target.value } }))}/></OpsField>
+                        <OpsField label="Stop instructions"><input value={draft.instructions} onChange={(event) => setStopDrafts((current) => ({ ...current, [stop.id]: { ...draft, instructions: event.target.value } }))} placeholder="Dock, contact, customs handoff, time window…"/></OpsField>
+                        <OpsButton size="sm" onClick={() => saveStop(stop)} disabled={busy}>Save stop</OpsButton>
+                      </div> : null}
+                    </li>;
+                  })}
+                </ol>
+              </OpsSurface>
             </div>
-          </OpsSurface>
 
-          {selectedLoad.status === "draft" && canManage ? <div className="flex flex-wrap justify-end gap-2"><OpsButton onClick={cancelLoad} disabled={busy}><Trash2 size={12}/> Cancel load</OpsButton><OpsButton variant="primary" onClick={releaseLoad} disabled={busy}>Lock route & release to procurement <ArrowRight size={12}/></OpsButton></div> : null}
-        </div> : <OpsSurface><OpsEmptyState title="Choose a load" description="Select a master load to manage its house orders, capacity and stop sequence."/></OpsSurface>}
+            <div className="load-detail-side">
+              {totals ? <OpsSurface density="compact" title="Capacity">
+                <OpsFacts>
+                  <OpsFact label="Weight">{`${totals.weight_kg.toFixed(2)} kg · ${selectedLoad.capacity_weight_kg ? `of ${selectedLoad.capacity_weight_kg} kg` : "no cap set"}`}</OpsFact>
+                  <OpsFact label="Volume">{`${totals.volume_cbm.toFixed(3)} CBM · ${selectedLoad.capacity_volume_cbm ? `of ${selectedLoad.capacity_volume_cbm} CBM` : "no cap set"}`}</OpsFact>
+                  <OpsFact label="Pieces">{`${totals.pieces} · ${selectedLoad.capacity_pieces ? `of ${selectedLoad.capacity_pieces}` : "no cap set"}`}</OpsFact>
+                  <OpsFact label="Containers">{`${totals.containers} · ${selectedLoad.capacity_containers ? `of ${selectedLoad.capacity_containers}` : "no cap set"}`}</OpsFact>
+                </OpsFacts>
+              </OpsSurface> : null}
+
+              <OpsSurface density="compact" title="Economics">
+                <OpsFacts>
+                  <OpsFact label="Selected cost baseline">{Object.entries(baselines).length ? Object.entries(baselines).map(([currency, value]) => money(value ?? 0, currency)).join(" · ") : "No comparable individual selected costs yet"}</OpsFact>
+                  <OpsFact label="Consolidation result">{savings && selectedLoad.procurement_currency ? `${money(savings.savings, selectedLoad.procurement_currency)} savings · ${money(savings.baseline, selectedLoad.procurement_currency)} → ${money(savings.consolidated, selectedLoad.procurement_currency)}` : selectedLoad.procurement_cost !== null && selectedLoad.procurement_currency ? `Master procurement ${money(selectedLoad.procurement_cost, selectedLoad.procurement_currency)}` : "Calculated after the master tender is booked"}</OpsFact>
+                </OpsFacts>
+              </OpsSurface>
+
+              {selectedLoad.status === "ready_for_procurement" && selectedLoad.master_order_id ? <OpsInspectorNote tone="info" title={`Master procurement order ${selectedLoad.master_order_id}`}>
+                Rate the master order in the Rate Desk, then tender it normally.
+                <span className="load-note-actions"><Link href="/admin/rating" className="ops-button" data-size="xs" data-variant="secondary">Rate master order</Link><Link href="/admin/tenders" className="ops-button" data-size="xs" data-variant="ghost">Tender Desk</Link></span>
+              </OpsInspectorNote> : null}
+              {selectedLoad.status === "booked" ? <OpsInspectorNote tone="success" title={`Master booking ${selectedLoad.master_booking_reference || "recorded"} · ${selectedLoad.procurement_partner_name || "Partner"}`}>Each house order keeps its own Digital Job File while remaining linked to this master movement.</OpsInspectorNote> : null}
+
+              {editable ? <div className="load-detail-actions">
+                <OpsButton variant="danger" size="sm" onClick={cancelLoad} disabled={busy}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>Cancel load</OpsButton>
+                <OpsButton variant="primary" size="sm" onClick={releaseLoad} disabled={busy}>Lock route & release to procurement<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></OpsButton>
+              </div> : null}
+            </div>
+          </div>
+        </section> : null}
+
+        {allocation ? <div className="plan-section">{allocation}</div> : null}
       </div>
     </OpsPage>
   );
-}
-
-function Mini({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{label}</p><strong className="mt-1 block text-[12px] text-[var(--admin-ink)]">{value}</strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{sub}</span></div>;
 }

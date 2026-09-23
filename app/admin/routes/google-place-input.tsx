@@ -77,10 +77,10 @@ export function GooglePlaceInput({
   const showMenu = focused && touched && value.trim().length >= 3 && (loading || Boolean(error) || suggestions.length > 0);
 
   return (
-    <label className="relative block">
-      <span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{label}</span>
-      <div className="flex h-9 items-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-soft)] px-2.5 focus-within:border-[#9aa6e5] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(83,103,217,.08)]">
-        <span className="text-[var(--admin-faint)]">{icon ?? <MapPin size={13}/>}</span>
+    <label className="ops-field">
+      <span className="ops-field-label">{label}</span>
+      <span className="route-place-input">
+        {icon ?? <MapPin size={14} strokeWidth={1.75} aria-hidden="true"/>}
         <input
           value={value}
           onFocus={() => setFocused(true)}
@@ -93,17 +93,16 @@ export function GooglePlaceInput({
             setLoading(false);
             onChange(nextValue);
           }}
-          className="w-full bg-transparent text-xs outline-none"
           placeholder={placeholder}
           autoComplete="off"
           required={required}
         />
-      </div>
+      </span>
 
       {showMenu ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white shadow-[var(--app-shadow-lg)]">
-          {loading ? <div className="px-3 py-3 text-[11px] text-[var(--admin-muted)]">Finding locations…</div> : null}
-          {!loading && error ? <div className="px-3 py-3 text-[11px] leading-4 text-amber-800">Place suggestions are temporarily unavailable. You can still enter the location manually.</div> : null}
+        <span className="market-suggest">
+          {loading ? <span className="market-suggest-status">Finding locations…</span> : null}
+          {!loading && error ? <span className="market-suggest-status">Place suggestions are temporarily unavailable. You can still enter the location manually.</span> : null}
           {!loading && !error ? suggestions.map((suggestion) => (
             <button
               key={suggestion.place_id}
@@ -115,16 +114,14 @@ export function GooglePlaceInput({
                 setSuggestions([]);
                 setFocused(false);
               }}
-              className="block w-full border-b border-[var(--admin-line)] px-3 py-2.5 text-left last:border-b-0 hover:bg-[var(--admin-surface-soft)]"
+              className="market-suggest-option"
             >
-              <span className="block truncate text-xs font-semibold text-[var(--admin-ink)]">{suggestion.main_text}</span>
-              {suggestion.secondary_text ? <span className="mt-0.5 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{suggestion.secondary_text}</span> : null}
+              <strong>{suggestion.main_text}</strong>
+              {suggestion.secondary_text ? <span>{suggestion.secondary_text}</span> : null}
             </button>
           )) : null}
-          <div className="border-t border-[var(--admin-line)] bg-[var(--admin-surface-soft)] px-3 py-1.5 text-right text-[length:var(--app-label-size)] text-[var(--admin-faint)]">
-            Results by <span translate="no" className="font-semibold text-[var(--admin-muted)]">Google Maps</span>
-          </div>
-        </div>
+          <span className="market-suggest-foot">Results by <span translate="no">Google Maps</span></span>
+        </span>
       ) : null}
     </label>
   );

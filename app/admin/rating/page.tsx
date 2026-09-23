@@ -1,3 +1,4 @@
+import "../plan-sell-premium.css";
 import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
@@ -56,7 +57,6 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
     if (rateCards.kind !== "ready" || !partners) return <OperationsShell {...shellProps}><Gate title="Rate Desk unavailable" detail="KCPL Partner pricing storage is temporarily unavailable." embedded/></OperationsShell>;
 
     return <OperationsShell {...shellProps}>
-      <div className="px-4 pt-4 sm:px-6 lg:px-7"><div className="mx-auto flex w-full max-w-[1152px] justify-between gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold text-[var(--admin-ink)]">← Transport Orders</Link><Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Open Tender Workspace →</Link></div></div>
       <TmsRatingWorkspace
         initialOrders={orderedOrders}
         initialRateCards={rateCards.rateCards}
@@ -74,5 +74,5 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-white p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">KCPL Operations</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/command-centre" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Operations Overview</Link><Link href="/admin/shipments" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Shipments</Link></div></section></main>;
+  return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-[var(--admin-surface)] p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">KCPL Operations</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/command-centre" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Operations Overview</Link><Link href="/admin/shipments" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Shipments</Link></div></section></main>;
 }

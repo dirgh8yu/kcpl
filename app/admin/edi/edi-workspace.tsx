@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Cable, CheckCircle2, Clock3, RefreshCw, Search, Send, ShieldAlert, Truck } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Cable, RefreshCw, Search, Send, ShieldAlert } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import type { TmsTender } from "../tenders/tms-tendering";
 import type { EdiLedgerRow } from "./edi-gateway.server";
 
@@ -19,16 +20,26 @@ type ApiResponse = {
   transactionId?: string;
 };
 
+const dateTimeFormat = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" });
+
 function fmt(value: string | null) {
   if (!value) return "—";
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleString() : value;
+  return Number.isFinite(date.getTime()) ? dateTimeFormat.format(date) : value;
 }
 
-function tone(status: EdiLedgerRow["status"]) {
-  if (status === "processed" || status === "dispatched") return "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
-  if (status === "quarantined" || status === "failed") return "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]";
-  return "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
+function tone(status: EdiLedgerRow["status"]): "success" | "danger" | "warning" {
+  if (status === "processed" || status === "dispatched") return "success";
+  if (status === "quarantined" || status === "failed") return "danger";
+  return "warning";
+}
+
+function statusLabel(status: EdiLedgerRow["status"]) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function channelLabel(channel: TmsTender["channel"]) {
+  return channel === "edi_204" ? "EDI 204" : channel.charAt(0).toUpperCase() + channel.slice(1).replaceAll("_", " ");
 }
 
 export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, initialEligibleTenders, canQueue204 }: {
@@ -72,38 +83,81 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
     finally { setBusy(null); }
   }
 
-  return <div className="ops-content-wide py-5">
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><p className="ops-eyebrow">Freight EDI</p><h1 className="mt-1 text-[27px] font-[760] tracking-[-.04em] text-[var(--admin-ink)]">EDI Gateway</h1><p className="mt-2 max-w-3xl text-[11px] leading-5 text-[var(--admin-muted)]">ANSI X12 204 load tenders, 990 carrier responses and 214 shipment status messages stitched into KCPL Tender & Booking and Live Visibility. Duplicate or unmatched messages are retained for review instead of silently mutating freight records.</p></div>
-      <div className="flex flex-wrap gap-2"><Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="sm">Tender & Booking</Link><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><button className="ops-button" data-variant="secondary" data-size="sm" disabled={Boolean(busy)} onClick={() => { setBusy("refresh"); setError(""); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")).finally(() => setBusy(null)); }}><RefreshCw size={12}/>Refresh</button></div>
+  const handoffShown = eligibleTenders.slice(0, 12);
+
+  return <>
+    <OpsPageHeader
+      title="EDI Gateway"
+      description="X12 204 load tenders, 990 carrier responses and 214 shipment status messages."
+      actions={<>
+        <Link href="/admin/tenders" className="ops-button" data-variant="secondary" data-size="md">Tender & Booking</Link>
+        <Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="md">Live Visibility</Link>
+        <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => { setBusy("refresh"); setError(""); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")).finally(() => setBusy(null)); }}><RefreshCw size={16} strokeWidth={1.75} className={busy === "refresh" ? "network-spin" : undefined} aria-hidden="true"/>Refresh</OpsButton>
+      </>}
+    />
+
+    <div className="px-4 pb-8 pt-4 md:px-6">
+      <OpsKpiRail label="EDI gateway summary">
+        <OpsRailMetric label="Transport" value={configured ? "Authenticated" : "Not configured"} tone={configured ? "success" : "warning"} title={configured ? "VAN/middleware can poll outbound 204s and post inbound 990/214 messages." : undefined}/>
+        <OpsRailMetric label="204 queued" value={summary.outbound204Queued}/>
+        <OpsRailMetric label="204 dispatched" value={summary.outbound204Dispatched}/>
+        <OpsRailMetric label="990 processed" value={summary.inbound990Processed}/>
+        <OpsRailMetric label="214 processed" value={summary.inbound214Processed}/>
+        <OpsRailMetric label="Quarantine" value={summary.quarantined} tone={summary.quarantined ? "danger" : "neutral"}/>
+      </OpsKpiRail>
+
+      {configured ? null : <div className="network-notice"><OpsInlineAlert icon={<ShieldAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>EDI transport not configured.</strong> Set KCPL_EDI_SECRET in Firebase Secret Manager before external EDI transport can connect. The internal ledger and tender workflow remain available.</OpsInlineAlert></div>}
+      {message ? <div className="network-notice"><OpsNotice tone="success" onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+      {error ? <div className="network-notice"><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
+
+      {canQueue204 ? <OpsSurface
+        density="compact"
+        title="204 tender handoff"
+        description="Sent manual tenders can be converted to EDI 204 before any email dispatch. The tender reference and commercial snapshot stay the same, so the carrier 990 returns to the existing procurement record."
+        flush
+      >
+        {handoffShown.length ? <OpsTableWrap>
+          <table className="ops-table ops-register-table edi-handoff-table" aria-label="Tenders eligible for EDI 204">
+            <thead><tr><th>Tender</th><th>Partner</th><th>Route</th><th>Channel</th><th><span className="sr-only">Action</span></th></tr></thead>
+            <tbody>{handoffShown.map((tender) => <tr key={tender.id}>
+              <td><Link href={`/admin/tenders?tender=${encodeURIComponent(tender.id)}`} className="ops-cell-primary ops-mono ops-cell-id network-link">{tender.tender_reference}</Link></td>
+              <td><span className="ops-cell-clamp" title={tender.partner_name}>{tender.partner_name}</span></td>
+              <td><span className="ops-cell-clamp" title={`${tender.origin} → ${tender.destination}`}>{tender.origin} → {tender.destination}</span></td>
+              <td><OpsBadge tone={tender.channel === "edi_204" ? "info" : "neutral"}>{channelLabel(tender.channel)}</OpsBadge></td>
+              <td className="ops-cell-actions"><OpsButton variant="secondary" size="xs" disabled={busy === tender.id || tender.channel === "edi_204"} onClick={() => queue204(tender)}><Send size={14} strokeWidth={1.75} aria-hidden="true"/>{tender.channel === "edi_204" ? "204 queued" : busy === tender.id ? "Queueing…" : "Queue EDI 204"}</OpsButton></td>
+            </tr>)}</tbody>
+          </table>
+        </OpsTableWrap> : <OpsEmptyState compact kind="healthy" icon={<Cable size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No tenders waiting" description="No sent manual tenders are waiting for an EDI handoff."/>}
+        {eligibleTenders.length > handoffShown.length ? <footer className="ops-register-footer"><span>{handoffShown.length} of {eligibleTenders.length} eligible tenders shown</span></footer> : null}
+      </OpsSurface> : null}
+
+      <OpsSurface
+        className="network-section"
+        density="compact"
+        title="EDI transaction ledger"
+        description="Outbound and inbound message history. Duplicate or unmatched messages are held for review instead of silently changing freight records; raw X12 payloads never reach the browser."
+        action={<div className="network-surface-tools">
+          <OpsSearch className="network-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search reference, partner, set" aria-label="Search the EDI transaction ledger"/>
+          <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} transactions` : `${filtered.length} of ${rows.length}`}</span>
+        </div>}
+        flush
+      >
+        {filtered.length ? <OpsTableWrap>
+          <table className="ops-table ops-register-table edi-ledger-table" aria-label="EDI transaction ledger">
+            <thead><tr><th>Set</th><th>Direction</th><th>Reference</th><th>Partner</th><th>Status</th><th>Control</th><th>Created</th><th>Message</th></tr></thead>
+            <tbody>{filtered.map((row) => <tr key={row.id}>
+              <td><span className="ops-cell-primary ops-mono">{row.transaction_set}</span></td>
+              <td><span className="edi-direction">{row.direction === "inbound" ? <ArrowDownLeft size={14} strokeWidth={1.75} aria-hidden="true"/> : <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true"/>}{row.direction === "inbound" ? "Inbound" : "Outbound"}</span></td>
+              <td>{row.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-mono network-link">{row.shipment_reference}</Link> : row.tender_reference ? <Link href={`/admin/tenders?tender=${encodeURIComponent(row.tender_reference)}`} className="ops-mono network-link">{row.tender_reference}</Link> : row.reference ? <span className="ops-mono">{row.reference}</span> : <span className="ops-cell-muted">—</span>}</td>
+              <td>{row.partner ? <span className="ops-cell-clamp" title={row.partner}>{row.partner}</span> : <span className="ops-cell-muted">—</span>}</td>
+              <td><OpsBadge tone={tone(row.status)}>{statusLabel(row.status)}</OpsBadge></td>
+              <td><span className="ops-mono ops-cell-muted">{row.transaction_control || row.interchange_control || "—"}</span></td>
+              <td><span className="ops-cell-muted network-nowrap">{fmt(row.created_at)}</span></td>
+              <td>{row.message ? <span className="ops-cell-muted ops-cell-clamp edi-message" title={row.message}>{row.message}</span> : <span className="ops-cell-muted">—</span>}</td>
+            </tr>)}</tbody>
+          </table>
+        </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Search size={16} strokeWidth={1.75} aria-hidden="true"/>} title={query.trim() ? "No results" : "No EDI transactions"} description={query.trim() ? "No EDI transactions match this search." : "No EDI transactions match this view."}/>}
+      </OpsSurface>
     </div>
-
-    <div className={`mt-4 rounded-[var(--app-radius)] border px-3 py-2.5 text-[length:var(--app-label-size)] ${configured ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]"}`}><strong>{configured ? "EDI transport authenticated" : "EDI transport not configured"}</strong> · {configured ? "VAN/middleware can poll outbound 204s and post inbound 990/214 messages." : "Set KCPL_EDI_SECRET in Firebase Secret Manager before external EDI transport can connect. Internal ledger and tender workflow remain available."}</div>
-    {message ? <div className="mt-3 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] px-3 py-2 text-[length:var(--app-label-size)] text-[var(--admin-success)]">{message}</div> : null}
-    {error ? <div className="mt-3 rounded-[var(--app-radius)] border border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] px-3 py-2 text-[length:var(--app-label-size)] text-[var(--admin-danger)]">{error}</div> : null}
-
-    <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-      <Stat label="204 queued" value={summary.outbound204Queued} icon={<Clock3 size={13}/>}/>
-      <Stat label="204 dispatched" value={summary.outbound204Dispatched} icon={<Send size={13}/>}/>
-      <Stat label="990 processed" value={summary.inbound990Processed} icon={<CheckCircle2 size={13}/>}/>
-      <Stat label="214 processed" value={summary.inbound214Processed} icon={<Truck size={13}/>}/>
-      <Stat label="Quarantine" value={summary.quarantined} icon={<ShieldAlert size={13}/>}/>
-    </div>
-
-    {canQueue204 ? <section className="mt-5 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-4">
-      <div className="flex items-center gap-2 text-[var(--admin-crimson)]"><Cable size={14}/><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em]">204 tender handoff</p></div>
-      <p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Sent manual tenders can be converted to EDI 204 before any email dispatch. The tender reference and commercial snapshot remain the same, so the carrier 990 response returns to the existing procurement record.</p>
-      <div className="mt-3 grid gap-2 lg:grid-cols-2">{eligibleTenders.length ? eligibleTenders.slice(0, 12).map((tender) => <div key={tender.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3"><div className="flex items-start justify-between gap-3"><div><Link href={`/admin/tenders?tender=${encodeURIComponent(tender.id)}`} className="text-[11px] font-bold text-[var(--admin-crimson)] hover:underline">{tender.tender_reference}</Link><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{tender.partner_name} · {tender.origin} → {tender.destination}</p></div><span className="rounded-full border border-[var(--admin-line)] bg-white px-2 py-1 text-[length:var(--app-label-size)] font-bold uppercase text-[var(--admin-muted)]">{tender.channel.replaceAll("_", " ")}</span></div><div className="mt-3 flex justify-end"><button className="ops-button" data-variant="primary" data-size="sm" disabled={busy === tender.id || tender.channel === "edi_204"} onClick={() => queue204(tender)}>{tender.channel === "edi_204" ? "204 queued" : busy === tender.id ? "Queueing…" : "Queue EDI 204"}</button></div></div>) : <p className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">No sent manual tenders are waiting for an EDI handoff.</p>}</div>
-    </section> : null}
-
-    <section className="mt-5 overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-3"><div><p className="text-[11px] font-[730] text-[var(--admin-ink)]">EDI transaction ledger</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Outbound and inbound message history without exposing raw X12 payloads to the browser.</p></div><div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--admin-faint)]"/><input className="ops-input w-64 pl-8" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search reference, partner, set"/></div></div>
-      <div className="ops-scroll-x overflow-x-auto"><table className="w-full min-w-[900px] text-left text-[length:var(--app-label-size)]"><thead className="border-b border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)]"><tr><th className="px-4 py-2.5">Set</th><th>Direction</th><th>Reference</th><th>Partner</th><th>Status</th><th>Control</th><th>Created</th><th className="pr-4">Message</th></tr></thead><tbody>{filtered.map((row) => <tr key={row.id} className="border-b border-[var(--admin-line)]"><td className="px-4 py-3 font-bold text-[var(--admin-ink)]">{row.transaction_set}</td><td>{row.direction}</td><td>{row.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="text-[var(--admin-crimson)] hover:underline">{row.shipment_reference}</Link> : row.tender_reference ? <Link href={`/admin/tenders?tender=${encodeURIComponent(row.tender_reference)}`} className="text-[var(--admin-crimson)] hover:underline">{row.tender_reference}</Link> : row.reference || "—"}</td><td>{row.partner || "—"}</td><td><span className={`rounded-full border px-2 py-1 text-[length:var(--app-label-size)] font-bold ${tone(row.status)}`}>{row.status}</span></td><td>{row.transaction_control || row.interchange_control || "—"}</td><td>{fmt(row.created_at)}</td><td className="max-w-[280px] pr-4 text-[var(--admin-muted)]">{row.message || "—"}</td></tr>)}</tbody></table></div>
-      {!filtered.length ? <div className="p-8 text-center text-[length:var(--app-label-size)] text-[var(--admin-muted)]">No EDI transactions match this view.</div> : null}
-    </section>
-  </div>;
-}
-
-function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
-  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3.5"><div className="flex items-center gap-2 text-[var(--admin-crimson)]">{icon}<span className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em]">{label}</span></div><p className="mt-2 text-[22px] font-[760] tracking-[-.04em] text-[var(--admin-ink)]">{value}</p></div>;
+  </>;
 }

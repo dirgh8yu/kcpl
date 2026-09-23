@@ -1,3 +1,4 @@
+import "../plan-sell-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
@@ -68,8 +69,7 @@ export default async function CrmPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <CrmCustomerJump customers={safeCustomers}/>
-      <CrmDashboard initialCustomers={safeCustomers} initialStats={crmDashboardStats(safeCustomers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
+      <CrmDashboard initialCustomers={safeCustomers} initialStats={crmDashboardStats(safeCustomers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial} jump={<CrmCustomerJump key="customer-360" customers={safeCustomers}/>}/>
     </OperationsShell>
   );
 }

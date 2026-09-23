@@ -1,9 +1,9 @@
+import "../plan-sell-premium.css";
 import Link from "next/link";
-import { CheckCircle2, CircleAlert, Mail, MapPinned, RadioTower } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
-import { OpsBadge, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
+import { OpsKpiRail, OpsPage, OpsPageHeader, OpsRailMetric } from "../operations-ui";
 import { GoogleRoadRoutePanel } from "../routes/google-road-route-panel";
 import { getStaffContext } from "../staff-directory.server";
 import { kcplStaffRoleLabels, staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
@@ -56,45 +56,32 @@ export default async function MarketEstimatePage() {
     <OperationsShell {...shellProps}>
       <OpsPage>
         <OpsPageHeader
-          eyebrow="Commercial intelligence"
           title="Market estimate"
-          description="Independent freight benchmarking, NRB forex and route references for planning. Reference data remains advisory and never overwrites a customer quote automatically."
-          meta={<><OpsBadge tone="accent">{roleLabel}</OpsBadge><span>Live integration workspace</span></>}
-          actions={<div className="flex flex-wrap gap-2"><Link href="/admin/rating" className="ops-button" data-variant="primary" data-size="sm">Rate Desk</Link><Link href="/admin/pricing" className="ops-button" data-variant="secondary" data-size="sm">Pricing Desk</Link><Link href="/admin/consolidation" className="ops-button" data-variant="secondary" data-size="sm">Load Planner</Link></div>}
+          description="Freight benchmarks, NRB forex and road-route references. Advisory only; never overwrites a quote."
+          meta={<span>{roleLabel} · live integration workspace</span>}
+          actions={<>
+            <Link href="/admin/rating" className="ops-button" data-variant="secondary" data-size="md">Rate Desk</Link>
+            <Link href="/admin/pricing" className="ops-button" data-variant="secondary" data-size="md">Pricing Desk</Link>
+            <Link href="/admin/consolidation" className="ops-button" data-variant="secondary" data-size="md">Load Planner</Link>
+          </>}
         />
 
-        <div className="ops-content ops-stack">
-          <OpsSurface eyebrow="Integration status" title="Connected reference sources" description="Integration state is visible to staff so an unavailable provider cannot masquerade as a blank result.">
-            <div className="grid border border-[var(--admin-line)] md:grid-cols-2 xl:grid-cols-4">
-              <IntegrationCard icon={<RadioTower size={15}/>} title="Freight benchmark" detail="Freightos public estimate adapter" state="available"/>
-              <IntegrationCard icon={<CheckCircle2 size={15}/>} title="NRB Forex" detail="Official Nepal Rastra Bank reference rates" state="available"/>
-              <IntegrationCard icon={<MapPinned size={15}/>} title="Google Routes + Places" detail={routesConfigured && placesConfigured ? "Firebase secrets detected" : "API code available · check Firebase secrets"} state={routesConfigured && placesConfigured ? "available" : "setup"}/>
-              <IntegrationCard icon={<Mail size={15}/>} title="SendGrid quote email" detail={emailConfigured ? "Firebase email configuration detected" : "API code available · check Firebase secrets"} state={emailConfigured ? "available" : "setup"}/>
-            </div>
-          </OpsSurface>
+        <div className="px-4 pb-8 pt-4 md:px-6">
+          {/* Source state stays visible so an unavailable provider cannot masquerade as a blank result. */}
+          <OpsKpiRail label="Connected reference sources">
+            <OpsRailMetric label="Freight benchmark" value="Available" tone="success" detail="Freightos" title="Freightos public estimate adapter"/>
+            <OpsRailMetric label="NRB Forex" value="Available" tone="success" detail="Nepal Rastra Bank" title="Official Nepal Rastra Bank reference rates"/>
+            <OpsRailMetric label="Google Routes + Places" value={routesConfigured && placesConfigured ? "Available" : "Check setup"} tone={routesConfigured && placesConfigured ? "success" : "warning"} detail={routesConfigured && placesConfigured ? "Configured" : undefined} title={routesConfigured && placesConfigured ? "Firebase secrets detected" : "API code available · check Firebase secrets"}/>
+            <OpsRailMetric label="SendGrid quote email" value={emailConfigured ? "Available" : "Check setup"} tone={emailConfigured ? "success" : "warning"} detail={emailConfigured ? "Configured" : undefined} title={emailConfigured ? "Firebase email configuration detected" : "API code available · check Firebase secrets"}/>
+          </OpsKpiRail>
 
-          <ForexReferencePanel compact/>
-          <GoogleRoadRoutePanel initialOrigin="Kolkata, India" initialDestination="Kathmandu, Nepal" compact/>
+          <MarketEstimateWorkspace/>
+          <div className="plan-section"><ForexReferencePanel compact/></div>
+          <div className="plan-section"><GoogleRoadRoutePanel initialOrigin="Kolkata, India" initialDestination="Kathmandu, Nepal" compact/></div>
         </div>
       </OpsPage>
-
-      <MarketEstimateWorkspace roleLabel={roleLabel}/>
     </OperationsShell>
   );
-}
-
-function IntegrationCard({ icon, title, detail, state }: { icon: React.ReactNode; title: string; detail: string; state: "available" | "setup" }) {
-  return <div className="min-h-[92px] border-b border-r border-[var(--admin-line)] bg-white p-3 last:border-r-0">
-    <div className="flex items-start justify-between gap-3">
-      <span className={state === "available" ? "text-[var(--admin-success)]" : "text-[var(--admin-warning)]"}>{icon}</span>
-      <span className={`inline-flex items-center gap-1 text-[length:var(--app-label-size)] font-medium ${state === "available" ? "text-[var(--admin-success)]" : "text-[var(--admin-warning)]"}`}>
-        {state === "available" ? <CheckCircle2 size={11}/> : <CircleAlert size={11}/>}
-        {state === "available" ? "Available" : "Check setup"}
-      </span>
-    </div>
-    <strong className="mt-3 block text-[12px] font-semibold text-[var(--admin-ink)]">{title}</strong>
-    <p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{detail}</p>
-  </div>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

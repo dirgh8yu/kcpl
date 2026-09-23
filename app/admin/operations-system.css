@@ -13,6 +13,15 @@
   --admin-crimson: #DC143C;
   --admin-crimson-dark: #B61032;
   --admin-crimson-deep: #9C0D2A;
+  /* Text/icon colour on any crimson fill. Pinned, like the crimson itself,
+   * so on-brand fills never inherit a themed text colour. */
+  --admin-on-crimson: #FFFFFF;
+  /* Deep-navy accent surfaces (finance header, CRM quote dock, its hover).
+   * Pair with --admin-on-dark for text/icons on any of them. */
+  --admin-navy: #0B1724;
+  --admin-navy-steel: #173650;
+  /* Text/icon colour on any dark brand surface (navy or ink). */
+  --admin-on-dark: #FFFFFF;
   /* Brand-pinned by tests/admin-ui-system.test.mjs -- the Figma identity black.
    * Not ours to soften. */
   --admin-ink: #101010;
@@ -83,6 +92,20 @@
   --app-shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
   --app-shadow-md: var(--app-surface-shadow);
   --app-shadow-lg: 0 12px 32px rgb(16 24 40 / 12%), 0 4px 10px rgb(16 24 40 / 6%);
+  /* Floating-layer micro-glass: one reusable shell for genuinely transient UI
+   * (filter menus, option lists, action menus, the command palette, the
+   * notification panel). Near-opaque KCPL white; the blur only reads where
+   * dense page content passes beneath an open panel. Static values — never
+   * animated. Canvases, tables, rails, inspectors and forms stay opaque; the
+   * shell carries the glass, its contents keep their own opaque surfaces. */
+  --app-float-bg: rgb(255 255 255 / 90%);
+  --app-float-bg-strong: rgb(255 255 255 / 94%);
+  --app-float-line: rgb(16 24 40 / 8%);
+  --app-float-blur: 12px;
+  --app-float-blur-strong: 14px;
+  --app-float-saturate: 115%;
+  --app-float-shadow: 0 12px 32px rgb(16 24 40 / 7%), 0 2px 8px rgb(16 24 40 / 4%);
+  --app-float-radius: var(--app-surface-radius);
   /* Motion tokens — see docs/OPERATING_SYSTEM.md. All UI motion is transform/opacity
    * only, sub-300ms, and disabled wholesale by the prefers-reduced-motion rule below. */
   --app-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -91,6 +114,23 @@
   --app-duration-fast: 120ms;
   --app-duration-base: 180ms;
   --app-duration-slow: 240ms;
+}
+/* Radix portals floating surfaces to document.body, outside .kcpl-admin-route,
+ * so every floating-layer variable must also resolve at the root. Values are
+ * duplicates of the block above; keep them in sync. */
+:root {
+  --app-float-bg: rgb(255 255 255 / 90%);
+  --app-float-bg-strong: rgb(255 255 255 / 94%);
+  --app-float-line: rgb(16 24 40 / 8%);
+  --app-float-blur: 12px;
+  --app-float-blur-strong: 14px;
+  --app-float-saturate: 115%;
+  --app-float-shadow: 0 12px 32px rgb(16 24 40 / 7%), 0 2px 8px rgb(16 24 40 / 4%);
+  --app-float-radius: var(--app-surface-radius);
+  /* Radius scale needed by the chain above (approved geometry, unchanged). */
+  --app-radius: 8px;
+  --app-surface-radius: 10px;
+  --app-dialog-radius: 12px;
 }
 .kcpl-admin-route .kcpl-admin-shell {
   min-height: 100dvh;
@@ -144,6 +184,13 @@
 .app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); color: var(--admin-ink); }
 .app-nav-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
 .app-account { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--app-radius); }
+/* Profile button: opens the account panel (the shell's settings surface). */
+.app-account-trigger { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; padding: 0; border: 0; border-radius: var(--app-radius); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.app-account-trigger:hover { background: var(--admin-surface-soft); }
+.app-account-chevron { flex: none; color: var(--admin-faint); transition: transform var(--app-duration-fast) var(--app-ease-out); }
+.app-account-trigger[aria-expanded="true"] .app-account-chevron { transform: rotate(180deg); }
+.app-account-panel { position: fixed; bottom: 76px; left: 12px; z-index: 80; width: min(340px, calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--app-float-line); border-radius: var(--app-surface-radius); background: var(--app-float-bg); -webkit-backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate)); backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate)); box-shadow: var(--app-float-shadow); }
+.app-account-panel .app-avatar { width: 34px; height: 34px; font-size: 12px; }
 .app-avatar { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--admin-crimson); color: white; font-size: 11px; font-weight: 600; }
 .app-account-name { min-width: 0; flex: 1; overflow: hidden; color: var(--admin-ink); text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 500; }
 .app-account-name small { display: block; color: var(--admin-muted); font-size: 11px; font-weight: 400; }
@@ -271,7 +318,6 @@
 .kcpl-admin-content .ops-table tbody tr[data-selected="true"],
 .kcpl-admin-content .ops-table tbody tr:focus-within { box-shadow: none; }
 .kcpl-admin-content .ops-table tbody tr[data-selected="true"] { background: var(--admin-surface-muted); }
-.kcpl-admin-content .ops-record-row[data-selected="true"] { box-shadow: none; }
 .kcpl-admin-content .ops-surface[data-priority] { border-left-width: 1px; }
 .kcpl-admin-content :is(.ops-notice, .ops-error-state) { border-width: 1px; border-color: var(--admin-line); }
 .kcpl-admin-content :is(.ops-notice, .ops-error-state)[data-tone="success"] { border-color: var(--admin-success-line); }
@@ -391,20 +437,6 @@
   color: white;
   font-size: 12px;
   line-height: 16px;
-}
-.kcpl-admin-content .shipments-filter-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 30;
-  display: grid;
-  width: min(300px, calc(100vw - 32px));
-  gap: 12px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-surface-radius);
-  background: var(--admin-surface);
-  padding: 16px;
-  box-shadow: var(--app-surface-shadow);
 }
 .kcpl-admin-content .shipments-filter-menu label {
   display: grid;
@@ -537,21 +569,6 @@
   .kcpl-admin-content .ship-lane { grid-template-columns: 1fr; gap: 10px; }
   .kcpl-admin-content .ship-lane-status { flex-direction: row; align-items: center; justify-content: space-between; }
 }
-.kcpl-admin-content .tender-workspace-page {
-  color: var(--admin-ink);
-}
-.kcpl-admin-content .tender-workspace-page :where(input,select,textarea):focus-visible {
-  border-color: var(--admin-crimson);
-  box-shadow: 0 0 0 3px rgb(220 20 60 / 12%);
-  outline: none;
-}
-.kcpl-admin-content .tender-workspace-page table tbody tr:focus-visible {
-  outline: 2px solid var(--admin-crimson);
-  outline-offset: -2px;
-}
-.kcpl-admin-content .tender-workspace-page .ops-button {
-  min-height: 36px;
-}
 /* The shipment inspector is a right-side slideover on desktop: the register
  * stays visible and scannable behind it. Below 900px it drops to a full-width
  * bottom sheet, which suits one-handed triage on small screens. */
@@ -621,7 +638,6 @@
 .ops-pagination-actions { display: flex; align-items: center; gap: 8px; }
 
 .kcpl-admin-content .ops-filter-pill, .kcpl-admin-content .ops-segmented { border-radius: var(--app-radius); }
-.kcpl-admin-content .ops-filter-pill { font-size: 12px; }
 
 @media (max-width: 1023px) {
   .kcpl-admin-route .kcpl-admin-content { padding-left: 0; }
@@ -700,6 +716,41 @@
 .app-nav-group summary svg { transition: transform var(--app-duration-fast) var(--app-ease-out); }
 .app-nav-group summary[data-collapsed] svg { transform: rotate(-90deg); }
 
+/* ── Floating-layer micro-glass (the one approved floating surface) ───────
+ * Applies to Radix floating content only — surfaces that exist while open and
+ * unmount on close, so at most one or two blurred regions are ever live.
+ * [data-state] out-specifies the per-workspace sheets (shipments-premium.css)
+ * regardless of import order, keeping this the single source of the treatment.
+ * NOT scoped to .kcpl-admin-content: register-pulse-picker portals to
+ * document.body, and `body` keeps this one class ahead of the per-workspace
+ * opaque menu rules (e.g. shipments-premium.css) regardless of import order.
+ * Inside these shells, inputs, chips and menu rows stay fully opaque via their
+ * own --admin-* backgrounds; text keeps AA contrast over any backdrop. */
+body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-filter-menu, .register-pulse-picker)[data-state] {
+  border-color: var(--app-float-line);
+  background: var(--app-float-bg);
+  -webkit-backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate));
+  backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate));
+  box-shadow: var(--app-float-shadow);
+  border-radius: var(--app-float-radius);
+}
+/* Browsers without backdrop-filter (and users who request less transparency)
+ * get the plain approved surface — glass is an enhancement, never a dependency. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-filter-menu, .register-pulse-picker)[data-state] {
+    background: var(--admin-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-filter-menu, .register-pulse-picker)[data-state] {
+    background: var(--admin-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Radix Popover/Dialog content: real symmetric enter/exit, keyed off the
  * data-state Radix already sets (Radix defers unmount for CSS animations,
  * so both directions play in full — no component changes needed). */
@@ -722,23 +773,38 @@
 @keyframes ops-fade-in-overlay { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ops-fade-out-overlay { from { opacity: 1; } to { opacity: 0; } }
 
-/* Command palette: entrance only via @starting-style (it unmounts on close, so
- * there's no exit to animate; an instant close reads as snappy, matching a
- * keyboard-triggered overlay — see plans/admin-motion-audit.md #1). */
-.app-command-backdrop { transition: opacity var(--app-duration-base) var(--app-ease-out); }
-.app-command-backdrop, .app-command-dialog { opacity: 1; }
-@starting-style {
-  .app-command-backdrop { opacity: 0; }
+/* Command palette entrance/exit + its micro-glass shell live in the shared-shell
+ * block below (search "strongest micro-glass"). */
+
+/* Browser without backdrop-filter: the palette and notification panel fall back
+ * to the plain approved surface — the palette's translucent 94% shell alone is
+ * not enough contrast over arbitrary page content. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-command-dialog, .app-notification-panel, .app-account-panel {
+    background: var(--admin-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
-.app-command-dialog { transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); transform: translateY(0) scale(1); }
-@starting-style {
-  .app-command-dialog { opacity: 0; transform: translateY(-8px) scale(.98); }
+@media (prefers-reduced-transparency: reduce) {
+  .app-command-dialog, .app-notification-panel, .app-account-panel {
+    background: var(--admin-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* Notification panel: same entrance-only treatment, anchored to its trigger. */
 .app-notification-panel { transform-origin: top right; opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); }
 @starting-style {
   .app-notification-panel { opacity: 0; transform: scale(.96); }
+}
+
+/* Account panel: same entrance-only treatment, rising from the sidebar's
+ * profile button (bottom-anchored, so it scales from its bottom edge). */
+.app-account-panel { transform-origin: bottom left; opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); }
+@starting-style {
+  .app-account-panel { opacity: 0; transform: scale(.96); }
 }
 
 /* Mobile nav: real slide, not a display:none/flex snap. Visibility keeps the
@@ -775,7 +841,9 @@
   .kcpl-admin-content .shipment-sheet-closebar-hint,
   .kcpl-admin-content .ops-dialog-overlay[data-state="open"],
   .kcpl-admin-content .ops-dialog-overlay[data-state="closed"] { animation: none; }
-  .app-command-backdrop, .app-command-dialog, .app-notification-panel { transition: none; }
+  .app-command-backdrop, .app-command-dialog, .app-notification-panel, .app-account-panel { transition: none; }
+  body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-filter-menu, .register-pulse-picker)[data-state] { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .app-command-dialog, .app-notification-panel, .app-account-panel { -webkit-backdrop-filter: none; backdrop-filter: none; }
   .kcpl-admin-content .ops-filter-chip:active { transform: none; transition: none; }
   .kcpl-admin-content .ops-action-menu-item { transition: none; }
   .kcpl-admin-content .ops-notice { transition: none; }
@@ -918,119 +986,80 @@
     height: 500px;
   }
 }
-/* Customs clearance: keep the queue and its decision panel readable at working density. */
-.kcpl-admin-content .customs-clearance-page {
-  min-height: calc(100dvh - var(--app-toolbar-height));
-  padding: var(--app-page-gap);
-}
-.kcpl-admin-content .customs-clearance-workspace {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-.kcpl-admin-content .customs-clearance-queue {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.kcpl-admin-content .customs-clearance-inspector {
-  position: sticky;
-  top: calc(var(--app-toolbar-height) + 16px);
-  width: 420px;
-  max-height: calc(100dvh - var(--app-toolbar-height) - 32px);
-  overflow: auto;
-}
-.kcpl-admin-content .customs-clearance-register .ops-table tbody tr[data-selected="true"] {
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .customs-clearance-register .ops-table tbody tr:hover {
-  background: var(--admin-surface-muted);
-}
-@media (max-width: 1040px) {
-  .kcpl-admin-content .customs-clearance-workspace {
-    display: block;
-  }
-  .kcpl-admin-content .customs-clearance-inspector {
-    position: relative;
-    top: auto;
-    width: 100%;
-    max-height: none;
-    margin-top: 16px;
-  }
-}
+/* Customs clearance: shared register anatomy. The old bespoke queue/inspector
+ * flex layout is replaced by .ops-register-layout; only route-specific details
+ * remain (checklist cell, step list, unassigned marker). */
+.kcpl-admin-content .customs-clearance-page { min-height: calc(100dvh - var(--app-toolbar-height)); padding-bottom: 24px; }
+.kcpl-admin-content .customs-table { min-width: 900px; }
+.kcpl-admin-content .customs-table td { padding-block: 5px; }
+.kcpl-admin-content .customs-table[data-compact="true"] { min-width: 620px; }
+.kcpl-admin-content .customs-checklist-cell { display: flex; min-width: 110px; align-items: center; gap: 8px; }
+.kcpl-admin-content .customs-checklist-track { flex: 1 1 56px; height: 4px; overflow: hidden; border-radius: 999px; background: var(--admin-line); }
+.kcpl-admin-content .customs-checklist-fill { height: 100%; border-radius: 999px; background: var(--admin-crimson); }
+.kcpl-admin-content .customs-checklist-fill[data-complete] { background: var(--admin-success); }
+.kcpl-admin-content .customs-unassigned { color: var(--admin-danger); font-size: 12px; }
+.kcpl-admin-content .customs-warning-list { display: grid; margin: 0; padding: 0; gap: 6px; list-style: none; }
+.kcpl-admin-content .customs-warning-list li { display: flex; align-items: flex-start; gap: 7px; color: var(--admin-danger); font-size: 12.5px; line-height: 17px; }
+.kcpl-admin-content .customs-warning-list li[data-warning] { color: var(--admin-warning); }
+.kcpl-admin-content .customs-warning-list svg { flex: none; margin-top: 2px; }
+.kcpl-admin-content .customs-step-list { display: grid; margin: 0; padding: 0; gap: 12px; list-style: none; }
+.kcpl-admin-content .customs-step-row { display: flex; gap: 10px; }
+.kcpl-admin-content .customs-step-dot { flex: none; margin-top: 2px; color: var(--admin-line-strong); }
+.kcpl-admin-content .customs-step-copy { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.kcpl-admin-content .customs-step-title { color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 18px; }
+.kcpl-admin-content .customs-step-detail { color: var(--admin-muted); font-size: 12px; line-height: 16px; }
+.kcpl-admin-content .customs-step-action { margin-top: 5px; }
+.kcpl-admin-content .customs-step-clear { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--admin-success); font-size: 12.5px; line-height: 18px; }
+.kcpl-admin-content .customs-docs-summary { margin: 0; color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 18px; }
+.kcpl-admin-content .customs-docs-advisory { margin: 8px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
 @media (max-width: 760px) {
-  .kcpl-admin-content .customs-clearance-page {
-    padding: 16px;
-  }
+  .kcpl-admin-content .customs-clearance-page { padding-bottom: 16px; }
 }
 
-/* Delivery & POD: keep recovery work visible while the evidence inspector stays usable. */
-.kcpl-admin-content .delivery-control-page {
-  min-height: calc(100dvh - var(--app-toolbar-height));
-  padding: var(--app-page-gap);
-}
-.kcpl-admin-content .delivery-control-workspace {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-.kcpl-admin-content .delivery-control-queue {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.kcpl-admin-content .delivery-control-workspace > aside {
-  position: sticky;
-  top: calc(var(--app-toolbar-height) + 16px);
-  width: 420px;
-  max-height: calc(100dvh - var(--app-toolbar-height) - 32px);
-  overflow: auto;
-}
-.kcpl-admin-content .delivery-control-queue .ops-table tbody tr:hover {
-  background: var(--admin-surface-muted);
-}
-.kcpl-admin-content .delivery-control-queue .ops-table tbody tr[data-selected="true"] {
-  background: var(--admin-surface-muted);
-}
-@media (max-width: 1040px) {
-  .kcpl-admin-content .delivery-control-workspace {
-    display: block;
-  }
-  .kcpl-admin-content .delivery-control-workspace > aside {
-    position: relative;
-    top: auto;
-    width: 100%;
-    max-height: none;
-    margin-top: 16px;
-  }
-}
+/* Delivery & POD: shared register anatomy; only route-specific details remain. */
+.kcpl-admin-content .delivery-control-page { min-height: calc(100dvh - var(--app-toolbar-height)); padding-bottom: 24px; }
+.kcpl-admin-content .delivery-table { min-width: 880px; }
+.kcpl-admin-content .delivery-table td { padding-block: 5px; }
+.kcpl-admin-content .delivery-table[data-compact="true"] { min-width: 620px; }
+.kcpl-admin-content .delivery-state-cell { display: inline-flex; align-items: center; gap: 6px; }
+.kcpl-admin-content .delivery-state-icon { color: var(--admin-warning); }
+.kcpl-admin-content .delivery-state-icon[data-danger] { color: var(--admin-danger); }
 @media (max-width: 760px) {
-  .kcpl-admin-content .delivery-control-page {
-    padding: 16px;
-  }
+  .kcpl-admin-content .delivery-control-page { padding-bottom: 16px; }
 }
 
-/* Tasks & notifications: surface queue pressure before the detailed history. */
+/* Tasks & notifications: shared page anatomy with route-specific row styles. */
 .kcpl-admin-content .alerts-workspace-page,
 .kcpl-admin-content .notifications-workspace-page {
   min-height: calc(100dvh - var(--app-toolbar-height));
-  padding: var(--app-page-gap);
+  padding-bottom: 24px;
 }
-.kcpl-admin-content .alerts-workspace-toolbar,
-.kcpl-admin-content .notifications-workspace-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.kcpl-admin-content .alerts-workspace-toolbar > .ops-search,
-.kcpl-admin-content .notifications-workspace-toolbar > .ops-search {
-  flex: 1 1 280px;
-  max-width: 340px;
+.kcpl-admin-content .alerts-toolbar-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.kcpl-admin-content .alerts-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .alerts-row:last-child { border-bottom: 0; }
+.kcpl-admin-content .alerts-row:hover { background: var(--admin-canvas); }
+.kcpl-admin-content .alerts-row[data-critical="true"] { background: color-mix(in srgb, var(--admin-danger) 3%, var(--admin-surface)); }
+.kcpl-admin-content .alerts-row[data-resolved] { opacity: .72; }
+.kcpl-admin-content .alerts-row-icon { flex: none; margin-top: 2px; }
+.kcpl-admin-content .alerts-severity-icon[data-tone="danger"] { color: var(--admin-danger); }
+.kcpl-admin-content .alerts-severity-icon[data-tone="warning"] { color: var(--admin-warning); }
+.kcpl-admin-content .alerts-severity-icon[data-tone="info"] { color: var(--admin-info); }
+.kcpl-admin-content .alerts-row-main { min-width: 0; flex: 1; }
+.kcpl-admin-content .alerts-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
+.kcpl-admin-content .alerts-row-owner { color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .alerts-row-age { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--admin-muted); font-size: 12px; white-space: nowrap; }
+.kcpl-admin-content .alerts-row-title { color: var(--admin-ink); font-size: 13.5px; line-height: 19px; }
+.kcpl-admin-content .alerts-row-detail { margin-top: 3px; color: var(--admin-muted); font-size: 12.5px; line-height: 17px; }
+.kcpl-admin-content .alerts-row-context { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 5px; color: var(--admin-faint); font-size: 11.5px; line-height: 15px; }
+.kcpl-admin-content .alerts-row-actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+@media (max-width: 860px) {
+  .kcpl-admin-content .alerts-row { flex-wrap: wrap; }
+  .kcpl-admin-content .alerts-row-actions { justify-content: flex-start; }
 }
 @media (max-width: 760px) {
   .kcpl-admin-content .alerts-workspace-page,
   .kcpl-admin-content .notifications-workspace-page {
-    padding: 16px;
+    padding-bottom: 16px;
   }
 }
 
@@ -1053,6 +1082,23 @@
   font-weight: 400;
   line-height: 20px;
 }
+
+/* Notification centre rows: one quiet list; unread is a dot + weight, never a fill. */
+.kcpl-admin-content .notifications-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--admin-line); background: transparent; text-align: left; color: inherit; font: inherit; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .notifications-row:last-child { border-bottom: 0; }
+.kcpl-admin-content .notifications-row:hover { background: var(--admin-canvas); }
+.kcpl-admin-content .notifications-row[data-unread] { background: color-mix(in srgb, var(--admin-info) 3%, var(--admin-surface)); }
+.kcpl-admin-content .notifications-row-icon { flex: none; margin-top: 2px; }
+.kcpl-admin-content .notifications-row-main { display: block; min-width: 0; flex: 1; }
+.kcpl-admin-content .notifications-row-head { display: flex; align-items: center; gap: 8px; }
+.kcpl-admin-content .notifications-row-title { overflow: hidden; font-size: 13.5px; line-height: 19px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .notifications-row[data-unread] .notifications-row-title { font-weight: 600; }
+.kcpl-admin-content .notifications-row-unread { flex: none; width: 7px; height: 7px; border-radius: 999px; background: var(--admin-crimson); }
+.kcpl-admin-content .notifications-row-age { margin-left: auto; flex: none; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .notifications-row-detail { display: block; margin-top: 2px; color: var(--admin-muted); font-size: 13px; line-height: 18px; }
+.kcpl-admin-content .notifications-row-detail[data-unread] { color: var(--admin-ink); }
+.kcpl-admin-content .notifications-row-context { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; color: var(--admin-faint); font-size: 11.5px; line-height: 15px; }
+.kcpl-admin-content .notifications-toolbar-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 
 /* 7-day transitions sparkline: quiet volume context above the history list. */
 .kcpl-admin-content .notifications-sparkline {
@@ -1125,8 +1171,21 @@
 .kcpl-admin-content .document-vault-note { margin: 0; color: var(--admin-ink); font-size: 12.5px; line-height: 18px; }
 .kcpl-admin-content .document-vault-check { display: flex; align-items: center; gap: 7px; color: var(--admin-ink); font-size: 12.5px; }
 
-/* Record navigation and command palette are part of the shared shell. */
-.app-command-dialog { border-color: var(--admin-line-strong); border-radius: var(--app-dialog-radius); background: var(--admin-surface); }
+/* Command palette: entrance only via @starting-style (it unmounts on close, so
+ * there's no exit to animate; an instant close reads as snappy, matching a
+ * keyboard-triggered overlay — see plans/admin-motion-audit.md #1).
+ * The strongest micro-glass in the system, still restrained: 94% white so
+ * result rows stay crisp over the dimmed page. */
+.app-command-backdrop { transition: opacity var(--app-duration-base) var(--app-ease-out); }
+.app-command-backdrop, .app-command-dialog { opacity: 1; }
+@starting-style {
+  .app-command-backdrop { opacity: 0; }
+}
+.app-command-dialog { transition: opacity var(--app-duration-base) var(--app-ease-out), transform var(--app-duration-base) var(--app-ease-out); transform: translateY(0) scale(1); border-color: var(--app-float-line); border-radius: var(--app-dialog-radius); background: var(--app-float-bg-strong); box-shadow: var(--app-float-shadow); -webkit-backdrop-filter: blur(var(--app-float-blur-strong)) saturate(var(--app-float-saturate)); backdrop-filter: blur(var(--app-float-blur-strong)) saturate(var(--app-float-saturate)); }
+@starting-style {
+  .app-command-dialog { opacity: 0; transform: translateY(-8px) scale(.98); }
+}
+
 .app-notification-toggle { position: relative; }
 /* Danger-activity cue fired by operational surfaces (kcpl:activity-danger). */
 .app-notification-toggle.app-notification-ring svg { color: var(--admin-danger); }
@@ -1144,7 +1203,7 @@
   100% { opacity: 0; transform: scale(1.35); }
 }
 .app-notification-count { position: absolute; top: -1px; right: -1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 4px; background: var(--admin-crimson); color: white; font-size: 9px; line-height: 15px; text-align: center; }
-.app-notification-panel { position: absolute; top: 40px; right: 0; z-index: 80; width: min(390px,calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--admin-line-strong); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: 0 12px 32px rgb(16 16 16 / 12%); }
+.app-notification-panel { position: absolute; top: 40px; right: 0; z-index: 80; width: min(390px,calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--app-float-line); border-radius: var(--app-surface-radius); background: var(--app-float-bg); -webkit-backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate)); backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate)); box-shadow: var(--app-float-shadow); }
 .ops-saved-views { margin: 12px 0; }
 .ops-saved-view-list, .ops-save-view-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .ops-saved-view { display: inline-flex; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); }
@@ -1636,13 +1695,13 @@
 .kcpl-admin-content .register-pulse-configure:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
 .kcpl-admin-content .register-pulse-configure:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
 .kcpl-admin-content .register-pulse-configure svg[data-active="true"] { color: var(--admin-crimson); }
-.kcpl-admin-content .register-pulse-picker { width: 240px; padding: 10px; }
-.kcpl-admin-content .register-pulse-picker-head { margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--admin-muted); }
-.kcpl-admin-content .register-pulse-picker-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 6px; font-size: 12.5px; font-weight: 500; color: var(--admin-ink); cursor: pointer; }
-.kcpl-admin-content .register-pulse-picker-row:hover { background: var(--admin-surface-muted); }
-.kcpl-admin-content .register-pulse-picker-row span { flex: 1; min-width: 0; }
-.kcpl-admin-content .register-pulse-picker-row svg { color: var(--admin-success); flex-shrink: 0; }
-.kcpl-admin-content .register-pulse-picker-note { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--admin-line); font-size: 11px; line-height: 1.45; color: var(--admin-faint); }
+.register-pulse-picker { width: 240px; border: 1px solid var(--app-float-line); border-radius: var(--app-surface-radius); background: var(--app-float-bg); -webkit-backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate)); backdrop-filter: blur(var(--app-float-blur)) saturate(var(--app-float-saturate)); padding: 10px; box-shadow: var(--app-float-shadow); }
+.register-pulse-picker-head { margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--admin-muted); }
+.register-pulse-picker-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 6px; font-size: 12.5px; font-weight: 500; color: var(--admin-ink); cursor: pointer; }
+.register-pulse-picker-row:hover { background: var(--admin-surface-muted); }
+.register-pulse-picker-row span { flex: 1; min-width: 0; }
+.register-pulse-picker-row svg { color: var(--admin-success); flex-shrink: 0; }
+.register-pulse-picker-note { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--admin-line); font-size: 11px; line-height: 1.45; color: var(--admin-faint); }
 
 /* ── Register primitives (app/admin/ops-register.tsx) ────────────────────
  * The approved Shipments register, extracted so every operational workspace
@@ -1671,6 +1730,9 @@
 .kcpl-admin-content .ops-rail-value { color: var(--admin-ink); font-size: 24px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
 .kcpl-admin-content .ops-rail-detail { overflow: hidden; color: var(--admin-faint); font-size: 11.5px; font-weight: 500; line-height: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .kcpl-admin-content .ops-rail-metric[data-text="true"] .ops-rail-value { overflow: hidden; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Shared text sizes for converted workspaces (kept in CSS so TSX stays literal-free). */
+.kcpl-admin-content .ops-text-strong { font-size: 13px; font-weight: 600; }
 .kcpl-admin-content .ops-rail-metric[data-zero="true"] .ops-rail-value { color: var(--admin-faint); }
 .kcpl-admin-content .ops-rail-metric[data-tone="info"]:not([data-zero]) .ops-rail-value { color: var(--admin-info); }
 .kcpl-admin-content .ops-rail-metric[data-tone="success"]:not([data-zero]) .ops-rail-value { color: var(--admin-success); }
@@ -1781,7 +1843,7 @@
 .kcpl-admin-content .ops-cell-secondary { display: block; overflow: hidden; margin-top: 1px; color: var(--admin-muted); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 .kcpl-admin-content .ops-cell-id { color: var(--admin-ink); font-size: 12px; font-weight: 600; }
 .kcpl-admin-content .ops-cell-secondary.ops-mono { font-size: 11.5px; }
-.kcpl-admin-content .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .ops-cell-clamp { display: block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kcpl-admin-content .ops-cell-ref { color: var(--admin-info); font-size: 12px; font-weight: 500; text-decoration: none; white-space: nowrap; }
 .kcpl-admin-content a.ops-cell-ref:hover { text-decoration: underline; text-underline-offset: 3px; }
 .kcpl-admin-content .ops-cell-muted { color: var(--admin-muted); font-size: 12.5px; white-space: nowrap; }
@@ -1827,8 +1889,8 @@
 .kcpl-admin-content .ops-inspector-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
 .kcpl-admin-content .ops-inspector-form .ops-field { gap: 4px; }
 .kcpl-admin-content .ops-inspector-form .ops-field-label { font-size: 11.5px; }
-.kcpl-admin-content .ops-inspector-form :where(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: 32px; padding: 5px 9px; font-size: 13px; }
-.kcpl-admin-content .ops-inspector-form textarea { min-height: 64px; padding: 7px 9px; font-size: 13px; }
+.kcpl-admin-content .ops-inspector-form :where(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: 32px; padding: 5px 9px; font-size: 13px; font-weight: 400; }
+.kcpl-admin-content .ops-inspector-form textarea { min-height: 64px; padding: 7px 9px; font-size: 13px; font-weight: 400; }
 
 .kcpl-admin-content .ops-facts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 20px; margin: 0; }
 .kcpl-admin-content .ops-facts[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1948,11 +2010,114 @@
   .kcpl-admin-content .ops-register-layout > .ops-inspector { position: sticky; top: calc(var(--app-toolbar-height) + 16px); max-height: calc(100dvh - var(--app-toolbar-height) - 32px); }
 }
 
+/* Flat list selection for side panels and split registers (Rating/Pricing/
+ * Consolidation pickers): the selected record is a flat grey fill with an ink
+ * title, never a coloured outline or left bar. */
+.kcpl-admin-content .ops-list-select { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--admin-line); background: transparent; padding: 10px 12px; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-list-select:hover { background: var(--admin-canvas); }
+.kcpl-admin-content .ops-list-select:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kcpl-admin-content .ops-list-select[data-selected="true"] { background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-list-select[data-selected="true"] .ops-list-select-title { color: var(--admin-ink); font-weight: 600; }
+
 /* Pickup Scheduling. */
 .kcpl-admin-content .pickups-table { min-width: 900px; }
+/* Receivables / Payables registers. */
+.kcpl-admin-content .finance-table { min-width: 980px; }
+.kcpl-admin-content .finance-table td { padding-block: 6px; }
+/* Transport Orders register. */
+.kcpl-admin-content .rating-orders-table { min-width: 880px; }
+.kcpl-admin-content .rating-orders-table td { padding-block: 5px; }
+.kcpl-admin-content .ops-order-peek { min-height: 480px; }
+.kcpl-admin-content .ops-order-peek > div { height: 100%; }
 .kcpl-admin-content .pickups-table td { padding-block: 5px; }
 .kcpl-admin-content .pickups-table .ops-cell-clamp { max-width: 240px; }
 .kcpl-admin-content .pickups-table[data-compact="true"] { min-width: 540px; }
 .kcpl-admin-content .pickups-table[data-compact="true"] .ops-cell-clamp { max-width: 180px; }
 .kcpl-admin-content .pickups-status { display: inline-flex; align-items: center; gap: 6px; }
 .kcpl-admin-content .pickups-attention { display: inline-flex; color: var(--admin-danger); }
+
+/* Jump menu (OpsJumpMenu): a header control that opens a record directly --
+ * search on top, a scrolling list beneath, reusing the filter option rows. */
+.kcpl-admin-content .ops-jump-menu { display: flex; width: 300px; max-width: calc(100vw - 24px); max-height: min(360px, var(--radix-popover-content-available-height, 360px)); flex-direction: column; overflow: hidden; padding: 0; }
+.kcpl-admin-content .ops-jump-search { display: flex; flex: none; min-height: 38px; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--admin-line); color: var(--admin-faint); }
+.kcpl-admin-content .ops-jump-search input { flex: 1 1 auto; min-width: 0; height: 36px; border: 0; background: transparent; color: var(--admin-ink); font: inherit; font-size: 12.5px; outline: none; }
+.kcpl-admin-content .ops-jump-search input::placeholder { color: var(--admin-faint); }
+.kcpl-admin-content .ops-jump-search:focus-within { color: var(--admin-muted); }
+.kcpl-admin-content .ops-jump-list { overflow-y: auto; padding: 4px; outline: none; }
+.kcpl-admin-content .ops-jump-list .ops-filter-option { justify-content: space-between; gap: 12px; }
+.kcpl-admin-content .ops-jump-list .ops-jump-option-label { flex: 1 1 auto; }
+.kcpl-admin-content .ops-jump-list .ops-jump-option-detail { flex: none; max-width: 45%; color: var(--admin-faint); font-size: 11px; }
+.kcpl-admin-content .ops-jump-empty { margin: 0; padding: 10px 8px; color: var(--admin-muted); font-size: 12px; }
+/* In a page header the trigger stands at header-button height beside its neighbours. */
+.kcpl-admin-content .ops-page-actions .ops-jump-trigger { min-height: var(--app-control-height); justify-content: center; padding-inline: 12px; color: var(--admin-ink); font-size: 13px; }
+
+/* Flush compact panels: a register table (or row list) runs edge to edge under
+ * the compact header, separated by one hairline; empty states keep the inset. */
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-body-flush { margin-top: 12px; border-top: 1px solid var(--admin-line); padding: 0; }
+.kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-body-flush > .ops-empty { padding: 12px 16px 14px; }
+
+/* Compact form grid (.ops-form-grid): register-era create and edit panels --
+ * 34px fields, quiet labels, four columns stepping down to two and one. */
+.kcpl-admin-content .ops-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 12px 14px; }
+.kcpl-admin-content .ops-form-grid > :is(.ops-form-inline, label:not(.ops-field)) { align-self: end; }
+.kcpl-admin-content .ops-form-grid .ops-field { gap: 4px; }
+.kcpl-admin-content .ops-form-grid .ops-field-label { font-size: 12px; }
+.kcpl-admin-content .ops-form-grid :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { min-height: 34px; padding: 6px 10px; font-size: 13px; font-weight: 400; }
+.kcpl-admin-content .ops-form-grid textarea { min-height: 72px; }
+.kcpl-admin-content .ops-form-grid .ops-form-wide { grid-column: span 2; }
+.kcpl-admin-content .ops-form-grid .ops-form-full { grid-column: 1 / -1; }
+.kcpl-admin-content .ops-form-inline { display: flex; align-items: flex-end; gap: 8px; }
+.kcpl-admin-content .ops-form-inline > .ops-field { flex: 1 1 auto; min-width: 0; }
+.kcpl-admin-content .ops-form-value { display: flex; min-height: 34px; align-items: center; color: var(--admin-ink); font-size: 13px; }
+.kcpl-admin-content .ops-form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 1100px) { .kcpl-admin-content .ops-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .kcpl-admin-content .ops-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .ops-form-grid .ops-form-wide { grid-column: auto; }
+}
+
+/* Disclosure row (.ops-disclosure): an optional-fields toggle inside a form --
+ * title and one quiet line, chevron turns when open. */
+.kcpl-admin-content .ops-disclosure { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 9px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-canvas); color: var(--admin-muted); text-align: left; cursor: pointer; transition: border-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-disclosure:hover { border-color: var(--admin-line-strong); }
+.kcpl-admin-content .ops-disclosure:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
+.kcpl-admin-content .ops-disclosure strong { display: block; color: var(--admin-ink); font-size: 13px; font-weight: 600; line-height: 18px; }
+.kcpl-admin-content .ops-disclosure small { display: block; margin-top: 1px; font-size: 12px; line-height: 16px; }
+.kcpl-admin-content .ops-disclosure svg { flex: none; transition: transform var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .ops-disclosure[aria-expanded="true"] svg { transform: rotate(180deg); }
+.kcpl-admin-content .ops-disclosure + .ops-form-grid { margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .kcpl-admin-content :is(.ops-disclosure, .ops-disclosure svg) { transition: none; } }
+
+/* NRB forex reference panel (Market Estimate, Finance): featured rates in a
+ * hairline grid, then the indicative converter and source line. */
+.kcpl-admin-content .fx-rate-date { color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kcpl-admin-content .fx-pad { padding: 12px 16px; }
+.kcpl-admin-content .fx-loading { margin: 0; padding: 12px 16px 14px; color: var(--admin-muted); font-size: 12.5px; }
+.kcpl-admin-content .fx-rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; margin: 0; padding: 0; background: var(--admin-line); list-style: none; }
+.kcpl-admin-content .fx-rates > li { display: grid; gap: 2px; padding: 10px 16px 11px; background: var(--admin-surface); }
+.kcpl-admin-content .fx-rate-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.kcpl-admin-content .fx-rate-head strong { color: var(--admin-ink); font-size: 12px; font-weight: 600; }
+.kcpl-admin-content .fx-rate-head span { color: var(--admin-faint); font-size: 11px; }
+.kcpl-admin-content .fx-rate-value { color: var(--admin-ink); font-size: 16px; font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: -0.015em; line-height: 22px; }
+.kcpl-admin-content .fx-rate-value span { color: var(--admin-muted); font-size: 11px; font-weight: 500; letter-spacing: 0; }
+.kcpl-admin-content .fx-rate-meta { color: var(--admin-faint); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .fx-converter { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 380px); align-items: end; gap: 16px; padding: 12px 16px 14px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .fx-converter-label { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--admin-muted); font-size: 12px; font-weight: 500; }
+.kcpl-admin-content .fx-converter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kcpl-admin-content .fx-converter-row .ops-input { width: auto; min-height: 34px; padding: 6px 10px; font-size: 13px; }
+.kcpl-admin-content .fx-converter-row select.ops-input { min-width: 90px; }
+.kcpl-admin-content .fx-converter-row input.ops-input { flex: 1 1 140px; min-width: 120px; }
+.kcpl-admin-content .fx-converter-row > span { color: var(--admin-muted); }
+.kcpl-admin-content .fx-converter-row > strong { color: var(--admin-ink); font-size: 15px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.kcpl-admin-content .fx-source { color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .fx-source p { margin: 0; }
+.kcpl-admin-content .fx-source p + p { margin-top: 2px; }
+.kcpl-admin-content .fx-source strong { color: var(--admin-ink); font-weight: 550; }
+@media (max-width: 900px) { .kcpl-admin-content .fx-converter { grid-template-columns: minmax(0, 1fr); } }
+
+/* Numeric register cells (.ops-col-num / .ops-num): right-aligned tabular
+ * figures; negative and warning values take the state colour. */
+.kcpl-admin-content .ops-col-num { text-align: right; }
+.kcpl-admin-content .ops-num { color: var(--admin-ink); font-size: 13px; font-weight: 550; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kcpl-admin-content .ops-num[data-negative="true"] { color: var(--admin-danger); }
+.kcpl-admin-content .ops-num[data-warning="true"] { color: var(--admin-warning); }

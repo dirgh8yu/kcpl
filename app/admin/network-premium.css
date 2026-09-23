@@ -1,0 +1,106 @@
+/* Network workspaces: Partners & Vendors, Carrier Integrations, EDI Gateway.
+ *
+ * Loaded by the three Network pages (operations-system.css stays the final
+ * root sheet). The pages draw on the shared register primitives -- OpsKpiRail,
+ * OpsRegisterToolbar, OpsScopeTabs, OpsFilterSelect, OpsJumpMenu, the register
+ * table, compact OpsSurface panels and the docked ops-inspector -- so this
+ * sheet only lays out what is specific to the Network group.
+ * Presentation only: partner records, provider sync and EDI routing are unchanged. */
+
+.kcpl-admin-content .network-notice { margin-bottom: 12px; }
+.kcpl-admin-content .network-section { margin-top: 16px; }
+.kcpl-admin-content .network-nowrap { white-space: nowrap; }
+.kcpl-admin-content .network-link { color: var(--admin-ink); text-decoration: none; }
+.kcpl-admin-content .network-link:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 2px; }
+.kcpl-admin-content .network-error { display: block; color: var(--admin-danger); font-size: 12.5px; line-height: 17px; }
+.kcpl-admin-content .network-spin { animation: app-spin 900ms linear infinite; }
+.kcpl-admin-content .network-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.kcpl-admin-content .network-footer-note { margin-right: auto; color: var(--admin-muted); font-size: 12px; }
+
+/* Search inside a compact panel header. */
+.kcpl-admin-content .network-surface-tools { display: flex; align-items: center; gap: 10px; }
+.kcpl-admin-content .network-surface-search { width: 260px; min-height: 32px; padding-inline: 10px; }
+.kcpl-admin-content .network-surface-search input { font-size: 13px; }
+
+/* Partners register: fits a 1280px laptop; Services, Contact and Activity
+ * step out as the width narrows and are always in the inspector. */
+.kcpl-admin-content .partners-table { min-width: 900px; }
+.kcpl-admin-content .partners-table[data-compact="true"] { min-width: 480px; }
+.kcpl-admin-content .ops-register-table.partners-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .ops-register-table.partners-table td { padding-block: 5px; }
+.kcpl-admin-content .partners-table .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .partners-table[data-compact="true"] .ops-cell-clamp { max-width: 190px; }
+.kcpl-admin-content .partners-name { display: flex; min-width: 0; align-items: center; gap: 5px; }
+.kcpl-admin-content .partners-preferred { flex: none; color: var(--admin-muted); }
+.kcpl-admin-content .partners-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kcpl-admin-content .partners-overdue { color: var(--admin-danger); font-weight: 550; }
+.kcpl-admin-content .partners-table .partners-col-footprint .ops-cell-clamp { max-width: 200px; }
+.kcpl-admin-content .partners-table[data-compact="true"] .partners-col-footprint .ops-cell-clamp { max-width: 160px; }
+@media (max-width: 1599px) { .kcpl-admin-content .partners-table .partners-col-services { display: none; } }
+@media (max-width: 1399px) { .kcpl-admin-content .partners-table .partners-col-contact { display: none; } }
+@media (max-width: 1099px) { .kcpl-admin-content .partners-table .partners-col-activity { display: none; } }
+
+/* Partner form: the shared .ops-form-grid and .ops-disclosure, plus the
+ * preferred checkbox and relationship toggles. */
+.kcpl-admin-content .network-form-panel { margin-bottom: 16px; scroll-margin-top: calc(var(--app-toolbar-height) + 12px); }
+.kcpl-admin-content .network-form { display: grid; gap: 16px; }
+.kcpl-admin-content .network-form .ops-disclosure { margin-top: 0; }
+.kcpl-admin-content .network-form .ops-form-actions { margin-top: 0; justify-content: flex-start; }
+.kcpl-admin-content .network-check { display: flex; min-height: 34px; align-items: center; gap: 8px; color: var(--admin-ink); font-size: 13px; cursor: pointer; }
+.kcpl-admin-content .network-choice-group { display: grid; gap: 6px; }
+.kcpl-admin-content .network-toggle { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Carrier provider health: one row per provider inside a single panel. */
+.kcpl-admin-content .network-providers { margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .network-provider { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(290px, .9fr); gap: 12px 24px; padding: 14px 16px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .network-provider:first-child { border-top: 0; }
+.kcpl-admin-content .network-provider-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kcpl-admin-content .network-provider-head strong { color: var(--admin-ink); font-size: 13.5px; font-weight: 600; line-height: 20px; }
+.kcpl-admin-content .network-provider-meta { margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .network-provider-note { max-width: 68ch; margin: 6px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .network-provider-message { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 6px 0 0; color: var(--admin-ink); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .network-provider-message > span { color: var(--admin-faint); }
+.kcpl-admin-content .network-provider-message code { padding: 1px 5px; border-radius: var(--app-radius-sm); background: var(--admin-surface-muted); font-size: 11.5px; }
+.kcpl-admin-content .network-capabilities { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .network-capabilities li { display: inline-flex; min-height: 22px; align-items: center; gap: 4px; padding: 0 7px; border: 1px solid var(--admin-line); border-radius: var(--app-radius-sm); color: var(--admin-faint); font-size: 11.5px; font-weight: 500; text-transform: capitalize; }
+.kcpl-admin-content .network-capabilities li[data-active="true"] { border-color: var(--admin-line-strong); color: var(--admin-ink); }
+.kcpl-admin-content .network-capabilities li svg { color: var(--admin-success); }
+.kcpl-admin-content .network-provider-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 8px 16px; margin: 0; }
+.kcpl-admin-content .network-provider-facts dt { color: var(--admin-muted); font-size: 11px; line-height: 15px; }
+.kcpl-admin-content .network-provider-facts dd { margin: 1px 0 0; color: var(--admin-ink); font-size: 12.5px; font-variant-numeric: tabular-nums; line-height: 17px; white-space: nowrap; }
+
+/* Carrier and EDI registers. */
+.kcpl-admin-content .carrier-queue-table { min-width: 900px; }
+.kcpl-admin-content .carrier-queue-table .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .carrier-schedule-table { min-width: 720px; }
+.kcpl-admin-content .network-inline-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kcpl-admin-content .network-inline-field .ops-input { width: 180px; min-height: 32px; padding: 5px 10px; font-size: 13px; }
+.kcpl-admin-content .network-schedule-results { margin: 12px -16px -14px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .edi-handoff-table { min-width: 640px; }
+.kcpl-admin-content .edi-ledger-table { min-width: 980px; }
+.kcpl-admin-content .edi-ledger-table .ops-cell-clamp { max-width: 200px; }
+.kcpl-admin-content .edi-ledger-table .edi-message { max-width: 280px; }
+/* The legacy .ops-mono weight (650) would make every code column shout. */
+.kcpl-admin-content :is(.carrier-queue-table, .carrier-schedule-table, .edi-ledger-table) .ops-mono.ops-cell-muted { font-weight: 450; }
+.kcpl-admin-content .edi-ledger-table .network-link.ops-mono { font-weight: 550; }
+.kcpl-admin-content .edi-direction { display: inline-flex; align-items: center; gap: 5px; color: var(--admin-muted); font-size: 12.5px; white-space: nowrap; }
+.kcpl-admin-content .edi-direction svg { color: var(--admin-faint); }
+
+@media (max-width: 1100px) {
+  .kcpl-admin-content .network-provider { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .kcpl-admin-content .network-provider-main { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .ops-surface[data-density="compact"] .ops-surface-action:has(> .network-surface-tools) { flex: 1 1 100%; max-width: none; }
+  .kcpl-admin-content .network-surface-tools { width: 100%; }
+  .kcpl-admin-content .network-surface-search { flex: 1 1 auto; width: auto; }
+  .kcpl-admin-content .network-provider { grid-template-columns: minmax(0, 1fr); padding-inline: 14px; }
+  .kcpl-admin-content .network-schedule-results { margin-inline: -14px; }
+}
+@media (max-width: 640px) {
+  .kcpl-admin-content .network-inline-field { flex: 1 1 140px; }
+  .kcpl-admin-content .network-inline-field .ops-input { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content .network-spin { animation: none; }
+}

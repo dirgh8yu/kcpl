@@ -2,7 +2,7 @@
 
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { useAdminPortalContainer } from "./use-admin-portal-container";
 
 /*
@@ -241,6 +241,64 @@ export function OpsFilterChoices({ label, value, options, onChange }: { label: s
         })}
       </div>
     </div>
+  );
+}
+
+export type OpsJumpOption = { value: string; label: string; detail?: string };
+
+/**
+ * A quiet "open record" control for the page header: the trigger opens a
+ * filterable list and hands the chosen record back (Partner 360 and similar).
+ * It replaces the full-width native-select bands above the older workspaces.
+ * Typing filters, arrow keys move into the list, Enter opens the first match.
+ */
+export function OpsJumpMenu({ label, placeholder, options, onSelect, icon, emptyLabel = "No matching records" }: { label: string; placeholder: string; options: OpsJumpOption[]; onSelect: (value: string) => void; icon?: ReactNode; emptyLabel?: string }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const container = useAdminPortalContainer();
+  const listRef = useRef<HTMLDivElement>(null);
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = terms.length ? options.filter((option) => {
+    const haystack = `${option.label} ${option.detail ?? ""} ${option.value}`.toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  }) : options;
+  function choose(value: string) { setOpen(false); setQuery(""); onSelect(value); }
+
+  return (
+    <PopoverPrimitive.Root open={open} onOpenChange={(next) => { setOpen(next); if (!next) setQuery(""); }}>
+      <PopoverPrimitive.Trigger asChild>
+        <button type="button" className="ops-filter-trigger ops-jump-trigger" aria-haspopup="dialog">
+          {icon}
+          <span className="ops-filter-trigger-label">{label}</span>
+          <ChevronDown size={14} strokeWidth={1.75} className="ops-filter-trigger-chevron" aria-hidden="true"/>
+        </button>
+      </PopoverPrimitive.Trigger>
+      <PopoverPrimitive.Portal container={container ?? undefined}>
+        <PopoverPrimitive.Content align="end" sideOffset={6} collisionPadding={12} className="ops-filter-options ops-jump-menu" aria-label={label}>
+          <label className="ops-jump-search">
+            <Search size={14} strokeWidth={1.75} aria-hidden="true"/>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={placeholder}
+              aria-label={placeholder}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") { event.preventDefault(); listRef.current?.querySelector<HTMLButtonElement>("[data-option]")?.focus(); }
+                if (event.key === "Enter" && matches[0]) { event.preventDefault(); choose(matches[0].value); }
+              }}
+            />
+          </label>
+          <div ref={listRef} className="ops-jump-list" role="menu" aria-label={label} tabIndex={-1} onKeyDown={moveFocus}>
+            {matches.length ? matches.map((option) => (
+              <button key={option.value} type="button" role="menuitem" data-option className="ops-filter-option" onClick={() => choose(option.value)}>
+                <span className="ops-jump-option-label">{option.label}</span>
+                {option.detail ? <span className="ops-jump-option-detail ops-mono">{option.detail}</span> : null}
+              </button>
+            )) : <p className="ops-jump-empty">{emptyLabel}</p>}
+          </div>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
   );
 }
 

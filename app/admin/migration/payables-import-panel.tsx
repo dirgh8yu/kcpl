@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, ReceiptText, Upload } from "lucide-react";
 import { jobCostCategoryLabels } from "../job-file";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import type { PayablesImportPreview, PayablesImportResult, PayablesImportStatus } from "./payables-import";
 
 function statusTone(status: PayablesImportStatus): "success" | "warning" | "danger" {
@@ -74,31 +74,31 @@ export function PayablesImportPanel() {
     {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
     {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} payables imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> created {result.bill_rows_imported} supplier bill{result.bill_rows_imported === 1 ? "" : "s"} and {result.opening_balance_rows_imported} supplier opening balance{result.opening_balance_rows_imported === 1 ? "" : "s"}. {result.duplicates} duplicate and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"} were skipped. <Link href="/admin/payables" className="font-bold underline">Open Payables</Link>.</OpsNotice> : null}
 
-    <OpsSurface eyebrow="Stage 3B · Payables" title="Current supplier money KCPL owes" description="Import real outstanding supplier bills or a controlled opening payable when the paper ledger has a known balance but reconstructing old vendor invoices would create false history." action={<a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={12}/>Download Stage 3B template</a>}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_350px]">
+    <OpsSurface density="compact" title="Stage 3B · Payables" description="Current supplier money KCPL owes. Import real outstanding supplier bills or a controlled opening payable when the paper ledger has a known balance but reconstructing old vendor invoices would create false history." action={<a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download Stage 3B template</a>}>
+      <div className="migration-intake">
         <div>
-          <label className="block rounded-[var(--app-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-6 text-center transition hover:border-[var(--admin-accent-line)] hover:bg-[var(--admin-accent-bg)]">
+          <label className="migration-drop">
             <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}/>
-            <span className="mx-auto grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-white text-[var(--admin-crimson)] shadow-[0_5px_18px_rgba(80,55,40,.06)]"><ReceiptText size={17}/></span>
-            <strong className="mt-3 block text-[12px] text-[var(--admin-ink)]">{file ? file.name : "Choose Stage 3B payables CSV"}</strong>
-            <span className="mt-1 block text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">CSV only · maximum 150 rows · maximum 2 MB · preview required before import</span>
+            <span className="mx-auto grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-surface)] text-[var(--admin-crimson)] shadow-[0_5px_18px_rgba(80,55,40,.06)]"><ReceiptText size={17}/></span>
+            <strong>{file ? file.name : "Choose Stage 3B payables CSV"}</strong>
+            <span>CSV only · maximum 150 rows · maximum 2 MB · preview required before import</span>
           </label>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={12} className="animate-spin"/> : <FileSpreadsheet size={12}/>}Preview & validate</OpsButton>
+          <div className="migration-actions">
+            <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true"/>}Preview & validate</OpsButton>
             {file ? <OpsButton variant="ghost" disabled={Boolean(busy)} onClick={() => chooseFile(null)}>Clear file</OpsButton> : null}
           </div>
         </div>
 
-        <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
-          <p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-faint)]">Stage 3B rules</p>
-          <ul className="mt-3 space-y-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">
-            <li>• <strong>bill</strong> rows preserve a real supplier bill number and only import balances still outstanding.</li>
-            <li>• <strong>opening_balance</strong> rows create a clearly labelled supplier opening payable, not a fabricated historical bill.</li>
-            <li>• Every supplier must already exist in the Partner network. Use Partner ID whenever names are ambiguous.</li>
-            <li>• Every row requires a KCPL branch. Shipment-linked bills must match the shipment branch.</li>
-            <li>• Bill total − amount paid must equal balance due. Currency, category and dates are validated server-side.</li>
-            <li>• Historical bill rows linked to shipments become locked Job File costs. Opening balances never become job costs.</li>
-            <li>• Pre-go-live supplier payments are stored as one auditable migration adjustment instead of invented settlement history.</li>
+        <div className="migration-rules">
+          <p className="migration-rules-title">Stage 3B rules</p>
+          <ul>
+            <li><strong>bill</strong> rows preserve a real supplier bill number and only import balances still outstanding.</li>
+            <li><strong>opening_balance</strong> rows create a clearly labelled supplier opening payable, not a fabricated historical bill.</li>
+            <li>Every supplier must already exist in the Partner network. Use Partner ID whenever names are ambiguous.</li>
+            <li>Every row requires a KCPL branch. Shipment-linked bills must match the shipment branch.</li>
+            <li>Bill total − amount paid must equal balance due. Currency, category and dates are validated server-side.</li>
+            <li>Historical bill rows linked to shipments become locked Job File costs. Opening balances never become job costs.</li>
+            <li>Pre-go-live supplier payments are stored as one auditable migration adjustment instead of invented settlement history.</li>
           </ul>
         </div>
       </div>
@@ -109,25 +109,24 @@ export function PayablesImportPanel() {
 }
 
 function PreviewPanel({ preview, confirmed, busy, onConfirmed, onImport }: { preview: PayablesImportPreview; confirmed: boolean; busy: "preview" | "import" | ""; onConfirmed: (value: boolean) => void; onImport: () => void }) {
-  return <OpsSurface eyebrow="Stage 3B safe preview" title="Reconcile every supplier payable before writing" description={`${preview.total} rows detected in ${preview.filename}. Only rows marked Ready will be created.`} flush>
-    <div className="grid grid-cols-2 gap-px border-b border-[var(--admin-line)] bg-[var(--admin-line)] sm:grid-cols-6">
+  return <OpsSurface density="compact" title="Reconcile every supplier payable before writing" description={`${preview.total} rows detected in ${preview.filename}. Only rows marked Ready will be created.`} flush>
+    <div className="migration-counts"><OpsKpiRail label="Preview counts">
       <PreviewCount label="Detected" value={preview.total}/>
       <PreviewCount label="Ready" value={preview.ready} tone="success"/>
       <PreviewCount label="Duplicates" value={preview.duplicates} tone="warning"/>
       <PreviewCount label="Invalid" value={preview.invalid} tone="danger"/>
       <PreviewCount label="Bills" value={preview.bill_rows}/>
       <PreviewCount label="Opening balances" value={preview.opening_balance_rows}/>
-    </div>
+    </OpsKpiRail></div>
 
-    <div className="ops-table-wrap"><table className="ops-table min-w-[1320px]"><thead><tr><th>Row</th><th>Type</th><th>Supplier</th><th>Source</th><th>Branch / category</th><th>Dates</th><th>Outstanding</th><th>Status</th><th>Validation</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.row_number}><td><OpsMono>{String(row.row_number)}</OpsMono></td><td><OpsBadge tone={row.record_type === "opening_balance" ? "violet" : "info"}>{row.record_type === "opening_balance" ? "Opening balance" : row.record_type === "bill" ? "Supplier bill" : "Invalid type"}</OpsBadge></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{row.supplier_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.supplier_id ? <OpsMono>{row.supplier_id}</OpsMono> : "Unresolved Partner"}</p></td><td><span className="text-[length:var(--app-label-size)]">{row.supplier_bill_reference || "Supplier opening balance"}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.shipment_reference ? <OpsMono>{row.shipment_reference}</OpsMono> : "No shipment link"}</p></td><td><span className="block text-[length:var(--app-label-size)]">{row.branch ?? "Invalid branch"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.category ? jobCostCategoryLabels[row.category] : "No valid category"}</span></td><td><span className="block text-[length:var(--app-label-size)]">Due {row.due_date || "invalid"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">As at {row.as_of_date || "invalid"}</span></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(row.balance_due, row.currency)}</strong>{row.record_type === "bill" ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Total {money(row.bill_total, row.currency)} · paid {money(row.amount_paid, row.currency)}</p> : null}</td><td><OpsBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</OpsBadge></td><td><div className="max-w-[390px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{row.issues.length ? row.issues.join(" ") : row.duplicate_matches.length ? row.duplicate_matches.join(" · ") : <span className="inline-flex items-center gap-1 text-[var(--admin-success)]"><CheckCircle2 size={10}/>Reconciled and ready</span>}</div></td></tr>)}</tbody></table></div>
+    <div className="ops-table-wrap"><table className="ops-table ops-register-table migration-table min-w-[1320px]"><thead><tr><th>Row</th><th>Type</th><th>Supplier</th><th>Source</th><th>Branch / category</th><th>Dates</th><th>Outstanding</th><th>Status</th><th>Validation</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.row_number}><td><OpsMono>{String(row.row_number)}</OpsMono></td><td><OpsBadge tone={row.record_type === "opening_balance" ? "violet" : "info"}>{row.record_type === "opening_balance" ? "Opening balance" : row.record_type === "bill" ? "Supplier bill" : "Invalid type"}</OpsBadge></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{row.supplier_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.supplier_id ? <OpsMono>{row.supplier_id}</OpsMono> : "Unresolved Partner"}</p></td><td><span className="text-[length:var(--app-label-size)]">{row.supplier_bill_reference || "Supplier opening balance"}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.shipment_reference ? <OpsMono>{row.shipment_reference}</OpsMono> : "No shipment link"}</p></td><td><span className="block text-[length:var(--app-label-size)]">{row.branch ?? "Invalid branch"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.category ? jobCostCategoryLabels[row.category] : "No valid category"}</span></td><td><span className="block text-[length:var(--app-label-size)]">Due {row.due_date || "invalid"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">As at {row.as_of_date || "invalid"}</span></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(row.balance_due, row.currency)}</strong>{row.record_type === "bill" ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Total {money(row.bill_total, row.currency)} · paid {money(row.amount_paid, row.currency)}</p> : null}</td><td><OpsBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</OpsBadge></td><td><div className="max-w-[390px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{row.issues.length ? row.issues.join(" ") : row.duplicate_matches.length ? row.duplicate_matches.join(" · ") : <span className="inline-flex items-center gap-1 text-[var(--admin-success)]"><CheckCircle2 size={10}/>Reconciled and ready</span>}</div></td></tr>)}</tbody></table></div>
 
-    <div className="border-t border-[var(--admin-line)] bg-[var(--admin-surface)] p-4 sm:p-5">
-      {preview.ready ? <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><label className="flex max-w-2xl cursor-pointer items-start gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><input type="checkbox" checked={confirmed} onChange={(event) => onConfirmed(event.target.checked)} className="mt-0.5"/><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">I reviewed and reconciled this supplier finance preview.</strong>Import the {preview.ready} Ready payable{preview.ready === 1 ? "" : "s"} only. Duplicate and invalid rows stay untouched. Imported balances immediately affect Accounts Payable and Partner exposure.</span></label><OpsButton variant="primary" disabled={!confirmed || Boolean(busy)} onClick={onImport}>{busy === "import" ? <LoaderCircle size={12} className="animate-spin"/> : <Upload size={12}/>}Import {preview.ready} ready payable{preview.ready === 1 ? "" : "s"}</OpsButton></div> : <OpsEmptyState compact icon={<AlertTriangle size={16}/>} title="Nothing is ready to import" description="Correct invalid rows or resolve possible duplicates in the supplier ledger, then preview the file again."/>}
+    <div className="migration-confirm">
+      {preview.ready ? <div className="migration-confirm-row"><label className="migration-confirm-check"><input type="checkbox" checked={confirmed} onChange={(event) => onConfirmed(event.target.checked)} className="mt-0.5"/><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">I reviewed and reconciled this supplier finance preview.</strong>Import the {preview.ready} Ready payable{preview.ready === 1 ? "" : "s"} only. Duplicate and invalid rows stay untouched. Imported balances immediately affect Accounts Payable and Partner exposure.</span></label><OpsButton variant="primary" disabled={!confirmed || Boolean(busy)} onClick={onImport}>{busy === "import" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <Upload size={14} strokeWidth={1.75} aria-hidden="true"/>}Import {preview.ready} ready payable{preview.ready === 1 ? "" : "s"}</OpsButton></div> : <OpsEmptyState compact icon={<AlertTriangle size={16}/>} title="Nothing is ready to import" description="Correct invalid rows or resolve possible duplicates in the supplier ledger, then preview the file again."/>}
     </div>
   </OpsSurface>;
 }
 
 function PreviewCount({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "success" | "warning" | "danger" }) {
-  const color = tone === "success" ? "text-[var(--admin-success)]" : tone === "warning" ? "text-[var(--admin-warning)]" : tone === "danger" ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]";
-  return <div className="bg-[var(--admin-surface)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-faint)]">{label}</p><strong className={`mt-1 block text-[20px] font-[740] ${color}`}>{value}</strong></div>;
+  return <OpsRailMetric label={label} value={value} tone={tone}/>;
 }

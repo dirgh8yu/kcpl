@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, Archive, CheckCircle2, Download, FileSpreadsheet, History, Landmark, LoaderCircle, PackageCheck, ReceiptText, RotateCcw, Upload, UsersRound } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
+import { AlertTriangle, Archive, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, RotateCcw, Upload } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import type { CustomerImportPreview, CustomerImportResult, CustomerImportStatus } from "./customer-import";
 import { MigrationBatchHistory } from "./migration-batch-history";
 import type { MigrationBatchDashboard } from "./migration-batches";
@@ -23,7 +23,7 @@ function statusLabel(status: CustomerImportStatus) {
   return "Invalid";
 }
 
-export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDashboard: MigrationBatchDashboard | null }) {
+export function MigrationWorkspace({ initialBatchDashboard, canRecover }: { initialBatchDashboard: MigrationBatchDashboard | null; canRecover: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CustomerImportPreview | null>(null);
   const [result, setResult] = useState<CustomerImportResult | null>(null);
@@ -69,34 +69,37 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
 
   return <OpsPage>
     <OpsPageHeader
-      eyebrow="Organisation · Migration Hub"
       title="Paper → KCPL migration"
-      description="KCPL now has the complete staged migration stack: controlled master-data imports, historical shipments, opening receivables and payables, an authoritative batch ledger, preserved paper evidence and fail-closed rollback recovery. The original import lanes remain available for ongoing digitisation."
-      meta={<><span>Management only</span><span>Stages 1–4 live</span><span>Dry-run recovery · no force delete</span></>}
-      actions={<><a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Customer template</a><a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Shipment template</a><a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Receivables template</a><a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="md" download><Download size={13}/>Payables template</a></>}
+      description="Staged imports, an authoritative batch ledger, preserved paper evidence and fail-closed rollback recovery."
+      meta={<span>Management only · Stages 1–4 live · dry-run recovery, no force delete</span>}
+      actions={<>
+        <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md"><Archive size={16} strokeWidth={1.75} aria-hidden="true"/>Paper Archive</Link>
+        {canRecover ? <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md"><RotateCcw size={16} strokeWidth={1.75} aria-hidden="true"/>Recovery</Link> : null}
+      </>}
     />
 
-    <OpsKpiStrip>
-      <OpsKpiCard label="Stage 1" value="Customers" variant="text" detail="Complete · still available" icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 2" value="Shipments" variant="text" detail="Complete · still available" icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 3A" value="Receivables" variant="text" detail="Complete · still available" icon={<Landmark size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 3B" value="Payables" variant="text" detail="Complete · still available" icon={<ReceiptText size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 4A" value="Batch history" variant="text" detail="Complete · evidence ledger" icon={<History size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 4B" value="Paper archive" variant="text" detail="Complete · evidence preserved" icon={<Archive size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Stage 4C" value="Recovery" variant="text" detail="Active · dry run first" icon={<RotateCcw size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-    </OpsKpiStrip>
-
-    <div className="ops-content-wide ops-stack">
-      <OpsSurface eyebrow="Stage plan" title="A complete migration safety chain" description="The stages now work as one chain: import carefully, retain an authoritative batch inventory, preserve source evidence, then permit rollback only when the live records still prove they are safe to reverse.">
-        <div className="grid gap-2 md:grid-cols-4 xl:grid-cols-7">
-          <Stage number="01" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
-          <Stage number="02" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="complete"/>
-          <Stage number="03A" title="Receivables opening" detail="Open customer invoices and auditable customer opening balances." state="complete"/>
-          <Stage number="03B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="complete"/>
-          <Stage number="04A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="complete"/>
-          <Stage number="04B" title="Paper archive" detail="Scanned historical files with controlled metadata, integrity fingerprints and stable storage." state="complete"/>
-          <Stage number="04C" title="Recovery" detail="Expiring dry-run plans, dependency blockers, exact confirmation and audited reversal." state="active"/>
-        </div>
+    <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
+      <OpsSurface
+        density="compact"
+        title="Migration safety chain"
+        description="Import carefully, keep an authoritative batch inventory, preserve source evidence, then allow rollback only when live records prove they are safe to reverse."
+        action={<span className="migration-templates"><span>Templates</span>
+          <a href="/api/admin/migration/customers" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Customers</a>
+          <a href="/api/admin/migration/shipments" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Shipments</a>
+          <a href="/api/admin/migration/receivables" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Receivables</a>
+          <a href="/api/admin/migration/payables" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Payables</a>
+        </span>}
+        flush
+      >
+        <ol className="migration-stages">
+          <Stage number="1" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
+          <Stage number="2" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="complete"/>
+          <Stage number="3A" title="Receivables opening" detail="Open customer invoices and auditable customer opening balances." state="complete"/>
+          <Stage number="3B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="complete"/>
+          <Stage number="4A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="complete"/>
+          <Stage number="4B" title="Paper archive" detail="Scanned historical files with controlled metadata, integrity fingerprints and stable storage." state="complete"/>
+          <Stage number="4C" title="Recovery" detail="Expiring dry-run plans, dependency blockers, exact confirmation and audited reversal." state="active"/>
+        </ol>
       </OpsSurface>
 
       <MigrationBatchHistory initialDashboard={initialBatchDashboard}/>
@@ -107,29 +110,29 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
       {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} customers imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> recorded {result.duplicates} possible duplicate{result.duplicates === 1 ? "" : "s"} and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"}. <Link href="/admin/crm" className="font-bold underline">Open Customers</Link>.</OpsNotice> : null}
 
-      <OpsSurface eyebrow="Stage 1 · Customer master" title="Customer CSV intake → validate → preview → confirm" description="Stage 1 stays available because shipment history and receivables still depend on a clean CRM customer master. Supplier finance uses the separate Partner network as its identity source." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={12}/>Download customer template</a>}>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <OpsSurface density="compact" title="Stage 1 · Customer master" description="Customer CSV intake → validate → preview → confirm. Stage 1 stays available because shipment history and receivables still depend on a clean CRM customer master. Supplier finance uses the separate Partner network as its identity source." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download customer template</a>}>
+        <div className="migration-intake">
           <div>
-            <label className="block rounded-[var(--app-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-6 text-center transition hover:border-[var(--admin-accent-line)] hover:bg-[var(--admin-accent-bg)]">
+            <label className="migration-drop">
               <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}/>
-              <span className="mx-auto grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-white text-[var(--admin-crimson)] shadow-[0_5px_18px_rgba(80,55,40,.06)]"><Upload size={17}/></span>
-              <strong className="mt-3 block text-[12px] text-[var(--admin-ink)]">{file ? file.name : "Choose customer CSV"}</strong>
-              <span className="mt-1 block text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">CSV only · maximum 250 customer rows · maximum 2 MB</span>
+              <Upload size={16} strokeWidth={1.75} aria-hidden="true"/>
+              <strong>{file ? file.name : "Choose customer CSV"}</strong>
+              <span>CSV only · maximum 250 customer rows · maximum 2 MB</span>
             </label>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={12} className="animate-spin"/> : <FileSpreadsheet size={12}/>}Preview & validate</OpsButton>
+            <div className="migration-actions">
+              <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true"/>}Preview & validate</OpsButton>
               {file ? <OpsButton variant="ghost" disabled={Boolean(busy)} onClick={() => chooseFile(null)}>Clear file</OpsButton> : null}
             </div>
           </div>
 
-          <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
-            <p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-faint)]">Stage 1 rules</p>
-            <ul className="mt-3 space-y-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">
-              <li>• Required columns: <strong>display_name</strong> and <strong>primary_branch</strong>.</li>
-              <li>• Branch must match a KCPL branch in the template vocabulary.</li>
-              <li>• Name, email, phone and tax ID are checked against existing CRM records and earlier rows in the same CSV.</li>
-              <li>• Invalid and possible-duplicate rows are never imported automatically.</li>
-              <li>• Every confirmed import receives a migration batch ID and appears in the Migration Control Centre automatically.</li>
+          <div className="migration-rules">
+            <p className="migration-rules-title">Stage 1 rules</p>
+            <ul>
+              <li>Required columns: <strong>display_name</strong> and <strong>primary_branch</strong>.</li>
+              <li>Branch must match a KCPL branch in the template vocabulary.</li>
+              <li>Name, email, phone and tax ID are checked against existing CRM records and earlier rows in the same CSV.</li>
+              <li>Invalid and possible-duplicate rows are never imported automatically.</li>
+              <li>Every confirmed import receives a migration batch ID and appears in the Migration Control Centre automatically.</li>
             </ul>
           </div>
         </div>
@@ -141,28 +144,30 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
 }
 
 function PreviewPanel({ preview, confirmed, busy, onConfirmed, onImport }: { preview: CustomerImportPreview; confirmed: boolean; busy: "preview" | "import" | ""; onConfirmed: (value: boolean) => void; onImport: () => void }) {
-  return <OpsSurface eyebrow="Stage 1 safe preview" title="Review customers before anything is written" description={`${preview.total} rows detected in ${preview.filename}. Only rows marked Ready can be created.`} flush>
-    <div className="grid grid-cols-2 gap-px border-b border-[var(--admin-line)] bg-[var(--admin-line)] sm:grid-cols-4">
+  return <OpsSurface density="compact" title="Review customers before anything is written" description={`${preview.total} rows detected in ${preview.filename}. Only rows marked Ready can be created.`} flush>
+    <div className="migration-counts"><OpsKpiRail label="Preview counts">
       <PreviewCount label="Detected" value={preview.total}/>
       <PreviewCount label="Ready" value={preview.ready} tone="success"/>
       <PreviewCount label="Duplicates" value={preview.duplicates} tone="warning"/>
       <PreviewCount label="Invalid" value={preview.invalid} tone="danger"/>
-    </div>
+    </OpsKpiRail></div>
 
-    <div className="ops-table-wrap"><table className="ops-table min-w-[900px]"><thead><tr><th>Row</th><th>Customer</th><th>Branch</th><th>Contact</th><th>Status</th><th>Validation</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.row_number}><td><OpsMono>{String(row.row_number)}</OpsMono></td><td><strong className="text-[11px] text-[var(--admin-ink)]">{row.display_name}</strong>{row.tax_id ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Tax ID {row.tax_id}</p> : null}</td><td>{row.primary_branch ?? <span className="text-[var(--admin-danger)]">Invalid branch</span>}</td><td><span className="block text-[length:var(--app-label-size)]">{row.primary_email || "No email"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.primary_phone || "No phone"}</span></td><td><OpsBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</OpsBadge></td><td><div className="max-w-[360px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{row.issues.length ? row.issues.join(" ") : row.duplicate_matches.length ? row.duplicate_matches.join(" · ") : <span className="inline-flex items-center gap-1 text-[var(--admin-success)]"><CheckCircle2 size={10}/>No blocking issues</span>}</div></td></tr>)}</tbody></table></div>
+    <div className="ops-table-wrap"><table className="ops-table ops-register-table migration-table min-w-[900px]"><thead><tr><th>Row</th><th>Customer</th><th>Branch</th><th>Contact</th><th>Status</th><th>Validation</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.row_number}><td><OpsMono>{String(row.row_number)}</OpsMono></td><td><strong className="text-[11px] text-[var(--admin-ink)]">{row.display_name}</strong>{row.tax_id ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Tax ID {row.tax_id}</p> : null}</td><td>{row.primary_branch ?? <span className="text-[var(--admin-danger)]">Invalid branch</span>}</td><td><span className="block text-[length:var(--app-label-size)]">{row.primary_email || "No email"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.primary_phone || "No phone"}</span></td><td><OpsBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</OpsBadge></td><td><div className="max-w-[360px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{row.issues.length ? row.issues.join(" ") : row.duplicate_matches.length ? row.duplicate_matches.join(" · ") : <span className="inline-flex items-center gap-1 text-[var(--admin-success)]"><CheckCircle2 size={10}/>No blocking issues</span>}</div></td></tr>)}</tbody></table></div>
 
-    <div className="border-t border-[var(--admin-line)] bg-[var(--admin-surface)] p-4 sm:p-5">
-      {preview.ready ? <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><label className="flex max-w-2xl cursor-pointer items-start gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><input type="checkbox" checked={confirmed} onChange={(event) => onConfirmed(event.target.checked)} className="mt-0.5"/><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">I reviewed this Stage 1 preview.</strong>Import the {preview.ready} Ready row{preview.ready === 1 ? "" : "s"} only. Possible duplicates and invalid rows will remain untouched.</span></label><OpsButton variant="primary" disabled={!confirmed || Boolean(busy)} onClick={onImport}>{busy === "import" ? <LoaderCircle size={12} className="animate-spin"/> : <Upload size={12}/>}Import {preview.ready} ready customer{preview.ready === 1 ? "" : "s"}</OpsButton></div> : <OpsEmptyState compact icon={<AlertTriangle size={16}/>} title="Nothing is ready to import" description="Correct the invalid rows or review possible duplicates in the source CSV, then preview the file again."/>}
+    <div className="migration-confirm">
+      {preview.ready ? <div className="migration-confirm-row"><label className="migration-confirm-check"><input type="checkbox" checked={confirmed} onChange={(event) => onConfirmed(event.target.checked)} className="mt-0.5"/><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">I reviewed this Stage 1 preview.</strong>Import the {preview.ready} Ready row{preview.ready === 1 ? "" : "s"} only. Possible duplicates and invalid rows will remain untouched.</span></label><OpsButton variant="primary" disabled={!confirmed || Boolean(busy)} onClick={onImport}>{busy === "import" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <Upload size={14} strokeWidth={1.75} aria-hidden="true"/>}Import {preview.ready} ready customer{preview.ready === 1 ? "" : "s"}</OpsButton></div> : <OpsEmptyState compact icon={<AlertTriangle size={16}/>} title="Nothing is ready to import" description="Correct the invalid rows or review possible duplicates in the source CSV, then preview the file again."/>}
     </div>
   </OpsSurface>;
 }
 
 function PreviewCount({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "success" | "warning" | "danger" }) {
-  const color = tone === "success" ? "text-[var(--admin-success)]" : tone === "warning" ? "text-[var(--admin-warning)]" : tone === "danger" ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]";
-  return <div className="bg-[var(--admin-surface)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-faint)]">{label}</p><strong className={`mt-1 block text-[20px] font-[740] ${color}`}>{value}</strong></div>;
+  return <OpsRailMetric label={label} value={value} tone={tone}/>;
 }
 
 function Stage({ number, title, detail, state = "later" }: { number: string; title: string; detail: string; state?: "active" | "complete" | "later" }) {
-  const highlighted = state !== "later";
-  return <div className={`rounded-[var(--app-radius)] border p-4 ${highlighted ? "border-[var(--admin-accent-line)] bg-[var(--admin-accent-bg)]" : "border-[var(--admin-line)] bg-[var(--admin-surface-muted)]"}`}><div className="flex items-center justify-between gap-2"><span className="text-[length:var(--app-label-size)] font-semibold tracking-[.08em] text-[var(--admin-crimson)]">{number}</span><OpsBadge tone={state === "active" ? "info" : state === "complete" ? "success" : "neutral"}>{state === "active" ? "Active" : state === "complete" ? "Complete" : "Later"}</OpsBadge></div><strong className="mt-3 block text-[11px] text-[var(--admin-ink)]">{title}</strong><p className="mt-1.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-faint)]">{detail}</p></div>;
+  return <li className="migration-stage">
+    <span className="migration-stage-head"><span className="ops-mono">Stage {number}</span><OpsBadge tone={state === "active" ? "info" : state === "complete" ? "success" : "neutral"}>{state === "active" ? "Active" : state === "complete" ? "Complete" : "Later"}</OpsBadge></span>
+    <strong>{title}</strong>
+    <span className="migration-stage-detail">{detail}</span>
+  </li>;
 }

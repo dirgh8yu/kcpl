@@ -1,3 +1,4 @@
+import "../plan-sell-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { listTmsOrders } from "../rating/tms-rating.server";
@@ -42,13 +43,17 @@ export default async function ConsolidationPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <TmsConsolidationAllocationDesk
+      <TmsConsolidationWorkspace
         initialLoads={loads.loads}
-        initialAllocations={Object.fromEntries(allocations)}
-        canPrepare={staff.permissions.canEditCommercial}
-        canApprove={staff.permissions.role === "management"}
+        initialOrders={orders.orders}
+        canManage={staff.permissions.canEditCommercial}
+        allocation={<TmsConsolidationAllocationDesk key="allocation"
+          initialLoads={loads.loads}
+          initialAllocations={Object.fromEntries(allocations)}
+          canPrepare={staff.permissions.canEditCommercial}
+          canApprove={staff.permissions.role === "management"}
+        />}
       />
-      <TmsConsolidationWorkspace initialLoads={loads.loads} initialOrders={orders.orders} canManage={staff.permissions.canEditCommercial}/>
     </OperationsShell>
   );
 }

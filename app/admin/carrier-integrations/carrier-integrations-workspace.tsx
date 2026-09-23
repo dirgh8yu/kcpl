@@ -2,21 +2,53 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Activity, Cable, RefreshCw, Route, Search, Ship, Truck } from "lucide-react";
+import { Cable, Check, RefreshCw, Route, Ship } from "lucide-react";
+import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { statusTone as shipmentStatusTone } from "../shipments/shipments-views";
 import type { CarrierProviderDashboard, CarrierShipmentCandidate } from "./carrier-integrations.server";
 
-function stateTone(state: CarrierProviderDashboard["state"]) {
-  if (state === "healthy") return "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
-  if (state === "degraded") return "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]";
-  if (state === "configured") return "border-[var(--admin-info-line)] bg-[var(--admin-info-bg)] text-[var(--admin-info)]";
-  if (state === "partial") return "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
-  return "border-[var(--admin-line)] bg-[var(--admin-surface-soft)] text-[var(--admin-muted)]";
+type Tone = "neutral" | "info" | "success" | "warning" | "danger";
+
+function stateTone(state: CarrierProviderDashboard["state"]): Tone {
+  if (state === "healthy") return "success";
+  if (state === "degraded") return "danger";
+  if (state === "configured") return "info";
+  if (state === "partial") return "warning";
+  return "neutral";
 }
+
+function stateLabel(state: CarrierProviderDashboard["state"]) {
+  const words = state.replaceAll("_", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function shipmentTone(status: string): Tone {
+  return (shipmentStatuses as readonly string[]).includes(status) ? shipmentStatusTone(status as ShipmentStatus) : "neutral";
+}
+
+function shipmentLabel(status: string) {
+  return (shipmentStatuses as readonly string[]).includes(status) ? shipmentStatusLabels[status as ShipmentStatus] : status.replaceAll("_", " ");
+}
+
+function providerLabel(row: CarrierShipmentCandidate) {
+  return row.provider === "dhl_express" ? "DHL Express" : row.provider === "maersk_ocean" ? "Maersk Ocean" : row.carrier || "Unmapped";
+}
+
+const dateTimeFormat = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" });
+
+const shortDateTimeFormat = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kathmandu" });
 
 function fmt(value: string | null) {
   if (!value) return "Never";
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleString() : value;
+  return Number.isFinite(date.getTime()) ? dateTimeFormat.format(date) : value;
+}
+
+/** In-row timestamp: day, month and time; the full date stays in the tooltip. */
+function short(value: string) {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? shortDateTimeFormat.format(date) : value;
 }
 
 export function CarrierIntegrationsWorkspace({
@@ -46,14 +78,6 @@ export function CarrierIntegrationsWorkspace({
     if (!q) return rows;
     return rows.filter((row) => [row.reference, row.carrier, row.carrier_reference, row.booking_reference, row.mode, row.status, row.branch].filter(Boolean).join(" ").toLowerCase().includes(q));
   }, [query, rows]);
-
-  const stats: Array<{ label: string; value: number; Icon: typeof Cable }> = [
-    { label: "Configured", value: summary.configured, Icon: Cable },
-    { label: "Degraded", value: summary.degraded, Icon: Activity },
-    { label: "Linked shipments", value: summary.linked_shipments, Icon: Route },
-    { label: "DHL sync ready", value: summary.dhl_sync_ready, Icon: Truck },
-    { label: "Maersk linked", value: summary.maersk_linked, Icon: Ship },
-  ];
 
   async function refresh() {
     const response = await fetch("/api/admin/carrier-integrations", { cache: "no-store" });
@@ -92,41 +116,110 @@ export function CarrierIntegrationsWorkspace({
     } finally { setBusy(null); }
   }
 
-  return <div className="ops-content-wide py-5">
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><p className="ops-eyebrow">Carrier network</p><h1 className="mt-1 text-[27px] font-[760] tracking-[-.04em] text-[var(--admin-ink)]">Carrier integrations</h1><p className="mt-2 max-w-3xl text-[11px] leading-5 text-[var(--admin-muted)]">One provider layer for carrier APIs, DCSA webhooks and tracking synchronization. Credentials remain server-only; provider data feeds the existing KCPL workflow rather than creating parallel records.</p></div>
-      <div className="flex flex-wrap gap-2"><Link href="/admin/visibility" className="ops-button" data-variant="primary" data-size="sm">Live visibility</Link><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="sm">Partners & vendors</Link><button className="ops-button" data-variant="secondary" data-size="sm" disabled={Boolean(busy)} onClick={() => { setBusy("refresh"); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")).finally(() => setBusy(null)); }}><RefreshCw size={12}/>Refresh</button></div>
+  const refreshBusy = busy === "refresh";
+
+  return <>
+    <OpsPageHeader
+      title="Carrier integrations"
+      description="Carrier APIs, DCSA webhooks and tracking sync. Credentials stay server-only."
+      actions={<>
+        <Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="md">Live visibility</Link>
+        <Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners & vendors</Link>
+        <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => { setBusy("refresh"); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")).finally(() => setBusy(null)); }}><RefreshCw size={16} strokeWidth={1.75} className={refreshBusy ? "network-spin" : undefined} aria-hidden="true"/>Refresh</OpsButton>
+      </>}
+    />
+
+    <div className="px-4 pb-8 pt-4 md:px-6">
+      <OpsKpiRail label="Carrier integration summary">
+        <OpsRailMetric label="Configured" value={summary.configured}/>
+        <OpsRailMetric label="Degraded" value={summary.degraded} tone={summary.degraded ? "danger" : "neutral"}/>
+        <OpsRailMetric label="Linked shipments" value={summary.linked_shipments}/>
+        <OpsRailMetric label="DHL sync ready" value={summary.dhl_sync_ready}/>
+        <OpsRailMetric label="Maersk linked" value={summary.maersk_linked}/>
+      </OpsKpiRail>
+
+      {message ? <div className="network-notice"><OpsNotice tone="success" onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
+      {error ? <div className="network-notice"><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
+
+      <OpsSurface density="compact" title="Provider health" description={`${providers.length} provider${providers.length === 1 ? "" : "s"} · last poll outcome, capabilities and latency`} flush>
+        {providers.length ? <ul className="network-providers">
+          {providers.map((provider) => <li key={provider.id} className="network-provider">
+            <div className="network-provider-main">
+              <div className="network-provider-head">
+                <strong>{provider.label}</strong>
+                <OpsBadge tone={stateTone(provider.state)}>{stateLabel(provider.state)}</OpsBadge>
+              </div>
+              <p className="network-provider-meta">{provider.modes.join(" / ")} · {provider.auth}</p>
+              <p className="network-provider-note">{provider.docs_note}</p>
+              {provider.last_message ? <p className="network-provider-message"><span>Last message</span>{provider.last_message}</p> : null}
+              {provider.id === "maersk_ocean" ? <p className="network-provider-message"><span>Webhook endpoint</span><code className="ops-mono">/api/integrations/carriers/maersk</code></p> : null}
+            </div>
+            <ul className="network-capabilities" aria-label={`${provider.label} capabilities`}>
+              {provider.capabilities.map((capability) => {
+                const enabled = provider.active_capabilities.includes(capability);
+                return <li key={capability} data-active={enabled || undefined}>
+                  {enabled ? <Check size={12} strokeWidth={2} aria-hidden="true"/> : null}
+                  {capability}
+                  <span className="sr-only">{enabled ? " (active)" : " (not active)"}</span>
+                </li>;
+              })}
+            </ul>
+            <dl className="network-provider-facts">
+              <div><dt>Last success</dt><dd>{fmt(provider.last_success_at)}</dd></div>
+              <div><dt>Last failure</dt><dd>{fmt(provider.last_failure_at)}</dd></div>
+              <div><dt>Last action</dt><dd>{provider.last_action || "None"}</dd></div>
+              <div><dt>Latency</dt><dd>{provider.last_latency_ms === null ? "—" : `${provider.last_latency_ms} ms`}</dd></div>
+            </dl>
+          </li>)}
+        </ul> : <OpsEmptyState compact kind="setup" icon={<Cable size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No carrier providers" description="No carrier integration providers are defined for this deployment."/>}
+      </OpsSurface>
+
+      <OpsSurface
+        className="network-section"
+        density="compact"
+        title="Shipment integration queue"
+        description="Carrier-linked jobs eligible for provider sync. Provider data feeds the existing Job File; it never creates parallel records."
+        action={<div className="network-surface-tools">
+          <OpsSearch className="network-surface-search" placeholder="Search shipment or reference" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search the shipment integration queue"/>
+          <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} shipments` : `${filtered.length} of ${rows.length}`}</span>
+        </div>}
+        flush
+      >
+        {filtered.length ? <OpsTableWrap>
+          <table className="ops-table ops-register-table carrier-queue-table" aria-label="Shipment integration queue">
+            <thead><tr><th>Shipment</th><th>Provider</th><th>Carrier reference</th><th>Status</th><th>Last tracking</th><th>Integration</th><th><span className="sr-only">Action</span></th></tr></thead>
+            <tbody>{filtered.map((row) => <tr key={row.reference}>
+              <td>
+                <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-cell-primary ops-mono ops-cell-id network-link">{row.reference}</Link>
+                <span className="ops-cell-secondary">{row.branch} · {row.mode || "mode not set"}</span>
+              </td>
+              <td className="network-nowrap">{providerLabel(row)}</td>
+              <td>{row.carrier_reference || row.booking_reference ? <span className="ops-mono ops-cell-muted network-nowrap">{row.carrier_reference || row.booking_reference}</span> : <span className="ops-cell-muted">—</span>}</td>
+              <td><OpsBadge tone={shipmentTone(row.status)}>{shipmentLabel(row.status)}</OpsBadge></td>
+              <td>
+                {row.last_tracking_at ? <span className="ops-cell-primary network-nowrap" title={fmt(row.last_tracking_at)}>{short(row.last_tracking_at)}</span> : <span className="ops-cell-muted">Never</span>}
+                {row.last_tracking_provider ? <span className="ops-cell-secondary">{row.last_tracking_provider}</span> : null}
+              </td>
+              <td>{row.sync_error ? <span className="network-error ops-cell-clamp" title={row.sync_error}>{row.sync_error}</span> : row.last_sync_at ? <span className="ops-cell-muted network-nowrap" title={`Synced ${fmt(row.last_sync_at)}`}>Synced {short(row.last_sync_at)}</span> : <span className="ops-cell-muted">Not synced</span>}</td>
+              <td className="ops-cell-actions">{row.provider === "dhl_express" && row.carrier_reference ? <OpsButton variant="secondary" size="xs" disabled={busy === row.reference} onClick={() => syncDhl(row.reference)}><RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>{busy === row.reference ? "Syncing…" : "Sync DHL"}</OpsButton> : row.provider === "maersk_ocean" ? <Link href={`/admin/visibility?shipment=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">View feed</Link> : <span className="ops-cell-muted">—</span>}</td>
+            </tr>)}</tbody>
+          </table>
+        </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Route size={16} strokeWidth={1.75} aria-hidden="true"/>} title={query.trim() ? "No results" : "No carrier-linked shipments"} description={query.trim() ? "No carrier-linked shipments match this search." : "No carrier-linked shipments match this view."}/>}
+      </OpsSurface>
+
+      {canViewCommercial ? <OpsSurface className="network-section" density="compact" title="Maersk commercial schedules" description="Use five-character UN/LOCODEs. Results are live planning data and are not persisted into KCPL rate history.">
+        <form className="network-inline-form" onSubmit={searchSchedules}>
+          <label className="network-inline-field"><span className="sr-only">Origin UN/LOCODE</span><input className="ops-input" value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} maxLength={5} placeholder="Origin e.g. INCCU"/></label>
+          <label className="network-inline-field"><span className="sr-only">Destination UN/LOCODE</span><input className="ops-input" value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} maxLength={5} placeholder="Destination e.g. SGSIN"/></label>
+          <OpsButton type="submit" variant="primary" size="sm" disabled={busy === "maersk"}><Ship size={14} strokeWidth={1.75} aria-hidden="true"/>{busy === "maersk" ? "Searching…" : "Search Maersk"}</OpsButton>
+        </form>
+        {scheduleRows.length ? <div className="network-schedule-results"><OpsTableWrap>
+          <table className="ops-table ops-register-table carrier-schedule-table" aria-label="Maersk schedule options">
+            <thead><tr><th>#</th><th>Origin</th><th>Destination</th><th>Departure</th><th>Arrival</th><th>Vessel / voyage</th><th>Service</th></tr></thead>
+            <tbody>{scheduleRows.map((row) => <tr key={row.index}><td className="ops-cell-muted">{row.index}</td><td className="ops-mono">{row.origin || origin}</td><td className="ops-mono">{row.destination || destination}</td><td>{row.departure || "—"}</td><td>{row.arrival || "—"}</td><td>{[row.vessel, row.voyage].filter(Boolean).join(" · ") || "—"}</td><td>{row.service || "—"}</td></tr>)}</tbody>
+          </table>
+        </OpsTableWrap></div> : null}
+      </OpsSurface> : null}
     </div>
-
-    {message ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] px-3 py-2 text-[length:var(--app-label-size)] text-[var(--admin-success)]">{message}</div> : null}
-    {error ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] px-3 py-2 text-[length:var(--app-label-size)] text-[var(--admin-danger)]">{error}</div> : null}
-
-    <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-      {stats.map(({ label, value, Icon }) => <div key={label} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3.5"><div className="flex items-center gap-2 text-[var(--admin-crimson)]"><Icon size={13}/><span className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em]">{label}</span></div><p className="mt-2 text-[22px] font-[760] tracking-[-.04em] text-[var(--admin-ink)]">{value}</p></div>)}
-    </div>
-
-    <section className="mt-5 grid gap-3 lg:grid-cols-2">
-      {providers.map((provider) => <article key={provider.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4 shadow-[0_8px_24px_rgba(54,43,34,.035)]">
-        <div className="flex items-start justify-between gap-3"><div><p className="text-[13px] font-[740] text-[var(--admin-ink)]">{provider.label}</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{provider.modes.join(" / ")} · {provider.auth}</p></div><span className={`rounded-full border px-2 py-1 text-[length:var(--app-label-size)] font-bold ${stateTone(provider.state)}`}>{provider.state.replaceAll("_", " ")}</span></div>
-        <div className="mt-3 flex flex-wrap gap-1.5">{provider.capabilities.map((capability) => <span key={capability} className={`rounded-full border px-2 py-1 text-[length:var(--app-label-size)] font-bold uppercase tracking-[.06em] ${provider.active_capabilities.includes(capability) ? "border-[var(--admin-accent-line)] bg-[var(--admin-accent-bg)] text-[var(--admin-crimson)]" : "border-[var(--admin-line)] bg-white text-[var(--admin-muted)]"}`}>{capability}</span>)}</div>
-        <p className="mt-3 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{provider.docs_note}</p>
-        <div className="mt-3 grid gap-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)] sm:grid-cols-2"><p>Last success: <strong>{fmt(provider.last_success_at)}</strong></p><p>Last failure: <strong>{fmt(provider.last_failure_at)}</strong></p><p>Last action: <strong>{provider.last_action || "None"}</strong></p><p>Latency: <strong>{provider.last_latency_ms === null ? "—" : `${provider.last_latency_ms} ms`}</strong></p></div>
-        {provider.last_message ? <p className="mt-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-2.5 py-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{provider.last_message}</p> : null}
-        {provider.id === "maersk_ocean" ? <p className="mt-3 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Webhook endpoint: <code className="rounded bg-[var(--admin-surface-soft)] px-1 py-0.5">/api/integrations/carriers/maersk</code></p> : null}
-      </article>)}
-    </section>
-
-    {canViewCommercial ? <section className="mt-5 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-4">
-      <div className="flex items-center gap-2 text-[var(--admin-crimson)]"><Ship size={14}/><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em]">Maersk commercial schedules</p></div>
-      <p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Use five-character UN/LOCODEs. Results are live planning data and are not persisted into KCPL rate history.</p>
-      <form className="mt-3 flex flex-wrap gap-2" onSubmit={searchSchedules}><input className="ops-input w-36" value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} maxLength={5} placeholder="Origin e.g. INCCU"/><input className="ops-input w-36" value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} maxLength={5} placeholder="Destination e.g. SGSIN"/><button className="ops-button" data-variant="primary" data-size="sm" disabled={busy === "maersk"}>{busy === "maersk" ? "Searching…" : "Search Maersk"}</button></form>
-      {scheduleRows.length ? <div className="ops-scroll-x mt-4 overflow-x-auto"><table className="w-full min-w-[720px] text-left text-[length:var(--app-label-size)]"><thead className="border-b border-[var(--admin-line)] text-[var(--admin-muted)]"><tr><th className="py-2">#</th><th>Origin</th><th>Destination</th><th>Departure</th><th>Arrival</th><th>Vessel / voyage</th><th>Service</th></tr></thead><tbody>{scheduleRows.map((row) => <tr key={row.index} className="border-b border-[var(--admin-line)]"><td className="py-2.5">{row.index}</td><td>{row.origin || origin}</td><td>{row.destination || destination}</td><td>{row.departure || "—"}</td><td>{row.arrival || "—"}</td><td>{[row.vessel, row.voyage].filter(Boolean).join(" · ") || "—"}</td><td>{row.service || "—"}</td></tr>)}</tbody></table></div> : null}
-    </section> : null}
-
-    <section className="mt-5 overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-3"><div><p className="text-[11px] font-[730] text-[var(--admin-ink)]">Shipment integration queue</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Carrier-linked jobs and references eligible for provider synchronization.</p></div><div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--admin-faint)]"/><input className="ops-input w-64 pl-8" placeholder="Search shipment, carrier, reference" value={query} onChange={(event) => setQuery(event.target.value)}/></div></div>
-      <div className="ops-scroll-x overflow-x-auto"><table className="w-full min-w-[900px] text-left text-[length:var(--app-label-size)]"><thead className="border-b border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)]"><tr><th className="px-4 py-2.5">Shipment</th><th>Provider</th><th>Carrier reference</th><th>Status</th><th>Last tracking</th><th>Integration</th><th className="pr-4 text-right">Action</th></tr></thead><tbody>{filtered.map((row) => <tr key={row.reference} className="border-b border-[var(--admin-line)]"><td className="px-4 py-3"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="font-bold text-[var(--admin-crimson)] hover:underline">{row.reference}</Link><p className="mt-0.5 text-[var(--admin-faint)]">{row.branch} · {row.mode || "mode not set"}</p></td><td>{row.provider === "dhl_express" ? "DHL Express" : row.provider === "maersk_ocean" ? "Maersk Ocean" : row.carrier || "Unmapped"}</td><td>{row.carrier_reference || row.booking_reference || "—"}</td><td>{row.status.replaceAll("_", " ")}</td><td>{fmt(row.last_tracking_at)}{row.last_tracking_provider ? <p className="mt-0.5 text-[var(--admin-faint)]">{row.last_tracking_provider}</p> : null}</td><td>{row.sync_error ? <span className="text-[var(--admin-danger)]">{row.sync_error}</span> : row.last_sync_at ? `Synced ${fmt(row.last_sync_at)}` : "Not synced"}</td><td className="pr-4 text-right">{row.provider === "dhl_express" && row.carrier_reference ? <button className="ops-button" data-variant="secondary" data-size="sm" disabled={busy === row.reference} onClick={() => syncDhl(row.reference)}>{busy === row.reference ? "Syncing…" : "Sync DHL"}</button> : row.provider === "maersk_ocean" ? <Link href={`/admin/visibility?shipment=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">View feed</Link> : "—"}</td></tr>)}</tbody></table></div>
-      {!filtered.length ? <div className="p-8 text-center text-[length:var(--app-label-size)] text-[var(--admin-muted)]">No carrier-linked shipments match this view.</div> : null}
-    </section>
-  </div>;
+  </>;
 }

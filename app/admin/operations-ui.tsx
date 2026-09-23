@@ -17,12 +17,14 @@ export {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
+  OpsJumpMenu,
   OpsKpiRail,
   OpsRailMetric,
   OpsRegisterToolbar,
   OpsScopeTabs,
   type OpsActiveFilter,
   type OpsFilterOption,
+  type OpsJumpOption,
   type OpsScopeItem,
 } from "./ops-register";
 export { useAdminPortalContainer } from "./use-admin-portal-container";

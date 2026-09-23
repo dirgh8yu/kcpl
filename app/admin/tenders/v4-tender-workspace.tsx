@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { Plus, RefreshCw, Send, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { TmsOrder } from "../rating/tms-rating";
+import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
 import {
   tenderCanBook,
   tenderCanCancel,
@@ -30,14 +32,10 @@ type ApiResponse = {
 
 type StatusFilter = "active" | "all" | TmsTenderStatus;
 
-const tabs = [
-  { label: "Orders", href: "/admin/rating" },
-  { label: "Tenders", href: "/admin/tenders", active: true },
-  { label: "Bookings", href: "/admin/tenders?state=booked" },
-  { label: "Pickups", href: "/admin/pickups" },
-  { label: "Shipments", href: "/admin/shipments" },
-  { label: "Consolidations", href: "/admin/consolidation" },
-];
+const channelLabels: Record<TmsTenderChannel, string> = { manual: "Manual", email: "Email", edi_204: "EDI 204" };
+
+/** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
+const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
 function money(value: number | null, currency: string | null) {
   if (value === null || !currency) return "Not set";
@@ -58,12 +56,11 @@ function shortDate(value: string | null) {
   return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone: value.length === 10 ? "UTC" : "Asia/Kathmandu" }).format(date);
 }
 
-function statusClasses(status: TmsTenderStatus) {
-  if (status === "accepted" || status === "booked") return "bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
-  if (status === "sent") return "bg-[var(--admin-info-bg)] text-[var(--admin-info)]";
-  if (status === "countered") return "bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
-  if (status === "rejected" || status === "cancelled" || status === "expired") return "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
-  return "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
+function stateTone(status: TmsTenderStatus): "neutral" | "info" | "warning" | "success" {
+  if (status === "accepted" || status === "booked") return "success";
+  if (status === "sent") return "info";
+  if (status === "countered") return "warning";
+  return "neutral";
 }
 
 function localDeadlineDefault() {
@@ -90,7 +87,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
   const [tenders, setTenders] = useState(initialTenders);
   const firstTender = initialTenders[0] ?? null;
   const firstOrder = firstTender ? initialOrders.find((order) => order.id === firstTender.order_id) : initialOrders.find((order) => ["selected", "tendering"].includes(order.status)) ?? initialOrders[0];
-  const [selectedTenderId, setSelectedTenderId] = useState(firstTender?.id ?? "");
+  const [selectedTenderId, setSelectedTenderId] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState(firstOrder?.id ?? "");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("active");
@@ -125,12 +122,18 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
     }).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }, [channelFilter, orders, query, status, tenders]);
 
-  const selected = tenders.find((tender) => tender.id === selectedTenderId) ?? filtered[0] ?? null;
+  const selected = tenders.find((tender) => tender.id === selectedTenderId) ?? null;
   const selectedTenderOrder = selected ? orders.find((order) => order.id === selected.order_id) ?? null : null;
   const awaiting = tenders.filter((tender) => tender.status === "sent").length;
   const accepted = tenders.filter((tender) => tender.status === "accepted" || tender.status === "countered").length;
   const expired = tenders.filter((tender) => tender.status === "expired").length;
   const booked = tenders.filter((tender) => tender.status === "booked").length;
+
+  const scopeOptions = [
+    { value: "active", label: "Active" },
+    { value: "all", label: "All states" },
+    ...Object.entries(tmsTenderStatusLabels).map(([value, label]) => ({ value, label })),
+  ] as const;
 
   function chooseOrder(id: string) {
     const order = orders.find((item) => item.id === id);
@@ -138,6 +141,30 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
     setCustomerId(order?.customer_id ?? "");
     setNotice(null);
   }
+
+  const inspectorRef = useRef<HTMLElement>(null);
+  function openTender(id: string) {
+    setSelectedTenderId(id);
+    // Stacked layouts put the inspector under the register; bring it into view.
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia(SIDE_BY_SIDE_QUERY).matches) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      inspectorRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+    });
+  }
+
+  // Escape closes the inspector, as it does on the other registers.
+  const hasSelection = selected !== null;
+  useEffect(() => {
+    if (!hasSelection) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
+      setSelectedTenderId("");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hasSelection]);
 
   async function refresh() {
     setBusy(true);
@@ -257,59 +284,263 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
     }
   }
 
-  return <main className="tender-workspace-page min-h-[calc(100vh-54px)] bg-[var(--admin-canvas)] px-4 pb-10 pt-6 text-[var(--admin-ink)] sm:px-6 lg:px-7">
-    <div className="mx-auto w-full max-w-[1152px]">
-      <header className="flex min-h-[60px] flex-wrap items-center justify-between gap-4">
-        <div><h1 className="text-[22px] font-semibold leading-[30px]">Tender Workspace</h1><p className="mt-[3px] text-[13px] leading-[19px] text-[var(--admin-muted)]">{awaiting} awaiting response · {accepted} accepted / countered · {expired} expired · {booked} booked</p></div>
-        <div className="flex gap-2"><button type="button" onClick={refresh} disabled={busy} className="ops-button" data-variant="secondary" data-size="sm">Refresh</button>{canManage ? <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="sm">Create tender</button> : null}</div>
-      </header>
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<StatusFilter, number>> = { active: tenders.filter((tender) => tenderIsActive(tender.status)).length, all: tenders.length };
+    for (const status of Object.keys(tmsTenderStatusLabels) as TmsTenderStatus[]) counts[status] = tenders.filter((tender) => tender.status === status).length;
+    return counts;
+  }, [tenders]);
+  const filtersActive = Boolean(query.trim()) || status !== "active" || channelFilter !== "all";
+  const compact = selected !== null;
+  const activeFilters: OpsActiveFilter[] = channelFilter !== "all" ? [{ key: "channel", label: channelLabels[channelFilter], title: `Channel: ${channelLabels[channelFilter]}`, onRemove: () => setChannelFilter("all") }] : [];
+  const eligibleOrders = orders.filter((order) => ["selected", "tendering"].includes(order.status));
 
-      <nav className="ops-scroll-x flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">{tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}</nav>
+  return (
+    <OpsPage>
+      <OpsPageHeader
+        title="Tender & Booking"
+        description={`${awaiting} awaiting response · ${accepted} accepted / countered · ${expired} expired · ${booked} booked`}
+        actions={<>
+          <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
+          {canManage ? <OpsButton variant="primary" onClick={() => setShowCreate((value) => !value)} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Create tender</OpsButton> : null}
+        </>}
+      />
 
-      {notice ? <div className={`mt-4 flex min-h-10 items-center justify-between gap-3 border px-3 py-2 text-[12px] font-medium ${notice.tone === "success" ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : notice.tone === "warning" ? "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]" : "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]"}`}><span>{notice.text}</span><button type="button" onClick={() => setNotice(null)} className="text-[11px] font-semibold">Dismiss</button></div> : null}
+      <div className="px-4 pb-8 pt-4 md:px-6">
+        <OpsKpiRail label="Tender desk summary">
+          <OpsRailMetric label="Awaiting response" value={awaiting} active={status === "sent"} onClick={() => setStatus(status === "sent" ? "active" : "sent")} title="Show tenders awaiting a carrier response"/>
+          <OpsRailMetric label="Accepted / countered" value={accepted}/>
+          <OpsRailMetric label="Expired" value={expired} tone={expired ? "warning" : "neutral"} active={status === "expired"} onClick={() => setStatus(status === "expired" ? "active" : "expired")} title="Show expired tenders"/>
+          <OpsRailMetric label="Booked" value={booked} active={status === "booked"} onClick={() => setStatus(status === "booked" ? "active" : "booked")} title="Show booked tenders"/>
+        </OpsKpiRail>
 
-      {showCreate && canManage ? <section className="mt-4 border-y border-[var(--admin-line)] bg-white px-4 py-5">
-        <div className="mb-4"><p className="text-[14px] font-semibold">Create tender</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Tender only from a transport order with an authoritative selected procurement rate.</p></div>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]"><Field label="Transport order"><select value={selectedOrderId} onChange={(event) => chooseOrder(event.target.value)}><option value="">Choose order</option>{orders.filter((order) => ["selected", "tendering"].includes(order.status)).map((order) => <option key={order.id} value={order.id}>{order.id} · {order.origin} → {order.destination}</option>)}</select></Field>{selectedOrder && !selectedOrder.customer_id ? <div className="flex items-end gap-2"><Field label="Customer"><select value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Choose customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>)}</select></Field><button type="button" onClick={linkCustomer} disabled={!customerId || busy} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold disabled:opacity-50">Link</button></div> : <div className="flex items-end pb-1 text-[12px] text-[var(--admin-muted)]">{selectedOrder?.customer_name || "Choose an eligible order"}</div>}</div>
-        <form onSubmit={createTender} className="mt-4 grid gap-3 md:grid-cols-4"><Field label="Channel"><select value={channel} onChange={(event) => setChannel(event.target.value as TmsTenderChannel)}><option value="manual">Manual / phone / WhatsApp</option><option value="email">Email</option></select></Field><Field label="Response deadline"><input required type="datetime-local" value={responseDueAt} onChange={(event) => setResponseDueAt(event.target.value)}/></Field><Field label="Recipient name"><input value={recipientName} onChange={(event) => setRecipientName(event.target.value)} placeholder="Partner contact"/></Field><Field label={channel === "email" ? "Recipient email" : "Recipient email (optional)"}><input required={channel === "email"} type="email" value={recipientEmail} onChange={(event) => setRecipientEmail(event.target.value)} placeholder="operations@carrier.com"/></Field><div className="flex justify-end gap-2 md:col-span-4"><button type="button" onClick={() => setShowCreate(false)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Cancel</button><button type="submit" disabled={busy || !selectedOrder?.customer_id} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-white disabled:opacity-50">{busy ? "Creating…" : channel === "email" ? "Send tender" : "Record tender"}</button></div></form>
-      </section> : null}
+        {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-      <div className="flex min-h-[58px] flex-wrap items-center gap-2 border-b border-[var(--admin-line)] py-3">
-        <label className="flex h-8 min-w-[260px] flex-1 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 md:max-w-[300px]"><span className="mr-2 text-[12px] text-[var(--admin-muted)]">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tender, order, partner…" className="min-w-0 flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-[var(--admin-muted)]"/></label>
-        <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold"><option value="active">Active</option><option value="all">All states</option>{Object.entries(tmsTenderStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-        <select value={channelFilter} onChange={(event) => setChannelFilter(event.target.value as "all" | TmsTenderChannel)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold"><option value="all">All channels</option><option value="manual">Manual</option><option value="email">Email</option><option value="edi_204">EDI 204</option></select>
-        <button type="button" onClick={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Reset</button><span className="ml-auto text-[12px] font-medium text-[var(--admin-muted)]">{filtered.length} shown</span>
-      </div>
+        {showCreate && canManage ? (
+          <div className="plan-panel">
+            <OpsSurface
+              density="compact"
+              title="Create tender"
+              description="Tender only from a transport order with an authoritative selected procurement rate."
+              action={<button type="button" className="ops-inspector-close" onClick={() => setShowCreate(false)} aria-label="Close create tender"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+            >
+              <form onSubmit={createTender}>
+                <div className="ops-form-grid">
+                  <OpsField label="Transport order" className="ops-form-wide">
+                    <select value={selectedOrderId} onChange={(event) => chooseOrder(event.target.value)}>
+                      {eligibleOrders.length ? null : <option value="">No eligible orders</option>}
+                      {eligibleOrders.map((order) => <option key={order.id} value={order.id}>{order.id} · {order.origin} → {order.destination}</option>)}
+                    </select>
+                  </OpsField>
+                  {selectedOrder && !selectedOrder.customer_id ? (
+                    <div className="ops-form-inline ops-form-wide">
+                      <OpsField label="Link customer">
+                        <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+                          <option value="">Choose customer…</option>
+                          {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.branch}</option>)}
+                        </select>
+                      </OpsField>
+                      <OpsButton size="sm" onClick={linkCustomer} disabled={!customerId || busy}>Link</OpsButton>
+                    </div>
+                  ) : (
+                    <div className="ops-field ops-form-wide"><span className="ops-field-label">Customer</span><span className="ops-form-value">{selectedOrder?.customer_name || "Choose an eligible order"}</span></div>
+                  )}
+                  <OpsField label="Channel">
+                    <select value={channel} onChange={(event) => setChannel(event.target.value as TmsTenderChannel)}>
+                      <option value="manual">Manual / phone / WhatsApp</option>
+                      <option value="email">Email</option>
+                    </select>
+                  </OpsField>
+                  <OpsField label="Response deadline"><input required type="datetime-local" value={responseDueAt} onChange={(event) => setResponseDueAt(event.target.value)}/></OpsField>
+                  <OpsField label="Recipient name"><input value={recipientName} onChange={(event) => setRecipientName(event.target.value)} placeholder="Partner contact"/></OpsField>
+                  <OpsField label={channel === "email" ? "Recipient email" : "Recipient email (optional)"}><input required={channel === "email"} type="email" value={recipientEmail} onChange={(event) => setRecipientEmail(event.target.value)} placeholder="operations@carrier.com"/></OpsField>
+                </div>
+                <div className="ops-form-actions">
+                  <OpsButton type="button" variant="ghost" size="sm" onClick={() => setShowCreate(false)}>Cancel</OpsButton>
+                  <OpsButton type="submit" size="sm" variant="primary" disabled={busy || !selectedOrder?.customer_id}>{busy ? "Creating…" : channel === "email" ? "Send tender" : "Record tender"}</OpsButton>
+                </div>
+              </form>
+            </OpsSurface>
+          </div>
+        ) : null}
 
-      <section className="grid min-h-[650px] lg:grid-cols-[minmax(0,800px)_351px]">
-        <div className="ops-scroll-x min-w-0 overflow-x-auto lg:border-r lg:border-[var(--admin-line)]">
-          <table className="w-full min-w-[800px] table-fixed border-collapse text-left"><thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">TENDER</th><th className="w-[170px] px-3 font-medium">ORDER / ROUTE</th><th className="w-[150px] px-3 font-medium">PARTNER</th><th className="w-[120px] px-3 text-right font-medium">COMMERCIAL</th><th className="w-[110px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">DEADLINE</th></tr></thead>
-            <tbody>{filtered.length ? filtered.map((tender) => {
-              const chosen = selected?.id === tender.id;
-              return <tr key={tender.id} tabIndex={0} aria-selected={chosen || undefined} onClick={() => setSelectedTenderId(tender.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedTenderId(tender.id); } }} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}><td className="relative px-3 text-[13px] font-semibold">{chosen ? <span className="absolute inset-y-0 left-0 w-0.5 bg-[var(--admin-crimson)]"/> : null}<span className="block truncate">{tender.tender_reference}</span></td><td className="px-3"><span className="block truncate text-[12px] font-medium">{tender.order_id}</span><span className="mt-0.5 block truncate text-[11px] text-[var(--admin-muted)]">{tender.origin} → {tender.destination}</span></td><td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]"><span className="block truncate">{tender.partner_name}</span></td><td className="px-3 text-right text-[12px] font-semibold tabular-nums">{finalCommercial(tender)}</td><td className="px-3"><span className={`inline-flex rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium ${statusClasses(tender.status)}`}>{tmsTenderStatusLabels[tender.status]}</span></td><td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]">{shortDate(tender.response_due_at)}</td></tr>;
-            }) : <tr><td colSpan={6} className="h-48 px-6 text-center"><p className="text-[14px] font-semibold">No tenders match this view</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Change filters or create a tender from an eligible order.</p></td></tr>}</tbody></table>
+        <OpsRegisterToolbar
+          search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tender, order, partner, customer…" aria-label="Search tenders"/>}
+          actions={<>
+            <OpsFilterSelect label="Channel" value={channelFilter} allLabel="All channels" options={(Object.keys(channelLabels) as TmsTenderChannel[]).map((value) => ({ value, label: channelLabels[value] }))} onChange={(value) => setChannelFilter(value as "all" | TmsTenderChannel)}/>
+            {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }}>Reset</OpsButton> : null}
+            <span className="ops-toolbar-divider" aria-hidden="true"/>
+            <span className="ops-result-count" aria-live="polite">{filtered.length === tenders.length ? `${tenders.length} tenders` : `${filtered.length} of ${tenders.length}`}</span>
+          </>}
+          tabs={<OpsScopeTabs<StatusFilter> label="Tender state" items={scopeOptions.map((option) => ({ value: option.value as StatusFilter, label: option.label, count: statusCounts[option.value as StatusFilter] }))} value={status} onChange={(value) => setStatus(value)}/>}
+        />
+        <OpsActiveFilters chips={activeFilters}/>
+
+        <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
+          <section className="ops-surface" aria-label="Tender register">
+            {filtered.length ? <OpsTableWrap>
+              <table className="ops-table ops-register-table tender-table" data-compact={compact || undefined} aria-label="Tenders">
+                <thead>
+                  <tr>
+                    <th>Tender</th>
+                    <th>Route</th>
+                    {compact ? null : <th>Partner</th>}
+                    <th className="ops-col-num">Commercial</th>
+                    <th>State</th>
+                    {compact ? null : <th>Deadline</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((tender) => {
+                    const chosen = selected?.id === tender.id;
+                    return (
+                      <tr key={tender.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => openTender(tender.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openTender(tender.id); } }}>
+                        <td>
+                          <span className="ops-cell-primary ops-mono ops-cell-id">{tender.tender_reference}</span>
+                          <span className="ops-cell-secondary ops-mono">{tender.order_id}</span>
+                        </td>
+                        <td>
+                          <span className="ops-cell-primary ops-cell-clamp" title={`${tender.origin} → ${tender.destination}`}>{tender.origin} → {tender.destination}</span>
+                          <span className="ops-cell-secondary">{compact ? tender.partner_name : tender.mode}</span>
+                        </td>
+                        {compact ? null : <td>
+                          <span className="ops-cell-primary ops-cell-clamp" title={tender.partner_name}>{tender.partner_name}</span>
+                          <span className="ops-cell-secondary">{channelLabels[tender.channel]}</span>
+                        </td>}
+                        <td className="ops-col-num"><span className="ops-num">{finalCommercial(tender)}</span></td>
+                        <td><OpsBadge tone={stateTone(tender.status)}>{tmsTenderStatusLabels[tender.status]}</OpsBadge></td>
+                        {compact ? null : <td><span className="ops-cell-muted plan-nowrap">{shortDate(tender.response_due_at)}</span></td>}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No tenders match this view" : "No tenders yet"} description={filtersActive ? "Change or reset the filters." : "Create a tender from an eligible transport order."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }}>Reset filters</OpsButton> : undefined}/>}
+            {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} tender{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
+          </section>
+
+          {selected ? (
+            <TenderInspector
+              tender={selected}
+              order={selectedTenderOrder}
+              inspectorRef={inspectorRef}
+              onClose={() => setSelectedTenderId("")}
+              canManage={canManage}
+              busy={busy}
+              counterFor={counterFor}
+              setCounterFor={setCounterFor}
+              counterCost={counterCost}
+              setCounterCost={setCounterCost}
+              counterCurrency={counterCurrency}
+              setCounterCurrency={setCounterCurrency}
+              responseNote={responseNote}
+              setResponseNote={setResponseNote}
+              bookingFor={bookingFor}
+              setBookingFor={setBookingFor}
+              bookingReference={bookingReference}
+              setBookingReference={setBookingReference}
+              pickupConfirmation={pickupConfirmation}
+              setPickupConfirmation={setPickupConfirmation}
+              onRespond={respond}
+              onCancel={cancel}
+              onBook={book}
+            />
+          ) : null}
         </div>
-        <aside className="min-h-[650px] bg-white px-6 py-5">{selected ? <TenderInspector tender={selected} order={selectedTenderOrder} canManage={canManage} busy={busy} counterFor={counterFor} setCounterFor={setCounterFor} counterCost={counterCost} setCounterCost={setCounterCost} counterCurrency={counterCurrency} setCounterCurrency={setCounterCurrency} responseNote={responseNote} setResponseNote={setResponseNote} bookingFor={bookingFor} setBookingFor={setBookingFor} bookingReference={bookingReference} setBookingReference={setBookingReference} pickupConfirmation={pickupConfirmation} setPickupConfirmation={setPickupConfirmation} onRespond={respond} onCancel={cancel} onBook={book}/> : <div className="grid h-full place-items-center text-center"><div><p className="text-[14px] font-semibold">No tender selected</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Choose a row to inspect procurement authority.</p></div></div>}</aside>
-      </section>
-    </div>
-  </main>;
+      </div>
+    </OpsPage>
+  );
 }
 
-function TenderInspector({ tender, order, canManage, busy, counterFor, setCounterFor, counterCost, setCounterCost, counterCurrency, setCounterCurrency, responseNote, setResponseNote, bookingFor, setBookingFor, bookingReference, setBookingReference, pickupConfirmation, setPickupConfirmation, onRespond, onCancel, onBook }: {
-  tender: TmsTender; order: TmsOrder | null; canManage: boolean; busy: boolean;
+function TenderInspector({ tender, order, inspectorRef, onClose, canManage, busy, counterFor, setCounterFor, counterCost, setCounterCost, counterCurrency, setCounterCurrency, responseNote, setResponseNote, bookingFor, setBookingFor, bookingReference, setBookingReference, pickupConfirmation, setPickupConfirmation, onRespond, onCancel, onBook }: {
+  tender: TmsTender; order: TmsOrder | null; inspectorRef: RefObject<HTMLElement | null>; onClose: () => void; canManage: boolean; busy: boolean;
   counterFor: string | null; setCounterFor: (value: string | null) => void; counterCost: string; setCounterCost: (value: string) => void; counterCurrency: CrmCurrency; setCounterCurrency: (value: CrmCurrency) => void; responseNote: string; setResponseNote: (value: string) => void; bookingFor: string | null; setBookingFor: (value: string | null) => void; bookingReference: string; setBookingReference: (value: string) => void; pickupConfirmation: string; setPickupConfirmation: (value: string) => void;
   onRespond: (tender: TmsTender, status: "accepted" | "rejected" | "countered") => Promise<void>; onCancel: (tender: TmsTender) => Promise<void>; onBook: (tender: TmsTender) => Promise<void>;
 }) {
   const canBook = tenderCanBook(tender.status);
-  return <div className="flex h-full flex-col"><div className="min-h-[110px]"><p className="text-[11px] font-medium text-[var(--admin-muted)]">{tender.tender_reference}</p><h2 className="mt-1 text-[18px] font-semibold leading-[26px]">{tender.partner_name}</h2><p className="mt-1 text-[12px] text-[var(--admin-muted)]">{tender.origin} → {tender.destination} · {tender.mode}</p><span className={`mt-2 inline-flex rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium ${statusClasses(tender.status)}`}>{tmsTenderStatusLabels[tender.status]}</span></div>
-    <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">PROCUREMENT BASIS</p><DetailRow label="Order" value={tender.order_id}/><DetailRow label="Customer" value={order?.customer_name || "Not linked"}/><DetailRow label="Offered" value={money(tender.offered_cost, tender.currency)}/>{tender.counter_cost !== null ? <DetailRow label="Counter" value={money(tender.counter_cost, tender.counter_currency)}/> : null}<DetailRow label="Channel" value={tender.channel}/><DetailRow label="Deadline" value={dateTime(tender.response_due_at)}/></div>
-    {tender.response_note ? <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">RESPONSE NOTE</p><p className="mt-2 text-[12px] leading-[19px] text-[var(--admin-muted)]">{tender.response_note}</p></div> : null}
-    {tender.status === "booked" ? <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">BOOKING</p><DetailRow label="Reference" value={tender.booking_reference || "Not recorded"}/><DetailRow label="Shipment" value={tender.shipment_reference || "Not linked"}/><Link href={`/admin/tenders/${encodeURIComponent(tender.id)}`} className="mt-3 inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Open booking confirmation</Link></div> : null}
-    {canManage && tender.status === "sent" ? <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">CARRIER RESPONSE</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => onRespond(tender, "accepted")} disabled={busy} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] px-3 text-[12px] font-semibold text-[var(--admin-success)]">Accepted</button><button type="button" onClick={() => onRespond(tender, "rejected")} disabled={busy} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Rejected</button><button type="button" onClick={() => setCounterFor(counterFor === tender.id ? null : tender.id)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] px-3 text-[12px] font-semibold text-[var(--admin-warning)]">Counter-offer</button></div>{counterFor === tender.id ? <div className="mt-3 space-y-2"><Field label="Counter amount"><input type="number" min="0" step="0.01" value={counterCost} onChange={(event) => setCounterCost(event.target.value)}/></Field><Field label="Currency"><select value={counterCurrency} onChange={(event) => setCounterCurrency(event.target.value as CrmCurrency)}>{crmCurrencies.map((value) => <option key={value}>{value}</option>)}</select></Field><Field label="Conditions / note"><input value={responseNote} onChange={(event) => setResponseNote(event.target.value)} placeholder="Validity, timing, exclusions…"/></Field><button type="button" onClick={() => onRespond(tender, "countered")} disabled={!counterCost || busy} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white disabled:opacity-50">Record counter-offer</button></div> : null}</div> : null}
-    {canManage && canBook ? <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">BOOKING AUTHORITY</p><p className="mt-1 text-[12px] leading-[19px] text-[var(--admin-muted)]">Only this accepted or valid counter-offer can request booking. The server remains authoritative.</p>{bookingFor === tender.id ? <div className="mt-3 space-y-2"><Field label="Partner booking reference"><input value={bookingReference} onChange={(event) => setBookingReference(event.target.value)} placeholder="Booking / confirmation number"/></Field><Field label="Pickup confirmation / notes"><input value={pickupConfirmation} onChange={(event) => setPickupConfirmation(event.target.value)} placeholder="Pickup slot, equipment, conditions…"/></Field><div className="flex gap-2"><button type="button" onClick={() => setBookingFor(null)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Cancel</button><button type="button" onClick={() => onBook(tender)} disabled={!bookingReference.trim() || busy} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white disabled:opacity-50">{busy ? "Confirming…" : "Confirm booking"}</button></div></div> : <button type="button" onClick={() => setBookingFor(tender.id)} className="mt-3 h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Confirm booking</button>}</div> : null}
-    {canManage && tenderCanCancel(tender.status) ? <div className="mt-auto border-t border-[var(--admin-line)] pt-4"><button type="button" onClick={() => onCancel(tender)} disabled={busy} className="text-[12px] font-semibold text-[var(--admin-danger)]">Cancel tender</button></div> : null}
-  </div>;
-}
+  return (
+    <aside ref={inspectorRef} className="ops-inspector" aria-label={`Tender ${tender.tender_reference}`}>
+      <OpsInspectorHeader
+        kicker={tender.tender_reference}
+        title={tender.partner_name}
+        subtitle={`${tender.origin} → ${tender.destination} · ${tender.mode}`}
+        actions={<>
+          <OpsBadge tone={stateTone(tender.status)}>{tmsTenderStatusLabels[tender.status]}</OpsBadge>
+          <button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close tender inspector"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+        </>}
+      />
+      <div className="ops-inspector-scroll">
+        <div className="ops-inspector-body">
+          <OpsInspectorSection title="Procurement basis">
+            <OpsFacts>
+              <OpsFact label="Order">{tender.order_id}</OpsFact>
+              <OpsFact label="Customer" warning={!order?.customer_name}>{order?.customer_name || "Not linked"}</OpsFact>
+              <OpsFact label="Offered">{money(tender.offered_cost, tender.currency)}</OpsFact>
+              {tender.counter_cost !== null ? <OpsFact label="Counter">{money(tender.counter_cost, tender.counter_currency)}</OpsFact> : null}
+              <OpsFact label="Channel">{channelLabels[tender.channel]}</OpsFact>
+              <OpsFact label="Deadline">{dateTime(tender.response_due_at)}</OpsFact>
+            </OpsFacts>
+          </OpsInspectorSection>
 
-function DetailRow({ label, value }: { label: string; value: string }) { return <div className="grid grid-cols-[82px_1fr] gap-3 py-[5px] text-[12px]"><span className="text-[var(--admin-muted)]">{label}</span><span className="break-words font-medium">{value}</span></div>; }
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block min-w-0 text-[11px] font-medium text-[var(--admin-muted)]"><span className="mb-1.5 block">{label}</span><span className="block [&_input]:h-8 [&_input]:w-full [&_input]:rounded-[var(--app-radius)] [&_input]:border [&_input]:border-[var(--admin-line)] [&_input]:bg-white [&_input]:px-3 [&_input]:text-[12px] [&_input]:font-medium [&_input]:outline-none [&_select]:h-8 [&_select]:w-full [&_select]:rounded-[var(--app-radius)] [&_select]:border [&_select]:border-[var(--admin-line)] [&_select]:bg-white [&_select]:px-3 [&_select]:text-[12px] [&_select]:font-medium [&_select]:outline-none">{children}</span></label>; }
+          {tender.response_note ? (
+            <OpsInspectorSection title="Response note">
+              <p className="plan-note">{tender.response_note}</p>
+            </OpsInspectorSection>
+          ) : null}
+
+          {tender.status === "booked" ? (
+            <OpsInspectorSection title="Booking">
+              <OpsFacts>
+                <OpsFact label="Reference">{tender.booking_reference || "Not recorded"}</OpsFact>
+                <OpsFact label="Shipment">{tender.shipment_reference || "Not linked"}</OpsFact>
+              </OpsFacts>
+              <div className="ops-inspector-actions plan-section-actions">
+                <Link href={`/admin/tenders/${encodeURIComponent(tender.id)}`} className="ops-button" data-size="sm" data-variant="secondary">Open booking confirmation</Link>
+              </div>
+            </OpsInspectorSection>
+          ) : null}
+
+          {canManage && tender.status === "sent" ? (
+            <OpsInspectorSection title="Carrier response">
+              <div className="ops-inspector-actions">
+                <OpsButton size="sm" onClick={() => onRespond(tender, "accepted")} disabled={busy}>Accepted</OpsButton>
+                <OpsButton size="sm" onClick={() => onRespond(tender, "rejected")} disabled={busy}>Rejected</OpsButton>
+                <OpsButton size="sm" variant="ghost" onClick={() => setCounterFor(counterFor === tender.id ? null : tender.id)} aria-expanded={counterFor === tender.id}>Counter-offer</OpsButton>
+              </div>
+              {counterFor === tender.id ? (
+                <div className="ops-inspector-form plan-subform">
+                  <OpsField label="Counter amount"><input type="number" min="0" step="0.01" value={counterCost} onChange={(event) => setCounterCost(event.target.value)}/></OpsField>
+                  <OpsField label="Currency"><select value={counterCurrency} onChange={(event) => setCounterCurrency(event.target.value as CrmCurrency)}>{crmCurrencies.map((value) => <option key={value}>{value}</option>)}</select></OpsField>
+                  <OpsField label="Conditions / note" className="col-span-full"><input value={responseNote} onChange={(event) => setResponseNote(event.target.value)} placeholder="Validity, timing, exclusions…"/></OpsField>
+                  <div className="col-span-full"><OpsButton size="sm" variant="primary" onClick={() => onRespond(tender, "countered")} disabled={!counterCost || busy}>Record counter-offer</OpsButton></div>
+                </div>
+              ) : null}
+            </OpsInspectorSection>
+          ) : null}
+
+          {canManage && canBook ? (
+            <OpsInspectorSection title="Booking authority">
+              <p className="ops-inspector-hint">Only this accepted or valid counter-offer can request booking. The server remains authoritative.</p>
+              {bookingFor === tender.id ? (
+                <div className="ops-inspector-form plan-subform">
+                  <OpsField label="Partner booking reference" className="col-span-full"><input value={bookingReference} onChange={(event) => setBookingReference(event.target.value)} placeholder="Booking / confirmation number"/></OpsField>
+                  <OpsField label="Pickup confirmation / notes" className="col-span-full"><input value={pickupConfirmation} onChange={(event) => setPickupConfirmation(event.target.value)} placeholder="Pickup slot, equipment, conditions…"/></OpsField>
+                  <div className="col-span-full ops-inspector-actions">
+                    <OpsButton size="sm" variant="ghost" onClick={() => setBookingFor(null)}>Cancel</OpsButton>
+                    <OpsButton size="sm" variant="primary" onClick={() => onBook(tender)} disabled={!bookingReference.trim() || busy}>{busy ? "Confirming…" : "Confirm booking"}</OpsButton>
+                  </div>
+                </div>
+              ) : (
+                <div className="ops-inspector-actions plan-section-actions"><OpsButton size="sm" variant="primary" onClick={() => setBookingFor(tender.id)}>Confirm booking</OpsButton></div>
+              )}
+            </OpsInspectorSection>
+          ) : null}
+        </div>
+      </div>
+      {canManage && tenderCanCancel(tender.status) ? (
+        <footer className="ops-inspector-footer">
+          <OpsButton size="sm" variant="danger" onClick={() => onCancel(tender)} disabled={busy}>Cancel tender</OpsButton>
+        </footer>
+      ) : null}
+    </aside>
+  );
+}

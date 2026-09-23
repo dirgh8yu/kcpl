@@ -18,9 +18,9 @@ function tone(status: ProductionReadinessStatus): "success" | "warning" | "dange
 }
 
 function StatusIcon({ status }: { status: ProductionReadinessStatus }) {
-  if (status === "ready") return <CheckCircle2 size={14}/>;
-  if (status === "warning") return <AlertTriangle size={14}/>;
-  return <ShieldAlert size={14}/>;
+  if (status === "ready") return <CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>;
+  if (status === "warning") return <AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>;
+  return <ShieldAlert size={14} strokeWidth={1.75} aria-hidden="true"/>;
 }
 
 async function requestReadiness() {
@@ -66,29 +66,25 @@ export function RuntimeReadinessPanel() {
   }, []);
 
   return (
-    <div className="ops-content-wide pb-8">
-      <OpsSurface
-        eyebrow="Production control"
-        title="Runtime readiness"
-        description="Live configuration checks for the services KCPL Operations depends on. This view reports configuration state only and never exposes credentials or secret values."
-        action={<OpsButton variant="ghost" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={12} className={loading ? "animate-spin" : ""}/>{loading ? "Checking" : "Refresh"}</OpsButton>}
-      >
-        {loading && !readiness ? <p className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Checking the production runtime…</p> : error ? <OpsEmptyState icon={<ShieldAlert size={17}/>} title="Readiness check unavailable" description={error}/> : readiness ? <>
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <OpsBadge tone={tone(readiness.overall)} dot>{readiness.overall === "ready" ? "Production ready" : readiness.overall === "warning" ? "Ready with warnings" : "Production blocked"}</OpsBadge>
-            <span className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{readiness.summary.ready} ready · {readiness.summary.warnings} warnings · {readiness.summary.blocked} blocked</span>
-          </div>
-          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {readiness.checks.map((item) => <div key={item.id} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3.5">
-              <div className="flex items-start justify-between gap-3">
-                <strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><span className={item.status === "ready" ? "text-[var(--admin-success)]" : item.status === "warning" ? "text-[var(--admin-warning)]" : "text-[var(--admin-danger)]"}><StatusIcon status={item.status}/></span>{item.label}</strong>
-                <OpsBadge tone={tone(item.status)}>{item.status}</OpsBadge>
-              </div>
-              <p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{item.detail}</p>
-            </div>)}
-          </div>
-        </> : null}
-      </OpsSurface>
-    </div>
+    <OpsSurface
+      density="compact"
+      title="Runtime readiness"
+      description="Live configuration checks for the services KCPL Operations depends on. Reports configuration state only; never exposes credentials or secret values."
+      action={<OpsButton variant="ghost" size="xs" onClick={() => void load()} disabled={loading}><RefreshCw size={14} strokeWidth={1.75} className={loading ? "animate-spin" : undefined} aria-hidden="true"/>{loading ? "Checking" : "Refresh"}</OpsButton>}
+    >
+      {loading && !readiness ? <p className="org-empty">Checking the production runtime…</p> : error ? <OpsEmptyState compact icon={<ShieldAlert size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Readiness check unavailable" description={error}/> : readiness ? <>
+        <div className="readiness-summary">
+          <OpsBadge tone={tone(readiness.overall)}>{readiness.overall === "ready" ? "Production ready" : readiness.overall === "warning" ? "Ready with warnings" : "Production blocked"}</OpsBadge>
+          <span>{readiness.summary.ready} ready · {readiness.summary.warnings} warnings · {readiness.summary.blocked} blocked</span>
+        </div>
+        <ul className="readiness-checks">
+          {readiness.checks.map((item) => <li key={item.id} data-status={item.status}>
+            <StatusIcon status={item.status}/>
+            <strong>{item.label}<span className="readiness-state">{item.status === "ready" ? "Ready" : item.status === "warning" ? "Warning" : "Blocked"}</span></strong>
+            <p>{item.detail}</p>
+          </li>)}
+        </ul>
+      </> : null}
+    </OpsSurface>
   );
 }

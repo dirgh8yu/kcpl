@@ -1,10 +1,10 @@
+import "../network-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { canEditPartnerNetwork, canViewPartnerFinance } from "./partner-policy";
-import { Partner360Jump } from "./partner-360-jump";
 import { PartnersWorkspace } from "./partners-workspace";
 import { listPartnerDashboard } from "./partners.server";
 
@@ -51,7 +51,7 @@ export default async function PartnersPage() {
   const dashboard = result.dashboard;
   const canEdit = canEditPartnerNetwork(staff.permissions);
   const canEditGlobal = canEdit && (staff.permissions.role === "management" || staff.can_access_all_branches);
-  return <OperationsShell {...shellProps}><Partner360Jump partners={dashboard.partners.map((partner) => ({ id: partner.id, display_name: partner.display_name }))} canReconcile={staff.permissions.canManageFinance}/><PartnersWorkspace dashboard={dashboard} canEdit={canEdit} canEditGlobal={canEditGlobal} editableOwnerBranches={staff.branches} commercialVisible={staff.permissions.canViewCommercial} financialVisible={canViewPartnerFinance(staff.permissions)}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><PartnersWorkspace dashboard={dashboard} canReconcile={staff.permissions.canManageFinance} canEdit={canEdit} canEditGlobal={canEditGlobal} editableOwnerBranches={staff.branches} commercialVisible={staff.permissions.canViewCommercial} financialVisible={canViewPartnerFinance(staff.permissions)}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

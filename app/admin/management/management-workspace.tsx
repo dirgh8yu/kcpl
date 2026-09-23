@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, Boxes, Download, Landmark, PackageCheck, Scale, Target, UsersRound } from "lucide-react";
+import type { ReactNode } from "react";
+import { AlertTriangle, Download } from "lucide-react";
 import type { CrmCurrency } from "../crm/crm-data";
 import type { ManagementAnalytics, ManagementRangeKey, TrendPoint } from "./management-data";
-import { OpsBadge, OpsMono, OpsPage, OpsPageHeader, OpsProgress, OpsKpiCard, OpsKpiStrip, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsFact, OpsFacts, OpsInlineAlert, OpsKpiRail, OpsPage, OpsPageHeader, OpsProgress, OpsRailMetric, OpsSurface, OpsTableWrap } from "../operations-ui";
 
 function money(amount: number, currency: string) { try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); } catch { return `${currency} ${amount.toLocaleString("en-AU")}`; } }
-function number(value: number) { return new Intl.NumberFormat("en-AU", { maximumFractionDigits: 0 }).format(value); }
 function percentage(value: number | null) { return value === null ? "N/A" : `${value.toFixed(1)}%`; }
 function queryFor(range: ManagementAnalytics["range"]) { const params = new URLSearchParams({ range: range.key }); if (range.from) params.set("from", range.from); if (range.to) params.set("to", range.to); return params.toString(); }
 
@@ -13,7 +13,7 @@ const ranges: Array<{ key: ManagementRangeKey; label: string }> = [
   { key: "today", label: "Today" }, { key: "7d", label: "7 days" }, { key: "month", label: "Month" }, { key: "quarter", label: "Quarter" }, { key: "year", label: "Year" }, { key: "all", label: "All time" },
 ];
 
-export function ManagementWorkspace({ analytics }: { analytics: ManagementAnalytics }) {
+export function ManagementWorkspace({ analytics, readiness }: { analytics: ManagementAnalytics; readiness?: ReactNode }) {
   const exportQuery = queryFor(analytics.range);
   const topCustomers = analytics.customers.slice(0, 12);
   const topRoutes = analytics.routes.slice(0, 10);
@@ -22,44 +22,148 @@ export function ManagementWorkspace({ analytics }: { analytics: ManagementAnalyt
   const trendCurrencies = [...new Set(analytics.trends.map((item) => item.currency))];
   const quality = analytics.data_quality;
   const dataQualityCount = quality.excluded_currency_records + quality.unassigned_branch_financial_records + quality.active_unassigned_branch_shipments + quality.unlinked_invoice_records + quality.orphaned_job_cost_records;
+  const generated = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(analytics.generated_at));
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Management" title="Analytics" description="Selected-period performance beside live working-capital and operational pressure. Currencies are deliberately never blended into a fake grand total." meta={<><OpsBadge tone="accent">{analytics.range.label}</OpsBadge><span>Generated {new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(analytics.generated_at))}</span></>} actions={<><Link href={`/api/admin/management/export?${exportQuery}`} className="ops-button" data-variant="secondary" data-size="md"><Download size={13}/>Export CSV</Link><Link href="/admin/command-centre" className="ops-button" data-variant="primary" data-size="md">Operations home</Link></>}> 
-      <div className="mt-5 flex flex-wrap items-end gap-2"><div className="ops-segmented">{ranges.map((item) => <Link key={item.key} href={`/admin/management?range=${item.key}`} data-active={analytics.range.key === item.key || undefined}>{item.label}</Link>)}</div><form method="get" className="flex flex-wrap items-end gap-2"><input type="hidden" name="range" value="custom"/><label className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">From<input name="from" type="date" defaultValue={analytics.range.key === "custom" ? analytics.range.from ?? "" : ""} className="ops-input mt-1 block w-[145px]"/></label><label className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">To<input name="to" type="date" defaultValue={analytics.range.key === "custom" ? analytics.range.to ?? "" : ""} className="ops-input mt-1 block w-[145px]"/></label><button className="ops-button" data-variant="secondary" data-size="sm">Apply</button></form></div>
-    </OpsPageHeader>
+    <OpsPageHeader
+      title="Analytics"
+      description="Period performance, live working capital and operational pressure. Currencies are never blended."
+      meta={<span>{analytics.range.label} · generated {generated}</span>}
+      actions={<>
+        <Link href={`/api/admin/management/export?${exportQuery}`} className="ops-button" data-variant="secondary" data-size="md"><Download size={16} strokeWidth={1.75} aria-hidden="true"/>Export CSV</Link>
+        <Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations home</Link>
+      </>}
+    />
 
-    <OpsKpiStrip>
-      <OpsKpiCard label="Active shipments" value={number(analytics.active_shipments)} icon={<Boxes size={18} strokeWidth={1.9} aria-hidden="true"/>} />
-      <OpsKpiCard label="Delivered" value={number(analytics.delivered_in_period)} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="success"/>
-      <OpsKpiCard label="Quote win rate" value={`${analytics.quote_conversion_percent.toFixed(1)}%`} icon={<Target size={18} strokeWidth={1.9} aria-hidden="true"/>} />
-      <OpsKpiCard label="Urgent / exception" value={`${analytics.urgent_shipments} / ${analytics.exception_shipments}`} icon={<AlertTriangle size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={analytics.urgent_shipments + analytics.exception_shipments ? "danger" : "neutral"}/>
-      <OpsKpiCard label="Customs blocked" value={number(analytics.customs_blocked_shipments)} icon={<Scale size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={analytics.customs_blocked_shipments ? "warning" : "neutral"}/>
-      <OpsKpiCard label="Unassigned" value={number(analytics.unassigned_shipments)} icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={analytics.unassigned_shipments ? "warning" : "neutral"}/>
-    </OpsKpiStrip>
+    <div className="px-4 pb-8 pt-4 md:px-6">
+      <div className="mgmt-range">
+        <nav className="ops-scope-tabs" aria-label="Reporting period">
+          {ranges.map((item) => {
+            const active = analytics.range.key === item.key;
+            return <Link key={item.key} href={`/admin/management?range=${item.key}`} className="ops-scope-tab" data-active={active || undefined} aria-current={active ? "page" : undefined}>{item.label}</Link>;
+          })}
+        </nav>
+        <form method="get" className="mgmt-range-form" aria-label="Custom reporting period">
+          <input type="hidden" name="range" value="custom"/>
+          <label><span>From</span><input name="from" type="date" defaultValue={analytics.range.key === "custom" ? analytics.range.from ?? "" : ""} className="ops-input"/></label>
+          <label><span>To</span><input name="to" type="date" defaultValue={analytics.range.key === "custom" ? analytics.range.to ?? "" : ""} className="ops-input"/></label>
+          <button className="ops-button" data-variant="secondary" data-size="sm">Apply</button>
+        </form>
+      </div>
 
-    <div className="ops-content-wide ops-stack">
-      {dataQualityCount ? <div className="ops-notice" data-tone="warning"><span><strong>Reporting integrity:</strong> {dataQualityCount} tracked records need cleanup. {quality.excluded_currency_records} unsupported-currency, {quality.unassigned_branch_financial_records} unassigned financial, {quality.active_unassigned_branch_shipments} unassigned shipments, {quality.unlinked_invoice_records} unlinked invoices, {quality.orphaned_job_cost_records} orphaned costs.</span></div> : null}
+      <OpsKpiRail label="Live operations">
+        <OpsRailMetric label="Active shipments" value={analytics.active_shipments}/>
+        <OpsRailMetric label="Delivered in period" value={analytics.delivered_in_period}/>
+        <OpsRailMetric label="Quote win rate" value={`${analytics.quote_conversion_percent.toFixed(1)}%`}/>
+        <OpsRailMetric label="Urgent / exception" value={`${analytics.urgent_shipments} / ${analytics.exception_shipments}`} tone={analytics.urgent_shipments + analytics.exception_shipments ? "danger" : "neutral"}/>
+        <OpsRailMetric label="Customs blocked" value={analytics.customs_blocked_shipments} tone={analytics.customs_blocked_shipments ? "warning" : "neutral"}/>
+        <OpsRailMetric label="Unassigned" value={analytics.unassigned_shipments} tone={analytics.unassigned_shipments ? "warning" : "neutral"}/>
+      </OpsKpiRail>
+      <OpsKpiRail label="Period decisions">
+        <OpsRailMetric label="Quote decisions" value={`${analytics.quote_decided}/${analytics.quote_total}`} detail={`${analytics.quote_open} open · ${analytics.quote_decision_rate_percent.toFixed(1)}% decided`}/>
+        <OpsRailMetric label="Loss-making jobs" value={analytics.loss_making_jobs.length} tone={analytics.loss_making_jobs.length ? "danger" : "neutral"} detail="Financially touched in period"/>
+        <OpsRailMetric label="Data quality" value={dataQualityCount} tone={dataQualityCount ? "warning" : "neutral"} detail={dataQualityCount ? "Records need cleanup" : "No tracked issues"}/>
+      </OpsKpiRail>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><DecisionCard label="Quote decisions" value={`${analytics.quote_decided}/${analytics.quote_total}`} detail={`${analytics.quote_open} open · ${analytics.quote_decision_rate_percent.toFixed(1)}% decision rate`}/><DecisionCard label="Loss-making jobs" value={number(analytics.loss_making_jobs.length)} detail="Jobs financially touched in period" danger={analytics.loss_making_jobs.length > 0}/><DecisionCard label="Data quality" value={number(dataQualityCount)} detail={dataQualityCount ? "Records need cleanup" : "No tracked integrity issues"} danger={dataQualityCount > 0}/><DecisionCard label="Delivered in period" value={number(analytics.delivered_in_period)} detail={`${analytics.active_shipments} currently active`}/></div>
+      {dataQualityCount ? <div className="org-notice"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Reporting integrity:</strong> {dataQualityCount} tracked records need cleanup · {quality.excluded_currency_records} unsupported currency · {quality.unassigned_branch_financial_records} unassigned financial · {quality.active_unassigned_branch_shipments} unassigned shipments · {quality.unlinked_invoice_records} unlinked invoices · {quality.orphaned_job_cost_records} orphaned costs.</OpsInlineAlert></div> : null}
 
-      <section><SectionTitle eyebrow="Money by currency" title="Period P&L + live working capital" detail="Revenue and recognised job cost follow the selected range. AR and AP are current open balances."/><div className="mt-3 grid gap-3 xl:grid-cols-2">{analytics.financials.length ? analytics.financials.map((item) => <OpsSurface key={item.currency} eyebrow={item.currency} title={`${money(item.profit, item.currency)} gross profit`} description={`${item.invoice_count} invoices · ${item.cost_item_count} recognised costs`} action={<OpsBadge tone={item.profit >= 0 ? "success" : "danger"}>{percentage(item.margin_percent)} margin</OpsBadge>}><div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]"><MoneyMini label="Revenue" value={money(item.revenue, item.currency)}/><MoneyMini label="Cost" value={money(item.cost, item.currency)}/><MoneyMini label="AR open" value={money(item.receivables, item.currency)} warn={item.overdue_receivables > 0}/><MoneyMini label="AP open" value={money(item.payables, item.currency)} warn={item.overdue_payables > 0}/></div>{item.overdue_receivables || item.overdue_payables ? <div className="mt-3 flex flex-wrap gap-2"><OpsBadge tone="danger">Overdue AR {money(item.overdue_receivables, item.currency)}</OpsBadge><OpsBadge tone="warning">Overdue AP {money(item.overdue_payables, item.currency)}</OpsBadge></div> : null}</OpsSurface>) : <Empty text="No financial activity or live balances for this range."/>}</div></section>
+      <SectionHead title="Period P&L and live working capital" detail="Revenue and recognised job cost follow the selected range. AR and AP are current open balances."/>
+      <div className="mgmt-cards">{analytics.financials.length ? analytics.financials.map((item) => <OpsSurface key={item.currency} density="compact" title={`${item.currency} · ${money(item.profit, item.currency)} gross profit`} description={`${item.invoice_count} invoices · ${item.cost_item_count} recognised costs`} action={<OpsBadge tone={item.profit >= 0 ? "success" : "danger"}>{percentage(item.margin_percent)} margin</OpsBadge>}>
+        <OpsFacts columns={2}>
+          <OpsFact label="Revenue">{money(item.revenue, item.currency)}</OpsFact>
+          <OpsFact label="Cost">{money(item.cost, item.currency)}</OpsFact>
+          <OpsFact label="AR open" warning={item.overdue_receivables > 0}>{money(item.receivables, item.currency)}</OpsFact>
+          <OpsFact label="AP open" warning={item.overdue_payables > 0}>{money(item.payables, item.currency)}</OpsFact>
+          {item.overdue_receivables ? <OpsFact label="Overdue AR" warning>{money(item.overdue_receivables, item.currency)}</OpsFact> : null}
+          {item.overdue_payables ? <OpsFact label="Overdue AP" warning>{money(item.overdue_payables, item.currency)}</OpsFact> : null}
+        </OpsFacts>
+      </OpsSurface>) : <Empty text="No financial activity or live balances for this range."/>}</div>
 
-      {trendCurrencies.length ? <section><SectionTitle eyebrow="Trend" title="Monthly revenue, cost & profit" detail="A compact trend view, separated by currency."/><div className="mt-3 grid gap-3 xl:grid-cols-2">{trendCurrencies.map((currency) => <TrendChart key={currency} currency={currency} points={analytics.trends.filter((item) => item.currency === currency)}/>)}</div></section> : null}
+      {trendCurrencies.length ? <>
+        <SectionHead title="Monthly revenue, cost and profit" detail="A compact trend view, separated by currency."/>
+        <div className="mgmt-cards">{trendCurrencies.map((currency) => <TrendChart key={currency} currency={currency} points={analytics.trends.filter((item) => item.currency === currency)}/>)}</div>
+      </> : null}
 
-      <div className="ops-grid-2"><OpsSurface eyebrow="Branch performance" title="Where value is being created" description="Selected-period P&L by branch and currency." flush><div className="ops-table-wrap"><table className="ops-table min-w-[780px]"><thead><tr><th>Branch</th><th>Currency</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th><th>Active jobs</th></tr></thead><tbody>{analytics.branches.length ? analytics.branches.map((row) => <tr key={`${row.branch}-${row.currency}`}><td>{row.branch === "Unassigned" ? <strong className="inline-flex items-center gap-1.5"><Landmark size={11}/>{row.branch}</strong> : <Link href={`/admin/branches/${encodeURIComponent(row.branch)}`} className="inline-flex items-center gap-1.5 font-bold text-[var(--admin-ink)] hover:text-[var(--admin-crimson)] hover:underline"><Landmark size={11}/>{row.branch}</Link>}</td><td>{row.currency}</td><td>{money(row.revenue,row.currency)}</td><td>{money(row.cost,row.currency)}</td><td className={row.profit < 0 ? "font-bold text-[var(--admin-danger)]" : "font-bold text-[var(--admin-success)]"}>{money(row.profit,row.currency)}</td><td>{percentage(row.margin_percent)}</td><td>{row.active_jobs}</td></tr>) : <tr><td colSpan={7}><Empty text="No branch P&L in this period."/></td></tr>}</tbody></table></div></OpsSurface>
-        <OpsSurface eyebrow="Concentration" title="Customer dependency" description="Revenue concentration inside each currency."><div className="space-y-4">{analytics.concentration.length ? analytics.concentration.map((risk) => <div key={risk.currency}><div className="flex items-center justify-between gap-3"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{risk.currency} · {risk.top_customer_name || "No customer"}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Top five {risk.top_five_share_percent.toFixed(1)}% of {money(risk.total_revenue,risk.currency)}</p></div><OpsBadge tone={risk.top_customer_share_percent >= 40 ? "danger" : risk.top_customer_share_percent >= 25 ? "warning" : "success"}>{risk.top_customer_share_percent.toFixed(1)}% top customer</OpsBadge></div><div className="mt-2"><OpsProgress value={risk.top_customer_share_percent} max={100} tone={risk.top_customer_share_percent >= 40 ? "danger" : risk.top_customer_share_percent >= 25 ? "warning" : "success"}/></div></div>) : <Empty text="Not enough customer revenue yet."/>}</div></OpsSurface></div>
+      <SectionHead title="Where value is created" detail="Selected-period economics by branch, customer and route."/>
+      <div className="mgmt-grid">
+        <OpsSurface density="compact" title="Branch performance" description="Selected-period P&L by branch and currency." flush>
+          {analytics.branches.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Branch performance"><thead><tr><th>Branch</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th><th className="ops-col-num">Active jobs</th></tr></thead><tbody>{analytics.branches.map((row) => <tr key={`${row.branch}-${row.currency}`}>
+            <td>{row.branch === "Unassigned" ? <span className="ops-cell-primary">{row.branch}</span> : <Link href={`/admin/branches/${encodeURIComponent(row.branch)}`} className="ops-cell-primary org-link">{row.branch}</Link>}<span className="ops-cell-secondary">{row.currency} · cost {money(row.cost, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-num">{money(row.revenue, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-cell-muted">{percentage(row.margin_percent)}</span></td>
+            <td className="ops-col-num"><span className="ops-num">{row.active_jobs}</span></td>
+          </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No branch P&L in this period."/>}
+        </OpsSurface>
+        <OpsSurface density="compact" title="Customer dependency" description="Revenue concentration inside each currency.">
+          {analytics.concentration.length ? <ul className="mgmt-concentration">{analytics.concentration.map((risk) => {
+            const riskTone = risk.top_customer_share_percent >= 40 ? "danger" : risk.top_customer_share_percent >= 25 ? "warning" : "success";
+            return <li key={risk.currency}>
+              <div className="mgmt-concentration-head">
+                <div className="min-w-0"><strong>{risk.currency} · {risk.top_customer_name || "No customer"}</strong><span>Top five {risk.top_five_share_percent.toFixed(1)}% of {money(risk.total_revenue, risk.currency)}</span></div>
+                <OpsBadge tone={riskTone}>{risk.top_customer_share_percent.toFixed(1)}% top customer</OpsBadge>
+              </div>
+              <OpsProgress value={risk.top_customer_share_percent} max={100} tone={riskTone}/>
+            </li>;
+          })}</ul> : <Empty text="Not enough customer revenue yet."/>}
+        </OpsSurface>
+        <OpsSurface density="compact" title="Customer profitability" description="Selected-period P&L ranked by profit within currency." flush>
+          {topCustomers.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Customer profitability"><thead><tr><th>Customer</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topCustomers.map((row) => <tr key={`${row.customer_id || row.customer_name}-${row.currency}`}>
+            <td>{row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-cell-primary ops-cell-clamp org-link" title={row.customer_name}>{row.customer_name}</Link> : <span className="ops-cell-primary ops-cell-clamp" title={row.customer_name}>{row.customer_name}</span>}<span className="ops-cell-secondary">{row.currency} · cost {money(row.cost, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-num">{money(row.revenue, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-cell-muted">{percentage(row.margin_percent)}</span></td>
+          </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No customer P&L in this period."/>}
+        </OpsSurface>
+        <OpsSurface density="compact" title="Route economics" description="Selected-period route performance." flush>
+          {topRoutes.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Route economics"><thead><tr><th>Route</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topRoutes.map((row, index) => <tr key={`${row.origin}-${row.destination}-${row.mode}-${row.currency}-${index}`}>
+            <td><span className="ops-cell-primary ops-cell-clamp" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span><span className="ops-cell-secondary">{row.mode} · {row.currency}</span></td>
+            <td className="ops-col-num"><span className="ops-num">{row.jobs}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-cell-muted">{percentage(row.margin_percent)}</span></td>
+          </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No route economics in this period."/>}
+        </OpsSurface>
+      </div>
 
-      <div className="ops-grid-2"><OpsSurface eyebrow="Customers" title="Customer profitability" description="Selected-period P&L ranked by profit within currency." flush><div className="ops-table-wrap"><table className="ops-table min-w-[720px]"><thead><tr><th>Customer</th><th>Currency</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead><tbody>{topCustomers.length ? topCustomers.map((row) => <tr key={`${row.customer_id || row.customer_name}-${row.currency}`}><td><strong>{row.customer_name}</strong>{row.customer_id ? <p className="mt-1"><Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]">Customer 360</Link></p> : null}</td><td>{row.currency}</td><td>{money(row.revenue,row.currency)}</td><td>{money(row.cost,row.currency)}</td><td className={row.profit < 0 ? "font-bold text-[var(--admin-danger)]" : "font-bold text-[var(--admin-success)]"}>{money(row.profit,row.currency)}</td><td>{percentage(row.margin_percent)}</td></tr>) : <tr><td colSpan={6}><Empty text="No customer P&L in this period."/></td></tr>}</tbody></table></div></OpsSurface>
-        <OpsSurface eyebrow="Routes" title="Route economics" description="Selected-period route performance." flush><div className="ops-table-wrap"><table className="ops-table min-w-[700px]"><thead><tr><th>Route</th><th>Mode</th><th>Currency</th><th>Jobs</th><th>Profit</th><th>Margin</th></tr></thead><tbody>{topRoutes.length ? topRoutes.map((row,index) => <tr key={`${row.origin}-${row.destination}-${row.mode}-${row.currency}-${index}`}><td><strong>{row.origin} → {row.destination}</strong></td><td>{row.mode}</td><td>{row.currency}</td><td>{row.jobs}</td><td className={row.profit < 0 ? "font-bold text-[var(--admin-danger)]" : "font-bold text-[var(--admin-success)]"}>{money(row.profit,row.currency)}</td><td>{percentage(row.margin_percent)}</td></tr>) : <tr><td colSpan={6}><Empty text="No route economics in this period."/></td></tr>}</tbody></table></div></OpsSurface></div>
+      <SectionHead title="Exceptions and ownership" detail="Loss-making jobs in the period, and current staff workload independent of the financial range."/>
+      <div className="mgmt-grid">
+        <OpsSurface density="compact" title="Loss-making jobs" description="Negative lifetime economics with financial activity in the period." flush>
+          {lossJobs.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Loss-making jobs"><thead><tr><th>Shipment</th><th>Customer</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{lossJobs.map((job) => <tr key={`${job.shipment_reference}-${job.currency}`}>
+            <td><Link href={`/admin/jobs/${encodeURIComponent(job.shipment_reference)}`} className="ops-cell-primary ops-mono ops-cell-id org-link">{job.shipment_reference}</Link><span className="ops-cell-secondary">{job.branch} · {job.currency}</span></td>
+            <td><span className="ops-cell-clamp" title={job.customer_name}>{job.customer_name}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-negative>{money(job.profit, job.currency)}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-negative>{percentage(job.margin_percent)}</span></td>
+          </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No loss-making jobs in the current slice."/>}
+        </OpsSurface>
+        <OpsSurface density="compact" title="Staff workload" description="Current ownership pressure." flush>
+          {workload.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Staff workload"><thead><tr><th>Staff</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Tasks</th><th className="ops-col-num">Overdue</th><th className="ops-col-num">Urgent</th></tr></thead><tbody>{workload.map((row, index) => <tr key={`${row.staff_email || row.staff_name}-${index}`}>
+            <td>{row.staff_email ? <Link href={`/admin/workload/${encodeURIComponent(row.staff_email)}`} className="ops-cell-primary org-link">{row.staff_name}</Link> : <span className="ops-cell-primary">{row.staff_name}</span>}<span className="ops-cell-secondary ops-cell-clamp">{row.staff_email || "No email"}</span></td>
+            <td className="ops-col-num"><span className="ops-num">{row.active_jobs}</span></td>
+            <td className="ops-col-num"><span className="ops-num">{row.open_tasks}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-negative={row.overdue_tasks > 0 || undefined}>{row.overdue_tasks}</span></td>
+            <td className="ops-col-num"><span className="ops-num" data-warning={row.urgent_jobs > 0 || undefined}>{row.urgent_jobs}</span></td>
+          </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No staff workload yet."/>}
+        </OpsSurface>
+      </div>
 
-      <div className="ops-grid-2"><OpsSurface eyebrow="Exceptions" title="Loss-making jobs" description="Jobs with negative lifetime economics that had financial activity in the period." flush><div className="ops-table-wrap"><table className="ops-table min-w-[720px]"><thead><tr><th>Shipment</th><th>Customer</th><th>Branch</th><th>Currency</th><th>Profit</th><th>Margin</th></tr></thead><tbody>{lossJobs.length ? lossJobs.map((job) => <tr key={`${job.shipment_reference}-${job.currency}`}><td><Link href={`/admin/jobs/${encodeURIComponent(job.shipment_reference)}`}><OpsMono>{job.shipment_reference}</OpsMono></Link></td><td>{job.customer_name}</td><td>{job.branch}</td><td>{job.currency}</td><td className="font-bold text-[var(--admin-danger)]">{money(job.profit,job.currency)}</td><td className="text-[var(--admin-danger)]">{percentage(job.margin_percent)}</td></tr>) : <tr><td colSpan={6}><Empty text="No loss-making jobs in the current slice."/></td></tr>}</tbody></table></div></OpsSurface>
-        <OpsSurface eyebrow="People" title="Staff workload" description="Current ownership pressure, independent of the financial range." flush><div className="ops-table-wrap"><table className="ops-table min-w-[650px]"><thead><tr><th>Staff</th><th>Jobs</th><th>Tasks</th><th>Overdue</th><th>Urgent</th></tr></thead><tbody>{workload.length ? workload.map((row,index) => <tr key={`${row.staff_email || row.staff_name}-${index}`}><td>{row.staff_email ? <Link href={`/admin/workload/${encodeURIComponent(row.staff_email)}`} className="font-bold text-[var(--admin-ink)] hover:text-[var(--admin-crimson)] hover:underline">{row.staff_name}</Link> : <strong>{row.staff_name}</strong>}<p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.staff_email || "No email"}</p></td><td>{row.active_jobs}</td><td>{row.open_tasks}</td><td className={row.overdue_tasks ? "font-bold text-[var(--admin-danger)]" : ""}>{row.overdue_tasks}</td><td className={row.urgent_jobs ? "font-bold text-[var(--admin-warning)]" : ""}>{row.urgent_jobs}</td></tr>) : <tr><td colSpan={5}><Empty text="No staff workload yet."/></td></tr>}</tbody></table></div></OpsSurface></div>
+      {readiness ? <div className="org-section">{readiness}</div> : null}
     </div>
   </OpsPage>;
 }
 
-function SectionTitle({ eyebrow,title,detail }:{eyebrow:string;title:string;detail:string}) { return <div><p className="ops-eyebrow">{eyebrow}</p><h2 className="mt-1 text-[17px] font-[720] tracking-[-.025em] text-[var(--admin-ink)]">{title}</h2><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{detail}</p></div>; }
-function DecisionCard({label,value,detail,danger=false}:{label:string;value:string;detail:string;danger?:boolean}) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-2 block text-[22px] tracking-[-.04em] ${danger ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</strong><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{detail}</p></div>; }
-function MoneyMini({label,value,warn=false}:{label:string;value:string;warn?:boolean}) { return <div className="rounded-[var(--app-radius)] bg-[var(--admin-surface-muted)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[length:var(--app-label-size)] ${warn ? "text-[var(--admin-warning)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
-function Empty({text}:{text:string}) { return <div className="p-5 text-center text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{text}</div>; }
-function TrendChart({ currency, points }:{currency:CrmCurrency;points:TrendPoint[]}) { const max = Math.max(1,...points.map((p)=>Math.max(p.revenue,p.cost,Math.abs(p.profit)))); return <OpsSurface eyebrow={currency} title="Monthly movement" description="Revenue, cost and profit proportions within this currency."><div className="space-y-3">{points.slice(-12).map((p)=><div key={`${p.month}-${p.currency}`}><div className="mb-1 flex items-center justify-between gap-3"><span className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-muted)]">{p.month}</span><span className={`text-[length:var(--app-label-size)] font-semibold ${p.profit<0?"text-[var(--admin-danger)]":"text-[var(--admin-success)]"}`}>{money(p.profit,currency)} profit</span></div><div className="grid grid-cols-[1fr_1fr] gap-1"><div className="h-1.5 overflow-hidden rounded-full bg-[var(--admin-line)]"><div className="h-full rounded-full bg-[var(--admin-danger)]" style={{width:`${Math.max(1,p.revenue/max*100)}%`}}/></div><div className="h-1.5 overflow-hidden rounded-full bg-[var(--admin-line)]"><div className="h-full rounded-full bg-[var(--admin-success)]" style={{width:`${Math.max(1,p.cost/max*100)}%`}}/></div></div></div>)}</div><div className="mt-3 flex gap-4 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><span>Coral · revenue</span><span>Sage · cost</span></div></OpsSurface>; }
+function SectionHead({ title, detail }: { title: string; detail: string }) { return <div className="org-section-head"><h2>{title}</h2><p>{detail}</p></div>; }
+function Empty({ text }: { text: string }) { return <p className="org-empty">{text}</p>; }
+function TrendChart({ currency, points }: { currency: CrmCurrency; points: TrendPoint[] }) {
+  const max = Math.max(1, ...points.map((p) => Math.max(p.revenue, p.cost, Math.abs(p.profit))));
+  return <OpsSurface density="compact" title={`${currency} · monthly movement`} description="Revenue and cost proportions within this currency, with monthly profit.">
+    <ol className="mgmt-trend">{points.slice(-12).map((p) => <li key={`${p.month}-${p.currency}`}>
+      <span className="mgmt-trend-month">{p.month}</span>
+      <span className="mgmt-trend-bars" aria-hidden="true">
+        <span className="mgmt-trend-bar" data-series="revenue"><span style={{ width: `${Math.max(1, p.revenue / max * 100)}%` }}/></span>
+        <span className="mgmt-trend-bar" data-series="cost"><span style={{ width: `${Math.max(1, p.cost / max * 100)}%` }}/></span>
+      </span>
+      <span className="mgmt-trend-profit" data-negative={p.profit < 0 || undefined}>{money(p.profit, currency)}</span>
+    </li>)}</ol>
+    <p className="mgmt-trend-legend"><span data-series="revenue">Revenue</span><span data-series="cost">Cost</span><span>Profit at right</span></p>
+  </OpsSurface>;
+}

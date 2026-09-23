@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
-import { ArrowRight, BadgeDollarSign, Building2, Clock3, Globe2, Moon, Pause, Plus, Sparkles, UserRound, UsersRound, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { ArrowRight, ChevronDown, Plus, Users, X } from "lucide-react";
 import {
   crmAccountStatusLabels,
   crmAccountStatuses,
@@ -19,7 +19,7 @@ import {
   type CrmDashboardStats,
   type CrmDuplicateMatch,
 } from "./crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiCard, OpsKpiStrip, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 
@@ -54,11 +54,14 @@ function computeStats(customers: CrmCustomerSummary[]): CrmDashboardStats {
 
 function csv(value: string) { return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))]; }
 
-export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean }) {
+/** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
+const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
+
+export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible, jump }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean; /** Header control for opening a Customer 360 directly. */ jump?: ReactNode }) {
   const buyerCustomers = initialCustomers.filter((customer) => customer.relationship_types.includes("customer"));
   const [customers, setCustomers] = useState(buyerCustomers);
   const [stats, setStats] = useState(buyerCustomers.length === initialCustomers.length ? initialStats : computeStats(buyerCustomers));
-  const [selectedId, setSelectedId] = useState(buyerCustomers[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | CrmAccountStatus>("all");
   const [showCreate, setShowCreate] = useState(buyerCustomers.length === 0);
@@ -70,6 +73,8 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [duplicates, setDuplicates] = useState<CrmDuplicateMatch[]>([]);
+  const inspectorRef = useRef<HTMLElement>(null);
+  const createRef = useRef<HTMLDivElement>(null);
 
   const selected = customers.find((customer) => customer.id === selectedId) ?? null;
   const filtered = useMemo(() => {
@@ -108,53 +113,162 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
     finally { setSaving(false); }
   }
 
-  function openNew() { resetForm(); setShowCreate(true); }
+  function openNew() {
+    resetForm(); setShowCreate(true);
+    window.requestAnimationFrame(() => {
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      createRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+    });
+  }
+
+  function openCustomer(id: string) {
+    setSelectedId(id); setNotice("");
+    // Stacked layouts put the inspector under the register; bring it into view.
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia(SIDE_BY_SIDE_QUERY).matches) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      inspectorRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+    });
+  }
+
+  // Escape closes the inspector, as it does on the other registers.
+  const hasSelection = selected !== null;
+  useEffect(() => {
+    if (!hasSelection) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
+      setSelectedId("");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hasSelection]);
+
+  const statusCounts = useMemo(() => Object.fromEntries(crmAccountStatuses.map((status) => [status, customers.filter((customer) => customer.account_status === status).length])) as Record<CrmAccountStatus, number>, [customers]);
+  const filtersActive = Boolean(query.trim()) || statusFilter !== "all";
+  const compact = selected !== null;
 
   return (
-    <main className="min-h-[calc(100vh-58px)] bg-[var(--admin-canvas)]">
-      <section className="border-b border-[var(--admin-line)] bg-[var(--admin-surface)]/72 px-5 py-6 backdrop-blur-xl lg:px-8">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-end justify-between gap-5"><div><p className="ops-eyebrow">Relationships</p><h1 className="mt-2 text-[31px] font-[730] tracking-[-.045em] text-[var(--admin-ink)]">Customers</h1><p className="mt-2 max-w-2xl text-[11px] leading-5 text-[var(--admin-muted)]">Customer accounts that buy KCPL freight and logistics services. Carriers, agents, transporters, suppliers and overseas counterparts live in Partners.</p></div><div className="flex items-center gap-2"><span className="hidden text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)] sm:inline">Working as {userName}</span><OpsButton variant="primary" onClick={openNew}><Plus size={13}/>New record</OpsButton></div></div>
-      </section>
+    <OpsPage>
+      <OpsPageHeader
+        title="Customers"
+        description="Accounts that buy KCPL freight and logistics services. Carriers, agents and suppliers live in Partners."
+        meta={<span>Working as {userName}</span>}
+        actions={<>
+          {jump}
+          <OpsButton variant="primary" onClick={openNew} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New record</OpsButton>
+        </>}
+      />
 
-      <div className="px-5 py-5 lg:px-8">
-      <OpsKpiStrip>
-        <OpsKpiCard label="Records" value={stats.total} icon={<UsersRound size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-        <OpsKpiCard label="Prospects" value={stats.prospects} tone="info" icon={<Sparkles size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "prospect"} onClick={() => setStatusFilter(statusFilter === "prospect" ? "all" : "prospect")}/>
-        <OpsKpiCard label="Active" value={stats.active} tone="success" icon={<UserRound size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "active"} onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")}/>
-        <OpsKpiCard label="Dormant" value={stats.dormant} icon={<Moon size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "dormant"} onClick={() => setStatusFilter(statusFilter === "dormant" ? "all" : "dormant")}/>
-        <OpsKpiCard label="On hold" value={stats.onHold} tone="warning" icon={<Pause size={18} strokeWidth={1.9} aria-hidden="true"/>} active={statusFilter === "on_hold"} onClick={() => setStatusFilter(statusFilter === "on_hold" ? "all" : "on_hold")}/>
-        <OpsKpiCard label="Follow-ups" value={stats.followUpsDue} tone={stats.followUpsDue ? "warning" : "neutral"} icon={<Clock3 size={18} strokeWidth={1.9} aria-hidden="true"/>}/>
-      </OpsKpiStrip>
+      <div className="px-4 pb-8 pt-4 md:px-6">
+        <OpsKpiRail label="Customer summary">
+          <OpsRailMetric label="Records" value={stats.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")}/>
+          <OpsRailMetric label="Prospects" value={stats.prospects} active={statusFilter === "prospect"} onClick={() => setStatusFilter(statusFilter === "prospect" ? "all" : "prospect")}/>
+          <OpsRailMetric label="Active" value={stats.active} active={statusFilter === "active"} onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")}/>
+          <OpsRailMetric label="Dormant" value={stats.dormant} active={statusFilter === "dormant"} onClick={() => setStatusFilter(statusFilter === "dormant" ? "all" : "dormant")}/>
+          <OpsRailMetric label="On hold" value={stats.onHold} tone={stats.onHold ? "warning" : "neutral"} active={statusFilter === "on_hold"} onClick={() => setStatusFilter(statusFilter === "on_hold" ? "all" : "on_hold")}/>
+          <OpsRailMetric label="Follow-ups" value={stats.followUpsDue} tone={stats.followUpsDue ? "warning" : "neutral"}/>
+        </OpsKpiRail>
+
+        {notice ? <div className="plan-notice"><OpsNotice tone={duplicates.length ? "warning" : notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
+
+        {showCreate ? <div ref={createRef} className="plan-panel crm-create"><CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/></div> : null}
+
+        {customers.length ? <>
+          <OpsRegisterToolbar
+            search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, contact, branch or tag" aria-label="Search customers"/>}
+            actions={<>
+              {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setStatusFilter("all"); }}>Reset</OpsButton> : null}
+              <span className="ops-result-count" aria-live="polite">{filtered.length === customers.length ? `${customers.length} customers` : `${filtered.length} of ${customers.length}`}</span>
+            </>}
+            tabs={<OpsScopeTabs<CrmAccountStatus | "all"> label="Account status" items={[{ value: "all", label: "All", count: customers.length }, ...crmAccountStatuses.map((status) => ({ value: status, label: crmAccountStatusLabels[status], count: statusCounts[status] }))]} value={statusFilter} onChange={setStatusFilter}/>}
+          />
+          <div className="crm-saved-views"><SavedFilterViews storageKey="kcpl-customer-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/></div>
+
+          <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
+            <section className="ops-surface" aria-label="Customer register">
+              {filtered.length ? <OpsTableWrap>
+                <table className="ops-table ops-register-table crm-table" data-compact={compact || undefined} aria-label="Customers">
+                  <thead><tr><th>Customer</th><th>Branch · manager</th><th>Status</th>{compact ? null : <th className="ops-col-num">Quotes</th>}{compact ? null : <th className="ops-col-num">Active jobs</th>}<th className="ops-col-num">Follow-ups</th></tr></thead>
+                  <tbody>{filtered.map((customer) => {
+                    const chosen = selectedId === customer.id;
+                    return <tr key={customer.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => openCustomer(customer.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openCustomer(customer.id); } }}>
+                      <td><span className="ops-cell-primary ops-cell-clamp" title={customer.display_name}>{customer.display_name}</span><span className="ops-cell-secondary ops-cell-clamp">{customer.primary_email || customer.primary_phone || customer.country}</span></td>
+                      <td><span className="ops-cell-primary">{customer.primary_branch}</span><span className="ops-cell-secondary ops-cell-clamp">{customer.account_manager_name || "Unassigned"}</span></td>
+                      <td><OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge></td>
+                      {compact ? null : <td className="ops-col-num"><span className="ops-num">{customer.quote_count}</span></td>}
+                      {compact ? null : <td className="ops-col-num"><span className="ops-num">{customer.active_shipment_count}</span></td>}
+                      <td className="ops-col-num">{customer.follow_up_count ? <span className="ops-num crm-follow-ups">{customer.follow_up_count}</span> : <span className="ops-cell-muted">0</span>}</td>
+                    </tr>;
+                  })}</tbody>
+                </table>
+              </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Users size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No customers match" description="Change the filter or create a customer account." action={<OpsButton variant="secondary" size="sm" onClick={() => { setQuery(""); setStatusFilter("all"); }}>Reset filters</OpsButton>}/>}
+              {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} customer{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
+            </section>
+
+            {selected ? <CustomerInspector customer={selected} commercialVisible={commercialVisible} inspectorRef={inspectorRef} onClose={() => setSelectedId("")}/> : null}
+          </div>
+        </> : showCreate ? null : <section className="ops-surface" aria-label="Customers">
+          <OpsEmptyState compact kind="setup" icon={<Users size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Add the first KCPL customer" description="Customer accounts connect enquiries, shipments, contacts, commercial terms and activity. Agents, carriers and vendors belong in Partners." action={<OpsButton variant="primary" size="sm" onClick={openNew}>Create customer</OpsButton>}/>
+        </section>}
       </div>
-
-      <div className="grid min-h-[calc(100vh-214px)] xl:grid-cols-[350px_minmax(0,1fr)]">
-        <aside className="min-h-0 border-r border-[var(--admin-line)] bg-[var(--admin-surface)]/72">
-          <div className="sticky top-[58px] z-10 border-b border-[var(--admin-line)] bg-[var(--admin-surface)]/94 p-4 backdrop-blur-xl"><OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, contact, branch or tag"/><div className="ops-filter-pills mt-3"><button type="button" className="ops-filter-pill" data-active={statusFilter === "all" || undefined} onClick={() => setStatusFilter("all")}>All</button>{crmAccountStatuses.map((status) => <button key={status} type="button" className="ops-filter-pill" data-active={statusFilter === status || undefined} onClick={() => setStatusFilter(status)}>{crmAccountStatusLabels[status]}</button>)}</div><SavedFilterViews storageKey="kcpl-customer-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/></div>
-          <div>{filtered.length ? filtered.map((customer) => <button key={customer.id} type="button" onClick={() => { setSelectedId(customer.id); setShowCreate(false); setNotice(""); }} className="ops-record-row block w-full border-b border-[var(--admin-line)] px-4 py-3.5 text-left" data-selected={selectedId === customer.id && !showCreate || undefined}><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-accent-bg)] text-[var(--admin-crimson)]">{customer.entity_kind === "company" ? <Building2 size={15}/> : <UserRound size={15}/>}</span><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><strong className="truncate text-[11px] text-[var(--admin-ink)]">{customer.display_name}</strong><OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge></div><p className="mt-1 truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{customer.primary_email || customer.primary_phone || customer.country}</p><p className="mt-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-faint)]">{customer.primary_branch}{customer.account_manager_name ? ` · ${customer.account_manager_name}` : ""}</p></div></div></button>) : <OpsEmptyState kind="search" title="No customers match" description="Change the filter or create a customer account."/>}</div>
-        </aside>
-
-        <section className="min-w-0 p-5 lg:p-7 xl:p-8">
-          {notice ? <div className="mb-4"><OpsNotice tone={duplicates.length ? "warning" : notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
-          {showCreate ? <CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/>
-            : selected ? <CustomerOverview customer={selected} onNew={openNew} commercialVisible={commercialVisible}/>
-            : <OpsEmptyState kind="setup" icon={<UsersRound size={19}/>} title="Add the first KCPL customer" description="Customer accounts connect enquiries, shipments, contacts, commercial terms and activity. Agents, carriers and vendors belong in Partners." action={<OpsButton variant="primary" onClick={openNew}>Create customer</OpsButton>}/>} 
-        </section>
-      </div>
-    </main>
+    </OpsPage>
   );
 }
 
-function CustomerOverview({ customer, onNew, commercialVisible }: { customer: CrmCustomerSummary; onNew: () => void; commercialVisible: boolean }) {
+function CustomerInspector({ customer, commercialVisible, inspectorRef, onClose }: { customer: CrmCustomerSummary; commercialVisible: boolean; inspectorRef: RefObject<HTMLElement | null>; onClose: () => void }) {
   const grossMargin = customer.revenue_total > 0 ? (customer.profit_total / customer.revenue_total) * 100 : 0;
-  return <div className="mx-auto max-w-6xl ops-stack">
-    <div className="flex flex-wrap items-start justify-between gap-5"><div><div className="flex flex-wrap items-center gap-2"><OpsMono className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{customer.id}</OpsMono><OpsBadge tone={statusTone(customer.account_status)} dot>{crmAccountStatusLabels[customer.account_status]}</OpsBadge>{customer.relationship_types.map((type) => <OpsBadge key={type}>{crmRelationshipLabels[type]}</OpsBadge>)}</div><h2 className="mt-3 text-[30px] font-[735] tracking-[-.045em] text-[var(--admin-ink)]">{customer.display_name}</h2><p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{customer.primary_email || "No primary email"}{customer.primary_phone ? ` · ${customer.primary_phone}` : ""} · {customer.country}</p></div><div className="flex gap-2"><OpsButton variant="secondary" onClick={onNew}><Plus size={12}/>New record</OpsButton><Link href={`/admin/crm/${encodeURIComponent(customer.id)}`} className="ops-button" data-variant="primary" data-size="md">Open Customer 360 <ArrowRight size={12}/></Link></div></div>
+  return <aside ref={inspectorRef} className="ops-inspector" aria-label={`Customer ${customer.display_name}`}>
+    <OpsInspectorHeader
+      kicker={customer.id}
+      title={customer.display_name}
+      subtitle={`${customer.primary_email || "No primary email"}${customer.primary_phone ? ` · ${customer.primary_phone}` : ""} · ${customer.country}`}
+      actions={<button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close customer inspector"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+    />
+    <div className="ops-inspector-scroll">
+      <div className="ops-inspector-body">
+        <div className="plan-badges">
+          <OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge>
+          {customer.relationship_types.map((type) => <OpsBadge key={type}>{crmRelationshipLabels[type]}</OpsBadge>)}
+        </div>
 
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MiniStat icon={<BadgeDollarSign size={14}/>} label="Quotes" value={customer.quote_count}/><MiniStat icon={<Globe2 size={14}/>} label="Active shipments" value={customer.active_shipment_count}/><MiniStat icon={<Sparkles size={14}/>} label="Completed jobs" value={customer.completed_shipment_count}/><MiniStat icon={<Clock3 size={14}/>} label="Follow-ups" value={customer.follow_up_count} warn={customer.follow_up_count > 0}/></div>
+        <OpsInspectorSection title="Activity">
+          <OpsFacts columns={2}>
+            <OpsFact label="Quotes">{customer.quote_count}</OpsFact>
+            <OpsFact label="Active shipments">{customer.active_shipment_count}</OpsFact>
+            <OpsFact label="Completed jobs">{customer.completed_shipment_count}</OpsFact>
+            <OpsFact label="Follow-ups" warning={customer.follow_up_count > 0}>{customer.follow_up_count}</OpsFact>
+          </OpsFacts>
+        </OpsInspectorSection>
 
-    <div className="ops-grid-main"><OpsSurface eyebrow="Account" title="Relationship snapshot"><div className="grid gap-x-8 gap-y-5 sm:grid-cols-2"><Fact label="Lead stage" value={crmLeadStageLabels[customer.lead_stage]}/><Fact label="Primary branch" value={customer.primary_branch}/><Fact label="Account manager" value={customer.account_manager_name || "Unassigned"}/><Fact label="Manager email" value={customer.account_manager_email || "Not set"}/><Fact label="Manager phone" value={customer.account_manager_phone || "Not set"}/><Fact label="Country" value={customer.country}/><Fact label="Entity" value={customer.entity_kind === "company" ? "Company / organisation" : "Individual"}/><Fact label="Updated" value={customer.updated_at ? new Date(customer.updated_at).toLocaleDateString("en-AU") : "Just created"}/></div>{customer.tags.length ? <div className="mt-5 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{customer.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}</OpsSurface>
-      {commercialVisible ? <OpsSurface eyebrow="Commercial" title={`${customer.preferred_currency} account`} description="Headline lifetime totals for quick context. Full terms and rate cards live inside Customer 360."><div className="divide-y divide-[var(--admin-line)]"><MoneyLine label="Revenue" value={formatMoney(customer.revenue_total, customer.preferred_currency)}/><MoneyLine label="Cost" value={formatMoney(customer.cost_total, customer.preferred_currency)}/><MoneyLine label="Gross profit" value={formatMoney(customer.profit_total, customer.preferred_currency)} strong/><MoneyLine label="Gross margin" value={`${grossMargin.toFixed(1)}%`}/></div></OpsSurface> : null}
+        <OpsInspectorSection title="Relationship">
+          <OpsFacts>
+            <OpsFact label="Lead stage">{crmLeadStageLabels[customer.lead_stage]}</OpsFact>
+            <OpsFact label="Primary branch">{customer.primary_branch}</OpsFact>
+            <OpsFact label="Account manager">{customer.account_manager_name || "Unassigned"}</OpsFact>
+            <OpsFact label="Manager email">{customer.account_manager_email || "Not set"}</OpsFact>
+            <OpsFact label="Manager phone">{customer.account_manager_phone || "Not set"}</OpsFact>
+            <OpsFact label="Entity">{customer.entity_kind === "company" ? "Company / organisation" : "Individual"}</OpsFact>
+            <OpsFact label="Updated">{customer.updated_at ? new Date(customer.updated_at).toLocaleDateString("en-AU") : "Just created"}</OpsFact>
+          </OpsFacts>
+          {customer.tags.length ? <div className="plan-badges plan-subform">{customer.tags.map((tag) => <OpsBadge key={tag}>{tag}</OpsBadge>)}</div> : null}
+        </OpsInspectorSection>
+
+        {commercialVisible ? <OpsInspectorSection title={`Commercial · ${customer.preferred_currency}`}>
+          <OpsFacts>
+            <OpsFact label="Revenue">{formatMoney(customer.revenue_total, customer.preferred_currency)}</OpsFact>
+            <OpsFact label="Cost">{formatMoney(customer.cost_total, customer.preferred_currency)}</OpsFact>
+            <OpsFact label="Gross profit">{formatMoney(customer.profit_total, customer.preferred_currency)}</OpsFact>
+            <OpsFact label="Gross margin">{`${grossMargin.toFixed(1)}%`}</OpsFact>
+          </OpsFacts>
+          <p className="ops-inspector-hint plan-subform">Headline lifetime totals. Full terms and rate cards live in Customer 360.</p>
+        </OpsInspectorSection> : null}
+      </div>
     </div>
-  </div>;
+    <footer className="ops-inspector-footer">
+      <Link href={`/admin/crm/${encodeURIComponent(customer.id)}`} className="ops-button" data-variant="primary" data-size="sm">Open Customer 360<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></Link>
+    </footer>
+  </aside>;
 }
 
 function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraft, setCarrierDraft, transportDraft, setTransportDraft, saving, duplicates, advancedOpen, setAdvancedOpen, onSubmit, onCancel }: {
@@ -167,26 +281,67 @@ function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraf
   onSubmit: (event: FormEvent<HTMLFormElement>, allowDuplicate?: boolean) => Promise<void>;
   onCancel: () => void;
 }) {
-  return <div className="mx-auto max-w-5xl ops-stack">
-    <div className="flex items-start justify-between gap-4"><div><p className="ops-eyebrow">New relationship</p><h2 className="mt-2 text-[27px] font-[730] tracking-[-.04em] text-[var(--admin-ink)]">Create CRM record</h2><p className="mt-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Start with identity and ownership. Commercial and operating preferences are available below when they are useful.</p></div><button type="button" onClick={onCancel} className="grid h-9 w-9 place-items-center rounded-[var(--app-radius)] text-[var(--admin-muted)] hover:bg-white" aria-label="Close create customer"><X size={14}/></button></div>
-    {duplicates.length ? <OpsSurface eyebrow="Duplicate check" title="Possible existing records" description="KCPL found similar customer data. Open an existing record first unless this is genuinely a separate relationship."><div className="divide-y divide-[var(--admin-line)]">{duplicates.map((match) => <div key={`${match.id}-${match.reason}`} className="flex items-center justify-between gap-4 py-3"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{match.display_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Matched by {match.reason}</p></div><Link href={`/admin/crm/${encodeURIComponent(match.id)}`} className="ops-button" data-variant="secondary" data-size="sm">Open existing</Link></div>)}</div></OpsSurface> : null}
-    <form onSubmit={(event) => onSubmit(event, false)} className="ops-stack">
-      <OpsSurface eyebrow="Identity" title="Who is this?">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><OpsField label="Record type"><select value={form.entityKind} onChange={(event) => setField("entityKind", event.target.value as CrmCreateCustomerInput["entityKind"])}>{crmEntityKinds.map((kind) => <option value={kind} key={kind}>{kind === "company" ? "Company / organisation" : "Individual"}</option>)}</select></OpsField><OpsField label="Display name"><input required value={form.displayName} onChange={(event) => setField("displayName", event.target.value)} placeholder="Customer or organisation name"/></OpsField><OpsField label="Legal name"><input value={form.legalName} onChange={(event) => setField("legalName", event.target.value)}/></OpsField><OpsField label="Primary email"><input type="email" value={form.primaryEmail} onChange={(event) => setField("primaryEmail", event.target.value)}/></OpsField><OpsField label="Primary phone"><input value={form.primaryPhone} onChange={(event) => setField("primaryPhone", event.target.value)}/></OpsField><OpsField label="Country"><input value={form.country} onChange={(event) => setField("country", event.target.value)}/></OpsField></div>
-        <div className="mt-4 flex flex-wrap items-center gap-2"><OpsBadge tone="info">Customer</OpsBadge><span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">This workspace is for buyers of KCPL services. Operational suppliers and counterparts belong in Partners.</span></div>
-      </OpsSurface>
+  return <OpsSurface
+    density="compact"
+    title="Create CRM record"
+    description="Start with identity and ownership. Commercial and operating preferences are available below when useful."
+    action={<button type="button" onClick={onCancel} className="ops-inspector-close" aria-label="Close create customer"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
+  >
+    {duplicates.length ? <div className="crm-duplicates">
+      <p className="crm-form-section">Possible existing records</p>
+      <p className="ops-inspector-hint">KCPL found similar customer data. Open an existing record first unless this is genuinely a separate relationship.</p>
+      <ul className="crm-duplicate-list">{duplicates.map((match) => <li key={`${match.id}-${match.reason}`}><div className="min-w-0"><strong>{match.display_name}</strong><span>Matched by {match.reason}</span></div><Link href={`/admin/crm/${encodeURIComponent(match.id)}`} className="ops-button" data-variant="secondary" data-size="xs">Open existing</Link></li>)}</ul>
+    </div> : null}
+    <form onSubmit={(event) => onSubmit(event, false)}>
+      <p className="crm-form-section">Identity</p>
+      <div className="ops-form-grid">
+        <OpsField label="Record type"><select value={form.entityKind} onChange={(event) => setField("entityKind", event.target.value as CrmCreateCustomerInput["entityKind"])}>{crmEntityKinds.map((kind) => <option value={kind} key={kind}>{kind === "company" ? "Company / organisation" : "Individual"}</option>)}</select></OpsField>
+        <OpsField label="Display name"><input required value={form.displayName} onChange={(event) => setField("displayName", event.target.value)} placeholder="Customer or organisation name"/></OpsField>
+        <OpsField label="Legal name"><input value={form.legalName} onChange={(event) => setField("legalName", event.target.value)}/></OpsField>
+        <OpsField label="Country"><input value={form.country} onChange={(event) => setField("country", event.target.value)}/></OpsField>
+        <OpsField label="Primary email"><input type="email" value={form.primaryEmail} onChange={(event) => setField("primaryEmail", event.target.value)}/></OpsField>
+        <OpsField label="Primary phone"><input value={form.primaryPhone} onChange={(event) => setField("primaryPhone", event.target.value)}/></OpsField>
+      </div>
+      <p className="ops-inspector-hint crm-form-hint">This workspace is for buyers of KCPL services. Operational suppliers and counterparts belong in Partners.</p>
 
-      <OpsSurface eyebrow="Ownership" title="How KCPL will manage the account"><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><OpsField label="Account status"><select value={form.accountStatus} onChange={(event) => setField("accountStatus", event.target.value as CrmCreateCustomerInput["accountStatus"])}>{crmAccountStatuses.map((status) => <option value={status} key={status}>{crmAccountStatusLabels[status]}</option>)}</select></OpsField><OpsField label="Lead stage"><select value={form.leadStage} onChange={(event) => setField("leadStage", event.target.value as CrmCreateCustomerInput["leadStage"])}>{crmLeadStages.map((stage) => <option value={stage} key={stage}>{crmLeadStageLabels[stage]}</option>)}</select></OpsField><OpsField label="Lead source"><select value={form.leadSource} onChange={(event) => setField("leadSource", event.target.value as CrmCreateCustomerInput["leadSource"])}><option value="">Not set</option>{crmLeadSources.map((source) => <option value={source} key={source}>{source.replaceAll("_", " ")}</option>)}</select></OpsField><OpsField label="Primary branch"><select value={form.primaryBranch} onChange={(event) => setField("primaryBranch", event.target.value as CrmCreateCustomerInput["primaryBranch"])}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField><div className="md:col-span-2"><OpsField label="Account manager" hint="Choose from People & branches. Name, email and phone populate automatically."><StaffAssignmentPicker branch={form.primaryBranch} value={{ name: form.accountManagerName, email: form.accountManagerEmail, phone: form.accountManagerPhone }} onChange={(staff) => { setField("accountManagerName", staff.name); setField("accountManagerEmail", staff.email); setField("accountManagerPhone", staff.phone); }}/></OpsField></div></div><OpsField label="Internal summary" className="mt-4"><textarea value={form.internalSummary} onChange={(event) => setField("internalSummary", event.target.value)} placeholder="What should another KCPL staff member know before speaking with this account?"/></OpsField></OpsSurface>
+      <p className="crm-form-section">Ownership</p>
+      <div className="ops-form-grid">
+        <OpsField label="Account status"><select value={form.accountStatus} onChange={(event) => setField("accountStatus", event.target.value as CrmCreateCustomerInput["accountStatus"])}>{crmAccountStatuses.map((status) => <option value={status} key={status}>{crmAccountStatusLabels[status]}</option>)}</select></OpsField>
+        <OpsField label="Lead stage"><select value={form.leadStage} onChange={(event) => setField("leadStage", event.target.value as CrmCreateCustomerInput["leadStage"])}>{crmLeadStages.map((stage) => <option value={stage} key={stage}>{crmLeadStageLabels[stage]}</option>)}</select></OpsField>
+        <OpsField label="Lead source"><select value={form.leadSource} onChange={(event) => setField("leadSource", event.target.value as CrmCreateCustomerInput["leadSource"])}><option value="">Not set</option>{crmLeadSources.map((source) => <option value={source} key={source}>{source.replaceAll("_", " ")}</option>)}</select></OpsField>
+        <OpsField label="Primary branch"><select value={form.primaryBranch} onChange={(event) => setField("primaryBranch", event.target.value as CrmCreateCustomerInput["primaryBranch"])}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
+        <OpsField label="Account manager" hint="From People & branches; name, email and phone fill automatically." className="ops-form-wide"><StaffAssignmentPicker branch={form.primaryBranch} value={{ name: form.accountManagerName, email: form.accountManagerEmail, phone: form.accountManagerPhone }} onChange={(staff) => { setField("accountManagerName", staff.name); setField("accountManagerEmail", staff.email); setField("accountManagerPhone", staff.phone); }}/></OpsField>
+        <OpsField label="Internal summary" className="ops-form-wide"><textarea value={form.internalSummary} onChange={(event) => setField("internalSummary", event.target.value)} placeholder="What should another KCPL staff member know before speaking with this account?"/></OpsField>
+      </div>
 
-      <button type="button" onClick={() => setAdvancedOpen(!advancedOpen)} className="flex items-center justify-between rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-3 text-left"><span><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">Commercial & operating details</strong><small className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Optional terms, preferences, IDs and tags</small></span><span className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]">{advancedOpen ? "Hide" : "Add details"}</span></button>
+      <button type="button" onClick={() => setAdvancedOpen(!advancedOpen)} className="ops-disclosure" aria-expanded={advancedOpen} aria-controls="crm-advanced-fields">
+        <span><strong>Commercial & operating details</strong><small>Optional terms, preferences, IDs and tags</small></span>
+        <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true"/>
+      </button>
 
-      {advancedOpen ? <OpsSurface eyebrow="Account setup" title="Commercial & operating details"><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><OpsField label="Trading name"><input value={form.tradingName} onChange={(event) => setField("tradingName", event.target.value)}/></OpsField><OpsField label="Website"><input value={form.website} onChange={(event) => setField("website", event.target.value)}/></OpsField><OpsField label="Industry"><input value={form.industry} onChange={(event) => setField("industry", event.target.value)}/></OpsField><OpsField label="Tax ID"><input value={form.taxId} onChange={(event) => setField("taxId", event.target.value)}/></OpsField><OpsField label="Billing email"><input type="email" value={form.billingEmail} onChange={(event) => setField("billingEmail", event.target.value)}/></OpsField><OpsField label="Preferred currency"><select value={form.preferredCurrency} onChange={(event) => setField("preferredCurrency", event.target.value as CrmCreateCustomerInput["preferredCurrency"])}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField><OpsField label="Payment terms (days)"><input inputMode="numeric" value={form.paymentTermsDays} onChange={(event) => setField("paymentTermsDays", event.target.value)}/></OpsField><OpsField label="Credit limit"><input inputMode="decimal" value={form.creditLimit} onChange={(event) => setField("creditLimit", event.target.value)}/></OpsField><OpsField label="Opening outstanding"><input inputMode="decimal" value={form.outstandingBalance} onChange={(event) => setField("outstandingBalance", event.target.value)}/></OpsField><OpsField label="Markup %"><input inputMode="decimal" value={form.markupPercent} onChange={(event) => setField("markupPercent", event.target.value)}/></OpsField><OpsField label="Tags" hint="Comma separated"><input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} placeholder="vip, garments, air-import"/></OpsField><OpsField label="Preferred carriers" hint="Comma separated"><input value={carrierDraft} onChange={(event) => setCarrierDraft(event.target.value)}/></OpsField><OpsField label="Transport preferences" hint="Comma separated"><input value={transportDraft} onChange={(event) => setTransportDraft(event.target.value)}/></OpsField><OpsField label="Pricing notes" className="md:col-span-2 xl:col-span-3"><textarea value={form.pricingNotes} onChange={(event) => setField("pricingNotes", event.target.value)}/></OpsField></div></OpsSurface> : null}
+      {advancedOpen ? <div id="crm-advanced-fields" className="ops-form-grid">
+        <OpsField label="Trading name"><input value={form.tradingName} onChange={(event) => setField("tradingName", event.target.value)}/></OpsField>
+        <OpsField label="Website"><input value={form.website} onChange={(event) => setField("website", event.target.value)}/></OpsField>
+        <OpsField label="Industry"><input value={form.industry} onChange={(event) => setField("industry", event.target.value)}/></OpsField>
+        <OpsField label="Tax ID"><input value={form.taxId} onChange={(event) => setField("taxId", event.target.value)}/></OpsField>
+        <OpsField label="Billing email"><input type="email" value={form.billingEmail} onChange={(event) => setField("billingEmail", event.target.value)}/></OpsField>
+        <OpsField label="Preferred currency"><select value={form.preferredCurrency} onChange={(event) => setField("preferredCurrency", event.target.value as CrmCreateCustomerInput["preferredCurrency"])}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField>
+        <OpsField label="Payment terms (days)"><input inputMode="numeric" value={form.paymentTermsDays} onChange={(event) => setField("paymentTermsDays", event.target.value)}/></OpsField>
+        <OpsField label="Credit limit"><input inputMode="decimal" value={form.creditLimit} onChange={(event) => setField("creditLimit", event.target.value)}/></OpsField>
+        <OpsField label="Opening outstanding"><input inputMode="decimal" value={form.outstandingBalance} onChange={(event) => setField("outstandingBalance", event.target.value)}/></OpsField>
+        <OpsField label="Markup %"><input inputMode="decimal" value={form.markupPercent} onChange={(event) => setField("markupPercent", event.target.value)}/></OpsField>
+        <OpsField label="Tags" hint="Comma separated"><input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} placeholder="vip, garments, air-import"/></OpsField>
+        <OpsField label="Preferred carriers" hint="Comma separated"><input value={carrierDraft} onChange={(event) => setCarrierDraft(event.target.value)}/></OpsField>
+        <OpsField label="Transport preferences" hint="Comma separated"><input value={transportDraft} onChange={(event) => setTransportDraft(event.target.value)}/></OpsField>
+        <OpsField label="Pricing notes" className="ops-form-full"><textarea value={form.pricingNotes} onChange={(event) => setField("pricingNotes", event.target.value)}/></OpsField>
+      </div> : null}
 
-      <div className="flex flex-wrap gap-2"><OpsButton type="submit" variant="primary" disabled={saving}>{saving ? "Creating…" : "Create record"}</OpsButton><OpsButton type="button" variant="secondary" onClick={onCancel}>Cancel</OpsButton>{duplicates.length ? <OpsButton type="button" variant="danger" disabled={saving} onClick={() => { const synthetic = { preventDefault() {} } as FormEvent<HTMLFormElement>; void onSubmit(synthetic, true); }}>Create anyway</OpsButton> : null}</div>
+      <div className="ops-form-actions">
+        {duplicates.length ? <OpsButton type="button" variant="danger" size="sm" disabled={saving} onClick={() => { const synthetic = { preventDefault() {} } as FormEvent<HTMLFormElement>; void onSubmit(synthetic, true); }}>Create anyway</OpsButton> : null}
+        <OpsButton type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</OpsButton>
+        <OpsButton type="submit" variant="primary" size="sm" disabled={saving}>{saving ? "Creating…" : "Create record"}</OpsButton>
+      </div>
     </form>
-  </div>;
+  </OpsSurface>;
 }
 
-function MiniStat({ icon, label, value, warn = false }: { icon: React.ReactNode; label: string; value: number; warn?: boolean }) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className={`flex items-center gap-2 ${warn ? "text-[var(--admin-warning)]" : "text-[var(--admin-muted)]"}`}>{icon}<span className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em]">{label}</span></div><strong className={`mt-2 block text-[21px] tracking-[-.035em] ${warn ? "text-[var(--admin-warning)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
-function Fact({ label, value }: { label: string; value: string }) { return <div><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-muted)]">{label}</p><p className="mt-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">{value}</p></div>; }
-function MoneyLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) { return <div className="flex items-center justify-between gap-4 py-3 text-[length:var(--app-label-size)]"><span className="text-[var(--admin-muted)]">{label}</span><strong className={strong ? "text-[12px] text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}>{value}</strong></div>; }

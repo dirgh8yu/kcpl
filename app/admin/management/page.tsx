@@ -1,3 +1,4 @@
+import "../organisation-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
@@ -53,7 +54,7 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
   const result = await loadAnalytics(range);
   if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title={result.kind === "error" ? "Management analytics could not be loaded" : "Analytics are unavailable"} detail="The Firebase reporting backend is temporarily unavailable. Navigation and search remain available."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><ManagementWorkspace analytics={result.analytics}/><RuntimeReadinessPanel/></OperationsShell>;
+  return <OperationsShell {...shellProps}><ManagementWorkspace analytics={result.analytics} readiness={<RuntimeReadinessPanel key="readiness"/>}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

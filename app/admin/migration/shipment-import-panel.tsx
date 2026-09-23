@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, PackageCheck, Upload } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import { shipmentStatusLabels } from "../../shipment-types";
 import type { ShipmentImportPreview, ShipmentImportResult, ShipmentImportStatus } from "./shipment-import";
 
@@ -67,30 +67,30 @@ export function ShipmentImportPanel() {
     {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
     {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} shipments imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> created {result.active_imported} active operational record{result.active_imported === 1 ? "" : "s"} and {result.historical_imported} historical record{result.historical_imported === 1 ? "" : "s"}. {result.duplicates} possible duplicate{result.duplicates === 1 ? "" : "s"} and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"} were skipped. <Link href="/admin/shipments" className="font-bold underline">Open active shipments</Link>.</OpsNotice> : null}
 
-    <OpsSurface eyebrow="Stage 2 · Shipment history" title="CSV intake → resolve customers → validate → preview → confirm" description="Stage 2 imports shipment records only. It does not import invoices, supplier bills, scanned documents or paper Job File archives." action={<a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={12}/>Download shipment template</a>}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <OpsSurface density="compact" title="Stage 2 · Shipment history" description="CSV intake → resolve customers → validate → preview → confirm. Stage 2 imports shipment records only. It does not import invoices, supplier bills, scanned documents or paper Job File archives." action={<a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download shipment template</a>}>
+      <div className="migration-intake">
         <div>
-          <label className="block rounded-[var(--app-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-surface-soft)] p-6 text-center transition hover:border-[var(--admin-accent-line)] hover:bg-[var(--admin-accent-bg)]">
+          <label className="migration-drop">
             <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}/>
-            <span className="mx-auto grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-white text-[var(--admin-crimson)] shadow-[0_5px_18px_rgba(80,55,40,.06)]"><Upload size={17}/></span>
-            <strong className="mt-3 block text-[12px] text-[var(--admin-ink)]">{file ? file.name : "Choose shipment CSV"}</strong>
-            <span className="mt-1 block text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">CSV only · maximum 200 shipment rows · maximum 2 MB</span>
+            <Upload size={16} strokeWidth={1.75} aria-hidden="true"/>
+            <strong>{file ? file.name : "Choose shipment CSV"}</strong>
+            <span>CSV only · maximum 200 shipment rows · maximum 2 MB</span>
           </label>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={12} className="animate-spin"/> : <FileSpreadsheet size={12}/>}Preview & validate</OpsButton>
+          <div className="migration-actions">
+            <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true"/>}Preview & validate</OpsButton>
             {file ? <OpsButton variant="ghost" disabled={Boolean(busy)} onClick={() => chooseFile(null)}>Clear file</OpsButton> : null}
           </div>
         </div>
 
-        <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4">
-          <p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.08em] text-[var(--admin-faint)]">Stage 2 rules</p>
-          <ul className="mt-3 space-y-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">
-            <li>• Every shipment must link to an existing Stage 1 / CRM customer by <strong>customer_id</strong> or one exact, unique customer name.</li>
-            <li>• <strong>active</strong> rows enter live Operations and receive the standard KCPL task, customs and document workflow.</li>
-            <li>• <strong>historical</strong> rows must be Delivered and are imported as completed migration records without generating live operational work.</li>
-            <li>• Shipment reference and carrier reference duplicates are blocked before import.</li>
-            <li>• Active owners, when supplied, must resolve to an eligible People & branches staff member.</li>
-            <li>• Dates use <strong>YYYY-MM-DD</strong>. Historical rows require a delivered date.</li>
+        <div className="migration-rules">
+          <p className="migration-rules-title">Stage 2 rules</p>
+          <ul>
+            <li>Every shipment must link to an existing Stage 1 / CRM customer by <strong>customer_id</strong> or one exact, unique customer name.</li>
+            <li><strong>active</strong> rows enter live Operations and receive the standard KCPL task, customs and document workflow.</li>
+            <li><strong>historical</strong> rows must be Delivered and are imported as completed migration records without generating live operational work.</li>
+            <li>Shipment reference and carrier reference duplicates are blocked before import.</li>
+            <li>Active owners, when supplied, must resolve to an eligible People & branches staff member.</li>
+            <li>Dates use <strong>YYYY-MM-DD</strong>. Historical rows require a delivered date.</li>
           </ul>
         </div>
       </div>
@@ -101,25 +101,24 @@ export function ShipmentImportPanel() {
 }
 
 function ShipmentPreview({ preview, confirmed, busy, onConfirmed, onImport }: { preview: ShipmentImportPreview; confirmed: boolean; busy: "preview" | "import" | ""; onConfirmed: (value: boolean) => void; onImport: () => void }) {
-  return <OpsSurface eyebrow="Stage 2 safe preview" title="Review shipment history before writing" description={`${preview.total} rows detected in ${preview.filename}. Ready rows include ${preview.active} active and ${preview.historical} historical shipments.`} flush>
-    <div className="grid grid-cols-2 gap-px border-b border-[var(--admin-line)] bg-[var(--admin-line)] sm:grid-cols-6">
+  return <OpsSurface density="compact" title="Review shipment history before writing" description={`${preview.total} rows detected in ${preview.filename}. Ready rows include ${preview.active} active and ${preview.historical} historical shipments.`} flush>
+    <div className="migration-counts"><OpsKpiRail label="Preview counts">
       <PreviewCount label="Detected" value={preview.total}/>
       <PreviewCount label="Ready" value={preview.ready} tone="success"/>
       <PreviewCount label="Active" value={preview.active}/>
       <PreviewCount label="Historical" value={preview.historical}/>
       <PreviewCount label="Duplicates" value={preview.duplicates} tone="warning"/>
       <PreviewCount label="Invalid" value={preview.invalid} tone="danger"/>
-    </div>
+    </OpsKpiRail></div>
 
-    <div className="ops-table-wrap"><table className="ops-table min-w-[1260px]"><thead><tr><th>Row</th><th>Shipment</th><th>Class</th><th>Customer</th><th>Route</th><th>Movement</th><th>Dates</th><th>Owner</th><th>Status</th><th>Validation</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.row_number}><td><OpsMono>{String(row.row_number)}</OpsMono></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><OpsMono>{row.shipment_reference}</OpsMono></strong>{row.carrier_reference ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Carrier ref {row.carrier_reference}</p> : null}</td><td>{row.record_class ? <OpsBadge tone={row.record_class === "active" ? "info" : "neutral"}>{row.record_class}</OpsBadge> : <span className="text-[var(--admin-danger)]">Invalid</span>}</td><td><strong className="text-[length:var(--app-label-size)]">{row.customer_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.customer_id || "Unresolved"}</p></td><td><span className="text-[length:var(--app-label-size)]">{row.origin || "?"} → {row.destination || "?"}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.primary_branch || "Invalid branch"}</p></td><td><span className="text-[length:var(--app-label-size)]">{row.mode || "Invalid mode"}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.shipment_status ? shipmentStatusLabels[row.shipment_status] : "Invalid status"}</p></td><td><span className="block text-[length:var(--app-label-size)]">Ship {row.shipment_date || "missing"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.record_class === "historical" ? `Delivered ${row.delivered_date || "missing"}` : `ETA ${row.eta || "not set"}`}</span></td><td><span className="text-[length:var(--app-label-size)]">{row.owner}</span></td><td><OpsBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</OpsBadge></td><td><div className="max-w-[420px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{row.issues.length ? row.issues.join(" ") : row.duplicate_matches.length ? row.duplicate_matches.join(" · ") : <span className="inline-flex items-center gap-1 text-[var(--admin-success)]"><CheckCircle2 size={10}/>No blocking issues</span>}</div></td></tr>)}</tbody></table></div>
+    <div className="ops-table-wrap"><table className="ops-table ops-register-table migration-table min-w-[1260px]"><thead><tr><th>Row</th><th>Shipment</th><th>Class</th><th>Customer</th><th>Route</th><th>Movement</th><th>Dates</th><th>Owner</th><th>Status</th><th>Validation</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.row_number}><td><OpsMono>{String(row.row_number)}</OpsMono></td><td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><OpsMono>{row.shipment_reference}</OpsMono></strong>{row.carrier_reference ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Carrier ref {row.carrier_reference}</p> : null}</td><td>{row.record_class ? <OpsBadge tone={row.record_class === "active" ? "info" : "neutral"}>{row.record_class}</OpsBadge> : <span className="text-[var(--admin-danger)]">Invalid</span>}</td><td><strong className="text-[length:var(--app-label-size)]">{row.customer_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.customer_id || "Unresolved"}</p></td><td><span className="text-[length:var(--app-label-size)]">{row.origin || "?"} → {row.destination || "?"}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.primary_branch || "Invalid branch"}</p></td><td><span className="text-[length:var(--app-label-size)]">{row.mode || "Invalid mode"}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.shipment_status ? shipmentStatusLabels[row.shipment_status] : "Invalid status"}</p></td><td><span className="block text-[length:var(--app-label-size)]">Ship {row.shipment_date || "missing"}</span><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.record_class === "historical" ? `Delivered ${row.delivered_date || "missing"}` : `ETA ${row.eta || "not set"}`}</span></td><td><span className="text-[length:var(--app-label-size)]">{row.owner}</span></td><td><OpsBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</OpsBadge></td><td><div className="max-w-[420px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{row.issues.length ? row.issues.join(" ") : row.duplicate_matches.length ? row.duplicate_matches.join(" · ") : <span className="inline-flex items-center gap-1 text-[var(--admin-success)]"><CheckCircle2 size={10}/>No blocking issues</span>}</div></td></tr>)}</tbody></table></div>
 
-    <div className="border-t border-[var(--admin-line)] bg-[var(--admin-surface)] p-4 sm:p-5">
-      {preview.ready ? <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><label className="flex max-w-2xl cursor-pointer items-start gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><input type="checkbox" checked={confirmed} onChange={(event) => onConfirmed(event.target.checked)} className="mt-0.5"/><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">I reviewed this Stage 2 preview.</strong>Import the {preview.ready} Ready shipment{preview.ready === 1 ? "" : "s"} only. Active rows become live operational records. Historical rows are stored as completed history. Duplicate and invalid rows remain untouched.</span></label><OpsButton variant="primary" disabled={!confirmed || Boolean(busy)} onClick={onImport}>{busy === "import" ? <LoaderCircle size={12} className="animate-spin"/> : <PackageCheck size={12}/>}Import {preview.ready} ready shipment{preview.ready === 1 ? "" : "s"}</OpsButton></div> : <OpsEmptyState compact icon={<AlertTriangle size={16}/>} title="Nothing is ready to import" description="Correct invalid shipment data or duplicate references in the source CSV, then preview it again."/>}
+    <div className="migration-confirm">
+      {preview.ready ? <div className="migration-confirm-row"><label className="migration-confirm-check"><input type="checkbox" checked={confirmed} onChange={(event) => onConfirmed(event.target.checked)} className="mt-0.5"/><span className="text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]"><strong className="block text-[length:var(--app-label-size)] text-[var(--admin-ink)]">I reviewed this Stage 2 preview.</strong>Import the {preview.ready} Ready shipment{preview.ready === 1 ? "" : "s"} only. Active rows become live operational records. Historical rows are stored as completed history. Duplicate and invalid rows remain untouched.</span></label><OpsButton variant="primary" disabled={!confirmed || Boolean(busy)} onClick={onImport}>{busy === "import" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <PackageCheck size={12}/>}Import {preview.ready} ready shipment{preview.ready === 1 ? "" : "s"}</OpsButton></div> : <OpsEmptyState compact icon={<AlertTriangle size={16}/>} title="Nothing is ready to import" description="Correct invalid shipment data or duplicate references in the source CSV, then preview it again."/>}
     </div>
   </OpsSurface>;
 }
 
 function PreviewCount({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "success" | "warning" | "danger" }) {
-  const color = tone === "success" ? "text-[var(--admin-success)]" : tone === "warning" ? "text-[var(--admin-warning)]" : tone === "danger" ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]";
-  return <div className="bg-[var(--admin-surface)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-faint)]">{label}</p><strong className={`mt-1 block text-[20px] font-[740] ${color}`}>{value}</strong></div>;
+  return <OpsRailMetric label={label} value={value} tone={tone}/>;
 }

@@ -3,30 +3,24 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
-  Building2,
-  CalendarDays,
   CheckCircle2,
-  Clock3,
   Link2,
   Mail,
-  MapPin,
   MessageSquareText,
   Package,
   Phone,
   Plus,
   Send,
-  UserRound,
 } from "lucide-react";
 import { quoteCurrencies } from "./admin-data";
 import type { QuoteCrmMatch, QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 import { AdminShipmentPanel } from "./admin-shipment-panel";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsSearch, OpsSurface } from "./operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
 import { StaffAssignmentPicker } from "./staff-assignment-picker";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 const statusLabels: Record<QuoteStatus, string> = { new: "New", reviewing: "Reviewing", quoted: "Quoted", won: "Won", lost: "Lost" };
-const statusOptions: Array<"all" | QuoteStatus> = ["all", "new", "reviewing", "quoted", "won", "lost"];
 const detailTabs = ["overview", "pricing", "shipment", "activity"] as const;
 const detailTabLabels: Record<DetailTab, string> = { overview: "Overview", pricing: "Pricing", shipment: "Shipment", activity: "Activity" };
 type DetailTab = (typeof detailTabs)[number];
@@ -421,110 +415,195 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
   const statusLocked = Boolean(detail && (detail.status === "won" || (!canEditCommercial && detail.status !== "new" && detail.status !== "reviewing")));
 
   return (
-    <main className="min-h-[calc(100vh-58px)] bg-[var(--admin-canvas)]">
-      <div className="ops-split">
-        <aside className="ops-split-list flex max-h-[48vh] min-h-0 flex-col lg:max-h-[calc(100vh-58px)]">
-          <div className="border-b border-[var(--admin-line)] bg-white/70 p-4">
-            <div className="flex items-end justify-between gap-3"><div><p className="ops-eyebrow">Enquiry desk</p><h1 className="mt-1 text-[20px] font-[730] tracking-[-.035em] text-[var(--admin-ink)]">Freight enquiries</h1></div><span className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{filtered.length} of {quotes.length}</span></div>
-            <OpsSearch className="mt-3" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, route, cargo, contact or reference" aria-label="Search enquiries"/>
-            <div className="ops-filter-pills mt-3">{statusOptions.map((item) => <button key={item} type="button" className="ops-filter-pill" data-active={statusFilter === item || undefined} onClick={() => setStatusFilter(item)}>{item === "all" ? "All" : statusLabels[item]} <span className="ml-1 opacity-60">{item === "all" ? quotes.length : statusCounts[item]}</span></button>)}</div>
-            <SavedFilterViews storageKey="kcpl-enquiry-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/>
-          </div>
+    <OpsPage>
+      <OpsPageHeader
+        title="Freight enquiries"
+        description={`Website enquiries reviewed, quoted and converted into KCPL shipments · ${filtered.length} of ${quotes.length} shown`}
+      />
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {filtered.length ? filtered.map((quote) => {
-              const selected = selectedReference === quote.reference;
-              return <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className="ops-record-row block w-full border-b border-[var(--admin-line)] px-4 py-3.5 text-left" data-selected={selected || undefined}>
-                <div className="flex items-center justify-between gap-2"><div className="ops-route min-w-0 text-[13px] font-semibold"><span className="truncate">{quote.origin || "Origin not recorded"}</span><ArrowRight size={11} className="ops-route-arrow shrink-0"/><span className="truncate">{quote.destination || "Destination not recorded"}</span></div><OpsBadge tone={statusTone(quote.status)} dot>{statusLabels[quote.status]}</OpsBadge></div>
-                <p className="mt-1.5 truncate text-[11px] font-semibold text-[var(--admin-ink)]">{quote.company_name || quote.contact_name} · {modeLabel(quote.mode)}</p>
-                {quote.cargo_type ? <p className="mt-1 truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{quote.cargo_type}</p> : null}
-                <div className="mt-2 flex items-center justify-between gap-3 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><span className="min-w-0 truncate"><OpsMono>{quote.reference}</OpsMono>{quote.assigned_to ? ` · ${quote.assigned_to}` : " · Unassigned"}</span><span className="flex shrink-0 items-center gap-2">{quote.email_count ? <span className="flex items-center gap-1" title={`${quote.email_count} customer email${quote.email_count === 1 ? "" : "s"}`}><Mail size={10}/>{quote.email_count}</span> : null}{quote.note_count ? <span className="flex items-center gap-1" title={`${quote.note_count} internal note${quote.note_count === 1 ? "" : "s"}`}><MessageSquareText size={10}/>{quote.note_count}</span> : null}</span></div>
-                <p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Received {formatDate(quote.created_at)}</p>
-              </button>;
-            }) : quotes.length ? <OpsEmptyState kind="search" title="No enquiries match" description="Change the search terms, status filter or saved view."/> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16}/>} title="Enquiry inbox is clear" description="New website freight enquiries will appear here automatically."/>}
-          </div>
-        </aside>
+      <div className="px-4 pb-8 pt-4 md:px-6">
+        <OpsKpiRail label="Enquiry pipeline">
+          <OpsRailMetric label="All" value={quotes.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")}/>
+          <OpsRailMetric label="New" value={statusCounts.new} active={statusFilter === "new"} onClick={() => setStatusFilter(statusFilter === "new" ? "all" : "new")}/>
+          <OpsRailMetric label="Reviewing" value={statusCounts.reviewing} tone={statusCounts.reviewing ? "warning" : "neutral"} active={statusFilter === "reviewing"} onClick={() => setStatusFilter(statusFilter === "reviewing" ? "all" : "reviewing")}/>
+          <OpsRailMetric label="Quoted" value={statusCounts.quoted} active={statusFilter === "quoted"} onClick={() => setStatusFilter(statusFilter === "quoted" ? "all" : "quoted")}/>
+          <OpsRailMetric label="Won" value={statusCounts.won} active={statusFilter === "won"} onClick={() => setStatusFilter(statusFilter === "won" ? "all" : "won")}/>
+          <OpsRailMetric label="Lost" value={statusCounts.lost} active={statusFilter === "lost"} onClick={() => setStatusFilter(statusFilter === "lost" ? "all" : "lost")}/>
+        </OpsKpiRail>
 
-        <section className="ops-split-detail min-h-0 overflow-y-auto">
-          {!selectedReference ? <OpsEmptyState kind={quotes.length ? "neutral" : "healthy"} icon={quotes.length ? <Package size={18}/> : <CheckCircle2 size={18}/>} title={quotes.length ? "Choose an enquiry" : "No enquiries waiting"} description={quotes.length ? "Select a freight enquiry to review the request, customer relationship, pricing and shipment handoff." : "The website enquiry inbox is currently clear."}/> : null}
-          {loading ? <div className="grid min-h-[55vh] place-items-center" role="status"><div className="text-center"><span className="mx-auto block h-5 w-5 animate-spin rounded-full border-2 border-[var(--admin-line)] border-t-[var(--admin-crimson)]"/><p className="mt-3 text-[11px] font-semibold text-[var(--admin-muted)]">Loading enquiry…</p></div></div> : null}
-          {!loading && selectedReference && !detail ? <div className="p-5"><OpsNotice tone="danger">{notice?.message || "This enquiry could not be loaded."}</OpsNotice></div> : null}
-
-          {!loading && detail ? <>
-            <header className="sticky top-[58px] z-20 border-b border-[var(--admin-line)] bg-white/95 px-5 py-4 backdrop-blur-xl lg:top-0">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><OpsBadge tone={statusTone(detail.status)} dot>{statusLabels[detail.status]}</OpsBadge>{detail.customer_id ? <OpsBadge tone="success">CRM linked</OpsBadge> : <OpsBadge tone="warning">CRM customer required</OpsBadge>}<OpsMono className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{detail.reference}</OpsMono></div><h2 className="mt-2 flex items-center gap-2 text-[24px] font-[735] tracking-[-.045em] text-[var(--admin-ink)]"><span className="truncate">{detail.origin || "Origin"}</span><ArrowRight size={16} className="shrink-0 text-[var(--admin-crimson)]"/><span className="truncate">{detail.destination || "Destination"}</span></h2><p className="mt-1 text-[11px] text-[var(--admin-muted)]">{detail.company_name || detail.contact_name} · {modeLabel(detail.mode)} · received {formatDate(detail.created_at)}</p></div>
-                <div className="flex flex-wrap items-center gap-2"><a href={`mailto:${detail.contact_email}`} className="ops-button" data-variant="secondary" data-size="sm"><Mail size={11}/>Email contact</a>{detail.phone ? <a href={`tel:${detail.phone}`} className="ops-button" data-variant="secondary" data-size="sm"><Phone size={11}/>Call</a> : null}{canEditCommercial && detail.quoted_amount ? <OpsButton variant="primary" size="sm" disabled={saving} onClick={sendQuote}><Send size={11}/>{saving ? "Working…" : "Send quote email"}</OpsButton> : null}</div>
-              </div>
-              <nav className="ops-segmented mt-4" aria-label="Enquiry sections">{availableTabs.map((tab) => <button key={tab} type="button" data-active={activeTab === tab || undefined} onClick={() => setActiveTab(tab)}>{tab === "activity" ? `${detailTabLabels[tab]} · ${detail.note_count + detail.email_count}` : detailTabLabels[tab]}</button>)}</nav>
-            </header>
-
-            <div className="ops-content ops-stack">
-              {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.message}</OpsNotice> : null}
-
-              {activeTab === "overview" ? <div className="ops-grid-main">
-                <div className="ops-stack">
-                  <OpsSurface eyebrow="Request" title="Cargo & route" description="The customer's original freight requirement.">
-                    <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3"><Info icon={<MapPin size={12}/>} label="Route" value={`${detail.origin || "Not recorded"} → ${detail.destination || "Not recorded"}`}/><Info icon={<Package size={12}/>} label="Mode" value={modeLabel(detail.mode)}/><Info label="Cargo type" value={detail.cargo_type || "Not provided"}/><Info label="Weight" value={cargoWeight(detail)}/><Info label="Dimensions" value={cargoDimensions(detail)}/><Info icon={<Clock3 size={12}/>} label="Preferred timing" value={detail.timing || "Not provided"}/></div>
-                    {detail.requirements ? <div className="mt-5 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">Customer requirements</p><p className="mt-2 whitespace-pre-wrap text-[12px] leading-6 text-[var(--admin-muted)]">{detail.requirements}</p></div> : null}
-                  </OpsSurface>
-                  <OpsSurface eyebrow="Contact" title="Customer contact"><div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3"><Info icon={<UserRound size={12}/>} label="Contact" value={detail.contact_name}/><Info icon={<Building2 size={12}/>} label="Company" value={detail.company_name || "Not provided"}/><Info icon={<Mail size={12}/>} label="Email" value={detail.contact_email} href={`mailto:${detail.contact_email}`}/><Info icon={<Phone size={12}/>} label="Phone" value={detail.phone || "Not provided"} href={detail.phone ? `tel:${detail.phone}` : undefined}/><Info icon={<CalendarDays size={12}/>} label="Quote validity" value={canViewCommercial && detail.valid_until ? formatDateOnly(detail.valid_until) : canViewCommercial ? "Not set" : "Commercial access required"}/></div></OpsSurface>
-                </div>
-
-                <aside className="ops-stack xl:sticky xl:top-[132px]">
-                  <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
-                  <OpsSurface eyebrow="Workflow" title="Ownership & status" description={detail.status === "won" ? "This quote is accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer ownership is confirmed. Commercial staff can progress the enquiry through Quoted, Won or Lost." : "Confirm the CRM customer before marking this enquiry Won."}>
-                    <form onSubmit={saveQuote} className="grid gap-3"><OpsField label="Status" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or Digital Job File." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField><OpsField label="Assigned to" hint="Choose from People & branches. Name, email and phone populate automatically."><StaffAssignmentPicker compact value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField><OpsButton type="submit" variant="primary" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></form>
-                  </OpsSurface>
-                  {canViewCommercial ? <OpsSurface eyebrow="Commercial" title="Quote snapshot"><div className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-line)]"><Snapshot label="Customer price" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "Not quoted"}/><Snapshot label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"}/></div><OpsButton variant="ghost" size="sm" className="mt-3" onClick={() => setActiveTab("pricing")}>Open pricing <ArrowRight size={11}/></OpsButton></OpsSurface> : null}
-                  {detail.shipment ? <OpsSurface eyebrow="Converted shipment" title={<OpsMono>{detail.shipment.reference}</OpsMono>} description="A controlled shipment and Digital Job File exist for this accepted quote."><div className="flex flex-wrap gap-2"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div></OpsSurface> : null}
-                </aside>
-              </div> : null}
-
-              {activeTab === "pricing" && canViewCommercial ? <OpsSurface eyebrow="Pricing worksheet" title="Build the customer offer" description={canEditCommercial ? "Sell price, internal cost and margin stay visible together. Internal cost never enters the customer email." : "Commercial figures are visible to your role, but pricing changes require commercial edit access."}>
-                {!canEditCommercial ? <div className="mb-4"><OpsNotice tone="neutral">Pricing is read-only for your current KCPL role.</OpsNotice></div> : null}
-                <form onSubmit={saveCommercial} className="grid gap-5">
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><OpsField label="Currency"><select disabled={!canEditCommercial} value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></OpsField><OpsField label="Customer price"><input disabled={!canEditCommercial} inputMode="decimal" value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00"/></OpsField><OpsField label="Internal cost" hint="KCPL only"><input disabled={!canEditCommercial} inputMode="decimal" value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00"/></OpsField><OpsField label="Valid until"><input disabled={!canEditCommercial} type="date" value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></OpsField></div>
-                  <div className="grid gap-px overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-line)] sm:grid-cols-4"><PricingMetric label="Sell" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "—"}/><PricingMetric label="Cost" value={detail.internal_cost ? formatMoney(detail.internal_cost, detail.quote_currency) : "—"}/><PricingMetric label="Profit" value={metrics ? formatMoney(metrics.profit, detail.quote_currency) : "—"} tone={metrics && metrics.profit < 0 ? "danger" : "success"}/><PricingMetric label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"} tone={metrics && metrics.margin < 10 ? "warning" : "success"}/></div>
-                  <OpsField label="Customer-facing note" hint="Included in the quote email"><textarea disabled={!canEditCommercial} value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Scope, inclusions, exclusions, transit assumptions or next steps…"/></OpsField>
-                  {canEditCommercial ? <div className="flex flex-wrap gap-2"><OpsButton type="submit" variant="secondary" disabled={saving}>{saving ? "Saving…" : "Save pricing"}</OpsButton><OpsButton type="button" variant="primary" disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote}><Send size={12}/>Send quote email</OpsButton><OpsButton type="button" variant="ghost" disabled={saving || !detail.quoted_amount?.trim()} onClick={openQuoteDraft}><Mail size={12}/>Open email draft</OpsButton></div> : null}
-                </form>
-              </OpsSurface> : null}
-
-              {activeTab === "shipment" ? <OpsSurface eyebrow="Shipment" title={detail.shipment ? <OpsMono>{detail.shipment.reference}</OpsMono> : "Shipment workspace"} description={detail.shipment ? "Continue operational tracking without leaving the enquiry context. Workflow guards apply to controlled status changes." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the CRM customer first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={(message) => showNotice(message)}/></OpsSurface> : null}
-
-              {activeTab === "activity" ? <OpsSurface eyebrow="Audit trail" title="Activity & communications" description="Customer quote emails and internal notes are recorded here in one chronological history.">
-                <form onSubmit={addNote} className="flex flex-col gap-2 sm:flex-row"><textarea className="ops-input min-h-[74px] flex-1 resize-y" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Add an internal note, callback, pricing decision or follow-up…" maxLength={3000}/><OpsButton type="submit" variant="primary" disabled={saving || !noteDraft.trim()}><MessageSquareText size={12}/>Add note</OpsButton></form>
-                <div className="mt-5 divide-y divide-[var(--admin-line)]">{activityItems.length ? activityItems.map((item) => item.kind === "note" ? <article key={item.id} className="flex gap-3 py-4"><span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-surface-soft)] text-[var(--admin-muted)]"><MessageSquareText size={13}/></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[12px] text-[var(--admin-ink)]">Internal note</strong><span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{formatDate(item.note.created_at)}</span></div><p className="mt-1.5 whitespace-pre-wrap text-[12px] leading-6 text-[var(--admin-muted)]">{item.note.note}</p><p className="mt-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{item.note.author_name || item.note.author_email}</p></div></article> : <article key={item.id} className="flex gap-3 py-4"><span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-info-bg)] text-[var(--admin-info)]"><Mail size={13}/></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[12px] text-[var(--admin-ink)]">Quote email sent</strong><OpsBadge tone="info">{item.communication.status || "sent"}</OpsBadge><span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{formatDate(item.at)}</span></div><p className="mt-1.5 break-words text-[12px] font-semibold text-[var(--admin-ink)]">{item.communication.subject || "KCPL freight quote"}</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">To {item.communication.to || detail.contact_email}{item.communication.provider ? ` · ${item.communication.provider}` : ""}</p><p className="mt-1 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">Sent by {item.communication.actor_name || item.communication.actor_email || "KCPL staff"}</p></div></article>) : <OpsEmptyState compact icon={<MessageSquareText size={17}/>} title="No activity recorded yet" description="Internal notes and sent customer quote emails will appear here."/>}</div>
-              </OpsSurface> : null}
+        <div className="enq-layout">
+          <aside className="enq-list" aria-label="Enquiry inbox">
+            <div className="enq-list-controls">
+              <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, route, cargo, contact or reference" aria-label="Search enquiries"/>
+              <SavedFilterViews storageKey="kcpl-enquiry-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/>
             </div>
-          </> : null}
-        </section>
+            <div className="enq-rows">
+              {filtered.length ? filtered.map((quote) => {
+                const selected = selectedReference === quote.reference;
+                return <button key={quote.reference} type="button" onClick={() => selectQuote(quote.reference)} className="enq-row" data-selected={selected || undefined} aria-current={selected || undefined}>
+                  <span className="enq-row-main">
+                    <span className="enq-row-route"><span>{quote.origin || "Origin not recorded"}</span><ArrowRight size={12} strokeWidth={1.75} className="enq-route-arrow" aria-hidden="true"/><span>{quote.destination || "Destination not recorded"}</span></span>
+                    <span className="enq-row-meta">{quote.company_name || quote.contact_name} · {modeLabel(quote.mode)}{quote.cargo_type ? ` · ${quote.cargo_type}` : ""}</span>
+                    <span className="enq-row-foot"><span className="ops-mono">{quote.reference}</span> · {quote.assigned_to || "Unassigned"} · {formatDate(quote.created_at)}</span>
+                  </span>
+                  <span className="enq-row-side">
+                    <OpsBadge tone={statusTone(quote.status)}>{statusLabels[quote.status]}</OpsBadge>
+                    <span className="enq-row-signals">{quote.email_count ? <span title={`${quote.email_count} customer email${quote.email_count === 1 ? "" : "s"}`}><Mail size={12} strokeWidth={1.75} aria-hidden="true"/>{quote.email_count}</span> : null}{quote.note_count ? <span title={`${quote.note_count} internal note${quote.note_count === 1 ? "" : "s"}`}><MessageSquareText size={12} strokeWidth={1.75} aria-hidden="true"/>{quote.note_count}</span> : null}</span>
+                  </span>
+                </button>;
+              }) : quotes.length ? <OpsEmptyState compact kind="search" title="No enquiries match" description="Change the search terms or the status filter above."/> : <OpsEmptyState compact kind="healthy" title="Enquiry inbox is clear" description="New website freight enquiries will appear here automatically."/>}
+            </div>
+          </aside>
+
+          <section className="enq-detail" aria-label="Enquiry detail">
+            {!selectedReference ? <section className="ops-surface" data-density="compact"><div className="ops-surface-body"><OpsEmptyState compact kind={quotes.length ? "neutral" : "healthy"} icon={quotes.length ? <Package size={16} strokeWidth={1.75} aria-hidden="true"/> : <CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={quotes.length ? "Choose an enquiry" : "No enquiries waiting"} description={quotes.length ? "Select a freight enquiry to review the request, customer relationship, pricing and shipment handoff." : "The website enquiry inbox is currently clear."}/></div></section> : null}
+            {loading ? <p className="enq-loading" role="status">Loading enquiry…</p> : null}
+            {!loading && selectedReference && !detail ? <OpsNotice tone="danger">{notice?.message || "This enquiry could not be loaded."}</OpsNotice> : null}
+
+            {!loading && detail ? <>
+              <header className="enq-record-head">
+                <div className="enq-record-top">
+                  <div className="min-w-0">
+                    <p className="ops-inspector-kicker">{detail.reference}</p>
+                    <h2 className="enq-record-title"><span>{detail.origin || "Origin"}</span><ArrowRight size={16} strokeWidth={1.75} className="enq-route-arrow" aria-hidden="true"/><span>{detail.destination || "Destination"}</span></h2>
+                    <p className="enq-record-meta">{detail.company_name || detail.contact_name} · {modeLabel(detail.mode)} · received {formatDate(detail.created_at)}</p>
+                    <div className="plan-badges enq-record-badges"><OpsBadge tone={statusTone(detail.status)}>{statusLabels[detail.status]}</OpsBadge>{detail.customer_id ? <OpsBadge tone="success">CRM linked</OpsBadge> : <OpsBadge tone="warning">CRM customer required</OpsBadge>}</div>
+                  </div>
+                  <div className="ops-inspector-actions">
+                    <a href={`mailto:${detail.contact_email}`} className="ops-button" data-variant="secondary" data-size="sm"><Mail size={14} strokeWidth={1.75} aria-hidden="true"/>Email contact</a>
+                    {detail.phone ? <a href={`tel:${detail.phone}`} className="ops-button" data-variant="secondary" data-size="sm"><Phone size={14} strokeWidth={1.75} aria-hidden="true"/>Call</a> : null}
+                    {canEditCommercial && detail.quoted_amount ? <OpsButton variant="primary" size="sm" disabled={saving} onClick={sendQuote}><Send size={14} strokeWidth={1.75} aria-hidden="true"/>{saving ? "Working…" : "Send quote email"}</OpsButton> : null}
+                  </div>
+                </div>
+                <div className="ops-scope-tabs enq-tabs" role="group" aria-label="Enquiry sections">{availableTabs.map((tab) => <button key={tab} type="button" className="ops-scope-tab" data-active={activeTab === tab || undefined} aria-pressed={activeTab === tab} onClick={() => setActiveTab(tab)}>{detailTabLabels[tab]}{tab === "activity" ? <span className="ops-scope-count">{detail.note_count + detail.email_count}</span> : null}</button>)}</div>
+              </header>
+
+              <div className="enq-detail-body">
+                {notice ? <OpsInlineAlert tone={notice.tone === "danger" ? "danger" : notice.tone === "warning" ? "warning" : notice.tone === "success" ? "success" : "neutral"}>{notice.message}</OpsInlineAlert> : null}
+
+                {activeTab === "overview" ? <div className="enq-overview">
+                  <div className="enq-overview-main">
+                    <OpsSurface density="compact" title="Cargo & route" description="The customer's original freight requirement.">
+                      <OpsFacts>
+                        <OpsFact label="Route">{`${detail.origin || "Not recorded"} → ${detail.destination || "Not recorded"}`}</OpsFact>
+                        <OpsFact label="Mode">{modeLabel(detail.mode)}</OpsFact>
+                        <OpsFact label="Cargo type">{detail.cargo_type || "Not provided"}</OpsFact>
+                        <OpsFact label="Weight">{cargoWeight(detail)}</OpsFact>
+                        <OpsFact label="Dimensions">{cargoDimensions(detail)}</OpsFact>
+                        <OpsFact label="Preferred timing">{detail.timing || "Not provided"}</OpsFact>
+                      </OpsFacts>
+                      {detail.requirements ? <div className="enq-requirements"><p className="enq-subhead">Customer requirements</p><p className="plan-note">{detail.requirements}</p></div> : null}
+                    </OpsSurface>
+                    <OpsSurface density="compact" title="Customer contact">
+                      <OpsFacts>
+                        <OpsFact label="Contact">{detail.contact_name}</OpsFact>
+                        <OpsFact label="Company">{detail.company_name || "Not provided"}</OpsFact>
+                        <OpsFact label="Email"><a href={`mailto:${detail.contact_email}`}>{detail.contact_email}</a></OpsFact>
+                        <OpsFact label="Phone">{detail.phone ? <a href={`tel:${detail.phone}`}>{detail.phone}</a> : "Not provided"}</OpsFact>
+                        <OpsFact label="Quote validity">{canViewCommercial && detail.valid_until ? formatDateOnly(detail.valid_until) : canViewCommercial ? "Not set" : "Commercial access required"}</OpsFact>
+                      </OpsFacts>
+                    </OpsSurface>
+                  </div>
+
+                  <aside className="enq-overview-side">
+                    <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
+                    <OpsSurface density="compact" title="Ownership & status" description={detail.status === "won" ? "Accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer confirmed. Commercial staff can progress through Quoted, Won or Lost." : "Confirm the CRM customer before marking this enquiry Won."}>
+                      <form onSubmit={saveQuote} className="ops-inspector-form enq-workflow">
+                        <OpsField label="Status" className="col-span-full" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or Digital Job File." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField>
+                        <OpsField label="Assigned to" className="col-span-full" hint="From People & branches; name, email and phone fill automatically."><StaffAssignmentPicker compact value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField>
+                        <div className="col-span-full"><OpsButton type="submit" variant="primary" size="sm" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></div>
+                      </form>
+                    </OpsSurface>
+                    {canViewCommercial ? <OpsSurface density="compact" title="Quote snapshot" action={<OpsButton variant="ghost" size="xs" onClick={() => setActiveTab("pricing")}>Open pricing<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></OpsButton>}>
+                      <OpsFacts>
+                        <OpsFact label="Customer price">{detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "Not quoted"}</OpsFact>
+                        <OpsFact label="Margin">{metrics ? `${metrics.margin.toFixed(1)}%` : "—"}</OpsFact>
+                      </OpsFacts>
+                    </OpsSurface> : null}
+                    {detail.shipment ? <OpsSurface density="compact" title={<span className="ops-mono">{detail.shipment.reference}</span>} description="A controlled shipment and Digital Job File exist for this accepted quote.">
+                      <div className="ops-inspector-actions"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div>
+                    </OpsSurface> : null}
+                  </aside>
+                </div> : null}
+
+                {activeTab === "pricing" && canViewCommercial ? <OpsSurface density="compact" title="Build the customer offer" description={canEditCommercial ? "Sell price, internal cost and margin stay visible together. Internal cost never enters the customer email." : "Commercial figures are visible to your role, but pricing changes require commercial edit access."}>
+                  {!canEditCommercial ? <div className="plan-notice"><OpsInlineAlert tone="neutral">Pricing is read-only for your current KCPL role.</OpsInlineAlert></div> : null}
+                  <form onSubmit={saveCommercial}>
+                    <div className="ops-form-grid">
+                      <OpsField label="Currency"><select disabled={!canEditCommercial} value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></OpsField>
+                      <OpsField label="Customer price"><input disabled={!canEditCommercial} inputMode="decimal" value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00"/></OpsField>
+                      <OpsField label="Internal cost" hint="KCPL only"><input disabled={!canEditCommercial} inputMode="decimal" value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00"/></OpsField>
+                      <OpsField label="Valid until"><input disabled={!canEditCommercial} type="date" value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></OpsField>
+                    </div>
+                    <div className="enq-pricing-rail">
+                      <OpsKpiRail label="Offer economics">
+                        <OpsRailMetric label="Sell" value={detail.quoted_amount ? formatMoney(detail.quoted_amount, detail.quote_currency) : "—"}/>
+                        <OpsRailMetric label="Cost" value={detail.internal_cost ? formatMoney(detail.internal_cost, detail.quote_currency) : "—"}/>
+                        <OpsRailMetric label="Profit" value={metrics ? formatMoney(metrics.profit, detail.quote_currency) : "—"} tone={metrics && metrics.profit < 0 ? "danger" : "neutral"}/>
+                        <OpsRailMetric label="Margin" value={metrics ? `${metrics.margin.toFixed(1)}%` : "—"} tone={metrics && metrics.margin < 10 ? "warning" : "neutral"}/>
+                      </OpsKpiRail>
+                    </div>
+                    <div className="ops-form-grid">
+                      <OpsField label="Customer-facing note" hint="Included in the quote email" className="ops-form-full"><textarea disabled={!canEditCommercial} value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Scope, inclusions, exclusions, transit assumptions or next steps…"/></OpsField>
+                    </div>
+                    {canEditCommercial ? <div className="ops-form-actions enq-pricing-actions">
+                      <OpsButton type="button" variant="ghost" size="sm" disabled={saving || !detail.quoted_amount?.trim()} onClick={openQuoteDraft}><Mail size={14} strokeWidth={1.75} aria-hidden="true"/>Open email draft</OpsButton>
+                      <OpsButton type="submit" variant="secondary" size="sm" disabled={saving}>{saving ? "Saving…" : "Save pricing"}</OpsButton>
+                      <OpsButton type="button" variant="primary" size="sm" disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote}><Send size={14} strokeWidth={1.75} aria-hidden="true"/>Send quote email</OpsButton>
+                    </div> : null}
+                  </form>
+                </OpsSurface> : null}
+
+                {activeTab === "shipment" ? <OpsSurface density="compact" title={detail.shipment ? <span className="ops-mono">{detail.shipment.reference}</span> : "Shipment workspace"} description={detail.shipment ? "Continue operational tracking without leaving the enquiry. Workflow guards apply to controlled status changes." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the CRM customer first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={(message) => showNotice(message)}/></OpsSurface> : null}
+
+                {activeTab === "activity" ? <OpsSurface density="compact" title="Activity & communications" description="Customer quote emails and internal notes in one chronological history.">
+                  <form onSubmit={addNote} className="enq-note-form">
+                    <textarea className="ops-input" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Add an internal note, callback, pricing decision or follow-up…" maxLength={3000} aria-label="Internal note"/>
+                    <OpsButton type="submit" variant="primary" size="sm" disabled={saving || !noteDraft.trim()}><MessageSquareText size={14} strokeWidth={1.75} aria-hidden="true"/>Add note</OpsButton>
+                  </form>
+                  {activityItems.length ? <ol className="enq-activity">{activityItems.map((item) => item.kind === "note" ? <li key={item.id}>
+                    <span className="enq-activity-icon"><MessageSquareText size={14} strokeWidth={1.75} aria-hidden="true"/></span>
+                    <div className="min-w-0">
+                      <div className="enq-activity-head"><strong>Internal note</strong><span>{formatDate(item.note.created_at)}</span></div>
+                      <p className="plan-note">{item.note.note}</p>
+                      <p className="enq-activity-meta">{item.note.author_name || item.note.author_email}</p>
+                    </div>
+                  </li> : <li key={item.id}>
+                    <span className="enq-activity-icon"><Mail size={14} strokeWidth={1.75} aria-hidden="true"/></span>
+                    <div className="min-w-0">
+                      <div className="enq-activity-head"><strong>Quote email sent</strong><OpsBadge tone="info">{item.communication.status || "sent"}</OpsBadge><span>{formatDate(item.at)}</span></div>
+                      <p className="enq-activity-subject">{item.communication.subject || "KCPL freight quote"}</p>
+                      <p className="enq-activity-meta">To {item.communication.to || detail.contact_email}{item.communication.provider ? ` · ${item.communication.provider}` : ""} · sent by {item.communication.actor_name || item.communication.actor_email || "KCPL staff"}</p>
+                    </div>
+                  </li>)}</ol> : <OpsEmptyState compact icon={<MessageSquareText size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No activity recorded yet" description="Internal notes and sent customer quote emails will appear here."/>}
+                </OpsSurface> : null}
+              </div>
+            </> : null}
+          </section>
+        </div>
       </div>
-    </main>
+    </OpsPage>
   );
 }
 
 function CustomerControl({ detail, saving, manualCustomerId, onManualCustomerId, onLink, onCreate }: { detail: QuoteDetail; saving: boolean; manualCustomerId: string; onManualCustomerId: (value: string) => void; onLink: (customerId: string) => void; onCreate: () => void }) {
   if (detail.customer_id) {
-    return <OpsSurface eyebrow="CRM customer" title="Confirmed account" description="This customer relationship flows into the shipment, Job File, Customer 360 and Finance."><div className="flex items-center justify-between gap-3 border-l-2 border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] px-3 py-2.5"><div className="min-w-0"><p className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--admin-success)]"><CheckCircle2 size={12}/>Customer linked</p><OpsMono className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{detail.customer_id}</OpsMono></div><a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="sm">Customer 360 <ArrowRight size={10}/></a></div></OpsSurface>;
+    return <OpsSurface density="compact" title="CRM customer" description="This relationship flows into the shipment, Job File, Customer 360 and Finance." action={<a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="xs">Customer 360<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></a>}>
+      <OpsFacts><OpsFact label="Linked account"><span className="ops-mono">{detail.customer_id}</span></OpsFact></OpsFacts>
+    </OpsSurface>;
   }
 
-  return <OpsSurface priority="warning" eyebrow="CRM customer" title="Confirm customer before marking Won" description="Confirm a suggested account, enter a known KCPL customer reference, or create a new prospect only when no duplicate exists.">
-    {detail.crm_matches.length ? <div className="grid gap-2">{detail.crm_matches.slice(0, 4).map((match) => <button type="button" disabled={saving} key={match.id} onClick={() => onLink(match.id)} className="flex items-center justify-between gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-3 text-left transition hover:border-[var(--admin-accent-line)] hover:bg-[var(--admin-accent-bg)]"><div className="min-w-0"><p className="truncate text-[11px] font-bold text-[var(--admin-ink)]">{match.display_name}</p><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{match.reason || "Existing CRM details match"} · <OpsMono>{match.id}</OpsMono></p></div><span className="shrink-0 text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]">Confirm</span></button>)}</div> : <div className="border-l-2 border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] px-3 py-2.5 text-[11px] leading-5 text-[var(--admin-muted)]">No existing CRM match was found for this enquiry.</div>}
-    <div className="mt-3 grid gap-2"><OpsField label="Known customer reference" hint="Optional"><input value={manualCustomerId} onChange={(event) => onManualCustomerId(event.target.value.toUpperCase())} placeholder="KCPL-C-…"/></OpsField><div className="flex flex-wrap gap-2"><OpsButton variant="secondary" size="sm" type="button" disabled={saving || !manualCustomerId.trim()} onClick={() => onLink(manualCustomerId)}><Link2 size={11}/>Link reference</OpsButton><OpsButton variant="primary" size="sm" type="button" disabled={saving} onClick={onCreate}><Plus size={11}/>Create from enquiry</OpsButton></div></div>
+  return <OpsSurface density="compact" title="Confirm customer before marking Won" description="Confirm a suggested account, enter a known KCPL customer reference, or create a new prospect only when no duplicate exists.">
+    {detail.crm_matches.length ? <ul className="enq-matches">{detail.crm_matches.slice(0, 4).map((match) => <li key={match.id}><button type="button" disabled={saving} onClick={() => onLink(match.id)}>
+      <span className="min-w-0"><strong>{match.display_name}</strong><span>{match.reason || "Existing CRM details match"} · <span className="ops-mono">{match.id}</span></span></span>
+      <span className="enq-match-action">Confirm</span>
+    </button></li>)}</ul> : <OpsInspectorNote tone="warning" title="No existing CRM match was found for this enquiry."/>}
+    <div className="ops-inspector-form plan-subform">
+      <OpsField label="Known customer reference" hint="Optional" className="col-span-full"><input value={manualCustomerId} onChange={(event) => onManualCustomerId(event.target.value.toUpperCase())} placeholder="KCPL-C-…"/></OpsField>
+      <div className="col-span-full ops-inspector-actions">
+        <OpsButton variant="secondary" size="sm" type="button" disabled={saving || !manualCustomerId.trim()} onClick={() => onLink(manualCustomerId)}><Link2 size={14} strokeWidth={1.75} aria-hidden="true"/>Link reference</OpsButton>
+        <OpsButton variant="primary" size="sm" type="button" disabled={saving} onClick={onCreate}><Plus size={14} strokeWidth={1.75} aria-hidden="true"/>Create from enquiry</OpsButton>
+      </div>
+    </div>
   </OpsSurface>;
-}
-
-function Info({ icon, label, value, href }: { icon?: React.ReactNode; label: string; value: string; href?: string }) {
-  const content = <p className="mt-1.5 break-words text-[12px] font-semibold leading-5 text-[var(--admin-ink)]">{value}</p>;
-  return <div><p className="flex items-center gap-1.5 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{icon}{label}</p>{href ? <a href={href} className="hover:underline hover:underline-offset-2">{content}</a> : content}</div>;
-}
-
-function Snapshot({ label, value }: { label: string; value: string }) {
-  return <div className="bg-white p-3"><p className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{label}</p><p className="mt-1.5 text-[12px] font-bold text-[var(--admin-ink)]">{value}</p></div>;
-}
-
-function PricingMetric({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "success" | "warning" | "danger" }) {
-  return <div className="bg-white p-4"><p className="text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[18px] tracking-[-.035em] ${tone === "success" ? "text-[var(--admin-success)]" : tone === "warning" ? "text-[var(--admin-warning)]" : tone === "danger" ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>;
 }

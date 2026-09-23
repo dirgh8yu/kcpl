@@ -53,3 +53,6 @@ yarn-error.log*
 # so tracking them means a dirty tree after each dev session.
 /AGENTS.md
 /CLAUDE.md
+
+# Graphify knowledge graph output (local only).
+/graphify-out/

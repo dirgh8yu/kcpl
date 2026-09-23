@@ -1,3 +1,4 @@
+import "../plan-sell-premium.css";
 import { redirect } from "next/navigation";
 import { getAdminAccess } from "../admin-auth";
 import { AdminDashboard } from "../admin-dashboard";

@@ -1,0 +1,169 @@
+/* Organisation workspaces: Management analytics, Migration Hub, Paper Archive,
+ * Migration Recovery, People & Branches, Customer Portal Access.
+ *
+ * Loaded by the Organisation pages (operations-system.css stays the final root
+ * sheet). The pages draw on the shared primitives -- OpsKpiRail, compact
+ * OpsSurface panels, the register table, .ops-form-grid and the docked
+ * ops-inspector -- so this sheet only lays out what is specific to them.
+ * Presentation only: analytics, imports, archive, recovery, staff access and
+ * portal provisioning are unchanged. */
+
+.kcpl-admin-content .org-notice { margin-bottom: 12px; }
+.kcpl-admin-content .org-section { margin-top: 16px; }
+.kcpl-admin-content .org-section-head { margin: 20px 0 8px; }
+.kcpl-admin-content .org-section-head h2 { margin: 0; color: var(--admin-ink); font-size: 14px; font-weight: 600; letter-spacing: -0.01em; line-height: 20px; }
+.kcpl-admin-content .org-section-head p { max-width: 760px; margin: 1px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .org-empty { margin: 0; padding: 12px 16px 14px; color: var(--admin-muted); font-size: 12.5px; }
+.kcpl-admin-content .ops-surface-body > .org-empty { padding: 2px 0 0; }
+.kcpl-admin-content .org-link { color: var(--admin-ink); text-decoration: none; }
+.kcpl-admin-content .org-link:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 2px; }
+.kcpl-admin-content .org-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
+.kcpl-admin-content .org-grid > * { min-width: 0; }
+
+/* Management analytics. */
+.kcpl-admin-content .mgmt-range { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; }
+.kcpl-admin-content .mgmt-range a.ops-scope-tab { text-decoration: none; }
+.kcpl-admin-content .mgmt-range-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.kcpl-admin-content .mgmt-range-form label { display: grid; gap: 3px; color: var(--admin-muted); font-size: 11.5px; font-weight: 500; }
+.kcpl-admin-content .mgmt-range-form .ops-input { width: 150px; min-height: 32px; padding: 5px 9px; font-size: 13px; }
+.kcpl-admin-content .mgmt-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
+@media (min-width: 1500px) { .kcpl-admin-content .mgmt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kcpl-admin-content .mgmt-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); align-items: start; gap: 16px; }
+.kcpl-admin-content :is(.mgmt-grid, .mgmt-cards) > * { min-width: 0; }
+.kcpl-admin-content .mgmt-cards .ops-fact dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kcpl-admin-content :is(.mgmt-grid, .mgmt-cards) > .org-empty { grid-column: 1 / -1; padding: 12px 16px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); }
+.kcpl-admin-content .mgmt-table { min-width: 460px; }
+.kcpl-admin-content .ops-register-table.mgmt-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .ops-register-table.mgmt-table td { padding-block: 5px; }
+.kcpl-admin-content .mgmt-table .ops-cell-clamp { max-width: 220px; }
+.kcpl-admin-content .mgmt-concentration { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .mgmt-concentration-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.kcpl-admin-content .mgmt-concentration-head strong { display: block; color: var(--admin-ink); font-size: 12.5px; font-weight: 600; }
+.kcpl-admin-content .mgmt-concentration-head span { display: block; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .mgmt-trend { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .mgmt-trend > li { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(120px, auto); align-items: center; gap: 10px; }
+.kcpl-admin-content .mgmt-trend-month { color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .mgmt-trend-bars { display: grid; gap: 3px; }
+.kcpl-admin-content .mgmt-trend-bar { display: block; height: 5px; overflow: hidden; border-radius: 999px; background: var(--admin-surface-muted); }
+.kcpl-admin-content .mgmt-trend-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--admin-ink); }
+.kcpl-admin-content .mgmt-trend-bar[data-series="cost"] > span { background: var(--admin-faint); }
+.kcpl-admin-content .mgmt-trend-profit { color: var(--admin-ink); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 550; text-align: right; white-space: nowrap; }
+.kcpl-admin-content .mgmt-trend-profit[data-negative="true"] { color: var(--admin-danger); }
+.kcpl-admin-content .mgmt-trend-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 0; color: var(--admin-muted); font-size: 11.5px; }
+.kcpl-admin-content .mgmt-trend-legend [data-series]::before { content: ""; display: inline-block; width: 10px; height: 4px; margin-right: 5px; border-radius: 999px; background: var(--admin-ink); vertical-align: middle; }
+.kcpl-admin-content .mgmt-trend-legend [data-series="cost"]::before { background: var(--admin-faint); }
+
+/* Runtime readiness: one hairline row per check. */
+.kcpl-admin-content .readiness-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .readiness-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin: 0 -16px -14px; padding: 0; border-top: 1px solid var(--admin-line); list-style: none; }
+.kcpl-admin-content .readiness-checks > li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; padding: 10px 16px; border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .readiness-checks > li > svg { grid-row: span 2; margin-top: 2px; color: var(--admin-success); }
+.kcpl-admin-content .readiness-checks > li[data-status="warning"] > svg { color: var(--admin-warning); }
+.kcpl-admin-content .readiness-checks > li[data-status="blocked"] > svg { color: var(--admin-danger); }
+.kcpl-admin-content .readiness-checks strong { color: var(--admin-ink); font-size: 12.5px; font-weight: 600; }
+.kcpl-admin-content .readiness-checks p { margin: 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .readiness-state { margin-left: 6px; color: var(--admin-muted); font-size: 11.5px; font-weight: 500; }
+
+@media (max-width: 1279px) {
+  .kcpl-admin-content .org-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .kcpl-admin-content .mgmt-cards { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .mgmt-cards .ops-fact dd { white-space: normal; }
+}
+@media (max-width: 760px) {
+  .kcpl-admin-content .readiness-checks { margin-inline: -14px; }
+}
+
+/* Migration Hub: the stage grid, then the batch ledger and the import lanes. */
+.kcpl-admin-content .org-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.kcpl-admin-content .org-stack > * { min-width: 0; }
+.kcpl-admin-content .migration-templates { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 2px; }
+.kcpl-admin-content .migration-templates > span { margin-right: 4px; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .migration-stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); margin: 0; padding: 0; overflow: hidden; list-style: none; }
+.kcpl-admin-content .migration-stage { display: grid; align-content: start; gap: 3px; margin: 0 -1px -1px 0; padding: 10px 12px 12px; border-right: 1px solid var(--admin-line); border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); }
+.kcpl-admin-content .migration-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.kcpl-admin-content .migration-stage-head .ops-mono { color: var(--admin-muted); font-size: 11.5px; font-weight: 500; }
+.kcpl-admin-content .migration-stage strong { color: var(--admin-ink); font-size: 12.5px; font-weight: 600; line-height: 17px; }
+.kcpl-admin-content .migration-stage-detail { color: var(--admin-muted); font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .migration-counts .ops-kpi-rail { margin-bottom: 0; border-radius: 0; border-inline: 0; border-top: 0; }
+.kcpl-admin-content .migration-table td { padding-block: 6px; }
+.kcpl-admin-content .migration-attention { padding: 10px 16px 12px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .migration-intake { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); align-items: start; gap: 16px; }
+.kcpl-admin-content .migration-drop { display: grid; justify-items: center; gap: 4px; padding: 18px 16px; border: 1px dashed var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-canvas); color: var(--admin-muted); text-align: center; cursor: pointer; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .migration-drop:hover,
+.kcpl-admin-content .migration-drop:focus-within { border-color: var(--admin-ink); background: var(--admin-surface); }
+.kcpl-admin-content .migration-drop:focus-within { outline: 2px solid var(--app-focus); outline-offset: 1px; }
+.kcpl-admin-content .migration-drop strong { color: var(--admin-ink); font-size: 13px; font-weight: 600; }
+.kcpl-admin-content .migration-drop > span { font-size: 12px; line-height: 16px; }
+.kcpl-admin-content .migration-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.kcpl-admin-content .migration-rules { padding: 10px 12px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-canvas); }
+.kcpl-admin-content .migration-rules-title { margin: 0 0 6px; color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.kcpl-admin-content .migration-rules ul { display: grid; gap: 4px; margin: 0; padding-left: 16px; color: var(--admin-muted); font-size: 12px; line-height: 17px; list-style: disc; }
+.kcpl-admin-content .migration-rules strong { color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .migration-confirm { padding: 12px 16px 14px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .migration-confirm-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.kcpl-admin-content .migration-confirm-check { display: flex; max-width: 640px; align-items: flex-start; gap: 8px; color: var(--admin-muted); font-size: 12px; line-height: 17px; cursor: pointer; }
+.kcpl-admin-content .migration-confirm-check input { margin-top: 2px; }
+.kcpl-admin-content .migration-confirm-check strong { display: block; color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .migration-confirm-check > span { font-size: 12px; }
+@media (max-width: 1023px) {
+  .kcpl-admin-content .migration-intake { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content .migration-drop { transition: none; }
+}
+
+/* Paper Archive. */
+.kcpl-admin-content .org-surface-search { width: 260px; min-height: 32px; padding-inline: 10px; }
+.kcpl-admin-content .org-surface-search input { font-size: 13px; }
+.kcpl-admin-content .org-notices { gap: 8px; }
+.kcpl-admin-content .archive-intake { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); align-items: start; gap: 16px; }
+.kcpl-admin-content .archive-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kcpl-admin-content .archive-side { display: grid; gap: 10px; }
+.kcpl-admin-content .archive-side > .ops-button { justify-self: start; }
+.kcpl-admin-content .archive-table { min-width: 1040px; }
+.kcpl-admin-content .ops-register-table.archive-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .archive-table td { padding-block: 6px; }
+.kcpl-admin-content .archive-table .ops-cell-clamp { max-width: 220px; }
+.kcpl-admin-content .archive-badge { display: block; margin-top: 3px; }
+.kcpl-admin-content .archive-original { display: block; max-width: 260px; margin-top: 4px; color: var(--admin-muted); font-size: 11.5px; line-height: 16px; }
+.kcpl-admin-content .archive-integrity { display: inline-flex; align-items: center; gap: 4px; color: var(--admin-success); font-size: 12px; font-weight: 550; }
+.kcpl-admin-content .archive-hash { display: block; max-width: 150px; margin-top: 2px; overflow: hidden; color: var(--admin-faint); font-size: 11px; font-weight: 450; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1100px) {
+  .kcpl-admin-content .archive-intake { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .archive-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .kcpl-admin-content .archive-fields { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .org-surface-search { width: 100%; }
+}
+
+/* Migration Recovery. */
+.kcpl-admin-content .recovery-rules { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.kcpl-admin-content .recovery-rule-head { justify-content: flex-start; gap: 6px; color: var(--admin-muted); }
+.kcpl-admin-content .recovery-table { min-width: 760px; }
+.kcpl-admin-content .ops-register-table.recovery-table td { padding-block: 5px; }
+
+/* People & Branches: staff register with the access form in the inspector. */
+.kcpl-admin-content .staff-table { min-width: 760px; }
+.kcpl-admin-content .staff-table[data-compact="true"] { min-width: 520px; }
+.kcpl-admin-content .ops-register-table.staff-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .ops-register-table.staff-table td { padding-block: 5px; }
+.kcpl-admin-content .staff-table .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .staff-table[data-compact="true"] .ops-cell-clamp { max-width: 170px; }
+.kcpl-admin-content .staff-form { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; }
+.kcpl-admin-content .staff-branches { display: grid; gap: 6px; }
+.kcpl-admin-content .staff-branch { display: inline-flex; align-items: center; gap: 4px; }
+.kcpl-admin-content .staff-active { display: flex; align-items: center; gap: 8px; color: var(--admin-ink); font-size: 13px; cursor: pointer; }
+
+/* Customer Portal Access. */
+.kcpl-admin-content .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kcpl-admin-content .portal-invite { overflow-wrap: anywhere; font-size: 12px; font-weight: 450; }
+.kcpl-admin-content .portal-table { min-width: 860px; }
+.kcpl-admin-content .ops-register-table.portal-table :is(th, td) { padding-inline: 10px; }
+.kcpl-admin-content .ops-register-table.portal-table td { padding-block: 5px; }
+.kcpl-admin-content .portal-table .ops-cell-clamp { max-width: 240px; }
+.kcpl-admin-content .portal-table .ops-mono.ops-cell-primary { font-size: 12.5px; font-weight: 500; }
+@media (max-width: 640px) { .kcpl-admin-content .portal-grid { grid-template-columns: minmax(0, 1fr); } }
+.kcpl-admin-content .org-nowrap { white-space: nowrap; }
