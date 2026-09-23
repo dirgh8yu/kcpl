@@ -128,8 +128,11 @@
 .hero .button-ghost { color: #ffffff; }
 
 /* A pair of concrete proof points, not a dashboard of claim tiles. */
-.hero-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(24px, 7vw, 108px); align-items: center; margin: 0; padding: 33px var(--site-gutter); background: #f7f9f8; }
-.hero-rail-item { display: flex; align-items: baseline; gap: clamp(14px, 2vw, 28px); min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--site-muted); }
+.hero-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(20px, 4vw, 56px); align-items: start; margin: 0; padding: 30px var(--site-gutter); background: #f7f9f8; }
+/* The value sits above its label rather than beside it: a label that wraps to a
+ * second line used to hang off the number's baseline and break the row. */
+.hero-rail-item { display: grid; align-content: start; gap: 8px; min-width: 0; max-width: 34ch; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--site-muted); }
+.hero-rail-item + .hero-rail-item { border-inline-start: 1px solid var(--site-line-soft); padding-inline-start: clamp(20px, 4vw, 56px); }
 .hero-rail-value { flex: none; font-family: var(--font-manrope), system-ui, sans-serif; font-size: clamp(32px, 3.2vw, 50px); font-weight: 750; line-height: 1; color: var(--site-ink); }
 
 /* Client rail: an open strip of marks, with the same rhythm as the proof points. */
@@ -338,8 +341,9 @@
   .hero-intro { font-size: 15px; line-height: 1.55; }
   .hero-actions { gap: 12px; }
   .hero .button-primary, .hero .button-ghost { min-height: 46px; font-size: 13px; }
-  .hero-rail { gap: 16px; padding-block: 28px; }
-  .hero-rail-item { display: grid; align-content: start; gap: 7px; font-size: 12px; }
+  .hero-rail { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 24px; }
+  .hero-rail-item { gap: 6px; font-size: 12px; }
+  .hero-rail-item + .hero-rail-item { border-inline-start: 0; padding-inline-start: 0; }
   .hero-rail-value { font-size: 32px; }
   .client-rail { padding-block: 28px 34px; }
   .client-rail-head { margin-bottom: 14px; }
