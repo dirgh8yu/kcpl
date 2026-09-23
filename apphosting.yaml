@@ -8,6 +8,16 @@ runConfig:
   memoryMiB: 512
 
 env:
+  # The public canonical origin. Not a secret, and NEXT_PUBLIC_* is inlined at
+  # build time, so it needs BUILD availability as well as RUNTIME. A staging
+  # backend should override this in its own backend configuration, or it will
+  # claim the live canonicals as its own.
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://kapileshworcargo.com.np
+    availability:
+      - BUILD
+      - RUNTIME
+
   - variable: KCPL_GPT_ACTION_SECRET
     secret: KCPL_GPT_ACTION_SECRET
     availability:
