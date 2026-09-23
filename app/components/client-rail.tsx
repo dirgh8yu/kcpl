@@ -15,7 +15,7 @@ const organisations = [
   { name: "Nepal Electricity Authority", logo: "nea.png" },
   { name: "EVEREST FASHION", logo: "everest-fashion.png" },
   { name: "SKIPPER INDIA", logo: "skipper.png" },
-  { name: "ZNCC" },
+  { name: "ZNCC", logo: "zncc.png" },
   { name: "FELT & YARN", logo: "felt-yarn.png" },
   { name: "SIEMENS INDIA", logo: "siemens.svg" },
   { name: "C.G POWER", logo: "cg-power.svg" },
