@@ -228,7 +228,7 @@
 
 /* Closing band ------------------------------------------------------------- */
 
-.section-cta { display: grid; justify-items: start; gap: 14px; background: var(--site-ink); }
+.section-cta { display: grid; justify-items: start; gap: 14px; background: var(--site-canvas); border-top: 2px solid var(--site-ink); }
 .cta-title { margin: 0; max-width: 22ch; font-size: clamp(23px, 2.9vw, 36px); color: var(--site-ink); }
 .cta-copy { margin: 0; max-width: 56ch; font-size: 16px; line-height: 1.7; color: var(--site-muted); }
 
