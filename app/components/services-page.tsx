@@ -81,6 +81,23 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
           <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
         </aside>
       </section>
+      {/* Depth the summary cannot carry: how the work actually runs, then the
+        * corridors and the paperwork side by side. Deliberately not three equal
+        * cards -- the prose block leads and the pair supports it. */}
+      <section className="section service-expanded">
+        <h2 className="service-block-title">{t("services.how_title")}</h2>
+        <p className="service-prose">{t(text(service.key, "how"))}</p>
+      </section>
+      <section className="section network-notes service-notes">
+        <article className="network-note">
+          <h2 className="service-block-title">{t("services.lanes_title")}</h2>
+          <p className="section-intro">{t(text(service.key, "lanes"))}</p>
+        </article>
+        <article className="network-note">
+          <h2 className="service-block-title">{t("services.docs_title")}</h2>
+          <p className="section-intro">{t(text(service.key, "docs"))}</p>
+        </article>
+      </section>
       <section className="section service-related">
         <h2 className="service-block-title">{t("services.related")}</h2>
         <div className="service-related-grid">

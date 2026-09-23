@@ -340,6 +340,12 @@
 
 .lane-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); }
 .lane-column { display: grid; align-content: start; gap: 12px; }
+.service-expanded { display: grid; gap: 14px; padding-bottom: 0; }
+.service-prose { margin: 0; max-width: 62ch; font-size: 17px; line-height: 1.75; color: var(--site-ink); }
+/* The pair reads as the continuation of the prose above it, so the two
+ * sections share one band of space rather than stacking their own. */
+.section.service-notes { padding-top: clamp(28px, 3vw, 44px); }
+
 .network-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(28px, 4vw, 72px); }
 .network-note { display: grid; align-content: start; gap: 12px; }
 
