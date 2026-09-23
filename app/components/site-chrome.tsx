@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, List, X } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Check, Globe, List, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
-import { siteAlternates, siteLocaleLabels, siteLocaleTags, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
 /** Nav is declared once: the header, the mobile disclosure and the footer all read it. */
 const navigation = [
@@ -51,13 +51,26 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
         </nav>
         <div className="site-header-actions">
           <Link href="/portal" className="site-portal-link">{t("chrome.portal")}<ArrowUpRight size={15} aria-hidden="true"/></Link>
-          {/* Three languages now, so the toggle becomes a list. A native
-            * disclosure again: it is a handful of links, not an app. */}
+          {/* The trigger cycles the word for "language" through the scripts the
+            * site speaks, so a reader who cannot read the others still
+            * recognises the control. Nepali and Hindi share भाषा, so three
+            * words cover four languages. The rotation is decoration: the
+            * accessible name is fixed and the globe carries the meaning when
+            * motion is switched off. */}
           <details className="site-lang">
-            <summary className="site-lang-button">{siteLocaleLabels[locale]}</summary>
+            <summary className="site-lang-button" aria-label={t("chrome.language")}>
+              <Globe size={16} aria-hidden="true"/>
+              <span className="site-lang-rotator" aria-hidden="true">
+                <span className="site-lang-word">Language</span>
+                <span className="site-lang-word">भाषा</span>
+                <span className="site-lang-word">语言</span>
+              </span>
+            </summary>
             <div className="site-lang-panel">
-              {siteAlternates(locale, path).map((entry) => (
-                <Link key={entry.locale} href={entry.href} className="site-lang-option" hrefLang={entry.tag} lang={entry.tag}>{entry.label}</Link>
+              {siteLocales.map((entry) => (
+                entry === locale
+                  ? <span key={entry} className="site-lang-option" aria-current="true" lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}<Check size={14} weight="bold" aria-hidden="true"/></span>
+                  : <Link key={entry} href={sitePath(entry, path)} className="site-lang-option" hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}</Link>
               ))}
             </div>
           </details>

@@ -84,7 +84,26 @@
 .site-header-actions { display: flex; align-items: center; gap: 16px; }
 .site-portal-link { display: inline-flex; align-items: center; gap: 4px; color: var(--site-ink); text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .site-lang { position: relative; font-size: 12px; font-weight: 600; color: var(--site-muted); border-left: 1px solid var(--site-line); padding-inline-start: 16px; }
-.site-lang-button { list-style: none; cursor: pointer; white-space: nowrap; }
+.site-lang-button { display: inline-flex; align-items: center; gap: 7px; list-style: none; cursor: pointer; white-space: nowrap; }
+/* The three words are stacked in one box sized by the longest, so the header
+ * never reflows as they swap. */
+.site-lang-rotator { position: relative; display: inline-grid; min-width: 4.5em; height: 1.25em; overflow: hidden; }
+.site-lang-word { grid-area: 1 / 1; align-self: center; opacity: 0; }
+.site-lang-word:first-child { opacity: 1; }
+.site-lang-option[aria-current] { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--site-crimson); cursor: default; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-lang-word { animation: site-lang-cycle 9s infinite; }
+  .site-lang-word:nth-child(2) { animation-delay: 3s; }
+  .site-lang-word:nth-child(3) { animation-delay: 6s; }
+}
+
+/* Each word holds for a third of the cycle and crossfades at the edges. */
+@keyframes site-lang-cycle {
+  0%, 2% { opacity: 0; }
+  5%, 28% { opacity: 1; }
+  33%, 100% { opacity: 0; }
+}
 .site-lang-button::-webkit-details-marker { display: none; }
 .site-lang[open] .site-lang-button { color: var(--site-ink); }
 .site-lang-panel { position: absolute; inset-inline-start: 16px; top: calc(100% + 10px); z-index: 31; display: grid; min-width: 128px; background: var(--site-paper); border: 1px solid var(--site-line); border-radius: 4px; box-shadow: 0 18px 38px rgb(8 22 29 / .14); padding: 4px; }
