@@ -1,23 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { services, type ServiceKey, type ServiceSlug } from "../services-data";
+import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
+import { StructuredData } from "./structured-data";
 
-/* One service list drives the overview, the seven detail pages and the routing,
- * so a service cannot exist in the navigation and be missing as a page. */
-export const services = [
-  { slug: "air-freight", key: "air", image: "/images/unsplash/air-cargo.jpg" },
-  { slug: "ocean-freight", key: "ocean", image: "/images/unsplash/ship-dusk.jpg" },
-  { slug: "road-freight", key: "road", image: "/images/unsplash/nepal-road.jpg" },
-  { slug: "customs-clearance", key: "customs", image: "/images/services/specialist-cargo.jpg" },
-  { slug: "project-cargo", key: "project", image: "/images/services/specialist-project-cargo.jpg" },
-  { slug: "warehousing", key: "warehouse", image: "/images/services/warehousing.jpg" },
-  { slug: "delivery", key: "delivery", image: "/images/services/door-to-door.jpg" },
-] as const;
-
-export type ServiceKey = (typeof services)[number]["key"];
-export type ServiceSlug = (typeof services)[number]["slug"];
+export { services, type ServiceKey, type ServiceSlug } from "../services-data";
 
 const text = (key: ServiceKey, part: string) => `svc.${key}.${part}` as SiteTextKey;
 
@@ -67,6 +57,9 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
   const others = services.filter((entry) => entry.slug !== slug).slice(0, 3);
   return (
     <SiteShell locale={locale} path={`/services/${slug}`}>
+      {/* The page describes one service; the node says the same thing to a
+        * crawler and points back at the organisation that provides it. */}
+      <StructuredData data={graph([serviceNode(locale, slug)])}/>
       <section className="service-banner">
         <Image src={service.image} alt="" fill sizes="100vw" priority className={`service-banner-image service-photo-${service.key}`}/>
         <div className="service-banner-copy">

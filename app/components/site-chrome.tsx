@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowUpRight, Check, Globe, List, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
+import { breadcrumbNode, graph } from "../structured-data";
+import { StructuredData } from "./structured-data";
 import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
 /** Nav is declared once: the header, the mobile disclosure and the footer all read it. */
@@ -142,8 +144,13 @@ const localeClass: Record<SiteLocale, string> = { en: "", ne: "site-root-deva", 
 
 /** Every marketing page is this sandwich, so the chrome can never drift between them. */
 export function SiteShell({ locale, path, children }: { locale: SiteLocale; path: string; children: ReactNode }) {
+  const crumbs = breadcrumbNode(locale, path);
+  const breadcrumb = crumbs ? graph([crumbs]) : null;
   return (
     <div className={`site-root ${localeClass[locale]}`.trim()} lang={locale === "en" ? undefined : siteLocaleTags[locale]}>
+      {/* Every public page is a page in a trail, and the shell is the one place
+        * that knows both which page and which language. */}
+      {breadcrumb ? <StructuredData data={breadcrumb}/> : null}
       <SiteHeader locale={locale} path={path}/>
       <main id="main">{children}</main>
       <SiteFooter locale={locale} path={path}/>

@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Sans_SC, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
-import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
 import { StructuredData } from "./components/structured-data";
-import { absoluteUrl, siteName, siteUrl, socialImage } from "./seo";
+import { siteName, siteUrl, socialImage } from "./seo";
+import { graph, organizationNode, websiteNode } from "./structured-data";
 import "./globals.css";
 import "./admin/operations-theme.css";
 import "./admin/operations-polish.css";
@@ -23,9 +23,15 @@ import "./admin/admin-typography.css";
 import "./admin/shipment-detail-hierarchy.css";
 import "./admin/operations-system.css";
 
+// Only the two faces the public site paints its first screen with are
+// preloaded. The rest are declared so the CSS variables resolve, and the
+// browser fetches each one when a glyph on the page actually calls for it:
+// preloading all ten put ~400KB of fonts -- Chinese and Devanagari included --
+// in front of the LCP image on every English page.
 const geist = Geist({
   variable: "--font-geist",
   subsets: ["latin"],
+  preload: false,
 });
 
 const manrope = Manrope({
@@ -36,18 +42,19 @@ const manrope = Manrope({
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  preload: false,
 });
 
 // Public brand and marketing retain Manrope; the KCPL staff product uses Inter through its scoped typography contract.
-const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
-const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
+const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400", preload: false });
+const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"], preload: false });
 // The identity file records Noto Sans Devanagari for Nepali, so the public site sets
 // Nepali in the sans to match the Manrope wordmark rather than the portal's serif.
 // The public site sets all metadata, labels and navigation in mono: on an
 // operational board those are readings, not prose.
 const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"] });
-const notoSansSC = Noto_Sans_SC({ variable: "--font-sc", subsets: ["latin"], weight: ["400", "500", "700"] });
-const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"] });
+const notoSansSC = Noto_Sans_SC({ variable: "--font-sc", subsets: ["latin"], weight: ["400", "500", "700"], preload: false });
+const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"], preload: false });
 
 const defaultTitle = "Kapileshwor Cargo | Freight & Logistics in Nepal";
 const defaultDescription = "KCPL coordinates import, export and cross-border freight through Nepal's logistics gateways and international counterpart network.";
@@ -58,7 +65,17 @@ export const metadata: Metadata = {
   description: defaultDescription,
   applicationName: siteName,
   alternates: { canonical: siteUrl },
-  icons: { icon: "/images/brand/kcpl-gateway-k.svg", shortcut: "/images/brand/kcpl-gateway-k.svg", apple: "/images/brand/kcpl-gateway-k.svg" },
+  /* Safari ignores an SVG apple-touch-icon and Android wants a raster too, so
+   * the vector stays the primary icon and PNGs cover what cannot read it. */
+  icons: {
+    icon: [
+      { url: "/images/brand/kcpl-gateway-k.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/images/brand/kcpl-gateway-k.svg",
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+  },
   openGraph: { type: "website", siteName, title: defaultTitle, description: defaultDescription, url: siteUrl, images: [socialImage] },
   twitter: { card: "summary_large_image", title: defaultTitle, description: defaultDescription, images: [socialImage.url] },
 };
@@ -69,37 +86,10 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "@id": `${siteUrl}/#organization`,
-  name: company.name,
-  alternateName: company.shortName,
-  url: siteUrl,
-  description: defaultDescription,
-  logo: absoluteUrl("/images/brand/kcpl-gateway-k.svg"),
-  foundingDate: String(company.founded),
-  areaServed: { "@type": "Country", name: "Nepal" },
-  email: company.email,
-  telephone: company.phones[0],
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "Pragatipath Finance Complex, 2nd Floor, Mhepi Road, Sorakhutte",
-    addressLocality: "Kathmandu",
-    addressCountry: "NP",
-  },
-  contactPoint: {
-    "@type": "ContactPoint",
-    contactType: "customer service",
-    telephone: company.phones[0],
-    email: company.email,
-  },
-  employee: {
-    "@type": "Person",
-    name: company.managingDirector,
-    jobTitle: "Managing Director",
-  },
-};
+/* Identity and site nodes ride on every page; the page-specific nodes -- the
+ * breadcrumb, the service -- are emitted by the public shell and the service
+ * route, which know which page they are. */
+const siteGraph = graph([organizationNode, websiteNode(defaultDescription)]);
 
 export default function RootLayout({
   children,
@@ -109,7 +99,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} ${plexMono.variable} ${notoSansSC.variable} antialiased`}>
-        <StructuredData data={organizationSchema}/>
+        <StructuredData data={siteGraph}/>
         {children}
         <Suspense fallback={null}><Analytics/></Suspense>
       </body>
