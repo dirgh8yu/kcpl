@@ -19,30 +19,39 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
     { title: t("home.cap_3_title"), copy: t("home.cap_3_copy") },
     { title: t("home.cap_4_title"), copy: t("home.cap_4_copy") },
   ];
+  const rail = [
+    { value: t("company.established_short"), detail: t("company.established_where") },
+    { value: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
+    { value: t("home.credibility_member_detail"), detail: t("home.credibility_member") },
+  ];
   const credibility = [
-    { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
-    { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
     { label: t("home.credibility_projects"), detail: t("home.credibility_projects_detail") },
   ];
 
   return (
     <SiteShell locale={locale} path="/">
-      {/* 1. Photographic hero. Illustrative image of Nepal, not KCPL cargo, so it is
-        * decorative and uncaptioned. Four text elements, no more. */}
+      {/* 1. The photograph runs full bleed and the copy plate breaks its lower
+        * edge, so the page opens like a publication rather than a banner. The
+        * image is illustrative of Nepal, not KCPL cargo, so it stays
+        * uncaptioned and decorative. */}
       <section className="hero">
         <Image src="/images/himalayan-hero.jpg" alt="" fill sizes="100vw" priority className="hero-image"/>
-        <div className="hero-veil"/>
-        <div className="hero-inner">
-          <p className="eyebrow hero-eyebrow">{t("home.hero_eyebrow")}</p>
-          <h1 className="hero-title">{t("home.hero_title")}</h1>
-          <p className="hero-intro">{t("home.hero_intro")}</p>
-          <div className="hero-actions">
-            <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
-            <Link href={sitePath(locale, "/services")} className="button-ghost">{t("home.hero_secondary")}</Link>
-          </div>
-        </div>
       </section>
+      <div className="hero-plate">
+        <h1 className="hero-title">{t("home.hero_title")}</h1>
+        <p className="hero-intro">{t("home.hero_intro")}</p>
+        <div className="hero-actions">
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/services")} className="section-link">{t("home.hero_secondary")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+        </div>
+      </div>
+      {/* The trust strip sits under the hero, never inside it. */}
+      <div className="hero-rail">
+        {rail.map((item) => (
+          <span key={item.value} className="hero-rail-item"><span className="hero-rail-value">{item.value}</span>{item.detail}</span>
+        ))}
+      </div>
 
       {/* 2. Sticky headline against a divided list. No cards, no equal columns. */}
       <section className="section section-capability">
@@ -96,27 +105,27 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           <h2 className="section-title">{t("home.proof_title")}</h2>
           <p className="section-intro">{t("home.proof_intro")}</p>
         </div>
-        <div className="proof-layout">
-          <article className="proof-lead">
-            <figure className="proof-figure"><Image src="/images/services/specialist-project-cargo.jpg" alt="" width={1200} height={800} sizes="(max-width: 1080px) 100vw, 58vw" className="proof-photo"/></figure>
+        <article className="proof-lead">
+          <figure className="proof-figure"><Image src="/images/services/specialist-project-cargo.jpg" alt="" width={1200} height={800} sizes="(max-width: 1080px) 100vw, 55vw" className="proof-photo"/></figure>
+          <div>
             <p className="proof-kicker">{t("home.proof_1_kicker")}</p>
             <h3 className="proof-lead-title">{t("home.proof_1_title")}</h3>
             <p className="proof-copy">{t("home.proof_1_copy")}</p>
-          </article>
-          <div className="proof-rest reveal-group">
-            <article className="proof-row reveal">
-              <p className="proof-kicker">{t("home.proof_2_kicker")}</p>
-              <h3 className="proof-title">{t("home.proof_2_title")}</h3>
-              <p className="proof-copy">{t("home.proof_2_copy")}</p>
-            </article>
-            <article className="proof-row reveal">
-              <p className="proof-kicker">{t("home.proof_3_kicker")}</p>
-              <h3 className="proof-title">{t("home.proof_3_title")}</h3>
-              <p className="proof-copy">{t("home.proof_3_copy")}</p>
-            </article>
-            <Link href={sitePath(locale, "/sectors")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
           </div>
+        </article>
+        <div className="proof-more reveal-group">
+          <article className="reveal">
+            <p className="proof-kicker">{t("home.proof_2_kicker")}</p>
+            <h3 className="proof-title">{t("home.proof_2_title")}</h3>
+            <p className="proof-copy">{t("home.proof_2_copy")}</p>
+          </article>
+          <article className="reveal">
+            <p className="proof-kicker">{t("home.proof_3_kicker")}</p>
+            <h3 className="proof-title">{t("home.proof_3_title")}</h3>
+            <p className="proof-copy">{t("home.proof_3_copy")}</p>
+          </article>
         </div>
+        <Link href={sitePath(locale, "/sectors")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
       </section>
 
       {/* 5. Credibility: claims a buyer can verify, each one named. */}

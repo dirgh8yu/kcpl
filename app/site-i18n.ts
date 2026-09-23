@@ -64,11 +64,12 @@ const en = {
   /* Company constants that read as copy */
   "company.tagline": "From Nepal. To the world.",
   "company.established": "Established 2015, Kathmandu, Nepal",
+  "company.established_short": "Established 2015",
+  "company.established_where": "Kathmandu, Nepal",
 
   /* Home */
   "home.meta_title": "Kapileshwor Cargo | Freight Forwarding in Nepal",
   "home.meta_description": "KCPL is a Kathmandu freight and logistics company established in 2015, coordinating air, ocean and road freight, customs documentation and project cargo for Nepalese importers and exporters.",
-  "home.hero_eyebrow": "Freight forwarding & logistics",
   "home.hero_title": "Cargo moves through many hands. Ours stays accountable.",
   "home.hero_intro": "Air, ocean and road freight, customs documentation and project cargo, for Nepalese importers and exporters.",
   "home.hero_cta": "Start an enquiry",
@@ -153,11 +154,12 @@ const ne: Record<SiteTextKey, string> = {
 
   "company.tagline": "नेपालबाट। विश्वभर।",
   "company.established": "स्थापना २०१५, काठमाडौँ, नेपाल",
+  "company.established_short": "स्थापना २०१५",
+  "company.established_where": "काठमाडौँ, नेपाल",
 
   /* Home */
   "home.meta_title": "कपिलेश्वर कार्गो | नेपालमा फ्रेट फर्वार्डिङ",
   "home.meta_description": "काठमाडौँमा २०१५ मा स्थापित कपिलेश्वर कार्गोले नेपालका आयातकर्ता र निर्यातकर्ताका लागि एयर, ओसन र रोड फ्रेट, भन्सार कागजात र प्रोजेक्ट कार्गो समन्वय गर्छ।",
-  "home.hero_eyebrow": "फ्रेट फर्वार्डिङ र लजिस्टिक्स",
   "home.hero_title": "कार्गो धेरै हात हुँदै जान्छ। हाम्रो हात जिम्मेवार रहन्छ।",
   "home.hero_intro": "नेपाली आयातकर्ता र निर्यातकर्ताका लागि एयर, ओसन र रोड फ्रेट, भन्सार कागजात र प्रोजेक्ट कार्गो।",
   "home.hero_cta": "इन्क्वायरी सुरु गर्नुहोस्",
