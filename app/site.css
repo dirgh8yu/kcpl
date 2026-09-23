@@ -30,6 +30,7 @@
 }
 
 .hero-title, .section-title, .cta-title, .proof-lead-title, .corridor-title, .proof-title, .site-footer-tagline {
+  text-wrap: balance;
   text-transform: none;
   letter-spacing: 0;
   line-height: 1.1;
@@ -105,10 +106,10 @@
 
 .eyebrow { margin: 0; font-size: 12px; font-weight: 700; color: var(--site-crimson); }
 
-.section { padding: clamp(76px, 9vw, 148px) var(--site-gutter); }
+.section { padding: clamp(76px, 9vw, 148px) var(--site-gutter) clamp(84px, 10vw, 164px); }
 .section-head { display: grid; gap: 20px; max-width: 880px; }
 .section-title { margin: 0; font-size: clamp(36px, 4.2vw, 64px); max-width: 19ch; }
-.section-intro { margin: 0; max-width: var(--site-measure); font-size: clamp(16px, 1.3vw, 19px); line-height: 1.7; color: var(--site-muted); }
+.section-intro { margin: 0; text-wrap: pretty; max-width: var(--site-measure); font-size: clamp(16px, 1.3vw, 19px); line-height: 1.7; color: var(--site-muted); }
 .section-link { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 750; color: var(--site-ink); text-decoration: none; border-bottom: 1px solid var(--site-crimson); padding-bottom: 6px; justify-self: start; width: fit-content; }
 
 .button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 52px; background: var(--site-crimson); color: #ffffff; font-size: 14px; font-weight: 750; text-decoration: none; padding: 15px 24px; border-radius: 4px; white-space: nowrap; }
@@ -133,7 +134,7 @@
  * second line used to hang off the number's baseline and break the row. */
 .hero-rail-item { display: grid; align-content: start; gap: 8px; min-width: 0; max-width: 34ch; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--site-muted); }
 .hero-rail-item + .hero-rail-item { border-inline-start: 1px solid var(--site-line-soft); padding-inline-start: clamp(20px, 4vw, 56px); }
-.hero-rail-value { flex: none; font-family: var(--font-manrope), system-ui, sans-serif; font-size: clamp(32px, 3.2vw, 50px); font-weight: 750; line-height: 1; color: var(--site-ink); }
+.hero-rail-value { font-variant-numeric: tabular-nums; flex: none; font-family: var(--font-manrope), system-ui, sans-serif; font-size: clamp(32px, 3.2vw, 50px); font-weight: 750; line-height: 1; color: var(--site-ink); }
 
 /* Client rail: an open strip of marks, with the same rhythm as the proof points. */
 .client-rail { overflow: hidden; padding: clamp(22px, 2.4vw, 34px) 0 clamp(24px, 2.6vw, 38px); background: #fff; border-bottom: 1px solid var(--site-line-soft); }
@@ -186,7 +187,7 @@
 .proof-kicker { margin: 0; font-size: 12px; font-weight: 750; color: var(--site-crimson); }
 .proof-lead-title { margin: 14px 0 0; font-size: clamp(27px, 3vw, 45px); }
 .proof-copy { margin: 18px 0 0; max-width: 54ch; font-size: 16px; line-height: 1.75; color: var(--site-muted); }
-.proof-meta { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--site-line); font-size: 12px; font-weight: 650; line-height: 1.8; color: var(--site-muted); }
+.proof-meta { font-variant-numeric: tabular-nums; margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--site-line); font-size: 12px; font-weight: 650; line-height: 1.8; color: var(--site-muted); }
 .proof-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(40px, 8vw, 132px); margin-top: clamp(64px, 8vw, 120px); }
 .proof-support { min-width: 0; }
 .proof-support .proof-copy { max-width: 49ch; }
@@ -280,6 +281,9 @@
 .contact-value { margin: 0; font-size: 16px; line-height: 1.6; color: var(--site-ink); }
 .contact-link { text-decoration: none; }
 .contact-second { margin-top: 16px; }
+.legal-body { display: grid; gap: clamp(26px, 3vw, 40px); max-width: 74ch; padding-top: 0; }
+.legal-block { display: grid; gap: 6px; }
+.legal-note { margin: 0; padding-top: 20px; border-top: 1px solid var(--site-line-soft); font-size: 13px; line-height: 1.7; color: var(--site-faint); }
 .quote-section { padding-top: 0; border-top: 0; }
 .cargo-types { display: grid; gap: 12px; background: var(--site-canvas); }
 

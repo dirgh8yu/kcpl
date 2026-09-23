@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ArrowUpRight, Menu } from "lucide-react";
 import { company } from "../company-data";
 import { siteAlternatePath, siteLocaleLabels, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
@@ -49,6 +50,7 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
           ))}
         </nav>
         <div className="site-header-actions">
+          <Link href="/portal" className="site-portal-link">{t("chrome.portal")}<ArrowUpRight size={15} aria-hidden="true"/></Link>
           {/* A plain link, not a client-side toggle: the other language is a different
             * URL, and search engines and a shared link should both land on it. */}
           <Link href={siteAlternatePath(locale, path)} className="site-lang" hrefLang={locale === "en" ? "ne" : "en"} lang={locale === "en" ? "ne" : "en"}>
@@ -60,12 +62,13 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
           * accessible on its own, ships no JavaScript, and a navigation renders
           * the header again already closed. */}
         <details className="site-menu">
-          <summary className="site-menu-button">{t("chrome.menu")}</summary>
+          <summary className="site-menu-button"><Menu size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
           <div className="site-menu-panel">
             {navigation.map((item) => (
               <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
             ))}
             <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
+            <Link href="/portal" className="site-menu-link">{t("chrome.portal")}</Link>
             {/* The header's quote button is hidden on the narrowest screens, so the
               * menu carries it there instead of losing the primary action. */}
             <Link href={sitePath(locale, "/quote")} className="site-menu-link site-menu-quote">{t("chrome.quote")}</Link>
@@ -106,7 +109,9 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
         </div>
       </div>
       <div className="site-footer-base">
-        <p>© {new Date().getFullYear()} {company.name}. {t("chrome.rights")}</p>
+        <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")}</p>
+        <p>{t("chrome.photo_note")}</p>
+        <Link href={sitePath(locale, "/privacy")} className="site-footer-link" aria-current={isCurrent("/privacy", path) ? "page" : undefined}>{t("chrome.privacy")}</Link>
       </div>
     </footer>
   );

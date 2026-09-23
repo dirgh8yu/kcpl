@@ -268,3 +268,33 @@ function ClosingBand({ locale }: { locale: SiteLocale }) {
     </section>
   );
 }
+
+export function PrivacyPage({ locale }: { locale: SiteLocale }) {
+  const t = siteTranslator(locale);
+  const sections = [1, 2, 3, 4, 5].map((n) => ({
+    title: t(`privacy.s${n}_title` as "privacy.s1_title"),
+    copy: t(`privacy.s${n}_copy` as "privacy.s1_copy"),
+  }));
+  return (
+    <SiteShell locale={locale} path="/privacy">
+      <section className="section page-head">
+        <h1 className="section-title">{t("privacy.title")}</h1>
+        <p className="section-intro">{t("privacy.intro")}</p>
+      </section>
+      <section className="section legal-body">
+        {sections.map((entry) => (
+          <article key={entry.title} className="legal-block">
+            <h2 className="service-block-title">{entry.title}</h2>
+            <p className="about-copy">{entry.copy}</p>
+          </article>
+        ))}
+        <article className="legal-block">
+          <h2 className="service-block-title">{t("contact.office_title")}</h2>
+          <p className="about-copy">{company.addressLines.join(", ")}</p>
+          <a className="contact-link about-copy" href={`mailto:${company.email}`}>{company.email}</a>
+        </article>
+        <p className="legal-note">{t("privacy.note")}</p>
+      </section>
+    </SiteShell>
+  );
+}
