@@ -70,7 +70,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("home.corridor_intro")}</p>
         <div className="corridor-band">
           <article className="corridor-leg">
-            <Image src="/images/ocean-freight.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/>
+            <figure className="corridor-figure"><Image src="/images/ocean-freight.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
             <h3 className="corridor-title">{t("home.corridor_in_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_in_copy")}</p>
             <p className="corridor-label">{t("home.corridor_origins")}</p>
@@ -79,7 +79,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <ul className="corridor-tags">{gateways.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
           </article>
           <article className="corridor-leg">
-            <Image src="/images/nepal-road-freight.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/>
+            <figure className="corridor-figure"><Image src="/images/nepal-road-freight.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
             <h3 className="corridor-title">{t("home.corridor_out_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_out_copy")}</p>
             <p className="corridor-label">{t("home.corridor_destinations")}</p>
@@ -98,7 +98,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         </div>
         <div className="proof-layout">
           <article className="proof-lead">
-            <Image src="/images/services/specialist-project-cargo.jpg" alt="" width={1200} height={800} sizes="(max-width: 1080px) 100vw, 58vw" className="proof-photo"/>
+            <figure className="proof-figure"><Image src="/images/services/specialist-project-cargo.jpg" alt="" width={1200} height={800} sizes="(max-width: 1080px) 100vw, 58vw" className="proof-photo"/></figure>
             <p className="proof-kicker">{t("home.proof_1_kicker")}</p>
             <h3 className="proof-lead-title">{t("home.proof_1_title")}</h3>
             <p className="proof-copy">{t("home.proof_1_copy")}</p>
