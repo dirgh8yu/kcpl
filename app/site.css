@@ -345,6 +345,11 @@
 .lane-column { display: grid; align-content: start; gap: 12px; }
 .service-expanded { display: grid; gap: 14px; padding-bottom: 0; }
 .service-prose { margin: 0; max-width: 62ch; font-size: 17px; line-height: 1.75; color: var(--site-ink); }
+.service-questions { display: grid; gap: clamp(26px, 4vw, 52px); }
+.service-question-list { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(28px, 5vw, 84px); }
+.service-question { min-width: 0; }
+.service-question dt { font-size: clamp(20px, 2vw, 26px); line-height: 1.3; font-weight: 650; color: var(--site-ink); }
+.service-question dd { margin: 16px 0 0; max-width: 56ch; font-size: 17px; line-height: 1.75; color: var(--site-muted); }
 /* The pair reads as the continuation of the prose above it, so the two
  * sections share one band of space rather than stacking their own. */
 .section.service-notes { padding-top: clamp(28px, 3vw, 44px); }
@@ -413,6 +418,7 @@
   .corridor-band { grid-template-columns: minmax(0, 1fr); }
   .record { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .service-related-grid { grid-template-columns: minmax(0, 1fr); }
+  .service-question-list { grid-template-columns: minmax(0, 1fr); }
   .site-portal-link { display: none; }
 }
 
@@ -925,4 +931,34 @@
 
 @media (max-width: 375px) {
   .site-root { --type-display: 36px; --type-section: 34px; --type-page: 38px; --type-feature: 28px; --type-subhead: 23px; }
+}
+
+/* Freight guides read as editorial reference pages, not a grid of cards. */
+.page-head.freight-guide-head { display: block; padding-block: clamp(54px, 7vw, 96px); }
+.freight-guide-head .section-title { max-width: 18ch; margin: 18px 0 24px; }
+.freight-guide-head .section-intro { max-width: 72ch; }
+.freight-guide-eyebrow { color: var(--site-crimson); font-size: 12px; font-weight: 750; }
+.freight-guide-body { max-width: 1380px; margin-inline: auto; padding-block: clamp(52px, 7vw, 100px); }
+.freight-guide-section { padding-block: 0 clamp(58px, 7vw, 100px); }
+.freight-guide-section .service-block-title { max-width: 25ch; margin-bottom: 30px; color: var(--site-ink); font-size: clamp(26px, 2.5vw, 36px); line-height: 1.22; font-weight: 700; }
+.freight-guide-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 3vw, 54px); margin: 0; padding: 0; list-style: none; }
+.freight-guide-steps li { border-top: 2px solid var(--site-crimson); padding-top: 20px; }
+.freight-guide-steps h3, .freight-guide-questions dt { margin: 0 0 14px; font-size: clamp(18px, 1.6vw, 23px); line-height: 1.3; }
+.freight-guide-body p, .freight-guide-body li, .freight-guide-questions dd { color: var(--site-muted); font-size: 16px; line-height: 1.8; }
+.freight-guide-steps p { margin: 0; }
+.freight-guide-documents { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(28px, 6vw, 96px); }
+.freight-guide-documents p { max-width: 48ch; }
+.freight-guide-documents ul { margin: 0; padding-left: 1.4em; }
+.freight-guide-documents li { padding-left: .35em; margin-bottom: 12px; }
+.freight-guide-questions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(28px, 5vw, 80px); margin: 0; }
+.freight-guide-questions dd { margin: 0; }
+.freight-guide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 24px 34px; }
+.freight-guide-next { border-top: 1px solid var(--site-line); margin-top: clamp(58px, 7vw, 100px); padding-top: 22px; }
+.freight-guide-next a { display: inline-flex; align-items: center; gap: 12px; color: var(--site-ink); text-decoration: none; font-size: 17px; font-weight: 700; }
+.freight-guide-next a:hover { color: var(--site-crimson); }
+
+@media (max-width: 780px) {
+  .freight-guide-steps, .freight-guide-documents, .freight-guide-questions { grid-template-columns: minmax(0, 1fr); }
+  .freight-guide-steps { gap: 32px; }
+  .freight-guide-section { padding-bottom: 58px; }
 }

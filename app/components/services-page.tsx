@@ -98,6 +98,17 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
           <p className="section-intro">{t(text(service.key, "docs"))}</p>
         </article>
       </section>
+      <section className="section service-questions" aria-labelledby="service-questions-title">
+        <h2 id="service-questions-title" className="service-block-title">{t("services.questions_title")}</h2>
+        <dl className="service-question-list">
+          {[1, 2].map((number) => (
+            <div className="service-question" key={number}>
+              <dt>{t(text(service.key, `q${number}`))}</dt>
+              <dd>{t(text(service.key, `a${number}`))}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
       <section className="section service-related">
         <h2 className="service-block-title">{t("services.related")}</h2>
         <div className="service-related-grid">

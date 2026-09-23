@@ -1,5 +1,8 @@
+import Link from "next/link";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { guides } from "../guide-data";
 import { networkGroupNames } from "../network-data";
-import { siteTranslator, type SiteLocale } from "../site-i18n";
+import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { NetworkMap } from "./network-map";
 import { SiteShell } from "./site-chrome";
@@ -32,6 +35,18 @@ export function NetworkPage({ locale }: { locale: SiteLocale }) {
         unavailable: t("network.map_unavailable"),
         map: t("network.map_aria"),
       }}/>
+      <section className="section network-notes network-route-guides">
+        <article className="network-note">
+          <h2 className="service-block-title">{t("network.import_title")}</h2>
+          <p className="section-intro">{t("network.import_copy")}</p>
+          <Link className="section-link" href={sitePath(locale, "/guides/importing-to-nepal")}>{guides[locale]["importing-to-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
+        </article>
+        <article className="network-note">
+          <h2 className="service-block-title">{t("network.export_title")}</h2>
+          <p className="section-intro">{t("network.export_copy")}</p>
+          <Link className="section-link" href={sitePath(locale, "/guides/exporting-from-nepal")}>{guides[locale]["exporting-from-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
+        </article>
+      </section>
       <section className="section section-corridor">
         <div className="lane-columns">
           {columns.map((column) => (

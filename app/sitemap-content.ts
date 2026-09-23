@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { services } from "./services-data.ts";
+import { guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
 import { siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
 
 /*
@@ -40,6 +41,10 @@ function prefixesFor(path: string) {
  * makes lastmod worthless.
  */
 export function contentFingerprint(locale: SiteLocale, path: string) {
+  const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
+  if (guideSlugs.includes(guideSlug as GuideSlug)) {
+    return createHash("sha256").update(JSON.stringify(guides[locale][guideSlug as GuideSlug])).digest("hex").slice(0, 16);
+  }
   const dictionary = siteDictionary(locale);
   const prefixes = prefixesFor(path);
   const entries = Object.keys(dictionary)
@@ -51,7 +56,7 @@ export function contentFingerprint(locale: SiteLocale, path: string) {
 
 /** Every path the sitemap covers, so the script and the sitemap agree on the set. */
 export function sitemapPaths() {
-  return [...Object.keys(pagePrefixes), ...services.map((service) => `/services/${service.slug}`)];
+  return [...Object.keys(pagePrefixes), ...services.map((service) => `/services/${service.slug}`), ...guideSlugs.map((slug) => `/guides/${slug}`)];
 }
 
 export function fingerprintAll() {
