@@ -76,8 +76,10 @@ const organizationSchema = {
   name: company.name,
   alternateName: company.shortName,
   url: siteUrl,
+  description: defaultDescription,
   logo: absoluteUrl("/images/brand/kcpl-gateway-k.svg"),
   foundingDate: String(company.founded),
+  areaServed: { "@type": "Country", name: "Nepal" },
   email: company.email,
   telephone: company.phones[0],
   address: {
@@ -97,7 +99,6 @@ const organizationSchema = {
     name: company.managingDirector,
     jobTitle: "Managing Director",
   },
-  sameAs: ["https://kapileshworcargo.com.np"],
 };
 
 export default function RootLayout({

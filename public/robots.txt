@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-
-Sitemap: https://kapileshwor-cargo.dirgh8yu.chatgpt.site/sitemap.xml
-Host: https://kapileshwor-cargo.dirgh8yu.chatgpt.site
