@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Instrument_Serif, Inter, Manrope, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { company } from "./company-data";
 import { Analytics } from "./components/analytics";
@@ -41,6 +41,9 @@ const inter = Inter({
 // Public brand and marketing retain Manrope; the KCPL staff product uses Inter through its scoped typography contract.
 const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"] });
+// The identity file records Noto Sans Devanagari for Nepali, so the public site sets
+// Nepali in the sans to match the Manrope wordmark rather than the portal's serif.
+const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"] });
 
 const defaultTitle = "Kapileshwor Cargo | Freight & Logistics in Nepal";
 const defaultDescription = "KCPL coordinates import, export and cross-border freight through Nepal's logistics gateways and international counterpart network.";
@@ -100,7 +103,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} antialiased`}>
+      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} antialiased`}>
         <StructuredData data={organizationSchema}/>
         {children}
         <Suspense fallback={null}><Analytics/></Suspense>

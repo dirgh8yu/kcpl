@@ -7,8 +7,8 @@ import { SiteShell } from "./site-chrome";
 
 /* Places are records, not copy: the same spellings appear on the documents, so
  * they are not translated and not re-ordered per language. */
-const gateways = ["Kolkata", "Visakhapatnam", "Haldia", "Raxaul", "Birgunj"];
 const origins = ["Shanghai", "Ningbo", "Qingdao", "Shekou", "Hong Kong", "Bangkok", "Port Klang", "Singapore"];
+const gateways = ["Kolkata", "Visakhapatnam", "Haldia", "Raxaul", "Birgunj"];
 const destinations = ["United States", "Canada", "United Kingdom", "Germany", "Netherlands", "Australia", "South Korea", "Brazil"];
 
 export function HomePage({ locale }: { locale: SiteLocale }) {
@@ -19,11 +19,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
     { title: t("home.cap_3_title"), copy: t("home.cap_3_copy") },
     { title: t("home.cap_4_title"), copy: t("home.cap_4_copy") },
   ];
-  const proof = [
-    { kicker: t("home.proof_1_kicker"), title: t("home.proof_1_title"), copy: t("home.proof_1_copy") },
-    { kicker: t("home.proof_2_kicker"), title: t("home.proof_2_title"), copy: t("home.proof_2_copy") },
-    { kicker: t("home.proof_3_kicker"), title: t("home.proof_3_title"), copy: t("home.proof_3_copy") },
-  ];
   const credibility = [
     { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
@@ -33,9 +28,9 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
 
   return (
     <SiteShell locale={locale} path="/">
+      {/* 1. Photographic hero. Illustrative image of Nepal, not KCPL cargo, so it is
+        * decorative and uncaptioned. Four text elements, no more. */}
       <section className="hero">
-        {/* Illustrative photography. It is Nepal, not a KCPL facility or KCPL cargo,
-          * so it carries no caption and is marked decorative. */}
         <Image src="/images/himalayan-hero.jpg" alt="" fill sizes="100vw" priority className="hero-image"/>
         <div className="hero-veil"/>
         <div className="hero-inner">
@@ -46,36 +41,36 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
             <Link href={sitePath(locale, "/services")} className="button-ghost">{t("home.hero_secondary")}</Link>
           </div>
-          <p className="hero-since">{t("home.hero_since")}</p>
         </div>
       </section>
 
+      {/* 2. Sticky headline against a divided list. No cards, no equal columns. */}
       <section className="section section-capability">
-        <div className="section-head">
-          <p className="eyebrow">{t("home.capability_eyebrow")}</p>
-          <h2 className="section-title">{t("home.capability_title")}</h2>
-          <p className="section-intro">{t("home.capability_intro")}</p>
+        <div className="capability-layout">
+          <div className="capability-aside">
+            <h2 className="section-title">{t("home.capability_title")}</h2>
+            <p className="section-intro">{t("home.capability_intro")}</p>
+            <Link href={sitePath(locale, "/services")} className="section-link">{t("home.capability_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+          </div>
+          <dl className="capability-list reveal-group">
+            {capabilities.map((item) => (
+              <div key={item.title} className="capability-item reveal">
+                <dt className="capability-title">{item.title}</dt>
+                <dd className="capability-copy">{item.copy}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-        <ol className="capability-list">
-          {capabilities.map((item, index) => (
-            <li key={item.title} className="capability-item">
-              <span className="capability-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <h3 className="capability-title">{item.title}</h3>
-              <p className="capability-copy">{item.copy}</p>
-            </li>
-          ))}
-        </ol>
-        <Link href={sitePath(locale, "/services")} className="section-link">{t("home.capability_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
       </section>
 
+      {/* 3. Corridors as a directional band: origins, gateway, inland. The photographs
+        * carry the two halves of a landlocked movement. */}
       <section className="section section-corridor">
-        <div className="section-head">
-          <p className="eyebrow eyebrow-inverse">{t("home.corridor_eyebrow")}</p>
-          <h2 className="section-title section-title-inverse">{t("home.corridor_title")}</h2>
-          <p className="section-intro section-intro-inverse">{t("home.corridor_intro")}</p>
-        </div>
-        <div className="corridor-grid">
-          <article className="corridor-card">
+        <h2 className="section-title corridor-heading">{t("home.corridor_title")}</h2>
+        <p className="section-intro">{t("home.corridor_intro")}</p>
+        <div className="corridor-band">
+          <article className="corridor-leg">
+            <Image src="/images/ocean-freight.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/>
             <h3 className="corridor-title">{t("home.corridor_in_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_in_copy")}</p>
             <p className="corridor-label">{t("home.corridor_origins")}</p>
@@ -83,34 +78,48 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <p className="corridor-label">{t("home.corridor_gateways")}</p>
             <ul className="corridor-tags">{gateways.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
           </article>
-          <article className="corridor-card">
+          <article className="corridor-leg">
+            <Image src="/images/nepal-road-freight.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/>
             <h3 className="corridor-title">{t("home.corridor_out_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_out_copy")}</p>
             <p className="corridor-label">{t("home.corridor_destinations")}</p>
             <ul className="corridor-tags">{destinations.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
           </article>
         </div>
-        <Link href={sitePath(locale, "/network")} className="section-link section-link-inverse">{t("home.corridor_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+        <Link href={sitePath(locale, "/network")} className="section-link">{t("home.corridor_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
       </section>
 
+      {/* 4. Evidence: one case carries the weight, two support it. Not three equal cards. */}
       <section className="section section-proof">
         <div className="section-head">
           <p className="eyebrow">{t("home.proof_eyebrow")}</p>
           <h2 className="section-title">{t("home.proof_title")}</h2>
           <p className="section-intro">{t("home.proof_intro")}</p>
         </div>
-        <div className="proof-grid">
-          {proof.map((item) => (
-            <article key={item.title} className="proof-card">
-              <p className="proof-kicker">{item.kicker}</p>
-              <h3 className="proof-title">{item.title}</h3>
-              <p className="proof-copy">{item.copy}</p>
+        <div className="proof-layout">
+          <article className="proof-lead">
+            <Image src="/images/services/specialist-project-cargo.jpg" alt="" width={1200} height={800} sizes="(max-width: 1080px) 100vw, 58vw" className="proof-photo"/>
+            <p className="proof-kicker">{t("home.proof_1_kicker")}</p>
+            <h3 className="proof-lead-title">{t("home.proof_1_title")}</h3>
+            <p className="proof-copy">{t("home.proof_1_copy")}</p>
+          </article>
+          <div className="proof-rest reveal-group">
+            <article className="proof-row reveal">
+              <p className="proof-kicker">{t("home.proof_2_kicker")}</p>
+              <h3 className="proof-title">{t("home.proof_2_title")}</h3>
+              <p className="proof-copy">{t("home.proof_2_copy")}</p>
             </article>
-          ))}
+            <article className="proof-row reveal">
+              <p className="proof-kicker">{t("home.proof_3_kicker")}</p>
+              <h3 className="proof-title">{t("home.proof_3_title")}</h3>
+              <p className="proof-copy">{t("home.proof_3_copy")}</p>
+            </article>
+            <Link href={sitePath(locale, "/sectors")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+          </div>
         </div>
-        <Link href={sitePath(locale, "/sectors")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
       </section>
 
+      {/* 5. Credibility: claims a buyer can verify, each one named. */}
       <section className="section section-credibility">
         <div className="credibility-layout">
           <div className="credibility-copy">
@@ -135,6 +144,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         </div>
       </section>
 
+      {/* 6. Closing band, dark, matching the footer beneath it. */}
       <section className="section section-cta">
         <h2 className="cta-title">{t("home.cta_title")}</h2>
         <p className="cta-copy">{t("home.cta_copy")}</p>
