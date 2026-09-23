@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import type { ServiceContent } from "./service-content";
 
 export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://kapileshwor-cargo.dirgh8yu.chatgpt.site").replace(/\/$/, "");
 
@@ -13,15 +12,6 @@ export const socialImage = {
 
 export function absoluteUrl(path = "/") {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
-}
-
-export function createServiceMetadata(content: ServiceContent, slug: string) {
-  const serviceName = content.eyebrow.replace(/\b\w/g, (letter) => letter.toUpperCase());
-  return createPageMetadata({
-    title: `${serviceName} in Nepal`,
-    description: `${content.intro} Learn how Kapileshwor Cargo coordinates the wider route.`,
-    path: `/services/${slug}`,
-  });
 }
 
 export function createPageMetadata({
