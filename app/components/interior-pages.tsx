@@ -1,14 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
-import { affiliations, company, locations } from "../company-data";
+import { affiliations, company } from "../company-data";
+import { networkGroupNames } from "../network-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { NetworkMap } from "./network-map";
 import { SiteShell } from "./site-chrome";
-
-/* Places and corridors are records, so they are written once and not translated. */
-const origins = ["Shanghai", "Ningbo", "Qingdao", "Shekou", "Hong Kong", "Bangkok", "Port Klang", "Singapore"];
-const gateways = ["Kolkata", "Visakhapatnam", "Haldia", "Raxaul", "Birgunj"];
-const destinations = ["United States", "Canada", "United Kingdom", "Germany", "Netherlands", "Switzerland", "Australia", "South Korea", "Brazil"];
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
@@ -28,18 +25,17 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
   }));
   return (
     <SiteShell locale={locale} path="/sectors">
-      <section className="section page-head">
+      <section className="section page-head sectors-overview-head">
         <h1 className="section-title">{t("sectors.title")}</h1>
         <p className="section-intro">{t("sectors.intro")}</p>
       </section>
       <section className="section sector-list reveal-group">
-        {sectors.map((sector) => (
+        {sectors.map((sector, index) => (
           <article key={sector.title} className="sector-row reveal">
-            <div className="sector-lead">
-              <figure className="sector-figure"><Image src={sector.image} alt="" width={800} height={560} sizes="(max-width: 1024px) 100vw, 34vw" className="sector-photo"/></figure>
+            <figure className="sector-figure"><Image src={sector.image} alt="" width={800} height={560} sizes="(max-width: 700px) 100vw, 45vw" className={`sector-photo sector-photo-${index + 1}`}/></figure>
+            <div className="sector-content">
+              <span className="sector-number" aria-hidden="true">{String(index + 1).padStart(2, "0")} / 03</span>
               <h2 className="sector-title">{sector.title}</h2>
-            </div>
-            <div className="sector-body">
               <p className="sector-copy">{sector.copy}</p>
               <p className="sector-list-line">{sector.list}</p>
             </div>
@@ -73,26 +69,27 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
 export function NetworkPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   const columns = [
-    { title: t("network.gateways_title"), items: gateways },
-    { title: t("network.origins_title"), items: origins },
-    { title: t("network.destinations_title"), items: destinations },
+    { title: t("network.gateways_title"), items: networkGroupNames("gateways") },
+    { title: t("network.origins_title"), items: networkGroupNames("origins") },
+    { title: t("network.destinations_title"), items: networkGroupNames("destinations") },
   ];
   return (
     <SiteShell locale={locale} path="/network">
-      <section className="section page-head">
+      <section className="section page-head network-overview-head">
         <h1 className="section-title">{t("network.title")}</h1>
         <p className="section-intro">{t("network.intro")}</p>
       </section>
-      <section className="network-banner">
-        <Image src="/images/nepal-satellite-nasa-regional.jpg" alt="" fill sizes="100vw" className="network-banner-image"/>
-      </section>
-      <section className="section">
-        <h2 className="service-block-title">{t("network.places_title")}</h2>
-        <ul className="place-grid">
-          {locations.map((place) => <li key={place} className="place-cell">{place}</li>)}
-        </ul>
-        <p className="place-note">{t("network.places_note")}</p>
-      </section>
+      <NetworkMap labels={{
+        title: t("network.map_title"),
+        all: t("network.map_all"),
+        operations: t("network.map_operations"),
+        gateways: t("network.gateways_title"),
+        origins: t("network.origins_title"),
+        destinations: t("network.destinations_title"),
+        note: t("network.map_note"),
+        unavailable: t("network.map_unavailable"),
+        map: t("network.map_aria"),
+      }}/>
       <section className="section section-corridor">
         <div className="lane-columns">
           {columns.map((column) => (
@@ -162,7 +159,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
           ))}
         </dl>
       </section>
-      <section className="section section-credibility">
+      <section className="section section-credibility about-credibility">
         <div className="credibility-layout">
           <div className="credibility-copy">
             <h2 className="section-title">{t("about.credentials_title")}</h2>
@@ -237,7 +234,7 @@ export function TrackPage({ locale }: { locale: SiteLocale }) {
         <h1 className="section-title">{t("track.title")}</h1>
         <p className="section-intro">{t("track.intro")}</p>
       </section>
-      <section className="section about-split">
+      <section className="section about-split track-options">
         <div>
           <h2 className="service-block-title">{t("track.portal_title")}</h2>
           <p className="about-copy">{t("track.portal_copy")}</p>

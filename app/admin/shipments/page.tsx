@@ -2,6 +2,8 @@ import Link from "next/link";
 import "./shipments-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { loadCommandCentre } from "../command-centre/command-centre.server";
+import { getLaneCompletionsByStaff, getReceivableExposureByCustomer } from "../command-centre/receivable-exposure.server";
+import type { ReceivableExposure } from "../command-centre/work-queue-impact";
 import { getStaffContext } from "../staff-directory.server";
 import { OperationsShell } from "../operations-shell";
 import { ShipmentsWorkspace } from "./shipments-workspace";
@@ -34,7 +36,21 @@ export default async function ShipmentsPage() {
 
   if (!data) return <OperationsShell {...shellProps}><Gate title="Shipment backend unavailable" detail="Firestore is not available for this deployment. Navigation and search remain available." embedded/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} canStartShipment={staff.permissions.canViewCommercial}/></OperationsShell>;
+  // Ranking and suggestion inputs load additively: a failure must never take
+  // down the register, it only degrades to severity-only order and no
+  // suggestions.
+  const [exposureByCustomer, laneCompletionsByStaff] = await Promise.all([
+    getReceivableExposureByCustomer(staff).catch((error) => {
+      console.error("Failed to load KCPL receivable exposure for shipments", error);
+      return new Map<string, ReceivableExposure>();
+    }),
+    getLaneCompletionsByStaff(staff).catch((error) => {
+      console.error("Failed to load KCPL lane completions for shipments", error);
+      return new Map<string, Map<string, { lane_completions: number; last_lane_completion_at: string | null }>>();
+    }),
+  ]);
+
+  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} canStartShipment={staff.permissions.canViewCommercial} exposureByCustomer={exposureByCustomer} laneCompletionsByStaff={laneCompletionsByStaff}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
@@ -45,7 +61,7 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
         <h1 className="mt-3 text-[32px] font-normal tracking-[-.04em]">{title}</h1>
         <p className="mt-4 text-[14px] leading-6 text-[var(--admin-muted)]">{detail}</p>
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/admin" className="inline-flex min-h-11 items-center border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-5 text-[12px] font-medium text-white hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)]">Operations</Link>
+          <Link href="/admin" className="inline-flex min-h-11 items-center border border-[var(--admin-crimson)] bg-[var(--admin-crimson)] px-5 text-[12px] font-medium text-[var(--admin-on-crimson)] hover:border-[var(--admin-crimson-dark)] hover:bg-[var(--admin-crimson-dark)]">Operations</Link>
           <Link href="/" className="inline-flex min-h-11 items-center border border-[var(--admin-line-strong)] px-5 text-[12px] font-medium text-[var(--admin-ink)] hover:border-[var(--admin-ink)] hover:bg-[var(--admin-surface-muted)]">KCPL website</Link>
         </div>
       </section>

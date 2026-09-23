@@ -178,6 +178,11 @@ const reviewedClassifications = [
     rationale: "Operations Overview read model; shipment status values are normalized for display only.",
   },
   {
+    file: "app/admin/command-centre/receivable-exposure.server.ts",
+    category: "F",
+    rationale: "Read model behind the receivable exposure and lane cards. Every Firestore call is a collection get; the .set() calls the scan sees are in-memory Map writes that bucket invoice balances by customer and lanes by owning staff member.",
+  },
+  {
     file: "app/admin/crm/crm-operations-history.server.ts",
     category: "F",
     rationale: "Read-only CRM operations history projection over quotes and shipments.",

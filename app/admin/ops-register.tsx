@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { Check, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, GripVertical, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { useAdminPortalContainer } from "./use-admin-portal-container";
 
 /*
@@ -373,6 +373,218 @@ export function OpsInspectorNote({ tone = "danger", icon, title, children }: { t
     <div className="ops-inspector-note" data-tone={tone}>
       {icon}
       <div><strong>{title}</strong>{children ? <span>{children}</span> : null}</div>
+    </div>
+  );
+}
+
+/* ── Workspace layout customise row ────────────────────────────────────── */
+
+export type CustomiseRowPreset = {
+  id: string;
+  label: string;
+  description: string;
+  layout: { order: string[]; hidden: string[] };
+};
+
+/**
+ * Shared "Customise" toolbar row for arrangeable workspaces: toggles arrange
+ * mode, offers per-workspace layout presets, show/hide checkboxes, and reset.
+ * Status strings come from useStaffArrangement.
+ */
+export function CustomiseRow({
+  arranging,
+  onToggle,
+  arrangeMenu,
+  onToggleMenu,
+  arrangement,
+  presets,
+  activePreset,
+  applyPreset,
+  onReset,
+  status,
+  saved = [],
+  onSaveCurrent,
+  onDeleteSaved,
+  savedMatchId,
+  onApplySaved,
+}: {
+  arranging: boolean;
+  onToggle: () => void;
+  arrangeMenu: boolean;
+  onToggleMenu: () => void;
+  arrangement: { order: string[]; hidden: string[] };
+  presets: readonly CustomiseRowPreset[];
+  activePreset: string | null;
+  applyPreset: (preset: CustomiseRowPreset) => void;
+  onReset: () => void;
+  status: "idle" | "saving" | "saved" | "error";
+  // Used by the sibling CustomiseMenu; the row itself does not render labels.
+  sectionLabels?: Record<string, string>;
+  saved?: readonly { id: string; name: string; order: string[]; hidden: string[] }[];
+  onSaveCurrent?: (name: string) => void;
+  onDeleteSaved?: (id: string) => void;
+  savedMatchId?: string | null;
+  /** Applies a saved layout; defaults to applying it as a plain layout. */
+  onApplySaved?: (layout: { id: string; name: string; order: string[]; hidden: string[] }) => void;
+}) {
+  // The save field only appears when the current arrangement is not already a
+  // saved layout — there is nothing new to capture in that case.
+  const currentLayoutSaved = savedMatchId != null;
+
+  // Saving a layout is an occasional, explicit user action — the "Saved" cue
+  // is Feedback (the interface confirming the write), not decoration. It
+  // announces politely for screen readers, then fades out after a beat.
+  const [justSaved, setJustSaved] = useState(false);
+  useEffect(() => {
+    if (!justSaved) return;
+    const timer = setTimeout(() => setJustSaved(false), 2400);
+    return () => clearTimeout(timer);
+  }, [justSaved]);
+
+  return (
+    <div className="ops-customise-row">
+      <button
+        type="button"
+        className="ops-button"
+        data-variant="secondary"
+        data-size="sm"
+        aria-pressed={arranging}
+        onClick={onToggle}
+      >
+        <GripVertical size={14} strokeWidth={1.75} aria-hidden="true"/>
+        {arranging ? "Done" : "Customise"}
+      </button>
+      {arranging ? (
+        <>
+          <span className="ops-customise-hint">Drag a section by its handle, or press Alt + ↑/↓ on a focused handle.</span>
+          <div className="ops-preset-group" role="group" aria-label="Layout presets">
+            {presets.map((preset) => {
+              const isCurrent = activePreset === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className="ops-preset-button"
+                  aria-pressed={isCurrent}
+                  title={preset.description}
+                  onClick={() => applyPreset(preset)}
+                >
+                  {preset.label}
+                  {isCurrent ? <span className="ops-preset-dot" aria-hidden="true"/> : null}
+                </button>
+              );
+            })}
+            {saved.map((layout) => {
+              const isCurrent = savedMatchId === layout.id;
+              return (
+                <button
+                  key={layout.id}
+                  type="button"
+                  className="ops-preset-button"
+                  aria-pressed={isCurrent}
+                  title={`Your saved layout: ${layout.name}`}
+                  onClick={() => onApplySaved?.(layout)}
+                >
+                  {layout.name}
+                  {isCurrent ? <span className="ops-preset-dot" aria-hidden="true"/> : null}
+                  {onDeleteSaved ? (
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      className="ops-preset-remove"
+                      aria-label={`Delete saved layout ${layout.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteSaved(layout.id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onDeleteSaved(layout.id);
+                        }
+                      }}
+                    >
+                      <X size={10} strokeWidth={2} aria-hidden="true"/>
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          {onSaveCurrent && !currentLayoutSaved ? (
+            <form
+              className="ops-preset-save"
+              data-saved-flash={justSaved ? "true" : undefined}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const input = event.currentTarget.elements.namedItem("layout-name");
+                if (input instanceof HTMLInputElement && input.value.trim()) {
+                  onSaveCurrent(input.value);
+                  input.value = "";
+                  setJustSaved(true);
+                }
+              }}
+            >
+              <input name="layout-name" maxLength={24} required placeholder="Save current as…" aria-label="Name for this layout"/>
+              <button type="submit" className="ops-button" data-variant="secondary" data-size="sm">Save</button>
+              {justSaved ? <span className="ops-preset-saved-cue" role="status"><Check size={12} strokeWidth={2} aria-hidden="true"/> Saved</span> : null}
+            </form>
+          ) : null}
+          <button
+            type="button"
+            className="ops-button"
+            data-variant="secondary"
+            data-size="sm"
+            aria-expanded={arrangeMenu}
+            onClick={onToggleMenu}
+          >
+            Show / hide
+          </button>
+          {arrangement.hidden.length > 0 || activePreset == null ? (
+            <button
+              type="button"
+              className="ops-button"
+              data-variant="secondary"
+              data-size="sm"
+              onClick={onReset}
+            >
+              <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true"/> Reset
+            </button>
+          ) : null}
+          {status === "saving" ? <span className="ops-customise-status">Saving…</span> : null}
+          {status === "saved" ? <span className="ops-customise-status">Saved</span> : null}
+          {status === "error" ? <span className="ops-customise-status" data-error>Couldn’t save — your layout stays on this device</span> : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/** Show/hide checkbox strip (rendered under the customise row while arranging). */
+export function CustomiseMenu({
+  open,
+  arrangement,
+  onToggle,
+  sectionLabels,
+}: {
+  open: boolean;
+  arrangement: { order: string[]; hidden: string[] };
+  onToggle: (id: string) => void;
+  sectionLabels: Record<string, string>;
+}) {
+  if (!open) return null;
+  return (
+    <div className="ops-customise-menu" role="group" aria-label="Show or hide sections">
+      {arrangement.order.map((id) => {
+        const hidden = arrangement.hidden.includes(id);
+        return (
+          <label key={id} className="ops-customise-item">
+            <input type="checkbox" checked={!hidden} onChange={() => onToggle(id)}/>
+            <span>{sectionLabels[id] ?? id}</span>
+          </label>
+        );
+      })}
     </div>
   );
 }

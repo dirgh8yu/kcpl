@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
+import { ChevronRight } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
+import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
 
 type ApiResponse = { ok: boolean; error?: string; order?: TmsOrder };
@@ -28,12 +30,21 @@ const statusLabels: Record<TmsOrderStatus, string> = {
   cancelled: "Cancelled",
 };
 
-function statusClasses(status: TmsOrderStatus) {
-  if (status === "booked") return "bg-[var(--admin-success-bg)] text-[var(--admin-success)]";
-  if (status === "tendering" || status === "rated") return "bg-[var(--admin-info-bg)] text-[var(--admin-info)]";
-  if (status === "selected") return "bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]";
-  if (status === "cancelled") return "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
-  return "bg-[var(--admin-surface-muted)] text-[var(--admin-muted)]";
+const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
+  { value: "active", label: "Active" },
+  { value: "all", label: "All" },
+  { value: "draft", label: "Draft" },
+  { value: "rated", label: "Rated" },
+  { value: "selected", label: "Rate selected" },
+  { value: "tendering", label: "Tendering" },
+  { value: "booked", label: "Booked" },
+];
+
+function statusTone(status: TmsOrderStatus): "success" | "info" | "warning" | "neutral" {
+  if (status === "booked") return "success";
+  if (status === "tendering" || status === "rated") return "info";
+  if (status === "selected") return "warning";
+  return "neutral";
 }
 
 function modeLabel(value: string) {
@@ -105,6 +116,10 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
   const tendering = orders.filter((order) => order.status === "tendering").length;
   const ready = orders.filter((order) => order.status === "selected").length;
   const booked = orders.filter((order) => order.status === "booked").length;
+  const statusCounts = useMemo(() => {
+    const byStatus = Object.fromEntries(Object.keys(statusLabels).map((key) => [key, orders.filter((order) => order.status === key).length])) as Record<TmsOrderStatus, number>;
+    return { ...byStatus, active: orders.filter((order) => !["booked", "cancelled"].includes(order.status)).length, all: orders.length } as Record<StatusFilter, number>;
+  }, [orders]);
 
   async function createOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -150,33 +165,42 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
     }
   }
 
-  return <main className="min-h-[calc(100vh-54px)] bg-[var(--admin-canvas)] px-4 pb-10 pt-6 text-[var(--admin-ink)] sm:px-6 lg:px-7">
-    <div className="mx-auto w-full max-w-[1152px]">
-      <header className="flex min-h-[60px] flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[22px] font-semibold leading-[30px]">Transport Orders</h1>
-          <p className="mt-[3px] text-[13px] leading-[19px] text-[var(--admin-muted)]">{active} active · {ready} rate selected · {tendering} tendering · {booked} booked</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/rating?view=rate-desk" className="inline-flex h-8 items-center justify-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-surface-soft)]">Rate Desk</Link>
-          <button type="button" onClick={() => setShowCreate((value) => !value)} className="inline-flex h-8 items-center justify-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-white hover:bg-[var(--admin-crimson-dark)]">Create Transport Order</button>
-        </div>
-      </header>
+  return <OpsPage>
+    <OpsPageHeader
+      title="Transport Orders"
+      description={`${active} active · ${ready} rate selected · ${tendering} tendering · ${booked} booked`}
+      actions={(
+        <>
+          <Link href="/admin/rating?view=rate-desk" className="ops-button" data-variant="secondary" data-size="md">Rate Desk</Link>
+          <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="md">Create Transport Order</button>
+        </>
+      )}
+    />
+
+    <div className="px-4 pt-3 md:px-6">
+      <OpsKpiRail label="Transport orders summary">
+        <OpsRailMetric label="Active" value={active} active={status === "active"} onClick={() => setStatus("active")}/>
+        <OpsRailMetric label="Rate selected" value={ready} tone="warning" active={status === "selected"} onClick={() => setStatus(status === "selected" ? "active" : "selected")} title="Ready to tender"/>
+        <OpsRailMetric label="Tendering" value={tendering} tone="info" active={status === "tendering"} onClick={() => setStatus(status === "tendering" ? "active" : "tendering")}/>
+        <OpsRailMetric label="Booked" value={booked} tone="success" active={status === "booked"} onClick={() => setStatus(status === "booked" ? "active" : "booked")}/>
+        <OpsRailMetric label="All orders" value={orders.length} active={status === "all"} onClick={() => setStatus("all")}/>
+      </OpsKpiRail>
+    </div>
 
       <nav className="ops-scroll-x flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">
         {tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium leading-[19px] ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}
       </nav>
 
-      {notice ? <div className={`mt-4 flex min-h-10 items-center justify-between gap-3 border px-3 py-2 text-[12px] font-medium ${notice.tone === "success" ? "border-[var(--admin-success-line)] bg-[var(--admin-success-bg)] text-[var(--admin-success)]" : "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]"}`}><span>{notice.text}</span><button type="button" onClick={() => setNotice(null)} className="text-[11px] font-semibold">Dismiss</button></div> : null}
+      {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-      {createdOrderId ? <section className="mt-4 border-y border-[var(--admin-line)] bg-white px-4 py-4">
+      {createdOrderId ? <section className="mt-4 border-y border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-success)]">Order Created</p><p className="mt-1 text-[14px] font-semibold">{createdOrderId}</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">The planning record is ready for rating and procurement.</p></div>
-          <div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Open order</Link><Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Continue to rating</Link><button type="button" onClick={() => setCreatedOrderId(null)} className="inline-flex h-8 items-center rounded-[var(--app-radius)] px-3 text-[12px] font-semibold text-[var(--admin-muted)]">Return to list</button></div>
+          <div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Open order</Link><Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Continue to rating</Link><button type="button" onClick={() => setCreatedOrderId(null)} className="inline-flex h-8 items-center rounded-[var(--app-radius)] px-3 text-[12px] font-semibold text-[var(--admin-muted)]">Return to list</button></div>
         </div>
       </section> : null}
 
-      {showCreate ? <section className="mt-4 border-y border-[var(--admin-line)] bg-white px-4 py-5">
+      {showCreate ? <section className="mt-4 border-y border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-5">
         <div className="mb-4"><p className="text-[14px] font-semibold">Create Transport Order</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Create the planning record first. Rating, tender and booking authority remain separate downstream steps.</p></div>
         <form onSubmit={createOrder} className="grid gap-x-4 gap-y-3 md:grid-cols-4">
           <Field label="Branch"><select value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></Field>
@@ -189,54 +213,83 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
           <Field label="Pieces"><input type="number" min="0" step="1" value={pieces} onChange={(event) => setPieces(event.target.value)}/></Field>
           <Field label="Containers"><input type="number" min="0" step="1" value={containers} onChange={(event) => setContainers(event.target.value)}/></Field>
           <Field label="Equipment"><input value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="20GP, 40HC, reefer, truck…"/></Field>
-          <div className="flex items-end justify-end gap-2 md:col-span-2"><button type="button" onClick={() => setShowCreate(false)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Cancel</button><button type="submit" disabled={busy} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-white disabled:opacity-50">{busy ? "Creating…" : "Create order"}</button></div>
+          <div className="flex items-end justify-end gap-2 md:col-span-2"><button type="button" onClick={() => setShowCreate(false)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Cancel</button><button type="submit" disabled={busy} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-[var(--admin-on-crimson)] disabled:opacity-50">{busy ? "Creating…" : "Create order"}</button></div>
         </form>
       </section> : null}
 
-      <div className="flex min-h-[58px] flex-wrap items-center gap-2 border-b border-[var(--admin-line)] py-3">
-        <label className="flex h-8 min-w-[260px] flex-1 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 md:max-w-[300px]"><span className="mr-2 text-[12px] text-[var(--admin-muted)]">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order, customer, route…" className="min-w-0 flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-[var(--admin-muted)]"/></label>
-        <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold outline-none"><option value="active">Active</option><option value="all">All states</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-        <select value={branch} onChange={(event) => setBranch(event.target.value as "all" | KcplBranch)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold outline-none"><option value="all">All branches</option>{branches.map((value) => <option key={value}>{value}</option>)}</select>
-        <select value={modeFilter} onChange={(event) => setModeFilter(event.target.value as "all" | TmsMode)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold outline-none"><option value="all">All modes</option>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select>
-        <button type="button" onClick={() => { setQuery(""); setStatus("active"); setBranch("all"); setModeFilter("all"); }} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Reset</button>
-        <span className="ml-auto text-[12px] font-medium text-[var(--admin-muted)]">{filtered.length} shown</span>
-      </div>
+      <div className="px-4 pb-8 pt-4 md:px-6">
+      <OpsRegisterToolbar
+        search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order, customer, route…" aria-label="Search transport orders"/>}
+        actions={(
+          <>
+            <OpsFilterSelect label="Branch" value={branch} allLabel="All branches" options={branches.map((value) => ({ value, label: value }))} onChange={(value) => setBranch(value === "all" ? "all" : value as KcplBranch)}/>
+            <OpsFilterSelect label="Mode" value={modeFilter} allLabel="All modes" options={tmsModes.map((value) => ({ value, label: modeLabel(value) }))} onChange={(value) => setModeFilter(value === "all" ? "all" : value as TmsMode)}/>
+            {query.trim() || status !== "active" || branch !== "all" || modeFilter !== "all" ? <button type="button" className="ops-inline-alert-action" onClick={() => { setQuery(""); setStatus("active"); setBranch("all"); setModeFilter("all"); }}>Reset</button> : null}
+            <span className="ops-toolbar-divider" aria-hidden="true"/>
+            <span className="ops-result-count" aria-live="polite">{filtered.length === orders.length ? `${orders.length} orders` : `${filtered.length} of ${orders.length}`}</span>
+          </>
+        )}
+        tabs={<OpsScopeTabs label="Order status views" items={STATUS_TABS.map((tab) => ({ ...tab, count: statusCounts[tab.value] }))} value={status} onChange={(value) => setStatus(value)}/>}
+      />
 
-      <section className="grid min-h-[620px] lg:grid-cols-[minmax(0,800px)_351px]">
-        <div className="ops-scroll-x min-w-0 overflow-x-auto lg:border-r lg:border-[var(--admin-line)]">
-          <table className="w-full min-w-[800px] table-fixed border-collapse text-left">
-            <thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[150px] px-3 font-medium">ORDER</th><th className="w-[170px] px-3 font-medium">ROUTE</th><th className="w-[150px] px-3 font-medium">CUSTOMER</th><th className="w-[90px] px-3 font-medium">MODE</th><th className="w-[120px] px-3 font-medium">STATE</th><th className="w-[100px] px-3 font-medium">PICKUP</th><th className="w-[120px] px-3 text-right font-medium">PROCUREMENT</th></tr></thead>
-            <tbody>{filtered.length ? filtered.map((order) => {
-              const chosen = selected?.id === order.id;
-              return <tr key={order.id} tabIndex={0} aria-selected={chosen || undefined} onClick={() => setSelectedOrderId(order.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedOrderId(order.id); } }} onDoubleClick={() => router.push(`/admin/rating/${encodeURIComponent(order.id)}`)} className={`relative h-12 cursor-pointer border-b border-[var(--admin-line)] text-[12px] transition hover:bg-[var(--admin-surface-soft)] ${chosen ? "bg-[var(--admin-surface-soft)]" : ""}`}>
-                <td className="relative px-3 text-[13px] font-semibold">{chosen ? <span className="absolute inset-y-0 left-0 w-0.5 bg-[var(--admin-crimson)]"/> : null}<span className="block truncate">{order.id}</span></td>
-                <td className="px-3 text-[13px] text-[var(--admin-muted)]"><span className="block truncate">{order.origin} → {order.destination}</span></td>
-                <td className="px-3 text-[13px] text-[var(--admin-muted)]"><span className="block truncate">{order.customer_name || "Not linked"}</span></td>
-                <td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]">{modeLabel(order.mode)}</td>
-                <td className="px-3"><span className={`inline-flex rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium leading-[15px] ${statusClasses(order.status)}`}>{statusLabels[order.status]}</span></td>
-                <td className="px-3 text-[12px] font-medium text-[var(--admin-muted)]">{shortDate(order.pickup_date)}</td>
-                <td className="px-3 text-right text-[12px] font-semibold tabular-nums text-[var(--admin-ink)]">{money(order.selected_cost, order.selected_currency)}</td>
-              </tr>;
-            }) : <tr><td colSpan={7} className="h-48 px-6 text-center"><p className="text-[14px] font-semibold">No transport orders match this view</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Change the filters or reset the workspace.</p></td></tr>}</tbody>
-          </table>
-        </div>
-        <aside className="min-h-[620px] bg-white px-6 py-5">
-          {selected ? <OrderPeek order={selected}/> : <div className="grid h-full place-items-center text-center"><div><p className="text-[14px] font-semibold">No order selected</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Choose a row to inspect the planning record.</p></div></div>}
+      <div className="ops-register-layout">
+        <section className="ops-surface" aria-label="Transport order register">
+          {filtered.length ? (
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table rating-orders-table" aria-label="Transport orders">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Route</th>
+                    <th>Customer</th>
+                    <th>Mode</th>
+                    <th>State</th>
+                    <th>Pickup</th>
+                    <th className="ops-cell-actions">Procurement</th>
+                    <th className="ops-cell-open"><span className="sr-only">Open</span></th>
+                  </tr>
+                </thead>
+                <tbody>{filtered.map((order) => {
+                  const chosen = selected?.id === order.id;
+                  return <tr key={order.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => setSelectedOrderId(order.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedOrderId(order.id); } }} onDoubleClick={() => router.push(`/admin/rating/${encodeURIComponent(order.id)}`)} aria-label={`Select transport order ${order.id}`}>
+                    <td><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span></td>
+                    <td><span className="ops-cell-primary ops-cell-clamp">{order.origin} → {order.destination}</span></td>
+                    <td><span className="ops-cell-muted ops-cell-clamp">{order.customer_name || "Not linked"}</span></td>
+                    <td><span className="ops-cell-muted">{modeLabel(order.mode)}</span></td>
+                    <td><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></td>
+                    <td><span className="ops-cell-muted">{shortDate(order.pickup_date)}</span></td>
+                    <td className="ops-cell-actions"><span className="ops-cell-primary tabular-nums">{money(order.selected_cost, order.selected_currency)}</span></td>
+                    <td className="ops-cell-open">
+                      <Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="ops-row-open" onClick={(event) => event.stopPropagation()} aria-label={`Open order ${order.id}`} tabIndex={-1}>
+                        <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
+                      </Link>
+                    </td>
+                  </tr>;
+                })}</tbody>
+              </table>
+            </OpsTableWrap>
+          ) : (
+            <OpsEmptyState compact kind="search" title="No transport orders match this view" description="Change the filters or reset the workspace." action={<button type="button" className="ops-button" data-variant="secondary" data-size="sm" onClick={() => { setQuery(""); setStatus("active"); setBranch("all"); setModeFilter("all"); }}>Reset</button>}/>
+          )}
+        </section>
+
+        <aside className="ops-surface ops-order-peek" aria-label="Selected order">
+          {selected ? <OrderPeek order={selected}/> : <OpsEmptyState compact title="No order selected" description="Choose a row to inspect the planning record."/>}
         </aside>
-      </section>
-    </div>
-  </main>;
+      </div>
+      </div>
+  </OpsPage>;
 }
 
 function OrderPeek({ order }: { order: TmsOrder }) {
   const action = nextAction(order);
   return <div className="flex h-full flex-col">
-    <div className="min-h-[108px]"><p className="text-[11px] font-medium leading-[15px] text-[var(--admin-muted)]">{order.id}</p><h2 className="mt-1 text-[18px] font-semibold leading-[26px]">{order.origin} → {order.destination}</h2><p className="mt-1 text-[12px] font-medium leading-[17px] text-[var(--admin-muted)]">{order.customer_name || "Customer not linked"} · {order.branch} · {modeLabel(order.mode)}</p><span className={`mt-2 inline-flex rounded-[var(--app-radius)] px-[7px] py-[3px] text-[11px] font-medium leading-[15px] ${statusClasses(order.status)}`}>{statusLabels[order.status]}</span></div>
+    <div className="min-h-[108px]"><p className="text-[11px] font-medium leading-[15px] text-[var(--admin-muted)]"><span className="ops-mono">{order.id}</span></p><h2 className="mt-1 text-[18px] font-semibold leading-[26px]">{order.origin} → {order.destination}</h2><p className="mt-1 text-[12px] font-medium leading-[17px] text-[var(--admin-muted)]">{order.customer_name || "Customer not linked"} · {order.branch} · {modeLabel(order.mode)}</p><span className="mt-2 inline-flex"><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></span></div>
     <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">NEXT ACTION</p><p className="mt-1 text-[13px] font-semibold">{action.title}</p><p className="mt-1 text-[12px] leading-[18px] text-[var(--admin-muted)]">{action.detail}</p></div>
     <dl className="border-t border-[var(--admin-line)] py-4 text-[12px]">
       <Row label="Pickup" value={shortDate(order.pickup_date)}/><Row label="Weight" value={`${order.weight_kg.toLocaleString()} kg`}/><Row label="Volume" value={`${order.volume_cbm.toLocaleString()} CBM`}/><Row label="Pieces" value={order.pieces.toLocaleString()}/><Row label="Equipment" value={order.equipment || "Not set"}/><Row label="Procurement" value={money(order.selected_cost, order.selected_currency)}/>
     </dl>
-    <div className="mt-auto border-t border-[var(--admin-line)] pt-4"><div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-white">Open order</Link>{["draft", "rated"].includes(order.status) ? <Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(order.id)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Rate order</Link> : null}{["selected", "tendering"].includes(order.status) ? <Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-3 text-[12px] font-semibold">Tender workspace</Link> : null}</div></div>
+    <div className="mt-auto border-t border-[var(--admin-line)] pt-4"><div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Open order</Link>{["draft", "rated"].includes(order.status) ? <Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(order.id)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Rate order</Link> : null}{["selected", "tendering"].includes(order.status) ? <Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Tender workspace</Link> : null}</div></div>
   </div>;
 }
 
@@ -245,5 +298,5 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block text-[11px] font-medium text-[var(--admin-muted)]"><span className="mb-1.5 block">{label}</span><span className="block [&_input]:h-8 [&_input]:w-full [&_input]:rounded-[var(--app-radius)] [&_input]:border [&_input]:border-[var(--admin-line)] [&_input]:bg-white [&_input]:px-3 [&_input]:text-[12px] [&_input]:font-medium [&_input]:outline-none [&_select]:h-8 [&_select]:w-full [&_select]:rounded-[var(--app-radius)] [&_select]:border [&_select]:border-[var(--admin-line)] [&_select]:bg-white [&_select]:px-3 [&_select]:text-[12px] [&_select]:font-medium [&_select]:outline-none">{children}</span></label>;
+  return <label className="block text-[11px] font-medium text-[var(--admin-muted)]"><span className="mb-1.5 block">{label}</span><span className="block [&_input]:h-8 [&_input]:w-full [&_input]:rounded-[var(--app-radius)] [&_input]:border [&_input]:border-[var(--admin-line)] [&_input]:bg-[var(--admin-surface)] [&_input]:px-3 [&_input]:text-[12px] [&_input]:font-medium [&_input]:outline-none [&_select]:h-8 [&_select]:w-full [&_select]:rounded-[var(--app-radius)] [&_select]:border [&_select]:border-[var(--admin-line)] [&_select]:bg-[var(--admin-surface)] [&_select]:px-3 [&_select]:text-[12px] [&_select]:font-medium [&_select]:outline-none">{children}</span></label>;
 }

@@ -70,7 +70,7 @@ export function AdminLogin() {
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "admin-login-error" : undefined}
             placeholder="name@kapileshwor.com"
-            className="h-[52px] w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white pl-11 pr-4 text-[14px] font-medium text-[var(--admin-ink)] outline-none transition placeholder:text-[var(--admin-faint)] hover:border-[var(--admin-line-strong)] focus:border-[var(--admin-crimson)] focus:ring-4 focus:ring-[var(--admin-crimson)]/10 disabled:cursor-not-allowed disabled:bg-[var(--admin-surface-muted)]"
+            className="h-[52px] w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] pl-11 pr-4 text-[14px] font-medium text-[var(--admin-ink)] outline-none transition placeholder:text-[var(--admin-faint)] hover:border-[var(--admin-line-strong)] focus:border-[var(--admin-crimson)] focus:ring-4 focus:ring-[var(--admin-crimson)]/10 disabled:cursor-not-allowed disabled:bg-[var(--admin-surface-muted)]"
             disabled={busy}
           />
         </div>
@@ -91,7 +91,7 @@ export function AdminLogin() {
             onChange={(event) => setPassword(event.target.value)}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "admin-login-error" : undefined}
-            className="h-[52px] w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white pl-11 pr-12 text-[14px] font-medium text-[var(--admin-ink)] outline-none transition hover:border-[var(--admin-line-strong)] focus:border-[var(--admin-crimson)] focus:ring-4 focus:ring-[var(--admin-crimson)]/10 disabled:cursor-not-allowed disabled:bg-[var(--admin-surface-muted)]"
+            className="h-[52px] w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] pl-11 pr-12 text-[14px] font-medium text-[var(--admin-ink)] outline-none transition hover:border-[var(--admin-line-strong)] focus:border-[var(--admin-crimson)] focus:ring-4 focus:ring-[var(--admin-crimson)]/10 disabled:cursor-not-allowed disabled:bg-[var(--admin-surface-muted)]"
             disabled={busy}
           />
           <button
@@ -118,7 +118,7 @@ export function AdminLogin() {
       <button
         disabled={busy}
         type="submit"
-        className="group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 text-[13px] font-semibold text-white shadow-[0_10px_28px_rgba(220,20,60,0.18)] transition hover:bg-[var(--admin-crimson-dark)] hover:shadow-[0_12px_32px_rgba(220,20,60,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-crimson)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none"
+        className="group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 text-[13px] font-semibold text-[var(--admin-on-crimson)] shadow-[0_10px_28px_rgba(220,20,60,0.18)] transition hover:bg-[var(--admin-crimson-dark)] hover:shadow-[0_12px_32px_rgba(220,20,60,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-crimson)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none"
       >
         <span>{busy ? "Signing in…" : "Open KCPL Operations"}</span>
         {!busy ? <ArrowRight aria-hidden="true" size={16} className="transition-transform group-hover:translate-x-0.5" /> : null}

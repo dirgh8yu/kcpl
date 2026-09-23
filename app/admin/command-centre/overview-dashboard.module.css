@@ -133,6 +133,12 @@
 .ownerCell { display: inline-flex; min-width: 0; align-items: center; gap: 5px; color: var(--overview-muted); font-size: 12px; }
 .ownerUnassigned { color: var(--overview-faint); }
 .ageDanger { color: var(--overview-danger); font-weight: 650; }
+
+/* Impact tier badge: ranked by severity × receivable exposure × SLA × dwell. */
+.impactBadge { display: inline-flex; align-items: center; min-height: 20px; border-radius: 999px; padding: 0 8px; background: var(--admin-surface-soft); color: var(--overview-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.impactBadge[data-tier="critical"] { background: var(--overview-danger-soft); color: var(--overview-danger); }
+.impactBadge[data-tier="high"] { background: var(--overview-warning-soft); color: var(--overview-warning); }
+.impactBadge[data-tier="moderate"] { background: var(--overview-info-soft); color: var(--overview-info); }
 .rowAction { display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--overview-faint); cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
 .rowAction:hover { background: var(--admin-surface-soft); color: var(--overview-ink); }
 
@@ -321,4 +327,67 @@
   .blackButton, .secondaryButton, .iconButton, .textButton { transition-property: background-color, border-color, color; }
   .kpiCell, .todayItem, .todayCritical, .todayClear, .workloadRow, .movementRow, .activityRow, .rowAction, .launcherChoice { transition: none; }
   .launcherBackdrop, .launcher { transition: none; }
+}
+
+/* ── Custom arrangement ─────────────────────────────────────────────── */
+
+.customizeRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.customizeHint { flex: 1 1 240px; min-width: 0; color: var(--overview-faint); font-size: 12px; line-height: 16px; }
+.customizeStatus { color: var(--overview-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.customizeStatus[data-error] { color: var(--overview-danger); }
+
+/* Presets: text-led segmented row. Quiet when idle; the current layout gets a
+ * small dot rather than a filled pill (no button-looking active state). */
+.presetGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--overview-line);
+  border-radius: 8px;
+}
+.presetButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 9px;
+  background: transparent;
+  color: var(--overview-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  cursor: pointer;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out);
+}
+.presetButton:hover { color: var(--admin-ink); background: var(--admin-surface-soft); }
+.presetButton[aria-pressed="true"] { color: var(--admin-ink); font-weight: 600; }
+.presetDot { width: 5px; height: 5px; border-radius: 999px; background: var(--admin-crimson); }
+
+.customizeMenu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  border: 1px solid var(--overview-line);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+.customizeMenuItem { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; line-height: 24px; color: var(--admin-ink); cursor: pointer; }
+.customizeMenuItem input { accent-color: var(--admin-crimson); }
+
+/* Sections sit in one flat arrangeable grid; the shell only adds the drop
+ * indicator spacing and the hover-visible handle (from arrangeable-grid.css). */
+.arrangeGrid { margin-bottom: 12px; }
+.arrangeSection { position: relative; min-width: 0; }
+.arrangeSection[data-arranging] { outline: 1px dashed var(--overview-line-strong, var(--overview-line)); outline-offset: 4px; border-radius: 10px; }
+
+@media (max-width: 900px) {
+  .arrangeGrid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customizeRow, .customizeMenu, .customizeMenuItem, .presetButton { transition: none; }
 }

@@ -434,12 +434,14 @@
   vertical-align: 1px;
   border-radius: 999px;
   background: var(--admin-crimson);
+  /* Opacity-only pulse: matches the Overview pulse dot (`pulseLive`) and keeps
+   * the animation compositor-friendly — no per-frame box-shadow paint on rows. */
   animation: shipments-live-activity-pulse 2.4s var(--app-ease-out) infinite;
 }
 
 @keyframes shipments-live-activity-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--admin-crimson) 35%, transparent); }
-  50% { opacity: 0.55; box-shadow: 0 0 0 3px transparent; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 /* ---- Active filter chips --------------------------------------------------- */
@@ -845,10 +847,6 @@
   animation: shipment-activity-flash 1.6s var(--app-ease-out) 1;
 }
 
-@keyframes ship-card-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 @media (max-width: 1240px) {
   .kcpl-admin-content .shipments-register .shipments-toolbar {
@@ -917,7 +915,16 @@
   background: var(--admin-surface);
   color: var(--admin-muted);
   font-size: 12px;
-  animation: shipments-toast-in 160ms var(--app-ease-out);
+  /* Enter on mount, then a quiet CSS exit timed to the component's 6s removal
+   * timer (160ms in + 5.84s hold + 120ms out = 6s), so the toast never pops
+   * out of existence. Pure CSS: no component change, interrupted removals just
+   * unmount early. */
+  animation:
+    shipments-toast-in 160ms var(--app-ease-out),
+    shipments-toast-out 120ms var(--app-ease-in-out) 5.88s forwards;
+}
+@keyframes shipments-toast-out {
+  to { opacity: 0; transform: translateY(-3px); }
 }
 .kcpl-admin-content .shipments-register .shipments-status-toast strong {
   color: var(--admin-ink);

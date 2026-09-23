@@ -56,7 +56,7 @@ export function CrmOperationsHistoryPanel({ history, showCommercial }: { history
   const hasHistory = history.quotes.length > 0 || history.shipments.length > 0;
   return (
     <section className="bg-[var(--admin-surface-muted)] px-5 pb-14 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-white shadow-sm">
+      <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 p-6 sm:p-8">
           <div>
             <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.19em] text-[#b78a3e]">Customer journey</p>
@@ -105,7 +105,7 @@ function QuoteHistoryRow({ quote, showCommercial }: { quote: CrmQuoteHistoryItem
         {showCommercial ? <div><p className="font-semibold uppercase tracking-[.1em] text-black/30">Quote value</p><p className="mt-1 font-bold text-black/65">{formatMoney(quote.quoted_amount, quote.currency)}</p></div> : null}
         <div><p className="font-semibold uppercase tracking-[.1em] text-black/30">Updated</p><p className="mt-1 font-bold text-black/65">{formatDate(quote.updated_at || quote.created_at)}</p></div>
       </div>
-      {quote.shipment_reference ? <p className="mt-3 rounded-[var(--app-radius)] bg-white px-3 py-2 text-[length:var(--app-label-size)] font-bold text-black/50">Shipment: <span className="text-[var(--admin-ink)]">{quote.shipment_reference}</span></p> : null}
+      {quote.shipment_reference ? <p className="mt-3 rounded-[var(--app-radius)] bg-[var(--admin-surface)] px-3 py-2 text-[length:var(--app-label-size)] font-bold text-black/50">Shipment: <span className="text-[var(--admin-ink)]">{quote.shipment_reference}</span></p> : null}
     </article>
   );
 }

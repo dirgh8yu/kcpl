@@ -717,10 +717,70 @@ export function mockFreightAuditQueue(staff: KcplStaffContext, now = Date.now())
 
 import type { CustomsDeskRow, CustomsDeskStep } from "./customs/customs-data.server.ts";
 import { customsDeskRisk, customsDeskState } from "./customs/customs-policy.ts";
+import { suggestChecklist, type ChecklistEvidence } from "./customs/checklist-recommender.ts";
+import { laneDwellBaseline, dwellWarning, type DwellEvidenceItem } from "./customs/lane-dwell-baseline.ts";
 
 /* The desk's state and risk are not restated here -- customsDeskState and
  * customsDeskRisk classify the rows, so the badges come from the same policy
  * the real page runs. */
+const MOCK_CHECKLIST_LANE = "guangzhou→birgunj";
+
+/**
+ * Worked lane history for the QA fixture: three completed Guangzhou→Birgunj
+ * ocean shipments whose documents are the evidence the recommender learns
+ * from. The suggestion counts are therefore derived, not asserted, and the
+ * KCPL-2609-0137 mock row (same lane, ocean, Birgunj) renders them live.
+ */
+function mockChecklistEvidence(): ChecklistEvidence[] {
+  const oceanSet = (extra: ShipmentDocumentType[]): ShipmentDocumentType[] => [
+    "commercial_invoice",
+    "packing_list",
+    "bill_of_lading",
+    ...extra,
+  ];
+  return [
+    { lane: MOCK_CHECKLIST_LANE, mode: "ocean", branch: "Birgunj", delivered: true, documents: oceanSet(["customs_document"]) },
+    { lane: MOCK_CHECKLIST_LANE, mode: "ocean", branch: "Birgunj", delivered: true, documents: oceanSet(["customs_document", "certificate_of_origin"]) },
+    { lane: MOCK_CHECKLIST_LANE, mode: "ocean", branch: "Birgunj", delivered: true, documents: oceanSet(["customs_document"]) },
+    // Shanghai→Kathmandu history so the 90h-clearance fixture row (0142)
+    // shows the checklist suggestion alongside its slow-clearance warning.
+    { lane: "shanghai→kathmandu", mode: "ocean", branch: "Birgunj", delivered: true, documents: oceanSet(["customs_document"]) },
+    { lane: "shanghai→kathmandu", mode: "ocean", branch: "Birgunj", delivered: true, documents: oceanSet(["customs_document"]) },
+    { lane: "shanghai→kathmandu", mode: "ocean", branch: "Birgunj", delivered: true, documents: oceanSet(["customs_document", "insurance_certificate"]) },
+  ];
+}
+
+const MOCK_DWELL_LANE = "guangzhou→birgunj";
+const customsLabel = "Customs clearance";
+const outForDeliveryLabel = "Out for delivery";
+
+/**
+ * Worked dwell history for the QA fixture: three completed Guangzhou→Birgunj
+ * clearances (58h, 70h, 66h) rebuilt from status-label event streams. The
+ * baseline therefore derives to p75 ≈ 68h, and a fixture row in clearance for
+ * 80+ hours renders the slow-clearance warning honestly.
+ */
+function mockDwellEvidence(now: number): DwellEvidenceItem[] {
+  const stream = (entryOffsetHours: number, dwellHours: number): { title: string; at: string }[] => {
+    const entry = now - entryOffsetHours * 3_600_000;
+    return [
+      { title: "Booking confirmed", at: new Date(entry - 96 * 3_600_000).toISOString() },
+      { title: customsLabel, at: new Date(entry).toISOString() },
+      { title: outForDeliveryLabel, at: new Date(entry + dwellHours * 3_600_000).toISOString() },
+    ];
+  };
+  return [
+    { lane: MOCK_DWELL_LANE, titles: stream(400, 58) },
+    { lane: MOCK_DWELL_LANE, titles: stream(700, 70) },
+    { lane: MOCK_DWELL_LANE, titles: stream(1000, 66) },
+    // Shanghai→Kathmandu history so the fixture row parked 90h in clearance
+    // (KCPL-2609-0142) trips its lane's learned p75 (~66h) honestly.
+    { lane: "shanghai→kathmandu", titles: stream(500, 60) },
+    { lane: "shanghai→kathmandu", titles: stream(800, 72) },
+    { lane: "shanghai→kathmandu", titles: stream(1100, 64) },
+  ];
+}
+
 export function mockCustomsDeskRows(staff: KcplStaffContext, now = Date.now()): CustomsDeskRow[] {
   return mockCommandCentre(staff, now).jobs
     .filter((job) => job.required_customs_total > 0 && job.status !== "delivered")
@@ -743,6 +803,15 @@ export function mockCustomsDeskRows(staff: KcplStaffContext, now = Date.now()): 
         : job.required_customs_open === 0 ? "released" as const : "preparing" as const;
       const etaDays = job.eta ? Math.round((Date.parse(job.eta) - now) / DAY) : null;
       const releaseRequired = job.mode === "ocean" || job.mode === "air";
+      // The dwell baseline learns from the mock lane history; a fixture row
+      // sitting in clearance for 90 hours trips the learned p75 (~68h).
+      const lane = `${job.origin.toLowerCase()}→${job.destination.toLowerCase()}`;
+      const baseline = laneDwellBaseline(mockDwellEvidence(now), lane);
+      const elapsedHours = job.status === "customs_clearance" && clearanceStatus !== "released"
+        ? (job.reference === "KCPL-2609-0142" ? 90 : 20)
+        : null;
+      const dwellPolicy = dwellWarning({ baseline, elapsedHours });
+      const dwellWarningRow = { active: dwellPolicy.active, elapsed_hours: dwellPolicy.elapsedHours, p75_hours: dwellPolicy.p75Hours, sample: dwellPolicy.sample, message: dwellPolicy.message };
       return {
         reference: job.reference,
         quote_reference: job.quote_reference,
@@ -768,6 +837,9 @@ export function mockCustomsDeskRows(staff: KcplStaffContext, now = Date.now()): 
         document_present: 3 - missing.length,
         document_direction: "import",
         document_advisories: [],
+        suggested_checklist: suggestChecklist(mockChecklistEvidence(), { lane: `${job.origin.toLowerCase()}→${job.destination.toLowerCase()}`, mode: job.mode, branch: job.primary_branch }),
+        dwell_baseline: { available: baseline.available, sample: baseline.sample, median_hours: baseline.medianHours, p75_hours: baseline.p75Hours },
+        dwell_warning: dwellWarningRow,
         release_required: releaseRequired,
         clearance: {
           status: clearanceStatus,

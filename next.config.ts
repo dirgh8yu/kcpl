@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   /**
    * The hosted preview is served through a proxy rather than a bare
    * `localhost:<port>`, and Next.js blocks cross-origin requests to dev-only
@@ -19,6 +20,23 @@ const nextConfig: NextConfig = {
    * logs a different blocked hostname, add it here.
    */
   allowedDevOrigins: ["*.daytonaproxy01.net"],
+  async redirects() {
+    return [
+      { source: "/tracking", destination: "/track", permanent: true },
+      { source: "/services/sea-freight", destination: "/services/ocean-freight", permanent: true },
+      { source: "/services/break-bulk-cargo", destination: "/services/project-cargo", permanent: true },
+      { source: "/services/open-top-container", destination: "/services/project-cargo", permanent: true },
+      { source: "/services/packaging-storage", destination: "/services/warehousing", permanent: true },
+      { source: "/services/ground-transport", destination: "/services/road-freight", permanent: true },
+      { source: "/services/door-to-door", destination: "/services/delivery", permanent: true },
+    ];
+  },
+  async headers() {
+    return ["/admin/:path*", "/portal/:path*"].map((source) => ({
+      source,
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    }));
+  },
 };
 
 export default nextConfig;

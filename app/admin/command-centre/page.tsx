@@ -7,6 +7,8 @@ import { loadCommandCentre } from "./command-centre.server";
 import type { CommandCentreData } from "./command-centre-data";
 import { getLatestOperationalNote, type OperationalNote } from "./operational-notes.server";
 import { getOverviewFinanceSnapshot, type OverviewFinanceSnapshot } from "./overview-finance.server";
+import { getReceivableExposureByCustomer } from "./receivable-exposure.server";
+import type { ReceivableExposure } from "./work-queue-impact";
 import { OperationsShell } from "../operations-shell";
 import { V4OperationsOverview } from "./v4-operations-overview";
 import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview.server";
@@ -32,7 +34,7 @@ type StaffState =
   | { kind: "error"; shell: ShellState };
 
 type OverviewState =
-  | { kind: "ready"; data: CommandCentreData; workflow: WorkflowOverview; finance: OverviewFinanceSnapshot | null; note: OperationalNote | null }
+  | { kind: "ready"; data: CommandCentreData; workflow: WorkflowOverview; finance: OverviewFinanceSnapshot | null; note: OperationalNote | null; exposureByCustomer: Map<string, ReceivableExposure> }
   | { kind: "unavailable" }
   | { kind: "error" };
 
@@ -110,9 +112,15 @@ async function loadOverviewState(staff: KcplStaffContext): Promise<OverviewState
       console.error("Failed to load KCPL operational note for Overview", error);
       return null;
     });
-    const [data, workflow, finance, note] = await Promise.all([dataPromise, workflowPromise, financePromise, notePromise]);
+    // Impact ranking input: a failure must never take down the Overview, so
+    // the queue simply falls back to severity-only ordering with no exposure.
+    const exposurePromise = getReceivableExposureByCustomer(staff).catch((error) => {
+      console.error("Failed to load KCPL receivable exposure for Overview", error);
+      return new Map<string, ReceivableExposure>();
+    });
+    const [data, workflow, finance, note, exposureByCustomer] = await Promise.all([dataPromise, workflowPromise, financePromise, notePromise, exposurePromise]);
     if (!data) return { kind: "unavailable" };
-    return { kind: "ready", data, workflow, finance, note };
+    return { kind: "ready", data, workflow, finance, note, exposureByCustomer };
   } catch (error) {
     console.error("Failed to load KCPL Overview data", error);
     return { kind: "error" };
@@ -169,6 +177,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
           workflow={overview.workflow}
           finance={overview.finance}
           note={overview.note}
+          exposureByCustomer={overview.exposureByCustomer}
           userName={userName}
           selectedBranch={selectedBranch}
           branches={accessibleBranches}

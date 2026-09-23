@@ -4,6 +4,16 @@ import { createPageMetadata } from "../../seo";
 import { siteText, type SiteTextKey } from "../../site-i18n";
 import "../../site.css";
 
+const searchTitles = {
+  air: "Air Freight to and from Nepal",
+  ocean: "Ocean Freight to and from Nepal",
+  road: "Road Freight in Nepal",
+  customs: "Customs Clearance in Nepal",
+  project: "Project Cargo in Nepal",
+  warehouse: "Cargo Warehousing in Nepal",
+  delivery: "Cargo Delivery in Nepal",
+} as const;
+
 export function generateStaticParams() {
   return services.map((service) => ({ service: service.slug }));
 }
@@ -17,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ service: 
   const found = entry(service);
   if (!found) return {};
   return createPageMetadata({
-    title: siteText("en", `svc.${found.key}.title` as SiteTextKey),
+    title: searchTitles[found.key],
     description: siteText("en", `svc.${found.key}.summary` as SiteTextKey),
     path: `/services/${found.slug}`,
   });

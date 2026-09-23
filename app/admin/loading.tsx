@@ -24,10 +24,11 @@ export default function AdminWorkspaceLoading() {
           <span className="ops-boot-block ops-boot-line-sm" />
         </div>
         <div className="app-workspaces ops-boot-nav">
-          {[5, 4, 4, 3].map((items, group) => (
+          {/* Context-first default: active group expanded, the rest collapsed. */}
+          {[[4], [], [], [], []].map((items, group) => (
             <div key={group} className="ops-boot-nav-group">
               <span className="ops-boot-block ops-boot-line-xs" />
-              {Array.from({ length: items }, (_, item) => (
+              {items.map((_, item) => (
                 <span key={item} className="ops-boot-block ops-boot-nav-item" />
               ))}
             </div>

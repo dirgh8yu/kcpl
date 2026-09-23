@@ -11,22 +11,39 @@ import {
   CircleAlert,
   Clock3,
   FileText,
+  GripVertical,
   MoreHorizontal,
   PackageCheck,
   Plane,
   Plus,
   RefreshCw,
   ShieldCheck,
+  RotateCcw,
   UserRoundX,
   X,
 } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
+import { statusTone } from "../shipments/shipments-views";
 import {
-  compareShipmentPriority,
   shipmentNeedsAttention,
   shipmentNextAction,
 } from "../shipments/shipment-queue-policy";
+import {
+  compareWorkQueueImpact,
+  workQueueImpact,
+  type ReceivableExposure,
+} from "./work-queue-impact";
 import { useWorkspaceQuery } from "../use-workspace-query";
+import { ArrangeableGrid } from "../arrangeable-grid";
+import "../arrangeable-grid.css";
+import {
+  LAYOUT_PRESETS,
+  OVERVIEW_SECTION_ORDER,
+  isDefaultArrangement,
+  presetForState,
+  type OverviewSectionId,
+} from "../operations-arrangeable";
+import { useStaffArrangement } from "../use-staff-arrangement";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
 import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
@@ -46,6 +63,7 @@ type DashboardProps = {
   workflow: WorkflowOverview;
   finance: OverviewFinanceSnapshot | null;
   note: OperationalNote | null;
+  exposureByCustomer: Map<string, ReceivableExposure>;
   userName: string;
   selectedBranch: string;
   branches: string[];
@@ -60,6 +78,42 @@ type CreateOrderResponse = {
 };
 
 type Metric = { href: string; label: string; value: number; tone: Tone };
+
+const overviewSectionLabels: Record<OverviewSectionId, string> = {
+  "work-queue": "Work queue",
+  today: "Today",
+  activity: "Recent activity",
+  movement: "Live movement",
+  pulse: "Shipments pulse",
+  workload: "Shipment workload",
+  finance: "Finance snapshot",
+  notes: "Operational notes",
+};
+
+function OverviewSectionShell({
+  id,
+  arranging,
+  handle,
+  children,
+}: {
+  id: OverviewSectionId;
+  arranging: boolean;
+  handle: ReactNode;
+  children: ReactNode;
+}) {
+  // Keyboard parity lives on the drag handle (a real button): Alt+arrows move
+  // the section, H toggles visibility. The section stays a plain landmark.
+  return (
+    <section
+      className={styles.arrangeSection}
+      data-arrange-section={id}
+      data-arranging={arranging || undefined}
+    >
+      {arranging ? handle : null}
+      {children}
+    </section>
+  );
+}
 
 function owner(job: CommandCentreJob) {
   return job.assigned_to_name || job.assigned_to_email || (job.assigned_to_uid ? "Assigned staff" : "Unassigned");
@@ -126,13 +180,8 @@ function etaShort(value: string | null, anchor: string) {
   return { label: `in ${Math.round(hours / 24)}d`, late: false };
 }
 
-function statusTone(status: ShipmentStatus): Tone {
-  if (status === "exception") return "danger";
-  if (status === "customs_clearance" || status === "preparing") return "warning";
-  if (status === "delivered") return "success";
-  if (status === "in_transit" || status === "booking_confirmed" || status === "out_for_delivery") return "info";
-  return "neutral";
-}
+// Status→tone mapping comes from the shared statusTone (shipments-views.tsx)
+// so a shipment carries the same colour on Overview, the register and the Job File.
 
 function statusClass(tone: Tone) {
   if (tone === "danger") return styles.statusDanger;
@@ -262,7 +311,7 @@ function KpiRail({ metrics }: { metrics: Metric[] }) {
  * The operational work queue. Rows stay records, not cards; the empty state is
  * a single quiet line because an empty queue is good news, not a feature.
  */
-function WorkQueue({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentreJob[]; total: number; returnTo: string; generatedAt: string }) {
+function WorkQueue({ jobs, total, returnTo, generatedAt, impactContext }: { jobs: CommandCentreJob[]; total: number; returnTo: string; generatedAt: string; impactContext: { exposureByCustomer: Map<string, ReceivableExposure>; operationalDate: string; now: Date } }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const allVisibleSelected = jobs.length > 0 && jobs.every((job) => selected.has(job.reference));
 
@@ -299,7 +348,7 @@ function WorkQueue({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentre
           <table className={styles.table} aria-label="Shipments requiring attention">
             <thead><tr>
               <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
-              <th>Reference</th><th>Customer</th><th>Status</th><th>Blocker</th><th>Owner</th><th>Age</th><th><span className={styles.srOnly}>Actions</span></th>
+              <th>Reference</th><th>Customer</th><th>Status</th><th>Blocker</th><th>Impact</th><th>Owner</th><th>Age</th><th><span className={styles.srOnly}>Actions</span></th>
             </tr></thead>
             <tbody>
               {jobs.map((job) => {
@@ -307,6 +356,13 @@ function WorkQueue({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentre
                 const age = ageShort(job.updated_at, generatedAt);
                 const jobOwner = owner(job);
                 const tone = statusTone(job.status);
+                const impact = workQueueImpact({
+                  job,
+                  exposure: job.customer_id ? impactContext.exposureByCustomer.get(job.customer_id) ?? null : null,
+                  operationalDate: impactContext.operationalDate,
+                  now: impactContext.now,
+                });
+                const leadFactor = impact.factors[0];
                 return (
                   <tr key={job.reference}>
                     <td><input className={styles.checkbox} type="checkbox" checked={selected.has(job.reference)} onChange={() => toggle(job.reference)} aria-label={`Select ${job.reference}`} /></td>
@@ -314,6 +370,7 @@ function WorkQueue({ jobs, total, returnTo, generatedAt }: { jobs: CommandCentre
                     <td title={job.customer_name || undefined}>{job.customer_name || "Customer not linked"}</td>
                     <td><span className={`${styles.statusBadge} ${statusClass(tone)}`}>{shipmentStatusLabels[job.status]}</span></td>
                     <td><Link href={withReturn(issue.href, returnTo)} className={styles.actionLink}>{issue.label}</Link></td>
+                    <td title={impact.factors.map((factor) => `${factor.label} (×${factor.weight})`).join(" · ")}><span className={styles.impactBadge} data-tier={impact.tier}>{leadFactor ? leadFactor.label : "Monitor"}</span></td>
                     <td><span className={`${styles.ownerCell} ${jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}`}>{jobOwner === "Unassigned" ? <UserRoundX size={12} strokeWidth={1.8} aria-hidden="true" /> : null}{jobOwner}</span></td>
                     <td className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
                     <td><Link className={styles.rowAction} href={jobHref(job.reference, returnTo)} aria-label={`Open ${job.reference}`}><MoreHorizontal size={15} strokeWidth={1.8} /></Link></td>
@@ -651,7 +708,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
   );
 }
 
-export function V4OperationsOverview({ data, workflow, finance, note, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
+export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -683,11 +740,51 @@ export function V4OperationsOverview({ data, workflow, finance, note, selectedBr
   const { search } = useWorkspaceQuery();
   const returnTo = `/admin/command-centre${search}`;
   const activeShipments = useMemo(() => data.jobs.filter((job) => job.status !== "delivered"), [data.jobs]);
-  const attentionShipments = useMemo(() => activeShipments.filter(shipmentNeedsAttention).sort(compareShipmentPriority), [activeShipments]);
+  // Impact ranking (revenue exposure × SLA × dwell on top of severity) is the
+  // presentation order; severity remains the tie-break so the two orders can
+  // never disagree about what is merely less urgent.
+  const impactContext = useMemo(() => ({ exposureByCustomer, operationalDate: data.operational_date, now: new Date(data.generated_at) }), [exposureByCustomer, data.operational_date, data.generated_at]);
+  const attentionShipments = useMemo(
+    () => activeShipments.filter(shipmentNeedsAttention).sort((a, b) => compareWorkQueueImpact(a, b, impactContext)),
+    [activeShipments, impactContext],
+  );
   const attentionQueue = attentionShipments.slice(0, 6);
   const arrivingToday = activeShipments.filter((job) => job.eta?.slice(0, 10) === data.operational_date).length;
   const inTransit = activeShipments.filter((job) => job.status === "in_transit").length;
   const customs = workflow.visibility?.customs ?? activeShipments.filter((job) => job.status === "customs_clearance").length;
+
+  const {
+    state: arrangement,
+    status: arrangeStatus,
+    applyState: setArrangement,
+    toggleHidden,
+    moveSectionToward,
+    resetArrangement,
+  } = useStaffArrangement();
+  const [arranging, setArranging] = useState(false);
+  const [arrangeMenu, setArrangeMenu] = useState(false);
+  // Which preset's layout the current arrangement exactly equals. null means
+  // custom; drives the quiet dot on the preset buttons. Pure derivation —
+  // no state needed.
+  const activePreset = presetForState(arrangement);
+  const onSectionKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>, id: OverviewSectionId) => {
+      if (!arranging || event.defaultPrevented) return;
+      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+        // Never steal arrows from text editing inside a section.
+        const target = event.target as HTMLElement | null;
+        if (target && target.closest("input, textarea, select")) return;
+        event.preventDefault();
+        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
+        return;
+      }
+      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
+        event.preventDefault();
+        toggleHidden(id);
+      }
+    },
+    [arranging, moveSectionToward, toggleHidden],
+  );
 
   const metrics: Metric[] = [
     { href: "/admin/shipments?attention=1", label: "Requires attention", value: attentionShipments.length, tone: "danger" },
@@ -723,22 +820,118 @@ export function V4OperationsOverview({ data, workflow, finance, note, selectedBr
 
       {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={15} strokeWidth={1.8} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the Digital Job File before acting.</span></div> : null}
 
+      <div className={styles.customizeRow}>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          aria-pressed={arranging}
+          onClick={() => {
+            if (arranging) {
+              setArranging(false);
+              setArrangeMenu(false);
+            } else {
+              setArrangeMenu(false);
+              setArranging(true);
+            }
+          }}
+        >
+          <GripVertical size={14} strokeWidth={1.8} />
+          {arranging ? "Done" : "Customise"}
+        </button>
+        {arranging ? (
+          <>
+            <span className={styles.customizeHint}>
+              Drag a section by its handle, or press Alt + ↑/↓ on a focused handle.
+            </span>
+            <div className={styles.presetGroup} role="group" aria-label="Layout presets">
+              {LAYOUT_PRESETS.map((preset) => {
+                const isCurrent = activePreset === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={styles.presetButton}
+                    aria-pressed={isCurrent}
+                    title={preset.description}
+                    onClick={() => setArrangement(preset.layout)}
+                  >
+                    {preset.label}
+                    {isCurrent ? <span className={styles.presetDot} aria-hidden="true" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+            <button type="button" className={styles.secondaryButton} onClick={() => setArrangeMenu(menu => !menu)} aria-expanded={arrangeMenu}>
+              Show / hide
+            </button>
+            {!isDefaultArrangement(arrangement) ? (
+              <button type="button" className={styles.secondaryButton} onClick={resetArrangement}>
+                <RotateCcw size={14} strokeWidth={1.8} /> Reset
+              </button>
+            ) : null}
+            {arrangeStatus === "saving" ? <span className={styles.customizeStatus}>Saving…</span> : null}
+            {arrangeStatus === "saved" ? <span className={styles.customizeStatus}>Saved</span> : null}
+            {arrangeStatus === "error" ? <span className={styles.customizeStatus} data-error>Couldn’t save — your layout stays on this device</span> : null}
+          </>
+        ) : null}
+      </div>
+      {arranging && arrangeMenu ? (
+        <div className={styles.customizeMenu} role="group" aria-label="Show or hide sections">
+          {OVERVIEW_SECTION_ORDER.map(id => {
+            const hidden = arrangement.hidden.includes(id);
+            return (
+              <label key={id} className={styles.customizeMenuItem}>
+                <input type="checkbox" checked={!hidden} onChange={() => toggleHidden(id)} />
+                <span>{overviewSectionLabels[id]}</span>
+              </label>
+            );
+          })}
+        </div>
+      ) : null}
+
       <KpiRail metrics={metrics} />
 
-      <div className={styles.primaryGrid}>
-        <WorkQueue jobs={attentionQueue} total={attentionShipments.length} returnTo={returnTo} generatedAt={data.generated_at} />
-        <TodayPanel data={data} workflow={workflow} customs={customs} arrivingToday={arrivingToday} />
-      </div>
-
-      <div className={styles.lowerGrid}>
-        <RecentActivity activity={workflow.recent_activity} generatedAt={data.generated_at} returnTo={returnTo} />
-        <LiveMovement movements={workflow.movements} generatedAt={data.generated_at} returnTo={returnTo} />
-        <Workload data={data} workflow={workflow} />
-        <ShipmentsPulse initialData={data} returnTo={returnTo} />
-        <FinanceSnapshot finance={finance} />
-      </div>
-
-      <OperationalNotes note={note} selectedBranch={selectedBranch} canPostNotes={canPostNotes} generatedAt={data.generated_at} />
+      <ArrangeableGrid
+        workspace="overview"
+        state={arrangement}
+        onChange={setArrangement}
+        arranging={arranging}
+        className={styles.arrangeGrid}
+      >
+        {(id: OverviewSectionId, { handleProps, hidden }) => {
+          if (hidden) return null;
+          const handle = (
+            <button
+              type="button"
+              className="ops-arrange-handle"
+              {...handleProps}
+              aria-label={`Move ${overviewSectionLabels[id]}`}
+              tabIndex={arranging ? 0 : -1}
+              onKeyDown={(event) => onSectionKeyDown(event, id)}
+            >
+              <GripVertical size={13} strokeWidth={1.8} />
+            </button>
+          );
+          switch (id) {
+            case "work-queue":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><WorkQueue jobs={attentionQueue} total={attentionShipments.length} returnTo={returnTo} generatedAt={data.generated_at} impactContext={impactContext} /></OverviewSectionShell>;
+            case "today":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><TodayPanel data={data} workflow={workflow} customs={customs} arrivingToday={arrivingToday} /></OverviewSectionShell>;
+            case "activity":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><RecentActivity activity={workflow.recent_activity} generatedAt={data.generated_at} returnTo={returnTo} /></OverviewSectionShell>;
+            case "movement":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><LiveMovement movements={workflow.movements} generatedAt={data.generated_at} returnTo={returnTo} /></OverviewSectionShell>;
+            case "pulse":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><ShipmentsPulse initialData={data} returnTo={returnTo} /></OverviewSectionShell>;
+            case "workload":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><Workload data={data} workflow={workflow} /></OverviewSectionShell>;
+            case "finance":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><FinanceSnapshot finance={finance} /></OverviewSectionShell>;
+            case "notes":
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><OperationalNotes note={note} selectedBranch={selectedBranch} canPostNotes={canPostNotes} generatedAt={data.generated_at} /></OverviewSectionShell>;
+          }
+        }}
+      </ArrangeableGrid>
 
       {launcherOpen ? <NewShipmentLauncher canViewCommercial={canViewCommercial} selectedBranch={selectedBranch} branches={branches} closing={launcherClosing} onClose={closeLauncher} /> : null}
     </div>

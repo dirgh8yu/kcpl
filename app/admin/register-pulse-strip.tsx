@@ -119,7 +119,8 @@ export function deliveryPulseRows(data: CommandCentreData): PulseRow[] {
   const active = data.jobs.filter((job) => job.status !== "delivered");
   return [
     { key: "out_for_delivery", label: "Out for delivery", value: active.filter((job) => job.status === "out_for_delivery").length, tone: "info", href: "/admin/shipments?status=out_for_delivery" },
-    { key: "in_transit", label: "In transit", value: active.filter((job) => job.status === "in_transit").length, tone: "neutral", href: "/admin/shipments?status=in_transit" },
+    // in_transit is informational everywhere else (Overview pulse, customs strip), not neutral.
+    { key: "in_transit", label: "In transit", value: active.filter((job) => job.status === "in_transit").length, tone: "info", href: "/admin/shipments?status=in_transit" },
     { key: "delivered", label: "Delivered today", value: data.jobs.filter((job) => job.status === "delivered").length, tone: "neutral", href: "/admin/shipments?status=delivered" },
     { key: "attention", label: "Attention", value: active.filter((job) => job.status === "exception").length, tone: "danger", href: "/admin/shipments?attention=1" },
   ];

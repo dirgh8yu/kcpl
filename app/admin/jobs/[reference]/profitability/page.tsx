@@ -65,5 +65,5 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
   </OperationsShell>;
 }
 
-function MoneyCell({label,value,positive}:{label:string;value:string;positive?:boolean}) { return <div className="rounded-[var(--app-radius)] bg-white p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[length:var(--app-label-size)] ${positive === false ? "text-[var(--admin-danger)]" : positive === true ? "text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
+function MoneyCell({label,value,positive}:{label:string;value:string;positive?:boolean}) { return <div className="rounded-[var(--app-radius)] bg-[var(--admin-surface)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[length:var(--app-label-size)] ${positive === false ? "text-[var(--admin-danger)]" : positive === true ? "text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) { return <V4WorkspaceGate eyebrow="KCPL Job Profitability" title={title} detail={detail} embedded={embedded}/>; }

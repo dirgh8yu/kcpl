@@ -58,7 +58,7 @@ const loadTypeLabels: Record<LoadType, string> = {
   container40HC: "40' High Cube",
 };
 
-const inputClass = "mt-1.5 h-10 w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 text-sm text-[var(--admin-ink)] outline-none transition focus:border-[#aa8748] focus:bg-white";
+const inputClass = "mt-1.5 h-10 w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 text-sm text-[var(--admin-ink)] outline-none transition focus:border-[#aa8748] focus:bg-[var(--admin-surface)]";
 
 function money(value: number, currency: string) {
   try {
@@ -184,7 +184,7 @@ function LocationAutocomplete({
       {selection ? <p className="mt-1.5 text-[length:var(--app-label-size)] text-[#77828c]">{selection.kind}{selection.shortName ? ` · ${selection.shortName}` : ""} · provider-valid location</p> : null}
 
       {open && !selection && value.trim().length >= 2 ? (
-        <div id={listboxId} role="listbox" className="absolute inset-x-0 top-full z-40 mt-1 max-h-80 overflow-y-auto rounded-[var(--app-radius)] border border-[#d9dee3] bg-white p-1.5 shadow-[0_18px_45px_rgba(16,38,63,.18)]">
+        <div id={listboxId} role="listbox" className="absolute inset-x-0 top-full z-40 mt-1 max-h-80 overflow-y-auto rounded-[var(--app-radius)] border border-[#d9dee3] bg-[var(--admin-surface)] p-1.5 shadow-[0_18px_45px_rgba(16,38,63,.18)]">
           {searching ? <p className="px-3 py-3 text-xs text-[#7d8790]">Searching SeaRates locations…</p> : null}
           {!searching && searchError ? <p className="px-3 py-3 text-xs leading-5 text-rose-700">{searchError}</p> : null}
           {!searching && !searchError && suggestions.length === 0 ? <div className="px-3 py-3"><p className="text-xs font-bold text-[#42505e]">No provider match yet.</p><p className="mt-1 text-[length:var(--app-label-size)] leading-4 text-[#8a949d]">Keep typing a port, airport or city. Select a result before requesting the benchmark.</p></div> : null}
@@ -315,7 +315,7 @@ export function SeaRatesMarketEstimateWorkspace({ roleLabel }: { roleLabel: stri
   const changeIsPositive = (estimate?.change ?? 0) >= 0;
 
   return <main className="min-h-screen bg-[var(--admin-canvas)] text-[var(--admin-ink)]">
-    <header className="border-b border-[var(--admin-line)] bg-white px-4 py-5 sm:px-6 lg:px-8">
+    <header className="border-b border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-[1500px] flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.18em] text-[#9a763b]">KCPL Commercial Intelligence</p>
@@ -327,9 +327,9 @@ export function SeaRatesMarketEstimateWorkspace({ roleLabel }: { roleLabel: stri
     </header>
 
     <div className="mx-auto grid max-w-[1500px] gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:p-8">
-      <section className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white p-5 shadow-sm sm:p-7">
+      <section className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-5 shadow-sm sm:p-7">
         <div className="mb-6 flex items-start gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] text-white"><PackageSearch size={18}/></span>
+          <span className="grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] text-[var(--admin-on-crimson)]"><PackageSearch size={18}/></span>
           <div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.16em] text-[#9a763b]">SeaRates Freight Index API</p><h2 className="mt-1 text-xl font-semibold">Market benchmark inputs</h2><p className="mt-1 text-xs leading-5 text-[#7a858f]">Choose locations from SeaRates itself, then compare its market index with KCPL partner/vendor buy rates.</p></div>
         </div>
 
@@ -350,7 +350,7 @@ export function SeaRatesMarketEstimateWorkspace({ roleLabel }: { roleLabel: stri
 
           <div className="md:col-span-2 xl:col-span-4 rounded-[var(--app-radius)] border border-[#e4e7ea] bg-[var(--admin-surface-muted)] px-4 py-3 text-[length:var(--app-label-size)] leading-5 text-[#6f7a84]">The Freight Index is a lane/mode market benchmark. Cargo weight and dimensions are stored as context for KCPL staff but do not turn the index into an exact shipment quote. Exact carrier pricing will come from a rate API / KCPL partner rate card.</div>
 
-          <div className="md:col-span-2 xl:col-span-4"><button disabled={busy || Boolean(configurationError)} type="submit" className="flex h-11 items-center gap-2 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 text-sm font-semibold text-white transition hover:bg-[#173650] disabled:cursor-not-allowed disabled:opacity-50"><Calculator size={16}/>{busy ? "Checking SeaRates…" : "Get SeaRates benchmark"}</button></div>
+          <div className="md:col-span-2 xl:col-span-4"><button disabled={busy || Boolean(configurationError)} type="submit" className="flex h-11 items-center gap-2 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 text-sm font-semibold text-[var(--admin-on-crimson)] transition hover:bg-[var(--admin-navy-steel)] disabled:cursor-not-allowed disabled:opacity-50"><Calculator size={16}/>{busy ? "Checking SeaRates…" : "Get SeaRates benchmark"}</button></div>
         </form>
       </section>
 
@@ -359,16 +359,16 @@ export function SeaRatesMarketEstimateWorkspace({ roleLabel }: { roleLabel: stri
         {error ? <div className="rounded-[var(--app-radius)] border border-rose-200 bg-rose-50 p-5 text-rose-800"><div className="flex items-start gap-3"><TriangleAlert size={18} className="mt-0.5 shrink-0"/><div><p className="text-sm font-semibold">Benchmark unavailable</p><p className="mt-1 text-xs leading-5">{error}</p></div></div></div> : null}
         {notice ? <div className="rounded-[var(--app-radius)] border border-[#d9c28f] bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#76591f]">{notice}</div> : null}
 
-        {estimate ? <section className="overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white shadow-sm">
-          <div className="bg-[var(--admin-crimson)] p-5 text-white"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.16em] text-[#d4ad62]">SeaRates market intelligence</p><h2 className="mt-1 text-xl font-semibold">{estimate.origin} → {estimate.destination}</h2><p className="mt-2 text-xs text-white/55">{modeLabels[estimate.mode as EstimateMode] ?? estimate.mode} · {estimate.origin_code || "origin"} → {estimate.destination_code || "destination"}</p></div>
+        {estimate ? <section className="overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] shadow-sm">
+          <div className="bg-[var(--admin-crimson)] p-5 text-[var(--admin-on-crimson)]"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.16em] text-[#d4ad62]">SeaRates market intelligence</p><h2 className="mt-1 text-xl font-semibold">{estimate.origin} → {estimate.destination}</h2><p className="mt-2 text-xs text-white/55">{modeLabels[estimate.mode as EstimateMode] ?? estimate.mode} · {estimate.origin_code || "origin"} → {estimate.destination_code || "destination"}</p></div>
           <div className="space-y-5 p-5">
             <div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.12em] text-[#89939c]">30-day market index range</p><p className="mt-1 text-2xl font-semibold tracking-[-.03em]">{money(estimate.min, estimate.currency)} – {money(estimate.max, estimate.currency)}</p><p className="mt-1 text-xs text-[#7a858f]">Average benchmark {money(estimate.midpoint, estimate.currency)}</p></div>
             <div className="grid grid-cols-2 gap-3"><Mini label="Latest index" value={money(estimate.latest, estimate.currency)}/><Mini label="Average" value={money(estimate.midpoint, estimate.currency)}/><Mini label="Period" value={`${dateLabel(estimate.period_from)} – ${dateLabel(estimate.period_to)}`}/><Mini label="Change" value={estimate.change === null ? "Not returned" : `${estimate.change > 0 ? "+" : ""}${estimate.change.toFixed(1)}%`} icon={estimate.change === null ? <Activity size={13}/> : changeIsPositive ? <TrendingUp size={13}/> : <TrendingDown size={13}/>}/></div>
             <div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-900"><ShieldCheck size={15} className="mt-0.5 shrink-0"/><span>{estimate.disclaimer}</span></div>
-            <button type="button" onClick={copyBenchmark} className="flex h-10 w-full items-center justify-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] text-xs font-semibold hover:bg-white"><Copy size={14}/>Copy average benchmark</button>
+            <button type="button" onClick={copyBenchmark} className="flex h-10 w-full items-center justify-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] text-xs font-semibold hover:bg-[var(--admin-surface)]"><Copy size={14}/>Copy average benchmark</button>
             <div className="border-t border-[#edf0f2] pt-4 text-[length:var(--app-label-size)] leading-5 text-[#88929a]"><p className="flex items-center gap-1.5"><Clock3 size={12}/>Fetched {fetchedLabel(estimate.fetched_at)}</p><p className="mt-1">Source: {estimate.source}</p><a href={estimate.attribution_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 font-semibold text-[#80612e] underline underline-offset-4">SeaRates Freight Index <ExternalLink size={11}/></a></div>
           </div>
-        </section> : !configurationError ? <section className="rounded-[var(--app-radius)] border border-dashed border-[#cfd5da] bg-white p-6"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-[#9a763b]">How KCPL should use it</p><h2 className="mt-2 text-lg font-semibold">Benchmark the market, then price the job.</h2><p className="mt-2 text-xs leading-6 text-[#6f7a84]">Use SeaRates to understand the market lane, compare that with KCPL’s actual partner/vendor rate, then build the customer quotation using expected buy cost and KCPL margin.</p></section> : null}
+        </section> : !configurationError ? <section className="rounded-[var(--app-radius)] border border-dashed border-[#cfd5da] bg-[var(--admin-surface)] p-6"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.14em] text-[#9a763b]">How KCPL should use it</p><h2 className="mt-2 text-lg font-semibold">Benchmark the market, then price the job.</h2><p className="mt-2 text-xs leading-6 text-[#6f7a84]">Use SeaRates to understand the market lane, compare that with KCPL’s actual partner/vendor rate, then build the customer quotation using expected buy cost and KCPL margin.</p></section> : null}
       </aside>
     </div>
   </main>;

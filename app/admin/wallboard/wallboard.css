@@ -1,0 +1,260 @@
+/*
+ * Ops wallboard (TV mode) — /admin/wallboard
+ * One dark, chromeless screen for the office display. Deliberately OUTSIDE the
+ * light admin palette: the board lives on a wall, read from metres away, so it
+ * re-anchors a small dark token set on .wb-root instead of overriding the
+ * shared system. Crimson stays KCPL brand crimson; semantic colours shift to
+ * dark-surface-legible tints. No gradients, no glass, no glow.
+ */
+
+.wb-root {
+  /* Dark tokens — local to the wallboard, never leaking into the admin shell. */
+  --wb-bg: #0B0E13;
+  --wb-panel: rgba(255, 255, 255, 0.028);
+  --wb-line: rgba(255, 255, 255, 0.09);
+  --wb-line-strong: rgba(255, 255, 255, 0.16);
+  --wb-ink: #F2F5F9;
+  --wb-muted: rgba(226, 232, 240, 0.62);
+  --wb-faint: rgba(226, 232, 240, 0.38);
+  --wb-crimson: var(--admin-crimson, #DC143C);
+  --wb-danger: #F97066;
+  --wb-warning: #FDB022;
+  --wb-success: #75E0A7;
+  --wb-info: #84ADFF;
+
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--wb-bg);
+  color: var(--wb-ink);
+  font-variant-numeric: tabular-nums;
+  z-index: 40;
+}
+
+/* Header ---------------------------------------------------------------- */
+
+.wb-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 32px 14px;
+  border-bottom: 1px solid var(--wb-line);
+}
+
+.wb-brand { display: flex; align-items: center; gap: 12px; }
+
+.wb-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--wb-line-strong);
+  border-radius: 8px;
+  font-weight: 650;
+  font-size: 16px;
+  color: var(--wb-crimson);
+}
+
+.wb-brand-text { display: flex; flex-direction: column; line-height: 1.25; }
+.wb-brand-text strong { font-size: 16px; font-weight: 650; letter-spacing: 0.02em; }
+.wb-brand-text span { font-size: 12px; color: var(--wb-faint); }
+
+.wb-header-meta { display: flex; align-items: baseline; gap: 16px; margin-left: auto; }
+.wb-freshness { font-size: 12px; color: var(--wb-faint); }
+.wb-freshness[data-stale] { color: var(--wb-warning); }
+.wb-clock { display: flex; align-items: baseline; gap: 12px; }
+.wb-clock span:first-child { font-size: 26px; font-weight: 600; letter-spacing: 0.01em; }
+.wb-date { font-size: 13px; color: var(--wb-muted); }
+
+.wb-dots { display: flex; gap: 8px; margin-left: 8px; }
+.wb-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 1px solid var(--wb-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.wb-dot:hover { border-color: var(--wb-faint); }
+.wb-dot[data-active] { background: var(--wb-crimson); border-color: var(--wb-crimson); }
+.wb-dot:focus-visible { outline: 2px solid var(--wb-info); outline-offset: 2px; }
+
+/* Stage + slides --------------------------------------------------------- */
+
+.wb-stage { flex: 1; min-height: 0; display: flex; padding: 20px 32px; }
+.wb-slide { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; animation: wb-fade 200ms ease-out; }
+@keyframes wb-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.wb-slide-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-faint);
+}
+
+.wb-quiet { margin: 0; font-size: 15px; color: var(--wb-faint); }
+.wb-quiet-large { margin: auto; font-size: 22px; text-align: center; color: var(--wb-muted); }
+
+/* Live pulse ------------------------------------------------------------- */
+
+.wb-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wb-pulse-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px 20px 18px;
+  border: 1px solid var(--wb-line);
+  border-radius: 10px;
+  background: var(--wb-panel);
+}
+.wb-pulse-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wb-faint); }
+.wb-pulse-value { font-size: 56px; line-height: 1; font-weight: 620; }
+.wb-pulse-cell[data-tone="danger"] .wb-pulse-value { color: var(--wb-danger); }
+.wb-pulse-cell[data-tone="warning"] .wb-pulse-value { color: var(--wb-warning); }
+.wb-pulse-cell[data-tone="info"] .wb-pulse-value { color: var(--wb-info); }
+.wb-pulse-cell[data-zero] .wb-pulse-value { color: var(--wb-faint); }
+
+.wb-branches {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.wb-branch {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--wb-line);
+  border-radius: 8px;
+  background: var(--wb-panel);
+}
+.wb-branch-name { font-size: 13px; font-weight: 620; }
+.wb-branch-urgent { color: var(--wb-danger); font-weight: 650; }
+.wb-branch-facts { font-size: 12px; color: var(--wb-muted); }
+
+/* Today ------------------------------------------------------------------ */
+
+.wb-today-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.wb-today-col { min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.wb-col-title { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--wb-muted); }
+.wb-today-col .wb-row { flex-shrink: 0; }
+
+.wb-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1.1fr) minmax(0, 1.6fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--wb-line);
+  font-size: 15px;
+}
+.wb-row-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--wb-faint); }
+.wb-row[data-tone="info"] .wb-row-dot { background: var(--wb-info); }
+.wb-row[data-tone="success"] .wb-row-dot { background: var(--wb-success); }
+.wb-row[data-tone="warning"] .wb-row-dot { background: var(--wb-warning); }
+.wb-row-ref { font-weight: 620; }
+.wb-row-customer { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-row-route { color: var(--wb-muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-row-label { color: var(--wb-faint); font-size: 12px; text-align: right; }
+
+/* Blockers ---------------------------------------------------------------- */
+
+.wb-blockers-list { flex: 1; min-height: 0; overflow: hidden; }
+
+.wb-blocker {
+  display: grid;
+  grid-template-columns: 10px 150px minmax(0, 1.4fr) minmax(0, 1.2fr) 130px minmax(0, 0.9fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--wb-line);
+  font-size: 16px;
+}
+.wb-blocker-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--wb-warning); }
+.wb-blocker[data-tone="danger"] .wb-blocker-dot { background: var(--wb-danger); }
+.wb-blocker-ref { font-weight: 620; font-size: 15px; }
+.wb-blocker-customer { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-blocker-route { color: var(--wb-muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-blocker-label { font-size: 13px; font-weight: 620; color: var(--wb-warning); }
+.wb-blocker-label[data-tone="danger"] { color: var(--wb-danger); }
+.wb-blocker-owner { font-size: 13px; color: var(--wb-faint); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-owner-none { color: var(--wb-warning); }
+
+.wb-totals-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--wb-line);
+  font-size: 14px;
+  color: var(--wb-muted);
+}
+.wb-totals-row strong { font-size: 18px; font-weight: 650; color: var(--wb-ink); margin-right: 6px; }
+
+/* Transitions -------------------------------------------------------------- */
+
+.wb-sparkline { display: flex; align-items: flex-end; gap: 14px; height: 180px; padding: 0 6px; }
+.wb-spark-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
+.wb-spark-track { flex: 1; width: 100%; max-width: 84px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--wb-line-strong); }
+.wb-spark-bar { width: 100%; background: var(--wb-info); opacity: 0.55; border-radius: 3px 3px 0 0; }
+.wb-spark-col[data-today] .wb-spark-bar { background: var(--wb-crimson); opacity: 0.85; }
+.wb-spark-day { font-size: 12px; color: var(--wb-faint); }
+.wb-spark-col[data-today] .wb-spark-day { color: var(--wb-muted); font-weight: 600; }
+
+.wb-transitions-list { margin-top: 6px; display: flex; flex-direction: column; }
+.wb-transition {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--wb-line);
+  font-size: 15px;
+}
+.wb-transition-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--wb-info); }
+.wb-transition[data-severity="warning"] .wb-transition-dot { background: var(--wb-warning); }
+.wb-transition[data-severity="critical"] .wb-transition-dot { background: var(--wb-danger); }
+.wb-transition-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-transition-when { font-size: 12px; color: var(--wb-faint); }
+
+/* Footer ------------------------------------------------------------------- */
+
+.wb-footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 32px 16px;
+}
+.wb-progress-track { flex: 1; height: 2px; background: var(--wb-line); border-radius: 999px; overflow: hidden; }
+.wb-progress { display: block; height: 100%; background: var(--wb-crimson); transform-origin: left; animation-name: wb-progress; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes wb-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.wb-snapshot { font-size: 11px; color: var(--wb-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-slide { animation: none; }
+  .wb-progress { animation: none; transform: scaleX(0); }
+}
+
+/* Laptop sanity: the board is a TV surface, but must degrade without overflow. */
+@media (max-width: 1100px) {
+  .wb-pulse-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wb-pulse-value { font-size: 40px; }
+  .wb-today-grid { grid-template-columns: 1fr; overflow-y: auto; }
+  .wb-blocker { grid-template-columns: 10px 130px minmax(0, 1.4fr) minmax(0, 1fr) 110px; }
+  .wb-blocker-owner { display: none; }
+}
+
+/* Large wall TVs: scale the counts up so the slide reads from across the room. */
+@media (min-width: 1700px) {
+  .wb-pulse-value { font-size: 76px; }
+  .wb-pulse-cell { padding: 30px 26px 24px; }
+}

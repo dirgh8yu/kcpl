@@ -14,7 +14,7 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
         <h1 className="section-title">{siteText("zh", "quote.title")}</h1>
         <p className="section-intro">{siteText("zh", "quote.intro")}</p>
       </section>
-      <section className="section quote-section"><QuoteEnquiry initial={query}/></section>
+      <section className="section quote-section"><QuoteEnquiry initial={query} locale="zh"/></section>
     </SiteShell>
   );
 }

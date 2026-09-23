@@ -3,11 +3,11 @@ import { Activity, ArrowRight, Boxes, CalendarClock, FileText, Handshake, ListCh
 import type { WorkflowOverview } from "./workflow-overview.server";
 
 function Signal({ label, value, danger = false, warning = false }: { label: string; value: number; danger?: boolean; warning?: boolean }) {
-  return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[length:var(--app-label-size)] font-bold ${danger && value > 0 ? "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]" : warning && value > 0 ? "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]" : "border-[var(--admin-line)] bg-white text-[var(--admin-muted)]"}`}><strong>{value}</strong>{label}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[length:var(--app-label-size)] font-bold ${danger && value > 0 ? "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)] text-[var(--admin-danger)]" : warning && value > 0 ? "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)] text-[var(--admin-warning)]" : "border-[var(--admin-line)] bg-[var(--admin-surface)] text-[var(--admin-muted)]"}`}><strong>{value}</strong>{label}</span>;
 }
 
 function FlowLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return <Link href={href} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-white px-2.5 py-1.5 text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)] hover:border-[var(--admin-accent-line)] hover:text-[var(--admin-crimson)]">{children}</Link>;
+  return <Link href={href} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-2.5 py-1.5 text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)] hover:border-[var(--admin-accent-line)] hover:text-[var(--admin-crimson)]">{children}</Link>;
 }
 
 export function WorkflowOverviewStrip({ overview }: { overview: WorkflowOverview }) {

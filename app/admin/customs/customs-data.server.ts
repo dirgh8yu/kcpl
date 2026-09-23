@@ -7,6 +7,8 @@ import { branchAccessSet, canAccessBranchSet, strictBranchValue } from "../branc
 import type { KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { buildDocumentIntelligence, type WorkflowDocumentDirection } from "../workflow-defaults";
+import { suggestChecklist, type ChecklistEvidence, type SuggestedChecklist } from "./checklist-recommender";
+import { dwellWarning, laneDwellBaseline, type DwellEvidenceItem } from "./lane-dwell-baseline";
 import { customsClearanceFromShipment } from "./customs-clearance.server";
 import type { CustomsClearanceRecord } from "./customs-clearance";
 import { customsDeskRisk, customsDeskState, customsReleaseRequired, type CustomsDeskRisk, type CustomsDeskState } from "./customs-policy";
@@ -44,6 +46,12 @@ export type CustomsDeskRow = {
   document_present: number;
   document_direction: WorkflowDocumentDirection;
   document_advisories: string[];
+  /** Document checklist suggested by comparable completed shipments on this lane; unavailable when no evidence exists. */
+  suggested_checklist: SuggestedChecklist;
+  /** Lane dwell baseline learned from completed clearances; unavailable without enough history. */
+  dwell_baseline: { available: boolean; sample: number; median_hours: number | null; p75_hours: number | null };
+  /** Warning when the live clearance is running slower than the lane's slow-but-normal bound. */
+  dwell_warning: { active: boolean; elapsed_hours: number | null; p75_hours: number | null; sample: number; message: string | null };
   release_required: boolean;
   clearance: CustomsClearanceRecord;
   state: CustomsDeskState;
@@ -111,6 +119,101 @@ async function getAllInChunks(refs: FirebaseFirestore.DocumentReference[], size 
     snapshots.push(...await db.getAll(...refs.slice(index, index + size)));
   }
   return snapshots;
+}
+
+/**
+ * Lane evidence for the checklist recommender, drawn from completed shipments.
+ * Serves branch-scoped operators only the lanes they may see, so a restricted
+ * desk never learns from records it cannot open.
+ */
+async function loadChecklistEvidence(context: KcplStaffContext, db: FirebaseFirestore.Firestore): Promise<ChecklistEvidence[]> {
+  const [delivered, quotes] = await Promise.all([
+    db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(400).get(),
+    db.collection("quotes").limit(4000).get(),
+  ]);
+  const quoteById = new Map(quotes.docs.map((doc) => [doc.id, doc]));
+
+  const accessible = delivered.docs.map((shipment) => {
+    const primary = strictBranchValue(shipment.get("primary_branch"));
+    const handling = branchAccessSet(shipment.get("primary_branch"), shipment.get("handling_branches"));
+    const branches = [...(primary ? [primary] : []), ...handling];
+    const allowed = branches.length > 0 && (context.can_access_all_branches || branches.some((branch) => staffCanAccessBranch(context, branch)));
+    if (!allowed) return null;
+    const quote = quoteById.get(text(shipment.get("quote_reference")));
+    const origin = text(quote?.get("origin"));
+    const destination = text(quote?.get("destination"));
+    if (!origin || !destination) return null;
+    return {
+      ref: shipment.ref,
+      lane: `${origin.toLowerCase()}→${destination.toLowerCase()}`,
+      mode: text(quote?.get("mode")),
+      branch: primary ?? "",
+    };
+  }).filter((row): row is NonNullable<typeof row> => row !== null);
+
+  const evidence: ChecklistEvidence[] = [];
+  const chunkSize = 30;
+  for (let index = 0; index < accessible.length; index += chunkSize) {
+    const chunk = accessible.slice(index, index + chunkSize);
+    const snapshots = await Promise.all(chunk.map((row) => row.ref.collection("documents").limit(100).get()));
+    for (let position = 0; position < chunk.length; position++) {
+      const documents: ShipmentDocumentType[] = [];
+      for (const doc of snapshots[position].docs) {
+        const type = doc.get("document_type") as ShipmentDocumentType;
+        if (shipmentDocumentTypeLabels[type]) documents.push(type);
+      }
+      evidence.push({ lane: chunk[position].lane, mode: chunk[position].mode, branch: chunk[position].branch, delivered: true, documents });
+    }
+  }
+  return evidence;
+}
+
+/**
+ * Dwell evidence for the lane baseline: recent events streams from completed
+ * international shipments. Status labels in the stream are the authoritative
+ * transition record written by the canonical update path. Bounded like every
+ * register read; streams with no completed clearance simply yield nothing.
+ */
+async function loadDwellEvidence(db: FirebaseFirestore.Firestore): Promise<DwellEvidenceItem[]> {
+  const [delivered, quotes] = await Promise.all([
+    db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(200).get(),
+    db.collection("quotes").limit(4000).get(),
+  ]);
+  const quoteById = new Map(quotes.docs.map((doc) => [doc.id, doc]));
+  const chunks: { ref: FirebaseFirestore.DocumentReference; lane: string }[][] = [];
+  const chunkSize = 30;
+  for (let index = 0; index < delivered.docs.length; index += chunkSize) {
+    chunks.push(delivered.docs.slice(index, index + chunkSize).map((doc) => {
+      const quote = quoteById.get(text(doc.get("quote_reference")));
+      const origin = text(quote?.get("origin"));
+      const destination = text(quote?.get("destination"));
+      return { ref: doc.ref, lane: origin && destination ? `${origin.toLowerCase()}→${destination.toLowerCase()}` : "" };
+    }));
+  }
+  const evidence: DwellEvidenceItem[] = [];
+  for (const chunk of chunks) {
+    const snapshots = await Promise.all(chunk.map((row) => row.ref.collection("events").orderBy("event_time", "asc").limit(200).get()));
+    for (let position = 0; position < chunk.length; position++) {
+      const lane = chunk[position].lane;
+      if (!lane) continue;
+      const titles = snapshots[position].docs
+        .map((doc) => ({ title: text(doc.get("title")), at: text(doc.get("event_time")) }))
+        .filter((item) => item.title && item.at);
+      if (titles.length) evidence.push({ lane, titles });
+    }
+  }
+  return evidence;
+}
+
+function hoursSince(value: unknown) {
+  const stamp = typeof value === "string" ? Date.parse(value) : Number.NaN;
+  if (!Number.isFinite(stamp)) return null;
+  return Math.max(0, Math.round(((Date.now() - stamp) / 3_600_000) * 10) / 10);
+}
+
+/** Serialized rows carry snake_case; the policy module speaks camelCase. */
+function dwellWarningShape(warning: ReturnType<typeof dwellWarning>) {
+  return { active: warning.active, elapsed_hours: warning.elapsedHours, p75_hours: warning.p75Hours, sample: warning.sample, message: warning.message };
 }
 
 async function loadDocumentsAndOverrides(shipmentRefs: FirebaseFirestore.DocumentReference[]) {
@@ -198,10 +301,12 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
 
   const quoteIds = [...new Set(accessibleShipments.map((shipment) => nullable(shipment.get("quote_reference"))).filter((value): value is string => Boolean(value)))];
   const customerIds = [...new Set(accessibleShipments.map((shipment) => nullable(shipment.get("customer_id"))).filter((value): value is string => Boolean(value)))];
-  const [quoteSnapshots, customerSnapshots, childData] = await Promise.all([
+  const [quoteSnapshots, customerSnapshots, childData, deliveredEvidence, dwellEvidence] = await Promise.all([
     getAllInChunks(quoteIds.map((id) => db.collection("quotes").doc(id))),
     getAllInChunks(customerIds.map((id) => db.collection("customers").doc(id))),
     loadDocumentsAndOverrides(accessibleShipments.map((shipment) => shipment.ref)),
+    loadChecklistEvidence(context, db),
+    loadDwellEvidence(db),
   ]);
   const quotes = new Map(quoteSnapshots.filter((doc) => doc.exists).map((doc) => [doc.id, doc]));
   const customers = new Map(customerSnapshots.filter((doc) => doc.exists).map((doc) => [doc.id, doc]));
@@ -291,7 +396,15 @@ export async function listCustomsDeskRows(context: KcplStaffContext): Promise<Cu
       clearanceStatus: clearance.status,
     });
 
+    const lane = `${origin.toLowerCase()}→${destination.toLowerCase()}`;
+    const baseline = laneDwellBaseline(dwellEvidence, lane);
+    const elapsedHours = status === "customs_clearance" && clearance.status !== "released"
+      ? hoursSince(shipment.get("status_changed_at") ?? shipment.get("updated_at"))
+      : null;
     rows.push({
+      suggested_checklist: suggestChecklist(deliveredEvidence, { lane, mode, branch: primary ?? "" }),
+      dwell_baseline: { available: baseline.available, sample: baseline.sample, median_hours: baseline.medianHours, p75_hours: baseline.p75Hours },
+      dwell_warning: dwellWarningShape(dwellWarning({ baseline, elapsedHours })),
       reference,
       quote_reference: quoteReference,
       customer_name: text(customer?.get("display_name"), text(quote?.get("company_name"), text(quote?.get("contact_name"), "Customer"))),

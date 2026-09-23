@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Boxes, Building2, FileSearch, Handshake, PackageSearch, Plus, ReceiptText, Search, X } from "lucide-react";
 import type { WorkflowWorkspace, WorkspaceIconName } from "./workflow-navigation";
-import { workspaceSearchText } from "./workflow-navigation";
+import { workspaceMatchesPath, workspaceSearchText, workflowGroupOrder } from "./workflow-navigation";
 import { WorkspaceIcon } from "./workflow-icon";
+import { clearRecents, pushRecent, readRecents, type PaletteRecent, type RecentKind } from "./palette-recents";
 
 type SearchResult = {
   kind: "shipment" | "customer" | "quote" | "order" | "tender" | "partner" | "payable";
@@ -22,8 +23,10 @@ type PaletteEntry = {
   subtitle: string;
   meta: string | null;
   href: string;
-  kind: "workspace" | "action" | SearchResult["kind"];
+  kind: "workspace" | "action" | "header" | SearchResult["kind"];
   icon?: WorkspaceIconName;
+  /** Marks a recent-items row (permission-checked, removable). */
+  recent?: true;
 };
 
 function resultIcon(entry: PaletteEntry) {
@@ -59,12 +62,19 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
   const [resultQuery, setResultQuery] = useState("");
   const [searchError, setSearchError] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  /** Recent items are read when the palette opens (per-device launcher state) and
+   * permission-filtered against the same workspace list the palette renders. */
+  const [recents, setRecents] = useState<PaletteRecent[]>([]);
 
   useEffect(() => {
     if (!open) return;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Recents are read synchronously at open: they are launcher state and must
+    // be there on the first painted frame, even in throttled/background tabs.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- adopting persisted storage into state on open
+    setRecents(readRecents());
     const frame = window.requestAnimationFrame(() => {
       setQuery("");
       setRemoteResults([]);
@@ -120,9 +130,10 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [open, query]);
 
+  /** Quick actions advertise real destinations only (contract-tested). */
+  const allowedIds = useMemo(() => new Set(workspaces.map((workspace) => workspace.id)), [workspaces]);
   const entries = useMemo<PaletteEntry[]>(() => {
     const needle = query.trim().toLowerCase();
-    const allowedIds = new Set(workspaces.map((workspace) => workspace.id));
     const quickActionCandidates: PaletteEntry[] = [
       { key: "action:new-customer", title: "New customer", subtitle: "Create a Customer 360 account", meta: null, href: "/admin/crm/new", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
@@ -132,11 +143,27 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
     const quickActions = quickActionCandidates.filter((entry) => !needle || `${entry.title} ${entry.subtitle}`.toLowerCase().includes(needle));
 
     const matchingWorkspaces = workspaces.filter((workspace) => !needle || workspaceSearchText(workspace).includes(needle));
-    const workspaceEntries = (needle ? matchingWorkspaces.slice(0, 18) : matchingWorkspaces)
-      .map((workspace) => ({ key: `workspace:${workspace.id}`, title: workspace.label, subtitle: `${workspace.group} · ${workspace.hint}`, meta: null, href: workspace.href, kind: "workspace" as const, icon: workspace.icon }));
+    // Workspaces render under the sidebar's own group sections, so the palette
+    // and the navigation teach the same information architecture.
+    const workspaceEntries: PaletteEntry[] = [];
+    for (const { group, items } of workflowGroupOrder
+      .map((group) => ({ group, items: (needle ? matchingWorkspaces.slice(0, 18) : matchingWorkspaces).filter((workspace) => workspace.group === group) }))
+      .filter((section) => section.items.length > 0)) {
+      workspaceEntries.push({ key: `group-header:${group}`, title: group, subtitle: String(items.length), meta: null, href: "", kind: "header" });
+      for (const workspace of items) {
+        workspaceEntries.push({ key: `workspace:${workspace.id}`, title: workspace.label, subtitle: workspace.hint, meta: null, href: workspace.href, kind: "workspace" as const, icon: workspace.icon });
+      }
+    }
     const remoteEntries = needle.length >= 2 && resultQuery === query.trim() ? remoteResults.map((result) => ({ key: `${result.kind}:${result.id}`, title: result.title, subtitle: result.subtitle, meta: result.meta, href: result.href, kind: result.kind })) : [];
-    return [...remoteEntries, ...quickActions.slice(0, needle ? 6 : 4), ...workspaceEntries].slice(0, 45);
-  }, [query, remoteResults, resultQuery, workspaces]);
+    // Recent items surface only on the empty query (the launcher's home state)
+    // and are permission-checked against the live workspace list every render.
+    // Entries without a workspaceId (record-level deep links) always render.
+    const recentEntries = needle ? [] : recents
+      .filter((recent) => !recent.workspaceId || allowedIds.has(recent.workspaceId))
+      .map((recent) => ({ key: `recent:${recent.href}`, title: recent.title, subtitle: recent.subtitle, meta: null, href: recent.href, kind: recent.kind as PaletteEntry["kind"], recent: true as const }));
+    const recentClear = !needle && recents.length ? [{ key: "recent:clear", title: "Clear recent items", subtitle: "Forget the recent list on this device", meta: null, href: "", kind: "action" as const, recent: true as const }] : [];
+    return [...recentEntries, ...recentClear, ...remoteEntries, ...quickActions.slice(0, needle ? 6 : 4), ...workspaceEntries].slice(0, 45);
+  }, [query, remoteResults, resultQuery, workspaces, recents, allowedIds]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setSelectedIndex(0));
@@ -147,13 +174,31 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
     resultsRef.current?.querySelector(`[data-result-index="${selectedIndex}"]`)?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  function go(href: string) {
+  function onEntryClick(entry: PaletteEntry) {
+    if (entry.kind === "header" || entry.key === "recent:clear") { if (entry.key === "recent:clear") { clearRecents(); setRecents([]); } return; }
+    go(entry);
+  }
+
+  function go(entry: PaletteEntry) {
+    // Record navigation for the Recent section. Quick actions are launchers,
+    // recent rows are already recorded, and permission is re-checked so a
+    // stored entry can never advertise a workspace the role no longer has.
+    if (entry.kind !== "action" && !entry.recent) {
+      const workspaceId = entry.kind === "workspace"
+        ? entry.key.slice("workspace:".length)
+        : workspaces.find((item) => workspaceMatchesPath(item, entry.href))?.id;
+      if (!workspaceId || allowedIds.has(workspaceId)) {
+        pushRecent({ title: entry.title, subtitle: entry.subtitle, href: entry.href, kind: entry.kind as RecentKind, workspaceId });
+      }
+    }
     onClose();
-    router.push(href);
+    router.push(entry.href);
   }
 
   if (!open) return null;
-  const selected = entries[selectedIndex] ?? entries[0] ?? null;
+  const selectable = entries.filter((entry) => entry.kind !== "header");
+  const selected = selectable[selectedIndex] ?? selectable[0] ?? null;
+  const selectedIndexAbsolute = selected ? entries.indexOf(selected) : -1;
   const busy = query.trim().length >= 2 && resultQuery !== query.trim();
 
   return (
@@ -166,9 +211,9 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => Math.max(0, Math.min(entries.length - 1, current + 1))); }
+              if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => Math.max(0, Math.min(selectable.length - 1, current + 1))); }
               else if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => Math.max(0, current - 1)); }
-              else if (event.key === "Enter" && selected) { event.preventDefault(); go(selected.href); }
+              else if (event.key === "Enter" && selected) { event.preventDefault(); onEntryClick(selected); }
               else if (event.key === "Escape") { event.preventDefault(); onClose(); }
             }}
             className="min-w-0 flex-1 bg-transparent text-[length:var(--app-font-size)] font-normal text-[var(--admin-ink)] outline-none placeholder:text-[var(--admin-muted)]"
@@ -178,7 +223,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
             aria-autocomplete="list"
             aria-expanded={open}
             aria-controls="command-results"
-            aria-activedescendant={selected ? `command-result-${Math.max(0, entries.indexOf(selected))}` : undefined}
+            aria-activedescendant={selected ? `command-result-${Math.max(0, selectedIndexAbsolute)}` : undefined}
           />
           {busy && query.trim().length >= 2 ? <span className="text-[length:var(--app-label-size)] font-medium text-[var(--admin-muted)]">Searching</span> : null}
           <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center border-l border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)]" aria-label="Close command palette"><X size={15} strokeWidth={1.75}/></button>
@@ -186,7 +231,18 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
 
         {searchError && resultQuery === query.trim() && query.trim().length >= 2 ? <p role="status" className="app-search-error">Record search is unavailable. You can still open a workspace below.</p> : null}
         <div ref={resultsRef} id="command-results" role="listbox" aria-label="Search results" aria-busy={busy} className="max-h-[66vh] overflow-y-auto">
-          {!entries.length ? <div className="px-5 py-14 text-center"><FileSearch size={20} strokeWidth={1.75} className="mx-auto text-[var(--admin-muted)]"/><p className="mt-4 text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)]">No matching KCPL records</p><p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Try a shipment reference, customer, lane, carrier, order, tender or invoice number.</p></div> : entries.map((entry, index) => (
+          {!entries.length ? <div className="px-5 py-14 text-center"><FileSearch size={20} strokeWidth={1.75} className="mx-auto text-[var(--admin-muted)]"/><p className="mt-4 text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)]">No matching KCPL records</p><p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Try a shipment reference, customer, lane, carrier, order, tender or invoice number.</p></div> : entries.map((entry, index) => entry.kind === "header" ? (
+            <div
+              key={entry.key}
+              id={`command-result-${index}`}
+              role="presentation"
+              aria-hidden="true"
+              className="app-palette-group-header"
+            >
+              <span className="app-palette-group-title">{entry.title}</span>
+              <span className="app-palette-group-count">{entry.subtitle}</span>
+            </div>
+          ) : (
             <button
               type="button"
               key={entry.key}
@@ -196,11 +252,11 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
               tabIndex={-1}
               data-result-index={index}
               onMouseEnter={() => setSelectedIndex(index)}
-              onClick={() => go(entry.href)}
-              className={`grid min-h-[48px] w-full grid-cols-[32px_minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-2 text-left transition-colors sm:px-5 ${index === selectedIndex ? "bg-[var(--admin-surface-muted)] shadow-[inset_2px_0_0_var(--admin-crimson)]" : "hover:bg-[var(--admin-canvas)]"}`}
+              onClick={() => onEntryClick(entry)}
+              className={`grid min-h-[48px] w-full grid-cols-[32px_minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-2 text-left transition-colors sm:px-5 ${index === selectedIndex ? "bg-[var(--admin-surface-muted)]" : "hover:bg-[var(--admin-canvas)]"}`}
             >
               <span className={`${index === selectedIndex ? "text-[var(--admin-crimson)]" : "text-[var(--admin-muted)]"}`}>{resultIcon(entry)}</span>
-              <span className="min-w-0"><span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"><strong className="truncate text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)]">{entry.title}</strong><span className="shrink-0 border border-[var(--admin-line-strong)] px-1.5 py-0.5 text-[length:var(--app-label-size)] font-normal text-[var(--admin-muted)]">{kindLabel(entry.kind)}</span></span><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{entry.subtitle}</span></span>
+              <span className="min-w-0"><span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"><strong className="truncate text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)]">{entry.title}</strong><span className="shrink-0 border border-[var(--admin-line-strong)] px-1.5 py-0.5 text-[length:var(--app-label-size)] font-normal text-[var(--admin-muted)]">{entry.recent && entry.kind !== "action" ? "Recent" : kindLabel(entry.kind)}</span></span><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{entry.subtitle}</span></span>
               {entry.meta ? <span className="hidden shrink-0 text-[length:var(--app-label-size)] text-[var(--admin-muted)] sm:block">{entry.meta.replaceAll("_", " ")}</span> : <span/>}
               <ArrowRight size={13} strokeWidth={1.75} className="shrink-0 text-[var(--admin-muted)]"/>
             </button>

@@ -132,6 +132,42 @@
   --app-surface-radius: 10px;
   --app-dialog-radius: 12px;
 }
+
+/* Operator display preferences (account panel's Display tab, persisted per
+ * staff member). The layout reflects the choice as data attributes on the route
+ * root; the stylesheet turns them into token overrides. Compact rewrites the
+ * scale tokens so every consumer (rows, controls, gaps) shrinks together;
+ * reduced-motion zeroes the duration tokens so transitions finish before they
+ * start — the same honest zero the prefers-reduced-motion blanket uses.
+ * Reference-cycles here would cascade undefined, so the overrides are values,
+ * never var() chains. */
+.kcpl-admin-route[data-density="compact"] {
+  --app-row-height: 40px;
+  --app-control-height: 34px;
+  --app-page-gap: 16px;
+  --app-space-4: 12px;
+  --app-space-5: 18px;
+  --app-space-6: 24px;
+}
+.kcpl-admin-route[data-motion="reduced"] {
+  --app-duration-fast: 0ms;
+  --app-duration-base: 0ms;
+  --app-duration-slow: 0ms;
+}
+/* Compact density beyond the scale tokens: cell and section paddings are
+ * component-local values the tokens don't reach, so the compact scope restates
+ * them. Vertical rhythm only — horizontal padding keeps the column rhythm.
+ * Specificity (route attribute + content class + element) beats the originals
+ * on the cascade, no force flags needed; row height itself needs no
+ * restatement, tables already consume --app-row-height. */
+.kcpl-admin-route[data-density="compact"] .kcpl-admin-content :where(table th) { height: 32px; padding: 6px 12px; }
+.kcpl-admin-route[data-density="compact"] .kcpl-admin-content :where(table td) { padding: 6px 12px; }
+.kcpl-admin-route[data-density="compact"] .kcpl-admin-content .ops-detail-section { gap: 10px; }
+.kcpl-admin-route[data-density="compact"] .kcpl-admin-content .ops-detail-section + .ops-detail-section { margin-top: 16px; padding-top: 16px; }
+.kcpl-admin-route[data-density="compact"] .kcpl-admin-content .ops-detail-grid { gap: 10px 14px; }
+
+/* No attributes → the base values above already are the defaults; nothing
+ * further to override. */
 .kcpl-admin-route .kcpl-admin-shell {
   min-height: 100dvh;
   background: var(--admin-canvas);
@@ -168,8 +204,10 @@
 .app-scope > span:last-child { margin-left: auto; color: var(--admin-faint); font-size: 10px; font-weight: 400; }
 .app-scope-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--admin-crimson); }
 .app-workspaces { overflow-y: auto; flex: 1; min-height: 0; padding: 10px 8px; scrollbar-width: thin; }
-.app-nav-group { margin-bottom: 2px; }
-.app-nav-group summary { min-height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 4px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.app-nav-group { margin-bottom: 10px; }
+.app-nav-group summary { min-height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 5px 10px 3px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.app-nav-group-meta { display: inline-flex; align-items: center; gap: 5px; }
+.app-nav-group-count { color: inherit; opacity: .7; font-size: 10.5px; font-weight: 550; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .app-nav-group summary::-webkit-details-marker { display: none; }
 .app-nav-group summary:hover { color: var(--admin-muted); background: transparent; }
 .app-nav-group a { position: relative; min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: 6px; padding: 0 8px 0 10px; color: var(--admin-muted); font-size: 13.5px; font-weight: 450; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
@@ -196,6 +234,14 @@
 .app-account-name small { display: block; color: var(--admin-muted); font-size: 11px; font-weight: 400; }
 .app-account a { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--app-radius); color: var(--admin-muted); }
 .app-account a:hover { background: var(--admin-surface-soft); color: var(--admin-ink); }
+/* Account panel tabs (Identity / Notifications / Session): the ops-scope-tab
+ * dialect — color-only hover, focus ring, and a crimson underline drawn with an
+ * inset shadow so selection never shifts layout. Same-token motion as the
+ * register tabs: fast color transitions only, nothing to gate. */
+.app-account-tab { flex: 1 1 0; min-height: 32px; padding: 0 8px; border: 0; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out); }
+.app-account-tab:hover { background: var(--admin-surface-soft); color: var(--admin-ink); }
+.app-account-tab:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.app-account-tab[aria-selected="true"] { background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--admin-crimson); }
 .app-topbar { position: fixed; inset: 0 0 auto var(--app-sidebar-width); z-index: 50; display: flex; align-items: center; gap: 12px; height: var(--app-toolbar-height); border-bottom: 1px solid var(--admin-line); background: rgb(255 255 255 / 95%); padding: 0 24px; backdrop-filter: blur(12px); box-shadow: inset 0 -1px 0 rgb(16 16 16 / 02%); }
 .app-breadcrumb { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; color: var(--admin-muted); font-size: 13px; white-space: nowrap; }
 .app-breadcrumb > :last-child { overflow: hidden; text-overflow: ellipsis; }
@@ -692,6 +738,11 @@
   .kcpl-admin-shell *, .kcpl-admin-shell *::before, .kcpl-admin-shell *::after { animation: none; transition: none; scroll-behavior: auto; }
 }
 .app-search-error { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--admin-line); color: var(--admin-warning); font-size: 13px; line-height: 20px; }
+/* ⌘K palette section headers — mirror the sidebar group summaries so palette
+ * and navigation teach the same information architecture. */
+.app-palette-group-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 20px 4px; background: var(--admin-surface); color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.app-palette-group-header + .app-palette-group-header { border-top: 0; }
+.app-palette-group-count { color: inherit; opacity: .7; font-weight: 550; font-variant-numeric: tabular-nums; }
 /* Motion v2 — shell overlays and primitive feedback.
  * Sourced from plans/admin-motion-audit.md. Everything here is transform/opacity
  * (or a fast color transition) only, sub-300ms, and disabled wholesale by the
@@ -1012,6 +1063,31 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .customs-step-clear { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--admin-success); font-size: 12.5px; line-height: 18px; }
 .kcpl-admin-content .customs-docs-summary { margin: 0; color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 18px; }
 .kcpl-admin-content .customs-docs-advisory { margin: 8px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
+
+/* Suggested checklist: learned from comparable completed shipments on the lane. */
+.kcpl-admin-content .customs-suggest { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .customs-suggest-head { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--admin-ink); font-size: 12px; font-weight: 600; }
+.kcpl-admin-content .customs-suggest-head svg { color: var(--admin-info); }
+.kcpl-admin-content .customs-suggest-list { display: grid; margin: 8px 0 0; padding: 0; gap: 4px; list-style: none; }
+.kcpl-admin-content .customs-suggest-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kcpl-admin-content .customs-suggest-label { color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .customs-suggest-list li[data-missing] .customs-suggest-label { color: var(--admin-ink); font-weight: 550; }
+.kcpl-admin-content .customs-suggest-list li[data-missing] .customs-suggest-label::after { content: " · not yet verified"; color: var(--admin-warning); font-weight: 500; }
+.kcpl-admin-content .customs-suggest-support { flex: none; color: var(--admin-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.kcpl-admin-content .customs-suggest-note { margin: 8px 0 0; color: var(--admin-muted); font-size: 11px; line-height: 15px; }
+
+/* Slow-clearance warning: live pace vs the lane's learned p75 dwell. */
+.kcpl-admin-content .customs-dwell-warning { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: var(--admin-ink); font-size: 12px; line-height: 17px; }
+.kcpl-admin-content .customs-dwell-warning svg { flex: none; margin-top: 2px; color: var(--admin-warning); }
+
+/* Owner suggestions in the shipments panel: ranked workload + lane evidence. */
+.shipments-owner-suggest { display: grid; margin: 8px 0 0; padding: 0; gap: 6px; list-style: none; counter-reset: owner-rank; }
+.shipments-owner-suggest li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border: 1px solid var(--admin-line); border-radius: 6px; padding: 6px 10px; }
+.shipments-owner-suggest li[data-lead] { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); }
+.shipments-owner-suggest-name { color: var(--admin-ink); font-size: 12px; font-weight: 600; }
+.shipments-owner-suggest-name::before { counter-increment: owner-rank; content: counter(owner-rank) ". "; color: var(--admin-faint); font-weight: 500; }
+.shipments-owner-suggest-reason { color: var(--admin-muted); font-size: 11px; text-align: right; }
+.shipments-owner-suggest-note { margin: 8px 0 0; color: var(--admin-muted); font-size: 11px; line-height: 15px; }
 @media (max-width: 760px) {
   .kcpl-admin-content .customs-clearance-page { padding-bottom: 16px; }
 }
@@ -1863,7 +1939,14 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 
 /* Record inspector: compact header, hairline sections, fact rows, sticky footer.
  * Mirrors the Shipments inspector (.shipment-sheet-*). */
-.kcpl-admin-content .ops-inspector { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); }
+.kcpl-admin-content .ops-inspector { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); animation: ops-inspector-in var(--app-duration-base) var(--app-ease-out); }
+/* Docked inspectors mount once per open (a 160ms fade+settle aligning them with
+ * the slide-over inspectors); re-selecting a row updates content inside an
+ * already-mounted panel, so it never re-animates per click. */
+@keyframes ops-inspector-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
 .kcpl-admin-content .ops-inspector-header { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 16px 9px; border-bottom: 1px solid var(--admin-line); }
 .kcpl-admin-content .ops-inspector-heading { min-width: 0; }
 .kcpl-admin-content .ops-inspector-kicker { margin: 0; overflow: hidden; color: var(--admin-muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
@@ -2121,3 +2204,107 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-num { color: var(--admin-ink); font-size: 13px; font-weight: 550; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kcpl-admin-content .ops-num[data-negative="true"] { color: var(--admin-danger); }
 .kcpl-admin-content .ops-num[data-warning="true"] { color: var(--admin-warning); }
+
+/* ── Workspace layout customise ─────────────────────────────────────── */
+
+.ops-customise-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ops-customise-hint { flex: 1 1 240px; min-width: 0; color: var(--admin-muted); font-size: 12px; line-height: 16px; }
+.ops-customise-status { color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ops-customise-status[data-error] { color: var(--admin-danger); }
+.ops-preset-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+}
+.ops-preset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 9px;
+  background: transparent;
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  cursor: pointer;
+  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out);
+}
+.ops-preset-button:hover { color: var(--admin-ink); background: var(--admin-surface-soft); }
+.ops-preset-button[aria-pressed="true"] { color: var(--admin-ink); font-weight: 600; }
+.ops-preset-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--admin-crimson); }
+.ops-preset-remove {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  margin-right: -3px;
+  border-radius: 4px;
+  color: var(--admin-faint);
+  cursor: pointer;
+}
+.ops-preset-remove:hover { color: var(--admin-danger); background: var(--admin-surface-soft); }
+
+/* "Saved" confirmation cue: an occasional, explicit action earns feedback.
+ * Enters with the shared ease-out, holds, then fades via the same animation
+ * (1400ms hold + 200ms fade = the 2400ms the component keeps the flag). */
+.ops-preset-saved-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--admin-success);
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+  animation: ops-preset-saved-cue 2400ms var(--app-ease-out) forwards;
+}
+.ops-preset-saved-cue svg { color: var(--admin-success); }
+@keyframes ops-preset-saved-cue {
+  0% { opacity: 0; transform: translateX(-3px); }
+  8%, 92% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ops-preset-saved-cue { animation: none; }
+}
+.ops-preset-save { display: inline-flex; align-items: center; gap: 6px; }
+.ops-preset-save input {
+  width: 150px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font: inherit;
+  font-size: 12px;
+}
+.ops-preset-save input:focus-visible { outline: 2px solid var(--app-focus, #2e90fa); outline-offset: 1px; }
+.ops-customise-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+.ops-customise-item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; line-height: 24px; color: var(--admin-ink); cursor: pointer; }
+.ops-customise-item input { accent-color: var(--admin-crimson); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-preset-button { transition: none; }
+}
