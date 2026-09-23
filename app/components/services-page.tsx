@@ -1,15 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
 
 /* One service list drives the overview, the seven detail pages and the routing,
  * so a service cannot exist in the navigation and be missing as a page. */
 export const services = [
-  { slug: "air-freight", key: "air", image: "/images/air-freight.jpg" },
-  { slug: "ocean-freight", key: "ocean", image: "/images/ocean-freight.jpg" },
-  { slug: "road-freight", key: "road", image: "/images/services/road-freight-nepal.jpg" },
+  { slug: "air-freight", key: "air", image: "/images/unsplash/air-cargo.jpg" },
+  { slug: "ocean-freight", key: "ocean", image: "/images/unsplash/ship-dusk.jpg" },
+  { slug: "road-freight", key: "road", image: "/images/unsplash/nepal-road.jpg" },
   { slug: "customs-clearance", key: "customs", image: "/images/services/specialist-cargo.jpg" },
   { slug: "project-cargo", key: "project", image: "/images/services/specialist-project-cargo.jpg" },
   { slug: "warehousing", key: "warehouse", image: "/images/services/warehousing.jpg" },
@@ -37,7 +37,7 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
             <figure className="service-figure"><Image src={service.image} alt="" width={900} height={600} sizes="(max-width: 860px) 100vw, 50vw" className="service-photo"/></figure>
             <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
             <p className="service-row-copy">{t(text(service.key, "summary"))}</p>
-            <Link href={sitePath(locale, `/services/${service.slug}`)} className="section-link">{t("services.detail_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+            <Link href={sitePath(locale, `/services/${service.slug}`)} className="section-link">{t("services.detail_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           </article>
         ))}
       </section>
@@ -49,7 +49,7 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
         <h2 className="cta-title">{t("home.cta_title")}</h2>
         <p className="cta-copy">{t("home.cta_copy")}</p>
         <div className="hero-actions">
-          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
           <Link href={sitePath(locale, "/contact")} className="button-ghost">{t("home.cta_secondary")}</Link>
         </div>
       </section>
@@ -82,7 +82,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
         <aside className="service-detail-aside">
           <h2 className="service-block-title">{t("services.ask")}</h2>
           <p className="service-ask">{t(text(service.key, "ask"))}</p>
-          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
         </aside>
       </section>
       <section className="section service-related">
@@ -91,11 +91,11 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
           {others.map((entry) => (
             <Link key={entry.slug} href={sitePath(locale, `/services/${entry.slug}`)} className="service-related-link">
               <span className="service-related-name">{t(text(entry.key, "title"))}</span>
-              <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/>
+              <ArrowRight size={15} weight="bold" aria-hidden="true"/>
             </Link>
           ))}
         </div>
-        <Link href={sitePath(locale, "/services")} className="section-link">{t("services.back")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+        <Link href={sitePath(locale, "/services")} className="section-link">{t("services.back")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
       </section>
     </SiteShell>
   );

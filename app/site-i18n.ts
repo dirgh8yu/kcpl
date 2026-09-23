@@ -253,6 +253,35 @@ const en = {
   "privacy.s5_copy": "Write to the address below and ask for a copy of what is held about you, a correction, or removal. Quote the email address you used so the enquiry can be found.",
   "privacy.note": "This page describes current practice in plain language. It is not legal advice and has not been reviewed by a lawyer.",
 
+  /* Terms */
+  "terms.meta_title": "Terms of Service",
+  "terms.meta_description": "The terms on which Kapileshwor Cargo provides this website and responds to freight enquiries made through it.",
+  "terms.title": "Terms of service",
+  "terms.intro": "These cover the website and enquiries made through it. A booked movement is governed by the quotation, the transport document issued for it, and the trading conditions KCPL agrees with you in writing.",
+  "terms.s1_title": "What this site is",
+  "terms.s1_copy": "A description of services and a way to reach the operations desk. Service descriptions, corridors and capacity here are indicative, not an offer, and availability is confirmed per shipment.",
+  "terms.s2_title": "Quotations",
+  "terms.s2_copy": "A quotation is based on the cargo details you give. Weight, dimensions, commodity, packing and access decide the price, so a rate is valid only for the cargo described and for the period stated on it. Rates change with carrier pricing, fuel, currency and regulation.",
+  "terms.s3_title": "Your information",
+  "terms.s3_copy": "You confirm that the cargo details, documents and declarations you provide are accurate and lawful. Wrong or missing information is the most common cause of delay, detention and penalty, and those costs follow the shipment.",
+  "terms.s4_title": "What KCPL arranges",
+  "terms.s4_copy": "KCPL coordinates freight, documentation and delivery, and appoints carriers, agents and transporters to perform the movement. Transit times are estimates. Liability for a shipment is as set out in the transport document and the agreed trading conditions.",
+  "terms.s5_title": "Prohibited and controlled cargo",
+  "terms.s5_copy": "Dangerous goods, perishables, licence-controlled and regulated cargo are accepted only after review and written confirmation. Do not tender such cargo as general freight.",
+  "terms.s6_title": "This website",
+  "terms.s6_copy": "Content may change without notice. The KCPL name, logo and site content belong to Kapileshwor Cargo Pvt. Ltd. Third-party marks shown on this site belong to their owners.",
+  "terms.s7_title": "Governing law",
+  "terms.s7_copy": "These terms are governed by the law of Nepal, and disputes fall to the courts of Kathmandu unless a signed agreement says otherwise.",
+  "terms.note": "This page states current practice in plain language. It is not legal advice, has not been reviewed by a lawyer, and does not replace signed trading conditions.",
+  "chrome.terms": "Terms",
+
+  /* Cookie notice */
+  "cookies.title": "Analytics",
+  "cookies.copy": "KCPL can measure page visits to see which services people look for. Nothing you type into the quote form is sent to analytics.",
+  "cookies.accept": "Allow",
+  "cookies.decline": "Decline",
+  "cookies.more": "Privacy",
+
   /* Sectors and projects */
   "sectors.meta_title": "Sectors & Projects",
   "sectors.meta_description": "Infrastructure and substation logistics, textile and handicraft exports, and import movements for Nepalese traders and distributors.",
@@ -544,6 +573,35 @@ const ne: Record<SiteTextKey, string> = {
   "privacy.s5_title": "आफ्नो डाटा माग्न",
   "privacy.s5_copy": "तलको ठेगानामा लेखेर आफूसम्बन्धी राखिएको विवरणको प्रतिलिपि, सुधार वा हटाउन अनुरोध गर्नुहोस्। इन्क्वायरी खोज्न सजिलो होस् भनेर प्रयोग गरेको इमेल उल्लेख गर्नुहोस्।",
   "privacy.note": "यो पृष्ठले हालको अभ्यास सरल भाषामा बताउँछ। यो कानुनी सल्लाह होइन र कानुन व्यवसायीबाट समीक्षा गरिएको छैन।",
+
+  /* Terms */
+  "terms.meta_title": "सेवाका सर्तहरू",
+  "terms.meta_description": "कपिलेश्वर कार्गोले यो वेबसाइट उपलब्ध गराउने र यसमार्फत आउने फ्रेट इन्क्वायरीमा जवाफ दिने सर्तहरू।",
+  "terms.title": "सेवाका सर्तहरू",
+  "terms.intro": "यी सर्त वेबसाइट र यसमार्फत आउने इन्क्वायरीसँग सम्बन्धित छन्। बुक भएको मुभमेन्ट कोटेसन, त्यसका लागि जारी ट्रान्सपोर्ट कागजात र KCPL सँग लिखित रूपमा सहमति भएका व्यापार सर्तअनुसार चल्छ।",
+  "terms.s1_title": "यो साइट के हो",
+  "terms.s1_copy": "सेवाको विवरण र सञ्चालन डेस्कसम्म पुग्ने बाटो। यहाँका सेवा विवरण, कोरिडोर र क्षमता सङ्केतात्मक हुन्, प्रस्ताव होइनन्; उपलब्धता प्रति शिपमेन्ट पुष्टि गरिन्छ।",
+  "terms.s2_title": "कोटेसन",
+  "terms.s2_copy": "कोटेसन तपाईंले दिनुभएको कार्गो विवरणमा आधारित हुन्छ। तौल, नाप, वस्तु, प्याकिङ र पहुँचले मूल्य तय गर्छ, त्यसैले दर वर्णित कार्गो र उल्लेखित अवधिका लागि मात्र मान्य हुन्छ। क्यारियर मूल्य, इन्धन, विनिमय दर र नियमनअनुसार दर बदलिन्छ।",
+  "terms.s3_title": "तपाईंको जानकारी",
+  "terms.s3_copy": "तपाईंले दिनुभएको कार्गो विवरण, कागजात र घोषणा सही र कानुनसम्मत छन् भन्ने पुष्टि गर्नुहुन्छ। गलत वा छुटेको जानकारी ढिलाइ, डिटेन्सन र जरिवानाको सबैभन्दा सामान्य कारण हो, र त्यस्ता खर्च शिपमेन्टसँगै जान्छन्।",
+  "terms.s4_title": "KCPL ले के मिलाउँछ",
+  "terms.s4_copy": "KCPL फ्रेट, कागजात र डेलिभरी समन्वय गर्छ, र मुभमेन्ट सम्पन्न गर्न क्यारियर, एजेन्ट तथा ट्रान्सपोर्टर नियुक्त गर्छ। ट्रान्जिट समय अनुमानित हुन्छ। शिपमेन्टप्रतिको दायित्व ट्रान्सपोर्ट कागजात र सहमत व्यापार सर्तमा उल्लेख भएबमोजिम हुन्छ।",
+  "terms.s5_title": "निषेधित र नियन्त्रित कार्गो",
+  "terms.s5_copy": "डेन्जरस गुड्स, पेरिसेबल, लाइसेन्स-नियन्त्रित र नियमित कार्गो समीक्षा र लिखित पुष्टिपछि मात्र स्वीकार गरिन्छ। त्यस्तो कार्गो सामान्य फ्रेटका रूपमा नपठाउनुहोस्।",
+  "terms.s6_title": "यो वेबसाइट",
+  "terms.s6_copy": "सामग्री सूचना नदिई परिवर्तन हुन सक्छ। KCPL नाम, लोगो र साइट सामग्री कपिलेश्वर कार्गो प्रा. लि. को हो। यहाँ देखिने तेस्रो पक्षका चिन्ह तिनका आफ्नै स्वामित्वमा छन्।",
+  "terms.s7_title": "लागू कानुन",
+  "terms.s7_copy": "यी सर्त नेपालको कानुनअनुसार निर्देशित हुन्छन्, र हस्ताक्षरित सम्झौताले अन्यथा नभनेसम्म विवाद काठमाडौँका अदालतको क्षेत्राधिकारमा पर्छ।",
+  "terms.note": "यो पृष्ठले हालको अभ्यास सरल भाषामा बताउँछ। यो कानुनी सल्लाह होइन, कानुन व्यवसायीबाट समीक्षा गरिएको छैन, र हस्ताक्षरित व्यापार सर्तको विकल्प होइन।",
+  "chrome.terms": "सर्तहरू",
+
+  /* Cookie notice */
+  "cookies.title": "एनालिटिक्स",
+  "cookies.copy": "कुन सेवा खोजिन्छ भनी बुझ्न KCPL ले पृष्ठ भ्रमण मापन गर्न सक्छ। कोटेसन फारममा तपाईंले लेख्नुभएको कुनै कुरा एनालिटिक्समा पठाइँदैन।",
+  "cookies.accept": "अनुमति",
+  "cookies.decline": "अस्वीकार",
+  "cookies.more": "गोपनीयता",
 
   /* Sectors and projects */
   "sectors.meta_title": "क्षेत्र र परियोजना",

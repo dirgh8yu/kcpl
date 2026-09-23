@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations, company, locations } from "../company-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
@@ -217,12 +217,12 @@ export function ContactPage({ locale }: { locale: SiteLocale }) {
         <div>
           <h2 className="service-block-title">{t("contact.quote_title")}</h2>
           <p className="about-copy">{t("contact.quote_copy")}</p>
-          <Link href={sitePath(locale, "/quote")} className="button-primary contact-action">{t("home.cta_primary")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/quote")} className="button-primary contact-action">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
         </div>
         <div>
           <h2 className="service-block-title">{t("contact.existing_title")}</h2>
           <p className="about-copy">{t("contact.existing_copy")}</p>
-          <Link href={sitePath(locale, "/track")} className="section-link contact-action">{t("chrome.track")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/track")} className="section-link contact-action">{t("chrome.track")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </div>
       </section>
     </SiteShell>
@@ -241,12 +241,12 @@ export function TrackPage({ locale }: { locale: SiteLocale }) {
         <div>
           <h2 className="service-block-title">{t("track.portal_title")}</h2>
           <p className="about-copy">{t("track.portal_copy")}</p>
-          <Link href="/portal" className="button-primary contact-action">{t("track.portal_cta")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+          <Link href="/portal" className="button-primary contact-action">{t("track.portal_cta")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
         </div>
         <div>
           <h2 className="service-block-title">{t("track.ask_title")}</h2>
           <p className="about-copy">{t("track.ask_copy")}</p>
-          <a href={`mailto:${company.email}`} className="section-link contact-action">{company.email}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></a>
+          <a href={`mailto:${company.email}`} className="section-link contact-action">{company.email}<ArrowRight size={15} weight="bold" aria-hidden="true"/></a>
         </div>
       </section>
     </SiteShell>
@@ -262,7 +262,7 @@ function ClosingBand({ locale }: { locale: SiteLocale }) {
       <h2 className="cta-title">{t("home.cta_title")}</h2>
       <p className="cta-copy">{t("home.cta_copy")}</p>
       <div className="hero-actions">
-        <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} strokeWidth={1.75} aria-hidden="true"/></Link>
+        <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
         <Link href={sitePath(locale, "/contact")} className="button-ghost">{t("home.cta_secondary")}</Link>
       </div>
     </section>
@@ -294,6 +294,31 @@ export function PrivacyPage({ locale }: { locale: SiteLocale }) {
           <a className="contact-link about-copy" href={`mailto:${company.email}`}>{company.email}</a>
         </article>
         <p className="legal-note">{t("privacy.note")}</p>
+      </section>
+    </SiteShell>
+  );
+}
+
+export function TermsPage({ locale }: { locale: SiteLocale }) {
+  const t = siteTranslator(locale);
+  const sections = [1, 2, 3, 4, 5, 6, 7].map((n) => ({
+    title: t(`terms.s${n}_title` as "terms.s1_title"),
+    copy: t(`terms.s${n}_copy` as "terms.s1_copy"),
+  }));
+  return (
+    <SiteShell locale={locale} path="/terms">
+      <section className="section page-head">
+        <h1 className="section-title">{t("terms.title")}</h1>
+        <p className="section-intro">{t("terms.intro")}</p>
+      </section>
+      <section className="section legal-body">
+        {sections.map((entry) => (
+          <article key={entry.title} className="legal-block">
+            <h2 className="service-block-title">{entry.title}</h2>
+            <p className="about-copy">{entry.copy}</p>
+          </article>
+        ))}
+        <p className="legal-note">{t("terms.note")}</p>
       </section>
     </SiteShell>
   );

@@ -281,6 +281,20 @@
 .contact-value { margin: 0; font-size: 16px; line-height: 1.6; color: var(--site-ink); }
 .contact-link { text-decoration: none; }
 .contact-second { margin-top: 16px; }
+/* Consent notice: the site's own surface, not a dark slab from the old brand.
+ * Sits above everything and traps nothing; declining is one click, same weight
+ * as accepting. */
+.cookie-notice { position: fixed; z-index: 50; inset-inline: clamp(12px, 3vw, 28px); bottom: clamp(12px, 3vw, 28px); margin-inline: auto; display: grid; gap: 16px; width: min(560px, 100%); background: var(--site-paper); border: 1px solid var(--site-line); border-radius: 6px; box-shadow: 0 22px 50px rgb(8 22 29 / .16); padding: clamp(16px, 2vw, 22px); }
+.cookie-notice-copy { display: grid; gap: 5px; }
+.cookie-notice-title { margin: 0; font-size: 12px; font-weight: 750; color: var(--site-ink); }
+.cookie-notice-text { margin: 0; font-size: 13px; line-height: 1.6; color: var(--site-muted); }
+.cookie-notice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.cookie-notice-accept, .cookie-notice-decline { min-height: 38px; padding: 0 16px; border-radius: 4px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out); }
+.cookie-notice-accept { border: 1px solid var(--site-crimson); background: var(--site-crimson); color: #fff; }
+.cookie-notice-decline { border: 1px solid var(--site-line); background: var(--site-paper); color: var(--site-ink); }
+.cookie-notice-accept:active, .cookie-notice-decline:active { transform: scale(.97); }
+.cookie-notice-link { margin-inline-start: auto; font-size: 12px; font-weight: 600; color: var(--site-muted); text-decoration: underline; text-underline-offset: 3px; }
+
 .legal-body { display: grid; gap: clamp(26px, 3vw, 40px); max-width: 74ch; padding-top: 0; }
 .legal-block { display: grid; gap: 6px; }
 .legal-note { margin: 0; padding-top: 20px; border-top: 1px solid var(--site-line-soft); font-size: 13px; line-height: 1.7; color: var(--site-faint); }

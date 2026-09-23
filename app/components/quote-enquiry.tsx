@@ -3,7 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { requestChallengeToken, turnstileSiteKey } from "./turnstile-challenge";
-import { ArrowUpRight, CheckCircle2, Mail, MapPin, Ruler, Scale } from "lucide-react";
+import { ArrowUpRight, CheckCircle, Envelope, MapPin, Ruler, Scales } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { trackAnalyticsEvent } from "./analytics";
 
@@ -139,7 +139,7 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
       </fieldset>
 
       <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><Scale size={18}/><span>Cargo profile</span></legend>
+        <legend><Scales size={18}/><span>Cargo profile</span></legend>
         <div className="quote-form-grid quote-form-grid-cargo">
           <label className="quote-field-wide"><span>Cargo type</span><input value={values.cargoType} onChange={(event) => setField("cargoType", event.target.value)} placeholder="e.g. machinery, cartons, personal effects" maxLength={160}/></label>
           <label><span>Weight</span><div className="quote-form-compound"><input value={values.weight} onChange={(event) => setField("weight", event.target.value)} type="number" min="0" step="any" inputMode="decimal" placeholder="0"/><select value={values.weightUnit} onChange={(event) => setField("weightUnit", event.target.value)} aria-label="Weight unit"><option value="kg">kg</option><option value="tonnes">tonnes</option><option value="lb">lb</option></select></div></label>
@@ -162,8 +162,8 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
     </div>
 
     <aside className="quote-email-panel">
-      <div className="quote-email-panel-index">02 / Submit</div>
-      {submitState.status === "success" ? <CheckCircle2 size={30} strokeWidth={1.5}/> : <Mail size={28} strokeWidth={1.25}/>} 
+      <div className="quote-email-panel-index">Review and send</div>
+      {submitState.status === "success" ? <CheckCircle size={30} strokeWidth={1.5}/> : <Envelope size={28} strokeWidth={1.25}/>} 
       <h2>{submitState.status === "success" ? "Enquiry received." : "Send to KCPL."}</h2>
       <p>{submitState.status === "success" ? "KCPL has received your freight enquiry. Keep the reference below for follow-up." : "Your route, cargo and contact details will be securely submitted to KCPL for review."}</p>
       <div className="quote-email-summary">

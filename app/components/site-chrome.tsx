@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, Menu } from "lucide-react";
+import { ArrowUpRight, List } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { siteAlternatePath, siteLocaleLabels, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
@@ -62,7 +62,7 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
           * accessible on its own, ships no JavaScript, and a navigation renders
           * the header again already closed. */}
         <details className="site-menu">
-          <summary className="site-menu-button"><Menu size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
+          <summary className="site-menu-button"><List size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
           <div className="site-menu-panel">
             {navigation.map((item) => (
               <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
@@ -112,6 +112,7 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
         <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")}</p>
         <p>{t("chrome.photo_note")}</p>
         <Link href={sitePath(locale, "/privacy")} className="site-footer-link" aria-current={isCurrent("/privacy", path) ? "page" : undefined}>{t("chrome.privacy")}</Link>
+        <Link href={sitePath(locale, "/terms")} className="site-footer-link" aria-current={isCurrent("/terms", path) ? "page" : undefined}>{t("chrome.terms")}</Link>
       </div>
     </footer>
   );

@@ -75,8 +75,15 @@ export function Analytics() {
     setConsent(next);
   }
 
-  return <aside className="analytics-consent" aria-label="Analytics preference">
-    <p><strong>Privacy choice</strong><span>KCPL can use anonymous analytics to understand site use. No form contents are sent to analytics.</span></p>
-    <div><button type="button" onClick={() => choose("granted")}>Allow analytics</button><button type="button" onClick={() => choose("denied")}>Decline</button><Link href="/privacy">Privacy</Link></div>
+  return <aside className="cookie-notice" aria-label="Analytics preference">
+    <div className="cookie-notice-copy">
+      <p className="cookie-notice-title">Analytics</p>
+      <p className="cookie-notice-text">KCPL can measure page visits to see which services people look for. Nothing you type into the quote form is sent to analytics.</p>
+    </div>
+    <div className="cookie-notice-actions">
+      <button type="button" className="cookie-notice-accept" onClick={() => choose("granted")}>Allow</button>
+      <button type="button" className="cookie-notice-decline" onClick={() => choose("denied")}>Decline</button>
+      <Link href="/privacy" className="cookie-notice-link">Privacy</Link>
+    </div>
   </aside>;
 }
