@@ -30,6 +30,12 @@ export function SiteLogo({ locale }: { locale: SiteLocale }) {
   );
 }
 
+/** A nav item is current on its own page and on anything beneath it, so a
+ * service detail page still lights Services. */
+function isCurrent(itemPath: string, path: string) {
+  return path === itemPath || path.startsWith(`${itemPath}/`);
+}
+
 export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string }) {
   const t = siteTranslator(locale);
   return (
@@ -38,7 +44,9 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
       <div className="site-header-inner">
         <SiteLogo locale={locale}/>
         <nav className="site-nav" aria-label={t("chrome.nav_label")}>
-          {navigation.map((item) => <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link">{t(item.key)}</Link>)}
+          {navigation.map((item) => (
+            <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+          ))}
         </nav>
         <div className="site-header-actions">
           {/* A plain link, not a client-side toggle: the other language is a different
@@ -54,8 +62,10 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
         <details className="site-menu">
           <summary className="site-menu-button">{t("chrome.menu")}</summary>
           <div className="site-menu-panel">
-            {navigation.map((item) => <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link">{t(item.key)}</Link>)}
-            <Link href={sitePath(locale, "/track")} className="site-menu-link">{t("chrome.track")}</Link>
+            {navigation.map((item) => (
+              <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+            ))}
+            <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
             {/* The header's quote button is hidden on the narrowest screens, so the
               * menu carries it there instead of losing the primary action. */}
             <Link href={sitePath(locale, "/quote")} className="site-menu-link site-menu-quote">{t("chrome.quote")}</Link>
@@ -66,7 +76,7 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
   );
 }
 
-export function SiteFooter({ locale }: { locale: SiteLocale }) {
+export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string }) {
   const t = siteTranslator(locale);
   return (
     <footer className="site-footer">
@@ -78,7 +88,9 @@ export function SiteFooter({ locale }: { locale: SiteLocale }) {
         </div>
         <div className="site-footer-col">
           <h2 className="site-footer-heading">{t("chrome.footer_company")}</h2>
-          {navigation.map((item) => <Link key={item.path} href={sitePath(locale, item.path)} className="site-footer-link">{t(item.key)}</Link>)}
+          {navigation.map((item) => (
+            <Link key={item.path} href={sitePath(locale, item.path)} className="site-footer-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+          ))}
         </div>
         <div className="site-footer-col">
           <h2 className="site-footer-heading">{t("chrome.footer_services")}</h2>
@@ -106,7 +118,7 @@ export function SiteShell({ locale, path, children }: { locale: SiteLocale; path
     <div className={`site-root${locale === "ne" ? " site-root-ne" : ""}`} lang={locale === "ne" ? "ne-NP" : undefined}>
       <SiteHeader locale={locale} path={path}/>
       <main id="main">{children}</main>
-      <SiteFooter locale={locale}/>
+      <SiteFooter locale={locale} path={path}/>
     </div>
   );
 }

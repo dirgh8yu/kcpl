@@ -144,6 +144,9 @@ const en = {
   "svc.air.p1": "Export bookings from Kathmandu to North America, Europe, Australia and Asian markets.",
   "svc.air.p2": "Airway bill preparation, carting, pre-alert and arrival follow-up.",
   "svc.air.p3": "Rerouting when a carrier network is disrupted, with the consignee kept informed.",
+  "svc.air.p4": "Perishables, dangerous goods and AOG shipments, arranged subject to cargo review and carrier acceptance.",
+  "svc.air.p5": "Export customs clearance at Kathmandu before dispatch, with the documents travelling with the cargo.",
+  "svc.air.p6": "Consignee-side follow-up to delivery, not just to arrival at the destination airport.",
   "svc.air.ask": "Gross weight, dimensions, commodity, ready date, airport or door delivery.",
 
   "svc.ocean.title": "Ocean freight",
@@ -151,6 +154,9 @@ const en = {
   "svc.ocean.p1": "20ft, 40ft and 40HQ containers, plus LCL consolidations.",
   "svc.ocean.p2": "Gateway handling at Kolkata, Visakhapatnam and Haldia, with rail-linked movement to ICD Birgunj.",
   "svc.ocean.p3": "Bill of lading review, endorsement, delivery orders and de-stuffing coordination.",
+  "svc.ocean.p4": "Draft bill of lading review before release, then original document follow-up and endorsement.",
+  "svc.ocean.p5": "IGM amendments, transit paperwork and empty-container return after de-stuffing.",
+  "svc.ocean.p6": "Destination and local charge reconciliation, so the invoice matches what was quoted.",
   "svc.ocean.ask": "Container type and count or CBM, origin port, incoterm, final delivery address.",
 
   "svc.road.title": "Road freight",
@@ -158,6 +164,9 @@ const en = {
   "svc.road.p1": "India to Nepal movements through Raxaul and other border points.",
   "svc.road.p2": "Domestic distribution from Birgunj and Kathmandu to project sites and western Nepal.",
   "svc.road.p3": "Trailers and special equipment where the cargo will not travel on a standard bed.",
+  "svc.road.p4": "Border coordination at Raxaul, including the transporter handover on the Nepal side.",
+  "svc.road.p5": "De-stuffing at the border or at the consignee warehouse, whichever the cargo needs.",
+  "svc.road.p6": "Bonded trucking where the movement requires it, subject to the cargo and the route.",
   "svc.road.ask": "Weight, dimensions, collection point, delivery point, access at both ends.",
 
   "svc.customs.title": "Customs and documentation",
@@ -165,6 +174,9 @@ const en = {
   "svc.customs.p1": "Invoices, packing lists, certificates of origin, permits and duty-exemption paperwork.",
   "svc.customs.p2": "Transit documentation for rail-linked and road movements into Nepal.",
   "svc.customs.p3": "Follow-up until the entry is cleared, rather than filing and waiting.",
+  "svc.customs.p4": "Delivery orders, letters of authority and endorsed documents released to the right party.",
+  "svc.customs.p5": "Duty exemption and licence-controlled cargo handled with the issuing body in the loop.",
+  "svc.customs.p6": "Fumigation and inspection requirements identified before they hold the cargo, not after.",
   "svc.customs.ask": "Commodity, HS code if known, value, any licence or exemption already held.",
 
   "svc.project.title": "Project and specialist cargo",
@@ -172,6 +184,9 @@ const en = {
   "svc.project.p1": "Route and trailer survey, handling method and lifting requirements.",
   "svc.project.p2": "Transmission and substation equipment moved to inland project sites.",
   "svc.project.p3": "Phased delivery with records at site, where a single drop is not practical.",
+  "svc.project.p4": "Flat-rack, open-top and over-height units, including repair-return movements back to origin.",
+  "svc.project.p5": "Multi-container lots released in the sequence the site can actually receive.",
+  "svc.project.p6": "Delivery reports and photographs from site, because a project closes on evidence.",
   "svc.project.ask": "Piece dimensions and weights, total packages, site access, required completion date.",
 
   "svc.warehouse.title": "Warehousing and packaging",
@@ -179,6 +194,9 @@ const en = {
   "svc.warehouse.p1": "Over 1,000 sqm for air cargo and over 6,000 sqm for road cargo.",
   "svc.warehouse.p2": "Consolidation and deconsolidation before onward dispatch.",
   "svc.warehouse.p3": "Packing and preparation for export handling.",
+  "svc.warehouse.p4": "Additional space arranged when a movement needs more than the standing allocation.",
+  "svc.warehouse.p5": "Cooler availability arranged as required. There is no temperature-controlled life-science storage.",
+  "svc.warehouse.p6": "Cargo held against a release instruction, so stock leaves when you say it leaves.",
   "svc.warehouse.ask": "Volume, duration, whether the cargo needs handling or only storage.",
 
   "svc.delivery.title": "Delivery and proof",
@@ -186,6 +204,9 @@ const en = {
   "svc.delivery.p1": "Delivery scheduling with the consignee and the site.",
   "svc.delivery.p2": "Unloading evidence and signed delivery receipts.",
   "svc.delivery.p3": "Status updates through the movement, and a record at the end of it.",
+  "svc.delivery.p4": "Proof of delivery issued and circulated to the parties who need it on file.",
+  "svc.delivery.p5": "Phased delivery to a site, with a record at each drop rather than one at the end.",
+  "svc.delivery.p6": "Exceptions reported when they happen, with the next action named.",
   "svc.delivery.ask": "Delivery address, site contact, unloading equipment available, receiving hours.",
 
   "quote.meta_title": "Request a Freight Quote",
@@ -377,6 +398,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.air.p1": "काठमाडौँबाट उत्तर अमेरिका, युरोप, अस्ट्रेलिया र एसियाली बजारसम्म निर्यात बुकिङ।",
   "svc.air.p2": "एयरवे बिल तयारी, कार्टिङ, प्रि-अलर्ट र आगमन फलोअप।",
   "svc.air.p3": "क्यारियर नेटवर्क अवरुद्ध हुँदा अर्को रुट, र प्राप्तकर्तालाई निरन्तर जानकारी।",
+  "svc.air.p4": "पेरिसेबल, डेन्जरस गुड्स र AOG शिपमेन्ट, कार्गो समीक्षा र क्यारियर स्वीकृतिका आधारमा मिलाइन्छ।",
+  "svc.air.p5": "दिसप्याचअघि काठमाडौँमै निर्यात भन्सार क्लियरेन्स, कागजात कार्गोसँगै जान्छ।",
+  "svc.air.p6": "गन्तव्य एयरपोर्टमा पुगेर होइन, प्राप्तकर्तासम्म डेलिभरी नभएसम्म फलोअप।",
   "svc.air.ask": "ग्रस तौल, नाप, वस्तु, तयार मिति, एयरपोर्ट कि डोर डेलिभरी।",
 
   "svc.ocean.title": "ओसन फ्रेट",
@@ -384,6 +408,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.ocean.p1": "२०ft, ४०ft र ४०HQ कन्टेनर, साथै LCL कन्सोलिडेसन।",
   "svc.ocean.p2": "कोलकाता, विशाखापट्टनम र हल्दियामा गेटवे ह्यान्डलिङ, र ICD वीरगन्जसम्म रेल-जोडिएको मुभमेन्ट।",
   "svc.ocean.p3": "बिल अफ लेडिङ जाँच, इन्डोर्समेन्ट, डेलिभरी अर्डर र डि-स्टफिङ समन्वय।",
+  "svc.ocean.p4": "रिलिजअघि ड्राफ्ट बिल अफ लेडिङ जाँच, त्यसपछि ओरिजिनल कागजात फलोअप र इन्डोर्समेन्ट।",
+  "svc.ocean.p5": "IGM संशोधन, ट्रान्जिट कागजात र डि-स्टफिङपछि खाली कन्टेनर फिर्ता।",
+  "svc.ocean.p6": "गन्तव्य र स्थानीय शुल्क मिलान, ताकि इनभ्वाइस कोटेसनसँग मेल खाओस्।",
   "svc.ocean.ask": "कन्टेनर प्रकार र सङ्ख्या वा CBM, मूल बन्दरगाह, इन्कोटर्म, अन्तिम ठेगाना।",
 
   "svc.road.title": "रोड फ्रेट",
@@ -391,6 +418,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.road.p1": "रक्सौल र अन्य नाका हुँदै भारतबाट नेपाल मुभमेन्ट।",
   "svc.road.p2": "वीरगन्ज र काठमाडौँबाट परियोजना साइट र पश्चिम नेपालसम्म वितरण।",
   "svc.road.p3": "सामान्य बेडमा नअट्ने कार्गोका लागि ट्रेलर र विशेष उपकरण।",
+  "svc.road.p4": "रक्सौलमा नाका समन्वय, नेपालतर्फको ट्रान्सपोर्टर ह्यान्डओभरसहित।",
+  "svc.road.p5": "कार्गोअनुसार नाकामै वा प्राप्तकर्ताको गोदाममा डि-स्टफिङ।",
+  "svc.road.p6": "मुभमेन्टलाई चाहिएमा बन्डेड ट्रकिङ, कार्गो र रुट हेरेर।",
   "svc.road.ask": "तौल, नाप, उठाउने ठाउँ, पुर्‍याउने ठाउँ, दुवैतर्फको पहुँच।",
 
   "svc.customs.title": "भन्सार र कागजात",
@@ -398,6 +428,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.customs.p1": "इनभ्वाइस, प्याकिङ लिस्ट, सर्टिफिकेट अफ ओरिजिन, परमिट र छुटसम्बन्धी कागजात।",
   "svc.customs.p2": "रेल-जोडिएको र सडक मुभमेन्टका लागि ट्रान्जिट कागजात।",
   "svc.customs.p3": "दर्ता गरेर पर्खने होइन, क्लियर नभएसम्म फलोअप।",
+  "svc.customs.p4": "डेलिभरी अर्डर, लेटर अफ अथोरिटी र इन्डोर्स गरिएका कागजात सही पक्षलाई हस्तान्तरण।",
+  "svc.customs.p5": "भन्सार छुट र लाइसेन्स-नियन्त्रित कार्गो, सम्बन्धित निकायलाई जानकारीमा राखेर।",
+  "svc.customs.p6": "फ्युमिगेसन र निरीक्षणका सर्त कार्गो अड्किनुअघि नै पहिचान गरिन्छ।",
   "svc.customs.ask": "वस्तु, थाहा भए HS कोड, मूल्य, पहिले नै लिएको लाइसेन्स वा छुट।",
 
   "svc.project.title": "प्रोजेक्ट र विशेष कार्गो",
@@ -405,6 +438,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.project.p1": "रुट र ट्रेलर सर्वे, ह्यान्डलिङ विधि र लिफ्टिङ आवश्यकता।",
   "svc.project.p2": "प्रसारण र सबस्टेसन उपकरण भित्री परियोजना साइटसम्म।",
   "svc.project.p3": "एकैपटक पुर्‍याउन नमिल्दा चरणबद्ध डेलिभरी, साइटमै रेकर्डसहित।",
+  "svc.project.p4": "फ्ल्याट-र्‍याक, ओपन-टप र अग्ला युनिट, मर्मतपछि फिर्ता पठाउने मुभमेन्टसमेत।",
+  "svc.project.p5": "साइटले बुझ्न सक्ने क्रममा बहु-कन्टेनर लट रिलिज।",
+  "svc.project.p6": "साइटबाट डेलिभरी रिपोर्ट र फोटो, किनभने परियोजना प्रमाणमा टुङ्गिन्छ।",
   "svc.project.ask": "प्रति पिस नाप र तौल, कुल प्याकेज, साइट पहुँच, सम्पन्न गर्नुपर्ने मिति।",
 
   "svc.warehouse.title": "भण्डारण र प्याकेजिङ",
@@ -412,6 +448,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.warehouse.p1": "एयर कार्गोका लागि १,०००+ वर्गमिटर र रोड कार्गोका लागि ६,०००+ वर्गमिटर।",
   "svc.warehouse.p2": "अगाडि पठाउनुअघि कन्सोलिडेसन र डिकन्सोलिडेसन।",
   "svc.warehouse.p3": "निर्यात ह्यान्डलिङका लागि प्याकिङ र तयारी।",
+  "svc.warehouse.p4": "तोकिएको भन्दा बढी ठाउँ चाहिँदा थप स्थान मिलाइन्छ।",
+  "svc.warehouse.p5": "आवश्यकताअनुसार कूलर व्यवस्था। तापक्रम-नियन्त्रित लाइफ-साइन्स भण्डारण छैन।",
+  "svc.warehouse.p6": "रिलिज निर्देशनअनुसार कार्गो रोकिन्छ, स्टक तपाईंले भनेकै बेला निस्कन्छ।",
   "svc.warehouse.ask": "परिमाण, अवधि, कार्गोलाई ह्यान्डलिङ चाहिन्छ कि भण्डारण मात्र।",
 
   "svc.delivery.title": "डेलिभरी र प्रमाण",
@@ -419,6 +458,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.delivery.p1": "प्राप्तकर्ता र साइटसँग मिलाएर डेलिभरी तालिका।",
   "svc.delivery.p2": "अनलोडिङ प्रमाण र हस्ताक्षरित डेलिभरी रसिद।",
   "svc.delivery.p3": "मुभमेन्टभरि स्थिति अपडेट, र अन्त्यमा एउटा रेकर्ड।",
+  "svc.delivery.p4": "प्रुफ अफ डेलिभरी जारी गरी फाइलमा चाहिने पक्षहरूलाई पठाइन्छ।",
+  "svc.delivery.p5": "साइटमा चरणबद्ध डेलिभरी, अन्त्यमा एउटा होइन हरेक ड्रपमा रेकर्ड।",
+  "svc.delivery.p6": "अपवाद भएको बेलामै जानकारी, अर्को कदमसहित।",
   "svc.delivery.ask": "डेलिभरी ठेगाना, साइट सम्पर्क, उपलब्ध अनलोडिङ उपकरण, बुझ्ने समय।",
 
   "quote.meta_title": "फ्रेट कोटेसन माग्नुहोस्",

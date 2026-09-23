@@ -12,10 +12,12 @@ const destinations = ["United States", "Canada", "United Kingdom", "Germany", "N
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
+  const sectorImages = ["/images/services/specialist-open-top.jpg", "/images/services/packaging-storage.jpg", "/images/ocean-freight.jpg"];
   const sectors = [1, 2, 3].map((n) => ({
     title: t(`sectors.s${n}_title` as "sectors.s1_title"),
     copy: t(`sectors.s${n}_copy` as "sectors.s1_copy"),
     list: t(`sectors.s${n}_list` as "sectors.s1_list"),
+    image: sectorImages[n - 1],
   }));
   const cases = [1, 2, 3].map((n) => ({
     kicker: t(`home.proof_${n}_kicker` as "home.proof_1_kicker"),
@@ -31,7 +33,10 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
       <section className="section sector-list reveal-group">
         {sectors.map((sector) => (
           <article key={sector.title} className="sector-row reveal">
-            <h2 className="sector-title">{sector.title}</h2>
+            <div className="sector-lead">
+              <figure className="sector-figure"><Image src={sector.image} alt="" width={800} height={560} sizes="(max-width: 1024px) 100vw, 34vw" className="sector-photo"/></figure>
+              <h2 className="sector-title">{sector.title}</h2>
+            </div>
             <div className="sector-body">
               <p className="sector-copy">{sector.copy}</p>
               <p className="sector-list-line">{sector.list}</p>
@@ -74,6 +79,9 @@ export function NetworkPage({ locale }: { locale: SiteLocale }) {
       <section className="section page-head">
         <h1 className="section-title">{t("network.title")}</h1>
         <p className="section-intro">{t("network.intro")}</p>
+      </section>
+      <section className="network-banner">
+        <Image src="/images/nepal-satellite-nasa-regional.jpg" alt="" fill sizes="100vw" className="network-banner-image"/>
       </section>
       <section className="section">
         <h2 className="service-block-title">{t("network.places_title")}</h2>
@@ -124,6 +132,9 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
       <section className="section page-head">
         <h1 className="section-title">{t("about.title")}</h1>
         <p className="section-intro">{t("about.intro")}</p>
+      </section>
+      <section className="about-banner">
+        <Image src="/images/services/warehousing.jpg" alt="" fill sizes="100vw" className="about-banner-image"/>
       </section>
       <section className="section about-split">
         <div>

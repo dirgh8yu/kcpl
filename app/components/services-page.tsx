@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
@@ -6,13 +7,13 @@ import { SiteShell } from "./site-chrome";
 /* One service list drives the overview, the seven detail pages and the routing,
  * so a service cannot exist in the navigation and be missing as a page. */
 export const services = [
-  { slug: "air-freight", key: "air" },
-  { slug: "ocean-freight", key: "ocean" },
-  { slug: "road-freight", key: "road" },
-  { slug: "customs-clearance", key: "customs" },
-  { slug: "project-cargo", key: "project" },
-  { slug: "warehousing", key: "warehouse" },
-  { slug: "delivery", key: "delivery" },
+  { slug: "air-freight", key: "air", image: "/images/air-freight.jpg" },
+  { slug: "ocean-freight", key: "ocean", image: "/images/ocean-freight.jpg" },
+  { slug: "road-freight", key: "road", image: "/images/services/road-freight-nepal.jpg" },
+  { slug: "customs-clearance", key: "customs", image: "/images/services/specialist-cargo.jpg" },
+  { slug: "project-cargo", key: "project", image: "/images/services/specialist-project-cargo.jpg" },
+  { slug: "warehousing", key: "warehouse", image: "/images/services/warehousing.jpg" },
+  { slug: "delivery", key: "delivery", image: "/images/services/door-to-door.jpg" },
 ] as const;
 
 export type ServiceKey = (typeof services)[number]["key"];
@@ -31,6 +32,9 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
       <section className="section service-index reveal-group">
         {services.map((service) => (
           <article key={service.slug} className="service-row reveal">
+            {/* Illustrative freight photography, not KCPL's own cargo, so it carries
+              * no caption and is marked decorative. */}
+            <figure className="service-figure"><Image src={service.image} alt="" width={900} height={600} sizes="(max-width: 860px) 100vw, 50vw" className="service-photo"/></figure>
             <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
             <p className="service-row-copy">{t(text(service.key, "summary"))}</p>
             <Link href={sitePath(locale, `/services/${service.slug}`)} className="section-link">{t("services.detail_link")}<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/></Link>
@@ -56,6 +60,9 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
   const others = services.filter((entry) => entry.slug !== slug).slice(0, 3);
   return (
     <SiteShell locale={locale} path={`/services/${slug}`}>
+      <section className="service-banner">
+        <Image src={service.image} alt="" fill sizes="100vw" priority className="service-banner-image"/>
+      </section>
       <section className="section page-head">
         <p className="eyebrow">{t("services.title")}</p>
         <h1 className="section-title">{t(text(service.key, "title"))}</h1>
@@ -65,7 +72,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
         <div className="service-detail-main">
           <h2 className="service-block-title">{t("services.covers")}</h2>
           <ul className="service-points">
-            {["p1", "p2", "p3"].map((part) => <li key={part} className="service-point">{t(text(service.key, part))}</li>)}
+            {["p1", "p2", "p3", "p4", "p5", "p6"].map((part) => <li key={part} className="service-point">{t(text(service.key, part))}</li>)}
           </ul>
         </div>
         <aside className="service-detail-aside">
