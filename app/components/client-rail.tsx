@@ -23,7 +23,7 @@ const organisations = [
   { name: "VIJAY TRANSMISSION INDIA", logo: "vijay.png" },
   { name: "GE T&E", logo: "ge.svg" },
   { name: "KEC INTERNATIONAL INDIA", logo: "kec.png" },
-  { name: "STERLITE POWER INDIA" },
+  { name: "STERLITE POWER INDIA", logo: "sterlite.svg" },
 ] as const;
 
 export function ClientRail({ locale }: { locale: SiteLocale }) {
