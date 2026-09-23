@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowUpRight, Check, Globe, InstagramLogo, List, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
+import { guides } from "../guide-data";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
 import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
@@ -119,6 +120,8 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
           <h2 className="site-footer-heading">{t("chrome.footer_services")}</h2>
           <Link href={sitePath(locale, "/quote")} className="site-footer-link">{t("chrome.quote")}</Link>
           <Link href={sitePath(locale, "/track")} className="site-footer-link">{t("chrome.track")}</Link>
+          <Link href={sitePath(locale, "/guides/importing-to-nepal")} className="site-footer-link">{guides[locale]["importing-to-nepal"].title}</Link>
+          <Link href={sitePath(locale, "/guides/exporting-from-nepal")} className="site-footer-link">{guides[locale]["exporting-from-nepal"].title}</Link>
           <Link href="/portal" className="site-footer-link">{t("chrome.portal")}</Link>
         </div>
         <div className="site-footer-col">

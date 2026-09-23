@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations } from "../company-data";
+import { guides } from "../guide-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
 import { ClientRail } from "./client-rail";
@@ -80,6 +81,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <figure className="corridor-figure"><Image src="/images/unsplash/ship-aerial.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
             <h3 className="corridor-title">{t("home.corridor_in_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_in_copy")}</p>
+            <Link href={sitePath(locale, "/guides/importing-to-nepal")} className="section-link">{guides[locale]["importing-to-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
             <p className="corridor-label">{t("home.corridor_origins")}</p>
             <ul className="corridor-tags">{origins.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
             <p className="corridor-label">{t("home.corridor_gateways")}</p>
@@ -89,6 +91,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <figure className="corridor-figure"><Image src="/images/unsplash/nepal-road.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
             <h3 className="corridor-title">{t("home.corridor_out_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_out_copy")}</p>
+            <Link href={sitePath(locale, "/guides/exporting-from-nepal")} className="section-link">{guides[locale]["exporting-from-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
             <p className="corridor-label">{t("home.corridor_destinations")}</p>
             <ul className="corridor-tags">{destinations.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
           </article>

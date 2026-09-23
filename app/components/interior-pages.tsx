@@ -20,7 +20,6 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
     title: t(`home.proof_${n}_title` as "home.proof_1_title"),
     copy: t(`home.proof_${n}_copy` as "home.proof_1_copy"),
     meta: t(`home.proof_${n}_meta` as "home.proof_1_meta"),
-    client: n === 1 ? t("home.proof_1_client") : "",
   }));
   return (
     <SiteShell locale={locale} path="/sectors">
@@ -53,7 +52,7 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
               <p className="proof-kicker">{item.kicker}</p>
               <div>
                 <h3 className="proof-title">{item.title}</h3>
-                <p className="proof-copy">{item.copy}{item.client ? ` ${item.client}` : ""}</p>
+                <p className="proof-copy">{item.copy}</p>
                 <p className="proof-meta">{item.meta}</p>
               </div>
             </article>

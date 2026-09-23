@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { guides, guideSlugs } from "../app/guide-data.ts";
 import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
 import { siteLocales } from "../app/site-i18n.ts";
 
@@ -33,5 +34,18 @@ test("every date is a real calendar day, not a build timestamp", () => {
   for (const [key, entry] of Object.entries(manifest.entries)) {
     assert.match(entry.lastmod, /^\d{4}-\d{2}-\d{2}$/, `${key} has a malformed date`);
     assert.ok(!Number.isNaN(Date.parse(`${entry.lastmod}T00:00:00Z`)), `${key} has an unparseable date`);
+  }
+});
+
+test("both freight guides are substantial and available in every site language", () => {
+  for (const slug of guideSlugs) {
+    assert.ok(sitemapPaths().includes(`/guides/${slug}`));
+    for (const locale of siteLocales) {
+      const guide = guides[locale][slug];
+      assert.ok(guide.title && guide.description && guide.intro, `${locale}/${slug} is missing SEO copy`);
+      assert.equal(guide.stages.length, 3, `${locale}/${slug} is missing a planning stage`);
+      assert.ok(guide.documents.length >= 4, `${locale}/${slug} is missing its checklist`);
+      assert.equal(guide.questions.length, 2, `${locale}/${slug} is missing a planning answer`);
+    }
   }
 });

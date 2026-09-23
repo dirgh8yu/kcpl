@@ -1,6 +1,7 @@
 import { company } from "./company-data";
 import { absoluteUrl, siteName, siteUrl } from "./seo";
 import { services } from "./services-data";
+import { guides, guideSlugs, type GuideSlug } from "./guide-data";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
 
 /* Schema.org for the public site. Everything here restates something the site
@@ -94,6 +95,8 @@ const crumbLabels: Record<string, SiteTextKey> = {
 };
 
 function crumbLabel(locale: SiteLocale, path: string) {
+  const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
+  if (guideSlugs.includes(guideSlug as GuideSlug)) return guides[locale][guideSlug as GuideSlug].title;
   const key = crumbLabels[path];
   if (key) return siteText(locale, key);
   const service = services.find((entry) => path === `/services/${entry.slug}`);
