@@ -1,8 +1,15 @@
 import Link from "next/link";
-import { PublicShell } from "./components/public-shell";
+import { SiteShell } from "./components/site-chrome";
+import "./site.css";
 
 export default function NotFound() {
-  return <PublicShell title="This page is not available." intro="The address may be incorrect, or the page may no longer exist.">
-    <Link href="/quote" className="text-base font-semibold underline">Request a freight quote</Link>
-  </PublicShell>;
+  return (
+    <SiteShell locale="en" path="/">
+      <section className="section page-head">
+        <h1 className="section-title">This page is not available.</h1>
+        <p className="section-intro">The address may be incorrect, or the page may no longer exist.</p>
+        <Link href="/quote" className="section-link contact-action">Request a quote</Link>
+      </section>
+    </SiteShell>
+  );
 }

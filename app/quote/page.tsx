@@ -1,9 +1,20 @@
-import { PublicShell } from "../components/public-shell";
 import { QuoteEnquiry, QuoteValues } from "../components/quote-enquiry";
+import { SiteShell } from "../components/site-chrome";
 import { createPageMetadata } from "../seo";
-export const metadata = createPageMetadata({ title: "Request a Freight Quote", description: "Share your route, freight mode, cargo weight, dimensions and handling details with Kapileshwor Cargo to begin planning an enquiry.", path: "/quote" });
+import { siteText } from "../site-i18n";
+import "../site.css";
+
+export const metadata = createPageMetadata({ title: siteText("en", "quote.meta_title"), description: siteText("en", "quote.meta_description"), path: "/quote" });
 
 export default async function QuotePage({ searchParams }: { searchParams: Promise<QuoteValues> }) {
   const query = await searchParams;
-  return <PublicShell title="Tell us where your cargo needs to go." intro="Share the route, measurements and handling details with the KCPL team to begin planning."><QuoteEnquiry initial={query}/></PublicShell>;
+  return (
+    <SiteShell locale="en" path="/quote">
+      <section className="section page-head">
+        <h1 className="section-title">{siteText("en", "quote.title")}</h1>
+        <p className="section-intro">{siteText("en", "quote.intro")}</p>
+      </section>
+      <section className="section quote-section"><QuoteEnquiry initial={query}/></section>
+    </SiteShell>
+  );
 }

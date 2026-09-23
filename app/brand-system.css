@@ -69,12 +69,6 @@ textarea:focus-visible {
   background-color: var(--kcpl-crimson-hover);
 }
 
-.text-gold,
-.text-red,
-.text-rhododendron {
-  color: var(--kcpl-crimson);
-}
-
 /* Operations adopts the same brand foundation. Semantic status colours remain functional. */
 .kcpl-ops {
   --ops-canvas: var(--kcpl-canvas);

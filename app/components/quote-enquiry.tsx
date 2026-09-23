@@ -129,8 +129,6 @@ export function QuoteEnquiry({ initial }: { initial: QuoteValues }) {
 
   return <form className="quote-enquiry" onSubmit={submitEnquiry}>
     <div className="quote-enquiry-main">
-      <div className="quote-enquiry-intro"><span>01</span><div><p className="eyebrow text-rhododendron">Route & cargo</p><h2>Build the enquiry.</h2><p>Add the practical details KCPL needs to begin reviewing the movement.</p></div></div>
-
       <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
         <legend><MapPin size={18}/><span>Route</span></legend>
         <div className="quote-form-grid quote-form-grid-route">
