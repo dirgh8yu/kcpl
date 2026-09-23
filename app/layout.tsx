@@ -1,27 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Sans_SC, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense } from "react";
 import { Analytics } from "./components/analytics";
 import { StructuredData } from "./components/structured-data";
 import { siteName, siteUrl, socialImage } from "./seo";
 import { graph, organizationNode, websiteNode } from "./structured-data";
 import "./globals.css";
-import "./admin/operations-theme.css";
-import "./admin/operations-polish.css";
-import "./admin/operations-hotfix.css";
-import "./admin/operations-v4-compat.css";
-import "./brand-system.css";
-import "./admin/operations-editorial.css";
-import "./admin/operations-mobile.css";
-import "./admin/operations-action-hierarchy.css";
-import "./admin/operations-detail-refinement.css";
-import "./admin/commercial-v4-compat.css";
-import "./admin/commercial-detail-refinement.css";
-import "./admin/admin-design-system.css";
-import "./admin/shipment-detail-v2.css";
-import "./admin/admin-typography.css";
-import "./admin/shipment-detail-hierarchy.css";
-import "./admin/operations-system.css";
 
 // Only the two faces the public site paints its first screen with are
 // preloaded. The rest are declared so the CSS variables resolve, and the
@@ -53,7 +37,6 @@ const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", su
 // The public site sets all metadata, labels and navigation in mono: on an
 // operational board those are readings, not prose.
 const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"] });
-const notoSansSC = Noto_Sans_SC({ variable: "--font-sc", subsets: ["latin"], weight: ["400", "500", "700"], preload: false });
 const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"], preload: false });
 
 const defaultTitle = "Kapileshwor Cargo | Freight & Logistics in Nepal";
@@ -98,7 +81,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} ${plexMono.variable} ${notoSansSC.variable} antialiased`}>
+      <body className={`${geist.variable} ${manrope.variable} ${inter.variable} ${instrumentSerif.variable} ${notoDevanagari.variable} ${notoDevanagariSans.variable} ${plexMono.variable} antialiased`}>
         <StructuredData data={siteGraph}/>
         {children}
         <Suspense fallback={null}><Analytics/></Suspense>

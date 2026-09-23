@@ -2,9 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations, company } from "../company-data";
-import { networkGroupNames } from "../network-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
-import { NetworkMap } from "./network-map";
+import { ClosingBand } from "./closing-band";
 import { SiteShell } from "./site-chrome";
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
@@ -60,55 +59,6 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
             </article>
           ))}
         </div>
-      </section>
-      <ClosingBand locale={locale}/>
-    </SiteShell>
-  );
-}
-
-export function NetworkPage({ locale }: { locale: SiteLocale }) {
-  const t = siteTranslator(locale);
-  const columns = [
-    { title: t("network.gateways_title"), items: networkGroupNames("gateways") },
-    { title: t("network.origins_title"), items: networkGroupNames("origins") },
-    { title: t("network.destinations_title"), items: networkGroupNames("destinations") },
-  ];
-  return (
-    <SiteShell locale={locale} path="/network">
-      <section className="section page-head network-overview-head">
-        <h1 className="section-title">{t("network.title")}</h1>
-        <p className="section-intro">{t("network.intro")}</p>
-      </section>
-      <NetworkMap labels={{
-        title: t("network.map_title"),
-        all: t("network.map_all"),
-        operations: t("network.map_operations"),
-        gateways: t("network.gateways_title"),
-        origins: t("network.origins_title"),
-        destinations: t("network.destinations_title"),
-        note: t("network.map_note"),
-        unavailable: t("network.map_unavailable"),
-        map: t("network.map_aria"),
-      }}/>
-      <section className="section section-corridor">
-        <div className="lane-columns">
-          {columns.map((column) => (
-            <div key={column.title} className="lane-column">
-              <h2 className="corridor-label">{column.title}</h2>
-              <ul className="corridor-tags">{column.items.map((item) => <li key={item} className="corridor-tag">{item}</li>)}</ul>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="section network-notes">
-        <article className="network-note">
-          <h2 className="service-block-title">{t("network.agents_title")}</h2>
-          <p className="section-intro">{t("network.agents_copy")}</p>
-        </article>
-        <article className="network-note">
-          <h2 className="service-block-title">{t("network.storage_title")}</h2>
-          <p className="section-intro">{t("home.credibility_storage_detail")}</p>
-        </article>
       </section>
       <ClosingBand locale={locale}/>
     </SiteShell>
@@ -252,20 +202,6 @@ export function TrackPage({ locale }: { locale: SiteLocale }) {
 
 /* The closing band repeats on interior pages: it is the page's exit, and the
  * home page's version is the same component's markup. */
-function ClosingBand({ locale }: { locale: SiteLocale }) {
-  const t = siteTranslator(locale);
-  return (
-    <section className="section section-cta">
-      <h2 className="cta-title">{t("home.cta_title")}</h2>
-      <p className="cta-copy">{t("home.cta_copy")}</p>
-      <div className="hero-actions">
-        <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-        <Link href={sitePath(locale, "/contact")} className="button-ghost">{t("home.cta_secondary")}</Link>
-      </div>
-    </section>
-  );
-}
-
 export function PrivacyPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   const sections = [1, 2, 3, 4, 5].map((n) => ({

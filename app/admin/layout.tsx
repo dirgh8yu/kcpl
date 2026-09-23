@@ -1,4 +1,5 @@
 import { Geist } from "next/font/google";
+import "../product.css";
 import type { ReactNode } from "react";
 import { getAdminAccess } from "./admin-auth";
 import { getDisplayPreferences } from "./notifications/display-preferences.server";

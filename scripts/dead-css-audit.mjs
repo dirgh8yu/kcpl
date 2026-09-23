@@ -513,7 +513,13 @@ const sheets = fileOverride ? [path.resolve(ROOT, fileOverride)] : SHEETS.map((s
 for (const sheet of sheets) {
   const full = path.isAbsolute(sheet) ? sheet : path.join(ROOT, sheet);
   if (!fs.existsSync(full)) continue;
-  const parsed = parseRules(fs.readFileSync(full, "utf8"));
+  const source = fs.readFileSync(full, "utf8");
+  // A sheet that is nothing but @import statements is a load-order manifest,
+  // not a stylesheet. It declares no rules to audit, and the sheets it names are
+  // audited on their own. Anything with a rule in it is audited as usual, so
+  // this cannot quietly excuse a sheet that stopped being parsed.
+  if (!source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@import\s+[^;]+;/g, "").trim()) continue;
+  const parsed = parseRules(source);
   const dead = [];
   for (const rule of parsed) {
     const unreachable = verdictFor(rule.selector);

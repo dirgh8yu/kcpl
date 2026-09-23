@@ -33,9 +33,14 @@ for (const [path, counts] of Object.entries(current.literals)) {
     if (count > (baseline.literals[path]?.[literal] || 0)) failures.push(`${path}: new UI literal ${literal}; use an Ops primitive or operations-system.css token.`);
   }
 }
-const layout = readFileSync("app/layout.tsx", "utf8");
-const styles = [...layout.matchAll(/import\s+["']([^"']+\.css)["']/g)].map((match) => match[1]);
-if (styles.at(-1) !== "./admin/operations-system.css") failures.push("operations-system.css must be the final root stylesheet.");
+// The staff stylesheets moved out of the root layout so marketing pages stop
+// downloading the console, but operations-system.css still has to win last.
+const product = readFileSync("app/product.css", "utf8");
+const styles = [...product.matchAll(/@import\s+["']([^"']+\.css)["']/g)].map((match) => match[1]);
+if (styles.at(-1) !== "./admin/operations-system.css") failures.push("operations-system.css must be the final stylesheet in product.css.");
+if (styles.indexOf("./brand-system.css") <= styles.indexOf("./admin/operations-polish.css")) failures.push("brand-system.css must load after the operations compatibility layers it overrides.");
+const rootStyles = [...readFileSync("app/layout.tsx", "utf8").matchAll(/import\s+["']([^"']+\.css)["']/g)].map((match) => match[1]);
+if (rootStyles.some((sheet) => sheet.includes("/admin/"))) failures.push("Admin stylesheets belong in product.css, not the root layout: they load on every public page from there.");
 const systemCss = readFileSync("app/admin/operations-system.css", "utf8");
 if (/!important|\[class[*~^$]?=/.test(systemCss)) failures.push("Shared UI cannot use !important or utility-class substring overrides.");
 for (const token of ["--app-title-size", "--app-control-height", "--app-radius", "--admin-crimson", "--admin-on-crimson", "--admin-navy", "--admin-navy-steel", "--admin-on-dark"]) {
