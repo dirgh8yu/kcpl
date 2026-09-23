@@ -44,22 +44,23 @@
 .site-root-zh .hero-title, .site-root-zh .section-title, .site-root-zh .cta-title, .site-root-zh .proof-lead-title { line-height: 1.28; letter-spacing: 0; }
 .site-root-zh .hero-intro, .site-root-zh .section-intro, .site-root-zh .capability-copy, .site-root-zh .corridor-copy, .site-root-zh .proof-copy, .site-root-zh .about-copy { line-height: 1.85; }
 
-/* Devanagari keeps its own face and normal casing throughout. */
-.site-root-ne { --site-measure: 52ch; font-family: var(--font-devanagari-sans), var(--font-manrope), system-ui, sans-serif; }
-.site-root-ne .eyebrow, .site-root-ne .site-nav-link, .site-root-ne .site-lang, .site-root-ne .site-menu-button,
-.site-root-ne .site-footer-heading, .site-root-ne .corridor-label, .site-root-ne .proof-kicker,
-.site-root-ne .credibility-label, .site-root-ne .capability-title, .site-root-ne .section-link,
-.site-root-ne .site-cta, .site-root-ne .button-primary, .site-root-ne .button-ghost,
-.site-root-ne .hero-title, .site-root-ne .section-title, .site-root-ne .cta-title,
-.site-root-ne .proof-lead-title, .site-root-ne .corridor-title, .site-root-ne .proof-title,
-.site-root-ne .proof-meta, .site-root-ne .site-footer-tagline, .site-root-ne .hero-rail-item, .site-root-ne .site-menu-link,
-.site-root-ne .hero-rail-value {
+/* Devanagari keeps its own face and normal casing throughout. Nepali and
+ * Hindi share it: same script, same leading, same opt-outs. */
+.site-root-deva { --site-measure: 52ch; font-family: var(--font-devanagari-sans), var(--font-manrope), system-ui, sans-serif; }
+.site-root-deva .eyebrow, .site-root-deva .site-nav-link, .site-root-deva .site-lang, .site-root-deva .site-menu-button,
+.site-root-deva .site-footer-heading, .site-root-deva .corridor-label, .site-root-deva .proof-kicker,
+.site-root-deva .credibility-label, .site-root-deva .capability-title, .site-root-deva .section-link,
+.site-root-deva .site-cta, .site-root-deva .button-primary, .site-root-deva .button-ghost,
+.site-root-deva .hero-title, .site-root-deva .section-title, .site-root-deva .cta-title,
+.site-root-deva .proof-lead-title, .site-root-deva .corridor-title, .site-root-deva .proof-title,
+.site-root-deva .proof-meta, .site-root-deva .site-footer-tagline, .site-root-deva .hero-rail-item, .site-root-deva .site-menu-link,
+.site-root-deva .hero-rail-value {
   font-family: inherit;
   text-transform: none;
   letter-spacing: normal;
 }
-.site-root-ne .hero-title, .site-root-ne .section-title, .site-root-ne .cta-title, .site-root-ne .proof-lead-title { line-height: 1.32; }
-.site-root-ne .hero-intro, .site-root-ne .section-intro, .site-root-ne .capability-copy, .site-root-ne .corridor-copy, .site-root-ne .proof-copy, .site-root-ne .cta-copy { line-height: 1.9; }
+.site-root-deva .hero-title, .site-root-deva .section-title, .site-root-deva .cta-title, .site-root-deva .proof-lead-title { line-height: 1.32; }
+.site-root-deva .hero-intro, .site-root-deva .section-intro, .site-root-deva .capability-copy, .site-root-deva .corridor-copy, .site-root-deva .proof-copy, .site-root-deva .cta-copy { line-height: 1.9; }
 
 /* Chrome ------------------------------------------------------------------ */
 

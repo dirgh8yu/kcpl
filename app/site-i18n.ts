@@ -15,15 +15,17 @@
  *      name and the Managing Director's name are never translated.
  */
 
+import { hi } from "./site-i18n-hi";
 import { zh } from "./site-i18n-zh";
 
-export const siteLocales = ["en", "ne", "zh"] as const;
+export const siteLocales = ["en", "ne", "zh", "hi"] as const;
 export type SiteLocale = (typeof siteLocales)[number];
 
 export const siteLocaleLabels: Record<SiteLocale, string> = {
   en: "English",
   ne: "नेपाली",
   zh: "中文",
+  hi: "हिन्दी",
 };
 
 /** BCP 47 for the `lang` attribute, so screen readers and hyphenation follow. */
@@ -31,6 +33,7 @@ export const siteLocaleTags: Record<SiteLocale, string> = {
   en: "en",
   ne: "ne-NP",
   zh: "zh-Hans",
+  hi: "hi-IN",
 };
 
 /** English sits at the root; every other language is prefixed with its code.
@@ -699,7 +702,7 @@ const ne: Record<SiteTextKey, string> = {
   "track.ask_copy": "शिपमेन्ट, बुकिङ, बिल अफ लेडिङ वा एयरवे बिल सन्दर्भ सञ्चालन डेस्कमा पठाउनुहोस्; हालको अवस्था पुष्टि भएको मितिसहित आउँछ।",
 };
 
-const dictionaries: Record<SiteLocale, Record<SiteTextKey, string>> = { en, ne, zh };
+const dictionaries: Record<SiteLocale, Record<SiteTextKey, string>> = { en, ne, zh, hi };
 
 export function siteText(locale: SiteLocale, key: SiteTextKey) {
   return dictionaries[locale][key];

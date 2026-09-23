@@ -125,7 +125,7 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
 
 /* Written out rather than interpolated: the dead-CSS audit reads class literals
  * from source, and a built-up name is invisible to it. */
-const localeClass: Record<SiteLocale, string> = { en: "", ne: "site-root-ne", zh: "site-root-zh" };
+const localeClass: Record<SiteLocale, string> = { en: "", ne: "site-root-deva", zh: "site-root-zh", hi: "site-root-deva" };
 
 /** Every marketing page is this sandwich, so the chrome can never drift between them. */
 export function SiteShell({ locale, path, children }: { locale: SiteLocale; path: string; children: ReactNode }) {
