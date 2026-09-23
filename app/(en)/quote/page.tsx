@@ -1,8 +1,8 @@
-import { QuoteEnquiry, QuoteValues } from "../components/quote-enquiry";
-import { SiteShell } from "../components/site-chrome";
-import { createPageMetadata } from "../seo";
-import { siteText } from "../site-i18n";
-import "../site.css";
+import { QuoteEnquiry, QuoteValues } from "../../components/quote-enquiry";
+import { SiteShell } from "../../components/site-chrome";
+import { createPageMetadata } from "../../seo";
+import { siteText } from "../../site-i18n";
+import "../../site.css";
 
 export const metadata = createPageMetadata({ title: siteText("en", "quote.meta_title"), description: siteText("en", "quote.meta_description"), path: "/quote" });
 

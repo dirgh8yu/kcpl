@@ -42,7 +42,6 @@
 /* Chinese sets in Noto Sans SC, with Manrope ahead of it so Latin inside a
  * Chinese sentence keeps the brand face. Chinese has no letter-spacing to give
  * and no uppercase, so both are left alone. */
-.site-script-host { display: contents; }
 .site-root-zh { --site-measure: 40em; font-family: var(--font-manrope), var(--font-sc), system-ui, sans-serif; }
 .site-root-zh .hero-title, .site-root-zh .section-title, .site-root-zh .cta-title, .site-root-zh .proof-lead-title { line-height: 1.28; letter-spacing: 0; }
 .site-root-zh .hero-intro, .site-root-zh .section-intro, .site-root-zh .capability-copy, .site-root-zh .corridor-copy, .site-root-zh .proof-copy, .site-root-zh .about-copy { line-height: 1.85; }

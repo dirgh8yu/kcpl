@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { ServiceDetailPage, services, type ServiceSlug } from "../../components/services-page";
-import { createPageMetadata } from "../../seo";
-import { siteText, type SiteTextKey } from "../../site-i18n";
-import "../../site.css";
+import { ServiceDetailPage, services, type ServiceSlug } from "../../../components/services-page";
+import { createPageMetadata } from "../../../seo";
+import { siteText, type SiteTextKey } from "../../../site-i18n";
+import "../../../site.css";
 
 const searchTitles = {
   air: "Air Freight to and from Nepal",

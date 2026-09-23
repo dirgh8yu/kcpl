@@ -1,15 +1,17 @@
-import Link from "next/link";
-import { SiteShell } from "./components/site-chrome";
+import { NotFoundPage } from "./components/not-found-page";
+import { SiteDocument } from "./site-document";
 import "./site.css";
 
+/*
+ * A URL that matches no segment at all has no root layout to fall into -- that
+ * is the trade for one root layout per language -- so this one renders the
+ * document itself. Without it an unknown address drops to Next's unstyled
+ * default instead of KCPL's 404.
+ */
 export default function NotFound() {
   return (
-    <SiteShell locale="en" path="/">
-      <section className="section page-head">
-        <h1 className="section-title">This page is not available.</h1>
-        <p className="section-intro">The address may be incorrect, or the page may no longer exist.</p>
-        <Link href="/quote" className="section-link contact-action">Request a quote</Link>
-      </section>
-    </SiteShell>
+    <SiteDocument>
+      <NotFoundPage/>
+    </SiteDocument>
   );
 }

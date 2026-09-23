@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { SiteShell } from "./components/site-chrome";
-import "./site.css";
+import { SiteShell } from "../components/site-chrome";
+import "../site.css";
 
 // Public chrome needs an error boundary of its own: without one, any render failure in a
 // public route drops to Next's unstyled default screen instead of KCPL's recoverable state.

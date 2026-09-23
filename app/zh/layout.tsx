@@ -1,16 +1,18 @@
 import { Noto_Sans_SC } from "next/font/google";
 import type { ReactNode } from "react";
+import { SiteDocument, baseMetadata, baseViewport } from "../site-document";
 
 /*
- * Noto Sans SC ships 303 unicode-range @font-face rules -- 272KB of CSS before a
- * single glyph is downloaded. Declaring it in the root layout put that on every
- * English and Nepali page and on the whole operations console. It belongs to the
- * seventeen Chinese pages, so it is declared here.
+ * Root layout for the Chinese site. Noto Sans SC ships 303 unicode-range
+ * @font-face rules -- 272KB of CSS -- so it is declared here rather than in the
+ * shared document, where it landed on every English and Nepali page and on the
+ * whole operations console.
  */
 const notoSansSC = Noto_Sans_SC({ variable: "--font-sc", subsets: ["latin"], weight: ["400", "500", "700"], preload: false });
 
-/* display:contents so the wrapper carries the variable without becoming a box
- * in the layout the pages below it expect. */
+export const metadata = baseMetadata;
+export const viewport = baseViewport;
+
 export default function ChineseLayout({ children }: { children: ReactNode }) {
-  return <div className={`${notoSansSC.variable} site-script-host`}>{children}</div>;
+  return <SiteDocument locale="zh" className={notoSansSC.variable}>{children}</SiteDocument>;
 }

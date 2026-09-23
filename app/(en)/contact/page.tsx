@@ -1,7 +1,7 @@
-import { ContactPage } from "../components/interior-pages";
-import { createPageMetadata } from "../seo";
-import { siteText } from "../site-i18n";
-import "../site.css";
+import { ContactPage } from "../../components/interior-pages";
+import { createPageMetadata } from "../../seo";
+import { siteText } from "../../site-i18n";
+import "../../site.css";
 
 export const metadata = createPageMetadata({ title: siteText("en", "contact.meta_title"), description: siteText("en", "contact.meta_description"), path: "/contact" });
 

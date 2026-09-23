@@ -39,14 +39,23 @@ const product = readFileSync("app/product.css", "utf8");
 const styles = [...product.matchAll(/@import\s+["']([^"']+\.css)["']/g)].map((match) => match[1]);
 if (styles.at(-1) !== "./admin/operations-system.css") failures.push("operations-system.css must be the final stylesheet in product.css.");
 if (styles.indexOf("./brand-system.css") <= styles.indexOf("./admin/operations-polish.css")) failures.push("brand-system.css must load after the operations compatibility layers it overrides.");
-const rootStyles = [...readFileSync("app/layout.tsx", "utf8").matchAll(/import\s+["']([^"']+\.css)["']/g)].map((match) => match[1]);
-if (rootStyles.some((sheet) => sheet.includes("/admin/"))) failures.push("Admin stylesheets belong in product.css, not the root layout: they load on every public page from there.");
+// One root layout per top-level segment is what gives each language its own
+// <html lang>, so the check runs over all of them and the document they share.
+const rootLayouts = ["app/site-document.tsx", "app/(en)/layout.tsx", "app/ne/layout.tsx", "app/zh/layout.tsx", "app/hi/layout.tsx", "app/admin/layout.tsx", "app/portal/layout.tsx"];
+for (const root of rootLayouts) {
+  const sheets = [...readFileSync(root, "utf8").matchAll(/import\s+["']([^"']+\.css)["']/g)].map((match) => match[1]);
+  if (sheets.some((sheet) => sheet.includes("/admin/"))) failures.push(`${root}: admin stylesheets belong in product.css; imported here they load on every page under this root.`);
+}
+const publicRoots = ["app/(en)/layout.tsx", "app/ne/layout.tsx", "app/zh/layout.tsx", "app/hi/layout.tsx"];
+for (const root of publicRoots) {
+  if (readFileSync(root, "utf8").includes("product.css")) failures.push(`${root}: product.css is the staff bundle and must not load on the public site.`);
+}
 const systemCss = readFileSync("app/admin/operations-system.css", "utf8");
 if (/!important|\[class[*~^$]?=/.test(systemCss)) failures.push("Shared UI cannot use !important or utility-class substring overrides.");
 for (const token of ["--app-title-size", "--app-control-height", "--app-radius", "--admin-crimson", "--admin-on-crimson", "--admin-navy", "--admin-navy-steel", "--admin-on-dark"]) {
   if (!systemCss.includes(token)) failures.push(`Missing application token: ${token}`);
 }
-for (const file of ["app/layout.tsx", "app/admin/layout.tsx", "app/admin/operations-shell.tsx"]) {
+for (const file of ["app/site-document.tsx", "app/admin/layout.tsx", "app/admin/operations-shell.tsx"]) {
   if (/OperationsGlobalSearch|OperationsNavigationFallback|OperationsNotificationBridge/.test(readFileSync(file, "utf8"))) failures.push(`${file}: mount search and notifications directly through OperationsShell only.`);
 }
 const shell = readFileSync("app/admin/operations-shell.tsx", "utf8");

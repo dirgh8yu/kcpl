@@ -5,6 +5,7 @@ import { getAdminAccess } from "./admin-auth";
 import { getDisplayPreferences } from "./notifications/display-preferences.server";
 import type { DisplayPreferences } from "./notifications/display-preferences";
 import { OperationsDisplayPreferences } from "./operations-display-preferences";
+import { SiteDocument, baseMetadata, baseViewport } from "../site-document";
 
 const adminFont = Geist({
   subsets: ["latin"],
@@ -29,6 +30,11 @@ async function layoutDisplayPreferences(): Promise<DisplayPreferences | null> {
   }
 }
 
+/* Root layout for the operations console: English only, so it takes the
+ * document's default language. */
+export const metadata = baseMetadata;
+export const viewport = baseViewport;
+
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   let density: DisplayPreferences["density"] | undefined;
   let motion: DisplayPreferences["motion"] | undefined;
@@ -36,13 +42,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (preferences) { density = preferences.density; motion = preferences.motion; }
 
   return (
-    <div
-      className={`${adminFont.className} ${adminFont.variable} kcpl-admin-route`}
-      data-density={density}
-      data-motion={motion}
-    >
-      {children}
-      <OperationsDisplayPreferences/>
-    </div>
+    <SiteDocument>
+      <div
+        className={`${adminFont.className} ${adminFont.variable} kcpl-admin-route`}
+        data-density={density}
+        data-motion={motion}
+      >
+        {children}
+        <OperationsDisplayPreferences/>
+      </div>
+    </SiteDocument>
   );
 }
