@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, Check, Globe, List, X } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Check, Globe, InstagramLogo, List, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
@@ -126,6 +126,10 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
           <p className="site-footer-address">{company.addressLines.join(", ")}</p>
           <a href={`tel:${company.phones[0].replace(/[^+\d]/g, "")}`} className="site-footer-link">{company.phones[0]}</a>
           <a href={`mailto:${company.email}`} className="site-footer-link">{company.email}</a>
+          {/* The one social profile KCPL runs. It is linked here as well as
+            * declared in the schema graph, so the machine-readable claim and
+            * the page agree. */}
+          <a href={company.instagram} className="site-footer-link site-footer-social" rel="me noreferrer" target="_blank"><InstagramLogo size={15} aria-hidden="true"/> Instagram</a>
         </div>
       </div>
       <div className="site-footer-base">

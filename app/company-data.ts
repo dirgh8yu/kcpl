@@ -11,6 +11,7 @@ export const company = {
   phones: ["+977-1-4987510"],
   email: "admin@kapileshworcargo.com.np",
   website: "kapileshworcargo.com.np",
+  instagram: "https://www.instagram.com/kapileshworcargo/",
 } as const;
 
 export const locations = ["Kathmandu", "Birgunj", "Nepalgunj", "Surkhet", "Raxaul", "Kolkata"] as const;

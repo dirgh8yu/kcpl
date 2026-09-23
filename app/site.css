@@ -137,6 +137,9 @@
 .site-footer-heading { margin: 0 0 10px; font-size: 12px; font-weight: 700; color: #ffffff; }
 .site-footer-col:last-child { min-width: 0; }
 .site-footer-link { font-size: 14px; color: #bbc3c5; text-decoration: none; }
+/* The footer columns stack their links, so the social one has to put its
+ * icon and label on one line itself. */
+.site-footer-social { display: inline-flex; align-items: center; gap: 7px; }
 .site-footer-address { margin: 0; font-size: 14px; line-height: 1.7; color: #bbc3c5; }
 .site-footer-base { display: flex; justify-content: space-between; gap: 18px; padding: 20px var(--site-gutter); border-top: 1px solid rgb(255 255 255 / .15); font-size: 11px; font-weight: 500; color: #aeb8bb; }
 .site-footer-base p { margin: 0; }

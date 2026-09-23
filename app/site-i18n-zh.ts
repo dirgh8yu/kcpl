@@ -299,7 +299,7 @@ export const zh: Record<SiteTextKey, string> = {
   "contact.phone_label": "电话",
   "contact.email_label": "邮箱",
   "contact.hours_label": "工作时间",
-  "contact.hours_value": "周日至周五，办公时间，尼泊尔时间",
+  "contact.hours_value": "周日至周五 9:00-17:00，尼泊尔时间",
   "contact.quote_title": "发送询价",
   "contact.quote_copy": "报价表单会询问路线、运输方式、重量与尺寸，这是准确报价所需的最少信息。",
   "contact.existing_title": "已在途的货物",
