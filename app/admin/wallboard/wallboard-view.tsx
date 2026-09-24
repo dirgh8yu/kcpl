@@ -70,7 +70,7 @@ export function WallboardView({ initial, initialGeneratedAt }: { initial: Wallbo
       <header className="wb-header">
         <div className="wb-brand">
           <span className="wb-brand-mark" aria-hidden="true">K</span>
-          <span className="wb-brand-text"><strong>KCPL</strong><span>Operations wallboard</span></span>
+          <h1 className="wb-brand-text"><strong>KCPL</strong><span>Operations wallboard</span></h1>
         </div>
         <div className="wb-header-meta">
           <span className="wb-freshness" data-stale={freshness.stale || undefined}>{freshness.label}</span>

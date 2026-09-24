@@ -113,7 +113,11 @@
 
 .ops-content { width: min(1680px, 100%); margin: 0 auto; padding: 20px clamp(18px, 3vw, 42px) 44px; }
 .ops-content-wide { width: 100%; padding: 20px clamp(18px, 3vw, 42px) 44px; }
-.ops-stack { display: grid; gap: 16px; }
+/* minmax(0, 1fr) rather than the implicit auto track: an auto track sizes to
+ * its content's minimum, so one wide child (the receivables and payables
+ * currency cards) made the track wider than the container it sits in and the
+ * overflow had nothing to scroll. */
+.ops-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .ops-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .ops-grid-main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(310px, .45fr); gap: 16px; align-items: start; }
 

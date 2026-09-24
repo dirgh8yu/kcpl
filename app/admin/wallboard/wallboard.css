@@ -56,7 +56,9 @@
   color: var(--wb-crimson);
 }
 
-.wb-brand-text { display: flex; flex-direction: column; line-height: 1.25; }
+/* The board's h1. Its children carry the type scale, so the heading resets its
+ * own margin and size rather than relying on a reset stylesheet being present. */
+.wb-brand-text { display: flex; flex-direction: column; line-height: 1.25; margin: 0; font-size: inherit; font-weight: inherit; }
 .wb-brand-text strong { font-size: 16px; font-weight: 650; letter-spacing: 0.02em; }
 .wb-brand-text span { font-size: 12px; color: var(--wb-faint); }
 
