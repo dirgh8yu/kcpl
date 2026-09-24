@@ -27,11 +27,11 @@ class Glass extends StatelessWidget {
       border: border ? Border.all(color: p.hairline, width: 0.5) : null,
     );
     final content = DecoratedBox(decoration: decoration, child: child);
-    final clipped = borderRadius == null ? ClipRect(child: _blur(solid, content)) : ClipRRect(borderRadius: borderRadius!, child: _blur(solid, content));
+    final clipped = borderRadius == null
+        ? ClipRect(child: _blur(solid, content))
+        : ClipRRect(borderRadius: borderRadius!, child: _blur(solid, content));
     return clipped;
   }
 
-  Widget _blur(bool solid, Widget child) => solid
-      ? child
-      : BackdropFilter(filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24), child: child);
+  Widget _blur(bool solid, Widget child) => solid ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24), child: child);
 }

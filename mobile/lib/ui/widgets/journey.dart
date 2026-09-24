@@ -24,12 +24,12 @@ double journeyFraction(String status) {
 }
 
 IconData modeIcon(String mode) => switch (mode) {
-  'air' => Icons.flight_rounded,
-  'sea' || 'ocean' => Icons.directions_boat_rounded,
-  'road' => Icons.local_shipping_rounded,
-  'rail' => Icons.train_rounded,
-  'courier' => Icons.inventory_2_rounded,
-  _ => Icons.route_rounded,
+  'air' => KIcons.air,
+  'sea' || 'ocean' => KIcons.sea,
+  'road' => KIcons.road,
+  'rail' => KIcons.rail,
+  'courier' => KIcons.shipmentsOn,
+  _ => KIcons.route,
 };
 
 /// The journey as a line, filled in crimson up to where the cargo is. The
@@ -116,7 +116,7 @@ class JourneyBar extends StatelessWidget {
                               shape: BoxShape.circle,
                               border: Border.all(color: fillColor, width: 2),
                             ),
-                            child: Icon(delivered ? Icons.check_rounded : modeIcon(mode ?? ''), size: 17, color: fillColor),
+                            child: Icon(delivered ? KIcons.check : modeIcon(mode ?? ''), size: 17, color: fillColor),
                           ),
                         ),
                       ),

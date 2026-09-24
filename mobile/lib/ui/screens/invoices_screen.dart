@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/rows.dart';
+import '../icons.dart';
 import 'overview_screen.dart' show BalanceFigure;
 
 class InvoicesScreen extends StatelessWidget {
@@ -22,7 +23,7 @@ class InvoicesScreen extends StatelessWidget {
         if (page.summary.balances.length > 1) Footnote(l.invPositionDescription),
         SectionHeader(l.invBillingTitle),
         if (page.invoices.isEmpty)
-          EmptyState(icon: Icons.receipt_long_outlined, title: l.invEmptyTitle, description: l.invEmptyDescription)
+          EmptyState(icon: KIcons.invoices, title: l.invEmptyTitle, description: l.invEmptyDescription)
         else
           RowGroup(children: [for (final invoice in page.invoices) InvoiceRow(invoice)]),
         Footnote(l.invFootnote),

@@ -8,6 +8,7 @@ import '../../push/push_service.dart';
 import '../../session_host.dart';
 import '../motion.dart';
 import '../theme.dart';
+import 'bento.dart' show Surface;
 import 'common.dart';
 import 'glass.dart';
 
@@ -94,10 +95,9 @@ class PushPrimer extends StatelessWidget {
         final card = !show
             ? const SizedBox(width: double.infinity)
             : Padding(
-                padding: const EdgeInsets.fromLTRB(kGutter, 20, kGutter, 0),
-                child: Container(
+                padding: const EdgeInsets.only(top: 20),
+                child: Surface(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
-                  decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(20)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -108,7 +108,7 @@ class PushPrimer extends StatelessWidget {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(color: p.ink, shape: BoxShape.circle),
-                            child: Icon(Icons.notifications_active_outlined, size: 18, color: p.paper),
+                            child: Icon(KIcons.bellRinging, size: 18, color: p.paper),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -358,12 +358,7 @@ class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.notice.title,
-                              style: context.type.titleSmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            Text(widget.notice.title, style: context.type.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
                             if (widget.notice.body.isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Text(

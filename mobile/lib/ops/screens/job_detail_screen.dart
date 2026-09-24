@@ -34,8 +34,11 @@ class JobDetailScreen extends StatelessWidget {
         load: () => api.job(reference),
         leading: preview == null ? 0 : 2,
         placeholder: preview == null ? null : (context) => _lead(context, preview),
-        onMissing: (context, _) =>
-            const EmptyState(icon: Icons.search_off_rounded, title: 'Job not found', description: 'It may have been closed or moved outside your branches.'),
+        onMissing: (context, _) => const EmptyState(
+          icon: KIcons.noResults,
+          title: 'Job not found',
+          description: 'It may have been closed or moved outside your branches.',
+        ),
         builder: (context, file) => [..._lead(context, file.job), ..._body(context, file)],
       ),
     );
@@ -53,37 +56,12 @@ class JobDetailScreen extends StatelessWidget {
         ),
       ),
       Padding(
-        padding: const EdgeInsets.fromLTRB(kGutter, 28, kGutter, 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          JourneyGraphic(shipment: job.asShipment),
-          const SizedBox(height: 22),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                StatusText(statusLabel(l, job.status), statusEmphasis(job.status), style: context.type.titleLarge),
-                const SizedBox(height: 4),
-                Text(
-                  [
-                    if (job.currentLocation != null) l.overviewNowAt(job.currentLocation!),
-                    if (job.urgent) 'Urgent',
-                  ].join(' · '),
-                  style: context.type.bodySmall,
-                ),
-              ]),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Align(
-                alignment: AlignmentDirectional.topEnd,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text(l.shipEta, style: context.type.bodySmall),
-                  const SizedBox(height: 2),
-                  Text(job.eta == null ? l.shipToBeConfirmed : formatShortDate(job.eta), style: context.type.titleLarge),
-                ]),
-              ),
-            ),
-          ]),
-        ]),
+        padding: const EdgeInsets.fromLTRB(kGutter, 22, kGutter, 0),
+        child: JourneyGraphic(
+          shipment: job.asShipment,
+          trailing: job.urgent ? 'Urgent' : null,
+          subtitle: job.currentLocation != null && job.status != 'delivered' ? l.overviewNowAt(job.currentLocation!) : job.primaryBranch,
+        ),
       ),
     ];
   }
@@ -95,12 +73,15 @@ class JobDetailScreen extends StatelessWidget {
     return [
       SectionHeader('Owner'),
       if (job.ownerName == null)
-        const Padding(padding: EdgeInsets.only(top: 6), child: Notice(title: 'Unassigned', body: 'Nobody owns this job yet. Assign it from the Job File on the web.'))
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Notice(title: 'Unassigned', body: 'Nobody owns this job yet. Assign it from the Job File on the web.'),
+        )
       else
         _OwnerRow(name: job.ownerName!, title: file.ownerTitle, phone: job.ownerPhone, branch: job.primaryBranch),
       if (file.tasks.isEmpty) ...[
         SectionHeader('Tasks'),
-        const EmptyState(icon: Icons.checklist_rounded, title: 'No tasks', description: 'Tasks added in the Job File appear here.'),
+        const EmptyState(icon: KIcons.tasks, title: 'No tasks', description: 'Tasks added in the Job File appear here.'),
       ] else
         _Checklist(
           label: 'Tasks',
@@ -144,32 +125,36 @@ class JobDetailScreen extends StatelessWidget {
         ),
       ],
       SectionHeader('Details'),
-      RowGroup(children: [
-        if (job.customerName.isNotEmpty) DetailRow('Customer', job.customerName),
-        DetailRow('Priority', priorityLabels[job.priority] ?? job.priority, emphasis: job.urgent ? Emphasis.attention : Emphasis.normal),
-        DetailRow('Branch', job.primaryBranch),
-        if (file.handlingBranches.any((b) => b != job.primaryBranch)) DetailRow('Handling', file.handlingBranches.join(', ')),
-        DetailRow(l.shipsColCarrier, job.carrier ?? '—'),
-        DetailRow(l.shipCarrierReference, file.carrierReference ?? '—'),
-        DetailRow(l.shipCurrentLocation, job.currentLocation ?? l.shipNotReported),
-        if (file.internalReference != null) DetailRow('Internal ref', file.internalReference!),
-        DetailRow(l.overviewOrigin, job.origin.isEmpty ? '—' : job.origin),
-        DetailRow(l.overviewDestination, job.destination.isEmpty ? '—' : job.destination),
-      ]),
+      RowGroup(
+        children: [
+          if (job.customerName.isNotEmpty) DetailRow('Customer', job.customerName),
+          DetailRow('Priority', priorityLabels[job.priority] ?? job.priority, emphasis: job.urgent ? Emphasis.attention : Emphasis.normal),
+          DetailRow('Branch', job.primaryBranch),
+          if (file.handlingBranches.any((b) => b != job.primaryBranch)) DetailRow('Handling', file.handlingBranches.join(', ')),
+          DetailRow(l.shipsColCarrier, job.carrier ?? '—'),
+          DetailRow(l.shipCarrierReference, file.carrierReference ?? '—'),
+          DetailRow(l.shipCurrentLocation, job.currentLocation ?? l.shipNotReported),
+          if (file.internalReference != null) DetailRow('Internal ref', file.internalReference!),
+          DetailRow(l.overviewOrigin, job.origin.isEmpty ? '—' : job.origin),
+          DetailRow(l.overviewDestination, job.destination.isEmpty ? '—' : job.destination),
+        ],
+      ),
       if (file.canViewCosts && (file.revenueTotals.isNotEmpty || file.costTotals.isNotEmpty)) ...[
         SectionHeader('Profitability'),
         for (final currency in {...file.revenueTotals.keys, ...file.costTotals.keys})
-          RowGroup(children: [
-            DetailRow('Revenue', formatMoney(file.revenueTotals[currency] ?? 0, currency)),
-            DetailRow('Cost', formatMoney(file.costTotals[currency] ?? 0, currency)),
-            DetailRow(
-              'Profit',
-              formatMoney(file.profitTotals[currency] ?? 0, currency),
-              strong: true,
-              emphasis: (file.profitTotals[currency] ?? 0) < 0 ? Emphasis.attention : Emphasis.normal,
-            ),
-            if (file.marginPercent[currency] != null) DetailRow('Margin', '${file.marginPercent[currency]!.toStringAsFixed(1)}%'),
-          ]),
+          RowGroup(
+            children: [
+              DetailRow('Revenue', formatMoney(file.revenueTotals[currency] ?? 0, currency)),
+              DetailRow('Cost', formatMoney(file.costTotals[currency] ?? 0, currency)),
+              DetailRow(
+                'Profit',
+                formatMoney(file.profitTotals[currency] ?? 0, currency),
+                strong: true,
+                emphasis: (file.profitTotals[currency] ?? 0) < 0 ? Emphasis.attention : Emphasis.normal,
+              ),
+              if (file.marginPercent[currency] != null) DetailRow('Margin', '${file.marginPercent[currency]!.toStringAsFixed(1)}%'),
+            ],
+          ),
       ],
     ];
   }
@@ -195,15 +180,15 @@ class _OwnerRow extends StatelessWidget {
     final p = context.palette;
     final digits = phone?.replaceAll(RegExp(r'[^0-9+]'), '');
     Widget action(IconData icon, String label, Uri uri) => Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: Pressable(
-            child: Material(
-              color: p.fill,
-              shape: const CircleBorder(),
-              child: IconButton(tooltip: label, icon: Icon(icon, size: 20), onPressed: () => _launch(context, uri)),
-            ),
-          ),
-        );
+      padding: const EdgeInsets.only(left: 8),
+      child: Pressable(
+        child: Material(
+          color: p.fill,
+          shape: const CircleBorder(),
+          child: IconButton(tooltip: label, icon: Icon(icon, size: 20), onPressed: () => _launch(context, uri)),
+        ),
+      ),
+    );
     return RowTile(
       leading: CircleAvatar(
         radius: 20,
@@ -214,10 +199,13 @@ class _OwnerRow extends StatelessWidget {
       subtitle: Text([?title, branch].join(' · ')),
       trailing: digits == null || digits.isEmpty
           ? null
-          : Row(mainAxisSize: MainAxisSize.min, children: [
-              action(Icons.call_outlined, 'Call $name', Uri(scheme: 'tel', path: digits)),
-              action(Icons.chat_bubble_outline_rounded, 'WhatsApp $name', Uri.https('wa.me', '/${digits.replaceAll('+', '')}')),
-            ]),
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                action(KIcons.phone, 'Call $name', Uri(scheme: 'tel', path: digits)),
+                action(KIcons.whatsapp, 'WhatsApp $name', Uri.https('wa.me', '/${digits.replaceAll('+', '')}')),
+              ],
+            ),
     );
   }
 }
@@ -277,13 +265,18 @@ class _ChecklistState extends State<_Checklist> {
   @override
   Widget build(BuildContext context) {
     final done = widget.items.where((item) => _pending[item.id] ?? item.completed).length;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      SectionHeader('${widget.label} · $done of ${widget.items.length} done'),
-      RowGroup(children: [
-        for (final item in widget.items)
-          _CheckRow(item: item, completed: _pending[item.id] ?? item.completed, onTap: () => _toggle(item)),
-      ]),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader('${widget.label} · $done of ${widget.items.length} done'),
+        RowGroup(
+          children: [
+            for (final item in widget.items)
+              _CheckRow(item: item, completed: _pending[item.id] ?? item.completed, onTap: () => _toggle(item)),
+          ],
+        ),
+      ],
+    );
   }
 }
 
@@ -318,7 +311,7 @@ class _CheckRow extends StatelessWidget {
             switchInCurve: Motion.easeOut,
             transitionBuilder: morphTransition,
             child: completed
-                ? Icon(Icons.check_rounded, key: const ValueKey('on'), size: 17, color: p.paper)
+                ? Icon(KIcons.check, key: const ValueKey('on'), size: 17, color: p.paper)
                 : const SizedBox(key: ValueKey('off')),
           ),
         ),
@@ -332,9 +325,7 @@ class _CheckRow extends StatelessWidget {
           ),
           child: Text(item.title),
         ),
-        subtitle: item.detail.isEmpty
-            ? null
-            : Text(item.detail, style: TextStyle(color: item.attention && !completed ? p.accent : null)),
+        subtitle: item.detail.isEmpty ? null : Text(item.detail, style: TextStyle(color: item.attention && !completed ? p.accent : null)),
       ),
     );
   }

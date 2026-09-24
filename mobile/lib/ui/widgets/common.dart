@@ -51,16 +51,7 @@ class RowGroup extends StatelessWidget {
 /// The app's one list row. Full-bleed, no card; the press highlight is
 /// instant and covers the whole row.
 class RowTile extends StatelessWidget {
-  const RowTile({
-    super.key,
-    required this.title,
-    this.subtitle,
-    this.leading,
-    this.trailing,
-    this.onTap,
-    this.chevron = false,
-    this.below,
-  });
+  const RowTile({super.key, required this.title, this.subtitle, this.leading, this.trailing, this.onTap, this.chevron = false, this.below});
 
   final Widget title;
   final Widget? subtitle;
@@ -107,7 +98,7 @@ class RowTile extends StatelessWidget {
                       child: trailing!,
                     ),
                   ],
-                  if (chevron) ...[const SizedBox(width: 6), Icon(Icons.chevron_right_rounded, size: 22, color: p.tertiary)],
+                  if (chevron) ...[const SizedBox(width: 6), Icon(KIcons.chevron, size: 22, color: p.tertiary)],
                 ],
               ),
             ),
@@ -121,14 +112,7 @@ class RowTile extends StatelessWidget {
 
 /// Label on the left, value on the right; or stacked for long values.
 class DetailRow extends StatelessWidget {
-  const DetailRow(
-    this.label,
-    this.value, {
-    super.key,
-    this.strong = false,
-    this.stacked = false,
-    this.emphasis = Emphasis.normal,
-  });
+  const DetailRow(this.label, this.value, {super.key, this.strong = false, this.stacked = false, this.emphasis = Emphasis.normal});
   final String label;
   final String value;
   final bool strong;
@@ -246,10 +230,7 @@ class Notice extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: context.type.titleMedium?.copyWith(color: emphasis == Emphasis.attention ? p.accent : p.ink)),
-                if (body != null) ...[
-                  const SizedBox(height: 4),
-                  Text(body!, style: context.type.bodyMedium?.copyWith(color: p.secondary)),
-                ],
+                if (body != null) ...[const SizedBox(height: 4), Text(body!, style: context.type.bodyMedium?.copyWith(color: p.secondary))],
               ],
             ),
           ),
@@ -323,7 +304,7 @@ class RouteText extends StatelessWidget {
             alignment: PlaceholderAlignment.middle,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: size * 0.3),
-              child: Icon(Icons.arrow_forward_rounded, size: size, color: context.palette.tertiary),
+              child: Icon(KIcons.arrowRight, size: size, color: context.palette.tertiary),
             ),
           ),
           TextSpan(text: destination.isEmpty ? '—' : destination),

@@ -142,8 +142,8 @@ class FcmPushService extends PushService {
   PushState get state => _blocked
       ? PushState.blocked
       : _granted && !_optedOut
-          ? PushState.on
-          : PushState.off;
+      ? PushState.on
+      : PushState.off;
 
   @override
   Stream<PushTarget> get taps async* {
@@ -171,11 +171,9 @@ class FcmPushService extends PushService {
     FirebaseMessaging.onMessage.listen((message) {
       final notification = message.notification;
       if (notification == null) return;
-      _notices.add(PushNotice(
-        title: notification.title ?? 'KCPL',
-        body: notification.body ?? '',
-        target: PushTarget.fromData(message.data),
-      ));
+      _notices.add(
+        PushNotice(title: notification.title ?? 'KCPL', body: notification.body ?? '', target: PushTarget.fromData(message.data)),
+      );
     });
     _messaging.onTokenRefresh.listen((token) async {
       _token = token;

@@ -7,6 +7,7 @@ import '../../ui/widgets/filter_bar.dart';
 import '../ops_controller.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
+import '../../ui/icons.dart';
 
 enum JobFilter { mine, all, urgent, overdue, customs, exceptions }
 
@@ -20,19 +21,25 @@ const jobFilterLabels = {
 };
 
 bool matchesJobFilter(OpsJob job, JobFilter filter, String email) => switch (filter) {
-      JobFilter.mine => job.ownedBy(email),
-      JobFilter.all => true,
-      JobFilter.urgent => job.urgent,
-      JobFilter.overdue => job.overdueTasks > 0,
-      JobFilter.customs => job.customsOpen > 0,
-      JobFilter.exceptions => job.exception,
-    };
+  JobFilter.mine => job.ownedBy(email),
+  JobFilter.all => true,
+  JobFilter.urgent => job.urgent,
+  JobFilter.overdue => job.overdueTasks > 0,
+  JobFilter.customs => job.customsOpen > 0,
+  JobFilter.exceptions => job.exception,
+};
 
 bool matchesJobQuery(OpsJob job, String query) {
   final needle = query.trim().toLowerCase();
   if (needle.isEmpty) return true;
-  return [job.reference, job.customerName, job.origin, job.destination, job.carrier ?? '', job.ownerName ?? '']
-      .any((field) => field.toLowerCase().contains(needle));
+  return [
+    job.reference,
+    job.customerName,
+    job.origin,
+    job.destination,
+    job.carrier ?? '',
+    job.ownerName ?? '',
+  ].any((field) => field.toLowerCase().contains(needle));
 }
 
 class JobsScreen extends StatefulWidget {
@@ -69,7 +76,7 @@ class _JobsScreenState extends State<JobsScreen> {
             filter: filter,
             child: visible.isEmpty
                 ? EmptyState(
-                    icon: Icons.search_off_rounded,
+                    icon: KIcons.noResults,
                     title: bundle.jobs.isEmpty ? 'No active jobs' : 'Nothing matches',
                     description: bundle.jobs.isEmpty ? 'Jobs in your branches appear here.' : 'Try another filter or clear the search.',
                   )

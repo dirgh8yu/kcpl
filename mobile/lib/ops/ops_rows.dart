@@ -8,10 +8,13 @@ import '../ui/widgets/common.dart';
 import '../ui/widgets/journey.dart';
 import 'ops_models.dart';
 import 'screens/job_detail_screen.dart';
+import '../ui/widgets/sheet_route.dart';
 
 void openJob(BuildContext context, String reference, {OpsJob? preview}) => Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => JobDetailScreen(reference: reference, preview: preview)),
-    );
+  SheetRoute<void>(
+    builder: (_) => JobDetailScreen(reference: reference, preview: preview),
+  ),
+);
 
 /// The one thing about a job a desk should see first: trouble, then late
 /// work, then urgency, then plain status.
@@ -39,11 +42,14 @@ class JobRow extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Text(job.eta == null ? '—' : formatShortDate(job.eta), style: context.type.titleSmall),
-        const SizedBox(height: 3),
-        StatusText(flag, emphasis, style: context.type.bodySmall),
-      ]),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(job.eta == null ? '—' : formatShortDate(job.eta), style: context.type.titleSmall),
+          const SizedBox(height: 3),
+          StatusText(flag, emphasis, style: context.type.bodySmall),
+        ],
+      ),
       below: job.status == 'delivered' ? null : JourneyBar(status: job.status, reference: job.reference),
     );
   }

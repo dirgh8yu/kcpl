@@ -33,8 +33,7 @@ String formatDateTime(String? value) {
 
 String formatMoney(double amount, String currency) {
   final digits = currency == 'JPY' ? 0 : 2;
-  return NumberFormat.currency(locale: 'en_US', name: currency, symbol: '$currency\u00a0', decimalDigits: digits)
-      .format(amount);
+  return NumberFormat.currency(locale: 'en_US', name: currency, symbol: '$currency\u00a0', decimalDigits: digits).format(amount);
 }
 
 String formatBytes(int bytes) {
@@ -51,8 +50,7 @@ String route(String origin, String destination) {
 
 /// The number alone, for sentences that place the currency themselves.
 String formatAmount(double amount, String currency) =>
-    NumberFormat.currency(locale: 'en_US', name: currency, symbol: '', decimalDigits: currency == 'JPY' ? 0 : 2)
-        .format(amount);
+    NumberFormat.currency(locale: 'en_US', name: currency, symbol: '', decimalDigits: currency == 'JPY' ? 0 : 2).format(amount);
 
 /// "27 Sept": for rows, where the year is almost always this one.
 String formatShortDate(String? value) {

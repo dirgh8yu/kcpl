@@ -12,6 +12,7 @@ import '../motion.dart';
 import '../theme.dart';
 import 'common.dart';
 import 'large_title.dart';
+import 'sheet_route.dart';
 
 /// A screen with a large title that collapses into the bar as it scrolls,
 /// which loads one thing and renders it. Every screen gets the same
@@ -80,7 +81,8 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _foreground = WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused &&
+    _foreground =
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused &&
         WidgetsBinding.instance.lifecycleState != AppLifecycleState.hidden;
   }
 
@@ -102,9 +104,10 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       if (!first) setState(() => _data = null);
       _fetch();
     }
-    // Covered pages and hidden tabs have their tickers turned off; that is
-    // the signal for "not on screen".
-    final visible = TickerMode.valuesOf(context).enabled;
+    // Hidden tabs and fully covered pages have their tickers turned off; a
+    // page under a sheet stays drawn, so it also counts as covered while its
+    // route is not the current one.
+    final visible = TickerMode.valuesOf(context).enabled && (ModalRoute.of(context)?.isCurrent ?? true);
     if (visible != _visible) {
       final returning = _visible != null;
       _visible = visible;
@@ -204,15 +207,14 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       return widget.onMissing!(context, error);
     }
     final l = AppLocalizations.of(context);
-    final network =
-        (error is ApiException && error.code == 'network') || (error is AuthFailure && error.kind == AuthFailureKind.network);
+    final network = (error is ApiException && error.code == 'network') || (error is AuthFailure && error.kind == AuthFailureKind.network);
     final message = error is ApiException && error.message.isNotEmpty && !network && error.code != 'unavailable'
         ? error.message
         : network
         ? l.networkError
         : l.commonUnavailableDetail;
     return EmptyState(
-      icon: network ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+      icon: network ? KIcons.offline : KIcons.unreachable,
       title: l.commonUnavailableTitle,
       description: message,
       action: OutlinedButton(onPressed: _fetch, child: Text(l.retry)),
@@ -239,18 +241,15 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       SliverToBoxAdapter(child: SizedBox(height: 48 + MediaQuery.paddingOf(context).bottom)),
     ];
 
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      color: p.ink,
-      backgroundColor: p.paper,
-      edgeOffset: 108,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          LargeTitleBar(title: widget.title),
-          ...body,
-        ],
-      ),
+    final scroll = CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        LargeTitleBar(title: widget.title),
+        ...body,
+      ],
     );
+    // In a sheet, pulling down closes it; the page still refreshes itself.
+    if (SheetRoute.of(context)) return scroll;
+    return RefreshIndicator(onRefresh: _refresh, color: p.ink, backgroundColor: p.paper, edgeOffset: 108, child: scroll);
   }
 }

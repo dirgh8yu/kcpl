@@ -23,8 +23,7 @@ class InvoiceDetailScreen extends StatelessWidget {
       body: AsyncPage<Invoice>(
         title: reference,
         load: () => api.invoice(reference),
-        onMissing: (context, _) =>
-            EmptyState(icon: Icons.search_off_rounded, title: l.invdNotFoundTitle, description: l.invdNotFoundDescription),
+        onMissing: (context, _) => EmptyState(icon: KIcons.noResults, title: l.invdNotFoundTitle, description: l.invdNotFoundDescription),
         builder: (context, invoice) => _body(context, invoice),
       ),
     );
@@ -69,7 +68,7 @@ class InvoiceDetailScreen extends StatelessWidget {
         const Divider(indent: kGutter, endIndent: kGutter),
         RowTile(
           onTap: () => openShipment(context, invoice.shipmentReference!),
-          leading: Icon(Icons.inventory_2_outlined, size: 22, color: p.ink),
+          leading: Icon(KIcons.shipments, size: 22, color: p.ink),
           title: Text(invoice.shipmentReference!),
           subtitle: Text(l.commonShipment),
           chevron: true,
@@ -78,7 +77,7 @@ class InvoiceDetailScreen extends StatelessWidget {
       ],
       SectionHeader(invoice.recordType == 'statement' ? l.invdStatement : l.invdColCharge),
       if (invoice.lines.isEmpty)
-        EmptyState(icon: Icons.receipt_long_outlined, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription)
+        EmptyState(icon: KIcons.invoices, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription)
       else
         RowGroup(
           children: [

@@ -8,10 +8,12 @@ import 'package:kcpl_customer/auth/token_store.dart';
 import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/main.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/map/route_map.dart';
 import 'package:kcpl_customer/ui/motion.dart';
 import 'package:kcpl_customer/ui/screens/overview_screen.dart';
 import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
 import 'package:kcpl_customer/ui/theme.dart';
+import 'package:kcpl_customer/ui/widgets/tab_bar.dart';
 
 /// Demo data, but the login has no finance access.
 class MemberApi extends DemoApi {
@@ -130,6 +132,7 @@ void main() {
 
     expect(find.text('Annapurna Home Goods (demo)'), findsOneWidget);
     expect(find.text('Active shipments'), findsWidgets);
+    await scrollTo(tester, find.text('Free time running out'));
     expect(find.text('Free time running out'), findsWidgets);
     await scrollTo(tester, ref('KCPL-S-24103'));
     expect(ref('KCPL-S-24103'), findsWidgets);
@@ -233,14 +236,14 @@ void main() {
       await tester.tap(find.byType(FilledButton));
       await settle(tester);
       for (final tab in [1, 2, 3, 4, 0]) {
-        await tester.tap(find.byType(NavigationDestination).at(tab));
+        await tester.tap(find.byType(TabBarItem).at(tab));
         await settle(tester);
       }
-      await tester.tap(find.byType(NavigationDestination).at(1));
+      await tester.tap(find.byType(TabBarItem).at(1));
       await settle(tester);
       await tester.tap(ref('KCPL-S-24091').first);
       await settle(tester);
-      await tester.tap(find.byType(BackButton));
+      await tester.tap(find.byType(CloseButton));
       await settle(tester);
       await controller.signOut();
       await settle(tester);
@@ -270,7 +273,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await run(const Duration(seconds: 3));
 
-    expect(find.byType(LivePulse), findsOneWidget, reason: 'the lead shipment is live');
+    expect(find.byType(RouteMap), findsOneWidget, reason: 'the lead shipment is drawn on its map');
     expect(find.byType(Hero), findsOneWidget);
 
     await tester.tap(find.byType(JourneyGraphic));
@@ -281,6 +284,7 @@ void main() {
     await run(const Duration(seconds: 2));
 
     expect(find.byType(ShipmentDetailScreen), findsOneWidget);
+    await scrollTo(tester, find.text('Customs declaration lodged'), pushed: true);
     expect(find.text('Customs declaration lodged'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

@@ -65,8 +65,7 @@ class HttpOpsApi implements OpsApi {
   String _ref(String value) => Uri.encodeComponent(value);
 
   @override
-  Future<OpsSession> session() async =>
-      OpsSession.fromJson(((await _send('session'))['session'] as Map).cast<String, dynamic>());
+  Future<OpsSession> session() async => OpsSession.fromJson(((await _send('session'))['session'] as Map).cast<String, dynamic>());
 
   @override
   Future<TodayBundle> today() async => TodayBundle.fromJson(await _send('today'));

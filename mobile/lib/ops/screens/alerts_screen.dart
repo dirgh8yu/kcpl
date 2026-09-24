@@ -10,14 +10,14 @@ import '../ops_models.dart';
 import '../ops_rows.dart';
 
 IconData alertIcon(String category) => switch (category) {
-      'assignments' => Icons.person_add_alt_outlined,
-      'tasks' => Icons.checklist_rounded,
-      'customs' => Icons.policy_outlined,
-      'documents' => Icons.description_outlined,
-      'finance' => Icons.account_balance_wallet_outlined,
-      'quotes' => Icons.request_quote_outlined,
-      _ => Icons.local_shipping_outlined,
-    };
+  'assignments' => KIcons.userPlus,
+  'tasks' => KIcons.tasks,
+  'customs' => KIcons.customs,
+  'documents' => KIcons.document,
+  'finance' => KIcons.wallet,
+  'quotes' => KIcons.invoice,
+  _ => KIcons.truck,
+};
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -56,33 +56,40 @@ class _AlertsScreenState extends State<AlertsScreen> {
       builder: (context, page) {
         if (page.alerts.isEmpty) {
           return const [
-            EmptyState(icon: Icons.notifications_none_rounded, title: 'All caught up', description: 'Alerts for your branches and jobs appear here.'),
+            EmptyState(icon: KIcons.alerts, title: 'All caught up', description: 'Alerts for your branches and jobs appear here.'),
           ];
         }
         final p = context.palette;
         return [
-          RowGroup(children: [
-            for (final alert in page.alerts)
-              Builder(builder: (context) {
-                final unread = alert.unread && !_readHere.contains(alert.id);
-                final critical = alert.severity == 'critical';
-                return RowTile(
-                  onTap: () => _open(alert, page.unreadCount),
-                  leading: Icon(alertIcon(alert.category), size: 22, color: critical ? p.accent : (unread ? p.ink : p.tertiary)),
-                  title: Text(
-                    alert.title,
-                    style: TextStyle(fontWeight: unread ? FontWeight.w600 : FontWeight.w400, color: unread ? p.ink : p.secondary),
-                  ),
-                  subtitle: Text('${alert.detail.isEmpty ? '' : '${alert.detail}\n'}${ago(alert.createdAt)}${alert.branch == null ? '' : ' · ${alert.branch}'}',
-                      maxLines: 3, overflow: TextOverflow.ellipsis),
-                  trailing: AnimatedOpacity(
-                    opacity: unread ? 1 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    child: StatusDot(emphasis: critical ? Emphasis.attention : Emphasis.normal, size: 8),
-                  ),
-                );
-              }),
-          ]),
+          RowGroup(
+            children: [
+              for (final alert in page.alerts)
+                Builder(
+                  builder: (context) {
+                    final unread = alert.unread && !_readHere.contains(alert.id);
+                    final critical = alert.severity == 'critical';
+                    return RowTile(
+                      onTap: () => _open(alert, page.unreadCount),
+                      leading: Icon(alertIcon(alert.category), size: 22, color: critical ? p.accent : (unread ? p.ink : p.tertiary)),
+                      title: Text(
+                        alert.title,
+                        style: TextStyle(fontWeight: unread ? FontWeight.w600 : FontWeight.w400, color: unread ? p.ink : p.secondary),
+                      ),
+                      subtitle: Text(
+                        '${alert.detail.isEmpty ? '' : '${alert.detail}\n'}${ago(alert.createdAt)}${alert.branch == null ? '' : ' · ${alert.branch}'}',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: AnimatedOpacity(
+                        opacity: unread ? 1 : 0,
+                        duration: const Duration(milliseconds: 180),
+                        child: StatusDot(emphasis: critical ? Emphasis.attention : Emphasis.normal, size: 8),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ];
       },
     );

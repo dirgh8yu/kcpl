@@ -14,11 +14,12 @@ import '../screens/shipment_detail_screen.dart';
 import '../theme.dart';
 import 'common.dart';
 import 'journey.dart';
+import 'sheet_route.dart';
 
 /// Opens a shipment. [preview] is what the caller already knows, so the
 /// detail page draws its journey on the first frame instead of a skeleton.
 void openShipment(BuildContext context, String reference, {Shipment? preview}) => Navigator.of(context).push(
-  MaterialPageRoute<void>(
+  SheetRoute<void>(
     builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview),
   ),
 );
@@ -118,11 +119,7 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
 
     return RowTile(
       onTap: downloadable && !_busy ? _open : null,
-      leading: Icon(
-        document.contentType.startsWith('image/') ? Icons.image_outlined : Icons.description_outlined,
-        color: p.ink,
-        size: 22,
-      ),
+      leading: Icon(document.contentType.startsWith('image/') ? KIcons.image : KIcons.document, color: p.ink, size: 22),
       title: Text(documentTypeLabel(l, document.documentType)),
       subtitle: Text(
         [
@@ -150,14 +147,8 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: p.ink),
                       )
                     : _done
-                    ? Icon(Icons.check_rounded, key: const ValueKey('done'), size: 22, color: p.ink)
-                    : Icon(
-                        Icons.arrow_downward_rounded,
-                        key: const ValueKey('ready'),
-                        size: 20,
-                        color: p.ink,
-                        semanticLabel: l.commonDownload,
-                      ),
+                    ? Icon(KIcons.check, key: const ValueKey('done'), size: 22, color: p.ink)
+                    : Icon(KIcons.download, key: const ValueKey('ready'), size: 20, color: p.ink, semanticLabel: l.commonDownload),
               ),
             ),
     );
@@ -173,8 +164,7 @@ class InvoiceRow extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final open = invoice.balanceDue > 0;
     return RowTile(
-      onTap: () =>
-          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => InvoiceDetailScreen(reference: invoice.reference))),
+      onTap: () => Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: invoice.reference))),
       title: Text(invoice.externalInvoiceNumber ?? invoice.reference, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         open && invoice.dueDate.isNotEmpty

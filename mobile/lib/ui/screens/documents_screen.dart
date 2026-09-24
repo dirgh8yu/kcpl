@@ -9,6 +9,7 @@ import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/filter_bar.dart';
 import '../widgets/rows.dart';
+import '../icons.dart';
 
 enum DocumentDirection { all, fromKcpl, sentByYou }
 
@@ -58,13 +59,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           FilterSwap(
             filter: _direction,
             child: page.documents.isEmpty
-                ? EmptyState(icon: Icons.description_outlined, title: l.docsEmptyTitle, description: l.docsEmptyDescription)
+                ? EmptyState(icon: KIcons.document, title: l.docsEmptyTitle, description: l.docsEmptyDescription)
                 : visible.isEmpty
-                ? EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: l.docsEmptyFilteredTitle,
-                    description: l.shipsEmptyFilteredDescription,
-                  )
+                ? EmptyState(icon: KIcons.noResults, title: l.docsEmptyFilteredTitle, description: l.shipsEmptyFilteredDescription)
                 : RowGroup(children: [for (final document in visible) DocumentRowTile(document)]),
           ),
           if (page.total > page.scanned) Footnote(l.docsCoverage('${page.scanned}', '${page.total}')),

@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../ui/motion.dart';
 import '../../ui/theme.dart';
-import '../../ui/widgets/glass.dart';
+import '../../ui/widgets/tab_bar.dart';
 import '../../ui/widgets/push_ui.dart';
 import '../ops_rows.dart' show openJob;
 import '../../ui/widgets/async_view.dart' show autoRefreshEvery;
@@ -27,7 +26,6 @@ class OpsShell extends StatefulWidget {
 class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
   OpsTab _tab = OpsTab.today;
   final Set<OpsTab> _visited = {OpsTab.today};
-  int _selections = 0;
 
   Timer? _badgeTimer;
 
@@ -73,20 +71,18 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
     setState(() {
       _tab = tab;
       _visited.add(tab);
-      _selections++;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
     final unread = OpsScope.of(context).unread;
     const labels = {OpsTab.today: 'Today', OpsTab.jobs: 'Jobs', OpsTab.alerts: 'Alerts', OpsTab.me: 'Me'};
     const icons = {
-      OpsTab.today: (Icons.wb_sunny_outlined, Icons.wb_sunny_rounded),
-      OpsTab.jobs: (Icons.inventory_2_outlined, Icons.inventory_2_rounded),
-      OpsTab.alerts: (Icons.notifications_none_rounded, Icons.notifications_rounded),
-      OpsTab.me: (Icons.person_outline_rounded, Icons.person_rounded),
+      OpsTab.today: (KIcons.today, KIcons.todayOn),
+      OpsTab.jobs: (KIcons.shipments, KIcons.shipmentsOn),
+      OpsTab.alerts: (KIcons.alerts, KIcons.alertsOn),
+      OpsTab.me: (KIcons.account, KIcons.accountOn),
     };
 
     Widget screen(OpsTab tab) => switch (tab) {
@@ -95,16 +91,6 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
       OpsTab.alerts => const AlertsScreen(),
       OpsTab.me => MeScreen(version: widget.version),
     };
-
-    Widget icon(OpsTab tab, IconData data) => tab == OpsTab.alerts
-        ? Badge(
-            isLabelVisible: unread > 0,
-            backgroundColor: p.accent,
-            textColor: Colors.white,
-            label: Text(unread > 99 ? '99+' : '$unread'),
-            child: Icon(data),
-          )
-        : Icon(data);
 
     // A tapped notification opens its job, or the Alerts tab.
     return PushRouter(
@@ -128,35 +114,19 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
               TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
           ],
         ),
-        bottomNavigationBar: Glass(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.demo)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text('Demo data, not real operations', style: context.type.labelSmall?.copyWith(color: p.tertiary)),
-                  ),
-                NavigationBar(
-                  backgroundColor: Colors.transparent,
-                  selectedIndex: _tab.index,
-                  onDestinationSelected: (index) => _select(OpsTab.values[index]),
-                  destinations: [
-                    for (final tab in OpsTab.values)
-                      NavigationDestination(
-                        icon: icon(tab, icons[tab]!.$1),
-                        selectedIcon: PopIn(key: ValueKey('$tab-$_selections'), child: icon(tab, icons[tab]!.$2)),
-                        label: labels[tab]!,
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        bottomNavigationBar: FloatingTabBar(
+          note: widget.demo ? 'Demo data, not real operations' : null,
+          selected: _tab.index,
+          onSelected: (index) => _select(OpsTab.values[index]),
+          items: [
+            for (final tab in OpsTab.values)
+              TabItem(
+                icon: icons[tab]!.$1,
+                selectedIcon: icons[tab]!.$2,
+                label: labels[tab]!,
+                badge: tab == OpsTab.alerts ? unread : 0,
+              ),
+          ],
         ),
       ),
     );

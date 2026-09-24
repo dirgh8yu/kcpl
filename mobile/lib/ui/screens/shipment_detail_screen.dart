@@ -30,8 +30,7 @@ class ShipmentDetailScreen extends StatelessWidget {
         load: () => api.shipment(reference),
         leading: preview == null ? 0 : 2,
         placeholder: preview == null ? null : (context) => _lead(context, preview),
-        onMissing: (context, _) =>
-            EmptyState(icon: Icons.search_off_rounded, title: l.shipNotFoundTitle, description: l.shipNotFoundDescription),
+        onMissing: (context, _) => EmptyState(icon: KIcons.noResults, title: l.shipNotFoundTitle, description: l.shipNotFoundDescription),
         builder: (context, detail) => _body(context, detail),
       ),
     );
@@ -41,7 +40,6 @@ class ShipmentDetailScreen extends StatelessWidget {
   List<Widget> _lead(BuildContext context, Shipment shipment) {
     final l = AppLocalizations.of(context);
     final p = context.palette;
-    final emphasis = statusEmphasis(shipment.status);
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: kGutter),
@@ -50,54 +48,10 @@ class ShipmentDetailScreen extends StatelessWidget {
           style: context.type.bodyLarge?.copyWith(color: p.secondary),
         ),
       ),
-      // The journey, large: where from, where to, and how far along.
+      // The pass: where from, where to, how far along, and when.
       Padding(
-        padding: const EdgeInsets.fromLTRB(kGutter, 28, kGutter, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            JourneyGraphic(shipment: shipment),
-            const SizedBox(height: 22),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StatusText(statusLabel(l, shipment.status), emphasis, style: context.type.titleLarge),
-                      const SizedBox(height: 4),
-                      Text(
-                        shipment.currentLocation != null && !shipment.delivered
-                            ? l.overviewNowAt(shipment.currentLocation!)
-                            : l.shipLastUpdate(formatDateTime(shipment.updatedAt)),
-                        style: context.type.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Align(
-                    alignment: AlignmentDirectional.topEnd,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(l.shipEta, style: context.type.bodySmall, textAlign: TextAlign.end),
-                        const SizedBox(height: 2),
-                        Text(
-                          shipment.eta == null ? l.shipToBeConfirmed : formatShortDate(shipment.eta),
-                          style: context.type.titleLarge,
-                          textAlign: TextAlign.end,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.fromLTRB(kGutter, 22, kGutter, 0),
+        child: JourneyGraphic(shipment: shipment),
       ),
     ];
   }
@@ -163,7 +117,7 @@ class ShipmentDetailScreen extends StatelessWidget {
       ],
       SectionHeader(l.shipMilestonesTitle),
       if (detail.events.isEmpty)
-        EmptyState(icon: Icons.timeline_rounded, title: l.shipNoMilestonesTitle, description: l.shipNoMilestonesDescription)
+        EmptyState(icon: KIcons.history, title: l.shipNoMilestonesTitle, description: l.shipNoMilestonesDescription)
       else
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter, 10, kGutter, 0),
@@ -188,7 +142,7 @@ class ShipmentDetailScreen extends StatelessWidget {
       ),
       SectionHeader(l.commonDocuments),
       if (detail.documents.isEmpty)
-        EmptyState(icon: Icons.description_outlined, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription)
+        EmptyState(icon: KIcons.document, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription)
       else
         RowGroup(children: [for (final document in detail.documents) DocumentRowTile(document, showShipment: false)]),
     ];
@@ -234,10 +188,7 @@ class _Milestone extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.title,
-                    style: latest ? context.type.titleMedium : context.type.bodyLarge?.copyWith(color: p.secondary),
-                  ),
+                  Text(event.title, style: latest ? context.type.titleMedium : context.type.bodyLarge?.copyWith(color: p.secondary)),
                   const SizedBox(height: 3),
                   Text(
                     [formatDateTime(event.eventTime), if (event.location != null) event.location!].join(' · '),

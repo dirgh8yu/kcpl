@@ -17,8 +17,7 @@ class CustomerScope {
   final String id;
   final String name;
 
-  factory CustomerScope.fromJson(Map<String, dynamic> json) =>
-      CustomerScope(id: _s(json['id']), name: _s(json['name']));
+  factory CustomerScope.fromJson(Map<String, dynamic> json) => CustomerScope(id: _s(json['id']), name: _s(json['name']));
 }
 
 class SessionView {
@@ -43,15 +42,15 @@ class SessionView {
   final String locale;
 
   factory SessionView.fromJson(Map<String, dynamic> json) => SessionView(
-        email: _s(json['email']),
-        displayName: _s(json['displayName']),
-        customerId: _s(json['customerId']),
-        customerName: _s(json['customerName']),
-        customers: _list(json['customers']).map(CustomerScope.fromJson).toList(),
-        role: _s(json['role'], 'member'),
-        canViewFinance: _b(_map(json['capabilities'])['canViewFinance']),
-        locale: _s(json['locale'], 'en'),
-      );
+    email: _s(json['email']),
+    displayName: _s(json['displayName']),
+    customerId: _s(json['customerId']),
+    customerName: _s(json['customerName']),
+    customers: _list(json['customers']).map(CustomerScope.fromJson).toList(),
+    role: _s(json['role'], 'member'),
+    canViewFinance: _b(_map(json['capabilities'])['canViewFinance']),
+    locale: _s(json['locale'], 'en'),
+  );
 }
 
 class Shipment {
@@ -86,19 +85,19 @@ class Shipment {
   bool get delivered => status == 'delivered';
 
   factory Shipment.fromJson(Map<String, dynamic> json) => Shipment(
-        reference: _s(json['reference']),
-        status: _s(json['status'], 'unknown'),
-        mode: _s(json['mode'], 'unsure'),
-        origin: _s(json['origin']),
-        destination: _s(json['destination']),
-        eta: _ns(json['eta']),
-        currentLocation: _ns(json['current_location']),
-        carrier: _ns(json['carrier']),
-        carrierReference: _ns(json['carrier_reference']),
-        customerNote: _ns(json['customer_note']),
-        createdAt: _s(json['created_at']),
-        updatedAt: _s(json['updated_at']),
-      );
+    reference: _s(json['reference']),
+    status: _s(json['status'], 'unknown'),
+    mode: _s(json['mode'], 'unsure'),
+    origin: _s(json['origin']),
+    destination: _s(json['destination']),
+    eta: _ns(json['eta']),
+    currentLocation: _ns(json['current_location']),
+    carrier: _ns(json['carrier']),
+    carrierReference: _ns(json['carrier_reference']),
+    customerNote: _ns(json['customer_note']),
+    createdAt: _s(json['created_at']),
+    updatedAt: _s(json['updated_at']),
+  );
 }
 
 class ShipmentEvent {
@@ -110,12 +109,12 @@ class ShipmentEvent {
   final String eventTime;
 
   factory ShipmentEvent.fromJson(Map<String, dynamic> json) => ShipmentEvent(
-        id: _s(json['id']),
-        title: _s(json['title']),
-        location: _ns(json['location']),
-        details: _ns(json['details']),
-        eventTime: _s(json['event_time']),
-      );
+    id: _s(json['id']),
+    title: _s(json['title']),
+    location: _ns(json['location']),
+    details: _ns(json['details']),
+    eventTime: _s(json['event_time']),
+  );
 }
 
 class DocumentRow {
@@ -144,16 +143,16 @@ class DocumentRow {
   final String reviewState;
 
   factory DocumentRow.fromJson(Map<String, dynamic> json) => DocumentRow(
-        id: '${json['id'] ?? ''}',
-        shipmentReference: _s(json['shipment_reference']),
-        filename: _s(json['filename']),
-        contentType: _s(json['content_type']),
-        sizeBytes: _i(json['size_bytes']),
-        documentType: _s(json['document_type'], 'other'),
-        uploadedAt: _s(json['uploaded_at']),
-        fromCustomer: _b(json['from_customer']),
-        reviewState: _s(json['review_state'], 'released'),
-      );
+    id: '${json['id'] ?? ''}',
+    shipmentReference: _s(json['shipment_reference']),
+    filename: _s(json['filename']),
+    contentType: _s(json['content_type']),
+    sizeBytes: _i(json['size_bytes']),
+    documentType: _s(json['document_type'], 'other'),
+    uploadedAt: _s(json['uploaded_at']),
+    fromCustomer: _b(json['from_customer']),
+    reviewState: _s(json['review_state'], 'released'),
+  );
 }
 
 class Requirement {
@@ -164,21 +163,12 @@ class Requirement {
   /// `needed`, `with_kcpl`, `confirmed` or `resend`.
   final String state;
 
-  factory Requirement.fromJson(Map<String, dynamic> json) => Requirement(
-        documentType: _s(json['document_type'], 'other'),
-        required: _b(json['required']),
-        state: _s(json['state'], 'needed'),
-      );
+  factory Requirement.fromJson(Map<String, dynamic> json) =>
+      Requirement(documentType: _s(json['document_type'], 'other'), required: _b(json['required']), state: _s(json['state'], 'needed'));
 }
 
 class FreeTimeStatus {
-  const FreeTimeStatus({
-    required this.state,
-    this.deadline,
-    required this.daysRemaining,
-    required this.daysOverdue,
-    this.projectedCharge,
-  });
+  const FreeTimeStatus({required this.state, this.deadline, required this.daysRemaining, required this.daysOverdue, this.projectedCharge});
 
   /// `not_set`, `running`, `last_day` or `expired`.
   final String state;
@@ -188,12 +178,12 @@ class FreeTimeStatus {
   final double? projectedCharge;
 
   factory FreeTimeStatus.fromJson(Map<String, dynamic> json) => FreeTimeStatus(
-        state: _s(json['state'], 'not_set'),
-        deadline: _ns(json['deadline']),
-        daysRemaining: _i(json['daysRemaining']),
-        daysOverdue: _i(json['daysOverdue']),
-        projectedCharge: json['projectedCharge'] is num ? _n(json['projectedCharge']) : null,
-      );
+    state: _s(json['state'], 'not_set'),
+    deadline: _ns(json['deadline']),
+    daysRemaining: _i(json['daysRemaining']),
+    daysOverdue: _i(json['daysOverdue']),
+    projectedCharge: json['projectedCharge'] is num ? _n(json['projectedCharge']) : null,
+  );
 }
 
 class FreeTime {
@@ -217,13 +207,7 @@ class FreeTime {
 }
 
 class ShipmentDetail {
-  const ShipmentDetail({
-    required this.shipment,
-    this.freeTime,
-    required this.events,
-    required this.documents,
-    required this.checklist,
-  });
+  const ShipmentDetail({required this.shipment, this.freeTime, required this.events, required this.documents, required this.checklist});
 
   final Shipment shipment;
   final FreeTime? freeTime;
@@ -232,12 +216,12 @@ class ShipmentDetail {
   final List<Requirement> checklist;
 
   factory ShipmentDetail.fromJson(Map<String, dynamic> json) => ShipmentDetail(
-        shipment: Shipment.fromJson(_map(json['shipment'])),
-        freeTime: json['freeTime'] is Map ? FreeTime.fromJson(_map(json['freeTime'])) : null,
-        events: _list(json['events']).map(ShipmentEvent.fromJson).toList(),
-        documents: _list(json['documents']).map(DocumentRow.fromJson).toList(),
-        checklist: _list(json['checklist']).map(Requirement.fromJson).toList(),
-      );
+    shipment: Shipment.fromJson(_map(json['shipment'])),
+    freeTime: json['freeTime'] is Map ? FreeTime.fromJson(_map(json['freeTime'])) : null,
+    events: _list(json['events']).map(ShipmentEvent.fromJson).toList(),
+    documents: _list(json['documents']).map(DocumentRow.fromJson).toList(),
+    checklist: _list(json['checklist']).map(Requirement.fromJson).toList(),
+  );
 }
 
 class FreeTimeRow {
@@ -249,12 +233,12 @@ class FreeTimeRow {
   final FreeTimeStatus status;
 
   factory FreeTimeRow.fromJson(Map<String, dynamic> json) => FreeTimeRow(
-        reference: _s(json['reference']),
-        origin: _s(json['origin']),
-        destination: _s(json['destination']),
-        location: _ns(json['location']),
-        status: FreeTimeStatus.fromJson(_map(json['status'])),
-      );
+    reference: _s(json['reference']),
+    origin: _s(json['origin']),
+    destination: _s(json['destination']),
+    location: _ns(json['location']),
+    status: FreeTimeStatus.fromJson(_map(json['status'])),
+  );
 }
 
 class OutstandingDocuments {
@@ -265,15 +249,21 @@ class OutstandingDocuments {
   final List<Requirement> rows;
 
   factory OutstandingDocuments.fromJson(Map<String, dynamic> json) => OutstandingDocuments(
-        reference: _s(json['reference']),
-        origin: _s(json['origin']),
-        destination: _s(json['destination']),
-        rows: _list(json['rows']).map(Requirement.fromJson).toList(),
-      );
+    reference: _s(json['reference']),
+    origin: _s(json['origin']),
+    destination: _s(json['destination']),
+    rows: _list(json['rows']).map(Requirement.fromJson).toList(),
+  );
 }
 
 class CurrencyBalance {
-  const CurrencyBalance({required this.currency, required this.invoiced, required this.paid, required this.outstanding, required this.overdue});
+  const CurrencyBalance({
+    required this.currency,
+    required this.invoiced,
+    required this.paid,
+    required this.outstanding,
+    required this.overdue,
+  });
   final String currency;
   final double invoiced;
   final double paid;
@@ -281,12 +271,12 @@ class CurrencyBalance {
   final double overdue;
 
   factory CurrencyBalance.fromJson(Map<String, dynamic> json) => CurrencyBalance(
-        currency: _s(json['currency'], 'NPR'),
-        invoiced: _n(json['invoiced']),
-        paid: _n(json['paid']),
-        outstanding: _n(json['outstanding']),
-        overdue: _n(json['overdue']),
-      );
+    currency: _s(json['currency'], 'NPR'),
+    invoiced: _n(json['invoiced']),
+    paid: _n(json['paid']),
+    outstanding: _n(json['outstanding']),
+    overdue: _n(json['overdue']),
+  );
 }
 
 class FinanceSummary {
@@ -296,10 +286,10 @@ class FinanceSummary {
   final int overdueInvoices;
 
   factory FinanceSummary.fromJson(Map<String, dynamic> json) => FinanceSummary(
-        balances: _list(json['balances']).map(CurrencyBalance.fromJson).toList(),
-        openInvoices: _i(json['openInvoices']),
-        overdueInvoices: _i(json['overdueInvoices']),
-      );
+    balances: _list(json['balances']).map(CurrencyBalance.fromJson).toList(),
+    openInvoices: _i(json['openInvoices']),
+    overdueInvoices: _i(json['overdueInvoices']),
+  );
 }
 
 class Overview {
@@ -330,18 +320,18 @@ class Overview {
   final FinanceSummary? finance;
 
   factory Overview.fromJson(Map<String, dynamic> json) => Overview(
-        shipments: _list(json['shipments']).map(Shipment.fromJson).toList(),
-        activeCount: _i(json['activeCount']),
-        inTransitCount: _i(json['inTransitCount']),
-        arrivingCount: _i(json['arrivingCount']),
-        attentionCount: _i(json['attentionCount']),
-        deliveredCount: _i(json['deliveredCount']),
-        documents: _list(json['documents']).map(DocumentRow.fromJson).toList(),
-        outstanding: _list(json['outstanding']).map(OutstandingDocuments.fromJson).toList(),
-        outstandingCount: _i(json['outstandingCount']),
-        freeTime: _list(json['freeTime']).map(FreeTimeRow.fromJson).toList(),
-        finance: json['finance'] is Map ? FinanceSummary.fromJson(_map(json['finance'])) : null,
-      );
+    shipments: _list(json['shipments']).map(Shipment.fromJson).toList(),
+    activeCount: _i(json['activeCount']),
+    inTransitCount: _i(json['inTransitCount']),
+    arrivingCount: _i(json['arrivingCount']),
+    attentionCount: _i(json['attentionCount']),
+    deliveredCount: _i(json['deliveredCount']),
+    documents: _list(json['documents']).map(DocumentRow.fromJson).toList(),
+    outstanding: _list(json['outstanding']).map(OutstandingDocuments.fromJson).toList(),
+    outstandingCount: _i(json['outstandingCount']),
+    freeTime: _list(json['freeTime']).map(FreeTimeRow.fromJson).toList(),
+    finance: json['finance'] is Map ? FinanceSummary.fromJson(_map(json['finance'])) : null,
+  );
 }
 
 class InvoiceLine {
@@ -353,12 +343,12 @@ class InvoiceLine {
   final double total;
 
   factory InvoiceLine.fromJson(Map<String, dynamic> json) => InvoiceLine(
-        id: _s(json['id']),
-        description: _s(json['description'], 'Charge'),
-        quantity: _n(json['quantity']),
-        unitPrice: _n(json['unit_price']),
-        total: _n(json['total']),
-      );
+    id: _s(json['id']),
+    description: _s(json['description'], 'Charge'),
+    quantity: _n(json['quantity']),
+    unitPrice: _n(json['unit_price']),
+    total: _n(json['total']),
+  );
 }
 
 class Invoice {
@@ -395,21 +385,21 @@ class Invoice {
   final List<InvoiceLine> lines;
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
-        reference: _s(json['reference']),
-        recordType: _s(json['record_type'], 'invoice'),
-        status: _s(json['status'], 'issued'),
-        issueDate: _s(json['issue_date']),
-        dueDate: _s(json['due_date']),
-        currency: _s(json['currency'], 'NPR'),
-        subtotal: _n(json['subtotal']),
-        taxTotal: _n(json['tax_total']),
-        total: _n(json['total']),
-        amountPaid: _n(json['amount_paid']),
-        balanceDue: _n(json['balance_due']),
-        shipmentReference: _ns(json['shipment_reference']),
-        externalInvoiceNumber: _ns(json['external_invoice_number']),
-        lines: _list(json['line_items']).map(InvoiceLine.fromJson).toList(),
-      );
+    reference: _s(json['reference']),
+    recordType: _s(json['record_type'], 'invoice'),
+    status: _s(json['status'], 'issued'),
+    issueDate: _s(json['issue_date']),
+    dueDate: _s(json['due_date']),
+    currency: _s(json['currency'], 'NPR'),
+    subtotal: _n(json['subtotal']),
+    taxTotal: _n(json['tax_total']),
+    total: _n(json['total']),
+    amountPaid: _n(json['amount_paid']),
+    balanceDue: _n(json['balance_due']),
+    shipmentReference: _ns(json['shipment_reference']),
+    externalInvoiceNumber: _ns(json['external_invoice_number']),
+    lines: _list(json['line_items']).map(InvoiceLine.fromJson).toList(),
+  );
 }
 
 class OverviewBundle {

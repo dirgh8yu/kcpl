@@ -69,8 +69,7 @@ class HttpKcplApi extends KcplApi {
       value is List ? value.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : const [];
 
   @override
-  Future<SessionView> session() async =>
-      SessionView.fromJson((await _json('session'))['session'] as Map<String, dynamic>);
+  Future<SessionView> session() async => SessionView.fromJson((await _json('session'))['session'] as Map<String, dynamic>);
 
   @override
   Future<OverviewBundle> overview() async {
@@ -82,8 +81,7 @@ class HttpKcplApi extends KcplApi {
   }
 
   @override
-  Future<List<Shipment>> shipments() async =>
-      _rows((await _json('shipments'))['shipments']).map(Shipment.fromJson).toList();
+  Future<List<Shipment>> shipments() async => _rows((await _json('shipments'))['shipments']).map(Shipment.fromJson).toList();
 
   @override
   Future<ShipmentDetail> shipment(String reference) async =>
@@ -113,16 +111,14 @@ class HttpKcplApi extends KcplApi {
       Invoice.fromJson((await _json('invoices/${Uri.encodeComponent(reference)}'))['invoice'] as Map<String, dynamic>);
 
   @override
-  Future<void> registerPush(String token, String platform) =>
-      _send('POST', 'push', body: {'token': token, 'platform': platform});
+  Future<void> registerPush(String token, String platform) => _send('POST', 'push', body: {'token': token, 'platform': platform});
 
   @override
   Future<void> unregisterPush(String token) => _send('DELETE', 'push', body: {'token': token});
 
   @override
   Future<DownloadedFile> download(DocumentRow document) async {
-    final response = await _get(
-        'documents/${Uri.encodeComponent(document.shipmentReference)}/${Uri.encodeComponent(document.id)}');
+    final response = await _get('documents/${Uri.encodeComponent(document.shipmentReference)}/${Uri.encodeComponent(document.id)}');
     return DownloadedFile(
       filename: document.filename.isEmpty ? 'document' : document.filename,
       contentType: response.headers['content-type'] ?? document.contentType,

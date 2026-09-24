@@ -8,6 +8,7 @@ import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/filter_bar.dart';
 import '../widgets/rows.dart';
+import '../icons.dart';
 
 enum ShipmentFocus { all, active, inTransit, attention, delivered }
 
@@ -68,13 +69,9 @@ class _ShipmentsScreenState extends State<ShipmentsScreen> {
           FilterSwap(
             filter: _focus,
             child: shipments.isEmpty
-                ? EmptyState(icon: Icons.inventory_2_outlined, title: l.shipsEmptyTitle, description: l.shipsEmptyDescription)
+                ? EmptyState(icon: KIcons.shipments, title: l.shipsEmptyTitle, description: l.shipsEmptyDescription)
                 : visible.isEmpty
-                ? EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: l.shipsEmptyFilteredTitle,
-                    description: l.shipsEmptyFilteredDescription,
-                  )
+                ? EmptyState(icon: KIcons.noResults, title: l.shipsEmptyFilteredTitle, description: l.shipsEmptyFilteredDescription)
                 : RowGroup(children: [for (final shipment in visible) ShipmentRow(shipment)]),
           ),
         ];

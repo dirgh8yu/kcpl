@@ -16,48 +16,60 @@ class MeScreen extends StatelessWidget {
     final p = context.palette;
     final controller = OpsScope.of(context);
     final session = controller.session;
-    return CustomScrollView(slivers: [
-      const LargeTitleBar(title: 'Me'),
-      SliverList(
-        delegate: SliverChildListDelegate([
-          if (session != null) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(kGutter, 4, kGutter, 0),
-              child: Row(children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: p.ink,
-                  child: Text(initials(session.displayName), style: context.type.titleLarge?.copyWith(color: p.paper)),
+    return CustomScrollView(
+      slivers: [
+        const LargeTitleBar(title: 'Me'),
+        SliverList(
+          delegate: SliverChildListDelegate([
+            if (session != null) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(kGutter, 4, kGutter, 0),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: p.ink,
+                      child: Text(initials(session.displayName), style: context.type.titleLarge?.copyWith(color: p.paper)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(session.displayName, style: context.type.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 2),
+                          Text(session.email, style: context.type.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(session.displayName, style: context.type.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 2),
-                    Text(session.email, style: context.type.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ]),
-                ),
-              ]),
+              ),
+              const SizedBox(height: 24),
+              RowGroup(
+                children: [
+                  DetailRow('Role', session.roleLabel),
+                  DetailRow('Branches', session.canAccessAllBranches ? 'All branches' : session.branches.join(', ')),
+                  DetailRow('Costs and margins', session.canViewCosts ? 'Visible' : 'Not shared with this role'),
+                ],
+              ),
+            ],
+            const Footnote('Roles and branch access are managed by KCPL Management in the web admin.'),
+            const SectionHeader('Notifications'),
+            const PushSettingRow(copy: opsPushCopy),
+            const SizedBox(height: 28),
+            const Divider(indent: kGutter, endIndent: kGutter),
+            RowTile(
+              onTap: controller.signOut,
+              title: Text('Sign out', style: TextStyle(color: p.accent)),
             ),
-            const SizedBox(height: 24),
-            RowGroup(children: [
-              DetailRow('Role', session.roleLabel),
-              DetailRow('Branches', session.canAccessAllBranches ? 'All branches' : session.branches.join(', ')),
-              DetailRow('Costs and margins', session.canViewCosts ? 'Visible' : 'Not shared with this role'),
-            ]),
-          ],
-          const Footnote('Roles and branch access are managed by KCPL Management in the web admin.'),
-          const SectionHeader('Notifications'),
-          const PushSettingRow(copy: opsPushCopy),
-          const SizedBox(height: 28),
-          const Divider(indent: kGutter, endIndent: kGutter),
-          RowTile(onTap: controller.signOut, title: Text('Sign out', style: TextStyle(color: p.accent))),
-          const Divider(indent: kGutter, endIndent: kGutter),
-          const SizedBox(height: 20),
-          Center(child: Text('KCPL Ops $version', style: context.type.bodySmall)),
-          SizedBox(height: 40 + MediaQuery.paddingOf(context).bottom),
-        ]),
-      ),
-    ]);
+            const Divider(indent: kGutter, endIndent: kGutter),
+            const SizedBox(height: 20),
+            Center(child: Text('KCPL Ops $version', style: context.type.bodySmall)),
+            SizedBox(height: 40 + MediaQuery.paddingOf(context).bottom),
+          ]),
+        ),
+      ],
+    );
   }
 }

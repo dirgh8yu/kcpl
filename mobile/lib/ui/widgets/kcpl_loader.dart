@@ -116,7 +116,12 @@ class _KPainter extends CustomPainter {
         heat = rest + bump * (1 - rest);
       }
       final color = Color.lerp(base, charge, heat)!.withValues(alpha: local);
-      canvas.drawPath(path, Paint()..color = color..isAntiAlias = true);
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color
+          ..isAntiAlias = true,
+      );
     }
   }
 

@@ -119,11 +119,7 @@ class _SignInScreenState extends State<SignInScreen> {
               HapticFeedback.selectionClick();
               controller.setLocale(Locale(code));
             },
-      style: TextButton.styleFrom(
-        disabledForegroundColor: p.ink,
-        foregroundColor: p.tertiary,
-        textStyle: context.type.labelLarge,
-      ),
+      style: TextButton.styleFrom(disabledForegroundColor: p.ink, foregroundColor: p.tertiary, textStyle: context.type.labelLarge),
       child: Text(label),
     );
 
@@ -158,10 +154,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           const SizedBox(height: 10),
                           Reveal(
                             index: 2,
-                            child: Text(
-                              widget.subtitle ?? l.signInSubtitle,
-                              style: context.type.bodyLarge?.copyWith(color: p.secondary),
-                            ),
+                            child: Text(widget.subtitle ?? l.signInSubtitle, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
                           ),
                           const SizedBox(height: 36),
                           Reveal(
@@ -196,10 +189,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                       hintText: l.passwordLabel,
                                       suffixIcon: IconButton(
                                         tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                        icon: Icon(
-                                          _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                          size: 22,
-                                        ),
+                                        icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 22),
                                         onPressed: () => setState(() => _obscure = !_obscure),
                                       ),
                                     ),
@@ -246,7 +236,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                       ? Semantics(
                                           key: const ValueKey('busy'),
                                           label: l.signingIn,
-child: KcplLoader(
+                                          child: KcplLoader(
                                             size: 22,
                                             color: Colors.white,
                                             base: Colors.white.withValues(alpha: 0.35),

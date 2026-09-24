@@ -9,11 +9,9 @@ String? _ns(Object? v) => v is String && v.trim().isNotEmpty ? v : null;
 int _i(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
 double _n(Object? v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
 bool _b(Object? v) => v == true;
-List<Map<String, dynamic>> _list(Object? v) =>
-    v is List ? v.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : const [];
+List<Map<String, dynamic>> _list(Object? v) => v is List ? v.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : const [];
 List<String> _strings(Object? v) => v is List ? v.whereType<String>().toList() : const [];
-Map<String, double> _money(Object? v) =>
-    v is Map ? {for (final e in v.entries) '${e.key}': _n(e.value)} : const {};
+Map<String, double> _money(Object? v) => v is Map ? {for (final e in v.entries) '${e.key}': _n(e.value)} : const {};
 
 class OpsSession {
   const OpsSession({
@@ -35,14 +33,14 @@ class OpsSession {
   final bool canViewCosts;
 
   factory OpsSession.fromJson(Map<String, dynamic> j) => OpsSession(
-        displayName: _s(j['displayName'], 'KCPL Staff'),
-        email: _s(j['email']),
-        role: _s(j['role'], 'operations'),
-        roleLabel: _s(j['roleLabel'], 'Operations'),
-        branches: _strings(j['branches']),
-        canAccessAllBranches: _b(j['canAccessAllBranches']),
-        canViewCosts: _b(j['canViewCosts']),
-      );
+    displayName: _s(j['displayName'], 'KCPL Staff'),
+    email: _s(j['email']),
+    role: _s(j['role'], 'operations'),
+    roleLabel: _s(j['roleLabel'], 'Operations'),
+    branches: _strings(j['branches']),
+    canAccessAllBranches: _b(j['canAccessAllBranches']),
+    canViewCosts: _b(j['canViewCosts']),
+  );
 }
 
 /// A job as the command centre lists it.
@@ -94,38 +92,38 @@ class OpsJob {
 
   /// The shape the shared journey widgets draw.
   Shipment get asShipment => Shipment(
-        reference: reference,
-        status: status,
-        mode: mode,
-        origin: origin,
-        destination: destination,
-        eta: eta,
-        currentLocation: currentLocation,
-        carrier: carrier,
-        createdAt: updatedAt,
-        updatedAt: updatedAt,
-      );
+    reference: reference,
+    status: status,
+    mode: mode,
+    origin: origin,
+    destination: destination,
+    eta: eta,
+    currentLocation: currentLocation,
+    carrier: carrier,
+    createdAt: updatedAt,
+    updatedAt: updatedAt,
+  );
 
   factory OpsJob.fromJson(Map<String, dynamic> j) => OpsJob(
-        reference: _s(j['reference']),
-        customerName: _s(j['customer_name']),
-        origin: _s(j['origin']),
-        destination: _s(j['destination']),
-        mode: _s(j['mode'], 'unsure'),
-        status: _s(j['status'], 'booking_confirmed'),
-        primaryBranch: _s(j['primary_branch']),
-        ownerName: _ns(j['assigned_to_name']),
-        ownerEmail: _ns(j['assigned_to_email']),
-        ownerPhone: _ns(j['assigned_to_phone']),
-        priority: _s(j['priority'], 'standard'),
-        eta: _ns(j['eta']),
-        currentLocation: _ns(j['current_location']),
-        carrier: _ns(j['carrier']),
-        openTasks: _i(j['open_tasks']),
-        overdueTasks: _i(j['overdue_tasks']),
-        customsOpen: _i(j['required_customs_open']),
-        updatedAt: _s(j['updated_at']),
-      );
+    reference: _s(j['reference']),
+    customerName: _s(j['customer_name']),
+    origin: _s(j['origin']),
+    destination: _s(j['destination']),
+    mode: _s(j['mode'], 'unsure'),
+    status: _s(j['status'], 'booking_confirmed'),
+    primaryBranch: _s(j['primary_branch']),
+    ownerName: _ns(j['assigned_to_name']),
+    ownerEmail: _ns(j['assigned_to_email']),
+    ownerPhone: _ns(j['assigned_to_phone']),
+    priority: _s(j['priority'], 'standard'),
+    eta: _ns(j['eta']),
+    currentLocation: _ns(j['current_location']),
+    carrier: _ns(j['carrier']),
+    openTasks: _i(j['open_tasks']),
+    overdueTasks: _i(j['overdue_tasks']),
+    customsOpen: _i(j['required_customs_open']),
+    updatedAt: _s(j['updated_at']),
+  );
 }
 
 class OpsTotals {
@@ -148,18 +146,24 @@ class OpsTotals {
   final int exceptions;
 
   factory OpsTotals.fromJson(Map<String, dynamic> j) => OpsTotals(
-        active: _i(j['active_jobs']),
-        urgent: _i(j['urgent_jobs']),
-        overdueTasks: _i(j['overdue_tasks']),
-        customsBlockers: _i(j['customs_blockers']),
-        deliveriesToday: _i(j['deliveries_today']),
-        unassigned: _i(j['unassigned_jobs']),
-        exceptions: _i(j['exception_jobs']),
-      );
+    active: _i(j['active_jobs']),
+    urgent: _i(j['urgent_jobs']),
+    overdueTasks: _i(j['overdue_tasks']),
+    customsBlockers: _i(j['customs_blockers']),
+    deliveriesToday: _i(j['deliveries_today']),
+    unassigned: _i(j['unassigned_jobs']),
+    exceptions: _i(j['exception_jobs']),
+  );
 }
 
 class BranchLoad {
-  const BranchLoad({required this.branch, required this.active, required this.urgent, required this.customsBlockers, required this.deliveriesToday});
+  const BranchLoad({
+    required this.branch,
+    required this.active,
+    required this.urgent,
+    required this.customsBlockers,
+    required this.deliveriesToday,
+  });
   final String branch;
   final int active;
   final int urgent;
@@ -167,12 +171,12 @@ class BranchLoad {
   final int deliveriesToday;
 
   factory BranchLoad.fromJson(Map<String, dynamic> j) => BranchLoad(
-        branch: _s(j['branch']),
-        active: _i(j['active_jobs']),
-        urgent: _i(j['urgent_jobs']),
-        customsBlockers: _i(j['customs_blockers']),
-        deliveriesToday: _i(j['deliveries_today']),
-      );
+    branch: _s(j['branch']),
+    active: _i(j['active_jobs']),
+    urgent: _i(j['urgent_jobs']),
+    customsBlockers: _i(j['customs_blockers']),
+    deliveriesToday: _i(j['deliveries_today']),
+  );
 }
 
 class TodayBundle {
@@ -196,7 +200,15 @@ class TodayBundle {
 }
 
 class JobTask {
-  const JobTask({required this.id, required this.title, this.detail, required this.branch, this.dueAt, this.assignee, required this.completed});
+  const JobTask({
+    required this.id,
+    required this.title,
+    this.detail,
+    required this.branch,
+    this.dueAt,
+    this.assignee,
+    required this.completed,
+  });
   final String id;
   final String title;
   final String? detail;
@@ -205,8 +217,15 @@ class JobTask {
   final String? assignee;
   final bool completed;
 
-  JobTask copyWith({bool? completed}) =>
-      JobTask(id: id, title: title, detail: detail, branch: branch, dueAt: dueAt, assignee: assignee, completed: completed ?? this.completed);
+  JobTask copyWith({bool? completed}) => JobTask(
+    id: id,
+    title: title,
+    detail: detail,
+    branch: branch,
+    dueAt: dueAt,
+    assignee: assignee,
+    completed: completed ?? this.completed,
+  );
 
   bool overdue(DateTime now) {
     final due = dueAt == null ? null : DateTime.tryParse(dueAt!);
@@ -214,18 +233,25 @@ class JobTask {
   }
 
   factory JobTask.fromJson(Map<String, dynamic> j) => JobTask(
-        id: _s(j['id']),
-        title: _s(j['title']),
-        detail: _ns(j['detail']),
-        branch: _s(j['branch']),
-        dueAt: _ns(j['due_at']),
-        assignee: _ns(j['assigned_to_name']),
-        completed: _b(j['completed']),
-      );
+    id: _s(j['id']),
+    title: _s(j['title']),
+    detail: _ns(j['detail']),
+    branch: _s(j['branch']),
+    dueAt: _ns(j['due_at']),
+    assignee: _ns(j['assigned_to_name']),
+    completed: _b(j['completed']),
+  );
 }
 
 class CustomsStep {
-  const CustomsStep({required this.id, required this.title, this.detail, required this.branch, required this.required, required this.completed});
+  const CustomsStep({
+    required this.id,
+    required this.title,
+    this.detail,
+    required this.branch,
+    required this.required,
+    required this.completed,
+  });
   final String id;
   final String title;
   final String? detail;
@@ -237,13 +263,13 @@ class CustomsStep {
       CustomsStep(id: id, title: title, detail: detail, branch: branch, required: required, completed: completed ?? this.completed);
 
   factory CustomsStep.fromJson(Map<String, dynamic> j) => CustomsStep(
-        id: _s(j['id']),
-        title: _s(j['title']),
-        detail: _ns(j['detail']),
-        branch: _s(j['branch']),
-        required: _b(j['required']),
-        completed: _b(j['completed']),
-      );
+    id: _s(j['id']),
+    title: _s(j['title']),
+    detail: _ns(j['detail']),
+    branch: _s(j['branch']),
+    required: _b(j['required']),
+    completed: _b(j['completed']),
+  );
 }
 
 class JobFile {
@@ -353,33 +379,33 @@ class OpsAlert {
   bool get unread => readAt == null && !resolved;
 
   OpsAlert markedRead(String at) => OpsAlert(
-        id: id,
-        category: category,
-        severity: severity,
-        title: title,
-        detail: detail,
-        actionPath: actionPath,
-        branch: branch,
-        createdAt: createdAt,
-        resolved: resolved,
-        readAt: at,
-      );
+    id: id,
+    category: category,
+    severity: severity,
+    title: title,
+    detail: detail,
+    actionPath: actionPath,
+    branch: branch,
+    createdAt: createdAt,
+    resolved: resolved,
+    readAt: at,
+  );
 
   /// The shipment an alert is about, when its link points at a Job File.
   String? get jobReference => RegExp(r'/admin/(?:jobs|shipments)/([A-Za-z0-9-]+)').firstMatch(actionPath)?.group(1);
 
   factory OpsAlert.fromJson(Map<String, dynamic> j) => OpsAlert(
-        id: _s(j['id']),
-        category: _s(j['category'], 'activity'),
-        severity: _s(j['severity'], 'info'),
-        title: _s(j['title']),
-        detail: _s(j['detail']),
-        actionPath: _s(j['action_path']),
-        branch: _ns(j['branch']),
-        createdAt: _s(j['created_at']),
-        resolved: _b(j['resolved']),
-        readAt: _ns(j['read_at']),
-      );
+    id: _s(j['id']),
+    category: _s(j['category'], 'activity'),
+    severity: _s(j['severity'], 'info'),
+    title: _s(j['title']),
+    detail: _s(j['detail']),
+    actionPath: _s(j['action_path']),
+    branch: _ns(j['branch']),
+    createdAt: _s(j['created_at']),
+    resolved: _b(j['resolved']),
+    readAt: _ns(j['read_at']),
+  );
 }
 
 class AlertsPage {

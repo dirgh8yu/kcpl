@@ -13,13 +13,9 @@ import 'token_store.dart';
 /// The refresh token is persisted in [TokenStore]; ID tokens (one hour) are
 /// kept in memory and renewed shortly before they expire.
 class FirebaseRestAuth implements AuthRepository {
-  FirebaseRestAuth({
-    required this.apiKey,
-    required this.store,
-    http.Client? client,
-    DateTime Function()? clock,
-  })  : _client = client ?? http.Client(),
-        _now = clock ?? DateTime.now;
+  FirebaseRestAuth({required this.apiKey, required this.store, http.Client? client, DateTime Function()? clock})
+    : _client = client ?? http.Client(),
+      _now = clock ?? DateTime.now;
 
   final String apiKey;
   final TokenStore store;
@@ -49,11 +45,7 @@ class FirebaseRestAuth implements AuthRepository {
       jsonEncode({'email': email.trim(), 'password': password, 'returnSecureToken': true}),
       contentType: 'application/json',
     );
-    await _accept(
-      idToken: body['idToken'] as String,
-      refreshToken: body['refreshToken'] as String,
-      expiresIn: body['expiresIn'],
-    );
+    await _accept(idToken: body['idToken'] as String, refreshToken: body['refreshToken'] as String, expiresIn: body['expiresIn']);
   }
 
   @override
@@ -99,11 +91,7 @@ class FirebaseRestAuth implements AuthRepository {
       await signOut();
       throw const SignedOutException();
     }
-    await _accept(
-      idToken: body['id_token'] as String,
-      refreshToken: body['refresh_token'] as String,
-      expiresIn: body['expires_in'],
-    );
+    await _accept(idToken: body['id_token'] as String, refreshToken: body['refresh_token'] as String, expiresIn: body['expires_in']);
     return _idToken!;
   }
 
@@ -126,9 +114,7 @@ class FirebaseRestAuth implements AuthRepository {
   Future<Map<String, dynamic>> _post(Uri uri, String body, {required String contentType}) async {
     final http.Response response;
     try {
-      response = await _client
-          .post(uri, headers: {'content-type': contentType}, body: body)
-          .timeout(const Duration(seconds: 20));
+      response = await _client.post(uri, headers: {'content-type': contentType}, body: body).timeout(const Duration(seconds: 20));
     } on TimeoutException {
       throw const AuthFailure(AuthFailureKind.network);
     } on http.ClientException {

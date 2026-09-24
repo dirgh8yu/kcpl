@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kcpl_customer/ui/screens/overview_screen.dart' show JourneyGraphic;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kcpl_customer/api/kcpl_api.dart' show ApiException;
@@ -190,7 +191,11 @@ void main() {
 
     expect(find.text('Today'), findsWidgets);
     expect(find.text('Overdue tasks'), findsOneWidget);
-    expect(find.text('KCPL-2609-0142'), findsOneWidget, reason: 'your exception leads');
+    expect(
+      find.descendant(of: find.byType(JourneyGraphic), matching: find.text('KCPL-2609-0142')),
+      findsOneWidget,
+      reason: 'your exception leads',
+    );
     expect(find.text('Yours'), findsOneWidget);
     // The unread badge is right before Alerts is opened.
     expect(find.text('3'), findsWidgets);
@@ -199,7 +204,7 @@ void main() {
   testWidgets('ticking a task shows at once and sticks', (tester) async {
     await pumpOps(tester);
     await signIn(tester);
-    await tester.tap(find.text('KCPL-2609-0142'));
+    await tester.tap(find.text('KCPL-2609-0142').first);
     await settle(tester);
 
     await tapInView(tester, find.text('Call customer with revised ETA'));
@@ -214,7 +219,7 @@ void main() {
   testWidgets('a tick the server refuses comes back off and says why', (tester) async {
     await pumpOps(tester, api: _FailingSaves());
     await signIn(tester);
-    await tester.tap(find.text('KCPL-2609-0142'));
+    await tester.tap(find.text('KCPL-2609-0142').first);
     await settle(tester);
 
     await tapInView(tester, find.text('Call customer with revised ETA'));
@@ -261,12 +266,12 @@ void main() {
     await pumpOps(tester, api: api);
     await signIn(tester);
     expect(api.todays, 1);
-    await tester.tap(find.text('KCPL-2609-0142'));
+    await tester.tap(find.text('KCPL-2609-0142').first);
     await settle(tester);
     await tapInView(tester, find.text('Call customer with revised ETA'));
     await settle(tester);
     await tester.pump(const Duration(seconds: 6));
-    await tester.tap(find.byType(BackButton));
+    await tester.tap(find.byType(CloseButton));
     await settle(tester);
     expect(api.todays, 2);
   });

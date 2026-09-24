@@ -12,8 +12,8 @@ enum OpsStatus { starting, unconfigured, signedOut, signedIn }
 /// The staff app's state: who is signed in and their role and branches.
 class OpsController extends SessionHost {
   OpsController({required this.auth, required this.api, required bool configured, PushService? push})
-      : push = push ?? NoPushService(),
-        _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
+    : push = push ?? NoPushService(),
+      _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
 
   @override
   final PushService push;

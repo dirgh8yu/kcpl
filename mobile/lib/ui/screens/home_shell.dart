@@ -3,11 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
-import '../motion.dart';
 import '../theme.dart';
-import '../widgets/glass.dart';
 import '../widgets/push_ui.dart';
 import '../widgets/rows.dart' show openShipment;
+import '../widgets/tab_bar.dart';
 import 'account_screen.dart';
 import 'documents_screen.dart';
 import 'invoices_screen.dart';
@@ -29,14 +28,12 @@ class _HomeShellState extends State<HomeShell> {
   /// Tabs are built on first visit and then kept, so switching back keeps
   /// the scroll position and never refetches, as native tab bars do.
   final Set<HomeTab> _visited = {HomeTab.overview};
-  int _selections = 0;
 
   void _select(HomeTab tab) {
     if (tab == _tab) return;
     HapticFeedback.selectionClick();
     setState(() {
       _tab = tab;
-      _selections++;
       _visited.add(tab);
     });
   }
@@ -44,7 +41,6 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final p = context.palette;
     final session = AppScope.of(context).session;
     final canViewFinance = session?.canViewFinance ?? false;
     // A login without finance access never sees the tab, as on the web.
@@ -62,11 +58,11 @@ class _HomeShellState extends State<HomeShell> {
       HomeTab.account: l.chromeAccount,
     };
     const icons = {
-      HomeTab.overview: (Icons.home_outlined, Icons.home_rounded),
-      HomeTab.shipments: (Icons.inventory_2_outlined, Icons.inventory_2_rounded),
-      HomeTab.documents: (Icons.description_outlined, Icons.description_rounded),
-      HomeTab.invoices: (Icons.receipt_long_outlined, Icons.receipt_long_rounded),
-      HomeTab.account: (Icons.person_outline_rounded, Icons.person_rounded),
+      HomeTab.overview: (KIcons.home, KIcons.homeOn),
+      HomeTab.shipments: (KIcons.shipments, KIcons.shipmentsOn),
+      HomeTab.documents: (KIcons.document, KIcons.documentsOn),
+      HomeTab.invoices: (KIcons.invoices, KIcons.invoicesOn),
+      HomeTab.account: (KIcons.account, KIcons.accountOn),
     };
 
     Widget screen(HomeTab item) => switch (item) {
@@ -95,36 +91,13 @@ class _HomeShellState extends State<HomeShell> {
               TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
           ],
         ),
-        bottomNavigationBar: Glass(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.demo)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(l.demoBanner, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
-                  ),
-                NavigationBar(
-                  backgroundColor: Colors.transparent,
-                  selectedIndex: tabs.indexOf(tab),
-                  onDestinationSelected: (index) => _select(tabs[index]),
-                  destinations: [
-                    for (final item in tabs)
-                      NavigationDestination(
-                        icon: Icon(icons[item]!.$1),
-                        // Keyed per selection so the pop plays each time a tab is chosen.
-                        selectedIcon: PopIn(key: ValueKey('$item-$_selections'), child: Icon(icons[item]!.$2)),
-                        label: labels[item]!,
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        bottomNavigationBar: FloatingTabBar(
+          note: widget.demo ? l.demoBanner : null,
+          selected: tabs.indexOf(tab),
+          onSelected: (index) => _select(tabs[index]),
+          items: [
+            for (final item in tabs) TabItem(icon: icons[item]!.$1, selectedIcon: icons[item]!.$2, label: labels[item]!),
+          ],
         ),
       ),
     );
