@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { adminSecurityConfigurationValid } from "../admin/admin-security-config";
 import { resolvePortalAccount } from "./portal-accounts.server";
+import { portalQaPreviewEnabled, portalQaPreviewSession } from "./portal-qa-preview";
 import type { PortalCapabilities, PortalCustomerScope, PortalDenialReason, PortalIdentity, PortalRole } from "./portal-access-policy";
 import type { PortalLocale } from "./portal-i18n";
 
@@ -79,6 +80,11 @@ export async function authorizePortalIdentity(
 }
 
 export async function getPortalAccess(): Promise<PortalAccess> {
+  /* Checked before the runtime gate, because the point of the preview is to
+   * render these screens on a host that has no Firebase project to configure.
+   * It cannot return true on a production runtime; see portal-qa-preview.ts. */
+  if (portalQaPreviewEnabled()) return { kind: "authorized", session: portalQaPreviewSession() };
+
   if (!portalRuntimeConfigured()) return { kind: "unconfigured" };
 
   const cookieStore = await cookies();
