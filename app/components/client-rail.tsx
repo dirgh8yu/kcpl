@@ -82,7 +82,12 @@ export function ClientRail({ locale }: { locale: SiteLocale }) {
           {organisations.map((organisation, index) => (
             <li key={organisation.name} className="client-rail-item" role="group" aria-roledescription="slide" aria-label={`${index + 1} / ${organisations.length}: ${organisation.name}`}>
               {"logo" in organisation ? (
-                <Image className="client-rail-logo" src={`/images/clients/${organisation.logo}`} alt={organisation.name} width={220} height={90} />
+                /* sizes mirrors the CSS box (.client-rail-logo: max 160px wide
+                 * on desktop, 132px under 620px), so the browser picks from
+                 * width-based candidates instead of assuming the full 220px
+                 * intrinsic width at 1x/2x — the rail stops fetching 640px
+                 * files for logos that render at ~112px. */
+                <Image className="client-rail-logo" src={`/images/clients/${organisation.logo}`} alt={organisation.name} width={220} height={90} sizes="(max-width: 620px) 132px, 160px" />
               ) : (
                 <span className={`client-rail-name${organisation.name.length > 22 ? " client-rail-name-long" : ""}`}>{organisation.name}</span>
               )}

@@ -58,6 +58,7 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
             </article>
           ))}
         </div>
+        <Link href={sitePath(locale, "/work")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
       </section>
       <ClosingBand locale={locale}/>
     </SiteShell>

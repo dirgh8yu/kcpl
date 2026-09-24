@@ -1,0 +1,22 @@
+.kcpl-admin-content .site-gallery-workspace { max-width: 1180px; }
+.kcpl-admin-content .site-gallery-upload { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 14px; }
+.kcpl-admin-content .site-gallery-upload .ops-field:nth-child(3) { grid-column: 1 / -1; }
+.kcpl-admin-content .site-gallery-upload > button { justify-self: start; }
+.kcpl-admin-content .site-gallery-notice { margin: 14px 0; color: var(--admin-ink); font-size: 12px; }
+.kcpl-admin-content .site-gallery-list { display: grid; }
+.kcpl-admin-content .site-gallery-row { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 20px; padding: 20px 0; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .site-gallery-row:first-child { border-top: 0; padding-top: 0; }
+.kcpl-admin-content .site-gallery-preview { min-height: 140px; background: var(--admin-surface-muted); }
+.kcpl-admin-content .site-gallery-preview img { display: block; width: 100%; height: 140px; object-fit: cover; }
+.kcpl-admin-content .site-gallery-row-main { min-width: 0; }
+.kcpl-admin-content .site-gallery-row-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 11px; color: var(--admin-muted); }
+.kcpl-admin-content .site-gallery-state { color: var(--admin-muted); font-weight: 700; }
+.kcpl-admin-content .site-gallery-state[data-published="true"] { color: var(--admin-success); }
+.kcpl-admin-content .site-gallery-row-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.kcpl-admin-content .site-gallery-row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+@media (max-width: 760px) {
+  .kcpl-admin-content .site-gallery-upload, .kcpl-admin-content .site-gallery-row-fields { grid-template-columns: 1fr; }
+  .kcpl-admin-content .site-gallery-upload .ops-field:nth-child(3) { grid-column: auto; }
+  .kcpl-admin-content .site-gallery-row { grid-template-columns: 1fr; gap: 12px; }
+  .kcpl-admin-content .site-gallery-preview img { height: 230px; }
+}
