@@ -1,6 +1,7 @@
 import sharp from "sharp";
 
 const maxUploadBytes = 10 * 1024 * 1024;
+const targetImageBytes = 300 * 1024;
 const allowedFormats = new Set(["jpeg", "png", "webp"]);
 
 export async function prepareGalleryImage(file: File) {
@@ -14,10 +15,16 @@ export async function prepareGalleryImage(file: File) {
   }
   if (!metadata.format || !allowedFormats.has(metadata.format) || (metadata.pages ?? 1) !== 1) throw new Error("Use a still JPG, PNG or WebP image.");
   if (!metadata.width || !metadata.height || metadata.width < 400 || metadata.height < 300) throw new Error("Choose an image at least 400 × 300 pixels.");
-  const { data, info } = await sharp(input, { limitInputPixels: 40_000_000, failOn: "error" })
-    .rotate()
-    .resize({ width: 2200, withoutEnlargement: true })
-    .webp({ quality: 82, effort: 4 })
-    .toBuffer({ resolveWithObject: true });
-  return { data, width: info.width, height: info.height };
+  const longestEdge = Math.max(metadata.width, metadata.height);
+  const sizes = [...new Set([1600, 1400, 1200].map((edge) => Math.min(edge, longestEdge)))];
+  let result;
+  for (const edge of sizes) {
+    result = await sharp(input, { limitInputPixels: 40_000_000, failOn: "error" })
+      .rotate()
+      .resize({ width: edge, height: edge, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 78, effort: 5, smartSubsample: true })
+      .toBuffer({ resolveWithObject: true });
+    if (result.data.length <= targetImageBytes) break;
+  }
+  return { data: result!.data, width: result!.info.width, height: result!.info.height };
 }
