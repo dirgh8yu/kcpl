@@ -107,4 +107,10 @@ class DemoOpsApi implements OpsApi {
 
   @override
   Future<void> markRead(String alertId) async => _read.add(alertId);
+
+  @override
+  Future<void> registerPush(String token, String platform) async {}
+
+  @override
+  Future<void> unregisterPush(String token) async {}
 }

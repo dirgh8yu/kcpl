@@ -90,7 +90,7 @@ export async function sendMobilePush(devices: MobileDevice[], message: MobilePus
       android: {
         priority: "high",
         collapseKey: message.tag.slice(0, 64),
-        notification: { tag: message.tag.slice(0, 64), color: "#DC143C", channelId: "kcpl_updates" },
+        notification: { tag: message.tag.slice(0, 64), color: "#DC143C" },
       },
       apns: { headers: { "apns-collapse-id": message.tag.slice(0, 64) }, payload: { aps: { sound: "default" } } },
     });

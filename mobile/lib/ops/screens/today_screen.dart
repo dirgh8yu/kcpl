@@ -8,6 +8,7 @@ import '../../ui/screens/overview_screen.dart' show Figure, JourneyGraphic;
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/push_ui.dart';
 import '../ops_controller.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
@@ -62,6 +63,7 @@ class TodayScreen extends StatelessWidget {
           style: context.type.bodyLarge?.copyWith(color: p.secondary),
         ),
       ),
+      const PushPrimer(copy: opsPushCopy),
       if (lead != null)
         Padding(padding: const EdgeInsets.fromLTRB(kGutter, 20, kGutter, 0), child: _LeadCard(job: lead, mine: lead.ownedBy(session.email))),
       // Crimson only where something has gone wrong: late work and exceptions.

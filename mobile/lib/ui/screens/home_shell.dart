@@ -5,6 +5,9 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../motion.dart';
 import '../theme.dart';
+import '../widgets/glass.dart';
+import '../widgets/push_ui.dart';
+import '../widgets/rows.dart' show openShipment;
 import 'account_screen.dart';
 import 'documents_screen.dart';
 import 'invoices_screen.dart';
@@ -74,42 +77,54 @@ class _HomeShellState extends State<HomeShell> {
       HomeTab.account => AccountScreen(version: widget.version),
     };
 
-    return Scaffold(
-      body: IndexedStack(
-        index: tabs.indexOf(tab),
-        // Hidden tabs have tickers off: their animations stop, and their
-        // pages know not to refresh until they are shown again.
-        children: [
-          for (final item in tabs)
-            TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
-        ],
-      ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    // A tapped notification opens the shipment it is about.
+    return PushRouter(
+      onTarget: (context, target) {
+        final reference = target.reference;
+        if (target.kind == 'shipment' && reference != null) openShipment(context, reference);
+      },
+      child: Scaffold(
+        // Content runs beneath the tab bar and shows through its frosted glass.
+        extendBody: true,
+        body: IndexedStack(
+          index: tabs.indexOf(tab),
+          // Hidden tabs have tickers off: their animations stop, and their
+          // pages know not to refresh until they are shown again.
           children: [
-            if (widget.demo)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(l.demoBanner, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
-              ),
-            NavigationBar(
-              selectedIndex: tabs.indexOf(tab),
-              onDestinationSelected: (index) => _select(tabs[index]),
-              destinations: [
-                for (final item in tabs)
-                  NavigationDestination(
-                    icon: Icon(icons[item]!.$1),
-                    // Keyed per selection so the pop plays each time a tab is chosen.
-                    selectedIcon: PopIn(key: ValueKey('$item-$_selections'), child: Icon(icons[item]!.$2)),
-                    label: labels[item]!,
+            for (final item in tabs)
+              TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
+          ],
+        ),
+        bottomNavigationBar: Glass(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.demo)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(l.demoBanner, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
                   ),
+                NavigationBar(
+                  backgroundColor: Colors.transparent,
+                  selectedIndex: tabs.indexOf(tab),
+                  onDestinationSelected: (index) => _select(tabs[index]),
+                  destinations: [
+                    for (final item in tabs)
+                      NavigationDestination(
+                        icon: Icon(icons[item]!.$1),
+                        // Keyed per selection so the pop plays each time a tab is chosen.
+                        selectedIcon: PopIn(key: ValueKey('$item-$_selections'), child: Icon(icons[item]!.$2)),
+                        label: labels[item]!,
+                      ),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -90,7 +90,20 @@ A build with neither define shows a "not configured" screen instead of guessing.
    (`np.com.kapileshworcargo.kcpl_customer` plus the signing SHA-1) and the iOS bundle
    id, allowing only *Identity Toolkit API* and *Token Service API*.
 3. **Release signing.** Android needs an upload keystore and iOS needs an Apple
-   developer team. Neither is in this repository, by design.
+   developer team. Neither is in this repository, by design. For Android, put the
+   keystore's details in `android/key.properties` (git-ignored):
+
+   ```properties
+   storeFile=/absolute/path/to/upload-keystore.jks
+   storePassword=...
+   keyAlias=upload
+   keyPassword=...
+   ```
+
+   Without that file a release build is signed with the debug key, which the Play
+   Store rejects.
+4. **Push notifications.** See *Push notifications* below. A build without the
+   Firebase files runs normally and shows push as "Not available in this build".
 
 ```sh
 flutter build appbundle --release --dart-define=KCPL_FIREBASE_API_KEY=<key>   # Play Store
@@ -165,6 +178,54 @@ may land, so a slow reply can never overwrite a newer one, including across a cu
 switch. The Ops alert badge counts unread every minute on every tab. `test/refresh_test.dart`
 holds all of this on a fake clock.
 
+### Push notifications
+
+Both apps receive pushes through Firebase Cloud Messaging. The server decides what is
+sent. It sends exactly what the web already would, so push is only a second transport:
+
+- **KCPL:** the customer notification sweep (arrivals, customs, free time running
+  out). Each fact is claimed once per recipient, so a phone, a laptop and an email each
+  get it once.
+- **KCPL Ops:** the notification centre's direct alerts (assignments, overdue tasks,
+  customs, exceptions). Categories muted on the web stay muted on the phone. Register
+  transitions are not pushed.
+
+The app never asks for permission at launch. A one-time card on Overview (Today in
+Ops) offers "Turn on", and only that tap brings up the system dialog. The switch in
+Account (Me in Ops) turns push off without touching the phone's permission. Signing out
+unregisters the phone, so the next person to sign in on it never receives the previous
+person's alerts.
+
+A push that arrives while the app is open drops in as a frosted banner, which you can
+flick away. Tapping it, or tapping the system notification, opens the shipment or job.
+
+To turn it on for real builds:
+
+1. In the Firebase console, add an Android app for each package
+   (`np.com.kapileshworcargo.kcpl_customer` and `np.com.kapileshworcargo.kcpl_ops`).
+   Put each `google-services.json` in `android/app/src/customer/` and
+   `android/app/src/ops/`. The Gradle plugin is applied only when one is present.
+2. Add the iOS app in Firebase, drop `GoogleService-Info.plist` into `ios/Runner/`
+   through Xcode, and turn on the *Push Notifications* capability. Then upload an APNs
+   key under Firebase → Project settings → Cloud Messaging.
+3. The server needs nothing new. It sends with the App Hosting service account it
+   already uses. Devices are stored in `mobile_push_devices`, and dead tokens are removed
+   on the first failed send.
+
+In the demo build (`KCPL_DEMO=true`), "Turn on" sends a sample push after four seconds.
+
+### Launch, display and glass
+
+- **Launch:** the native splash is the K on white (black in dark mode), made with
+  `flutter_native_splash`. The app then takes over with the animated K: its three strokes
+  assemble, then a crimson charge runs through them until the app is ready. The same K
+  runs inside the sign-in button while it signs in. Under Reduce Motion it is a still K.
+- **Display:** Android phones with 90 or 120Hz screens are asked for their highest refresh
+  rate (`lib/platform/display.dart`). iOS ProMotion is enabled in `Info.plist`.
+- **Glass:** only floating chrome is frosted: the tab bar, the title bar once it collapses,
+  and the push banner. Content scrolls under them. Cards stay solid because they carry
+  reading, not chrome. With the system's high-contrast setting on, glass turns solid.
+
 ### Strings
 
 The Nepali is the web portal's own (`app/portal/portal-i18n.ts`), which was written for
@@ -196,6 +257,4 @@ size. A layout overflow fails the test, so a long label can't clip on a real pho
 
 - Uploads, payment receipts, delivery confirmation, freight requests and team
   management. These stay on the web portal.
-- Native push notifications. These need Firebase Cloud Messaging and the project's
-  `google-services.json` / `GoogleService-Info.plist`.
 - Offline cache. Each screen fetches live and says so plainly when it can't.

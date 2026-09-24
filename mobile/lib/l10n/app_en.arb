@@ -386,5 +386,16 @@
   },
   "modeRail": "Rail freight",
   "modeCourier": "Courier",
-  "modeMultimodal": "Multimodal"
+  "modeMultimodal": "Multimodal",
+  "pushPrimerTitle": "Know the moment your cargo moves",
+  "pushPrimerBody": "Get a notification when a shipment moves, a document is ready or free time is running out.",
+  "pushTurnOn": "Turn on",
+  "pushNotNow": "Not now",
+  "pushSection": "Notifications",
+  "pushSetting": "Push notifications",
+  "pushOn": "On",
+  "pushOff": "Off",
+  "pushBlocked": "Blocked in your phone's Settings",
+  "pushUnavailable": "Not available in this build",
+  "pushBlockedHelp": "Allow notifications for KCPL in your phone's Settings."
 }

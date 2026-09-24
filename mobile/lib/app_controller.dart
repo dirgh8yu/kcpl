@@ -4,6 +4,7 @@ import 'api/kcpl_api.dart';
 import 'api/models.dart';
 import 'auth/auth_repository.dart';
 import 'auth/token_store.dart';
+import 'push/push_service.dart';
 import 'session_host.dart';
 
 enum AppStatus { starting, unconfigured, signedOut, signedIn }
@@ -12,8 +13,22 @@ enum AppStatus { starting, unconfigured, signedOut, signedIn }
 /// which language. Screens load their own data; they listen here only to
 /// know when to reload (customer switched) or leave (signed out).
 class AppController extends SessionHost {
-  AppController({required this.auth, required this.api, required this.prefs, required bool configured})
-    : _status = configured ? AppStatus.starting : AppStatus.unconfigured;
+  AppController({required this.auth, required this.api, required this.prefs, required bool configured, PushService? push})
+    : push = push ?? NoPushService(),
+      _status = configured ? AppStatus.starting : AppStatus.unconfigured;
+
+  @override
+  final PushService push;
+
+  @override
+  Future<PushState> enablePush() => push.enable(api.registerPush);
+
+  @override
+  Future<void> disablePush() => push.disable(api.unregisterPush);
+
+  /// Re-registers this phone for the signed-in login when push is on. Never
+  /// holds up the screen: registration happens behind it.
+  void _resumePush() => push.resume(api.registerPush).ignore();
 
   @override
   final AuthRepository auth;
@@ -58,6 +73,7 @@ class AppController extends SessionHost {
     try {
       await _loadSession();
       _set(AppStatus.signedIn);
+      _resumePush();
     } on SignedOutException {
       _set(AppStatus.signedOut);
     } on ApiException catch (error) {
@@ -68,9 +84,11 @@ class AppController extends SessionHost {
         return;
       }
       _set(AppStatus.signedIn);
+      _resumePush();
     } catch (_) {
       // Offline at launch is not signed out. Screens show their own retry.
       _set(AppStatus.signedIn);
+      _resumePush();
     }
   }
 
@@ -87,6 +105,7 @@ class AppController extends SessionHost {
     }
     sessionEnded = false;
     _set(AppStatus.signedIn);
+    _resumePush();
   }
 
   Future<void> _loadSession() async {
@@ -126,6 +145,10 @@ class AppController extends SessionHost {
 
   @override
   Future<void> signOut() async {
+    // While the login is still valid: this phone stops receiving its pushes.
+    try {
+      await push.disable(api.unregisterPush, optOut: false);
+    } catch (_) {}
     await auth.signOut();
     await prefs.delete(_customerKey);
     api.customerId = null;

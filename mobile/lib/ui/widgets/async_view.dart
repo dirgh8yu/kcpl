@@ -235,7 +235,8 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
         const SliverToBoxAdapter(child: Skeleton())
       else if (error != null)
         SliverFillRemaining(hasScrollBody: false, child: Center(child: _failure(context, error))),
-      const SliverToBoxAdapter(child: SizedBox(height: 48)),
+      // Clear of the frosted tab bar, which the page scrolls beneath.
+      SliverToBoxAdapter(child: SizedBox(height: 48 + MediaQuery.paddingOf(context).bottom)),
     ];
 
     return RefreshIndicator(

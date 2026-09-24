@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../ui/theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/large_title.dart';
+import '../../ui/widgets/push_ui.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 
@@ -46,13 +47,15 @@ class MeScreen extends StatelessWidget {
             ]),
           ],
           const Footnote('Roles and branch access are managed by KCPL Management in the web admin.'),
+          const SectionHeader('Notifications'),
+          const PushSettingRow(copy: opsPushCopy),
           const SizedBox(height: 28),
           const Divider(indent: kGutter, endIndent: kGutter),
           RowTile(onTap: controller.signOut, title: Text('Sign out', style: TextStyle(color: p.accent))),
           const Divider(indent: kGutter, endIndent: kGutter),
           const SizedBox(height: 20),
           Center(child: Text('KCPL Ops $version', style: context.type.bodySmall)),
-          const SizedBox(height: 40),
+          SizedBox(height: 40 + MediaQuery.paddingOf(context).bottom),
         ]),
       ),
     ]);

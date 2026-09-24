@@ -331,6 +331,12 @@ class DemoApi extends KcplApi {
   }
 
   @override
+  Future<void> registerPush(String token, String platform) async {}
+
+  @override
+  Future<void> unregisterPush(String token) async {}
+
+  @override
   Future<DownloadedFile> download(DocumentRow document) => _later(DownloadedFile(
         filename: '${document.filename}.txt',
         contentType: 'text/plain',

@@ -3,6 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'glass.dart';
 
 /// A large title that eases into the bar as the page scrolls: 32pt and bold
 /// at rest, 17pt beside the back button when collapsed, with a hairline
@@ -22,7 +23,7 @@ class LargeTitleBar extends StatelessWidget {
       pinned: true,
       toolbarHeight: _toolbar,
       expandedHeight: _toolbar + _extra,
-      backgroundColor: p.paper,
+      backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
       elevation: 0,
@@ -32,6 +33,10 @@ class LargeTitleBar extends StatelessWidget {
         final t = ((constraints.maxHeight - min) / _extra).clamp(0.0, 1.0);
         final start = lerpDouble(canPop ? 56 : kGutter, kGutter, t)!;
         return Stack(children: [
+          // Solid at rest; frosted once content runs beneath, as iOS does.
+          Positioned.fill(
+            child: t >= 0.999 ? ColoredBox(color: p.paper) : const Glass(opacity: 0.8, child: SizedBox.expand()),
+          ),
           PositionedDirectional(
             start: start,
             end: kGutter,

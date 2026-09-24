@@ -31,4 +31,8 @@ abstract class KcplApi {
   Future<InvoicesPage> invoices();
   Future<Invoice> invoice(String reference);
   Future<DownloadedFile> download(DocumentRow document);
+
+  /// This phone, for push to the signed-in login.
+  Future<void> registerPush(String token, String platform);
+  Future<void> unregisterPush(String token);
 }

@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/common.dart';
 import '../widgets/large_title.dart';
+import '../widgets/push_ui.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key, required this.version});
@@ -61,6 +62,8 @@ class AccountScreen extends StatelessWidget {
               ]),
             ],
           ],
+          SectionHeader(l.pushSection),
+          PushSettingRow(copy: customerPushCopy(l)),
           SectionHeader(l.settingsLanguage),
           RowGroup(children: [
             for (final (code, label) in const [('en', 'English'), ('ne', 'नेपाली')])
@@ -76,7 +79,7 @@ class AccountScreen extends StatelessWidget {
           const Divider(indent: kGutter, endIndent: kGutter),
           const SizedBox(height: 20),
           Center(child: Text(l.appVersion(version), style: context.type.bodySmall)),
-          const SizedBox(height: 40),
+          SizedBox(height: 40 + MediaQuery.paddingOf(context).bottom),
         ]),
       ),
     ]);

@@ -2,12 +2,21 @@
     <!-- Flutter's template grants this only to debug builds; a release build
          without it cannot reach KCPL at all. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+: asked for only when the person turns push on. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="@string/app_name"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Push notifications: the K in the status bar, in KCPL crimson. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/kcpl_crimson" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

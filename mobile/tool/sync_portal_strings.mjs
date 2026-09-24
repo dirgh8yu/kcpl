@@ -92,6 +92,17 @@ const appStrings = [
   ["modeRail", "Rail freight", "रेल ढुवानी"],
   ["modeCourier", "Courier", "कुरियर"],
   ["modeMultimodal", "Multimodal", "बहुमाध्यम ढुवानी"],
+  ["pushPrimerTitle", "Know the moment your cargo moves", "सामान सर्ने बित्तिकै थाहा पाउनुहोस्"],
+  ["pushPrimerBody", "Get a notification when a shipment moves, a document is ready or free time is running out.", "ढुवानी अघि बढ्दा, कागजात तयार हुँदा वा फ्री टाइम सकिन लाग्दा सूचना पाउनुहोस्।"],
+  ["pushTurnOn", "Turn on", "खोल्नुहोस्"],
+  ["pushNotNow", "Not now", "अहिले होइन"],
+  ["pushSection", "Notifications", "सूचना"],
+  ["pushSetting", "Push notifications", "पुस सूचना"],
+  ["pushOn", "On", "खुला"],
+  ["pushOff", "Off", "बन्द"],
+  ["pushBlocked", "Blocked in your phone's Settings", "फोनको सेटिङमा रोकिएको"],
+  ["pushUnavailable", "Not available in this build", "यो संस्करणमा उपलब्ध छैन"],
+  ["pushBlockedHelp", "Allow notifications for KCPL in your phone's Settings.", "फोनको सेटिङमा KCPL का लागि सूचना अनुमति दिनुहोस्।"],
 ];
 
 const camel = (key) => key.replace(/[._](\w)/g, (_, c) => c.toUpperCase());

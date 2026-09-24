@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'auth/auth_repository.dart';
+import 'push/push_service.dart';
 
 /// What the shared screens need from whichever app they are in: the customer
 /// app's controller and the staff app's both provide it.
@@ -20,6 +21,14 @@ abstract class SessionHost extends ChangeNotifier {
   Future<void> expire();
 
   Future<void> signOut();
+
+  /// Push for this app; a [NoPushService] when the build has no Firebase
+  /// config.
+  PushService get push;
+
+  /// The person's "Turn on" / "Turn off" for push on this phone.
+  Future<PushState> enablePush();
+  Future<void> disablePush();
 
   /// Whether the app offers a language choice.
   bool get multilingual;

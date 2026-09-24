@@ -739,4 +739,39 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get modeMultimodal => 'बहुमाध्यम ढुवानी';
+
+  @override
+  String get pushPrimerTitle => 'सामान सर्ने बित्तिकै थाहा पाउनुहोस्';
+
+  @override
+  String get pushPrimerBody =>
+      'ढुवानी अघि बढ्दा, कागजात तयार हुँदा वा फ्री टाइम सकिन लाग्दा सूचना पाउनुहोस्।';
+
+  @override
+  String get pushTurnOn => 'खोल्नुहोस्';
+
+  @override
+  String get pushNotNow => 'अहिले होइन';
+
+  @override
+  String get pushSection => 'सूचना';
+
+  @override
+  String get pushSetting => 'पुस सूचना';
+
+  @override
+  String get pushOn => 'खुला';
+
+  @override
+  String get pushOff => 'बन्द';
+
+  @override
+  String get pushBlocked => 'फोनको सेटिङमा रोकिएको';
+
+  @override
+  String get pushUnavailable => 'यो संस्करणमा उपलब्ध छैन';
+
+  @override
+  String get pushBlockedHelp =>
+      'फोनको सेटिङमा KCPL का लागि सूचना अनुमति दिनुहोस्।';
 }

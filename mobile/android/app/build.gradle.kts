@@ -1,3 +1,13 @@
+import java.util.Properties
+
+// Release signing. Put the upload keystore's details in android/key.properties
+// (storeFile, storePassword, keyAlias, keyPassword); it and the keystore are
+// git-ignored and never leave the machine that signs releases.
+val releaseKeys = Properties().apply {
+    val properties = rootProject.file("key.properties")
+    if (properties.exists()) properties.inputStream().use { load(it) }
+}
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -15,10 +25,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Each flavour sets its own applicationId below.
         applicationId = "np.com.kapileshworcargo.kcpl_customer"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
@@ -51,11 +59,22 @@ android {
         }
     }
 
+    signingConfigs {
+        if (!releaseKeys.isEmpty) {
+            create("release") {
+                storeFile = file(releaseKeys.getProperty("storeFile"))
+                storePassword = releaseKeys.getProperty("storePassword")
+                keyAlias = releaseKeys.getProperty("keyAlias")
+                keyPassword = releaseKeys.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Without key.properties a release build is debug-signed: fine for
+            // testing on a phone, refused by the Play Store.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }
@@ -68,4 +87,11 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Push needs the Firebase project's config: app/google-services.json, or one
+// per flavour in app/src/customer/ and app/src/ops/. Until it is added the
+// apps build and run with push shown as unavailable.
+if (listOf("google-services.json", "src/customer/google-services.json", "src/ops/google-services.json").any { file(it).exists() }) {
+    apply(plugin = "com.google.gms.google-services")
 }

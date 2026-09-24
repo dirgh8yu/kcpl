@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../api/kcpl_api.dart' show ApiException;
 import '../auth/auth_repository.dart';
+import '../push/push_service.dart';
 import '../session_host.dart';
 import 'ops_api.dart';
 import 'ops_models.dart';
@@ -10,8 +11,21 @@ enum OpsStatus { starting, unconfigured, signedOut, signedIn }
 
 /// The staff app's state: who is signed in and their role and branches.
 class OpsController extends SessionHost {
-  OpsController({required this.auth, required this.api, required bool configured})
-      : _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
+  OpsController({required this.auth, required this.api, required bool configured, PushService? push})
+      : push = push ?? NoPushService(),
+        _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
+
+  @override
+  final PushService push;
+
+  @override
+  Future<PushState> enablePush() => push.enable(api.registerPush);
+
+  @override
+  Future<void> disablePush() => push.disable(api.unregisterPush);
+
+  /// Re-registers this phone for the signed-in login when push is on.
+  void _resumePush() => push.resume(api.registerPush).ignore();
 
   @override
   final AuthRepository auth;
@@ -44,6 +58,7 @@ class OpsController extends SessionHost {
     try {
       _session = await api.session();
       _set(OpsStatus.signedIn);
+      _resumePush();
     } on SignedOutException {
       _set(OpsStatus.signedOut);
     } on ApiException catch (error) {
@@ -52,8 +67,10 @@ class OpsController extends SessionHost {
         return _set(OpsStatus.signedOut);
       }
       _set(OpsStatus.signedIn);
+      _resumePush();
     } catch (_) {
       _set(OpsStatus.signedIn);
+      _resumePush();
     }
   }
 
@@ -70,6 +87,7 @@ class OpsController extends SessionHost {
     }
     sessionEnded = false;
     _set(OpsStatus.signedIn);
+    _resumePush();
   }
 
   void updateSession(OpsSession session) {
@@ -85,6 +103,10 @@ class OpsController extends SessionHost {
 
   @override
   Future<void> signOut() async {
+    // While the login is still valid: this phone stops receiving its pushes.
+    try {
+      await push.disable(api.unregisterPush, optOut: false);
+    } catch (_) {}
     await auth.signOut();
     _session = null;
     unread = 0;

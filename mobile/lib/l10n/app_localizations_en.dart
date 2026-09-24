@@ -740,4 +740,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modeMultimodal => 'Multimodal';
+
+  @override
+  String get pushPrimerTitle => 'Know the moment your cargo moves';
+
+  @override
+  String get pushPrimerBody =>
+      'Get a notification when a shipment moves, a document is ready or free time is running out.';
+
+  @override
+  String get pushTurnOn => 'Turn on';
+
+  @override
+  String get pushNotNow => 'Not now';
+
+  @override
+  String get pushSection => 'Notifications';
+
+  @override
+  String get pushSetting => 'Push notifications';
+
+  @override
+  String get pushOn => 'On';
+
+  @override
+  String get pushOff => 'Off';
+
+  @override
+  String get pushBlocked => 'Blocked in your phone\'s Settings';
+
+  @override
+  String get pushUnavailable => 'Not available in this build';
+
+  @override
+  String get pushBlockedHelp =>
+      'Allow notifications for KCPL in your phone\'s Settings.';
 }

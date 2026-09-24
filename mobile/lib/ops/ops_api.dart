@@ -15,6 +15,8 @@ abstract class OpsApi {
   Future<void> setCustomsStep(String reference, String stepId, bool completed);
   Future<AlertsPage> alerts();
   Future<void> markRead(String alertId);
+  Future<void> registerPush(String token, String platform);
+  Future<void> unregisterPush(String token);
 }
 
 /// [OpsApi] over `/api/mobile/ops/v1`. Same retry rule as the customer app:
@@ -28,16 +30,19 @@ class HttpOpsApi implements OpsApi {
 
   Uri _uri(String path) => base.replace(path: '/api/mobile/ops/v1/$path');
 
-  Future<Map<String, dynamic>> _send(String path, {Object? body}) async {
+  Future<Map<String, dynamic>> _send(String path, {Object? body, String? method}) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await auth.idToken(forceRefresh: attempt > 0);
-      final headers = {'authorization': 'Bearer $token', 'accept': 'application/json'};
       final http.Response response;
       try {
-        response = await (body == null
-                ? _client.get(_uri(path), headers: headers)
-                : _client.post(_uri(path), headers: {...headers, 'content-type': 'application/json'}, body: jsonEncode(body)))
-            .timeout(const Duration(seconds: 30));
+        final request = http.Request(method ?? (body == null ? 'GET' : 'POST'), _uri(path))
+          ..headers.addAll({
+            'authorization': 'Bearer $token',
+            'accept': 'application/json',
+            if (body != null) 'content-type': 'application/json',
+          });
+        if (body != null) request.body = jsonEncode(body);
+        response = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 30));
       } on TimeoutException {
         throw const ApiException(0, 'network', 'KCPL could not be reached.');
       } on http.ClientException {
@@ -89,4 +94,10 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<void> markRead(String alertId) => _send('alerts/${_ref(alertId)}', body: const {});
+
+  @override
+  Future<void> registerPush(String token, String platform) => _send('push', body: {'token': token, 'platform': platform});
+
+  @override
+  Future<void> unregisterPush(String token) => _send('push', body: {'token': token}, method: 'DELETE');
 }

@@ -11,6 +11,7 @@ import '../widgets/async_view.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/common.dart';
 import '../widgets/journey.dart';
+import '../widgets/push_ui.dart';
 import '../widgets/rows.dart';
 
 enum HomeTab { overview, shipments, documents, invoices, account }
@@ -56,6 +57,7 @@ class OverviewScreen extends StatelessWidget {
 
     return [
       _AccountLine(session: session),
+      PushPrimer(copy: customerPushCopy(l)),
       if (hero != null)
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter, 20, kGutter, 0),

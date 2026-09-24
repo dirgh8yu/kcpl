@@ -1405,6 +1405,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Multimodal'**
   String get modeMultimodal;
+
+  /// No description provided for @pushPrimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Know the moment your cargo moves'**
+  String get pushPrimerTitle;
+
+  /// No description provided for @pushPrimerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a notification when a shipment moves, a document is ready or free time is running out.'**
+  String get pushPrimerBody;
+
+  /// No description provided for @pushTurnOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get pushTurnOn;
+
+  /// No description provided for @pushNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get pushNotNow;
+
+  /// No description provided for @pushSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get pushSection;
+
+  /// No description provided for @pushSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get pushSetting;
+
+  /// No description provided for @pushOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get pushOn;
+
+  /// No description provided for @pushOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get pushOff;
+
+  /// No description provided for @pushBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked in your phone\'s Settings'**
+  String get pushBlocked;
+
+  /// No description provided for @pushUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available in this build'**
+  String get pushUnavailable;
+
+  /// No description provided for @pushBlockedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications for KCPL in your phone\'s Settings.'**
+  String get pushBlockedHelp;
 }
 
 class _AppLocalizationsDelegate

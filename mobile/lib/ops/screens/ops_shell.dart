@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 
 import '../../ui/motion.dart';
 import '../../ui/theme.dart';
+import '../../ui/widgets/glass.dart';
+import '../../ui/widgets/push_ui.dart';
+import '../ops_rows.dart' show openJob;
 import '../../ui/widgets/async_view.dart' show autoRefreshEvery;
 import '../ops_controller.dart';
 import 'alerts_screen.dart';
@@ -87,11 +90,11 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
     };
 
     Widget screen(OpsTab tab) => switch (tab) {
-          OpsTab.today => TodayScreen(onNavigate: _select),
-          OpsTab.jobs => const JobsScreen(),
-          OpsTab.alerts => const AlertsScreen(),
-          OpsTab.me => MeScreen(version: widget.version),
-        };
+      OpsTab.today => TodayScreen(onNavigate: _select),
+      OpsTab.jobs => const JobsScreen(),
+      OpsTab.alerts => const AlertsScreen(),
+      OpsTab.me => MeScreen(version: widget.version),
+    };
 
     Widget icon(OpsTab tab, IconData data) => tab == OpsTab.alerts
         ? Badge(
@@ -103,37 +106,58 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
           )
         : Icon(data);
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _tab.index,
-        // Hidden tabs have tickers off: their animations stop, and their
-        // pages know not to refresh until they are shown again.
-        children: [
-          for (final tab in OpsTab.values)
-            TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
-        ],
-      ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: p.hairline, width: 0.5))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          if (widget.demo)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text('Demo data, not real operations', style: context.type.labelSmall?.copyWith(color: p.tertiary)),
+    // A tapped notification opens its job, or the Alerts tab.
+    return PushRouter(
+      onTarget: (context, target) {
+        final reference = target.reference;
+        if (target.kind == 'job' && reference != null) {
+          openJob(context, reference);
+        } else {
+          _select(OpsTab.alerts);
+        }
+      },
+      child: Scaffold(
+        // Content runs beneath the tab bar and shows through its frosted glass.
+        extendBody: true,
+        body: IndexedStack(
+          index: _tab.index,
+          // Hidden tabs have tickers off: their animations stop, and their
+          // pages know not to refresh until they are shown again.
+          children: [
+            for (final tab in OpsTab.values)
+              TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
+          ],
+        ),
+        bottomNavigationBar: Glass(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
             ),
-          NavigationBar(
-            selectedIndex: _tab.index,
-            onDestinationSelected: (index) => _select(OpsTab.values[index]),
-            destinations: [
-              for (final tab in OpsTab.values)
-                NavigationDestination(
-                  icon: icon(tab, icons[tab]!.$1),
-                  selectedIcon: PopIn(key: ValueKey('$tab-$_selections'), child: icon(tab, icons[tab]!.$2)),
-                  label: labels[tab]!,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.demo)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text('Demo data, not real operations', style: context.type.labelSmall?.copyWith(color: p.tertiary)),
+                  ),
+                NavigationBar(
+                  backgroundColor: Colors.transparent,
+                  selectedIndex: _tab.index,
+                  onDestinationSelected: (index) => _select(OpsTab.values[index]),
+                  destinations: [
+                    for (final tab in OpsTab.values)
+                      NavigationDestination(
+                        icon: icon(tab, icons[tab]!.$1),
+                        selectedIcon: PopIn(key: ValueKey('$tab-$_selections'), child: icon(tab, icons[tab]!.$2)),
+                        label: labels[tab]!,
+                      ),
+                  ],
                 ),
-            ],
+              ],
+            ),
           ),
-        ]),
+        ),
       ),
     );
   }

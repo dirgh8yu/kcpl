@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/kcpl_loader.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key, this.title, this.subtitle});
@@ -245,10 +246,11 @@ class _SignInScreenState extends State<SignInScreen> {
                                       ? Semantics(
                                           key: const ValueKey('busy'),
                                           label: l.signingIn,
-                                          child: const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+child: KcplLoader(
+                                            size: 22,
+                                            color: Colors.white,
+                                            base: Colors.white.withValues(alpha: 0.35),
+                                            assemble: false,
                                           ),
                                         )
                                       : Text(l.signIn, key: const ValueKey('idle')),

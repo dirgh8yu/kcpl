@@ -1,30 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'platform/display.dart';
+
 import 'api/http_kcpl_api.dart';
 import 'app_controller.dart';
 import 'auth/firebase_rest_auth.dart';
 import 'auth/token_store.dart';
 import 'config.dart';
+import 'push/push_service.dart';
 import 'session_host.dart';
 import 'demo/demo_backend.dart';
+import 'demo/demo_push.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/format.dart';
 import 'ui/motion.dart';
 import 'ui/screens/home_shell.dart';
 import 'ui/screens/sign_in_screen.dart';
 import 'ui/theme.dart';
+import 'ui/widgets/kcpl_loader.dart';
 
 const appVersion = '1.0.0';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initFormatting();
+  await preferHighRefreshRate();
   final config = AppConfig.fromEnvironment();
   final store = SecureTokenStore();
   final AppController controller;
   if (config.demo) {
-    controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+    controller = AppController(
+      auth: DemoAuth(),
+      api: DemoApi(),
+      prefs: MemoryTokenStore(),
+      configured: true,
+      push: DemoPushService(
+        const PushNotice(
+          title: 'KCPL-S-24091 cleared customs',
+          body: 'Released at Birgunj ICD. Onward delivery is being arranged.',
+          target: PushTarget('shipment', 'KCPL-S-24091'),
+        ),
+      ),
+    );
   } else {
     final auth = FirebaseRestAuth(apiKey: config.firebaseApiKey, store: store);
     controller = AppController(
@@ -32,6 +50,7 @@ Future<void> main() async {
       api: HttpKcplApi(base: config.apiBase, auth: auth),
       prefs: store,
       configured: config.configured,
+      push: await FcmPushService.create(store),
     );
   }
   controller.start();
@@ -77,7 +96,7 @@ class KcplApp extends StatelessWidget {
               child: KeyedSubtree(
                 key: ValueKey(controller.status),
                 child: switch (controller.status) {
-                  AppStatus.starting => const Scaffold(body: Center(child: CircularProgressIndicator(strokeWidth: 2.5))),
+                  AppStatus.starting => const Scaffold(body: Center(child: KcplLoader(size: 64))),
                   AppStatus.unconfigured => const _Unconfigured(),
                   AppStatus.signedOut => const SignInScreen(),
                   AppStatus.signedIn => HomeShell(demo: demo, version: appVersion),

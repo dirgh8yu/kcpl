@@ -217,5 +217,16 @@
   "appVersion": "संस्करण {version}",
   "modeRail": "रेल ढुवानी",
   "modeCourier": "कुरियर",
-  "modeMultimodal": "बहुमाध्यम ढुवानी"
+  "modeMultimodal": "बहुमाध्यम ढुवानी",
+  "pushPrimerTitle": "सामान सर्ने बित्तिकै थाहा पाउनुहोस्",
+  "pushPrimerBody": "ढुवानी अघि बढ्दा, कागजात तयार हुँदा वा फ्री टाइम सकिन लाग्दा सूचना पाउनुहोस्।",
+  "pushTurnOn": "खोल्नुहोस्",
+  "pushNotNow": "अहिले होइन",
+  "pushSection": "सूचना",
+  "pushSetting": "पुस सूचना",
+  "pushOn": "खुला",
+  "pushOff": "बन्द",
+  "pushBlocked": "फोनको सेटिङमा रोकिएको",
+  "pushUnavailable": "यो संस्करणमा उपलब्ध छैन",
+  "pushBlockedHelp": "फोनको सेटिङमा KCPL का लागि सूचना अनुमति दिनुहोस्।"
 }

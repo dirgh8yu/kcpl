@@ -22,16 +22,22 @@ class HttpKcplApi extends KcplApi {
   /// One authenticated GET. A 401 is retried once with a freshly minted
   /// token, since the cached one may have been revoked or expired early. A
   /// second 401 means the login itself is no longer accepted.
-  Future<http.Response> _get(String path) async {
+  Future<http.Response> _get(String path) => _send('GET', path);
+
+  Future<http.Response> _send(String method, String path, {Object? body}) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await auth.idToken(forceRefresh: attempt > 0);
       final http.Response response;
       try {
-        response = await _client.get(_uri(path), headers: {
-          'authorization': 'Bearer $token',
-          'x-kcpl-customer': ?customerId,
-          'accept': 'application/json',
-        }).timeout(_timeout);
+        final request = http.Request(method, _uri(path))
+          ..headers.addAll({
+            'authorization': 'Bearer $token',
+            'x-kcpl-customer': ?customerId,
+            'accept': 'application/json',
+            if (body != null) 'content-type': 'application/json',
+          });
+        if (body != null) request.body = jsonEncode(body);
+        response = await _client.send(request).then(http.Response.fromStream).timeout(_timeout);
       } on TimeoutException {
         throw const ApiException(0, 'network', 'KCPL could not be reached.');
       } on http.ClientException {
@@ -105,6 +111,13 @@ class HttpKcplApi extends KcplApi {
   @override
   Future<Invoice> invoice(String reference) async =>
       Invoice.fromJson((await _json('invoices/${Uri.encodeComponent(reference)}'))['invoice'] as Map<String, dynamic>);
+
+  @override
+  Future<void> registerPush(String token, String platform) =>
+      _send('POST', 'push', body: {'token': token, 'platform': platform});
+
+  @override
+  Future<void> unregisterPush(String token) => _send('DELETE', 'push', body: {'token': token});
 
   @override
   Future<DownloadedFile> download(DocumentRow document) async {
