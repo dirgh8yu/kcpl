@@ -39,14 +39,14 @@ function publicEntry(data: StoredGalleryEntry): GalleryEntry {
 
 export async function listGalleryEntries(publishedOnly = false): Promise<GalleryEntry[] | null> {
   if (!galleryStorageAvailable()) return null;
-  const snapshot = await galleryCollection().orderBy("created_at", "desc").limit(100).get();
+  const snapshot = await galleryCollection().orderBy("created_at", "desc").get();
   return snapshot.docs
     .map((doc) => ({ ...doc.data(), id: doc.id } as StoredGalleryEntry))
     .filter((entry) => !publishedOnly || entry.published === true)
     .map(publicEntry);
 }
 
-export async function createGalleryEntry(values: { title: string; alt: string; image: Awaited<ReturnType<typeof prepareGalleryImage>> }) {
+export async function createGalleryEntry(values: { title: string; alt: string; published?: boolean; image: Awaited<ReturnType<typeof prepareGalleryImage>> }) {
   const id = randomUUID();
   const now = new Date().toISOString();
   const storage_path = `site-gallery/${id}.webp`;
@@ -55,7 +55,7 @@ export async function createGalleryEntry(values: { title: string; alt: string; i
   const entry: StoredGalleryEntry = {
     id, title: values.title, alt: values.alt,
     width: values.image.width, height: values.image.height,
-    published: false, created_at: now, updated_at: now, storage_path,
+    published: values.published === true, created_at: now, updated_at: now, storage_path,
   };
   try {
     await galleryCollection().doc(id).create(entry);

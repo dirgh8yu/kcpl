@@ -24,10 +24,11 @@ export async function POST(request: Request) {
   const file = form.get("file");
   const title = galleryText(form.get("title"), 120);
   const alt = galleryText(form.get("alt"), 220);
+  const published = form.get("published") === "true";
   if (!(file instanceof File)) return galleryJson({ ok: false, error: "Choose an image." }, 400);
   try {
     const image = await prepareGalleryImage(file);
-    const item = await createGalleryEntry({ title, alt, image });
+    const item = await createGalleryEntry({ title, alt, published, image });
     revalidatePath("/gallery");
     revalidatePath("/ne/gallery");
     revalidatePath("/hi/gallery");
