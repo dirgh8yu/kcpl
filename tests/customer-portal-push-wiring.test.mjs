@@ -56,8 +56,10 @@ test("push failures never cost the email carrying the same news", async () => {
   const push = sweep.slice(sweep.indexOf("async function pushOnce"), sweep.indexOf("async function sendOnce"));
   // No throw path: an unconfigured deployment and an empty subscription list
   // both return quietly, and delivery failures are handled inside the module.
-  assert.match(push, /if \(!portalPushConfigured\(\)\) return;/);
-  assert.match(push, /if \(!targets\.length\) return;/);
+  // Web push only counts when VAPID is configured; the app is looked up by
+  // a helper that returns [] rather than throwing (mobile-push.server.ts).
+  assert.match(push, /const targets = portalPushConfigured\(\) \? input\.subscriptions\.get\(input\.account\.email\) \?\? \[\] : \[\];/);
+  assert.match(push, /if \(!targets\.length && !phones\.length\) return;/);
   assert.doesNotMatch(push, /throw /);
 });
 

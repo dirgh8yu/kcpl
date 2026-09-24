@@ -92,8 +92,11 @@ test("every mobile route resolves the session through the one wrapper", async ()
   for (const path of routes) {
     const source = code(await readFile(repo(path), "utf8"));
     assert.match(source, /withMobileSession\(request, async \(session\)/, `${path} must go through withMobileSession`);
-    // Only reads: nothing here may mutate on the customer's behalf yet.
-    assert.doesNotMatch(source, /export async function (POST|PUT|PATCH|DELETE)/, `${path} must be read-only`);
+    // Only reads, except registering this phone for push: nothing here may
+    // act on the customer's shipments, documents or invoices.
+    if (path !== "app/api/mobile/v1/push/route.ts") {
+      assert.doesNotMatch(source, /export async function (POST|PUT|PATCH|DELETE)/, `${path} must be read-only`);
+    }
     // Data comes from the redacting portal readers, never from Firestore directly.
     assert.doesNotMatch(source, /firebaseAdminDb|collection\(/, `${path} must not query Firestore itself`);
     assert.doesNotMatch(source, /getPortalAccess\(\)/, `${path} must not fall back to the cookie`);

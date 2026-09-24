@@ -64,6 +64,7 @@ test("the staff app can write only what the phone needs, and only through shared
     "app/api/mobile/ops/v1/alerts/[id]/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/customs/[id]/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/tasks/[id]/route.ts",
+    "app/api/mobile/ops/v1/push/route.ts",
   ]);
   for (const kind of ["tasks", "customs"]) {
     const source = code(await readFile(repo(`app/api/mobile/ops/v1/jobs/[reference]/${kind}/[id]/route.ts`), "utf8"));

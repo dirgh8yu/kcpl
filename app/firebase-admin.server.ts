@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 import { getStorage } from "firebase-admin/storage";
 
 type InjectedFirebaseConfig = {
@@ -71,4 +72,9 @@ export function firebaseAdminBucket() {
 
 export function firebaseStorageBucketName() {
   return configuredValue(process.env.FIREBASE_STORAGE_BUCKET) || configuredValue(automaticConfig.storageBucket);
+}
+
+/** Firebase Cloud Messaging, for push to the KCPL apps. */
+export function firebaseAdminMessaging() {
+  return getMessaging(adminApp());
 }
