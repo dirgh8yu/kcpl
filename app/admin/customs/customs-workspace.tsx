@@ -25,7 +25,6 @@ import {
   OpsPageHeader,
   OpsRailMetric,
   OpsRegisterToolbar,
-  OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
@@ -427,7 +426,9 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
                 {handle}
                 <OpsKpiRail label="Customs summary">
                   <OpsRailMetric label="Blocked" value={blockedCount} tone="danger" active={state === "blocked"} onClick={() => setStateFilter(state === "blocked" ? "all" : "blocked")} title="Shipments blocked in clearance"/>
+                  {/* Held is a reading, not a view: there is no held state to filter to. */}
                   <OpsRailMetric label="Held" value={heldCount} tone="danger" title="Customs authority holds recorded"/>
+                  <OpsRailMetric label="In progress" value={stateCounts.in_progress} tone="info" active={state === "in_progress"} onClick={() => setStateFilter(state === "in_progress" ? "all" : "in_progress")} title="Clearance underway"/>
                   <OpsRailMetric label="Awaiting release" value={awaitingCount} tone="warning" active={state === "awaiting_release"} onClick={() => setStateFilter(state === "awaiting_release" ? "all" : "awaiting_release")}/>
                   <OpsRailMetric label="Checklist ready" value={readyCount} tone="info" active={state === "ready"} onClick={() => setStateFilter(state === "ready" ? "all" : "ready")}/>
                   <OpsRailMetric label="Released" value={releasedCount} tone="success" active={state === "released"} onClick={() => setStateFilter(state === "released" ? "all" : "released")}/>
@@ -457,7 +458,6 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
               <span className="ops-result-count" aria-live="polite">{visible.length === rows.length ? `${rows.length} shipments` : `${visible.length} of ${rows.length}`}</span>
             </>
           )}
-          tabs={<OpsScopeTabs label="Clearance state views" items={STATE_TABS.map((tab) => ({ ...tab, count: stateCounts[tab.value] }))} value={state} onChange={setStateFilter}/>}
         />
 
         <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>

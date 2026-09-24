@@ -17,7 +17,6 @@ import {
   OpsPageHeader,
   OpsRailMetric,
   OpsRegisterToolbar,
-  OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
@@ -80,14 +79,6 @@ function podTone(row: DeliveryQueueRow): "success" | "warning" | "danger" | "neu
   if (row.pod_status === "rejected") return "danger";
   return "neutral";
 }
-
-const FOCUS_TABS: Array<{ value: Focus; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Delivery active" },
-  { value: "failed", label: "Failed / refused" },
-  { value: "pod_pending", label: "POD pending" },
-  { value: "verified", label: "POD verified" },
-];
 
 /** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
 const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
@@ -218,14 +209,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     });
   }, [selected]);
 
-  const focusCounts = useMemo(() => ({
-    all: initialRows.length,
-    active: initialRows.filter((row) => row.delivery_state === "delivery_active").length,
-    failed: initialRows.filter((row) => row.delivery_state === "delivery_failed").length,
-    pod_pending: initialRows.filter((row) => row.delivery_state === "delivered_pod_pending").length,
-    verified: initialRows.filter((row) => row.delivery_state === "pod_verified").length,
-  }), [initialRows]);
-
   return <OpsPage>
     <div className="delivery-control-page">
       <OpsPageHeader
@@ -306,7 +289,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
               <span className="ops-result-count" aria-live="polite">{rows.length === initialRows.length ? `${initialRows.length} deliveries` : `${rows.length} of ${initialRows.length}`}</span>
             </>
           )}
-          tabs={<OpsScopeTabs label="Delivery state views" items={FOCUS_TABS.map((tab) => ({ ...tab, count: focusCounts[tab.value] }))} value={focus} onChange={setFocus}/>}
         />
 
         <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>

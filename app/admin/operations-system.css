@@ -217,6 +217,19 @@
 .app-nav-item-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .app-nav-item-main > svg { flex: none; color: currentColor; opacity: .72; }
 .app-nav-item-main > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The persistent rail only. Below 1024px the sidebar is a drawer, and a drawer
+ * is touched rather than pointed at, so it keeps the larger rows the 760px
+ * block already sets. On a pointer the rail sat noticeably looser than the
+ * tables beside it: thirty-four workspaces at 36px scrolled before the first
+ * group finished, and the airier rhythm read as a different system from the
+ * dense registers it navigates. */
+@media (min-width: 1024px) {
+  .app-workspaces { padding: 6px 8px; }
+  .app-nav-group { margin-bottom: 6px; }
+  .app-nav-group summary { min-height: 24px; padding: 3px 10px 2px; }
+  .app-nav-group a { min-height: 30px; }
+}
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
 .app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
 .app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); color: var(--admin-ink); }
