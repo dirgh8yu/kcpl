@@ -1,0 +1,93 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'api/http_kcpl_api.dart';
+import 'app_controller.dart';
+import 'auth/firebase_rest_auth.dart';
+import 'auth/token_store.dart';
+import 'config.dart';
+import 'demo/demo_backend.dart';
+import 'l10n/app_localizations.dart';
+import 'ui/format.dart';
+import 'ui/screens/home_shell.dart';
+import 'ui/screens/sign_in_screen.dart';
+import 'ui/theme.dart';
+
+const appVersion = '1.0.0';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initFormatting();
+  final config = AppConfig.fromEnvironment();
+  final store = SecureTokenStore();
+  final AppController controller;
+  if (config.demo) {
+    controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+  } else {
+    final auth = FirebaseRestAuth(apiKey: config.firebaseApiKey, store: store);
+    controller = AppController(
+      auth: auth,
+      api: HttpKcplApi(base: config.apiBase, auth: auth),
+      prefs: store,
+      configured: config.configured,
+    );
+  }
+  controller.start();
+  runApp(KcplApp(controller: controller, demo: config.demo));
+}
+
+class KcplApp extends StatelessWidget {
+  const KcplApp({super.key, required this.controller, this.demo = false});
+  final AppController controller;
+  final bool demo;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppScope(
+      controller: controller,
+      child: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => MaterialApp(
+          title: 'KCPL',
+          debugShowCheckedModeBanner: false,
+          theme: kcplTheme(Brightness.light),
+          darkTheme: kcplTheme(Brightness.dark),
+          locale: controller.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: switch (controller.status) {
+            AppStatus.starting => const Scaffold(body: Center(child: CircularProgressIndicator(strokeWidth: 2.5))),
+            AppStatus.unconfigured => const _Unconfigured(),
+            AppStatus.signedOut => const SignInScreen(),
+            AppStatus.signedIn => HomeShell(demo: demo, version: appVersion),
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// A build made without `--dart-define=KCPL_FIREBASE_API_KEY`. Only a
+/// developer should ever see this.
+class _Unconfigured extends StatelessWidget {
+  const _Unconfigured();
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Text(
+              'This build has no KCPL sign-in configuration. Rebuild with '
+              '--dart-define=KCPL_FIREBASE_API_KEY=… or KCPL_DEMO=true.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+}
