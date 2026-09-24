@@ -42,10 +42,18 @@ class FloatingTabBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // On its own small glass pill, so it reads over whatever scrolls behind.
             if (note != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text(note!, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
+                child: Glass(
+                  borderRadius: BorderRadius.circular(99),
+                  opacity: 0.85,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    child: Text(note!, style: context.type.labelSmall?.copyWith(color: p.secondary)),
+                  ),
+                ),
               ),
             DecoratedBox(
               decoration: BoxDecoration(

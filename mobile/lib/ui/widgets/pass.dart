@@ -433,7 +433,7 @@ class _ScrollRecedeState extends State<ScrollRecede> {
             ..setEntry(3, 2, 0.0012)
             ..rotateX(0.22 * t)
             ..scaleByDouble(1 - 0.06 * t, 1 - 0.06 * t, 1, 1),
-          child: Opacity(opacity: 1 - 0.5 * t, child: child),
+          child: Opacity(opacity: 1 - 0.2 * t, child: child),
         );
       },
     );
