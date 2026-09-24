@@ -452,11 +452,17 @@ excluded from public analytics and from the public site's mobile quote CTA.
 
 ## Known gaps
 
-- **No QA preview fixtures.** The staff product can be rendered without Firebase through
-  the double-gated QA bypass (`KCPL_QA_AUTH_BYPASS` + `KCPL_QA_MOCK_DATA`). The portal has
-  no equivalent, so its authenticated surfaces cannot be screenshotted without a real
-  Firebase project. Adding one means extending an auth bypass to a customer data surface
-  and should be a deliberate, separately reviewed decision.
+- **QA preview reaches the screens, not the data.** `KCPL_QA_AUTH_BYPASS` plus a separate
+  `KCPL_QA_PORTAL` renders every signed-in surface as an invented customer, so the portal
+  can be reviewed without a real account. It is fenced by the same helper as the staff
+  bypass, which refuses outside a Vercel preview or a development server, and the second
+  flag exists so enabling the staff preview never opens a customer surface by accident.
+  `tests/portal-qa-preview.test.mjs` holds that fence.
+
+  The preview customer id matches no real record, so every reader scopes to nothing and
+  the screens render in their empty states. That is enough to review layout, navigation,
+  both languages and the empty copy; it is not enough to review a populated table. A
+  provisioned test customer remains the way to see the portal with data in it.
 - **Document coverage is bounded.** `/portal/documents` scans the 40 most recently
   updated shipments (documents live in a per-shipment subcollection, so a full history
   scan costs one read per shipment). The workspace states the coverage when it is capped.
