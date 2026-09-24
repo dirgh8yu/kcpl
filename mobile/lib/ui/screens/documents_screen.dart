@@ -4,6 +4,7 @@ import '../../api/models.dart';
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../labels.dart';
+import '../motion.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/filter_bar.dart';
@@ -27,8 +28,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     if (_direction == DocumentDirection.sentByYou && !document.fromCustomer) return false;
     final needle = _query.trim().toLowerCase();
     if (needle.isEmpty) return true;
-    return [document.filename, document.shipmentReference, documentTypeLabel(l, document.documentType)]
-        .any((field) => field.toLowerCase().contains(needle));
+    return [
+      document.filename,
+      document.shipmentReference,
+      documentTypeLabel(l, document.documentType),
+    ].any((field) => field.toLowerCase().contains(needle));
   }
 
   @override
@@ -51,12 +55,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             selected: _direction,
             onSelected: (direction) => setState(() => _direction = direction),
           ),
-          if (page.documents.isEmpty)
-            EmptyState(icon: Icons.description_outlined, title: l.docsEmptyTitle, description: l.docsEmptyDescription)
-          else if (visible.isEmpty)
-            EmptyState(icon: Icons.search_off_rounded, title: l.docsEmptyFilteredTitle, description: l.shipsEmptyFilteredDescription)
-          else
-            RowGroup(children: [for (final document in visible) DocumentRowTile(document)]),
+          FilterSwap(
+            filter: _direction,
+            child: page.documents.isEmpty
+                ? EmptyState(icon: Icons.description_outlined, title: l.docsEmptyTitle, description: l.docsEmptyDescription)
+                : visible.isEmpty
+                ? EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: l.docsEmptyFilteredTitle,
+                    description: l.shipsEmptyFilteredDescription,
+                  )
+                : RowGroup(children: [for (final document in visible) DocumentRowTile(document)]),
+          ),
           if (page.total > page.scanned) Footnote(l.docsCoverage('${page.scanned}', '${page.total}')),
         ];
       },

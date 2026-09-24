@@ -5,6 +5,7 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../format.dart';
 import '../labels.dart';
+import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
@@ -48,17 +49,20 @@ class InvoiceDetailScreen extends StatelessWidget {
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(kGutter, 28, kGutter, 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l.invdBalanceDue, style: context.type.bodySmall),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(money(invoice.balanceDue), style: context.type.headlineLarge),
-          ),
-          const SizedBox(height: 6),
-          StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice)),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l.invdBalanceDue, style: context.type.bodySmall),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: CountUp(value: invoice.balanceDue, format: money, style: context.type.headlineLarge),
+            ),
+            const SizedBox(height: 6),
+            StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice)),
+          ],
+        ),
       ),
       if (invoice.shipmentReference != null) ...[
         const SizedBox(height: 20),
@@ -76,25 +80,33 @@ class InvoiceDetailScreen extends StatelessWidget {
       if (invoice.lines.isEmpty)
         EmptyState(icon: Icons.receipt_long_outlined, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription)
       else
-        RowGroup(children: [
-          for (final line in invoice.lines)
-            RowTile(
-              title: Text(line.description, style: context.type.bodyLarge),
-              subtitle: line.quantity != 1
-                  ? Text('${line.quantity.toStringAsFixed(line.quantity % 1 == 0 ? 0 : 2)} × ${money(line.unitPrice)}')
-                  : null,
-              trailing: Text(money(line.total), style: context.type.titleSmall?.copyWith(fontFeatures: tabular)),
-            ),
-        ]),
+        RowGroup(
+          children: [
+            for (final line in invoice.lines)
+              RowTile(
+                title: Text(line.description, style: context.type.bodyLarge),
+                subtitle: line.quantity != 1
+                    ? Text('${line.quantity.toStringAsFixed(line.quantity % 1 == 0 ? 0 : 2)} × ${money(line.unitPrice)}')
+                    : null,
+                trailing: Text(money(line.total), style: context.type.titleSmall?.copyWith(fontFeatures: tabular)),
+              ),
+          ],
+        ),
       const SizedBox(height: 16),
-      RowGroup(children: [
-        DetailRow(l.invdSubtotal, money(invoice.subtotal)),
-        DetailRow(l.invdTax, money(invoice.taxTotal)),
-        DetailRow(l.invColTotal, money(invoice.total), strong: true),
-        DetailRow(l.invdReceipted, money(invoice.amountPaid)),
-        DetailRow(l.invdBalanceDue, money(invoice.balanceDue), strong: true,
-            emphasis: invoice.status == 'overdue' ? Emphasis.attention : Emphasis.normal),
-      ]),
+      RowGroup(
+        children: [
+          DetailRow(l.invdSubtotal, money(invoice.subtotal)),
+          DetailRow(l.invdTax, money(invoice.taxTotal)),
+          DetailRow(l.invColTotal, money(invoice.total), strong: true),
+          DetailRow(l.invdReceipted, money(invoice.amountPaid)),
+          DetailRow(
+            l.invdBalanceDue,
+            money(invoice.balanceDue),
+            strong: true,
+            emphasis: invoice.status == 'overdue' ? Emphasis.attention : Emphasis.normal,
+          ),
+        ],
+      ),
       Footnote(l.invFootnote),
     ];
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
 import '../theme.dart';
 
 /// A bold section title with an optional quiet action, aligned to the gutter.
@@ -350,24 +351,26 @@ class Skeleton extends StatelessWidget {
     );
     return Semantics(
       label: MaterialLocalizations.of(context).refreshIndicatorSemanticLabel,
-      child: Column(
-        children: [
-          for (var i = 0; i < rows; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: kGutter, vertical: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [bar(i.isEven ? 190 : 150, 14), const SizedBox(height: 8), bar(i.isEven ? 120 : 160, 11)],
+      child: Shimmer(
+        child: Column(
+          children: [
+            for (var i = 0; i < rows; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: kGutter, vertical: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [bar(i.isEven ? 190 : 150, 14), const SizedBox(height: 8), bar(i.isEven ? 120 : 160, 11)],
+                      ),
                     ),
-                  ),
-                  bar(48, 12),
-                ],
+                    bar(48, 12),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/models.dart';
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../motion.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/filter_bar.dart';
@@ -12,18 +13,23 @@ enum ShipmentFocus { all, active, inTransit, attention, delivered }
 
 /// Same buckets as the web portal (portal-shipments-workspace.tsx).
 bool matchesFocus(Shipment shipment, ShipmentFocus focus) => switch (focus) {
-      ShipmentFocus.all => true,
-      ShipmentFocus.active => !shipment.delivered,
-      ShipmentFocus.inTransit => shipment.status == 'in_transit',
-      ShipmentFocus.attention => shipment.status == 'exception',
-      ShipmentFocus.delivered => shipment.delivered,
-    };
+  ShipmentFocus.all => true,
+  ShipmentFocus.active => !shipment.delivered,
+  ShipmentFocus.inTransit => shipment.status == 'in_transit',
+  ShipmentFocus.attention => shipment.status == 'exception',
+  ShipmentFocus.delivered => shipment.delivered,
+};
 
 bool matchesQuery(Shipment shipment, String query) {
   final needle = query.trim().toLowerCase();
   if (needle.isEmpty) return true;
-  return [shipment.reference, shipment.origin, shipment.destination, shipment.carrier ?? '', shipment.carrierReference ?? '']
-      .any((field) => field.toLowerCase().contains(needle));
+  return [
+    shipment.reference,
+    shipment.origin,
+    shipment.destination,
+    shipment.carrier ?? '',
+    shipment.carrierReference ?? '',
+  ].any((field) => field.toLowerCase().contains(needle));
 }
 
 class ShipmentsScreen extends StatefulWidget {
@@ -59,12 +65,18 @@ class _ShipmentsScreenState extends State<ShipmentsScreen> {
             selected: _focus,
             onSelected: (focus) => setState(() => _focus = focus),
           ),
-          if (shipments.isEmpty)
-            EmptyState(icon: Icons.inventory_2_outlined, title: l.shipsEmptyTitle, description: l.shipsEmptyDescription)
-          else if (visible.isEmpty)
-            EmptyState(icon: Icons.search_off_rounded, title: l.shipsEmptyFilteredTitle, description: l.shipsEmptyFilteredDescription)
-          else
-            RowGroup(children: [for (final shipment in visible) ShipmentRow(shipment)]),
+          FilterSwap(
+            filter: _focus,
+            child: shipments.isEmpty
+                ? EmptyState(icon: Icons.inventory_2_outlined, title: l.shipsEmptyTitle, description: l.shipsEmptyDescription)
+                : visible.isEmpty
+                ? EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: l.shipsEmptyFilteredTitle,
+                    description: l.shipsEmptyFilteredDescription,
+                  )
+                : RowGroup(children: [for (final shipment in visible) ShipmentRow(shipment)]),
+          ),
         ];
       },
     );

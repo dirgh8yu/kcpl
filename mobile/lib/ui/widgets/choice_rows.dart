@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../motion.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -15,17 +16,24 @@ class CheckRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        selected: selected,
-        inMutuallyExclusiveGroup: true,
-        child: RowTile(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          title: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
-          trailing: selected ? Icon(Icons.check_rounded, size: 22, color: context.palette.ink) : null,
-        ),
-      );
+    selected: selected,
+    inMutuallyExclusiveGroup: true,
+    child: RowTile(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      title: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
+      trailing: AnimatedSwitcher(
+        duration: Motion.swap,
+        switchInCurve: Motion.easeOut,
+        transitionBuilder: morphTransition,
+        child: selected
+            ? Icon(Icons.check_rounded, key: const ValueKey('on'), size: 22, color: context.palette.ink)
+            : const SizedBox(key: ValueKey('off'), width: 22, height: 22),
+      ),
+    ),
+  );
 }
 
 Future<void> switchCustomer(BuildContext context, String id) async {
@@ -48,24 +56,30 @@ Future<void> showCustomerSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     builder: (sheet) => SafeArea(
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 8),
-          child: Text(l.switchAccount, style: sheet.type.titleLarge),
-        ),
-        RowGroup(children: [
-          for (final customer in session.customers)
-            CheckRow(
-              label: customer.name,
-              selected: customer.id == session.customerId,
-              onTap: () {
-                Navigator.of(sheet).pop();
-                switchCustomer(context, customer.id);
-              },
-            ),
-        ]),
-        const SizedBox(height: 12),
-      ]),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 8),
+            child: Text(l.switchAccount, style: sheet.type.titleLarge),
+          ),
+          RowGroup(
+            children: [
+              for (final customer in session.customers)
+                CheckRow(
+                  label: customer.name,
+                  selected: customer.id == session.customerId,
+                  onTap: () {
+                    Navigator.of(sheet).pop();
+                    switchCustomer(context, customer.id);
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
     ),
   );
 }

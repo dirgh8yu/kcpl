@@ -82,6 +82,28 @@ The patterns come from apps that do this well:
 Tabs keep their state and scroll position, and selection changes give a light haptic
 tick.
 
+### Motion
+
+Every animation has a job, and all of them draw on one set of curves and durations
+(`lib/ui/motion.dart`):
+
+| Where | What it does |
+|---|---|
+| Sign-in | Assembles top to bottom on launch. The crimson button presses in, and its label morphs into a spinner. A wrong password shakes the fields with a haptic buzz. |
+| Sign-in → app | Fades up with a slight settle instead of cutting. |
+| Every screen | Content fades up in a 40ms stagger when it arrives; the skeleton shimmers while loading. A refresh updates in place. |
+| Overview → shipment | The journey card flies into the detail page (a shared element), and the detail page draws its journey on the first frame from what the list already knew. |
+| Journey line | Fills to the current stage once per shipment per session; a soft ring pulses around the moving vehicle. |
+| Figures and balances | Count up when they first appear. |
+| Controls | Checkmarks pop, the download arrow turns into a spinner and then a tick, the chosen tab's icon pops, and lists crossfade on a filter change. |
+
+Tab switching and language changes stay instant, as native apps keep them.
+
+With the system's Reduce Motion setting on, nothing moves or loops and only short fades
+remain. The flow tests run under that setting, so a looping animation that ignored it
+would hang them. Two further tests run with full motion: the shared-element flight, and
+the crimson button with its shake.
+
 ### Strings
 
 The Nepali is the web portal's own (`app/portal/portal-i18n.ts`), which was written for

@@ -8,6 +8,10 @@ import 'package:kcpl_customer/auth/token_store.dart';
 import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/main.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/motion.dart';
+import 'package:kcpl_customer/ui/screens/overview_screen.dart';
+import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
+import 'package:kcpl_customer/ui/theme.dart';
 
 /// Demo data, but the login has no finance access.
 class MemberApi extends DemoApi {
@@ -64,10 +68,17 @@ class TrackingAuth extends DemoAuth {
   }
 }
 
-Future<AppController> pumpApp(WidgetTester tester, {KcplApi? api, AuthRepository? auth}) async {
+Future<AppController> pumpApp(WidgetTester tester, {KcplApi? api, AuthRepository? auth, bool reduceMotion = true}) async {
   tester.view.physicalSize = const Size(1170, 2532);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
+  // Flows run under the system's reduce-motion setting. Settling can only
+  // finish if every looping animation honours it, so each flow test also
+  // proves the app stops moving when asked to.
+  if (reduceMotion) {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
   final controller = AppController(auth: auth ?? DemoAuth(), api: api ?? DemoApi(), prefs: MemoryTokenStore(), configured: true);
   await controller.start();
   await tester.pumpWidget(KcplApp(controller: controller, demo: true));
@@ -243,5 +254,52 @@ void main() {
     await controller.start();
     expect(controller.status, AppStatus.signedOut);
     expect(auth.signOuts, 1);
+  });
+
+  testWidgets('with full motion, the journey card flies into its shipment', (tester) async {
+    await pumpApp(tester, reduceMotion: false);
+    // Pumped by time, not settled: the live pulse never settles, by design.
+    Future<void> run(Duration total) async {
+      for (var elapsed = Duration.zero; elapsed < total; elapsed += const Duration(milliseconds: 50)) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    await tester.enterText(find.byType(TextField).at(0), 'imports@annapurna.example');
+    await tester.enterText(find.byType(TextField).at(1), 'secret');
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await run(const Duration(seconds: 3));
+
+    expect(find.byType(LivePulse), findsOneWidget, reason: 'the lead shipment is live');
+    expect(find.byType(Hero), findsOneWidget);
+
+    await tester.tap(find.byType(JourneyGraphic));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    // Mid-flight, the card is in the overlay between the two pages.
+    expect(find.byType(JourneyGraphic), findsWidgets);
+    await run(const Duration(seconds: 2));
+
+    expect(find.byType(ShipmentDetailScreen), findsOneWidget);
+    expect(find.text('Customs declaration lodged'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a wrong password shakes the form, and the button is crimson', (tester) async {
+    await pumpApp(tester, api: DeniedApi(), reduceMotion: false);
+    final button = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Sign in'));
+    final context = tester.element(find.widgetWithText(FilledButton, 'Sign in'));
+    expect(button.style?.backgroundColor?.resolve({}), Theme.of(context).extension<Palette>()!.accent);
+
+    await tester.enterText(find.byType(TextField).at(0), 'a@b.example');
+    await tester.enterText(find.byType(TextField).at(1), 'x');
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 120));
+    final shaking = tester.widget<Transform>(
+      find.descendant(of: find.byType(Shake), matching: find.byType(Transform)).first,
+    );
+    expect(shaking.transform.getTranslation().x, isNot(0));
+    await tester.pumpAndSettle();
   });
 }

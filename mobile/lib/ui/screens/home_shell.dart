@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../motion.dart';
 import '../theme.dart';
 import 'account_screen.dart';
 import 'documents_screen.dart';
@@ -25,12 +26,14 @@ class _HomeShellState extends State<HomeShell> {
   /// Tabs are built on first visit and then kept, so switching back keeps
   /// the scroll position and never refetches, as native tab bars do.
   final Set<HomeTab> _visited = {HomeTab.overview};
+  int _selections = 0;
 
   void _select(HomeTab tab) {
     if (tab == _tab) return;
     HapticFeedback.selectionClick();
     setState(() {
       _tab = tab;
+      _selections++;
       _visited.add(tab);
     });
   }
@@ -42,7 +45,10 @@ class _HomeShellState extends State<HomeShell> {
     final session = AppScope.of(context).session;
     final canViewFinance = session?.canViewFinance ?? false;
     // A login without finance access never sees the tab, as on the web.
-    final tabs = [for (final tab in HomeTab.values) if (tab != HomeTab.invoices || canViewFinance) tab];
+    final tabs = [
+      for (final tab in HomeTab.values)
+        if (tab != HomeTab.invoices || canViewFinance) tab,
+    ];
     final tab = tabs.contains(_tab) ? _tab : HomeTab.overview;
 
     final labels = {
@@ -61,12 +67,12 @@ class _HomeShellState extends State<HomeShell> {
     };
 
     Widget screen(HomeTab item) => switch (item) {
-          HomeTab.overview => OverviewScreen(onNavigate: _select),
-          HomeTab.shipments => const ShipmentsScreen(),
-          HomeTab.documents => const DocumentsScreen(),
-          HomeTab.invoices => const InvoicesScreen(),
-          HomeTab.account => AccountScreen(version: widget.version),
-        };
+      HomeTab.overview => OverviewScreen(onNavigate: _select),
+      HomeTab.shipments => const ShipmentsScreen(),
+      HomeTab.documents => const DocumentsScreen(),
+      HomeTab.invoices => const InvoicesScreen(),
+      HomeTab.account => AccountScreen(version: widget.version),
+    };
 
     return Scaffold(
       body: IndexedStack(
@@ -74,22 +80,32 @@ class _HomeShellState extends State<HomeShell> {
         children: [for (final item in tabs) _visited.contains(item) ? screen(item) : const SizedBox.shrink()],
       ),
       bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: p.hairline, width: 0.5))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          if (widget.demo)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(l.demoBanner, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.demo)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(l.demoBanner, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
+              ),
+            NavigationBar(
+              selectedIndex: tabs.indexOf(tab),
+              onDestinationSelected: (index) => _select(tabs[index]),
+              destinations: [
+                for (final item in tabs)
+                  NavigationDestination(
+                    icon: Icon(icons[item]!.$1),
+                    // Keyed per selection so the pop plays each time a tab is chosen.
+                    selectedIcon: PopIn(key: ValueKey('$item-$_selections'), child: Icon(icons[item]!.$2)),
+                    label: labels[item]!,
+                  ),
+              ],
             ),
-          NavigationBar(
-            selectedIndex: tabs.indexOf(tab),
-            onDestinationSelected: (index) => _select(tabs[index]),
-            destinations: [
-              for (final item in tabs)
-                NavigationDestination(icon: Icon(icons[item]!.$1), selectedIcon: Icon(icons[item]!.$2), label: labels[item]!),
-            ],
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }

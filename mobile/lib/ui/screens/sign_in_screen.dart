@@ -5,6 +5,7 @@ import '../../api/kcpl_api.dart';
 import '../../app_controller.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../motion.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
@@ -19,6 +20,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _passwordFocus = FocusNode();
+  final _shake = GlobalKey<ShakeState>();
   bool _busy = false;
   bool _obscure = true;
   String? _error;
@@ -47,25 +49,32 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await AppScope.read(context).signIn(_email.text, _password.text);
     } on AuthFailure catch (failure) {
-      setState(() => _error = switch (failure.kind) {
-            AuthFailureKind.tooManyAttempts => l.tooManyAttempts,
-            AuthFailureKind.network => l.networkError,
-            _ => l.signInFailed,
-          });
+      setState(
+        () => _error = switch (failure.kind) {
+          AuthFailureKind.tooManyAttempts => l.tooManyAttempts,
+          AuthFailureKind.network => l.networkError,
+          _ => l.signInFailed,
+        },
+      );
     } on ApiException catch (failure) {
       // KCPL's own refusal (no portal access, unverified email) is worded by
       // the server, identically to the web sign-in.
-      setState(() => _error = failure.code == 'network'
-          ? l.networkError
-          : failure.message.isNotEmpty
-              ? failure.message
-              : l.commonUnavailableDetail);
+      setState(
+        () => _error = failure.code == 'network'
+            ? l.networkError
+            : failure.message.isNotEmpty
+            ? failure.message
+            : l.commonUnavailableDetail,
+      );
     } on SignedOutException {
       setState(() => _error = l.signInFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-    if (_error != null) HapticFeedback.heavyImpact();
+    if (_error != null) {
+      HapticFeedback.heavyImpact();
+      _shake.currentState?.shake();
+    }
   }
 
   Future<void> _reset() async {
@@ -99,19 +108,19 @@ class _SignInScreenState extends State<SignInScreen> {
     final language = Localizations.localeOf(context).languageCode;
 
     Widget languageButton(String code, String label) => TextButton(
-          onPressed: language == code
-              ? null
-              : () {
-                  HapticFeedback.selectionClick();
-                  controller.setLocale(Locale(code));
-                },
-          style: TextButton.styleFrom(
-            disabledForegroundColor: p.ink,
-            foregroundColor: p.tertiary,
-            textStyle: context.type.labelLarge,
-          ),
-          child: Text(label),
-        );
+      onPressed: language == code
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              controller.setLocale(Locale(code));
+            },
+      style: TextButton.styleFrom(
+        disabledForegroundColor: p.ink,
+        foregroundColor: p.tertiary,
+        textStyle: context.type.labelLarge,
+      ),
+      child: Text(label),
+    );
 
     final message = _error ?? _notice ?? (controller.sessionEnded ? l.sessionEnded : null);
 
@@ -131,49 +140,70 @@ class _SignInScreenState extends State<SignInScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const SizedBox(height: 28),
-                          Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Image.asset('assets/brand/k-mark.png', width: 34, height: 34, semanticLabel: 'KCPL'),
+                          // The screen assembles top to bottom on launch.
+                          Reveal(
+                            index: 0,
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Image.asset('assets/brand/k-mark.png', width: 34, height: 34, semanticLabel: 'KCPL'),
+                            ),
                           ),
                           const SizedBox(height: 56),
-                          Text(l.signInTitle, style: context.type.headlineMedium),
+                          Reveal(index: 1, child: Text(l.signInTitle, style: context.type.headlineMedium)),
                           const SizedBox(height: 10),
-                          Text(l.signInSubtitle, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
-                          const SizedBox(height: 36),
-                          TextField(
-                            controller: _email,
-                            enabled: !_busy,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            autocorrect: false,
-                            enableSuggestions: false,
-                            autofillHints: const [AutofillHints.email, AutofillHints.username],
-                            style: context.type.bodyLarge,
-                            decoration: InputDecoration(hintText: l.emailLabel),
-                            onSubmitted: (_) => _passwordFocus.requestFocus(),
+                          Reveal(
+                            index: 2,
+                            child: Text(l.signInSubtitle, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
                           ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _password,
-                            focusNode: _passwordFocus,
-                            enabled: !_busy,
-                            obscureText: _obscure,
-                            textInputAction: TextInputAction.go,
-                            autofillHints: const [AutofillHints.password],
-                            style: context.type.bodyLarge,
-                            decoration: InputDecoration(
-                              hintText: l.passwordLabel,
-                              suffixIcon: IconButton(
-                                tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 22),
-                                onPressed: () => setState(() => _obscure = !_obscure),
+                          const SizedBox(height: 36),
+                          Reveal(
+                            index: 3,
+                            child: Shake(
+                              key: _shake,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  TextField(
+                                    controller: _email,
+                                    enabled: !_busy,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    autofillHints: const [AutofillHints.email, AutofillHints.username],
+                                    style: context.type.bodyLarge,
+                                    decoration: InputDecoration(hintText: l.emailLabel),
+                                    onSubmitted: (_) => _passwordFocus.requestFocus(),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    controller: _password,
+                                    focusNode: _passwordFocus,
+                                    enabled: !_busy,
+                                    obscureText: _obscure,
+                                    textInputAction: TextInputAction.go,
+                                    autofillHints: const [AutofillHints.password],
+                                    style: context.type.bodyLarge,
+                                    decoration: InputDecoration(
+                                      hintText: l.passwordLabel,
+                                      suffixIcon: IconButton(
+                                        tooltip: _obscure ? l.showPassword : l.hidePassword,
+                                        icon: Icon(
+                                          _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                          size: 22,
+                                        ),
+                                        onPressed: () => setState(() => _obscure = !_obscure),
+                                      ),
+                                    ),
+                                    onSubmitted: (_) => _signIn(),
+                                  ),
+                                ],
                               ),
                             ),
-                            onSubmitted: (_) => _signIn(),
                           ),
                           AnimatedSize(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOutCubic,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Motion.easeOut,
                             alignment: Alignment.topCenter,
                             child: message == null
                                 ? const SizedBox(width: double.infinity)
@@ -187,14 +217,37 @@ class _SignInScreenState extends State<SignInScreen> {
                                   ),
                           ),
                           const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: _busy ? null : _signIn,
-                            child: _busy
-                                ? Semantics(
-                                    label: l.signingIn,
-                                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: p.tertiary)),
-                                  )
-                                : Text(l.signIn),
+                          Reveal(
+                            index: 4,
+                            child: Pressable(
+                              child: FilledButton(
+                                onPressed: _busy ? null : _signIn,
+                                // The one crimson control in the app: the way in.
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: p.accent,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: p.accent.withValues(alpha: 0.8),
+                                  disabledForegroundColor: Colors.white,
+                                ),
+                                child: AnimatedSwitcher(
+                                  duration: Motion.swap,
+                                  switchInCurve: Motion.easeOut,
+                                  switchOutCurve: Motion.easeOut,
+                                  transitionBuilder: morphTransition,
+                                  child: _busy
+                                      ? Semantics(
+                                          key: const ValueKey('busy'),
+                                          label: l.signingIn,
+                                          child: const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                          ),
+                                        )
+                                      : Text(l.signIn, key: const ValueKey('idle')),
+                                ),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Center(
@@ -206,13 +259,20 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                           const Spacer(),
                           const SizedBox(height: 32),
-                          Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
+                          Reveal(
+                            index: 5,
+                            child: Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
+                          ),
                           const SizedBox(height: 6),
-                          Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                            languageButton('en', 'English'),
-                            Text('·', style: TextStyle(color: p.tertiary)),
-                            languageButton('ne', 'नेपाली'),
-                          ]),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              languageButton('en', 'English'),
+                              Text('·', style: TextStyle(color: p.tertiary)),
+                              languageButton('ne', 'नेपाली'),
+                            ],
+                          ),
                           const SizedBox(height: 12),
                         ],
                       ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../api/kcpl_api.dart';
 import '../../app_controller.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../motion.dart';
 import '../theme.dart';
 import 'common.dart';
 import 'large_title.dart';
@@ -19,6 +21,8 @@ class AsyncPage<T> extends StatefulWidget {
     required this.load,
     required this.builder,
     this.onMissing,
+    this.placeholder,
+    this.leading = 0,
   });
 
   final String title;
@@ -29,6 +33,15 @@ class AsyncPage<T> extends StatefulWidget {
 
   /// Shown instead of the generic failure when the server says "not found".
   final Widget Function(BuildContext context, ApiException error)? onMissing;
+
+  /// What can be drawn before the data arrives, from something the previous
+  /// screen already had. It makes the first frames real content instead of
+  /// a skeleton, and gives a shared-element flight somewhere to land.
+  final List<Widget> Function(BuildContext context)? placeholder;
+
+  /// How many leading widgets the placeholder and the loaded page share.
+  /// They stay put when the data lands; everything after them fades up.
+  final int leading;
 
   @override
   State<AsyncPage<T>> createState() => _AsyncPageState<T>();
@@ -52,6 +65,22 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
       _fetch();
     }
   }
+
+  Future<void> _refresh() {
+    HapticFeedback.mediumImpact();
+    return _fetch();
+  }
+
+  /// Wraps each widget so the page arrives top to bottom. The shared lead
+  /// keeps its identity across loading and loaded; the rest is keyed by
+  /// state, so real content fades in over the placeholder rather than
+  /// popping into its slot.
+  List<Widget> _staged(List<Widget> children, {required bool loaded}) => [
+    for (var i = 0; i < children.length; i++)
+      i < widget.leading
+          ? Reveal(key: ValueKey('lead$i'), animate: false, child: children[i])
+          : Reveal(key: ValueKey('${loaded ? 'data' : 'wait'}$i'), index: i - widget.leading, child: children[i]),
+  ];
 
   Future<void> _fetch() async {
     setState(() {
@@ -92,13 +121,13 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
       return widget.onMissing!(context, error);
     }
     final l = AppLocalizations.of(context);
-    final network = (error is ApiException && error.code == 'network') ||
-        (error is AuthFailure && error.kind == AuthFailureKind.network);
+    final network =
+        (error is ApiException && error.code == 'network') || (error is AuthFailure && error.kind == AuthFailureKind.network);
     final message = error is ApiException && error.message.isNotEmpty && !network && error.code != 'unavailable'
         ? error.message
         : network
-            ? l.networkError
-            : l.commonUnavailableDetail;
+        ? l.networkError
+        : l.commonUnavailableDetail;
     return EmptyState(
       icon: network ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
       title: l.commonUnavailableTitle,
@@ -113,9 +142,12 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
     final data = _data;
     final error = _error;
 
+    final placeholder = widget.placeholder;
     final body = <Widget>[
       if (data != null)
-        SliverList(delegate: SliverChildListDelegate(widget.builder(context, data)))
+        SliverList(delegate: SliverChildListDelegate(_staged(widget.builder(context, data), loaded: true)))
+      else if (_loading && placeholder != null)
+        SliverList(delegate: SliverChildListDelegate(_staged([...placeholder(context), const Skeleton(rows: 4)], loaded: false)))
       else if (_loading)
         const SliverToBoxAdapter(child: Skeleton())
       else if (error != null)
@@ -124,7 +156,7 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
     ];
 
     return RefreshIndicator(
-      onRefresh: _fetch,
+      onRefresh: _refresh,
       color: p.ink,
       backgroundColor: p.paper,
       edgeOffset: 108,

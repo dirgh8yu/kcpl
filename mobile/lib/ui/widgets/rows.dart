@@ -8,15 +8,20 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/file_opener.dart';
 import '../format.dart';
 import '../labels.dart';
+import '../motion.dart';
 import '../screens/invoice_detail_screen.dart';
 import '../screens/shipment_detail_screen.dart';
 import '../theme.dart';
 import 'common.dart';
 import 'journey.dart';
 
-void openShipment(BuildContext context, String reference) => Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ShipmentDetailScreen(reference: reference)),
-    );
+/// Opens a shipment. [preview] is what the caller already knows, so the
+/// detail page draws its journey on the first frame instead of a skeleton.
+void openShipment(BuildContext context, String reference, {Shipment? preview}) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview),
+  ),
+);
 
 /// A shipment as a flight tracker lists a flight: where it's going in bold,
 /// the reference and status beneath, the date that matters on the right,
@@ -33,16 +38,18 @@ class ShipmentRow extends StatelessWidget {
     final date = shipment.delivered ? shipment.updatedAt : shipment.eta;
 
     return RowTile(
-      onTap: () => openShipment(context, shipment.reference),
+      onTap: () => openShipment(context, shipment.reference, preview: shipment),
       title: RouteText(place(shipment.origin), place(shipment.destination)),
       subtitle: Text.rich(
-        TextSpan(children: [
-          TextSpan(text: '${shipment.reference} · '),
-          TextSpan(
-            text: statusLabel(l, shipment.status),
-            style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
-          ),
-        ]),
+        TextSpan(
+          children: [
+            TextSpan(text: '${shipment.reference} · '),
+            TextSpan(
+              text: statusLabel(l, shipment.status),
+              style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
+            ),
+          ],
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -57,7 +64,7 @@ class ShipmentRow extends StatelessWidget {
           Text(shipment.delivered ? l.statusDelivered : l.overviewColEta, style: context.type.bodySmall),
         ],
       ),
-      below: shipment.delivered ? null : JourneyBar(status: shipment.status),
+      below: shipment.delivered ? null : JourneyBar(status: shipment.status, reference: shipment.reference),
     );
   }
 }
@@ -73,6 +80,7 @@ class DocumentRowTile extends StatefulWidget {
 
 class _DocumentRowTileState extends State<DocumentRowTile> {
   bool _busy = false;
+  bool _done = false;
 
   Future<void> _open() async {
     final l = AppLocalizations.of(context);
@@ -83,6 +91,12 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
     try {
       final file = await controller.api.download(widget.document);
       await openDownloadedFile(file);
+      // A tick where the arrow was, briefly, then back to ready.
+      if (mounted) setState(() => _done = true);
+      HapticFeedback.lightImpact();
+      Future<void>.delayed(const Duration(milliseconds: 1600), () {
+        if (mounted) setState(() => _done = false);
+      });
     } on SignedOutException {
       await controller.expire();
     } catch (_) {
@@ -121,9 +135,31 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
       ),
       trailing: !downloadable
           ? (state == null ? null : StatusText(state.$1, state.$2))
-          : _busy
-              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: p.ink))
-              : Icon(Icons.arrow_downward_rounded, size: 20, color: p.ink, semanticLabel: l.commonDownload),
+          : SizedBox(
+              width: 24,
+              height: 24,
+              child: AnimatedSwitcher(
+                duration: Motion.swap,
+                switchInCurve: Motion.easeOut,
+                switchOutCurve: Motion.easeOut,
+                transitionBuilder: morphTransition,
+                child: _busy
+                    ? Padding(
+                        key: const ValueKey('busy'),
+                        padding: const EdgeInsets.all(2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: p.ink),
+                      )
+                    : _done
+                    ? Icon(Icons.check_rounded, key: const ValueKey('done'), size: 22, color: p.ink)
+                    : Icon(
+                        Icons.arrow_downward_rounded,
+                        key: const ValueKey('ready'),
+                        size: 20,
+                        color: p.ink,
+                        semanticLabel: l.commonDownload,
+                      ),
+              ),
+            ),
     );
   }
 }
@@ -137,9 +173,8 @@ class InvoiceRow extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final open = invoice.balanceDue > 0;
     return RowTile(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => InvoiceDetailScreen(reference: invoice.reference),
-      )),
+      onTap: () =>
+          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => InvoiceDetailScreen(reference: invoice.reference))),
       title: Text(invoice.externalInvoiceNumber ?? invoice.reference, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         open && invoice.dueDate.isNotEmpty
