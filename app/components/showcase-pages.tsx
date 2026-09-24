@@ -11,7 +11,7 @@ const galleryImages: { src: string; key: SiteTextKey; width: number; height: num
   { src: "/images/unsplash/air-cargo.jpg", key: "gallery.air", width: 1800, height: 1200 },
   { src: "/images/unsplash/nepal-road.jpg", key: "gallery.road", width: 2200, height: 1467 },
   { src: "/images/unsplash/port-aerial.jpg", key: "gallery.gateway", width: 2200, height: 1730 },
-  { src: "/images/services/packaging-storage.jpg", key: "gallery.handling", width: 1536, height: 1024 },
+  { src: "/images/unsplash/forklift-loading.jpg", key: "gallery.handling", width: 1800, height: 2700 },
 ];
 
 const awardCertificates = [2022, 2023, 2024, 2025] as const;

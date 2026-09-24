@@ -7,10 +7,10 @@ export const services = [
   { slug: "air-freight", key: "air", image: "/images/unsplash/air-cargo.jpg" },
   { slug: "ocean-freight", key: "ocean", image: "/images/unsplash/ship-dusk.jpg" },
   { slug: "road-freight", key: "road", image: "/images/unsplash/nepal-road.jpg" },
-  { slug: "customs-clearance", key: "customs", image: "/images/services/specialist-cargo.jpg" },
-  { slug: "project-cargo", key: "project", image: "/images/services/specialist-project-cargo.jpg" },
-  { slug: "warehousing", key: "warehouse", image: "/images/services/warehousing.jpg" },
-  { slug: "delivery", key: "delivery", image: "/images/services/door-to-door.jpg" },
+  { slug: "customs-clearance", key: "customs", image: "/images/unsplash/port-aerial.jpg" },
+  { slug: "project-cargo", key: "project", image: "/images/unsplash/port-crane.jpg" },
+  { slug: "warehousing", key: "warehouse", image: "/images/unsplash/warehouse-forklift.jpg" },
+  { slug: "delivery", key: "delivery", image: "/images/unsplash/forklift-loading.jpg" },
 ] as const;
 
 export type ServiceKey = (typeof services)[number]["key"];
