@@ -1,0 +1,10 @@
+# Launcher icons for the KCPL Ops flavour: the K on black.
+# Regenerate with: dart run flutter_launcher_icons -f flutter_launcher_icons-ops.yaml
+flutter_launcher_icons:
+  image_path: assets/icon/icon-ops.png
+  android: true
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: assets/icon/icon-ops-foreground.png
+  ios: false
+  web:
+    generate: false

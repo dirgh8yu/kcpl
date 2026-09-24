@@ -524,7 +524,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
             <OpsButton variant="secondary" onClick={handleRefresh} disabled={busy}>
               <RefreshCw size={16} strokeWidth={1.75} className={busy ? "app-refreshing" : undefined} aria-hidden="true"/> Refresh
             </OpsButton>
-            <OpsButton variant="primary" type="button" disabled={!hasSchedulable || busy} onClick={scheduleNext}>
+            <OpsButton
+              variant="primary"
+              type="button"
+              disabled={!hasSchedulable || busy}
+              onClick={scheduleNext}
+              title={hasSchedulable ? undefined : "No shipment is currently awaiting collection, so there is nothing to schedule."}
+            >
               <Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Schedule pickup
             </OpsButton>
           </div>
@@ -690,6 +696,8 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                   </tbody>
                 </table>
               </OpsTableWrap>
+            ) : rows.length === 0 ? (
+              <OpsEmptyState compact kind="healthy" title="No pickups yet" description="Pickups appear here once a shipment reaches a stage that needs collection from origin. Nothing is waiting on a pickup right now."/>
             ) : (
               <OpsEmptyState compact kind="search" title="No pickups" description="No pickups match the current search and filters." action={<OpsButton type="button" variant="secondary" size="sm" onClick={resetFilters}>Clear filters</OpsButton>}/>
             )}

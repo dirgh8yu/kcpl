@@ -10,6 +10,8 @@ import {
   sendPortalPush,
   type PortalPushSubscription,
 } from "./portal-push.server";
+import { mobileDevicesFor, sendMobilePush, type MobileDevice } from "../mobile-push.server";
+import { customerPushTarget } from "../mobile-push-policy";
 import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
@@ -109,10 +111,17 @@ async function pushOnce(input: {
   text: string;
   url: string;
   subscriptions: Map<string, PortalPushSubscription[]>;
+  /** The account's app installs, looked up once per recipient per sweep. */
+  mobileDevices: Map<string, Promise<MobileDevice[]>>;
 }) {
-  if (!portalPushConfigured()) return;
-  const targets = input.subscriptions.get(input.account.email) ?? [];
-  if (!targets.length) return;
+  const targets = portalPushConfigured() ? input.subscriptions.get(input.account.email) ?? [] : [];
+  let devices = input.mobileDevices.get(input.account.email);
+  if (!devices) {
+    devices = mobileDevicesFor("customer", input.account.email);
+    input.mobileDevices.set(input.account.email, devices);
+  }
+  const phones = await devices;
+  if (!targets.length && !phones.length) return;
 
   const reference = firebaseAdminDb().collection("portal_push_deliveries").doc(deliveryId(input.key));
   try {
@@ -141,6 +150,14 @@ async function pushOnce(input: {
       lang: input.account.locale,
     });
   }
+  // The app gets the same fact under the same claim: one notification per
+  // device, and a tap opens the shipment it is about.
+  await sendMobilePush(phones, {
+    title: input.subject,
+    body,
+    target: customerPushTarget(input.url),
+    tag: input.key,
+  });
 }
 
 async function sendOnce(input: { key: string; to: string; subject: string; text: string; html: string; reference: string }) {
@@ -209,6 +226,7 @@ export async function dispatchPortalNotifications() {
   const pushSubscriptions = portalPushConfigured()
     ? await portalPushSubscriptionsByEmail()
     : new Map<string, PortalPushSubscription[]>();
+  const mobileDevices = new Map<string, Promise<MobileDevice[]>>();
 
   let sent = 0;
   let watched = 0;
@@ -286,6 +304,7 @@ export async function dispatchPortalNotifications() {
             text: message.text,
             url: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
             subscriptions: pushSubscriptions,
+            mobileDevices,
           });
         }
       }
@@ -344,6 +363,7 @@ export async function dispatchPortalNotifications() {
               text: message.text,
               url: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}#documents`),
               subscriptions: pushSubscriptions,
+              mobileDevices,
             });
           }
         }
@@ -391,6 +411,7 @@ export async function dispatchPortalNotifications() {
               text: message.text,
               url: portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}`),
               subscriptions: pushSubscriptions,
+              mobileDevices,
             });
           }
         }

@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "public/maplibre/**",
+    // Flutter build output (mobile/.gitignore keeps it out of git).
+    "mobile/build/**",
+    "mobile/.dart_tool/**",
   ]),
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

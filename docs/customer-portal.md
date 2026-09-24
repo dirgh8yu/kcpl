@@ -370,6 +370,33 @@ The permission prompt is only ever raised from the button. A permission asked fo
 page load is the fastest way to have it denied permanently, and a denied permission
 cannot be re-requested from script.
 
+## Mobile app API
+
+The Flutter customer app (`mobile/`, see `mobile/README.md`) cannot hold the portal's
+HttpOnly session cookie, so it presents a **Firebase ID token** as
+`Authorization: Bearer <token>` instead. Only the credential differs:
+
+- `getPortalAccessFromBearer` (`portal-auth.ts`) verifies the token with revocation
+  checked, then calls the same `authorizePortalIdentity` the cookie path uses. Disabling
+  a login or revoking its tokens in Firebase locks the app out on its next request.
+- An agent's chosen customer arrives in `X-KCPL-Customer` and goes through the same
+  `decidePortalCustomerScope` intersection as the customer cookie: a preference, never
+  authority.
+- Every `/api/mobile/v1` route goes through one wrapper (`portal-mobile-api.server.ts`),
+  calls the same redacting readers in `portal-data.server.ts`, and is read-only.
+- Shipment free time is **allowlisted** before it reaches the wire. A server-rendered page
+  never sends fields it doesn't display; JSON would carry who at KCPL last edited the
+  allowance and whether its cost has been agreed.
+- The document download repeats the portal route's ownership and release gates, in order,
+  and writes the same access-log row, so a file taken on a phone counts in a dispute
+  exactly as one taken in a browser.
+- Bearer credentials are not sent automatically by a browser, so these routes are not
+  exposed to cross-site request forgery and need no same-origin check.
+
+A refusal is reported as `403` with the same deliberately vague message the web sign-in
+shows, so the app can tell "wrong password" from "no portal access" without learning
+which check failed. `tests/customer-portal-mobile-api.test.mjs` holds all of the above.
+
 ## Provisioning (staff runbook)
 
 **Operations → Organisation → Customer Portal Access** (`/admin/portal-access`,
@@ -444,6 +471,10 @@ in server routes only, exactly like the staff product.
 | `POST /api/portal/shipments/[reference]/confirm-delivery` | Customer confirmation of receipt, as evidence |
 | `GET`/`POST /api/portal/invoices/[reference]/remittance` | Payment receipts against an invoice |
 | `GET /api/portal/invoices/[reference]/remittance/[id]` | Re-download of a receipt the customer sent |
+| `GET /api/mobile/v1/session` | Mobile app: who is signed in and which customers it may switch between |
+| `GET /api/mobile/v1/overview`, `/shipments`, `/shipments/[reference]` | Mobile app: the same views as the portal pages |
+| `GET /api/mobile/v1/documents`, `/documents/[reference]/[id]` | Mobile app: document list and logged download |
+| `GET /api/mobile/v1/invoices`, `/invoices/[reference]` | Mobile app: invoices (finance capability only) |
 | `GET`/`PUT /api/admin/jobs/[reference]/free-time` | Staff free-time record (Job File) |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |
 
@@ -452,6 +483,10 @@ excluded from public analytics and from the public site's mobile quote CTA.
 
 ## Known gaps
 
+- **The mobile app reads, it does not act.** Uploads, remittances, delivery confirmation,
+  requests and team management stay on the web portal for now, and the app has no native
+  push (that needs FCM and the project's `google-services.json`). An app sign-in is also
+  not written to the account's last-sign-in time, which the web sign-in records.
 - **QA preview reaches the screens, not the data.** `KCPL_QA_AUTH_BYPASS` plus a separate
   `KCPL_QA_PORTAL` renders every signed-in surface as an invented customer, so the portal
   can be reviewed without a real account. It is fenced by the same helper as the staff

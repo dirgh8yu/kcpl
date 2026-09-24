@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
+import { mobileDevicesFor, sendMobilePush } from "../../mobile-push.server";
+import { staffNotificationPushes, staffPushTarget } from "../../mobile-push-policy";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { listAutomationAlerts } from "../alerts/alert-engine.server";
 import type { AutomationAlert, AutomationAlertType } from "../alerts/alert-data";
@@ -122,7 +124,33 @@ export async function createDirectNotification(input: DirectNotificationInput) {
     source_id: input.sourceId ?? null,
     created_at: createdAt,
   });
+  await pushDirectNotification(targetEmail, input);
   return { kind: "created" as const, notification: { ...input, targetEmail, id, createdAt } satisfies StoredDirectNotification };
+}
+
+/**
+ * The same notification, to the person's KCPL Ops installs. It honours the
+ * categories they muted in the notification centre, and skips register
+ * transitions (see staffNotificationPushes). Never throws: the record above
+ * is the notification; the buzz is a courtesy.
+ */
+async function pushDirectNotification(targetEmail: string, input: DirectNotificationInput) {
+  // Decided before any read: the register writes transitions often.
+  if (!staffNotificationPushes({ sourceType: input.sourceType, category: input.category, categories: {} })) return;
+  try {
+    const devices = await mobileDevicesFor("staff", targetEmail);
+    if (!devices.length) return;
+    const preferences = await getNotificationPreferences(devices[0].uid);
+    if (!staffNotificationPushes({ sourceType: input.sourceType, category: input.category, categories: preferences.categories })) return;
+    await sendMobilePush(devices, {
+      title: input.title.trim(),
+      body: input.detail.trim(),
+      target: staffPushTarget(input.actionPath),
+      tag: input.sourceId ?? input.title.trim(),
+    });
+  } catch (error) {
+    console.error("KCPL staff push failed", error);
+  }
 }
 
 function directFromDoc(id: string, data: Record<string, unknown>): OperationsNotification {

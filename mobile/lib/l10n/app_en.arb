@@ -1,0 +1,401 @@
+{
+  "@@locale": "en",
+  "chromeOverview": "Overview",
+  "chromeShipments": "Shipments",
+  "chromeDocuments": "Documents",
+  "chromeInvoices": "Invoices",
+  "chromeSettings": "Settings",
+  "chromeAccount": "Account",
+  "chromeAccountSwitchFailed": "That account could not be opened.",
+  "chromePublicSite": "Public website",
+  "commonShipment": "Shipment",
+  "commonRoute": "Route",
+  "commonStatus": "Status",
+  "commonDocuments": "Documents",
+  "commonUpdated": "Updated",
+  "commonDownload": "Download",
+  "commonLoading": "Loading…",
+  "commonUnavailableTitle": "This information is temporarily unavailable",
+  "commonUnavailableDetail": "KCPL's systems could not be reached. Please try again in a moment, or contact your account manager.",
+  "statusBookingConfirmed": "Booking confirmed",
+  "statusPreparing": "Preparing",
+  "statusInTransit": "In transit",
+  "statusCustomsClearance": "Customs clearance",
+  "statusOutForDelivery": "Out for delivery",
+  "statusDelivered": "Delivered",
+  "statusException": "Exception",
+  "statusUnknown": "Shipment update",
+  "modeAir": "Air freight",
+  "modeSea": "Sea freight",
+  "modeRoad": "Road freight",
+  "modeUnsure": "Freight movement",
+  "invoiceIssued": "Issued",
+  "invoicePartiallyPaid": "Part paid",
+  "invoicePaid": "Paid",
+  "invoiceOverdue": "Overdue",
+  "invoiceOpen": "Open",
+  "freeTimeLabel": "Free time",
+  "freeTimeDeadline": "Last free day",
+  "freeTimeConsequence": "Once free time ends, the carrier or terminal may charge storage and demurrage for each day the cargo stays.",
+  "ftsNotSet": "No free-time allowance recorded.",
+  "ftsExpiredYesterday": "Free time ended yesterday. Charges may now apply.",
+  "ftsExpiredYesterdayAt": "Free time at {location} ended yesterday. Charges may now apply.",
+  "@ftsExpiredYesterdayAt": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "ftsExpiredDays": "Free time ended {days} days ago. Charges may now apply.",
+  "@ftsExpiredDays": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "ftsExpiredDaysAt": "Free time at {location} ended {days} days ago. Charges may now apply.",
+  "@ftsExpiredDaysAt": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "ftsLastDay": "Today is the last free day.",
+  "ftsLastDayAt": "Today is the last free day at {location}.",
+  "@ftsLastDayAt": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "ftsOneDay": "1 free day left.",
+  "ftsOneDayAt": "1 free day left at {location}.",
+  "@ftsOneDayAt": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "ftsDays": "{days} free days left.",
+  "@ftsDays": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "ftsDaysAt": "{days} free days left at {location}.",
+  "@ftsDaysAt": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "roleOwner": "Account owner",
+  "roleMember": "Team member",
+  "docAirWaybill": "Air waybill (AWB)",
+  "docBillOfLading": "Bill of lading (BL)",
+  "docRoadConsignmentNote": "Road consignment note",
+  "docShippingInstruction": "Shipping instruction",
+  "docCargoManifest": "Cargo manifest",
+  "docPickupOrder": "Pickup order",
+  "docCommercialInvoice": "Commercial invoice",
+  "docPackingList": "Packing list",
+  "docCustomsDocument": "Customs document",
+  "docCertificateOfOrigin": "Certificate of origin",
+  "docImportPermit": "Import permit / licence",
+  "docExportPermit": "Export permit / licence",
+  "docDangerousGoodsDeclaration": "Dangerous goods declaration",
+  "docInsuranceCertificate": "Cargo insurance certificate",
+  "docDeliveryOrder": "Delivery order",
+  "docProofOfDelivery": "Proof of delivery (POD)",
+  "docOther": "Other document",
+  "docUnknown": "Document",
+  "overviewDescription": "Your live shipments, released documents and account position with KCPL.",
+  "overviewKpiActive": "Active shipments",
+  "overviewKpiInTransit": "In transit",
+  "overviewKpiArriving": "Arriving in 7 days",
+  "overviewKpiFreeTime": "Free time running out",
+  "overviewKpiDocuments": "Documents needed",
+  "overviewKpiAttention": "Needs attention",
+  "overviewFreeTimeTitle": "Free time running out",
+  "overviewFreeTimeDescription": "Storage and demurrage start when the carrier's free days end. Clearing the cargo before then avoids the charge.",
+  "overviewOutstandingTitle": "Paperwork KCPL is waiting on",
+  "overviewOutstandingDescription": "Send these from the shipment so KCPL can keep the cargo moving.",
+  "overviewAccountTitle": "Outstanding with KCPL",
+  "overviewOpenInvoicesOne": "1 open invoice",
+  "overviewOpenInvoices": "{count} open invoices",
+  "@overviewOpenInvoices": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewOverdueCount": "{count} overdue",
+  "@overviewOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewCurrencyOutstanding": "{currency} outstanding",
+  "@overviewCurrencyOutstanding": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewAmountOverdue": "{amount} overdue",
+  "@overviewAmountOverdue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewNothingOverdue": "Nothing overdue",
+  "overviewMovementsTitle": "Active shipments",
+  "overviewAllShipments": "All shipments",
+  "overviewNowAt": "Now at {location}",
+  "@overviewNowAt": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewEmptyDeliveredTitle": "Nothing in transit right now",
+  "overviewEmptyDeliveredDescription": "Every movement on your account has been delivered. Completed shipments stay available under Shipments.",
+  "overviewEmptyNoneTitle": "No shipments yet",
+  "overviewEmptyNoneDescription": "Once KCPL books your first shipment it will appear here with live milestones.",
+  "overviewPaperworkTitle": "Recently released documents",
+  "overviewAllDocuments": "All documents",
+  "overviewNoDocumentsTitle": "No documents released yet",
+  "overviewNoDocumentsDescription": "Bills of lading, air waybills and customs paperwork appear here once KCPL releases them to your account.",
+  "overviewViewInvoices": "View invoices",
+  "overviewOrigin": "Origin",
+  "overviewDestination": "Destination",
+  "overviewColEta": "ETA",
+  "shipsFocusAll": "All",
+  "shipsFocusActive": "Active",
+  "shipsFocusInTransit": "In transit",
+  "shipsFocusAttention": "Needs attention",
+  "shipsFocusDelivered": "Delivered",
+  "shipsSearchPlaceholder": "Search reference, route or carrier…",
+  "shipsEmptyFilteredTitle": "No shipments match this view",
+  "shipsEmptyFilteredDescription": "Try a different filter or clear the search.",
+  "shipsEmptyTitle": "No shipments yet",
+  "shipsEmptyDescription": "Once KCPL books a shipment for your account it appears here with its milestones and documents.",
+  "docsCoverage": "Covering your {scanned} most recent shipments of {total}",
+  "@docsCoverage": {
+    "placeholders": {
+      "scanned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "docsAll": "All",
+  "docsFromKcpl": "From KCPL",
+  "docsSentByYou": "Sent by you",
+  "docsStateConfirmed": "Confirmed",
+  "docsStateResend": "Send again",
+  "docsStateWithKcpl": "With KCPL",
+  "docsEmptyFilteredTitle": "No documents match this view",
+  "docsEmptyTitle": "No documents yet",
+  "docsEmptyDescription": "Paperwork KCPL releases to you, and anything you send from a shipment, is listed here.",
+  "docsSearchPlaceholder": "Search file name, type or shipment…",
+  "invPositionTitle": "Balances",
+  "invPositionDescription": "Totals are grouped by the currency each invoice was issued in; KCPL does not convert between them here.",
+  "invInvoicedReceipted": "{invoiced} invoiced · {paid} receipted",
+  "@invInvoicedReceipted": {
+    "placeholders": {
+      "invoiced": {
+        "type": "String"
+      },
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
+  "invBillingTitle": "Issued invoices",
+  "invColIssued": "Issued",
+  "invColDue": "Due",
+  "invColTotal": "Total",
+  "invColPaid": "Paid",
+  "invColBalance": "Balance",
+  "invOpeningBalance": "Opening balance",
+  "invEmptyTitle": "No invoices issued",
+  "invEmptyDescription": "Invoices appear here once KCPL issues them against your account.",
+  "invFootnote": "Payment references, bank details and credit terms are confirmed by KCPL accounts. Contact your account manager if an invoice needs to be reissued or a payment is not yet reflected here.",
+  "invdStatement": "Statement",
+  "invdColCharge": "Charge",
+  "invdColQuantity": "Quantity",
+  "invdColUnitPrice": "Unit price",
+  "invdNoLinesTitle": "No itemised charges",
+  "invdNoLinesDescription": "This invoice carries a total without a line breakdown.",
+  "invdSubtotal": "Subtotal",
+  "invdTax": "Tax",
+  "invdReceipted": "Receipted",
+  "invdBalanceDue": "Balance due",
+  "invdIssuedOn": "Issued {date}",
+  "@invdIssuedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "invdDueOn": "Due {date}",
+  "@invdDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "invdNotFoundTitle": "Invoice not found",
+  "invdNotFoundDescription": "Open it from your invoice list instead.",
+  "invdNoAccessTitle": "Account billing is not shared with this login",
+  "invdNoAccessDescription": "Ask your account owner or KCPL account manager if you also need invoice access.",
+  "shipNotFoundTitle": "Shipment not found",
+  "shipNotFoundDescription": "Check the reference, or open the shipment from your list.",
+  "shipOpened": "Opened {date}",
+  "@shipOpened": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shipLastUpdate": "Last update {when}",
+  "@shipLastUpdate": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shipFreeTimeExpiredDescription": "Storage or demurrage charges may be accruing on this cargo.",
+  "shipFreeTimeDescription": "Clearing the cargo before this date avoids storage and demurrage charges.",
+  "shipLocation": "Location",
+  "shipAsAdvised": "As advised",
+  "shipDaysOverdue": "Days overdue",
+  "shipDaysRemaining": "Days remaining",
+  "shipChargeAfterExpiry": "Charge after expiry",
+  "shipPerDay": "{currency} {amount} per day",
+  "@shipPerDay": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shipAllowance": "Allowance",
+  "shipAllowanceDays": "{days} days",
+  "@shipAllowanceDays": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "shipFreeTimeFootnote": "Free days are granted by the carrier or terminal. Contact your KCPL account manager if you need an extension.",
+  "shipMovementTitle": "Shipment details",
+  "shipMode": "Mode",
+  "shipCurrentLocation": "Current location",
+  "shipNotReported": "Not reported",
+  "shipEta": "Estimated arrival",
+  "shipCarrierReference": "Carrier reference",
+  "shipToBeConfirmed": "To be confirmed",
+  "shipMilestonesTitle": "Milestones",
+  "shipNoMilestonesTitle": "No milestones recorded yet",
+  "shipNoMilestonesDescription": "Updates appear here as KCPL progresses the shipment.",
+  "shipDocumentsDescription": "Documents KCPL has released to you, and the ones you have sent.",
+  "shipNoDocumentsTitle": "No documents yet",
+  "shipNoDocumentsDescription": "Documents KCPL releases to you, and anything you send, will be listed here.",
+  "shipsColCarrier": "Carrier",
+  "xchgTitle": "What KCPL needs from you",
+  "xchgStateNeeded": "Needed",
+  "xchgStateResend": "Send again",
+  "xchgStateWithKcpl": "With KCPL",
+  "xchgStateConfirmed": "Confirmed",
+  "settingsLanguage": "Language",
+  "settingsSignedInAs": "Signed in as",
+  "settingsAccount": "Account",
+  "settingsAccessLevel": "Access level",
+  "settingsProvisioningNote": "Your KCPL account manager provisions and removes portal logins. Contact them to add a colleague or change what this login can see.",
+  "appTitle": "KCPL",
+  "signInTitle": "Sign in to KCPL",
+  "signInSubtitle": "Your shipments, documents and invoices with Kapileshwor Cargo.",
+  "emailLabel": "Email address",
+  "passwordLabel": "Password",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "signIn": "Sign in",
+  "signingIn": "Signing in…",
+  "forgotPassword": "Forgot password?",
+  "resetNeedsEmail": "Enter your email address first, then choose Forgot password.",
+  "resetSent": "If that address has KCPL portal access, a password reset link is on its way.",
+  "signInFailed": "Sign-in failed. Check your details and try again.",
+  "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
+  "networkError": "KCPL could not be reached. Check your connection and try again.",
+  "sessionEnded": "Your session has ended. Sign in again.",
+  "signOut": "Sign out",
+  "retry": "Try again",
+  "switchAccount": "Switch account",
+  "downloading": "Downloading…",
+  "downloadFailed": "The document could not be downloaded.",
+  "documentSaved": "Saved {filename}",
+  "@documentSaved": {
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
+  },
+  "helpContact": "Need help? Contact your KCPL account manager.",
+  "demoBanner": "Demo data, not a real account",
+  "appVersion": "Version {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "modeRail": "Rail freight",
+  "modeCourier": "Courier",
+  "modeMultimodal": "Multimodal",
+  "pushPrimerTitle": "Know the moment your cargo moves",
+  "pushPrimerBody": "Get a notification when a shipment moves, a document is ready or free time is running out.",
+  "pushTurnOn": "Turn on",
+  "pushNotNow": "Not now",
+  "pushSection": "Notifications",
+  "pushSetting": "Push notifications",
+  "pushOn": "On",
+  "pushOff": "Off",
+  "pushBlocked": "Blocked in your phone's Settings",
+  "pushUnavailable": "Not available in this build",
+  "pushBlockedHelp": "Allow notifications for KCPL in your phone's Settings."
+}

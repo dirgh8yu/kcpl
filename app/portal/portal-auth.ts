@@ -3,6 +3,7 @@ import { firebaseAdminAuth, firebaseRuntimeConfigured } from "../firebase-admin.
 import { adminSecurityConfigurationValid } from "../admin/admin-security-config";
 import { resolvePortalAccount } from "./portal-accounts.server";
 import { portalQaPreviewEnabled, portalQaPreviewSession } from "./portal-qa-preview";
+import { PORTAL_MOBILE_CUSTOMER_HEADER, portalBearerToken, portalRequestedCustomer } from "./portal-mobile-auth";
 import type { PortalCapabilities, PortalCustomerScope, PortalDenialReason, PortalIdentity, PortalRole } from "./portal-access-policy";
 import type { PortalLocale } from "./portal-i18n";
 
@@ -111,6 +112,61 @@ export async function getPortalAccess(): Promise<PortalAccess> {
     // A revoked, expired or forged cookie is signed-out, never a partial session.
     return { kind: "signed-out" };
   }
+}
+
+export type PortalBearerAccess =
+  | PortalAccess
+  | { kind: "denied"; message: string }
+  | { kind: "unavailable" };
+
+/**
+ * The mobile app's counterpart to `getPortalAccess`. The credential is a
+ * Firebase ID token in an Authorization header rather than a session cookie;
+ * everything after verification is the same `authorizePortalIdentity` call.
+ * See portal-mobile-auth.ts.
+ *
+ * Unlike the cookie path this reports a denial separately from signed-out.
+ * The app has to tell "your password is wrong" apart from "this login has no
+ * portal access", and the message is the same deliberately vague one the web
+ * sign-in shows.
+ */
+export async function getPortalAccessFromBearer(request: Request): Promise<PortalBearerAccess> {
+  // Mirrors the cookie path, fenced the same way; see portal-qa-preview.ts.
+  if (portalQaPreviewEnabled()) return { kind: "authorized", session: portalQaPreviewSession() };
+
+  if (!portalRuntimeConfigured()) return { kind: "unconfigured" };
+
+  const token = portalBearerToken(request.headers.get("authorization"));
+  if (!token) return { kind: "signed-out" };
+  const requestedCustomerId = portalRequestedCustomer(request.headers.get(PORTAL_MOBILE_CUSTOMER_HEADER));
+
+  let decoded;
+  try {
+    // `true` checks revocation, so disabling a login or revoking its tokens
+    // in Firebase locks the app out on its next request, not after the
+    // token's hour runs out.
+    decoded = await firebaseAdminAuth().verifyIdToken(token, true);
+  } catch {
+    return { kind: "signed-out" };
+  }
+
+  const result = await authorizePortalIdentity({
+    uid: decoded.uid,
+    email: decoded.email ?? "",
+    emailVerified: decoded.email_verified === true,
+  }, requestedCustomerId);
+  if (result.kind === "unavailable") return { kind: "unavailable" };
+  if (result.kind === "denied") {
+    console.warn("KCPL portal mobile access refused", { reason: result.reason });
+    return { kind: "denied", message: portalDenialMessage(result.reason) };
+  }
+  return {
+    kind: "authorized",
+    session: {
+      ...result.session,
+      displayName: decoded.name?.trim() || result.session.displayName,
+    },
+  };
 }
 
 export function portalSessionCookie(token: string) {
