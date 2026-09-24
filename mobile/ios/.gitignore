@@ -32,3 +32,6 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Firebase app config: added through Xcode on the build Mac, never committed.
+GoogleService-Info.plist

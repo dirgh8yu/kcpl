@@ -80,6 +80,29 @@ project, and KCPL's server decides access.
 
 A build with neither define shows a "not configured" screen instead of guessing.
 
+## Getting the Android apps onto a phone
+
+GitHub builds them: `.github/workflows/mobile-apps.yml` runs whenever the app changes
+(or from the Actions tab → *KCPL apps (Android)* → *Run workflow*). Open the finished
+run, download **kcpl-android-apps** under *Artifacts*, unzip it, copy an APK to the
+phone and open it. Android asks once to allow installs from that source.
+
+| File | What it is |
+|---|---|
+| `KCPL.apk`, `KCPL-Ops.apk` | The real apps, signing in against the live site |
+| `KCPL-demo.apk`, `KCPL-Ops-demo.apk` | Sample data, no account needed (they replace the real app of the same name) |
+
+The real builds need two repository secrets (Settings → Secrets and variables →
+Actions). Neither is kept in the code:
+
+- `KCPL_FIREBASE_API_KEY`: the Firebase **Web API key** (Firebase console → Project
+  settings → General). Without it, only the demo apps are built.
+- `GOOGLE_SERVICES_JSON`: the whole contents of `google-services.json` downloaded after
+  adding both Android apps in Firebase. Without it, push notifications stay off.
+
+These APKs are debug-signed, for installing directly. Store releases need the signing
+key described below.
+
 ## Before the first real build
 
 1. **Deploy the API first.** `/api/mobile/v1` must be live on the site the app points at.
@@ -236,8 +259,9 @@ To turn it on for real builds:
 
 1. In the Firebase console, add an Android app for each package
    (`np.com.kapileshworcargo.kcpl_customer` and `np.com.kapileshworcargo.kcpl_ops`).
-   Put each `google-services.json` in `android/app/src/customer/` and
-   `android/app/src/ops/`. The Gradle plugin is applied only when one is present.
+   Download the combined `google-services.json`. For GitHub builds, paste its contents
+   into the `GOOGLE_SERVICES_JSON` secret. For local builds, put it in `android/app/`,
+   where it is git-ignored. The Gradle plugin is applied only when the file is present.
 2. Add the iOS app in Firebase, drop `GoogleService-Info.plist` into `ios/Runner/`
    through Xcode, and turn on the *Push Notifications* capability. Then upload an APNs
    key under Firebase → Project settings → Cloud Messaging.
