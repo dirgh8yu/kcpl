@@ -16,14 +16,14 @@ void main() {
   late List<http.Request> requests;
 
   FirebaseRestAuth build(Future<http.Response> Function(http.Request) handler) => FirebaseRestAuth(
-        apiKey: 'test-key',
-        store: store,
-        clock: () => now,
-        client: MockClient((request) {
-          requests.add(request);
-          return handler(request);
-        }),
-      );
+    apiKey: 'test-key',
+    store: store,
+    clock: () => now,
+    client: MockClient((request) {
+      requests.add(request);
+      return handler(request);
+    }),
+  );
 
   setUp(() {
     store = MemoryTokenStore();
@@ -74,7 +74,11 @@ void main() {
 
   test('a revoked refresh token signs the phone out and forgets the credential', () async {
     store.values[FirebaseRestAuth.refreshKey] = 'revoked';
-    final auth = build((request) async => _json({'error': {'message': 'TOKEN_EXPIRED'}}, 400));
+    final auth = build(
+      (request) async => _json({
+        'error': {'message': 'TOKEN_EXPIRED'},
+      }, 400),
+    );
     await auth.restore();
     await expectLater(auth.idToken(), throwsA(isA<SignedOutException>()));
     expect(store.values, isEmpty);
@@ -102,7 +106,11 @@ void main() {
       ('USER_DISABLED', AuthFailureKind.disabled),
       ('SOMETHING_NEW', AuthFailureKind.unknown),
     ]) {
-      final auth = build((request) async => _json({'error': {'message': code}}, 400));
+      final auth = build(
+        (request) async => _json({
+          'error': {'message': code},
+        }, 400),
+      );
       await expectLater(auth.signIn('a@b.example', 'x'), throwsA(isA<AuthFailure>().having((f) => f.kind, 'kind', kind)), reason: code);
     }
     expect(store.values, isEmpty);
@@ -111,7 +119,9 @@ void main() {
   test('a password reset for an unknown address looks exactly like a known one', () async {
     final auth = build((request) async {
       expect(jsonDecode(request.body)['requestType'], 'PASSWORD_RESET');
-      return _json({'error': {'message': 'EMAIL_NOT_FOUND'}}, 400);
+      return _json({
+        'error': {'message': 'EMAIL_NOT_FOUND'},
+      }, 400);
     });
     await auth.sendPasswordReset('nobody@acme.example');
   });

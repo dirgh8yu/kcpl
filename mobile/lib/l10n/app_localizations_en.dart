@@ -55,8 +55,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonLoading => 'Loading…';
 
   @override
-  String get commonUnavailableTitle =>
-      'This information is temporarily unavailable';
+  String get commonUnavailableTitle => 'This information is temporarily unavailable';
 
   @override
   String get commonUnavailableDetail =>
@@ -127,8 +126,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ftsNotSet => 'No free-time allowance recorded.';
 
   @override
-  String get ftsExpiredYesterday =>
-      'Free time ended yesterday. Charges may now apply.';
+  String get ftsExpiredYesterday => 'Free time ended yesterday. Charges may now apply.';
 
   @override
   String ftsExpiredYesterdayAt(String location) {
@@ -232,8 +230,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get docUnknown => 'Document';
 
   @override
-  String get overviewDescription =>
-      'Your live shipments, released documents and account position with KCPL.';
+  String get overviewDescription => 'Your live shipments, released documents and account position with KCPL.';
 
   @override
   String get overviewKpiActive => 'Active shipments';
@@ -264,8 +261,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewOutstandingTitle => 'Paperwork KCPL is waiting on';
 
   @override
-  String get overviewOutstandingDescription =>
-      'Send these from the shipment so KCPL can keep the cargo moving.';
+  String get overviewOutstandingDescription => 'Send these from the shipment so KCPL can keep the cargo moving.';
 
   @override
   String get overviewAccountTitle => 'Outstanding with KCPL';
@@ -318,8 +314,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewEmptyNoneTitle => 'No shipments yet';
 
   @override
-  String get overviewEmptyNoneDescription =>
-      'Once KCPL books your first shipment it will appear here with live milestones.';
+  String get overviewEmptyNoneDescription => 'Once KCPL books your first shipment it will appear here with live milestones.';
 
   @override
   String get overviewPaperworkTitle => 'Recently released documents';
@@ -368,15 +363,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shipsEmptyFilteredTitle => 'No shipments match this view';
 
   @override
-  String get shipsEmptyFilteredDescription =>
-      'Try a different filter or clear the search.';
+  String get shipsEmptyFilteredDescription => 'Try a different filter or clear the search.';
 
   @override
   String get shipsEmptyTitle => 'No shipments yet';
 
   @override
-  String get shipsEmptyDescription =>
-      'Once KCPL books a shipment for your account it appears here with its milestones and documents.';
+  String get shipsEmptyDescription => 'Once KCPL books a shipment for your account it appears here with its milestones and documents.';
 
   @override
   String docsCoverage(String scanned, String total) {
@@ -408,8 +401,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get docsEmptyTitle => 'No documents yet';
 
   @override
-  String get docsEmptyDescription =>
-      'Paperwork KCPL releases to you, and anything you send from a shipment, is listed here.';
+  String get docsEmptyDescription => 'Paperwork KCPL releases to you, and anything you send from a shipment, is listed here.';
 
   @override
   String get docsSearchPlaceholder => 'Search file name, type or shipment…';
@@ -451,8 +443,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invEmptyTitle => 'No invoices issued';
 
   @override
-  String get invEmptyDescription =>
-      'Invoices appear here once KCPL issues them against your account.';
+  String get invEmptyDescription => 'Invoices appear here once KCPL issues them against your account.';
 
   @override
   String get invFootnote =>
@@ -474,8 +465,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invdNoLinesTitle => 'No itemised charges';
 
   @override
-  String get invdNoLinesDescription =>
-      'This invoice carries a total without a line breakdown.';
+  String get invdNoLinesDescription => 'This invoice carries a total without a line breakdown.';
 
   @override
   String get invdSubtotal => 'Subtotal';
@@ -503,23 +493,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invdNotFoundTitle => 'Invoice not found';
 
   @override
-  String get invdNotFoundDescription =>
-      'Open it from your invoice list instead.';
+  String get invdNotFoundDescription => 'Open it from your invoice list instead.';
 
   @override
-  String get invdNoAccessTitle =>
-      'Account billing is not shared with this login';
+  String get invdNoAccessTitle => 'Account billing is not shared with this login';
 
   @override
-  String get invdNoAccessDescription =>
-      'Ask your account owner or KCPL account manager if you also need invoice access.';
+  String get invdNoAccessDescription => 'Ask your account owner or KCPL account manager if you also need invoice access.';
 
   @override
   String get shipNotFoundTitle => 'Shipment not found';
 
   @override
-  String get shipNotFoundDescription =>
-      'Check the reference, or open the shipment from your list.';
+  String get shipNotFoundDescription => 'Check the reference, or open the shipment from your list.';
 
   @override
   String shipOpened(String date) {
@@ -532,12 +518,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get shipFreeTimeExpiredDescription =>
-      'Storage or demurrage charges may be accruing on this cargo.';
+  String get shipFreeTimeExpiredDescription => 'Storage or demurrage charges may be accruing on this cargo.';
 
   @override
-  String get shipFreeTimeDescription =>
-      'Clearing the cargo before this date avoids storage and demurrage charges.';
+  String get shipFreeTimeDescription => 'Clearing the cargo before this date avoids storage and demurrage charges.';
 
   @override
   String get shipLocation => 'Location';
@@ -599,19 +583,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shipNoMilestonesTitle => 'No milestones recorded yet';
 
   @override
-  String get shipNoMilestonesDescription =>
-      'Updates appear here as KCPL progresses the shipment.';
+  String get shipNoMilestonesDescription => 'Updates appear here as KCPL progresses the shipment.';
 
   @override
-  String get shipDocumentsDescription =>
-      'Documents KCPL has released to you, and the ones you have sent.';
+  String get shipDocumentsDescription => 'Documents KCPL has released to you, and the ones you have sent.';
 
   @override
   String get shipNoDocumentsTitle => 'No documents yet';
 
   @override
-  String get shipNoDocumentsDescription =>
-      'Documents KCPL releases to you, and anything you send, will be listed here.';
+  String get shipNoDocumentsDescription => 'Documents KCPL releases to you, and anything you send, will be listed here.';
 
   @override
   String get shipsColCarrier => 'Carrier';
@@ -654,8 +635,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInTitle => 'Sign in to KCPL';
 
   @override
-  String get signInSubtitle =>
-      'Your shipments, documents and invoices with Kapileshwor Cargo.';
+  String get signInSubtitle => 'Your shipments, documents and invoices with Kapileshwor Cargo.';
 
   @override
   String get emailLabel => 'Email address';
@@ -679,24 +659,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPassword => 'Forgot password?';
 
   @override
-  String get resetNeedsEmail =>
-      'Enter your email address first, then choose Forgot password.';
+  String get resetNeedsEmail => 'Enter your email address first, then choose Forgot password.';
 
   @override
-  String get resetSent =>
-      'If that address has KCPL portal access, a password reset link is on its way.';
+  String get resetSent => 'If that address has KCPL portal access, a password reset link is on its way.';
 
   @override
-  String get signInFailed =>
-      'Sign-in failed. Check your details and try again.';
+  String get signInFailed => 'Sign-in failed. Check your details and try again.';
 
   @override
-  String get tooManyAttempts =>
-      'Too many attempts. Wait a few minutes and try again.';
+  String get tooManyAttempts => 'Too many attempts. Wait a few minutes and try again.';
 
   @override
-  String get networkError =>
-      'KCPL could not be reached. Check your connection and try again.';
+  String get networkError => 'KCPL could not be reached. Check your connection and try again.';
 
   @override
   String get sessionEnded => 'Your session has ended. Sign in again.';
@@ -745,8 +720,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pushPrimerTitle => 'Know the moment your cargo moves';
 
   @override
-  String get pushPrimerBody =>
-      'Get a notification when a shipment moves, a document is ready or free time is running out.';
+  String get pushPrimerBody => 'Get a notification when a shipment moves, a document is ready or free time is running out.';
 
   @override
   String get pushTurnOn => 'Turn on';
@@ -773,6 +747,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pushUnavailable => 'Not available in this build';
 
   @override
-  String get pushBlockedHelp =>
-      'Allow notifications for KCPL in your phone\'s Settings.';
+  String get pushBlockedHelp => 'Allow notifications for KCPL in your phone\'s Settings.';
 }

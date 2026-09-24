@@ -296,23 +296,26 @@ class _CheckRow extends StatelessWidget {
       button: true,
       child: RowTile(
         onTap: onTap,
-        leading: AnimatedContainer(
-          duration: duration,
-          curve: Motion.easeOut,
-          width: 26,
-          height: 26,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: completed ? p.ink : Colors.transparent,
-            border: Border.all(color: completed ? p.ink : (item.attention ? p.accent : p.tertiary), width: 1.6),
-          ),
-          child: AnimatedSwitcher(
+        leading: Burst(
+          on: completed,
+          child: AnimatedContainer(
             duration: duration,
-            switchInCurve: Motion.easeOut,
-            transitionBuilder: morphTransition,
-            child: completed
-                ? Icon(KIcons.check, key: const ValueKey('on'), size: 17, color: p.paper)
-                : const SizedBox(key: ValueKey('off')),
+            curve: Motion.easeOut,
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: completed ? p.ink : Colors.transparent,
+              border: Border.all(color: completed ? p.ink : (item.attention ? p.accent : p.tertiary), width: 1.6),
+            ),
+            child: AnimatedSwitcher(
+              duration: duration,
+              switchInCurve: Motion.easeOut,
+              transitionBuilder: morphTransition,
+              child: completed
+                  ? Icon(KIcons.check, key: const ValueKey('on'), size: 17, color: p.paper)
+                  : const SizedBox(key: ValueKey('off')),
+            ),
           ),
         ),
         title: AnimatedDefaultTextStyle(

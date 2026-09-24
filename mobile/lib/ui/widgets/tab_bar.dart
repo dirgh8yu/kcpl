@@ -51,8 +51,16 @@ class FloatingTabBar extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: p.isDark ? 0.5 : 0.10), blurRadius: 30, offset: const Offset(0, 10)),
-                  BoxShadow(color: Colors.black.withValues(alpha: p.isDark ? 0.3 : 0.06), blurRadius: 4, offset: const Offset(0, 1)),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: p.isDark ? 0.5 : 0.10),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: p.isDark ? 0.3 : 0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
                 ],
               ),
               child: Glass(
@@ -77,7 +85,9 @@ class FloatingTabBar extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: p.ink,
                                 borderRadius: BorderRadius.circular(27),
-                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 10, offset: const Offset(0, 3))],
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 10, offset: const Offset(0, 3)),
+                                ],
                               ),
                             ),
                           ),
@@ -120,12 +130,7 @@ class TabBarItem extends StatelessWidget {
     Widget icon = Icon(selected ? item.selectedIcon : item.icon, size: 22, color: colour);
     if (selected) icon = PopIn(key: ValueKey(item.label), child: icon);
     if (item.badge > 0) {
-      icon = Badge(
-        backgroundColor: p.accent,
-        textColor: Colors.white,
-        label: Text(item.badge > 99 ? '99+' : '${item.badge}'),
-        child: icon,
-      );
+      icon = Badge(backgroundColor: p.accent, textColor: Colors.white, label: Text(item.badge > 99 ? '99+' : '${item.badge}'), child: icon);
     }
     return Semantics(
       button: true,

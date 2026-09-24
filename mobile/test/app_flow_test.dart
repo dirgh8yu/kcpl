@@ -84,7 +84,14 @@ Future<AppController> pumpApp(WidgetTester tester, {KcplApi? api, AuthRepository
   final controller = AppController(auth: auth ?? DemoAuth(), api: api ?? DemoApi(), prefs: MemoryTokenStore(), configured: true);
   await controller.start();
   await tester.pumpWidget(KcplApp(controller: controller, demo: true));
-  await settle(tester);
+  if (reduceMotion) {
+    await settle(tester);
+  } else {
+    // With motion on, the sign-in lanes loop and never settle: pump by time.
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
   return controller;
 }
 
@@ -233,6 +240,8 @@ void main() {
       await settle(tester);
       await tester.enterText(find.byType(TextField).at(0), 'a@b.example');
       await tester.enterText(find.byType(TextField).at(1), 'x');
+      await tester.ensureVisible(find.byType(FilledButton));
+      await tester.pump();
       await tester.tap(find.byType(FilledButton));
       await settle(tester);
       for (final tab in [1, 2, 3, 4, 0]) {
@@ -300,10 +309,9 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pump(const Duration(seconds: 1));
     await tester.pump(const Duration(milliseconds: 120));
-    final shaking = tester.widget<Transform>(
-      find.descendant(of: find.byType(Shake), matching: find.byType(Transform)).first,
-    );
+    final shaking = tester.widget<Transform>(find.descendant(of: find.byType(Shake), matching: find.byType(Transform)).first);
     expect(shaking.transform.getTranslation().x, isNot(0));
-    await tester.pumpAndSettle();
+    // The lanes behind the form never settle, by design: pump by time.
+    await tester.pump(const Duration(seconds: 1));
   });
 }

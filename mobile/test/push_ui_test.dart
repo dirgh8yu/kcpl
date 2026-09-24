@@ -140,7 +140,9 @@ void main() {
     final api = RecordingApi();
     await signedIn(tester, push: push, api: api);
 
-    push.noticeController.add(const PushNotice(title: 'KCPL-S-24091 in customs', body: 'Declaration lodged.', target: PushTarget('shipment', 'KCPL-S-24091')));
+    push.noticeController.add(
+      const PushNotice(title: 'KCPL-S-24091 in customs', body: 'Declaration lodged.', target: PushTarget('shipment', 'KCPL-S-24091')),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('KCPL-S-24091 in customs'), findsOneWidget);
@@ -170,7 +172,12 @@ void main() {
   });
 
   testWidgets('the K assembles and charges with motion on, and holds still without', (tester) async {
-    await tester.pumpWidget(MaterialApp(theme: kcplTheme(Brightness.light), home: const Center(child: KcplLoader())));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: kcplTheme(Brightness.light),
+        home: const Center(child: KcplLoader()),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump(const Duration(seconds: 2));
     expect(tester.binding.hasScheduledFrame, isTrue, reason: 'the charge keeps running while waiting');
@@ -178,7 +185,12 @@ void main() {
 
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await tester.pumpWidget(MaterialApp(theme: kcplTheme(Brightness.light), home: const Center(child: KcplLoader(key: ValueKey('still')))));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: kcplTheme(Brightness.light),
+        home: const Center(child: KcplLoader(key: ValueKey('still'))),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(tester.binding.hasScheduledFrame, isFalse);
   });

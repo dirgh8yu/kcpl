@@ -9,6 +9,7 @@ import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
+import '../widgets/journey.dart' show IconTile;
 import '../widgets/rows.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
@@ -68,7 +69,7 @@ class InvoiceDetailScreen extends StatelessWidget {
         const Divider(indent: kGutter, endIndent: kGutter),
         RowTile(
           onTap: () => openShipment(context, invoice.shipmentReference!),
-          leading: Icon(KIcons.shipments, size: 22, color: p.ink),
+          leading: const IconTile(icon: KIcons.shipments),
           title: Text(invoice.shipmentReference!),
           subtitle: Text(l.commonShipment),
           chevron: true,

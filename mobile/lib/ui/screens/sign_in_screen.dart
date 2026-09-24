@@ -5,6 +5,7 @@ import '../../api/kcpl_api.dart';
 import '../../session_host.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../map/route_map.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -126,155 +127,173 @@ class _SignInScreenState extends State<SignInScreen> {
     final message = _error ?? _notice ?? (controller.sessionEnded ? l.sessionEnded : null);
 
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Center(
+      body: Stack(
+        children: [
+          // KCPL's lanes into Nepal, moving behind the mark.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: MediaQuery.sizeOf(context).height * 0.46,
+            child: IgnorePointer(
+              child: Reveal(child: AmbientRouteMap(style: RouteMapStyle.page(p))),
+            ),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: IntrinsicHeight(
-                    child: AutofillGroup(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 28),
-                          // The screen assembles top to bottom on launch.
-                          Reveal(
-                            index: 0,
-                            child: Align(
-                              alignment: AlignmentDirectional.centerStart,
-                              child: Image.asset('assets/brand/k-mark.png', width: 34, height: 34, semanticLabel: 'KCPL'),
-                            ),
-                          ),
-                          const SizedBox(height: 56),
-                          Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.headlineMedium)),
-                          const SizedBox(height: 10),
-                          Reveal(
-                            index: 2,
-                            child: Text(widget.subtitle ?? l.signInSubtitle, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
-                          ),
-                          const SizedBox(height: 36),
-                          Reveal(
-                            index: 3,
-                            child: Shake(
-                              key: _shake,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  TextField(
-                                    controller: _email,
-                                    enabled: !_busy,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    autocorrect: false,
-                                    enableSuggestions: false,
-                                    autofillHints: const [AutofillHints.email, AutofillHints.username],
-                                    style: context.type.bodyLarge,
-                                    decoration: InputDecoration(hintText: l.emailLabel),
-                                    onSubmitted: (_) => _passwordFocus.requestFocus(),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextField(
-                                    controller: _password,
-                                    focusNode: _passwordFocus,
-                                    enabled: !_busy,
-                                    obscureText: _obscure,
-                                    textInputAction: TextInputAction.go,
-                                    autofillHints: const [AutofillHints.password],
-                                    style: context.type.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: l.passwordLabel,
-                                      suffixIcon: IconButton(
-                                        tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                        icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 22),
-                                        onPressed: () => setState(() => _obscure = !_obscure),
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: IntrinsicHeight(
+                        child: AutofillGroup(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 28),
+                              // The screen assembles top to bottom on launch.
+                              Reveal(
+                                index: 0,
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Image.asset('assets/brand/k-mark.png', width: 34, height: 34, semanticLabel: 'KCPL'),
+                                ),
+                              ),
+                              // On a tall screen the map has room to breathe.
+                              SizedBox(height: constraints.maxHeight > 700 ? MediaQuery.sizeOf(context).height * 0.46 - 120 : 56),
+                              Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.headlineMedium)),
+                              const SizedBox(height: 10),
+                              Reveal(
+                                index: 2,
+                                child: Text(
+                                  widget.subtitle ?? l.signInSubtitle,
+                                  style: context.type.bodyLarge?.copyWith(color: p.secondary),
+                                ),
+                              ),
+                              const SizedBox(height: 36),
+                              Reveal(
+                                index: 3,
+                                child: Shake(
+                                  key: _shake,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      TextField(
+                                        controller: _email,
+                                        enabled: !_busy,
+                                        keyboardType: TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        autocorrect: false,
+                                        enableSuggestions: false,
+                                        autofillHints: const [AutofillHints.email, AutofillHints.username],
+                                        style: context.type.bodyLarge,
+                                        decoration: InputDecoration(hintText: l.emailLabel),
+                                        onSubmitted: (_) => _passwordFocus.requestFocus(),
                                       ),
-                                    ),
-                                    onSubmitted: (_) => _signIn(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Motion.easeOut,
-                            alignment: Alignment.topCenter,
-                            child: message == null
-                                ? const SizedBox(width: double.infinity)
-                                : Padding(
-                                    padding: const EdgeInsets.only(top: 18),
-                                    child: Notice(
-                                      padding: EdgeInsets.zero,
-                                      title: message,
-                                      emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
-                                    ),
-                                  ),
-                          ),
-                          const SizedBox(height: 24),
-                          Reveal(
-                            index: 4,
-                            child: Pressable(
-                              child: FilledButton(
-                                onPressed: _busy ? null : _signIn,
-                                // The one crimson control in the app: the way in.
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: p.accent,
-                                  foregroundColor: Colors.white,
-                                  disabledBackgroundColor: p.accent.withValues(alpha: 0.8),
-                                  disabledForegroundColor: Colors.white,
-                                ),
-                                child: AnimatedSwitcher(
-                                  duration: Motion.swap,
-                                  switchInCurve: Motion.easeOut,
-                                  switchOutCurve: Motion.easeOut,
-                                  transitionBuilder: morphTransition,
-                                  child: _busy
-                                      ? Semantics(
-                                          key: const ValueKey('busy'),
-                                          label: l.signingIn,
-                                          child: KcplLoader(
-                                            size: 22,
-                                            color: Colors.white,
-                                            base: Colors.white.withValues(alpha: 0.35),
-                                            assemble: false,
+                                      const SizedBox(height: 12),
+                                      TextField(
+                                        controller: _password,
+                                        focusNode: _passwordFocus,
+                                        enabled: !_busy,
+                                        obscureText: _obscure,
+                                        textInputAction: TextInputAction.go,
+                                        autofillHints: const [AutofillHints.password],
+                                        style: context.type.bodyLarge,
+                                        decoration: InputDecoration(
+                                          hintText: l.passwordLabel,
+                                          suffixIcon: IconButton(
+                                            tooltip: _obscure ? l.showPassword : l.hidePassword,
+                                            icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 22),
+                                            onPressed: () => setState(() => _obscure = !_obscure),
                                           ),
-                                        )
-                                      : Text(l.signIn, key: const ValueKey('idle')),
+                                        ),
+                                        onSubmitted: (_) => _signIn(),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 220),
+                                curve: Motion.easeOut,
+                                alignment: Alignment.topCenter,
+                                child: message == null
+                                    ? const SizedBox(width: double.infinity)
+                                    : Padding(
+                                        padding: const EdgeInsets.only(top: 18),
+                                        child: Notice(
+                                          padding: EdgeInsets.zero,
+                                          title: message,
+                                          emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(height: 24),
+                              Reveal(
+                                index: 4,
+                                child: Pressable(
+                                  child: FilledButton(
+                                    onPressed: _busy ? null : _signIn,
+                                    // The one crimson control in the app: the way in.
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: p.accent,
+                                      foregroundColor: Colors.white,
+                                      disabledBackgroundColor: p.accent.withValues(alpha: 0.8),
+                                      disabledForegroundColor: Colors.white,
+                                    ),
+                                    child: AnimatedSwitcher(
+                                      duration: Motion.swap,
+                                      switchInCurve: Motion.easeOut,
+                                      switchOutCurve: Motion.easeOut,
+                                      transitionBuilder: morphTransition,
+                                      child: _busy
+                                          ? Semantics(
+                                              key: const ValueKey('busy'),
+                                              label: l.signingIn,
+                                              child: KcplLoader(
+                                                size: 22,
+                                                color: Colors.white,
+                                                base: Colors.white.withValues(alpha: 0.35),
+                                                assemble: false,
+                                              ),
+                                            )
+                                          : Text(l.signIn, key: const ValueKey('idle')),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Center(
+                                child: TextButton(
+                                  onPressed: _busy ? null : _reset,
+                                  style: TextButton.styleFrom(foregroundColor: p.secondary),
+                                  child: Text(l.forgotPassword),
+                                ),
+                              ),
+                              const Spacer(),
+                              const SizedBox(height: 32),
+                              Reveal(
+                                index: 5,
+                                child: Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
+                              ),
+                              const SizedBox(height: 6),
+                              if (controller.multilingual)
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    languageButton('en', 'English'),
+                                    Text('·', style: TextStyle(color: p.tertiary)),
+                                    languageButton('ne', 'नेपाली'),
+                                  ],
+                                ),
+                              const SizedBox(height: 12),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          Center(
-                            child: TextButton(
-                              onPressed: _busy ? null : _reset,
-                              style: TextButton.styleFrom(foregroundColor: p.secondary),
-                              child: Text(l.forgotPassword),
-                            ),
-                          ),
-                          const Spacer(),
-                          const SizedBox(height: 32),
-                          Reveal(
-                            index: 5,
-                            child: Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
-                          ),
-                          const SizedBox(height: 6),
-                          if (controller.multilingual)
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                languageButton('en', 'English'),
-                                Text('·', style: TextStyle(color: p.tertiary)),
-                                languageButton('ne', 'नेपाली'),
-                              ],
-                            ),
-                          const SizedBox(height: 12),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -282,7 +301,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

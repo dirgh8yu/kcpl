@@ -40,6 +40,7 @@ class ShipmentRow extends StatelessWidget {
 
     return RowTile(
       onTap: () => openShipment(context, shipment.reference, preview: shipment),
+      leading: ModeBadge(mode: shipment.mode, status: shipment.status),
       title: RouteText(place(shipment.origin), place(shipment.destination)),
       subtitle: Text.rich(
         TextSpan(
@@ -65,7 +66,13 @@ class ShipmentRow extends StatelessWidget {
           Text(shipment.delivered ? l.statusDelivered : l.overviewColEta, style: context.type.bodySmall),
         ],
       ),
-      below: shipment.delivered ? null : JourneyBar(status: shipment.status, reference: shipment.reference),
+      // Under the text, clear of the badge.
+      below: shipment.delivered
+          ? null
+          : Padding(
+              padding: const EdgeInsetsDirectional.only(start: 56),
+              child: JourneyBar(status: shipment.status, reference: shipment.reference),
+            ),
     );
   }
 }
@@ -119,7 +126,7 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
 
     return RowTile(
       onTap: downloadable && !_busy ? _open : null,
-      leading: Icon(document.contentType.startsWith('image/') ? KIcons.image : KIcons.document, color: p.ink, size: 22),
+      leading: IconTile(icon: document.contentType.startsWith('image/') ? KIcons.image : KIcons.document),
       title: Text(documentTypeLabel(l, document.documentType)),
       subtitle: Text(
         [

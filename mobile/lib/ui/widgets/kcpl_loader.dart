@@ -65,7 +65,7 @@ class _KcplLoaderState extends State<KcplLoader> with TickerProviderStateMixin {
           child: AnimatedBuilder(
             animation: Listenable.merge([_intro, _wave]),
             builder: (context, _) => CustomPaint(
-              painter: _KPainter(
+              painter: KPainter(
                 intro: Motion.easeOut.transform(_intro.value),
                 wave: _wave.isAnimating ? _wave.value : null,
                 charge: widget.color ?? p.accent,
@@ -79,8 +79,8 @@ class _KcplLoaderState extends State<KcplLoader> with TickerProviderStateMixin {
   }
 }
 
-class _KPainter extends CustomPainter {
-  _KPainter({required this.intro, required this.wave, required this.charge, required this.base});
+class KPainter extends CustomPainter {
+  KPainter({required this.intro, required this.wave, required this.charge, required this.base});
   final double intro;
   final double? wave;
   final Color charge;
@@ -126,5 +126,5 @@ class _KPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_KPainter old) => old.intro != intro || old.wave != wave || old.charge != charge || old.base != base;
+  bool shouldRepaint(KPainter old) => old.intro != intro || old.wave != wave || old.charge != charge || old.base != base;
 }

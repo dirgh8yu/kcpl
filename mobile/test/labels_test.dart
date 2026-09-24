@@ -31,7 +31,15 @@ void main() {
 
   test('every status, mode and document type has a real label in both languages', () {
     for (final l in [en, ne]) {
-      for (final value in ['booking_confirmed', 'preparing', 'in_transit', 'customs_clearance', 'out_for_delivery', 'delivered', 'exception']) {
+      for (final value in [
+        'booking_confirmed',
+        'preparing',
+        'in_transit',
+        'customs_clearance',
+        'out_for_delivery',
+        'delivered',
+        'exception',
+      ]) {
         expect(statusLabel(l, value), isNot(statusLabel(l, 'never-seen')), reason: value);
       }
       expect(modeLabel(l, 'ocean'), modeLabel(l, 'sea'));

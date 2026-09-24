@@ -11,7 +11,7 @@ import '../widgets/async_view.dart';
 import '../widgets/bento.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/common.dart';
-import '../widgets/journey.dart' show journeyStage;
+import '../widgets/journey.dart' show IconTile, journeyStage;
 import '../widgets/pass.dart';
 import '../widgets/push_ui.dart';
 import '../widgets/rows.dart';
@@ -52,7 +52,6 @@ class OverviewScreen extends StatelessWidget {
 
   List<Widget> _body(BuildContext context, OverviewBundle bundle) {
     final l = AppLocalizations.of(context);
-    final p = context.palette;
     final overview = bundle.overview;
     final session = bundle.session;
     final hero = heroShipment(overview.shipments);
@@ -76,11 +75,7 @@ class OverviewScreen extends StatelessWidget {
             for (final row in overview.freeTime)
               RowTile(
                 onTap: () => openShipment(context, row.reference),
-                leading: Icon(
-                  KIcons.timer,
-                  size: 22,
-                  color: p.of(freeTimeEmphasis(row.status) == Emphasis.attention ? Emphasis.attention : Emphasis.normal),
-                ),
+                leading: IconTile(icon: KIcons.timer, attention: freeTimeEmphasis(row.status) == Emphasis.attention),
                 title: Text(freeTimeSummary(l, row.location, row.status)),
                 subtitle: Text('${row.reference} · ${l.freeTimeDeadline} ${formatShortDate(row.status.deadline)}'),
                 chevron: true,
@@ -95,7 +90,7 @@ class OverviewScreen extends StatelessWidget {
             for (final item in overview.outstanding)
               RowTile(
                 onTap: () => openShipment(context, item.reference),
-                leading: Icon(KIcons.upload, size: 22, color: p.accent),
+                leading: const IconTile(icon: KIcons.upload, attention: true),
                 title: Text(item.rows.map((row) => documentTypeLabel(l, row.documentType)).join(', ')),
                 subtitle: Text(
                   '${item.reference} · ${place(item.origin)} – ${place(item.destination)}',

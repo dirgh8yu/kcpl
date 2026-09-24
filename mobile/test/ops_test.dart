@@ -75,7 +75,9 @@ Future<OpsController> pumpOps(WidgetTester tester, {OpsApi? api}) async {
 
 /// Whether the checklist row titled [title] reads as ticked.
 bool? ticked(WidgetTester tester, String title) => tester
-    .widget<Semantics>(find.ancestor(of: find.text(title), matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.checked != null)).first)
+    .widget<Semantics>(
+      find.ancestor(of: find.text(title), matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.checked != null)).first,
+    )
     .properties
     .checked;
 
@@ -166,7 +168,9 @@ void main() {
         'can_view_costs': true,
         'updated_at': '2026-09-24T00:00:00Z',
       },
-      'workflow': {'blockers': ['Required customs steps are still open.']},
+      'workflow': {
+        'blockers': ['Required customs steps are still open.'],
+      },
     });
     expect(file.job.urgent, isTrue);
     expect(file.job.overdueTasks, 1);

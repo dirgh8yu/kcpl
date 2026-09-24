@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/journey.dart' show IconTile;
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
@@ -70,7 +71,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     final critical = alert.severity == 'critical';
                     return RowTile(
                       onTap: () => _open(alert, page.unreadCount),
-                      leading: Icon(alertIcon(alert.category), size: 22, color: critical ? p.accent : (unread ? p.ink : p.tertiary)),
+                      leading: IconTile(icon: alertIcon(alert.category), attention: critical, muted: !unread),
                       title: Text(
                         alert.title,
                         style: TextStyle(fontWeight: unread ? FontWeight.w600 : FontWeight.w400, color: unread ? p.ink : p.secondary),

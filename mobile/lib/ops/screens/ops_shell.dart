@@ -120,12 +120,7 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
           onSelected: (index) => _select(OpsTab.values[index]),
           items: [
             for (final tab in OpsTab.values)
-              TabItem(
-                icon: icons[tab]!.$1,
-                selectedIcon: icons[tab]!.$2,
-                label: labels[tab]!,
-                badge: tab == OpsTab.alerts ? unread : 0,
-              ),
+              TabItem(icon: icons[tab]!.$1, selectedIcon: icons[tab]!.$2, label: labels[tab]!, badge: tab == OpsTab.alerts ? unread : 0),
           ],
         ),
       ),

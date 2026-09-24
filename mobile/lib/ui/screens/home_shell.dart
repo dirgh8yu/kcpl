@@ -95,9 +95,7 @@ class _HomeShellState extends State<HomeShell> {
           note: widget.demo ? l.demoBanner : null,
           selected: tabs.indexOf(tab),
           onSelected: (index) => _select(tabs[index]),
-          items: [
-            for (final item in tabs) TabItem(icon: icons[item]!.$1, selectedIcon: icons[item]!.$2, label: labels[item]!),
-          ],
+          items: [for (final item in tabs) TabItem(icon: icons[item]!.$1, selectedIcon: icons[item]!.$2, label: labels[item]!)],
         ),
       ),
     );

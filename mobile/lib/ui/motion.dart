@@ -352,3 +352,73 @@ class PopIn extends StatelessWidget {
     );
   }
 }
+
+/// A small crimson burst around [child] each time [on] turns true: a ring
+/// that opens and eight sparks that fly out and fade. The reward for
+/// finishing something, not for anything else. Nothing under reduce-motion.
+class Burst extends StatefulWidget {
+  const Burst({super.key, required this.on, required this.child});
+  final bool on;
+  final Widget child;
+
+  @override
+  State<Burst> createState() => _BurstState();
+}
+
+class _BurstState extends State<Burst> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 620));
+
+  @override
+  void didUpdateWidget(Burst old) {
+    super.didUpdateWidget(old);
+    if (widget.on && !old.on && !Motion.reduced(context)) _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colour = context.palette.accent;
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) =>
+          CustomPaint(foregroundPainter: _controller.isAnimating ? _BurstPainter(_controller.value, colour) : null, child: child),
+    );
+  }
+}
+
+class _BurstPainter extends CustomPainter {
+  _BurstPainter(this.t, this.colour);
+  final double t;
+  final Color colour;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = size.center(Offset.zero);
+    final base = size.shortestSide / 2;
+    final open = Motion.easeOut.transform(t);
+    final fade = 1 - Curves.easeIn.transform(t);
+    canvas.drawCircle(
+      centre,
+      base + base * 0.9 * open,
+      Paint()
+        ..color = colour.withValues(alpha: 0.5 * fade)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * fade + 0.5,
+    );
+    final spark = Paint()..color = colour.withValues(alpha: fade);
+    for (var i = 0; i < 8; i++) {
+      final angle = i * math.pi / 4 + math.pi / 8;
+      final distance = base * (1.1 + 1.0 * open);
+      canvas.drawCircle(centre + Offset(math.cos(angle), math.sin(angle)) * distance, 2.2 * fade + 0.3, spark);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BurstPainter old) => old.t != t || old.colour != colour;
+}

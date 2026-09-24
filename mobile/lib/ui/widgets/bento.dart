@@ -133,7 +133,14 @@ class BentoTile extends StatelessWidget {
           ],
           if (caption != null && caption!.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(caption!, style: context.type.bodySmall, maxLines: 3, overflow: TextOverflow.ellipsis),
+            // One line each, shrunk rather than broken: a reference split
+            // across two lines is misread.
+            for (final line in caption!.split('\n').take(3))
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(line, style: context.type.bodySmall, maxLines: 1),
+              ),
           ],
           if (chart != null) ...[const Spacer(), const SizedBox(height: 14), chart!],
         ],
@@ -255,7 +262,9 @@ class StageBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Flexible(child: Text(stages[i].label, style: context.type.labelMedium?.copyWith(color: p.secondary))),
+                  Flexible(
+                    child: Text(stages[i].label, style: context.type.labelMedium?.copyWith(color: p.secondary)),
+                  ),
                 ],
               ),
           ],

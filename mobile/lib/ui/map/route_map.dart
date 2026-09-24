@@ -188,7 +188,7 @@ class _RouteMapState extends State<RouteMap> with TickerProviderStateMixin {
                   axis: Axis.horizontal,
                   child: _EdgeFade(
                     axis: Axis.vertical,
-                    child: CustomPaint(painter: _DotsPainter(geometry, widget.style)),
+                    child: CustomPaint(painter: _DotsPainter(geometry.toScreen, geometry.key, widget.style)),
                   ),
                 ),
               ),
@@ -303,37 +303,7 @@ class _Geometry {
     // A route into or out of Nepal shows all of Nepal, so its shape is there
     // to recognise.
     if (anchors.any(_inNepal)) anchors.addAll(const [GeoPoint(26.4, 80.1), GeoPoint(30.4, 88.2)]);
-    final midLat = anchors.map((p) => p.lat).reduce((x, y) => x + y) / anchors.length;
-    final kx = math.cos(midLat * math.pi / 180);
-
-    // The frame: the on-map points, padded, never tighter than a region a
-    // person can recognise, matched to the widget's shape.
-    var west = anchors.map((p) => p.lon * kx).reduce(math.min);
-    var east = anchors.map((p) => p.lon * kx).reduce(math.max);
-    var north = anchors.map((p) => -p.lat).reduce(math.min);
-    var south = anchors.map((p) => -p.lat).reduce(math.max);
-    // Wide enough to take in Nepal and the Bay of Bengal together.
-    final minSpan = 16.0 * kx;
-    final padX = math.max((east - west) * 0.3, (minSpan - (east - west)) / 2);
-    final padY = math.max((south - north) * 0.3, (minSpan * 0.35 - (south - north)) / 2);
-    west -= padX;
-    east += padX;
-    north -= padY;
-    south += padY;
-    final spanX = east - west;
-    final spanY = south - north;
-    final aspect = size.width / size.height;
-    if (spanX / spanY > aspect) {
-      final grow = (spanX / aspect - spanY) / 2;
-      north -= grow;
-      south += grow;
-    } else {
-      final grow = (spanY * aspect - spanX) / 2;
-      west -= grow;
-      east += grow;
-    }
-    final scale = size.width / (east - west);
-    Offset toScreen(double lat, double lon) => Offset((lon * kx - west) * scale, (-lat - north) * scale);
+    final toScreen = _project(size, anchors, minSpan: 16);
 
     final rect = Offset.zero & size;
     final inset = rect.deflate(14);
@@ -381,6 +351,42 @@ class _Geometry {
     );
   }
 
+  /// An equirectangular projection (longitude scaled for latitude) that
+  /// frames [anchors], padded and at least [minSpan] degrees wide, in [size].
+  static Offset Function(double lat, double lon) _project(Size size, List<GeoPoint> anchors, {required double minSpan}) {
+    final midLat = anchors.map((p) => p.lat).reduce((x, y) => x + y) / anchors.length;
+    final kx = math.cos(midLat * math.pi / 180);
+
+    // The frame: the on-map points, padded, never tighter than a region a
+    // person can recognise, matched to the widget's shape.
+    var west = anchors.map((p) => p.lon * kx).reduce(math.min);
+    var east = anchors.map((p) => p.lon * kx).reduce(math.max);
+    var north = anchors.map((p) => -p.lat).reduce(math.min);
+    var south = anchors.map((p) => -p.lat).reduce(math.max);
+    // Wide enough to take in Nepal and the Bay of Bengal together.
+    final span = minSpan * kx;
+    final padX = math.max((east - west) * 0.3, (span - (east - west)) / 2);
+    final padY = math.max((south - north) * 0.3, (span * 0.35 - (south - north)) / 2);
+    west -= padX;
+    east += padX;
+    north -= padY;
+    south += padY;
+    final spanX = east - west;
+    final spanY = south - north;
+    final aspect = size.width / size.height;
+    if (spanX / spanY > aspect) {
+      final grow = (spanX / aspect - spanY) / 2;
+      north -= grow;
+      south += grow;
+    } else {
+      final grow = (spanY * aspect - spanX) / 2;
+      west -= grow;
+      east += grow;
+    }
+    final scale = size.width / (east - west);
+    return (lat, lon) => Offset((lon * kx - west) * scale, (-lat - north) * scale);
+  }
+
   static bool _inNepal(GeoPoint p) => p.lat > 26.3 && p.lat < 30.5 && p.lon > 80 && p.lon < 88.3;
 
   static bool _near(GeoPoint x, GeoPoint y) => (x.lat - y.lat).abs() + (x.lon - y.lon).abs() < 0.4;
@@ -408,8 +414,11 @@ class _Geometry {
 }
 
 class _DotsPainter extends CustomPainter {
-  _DotsPainter(this.geometry, this.style);
-  final _Geometry geometry;
+  _DotsPainter(this.toScreen, this.key, this.style);
+  final Offset Function(double lat, double lon) toScreen;
+
+  /// Changes only when the frame does.
+  final String key;
   final RouteMapStyle style;
 
   static const _spacing = 6.0;
@@ -420,9 +429,9 @@ class _DotsPainter extends CustomPainter {
     final nepal = <Offset>[];
     // Invert the projection at each dot of an even grid, so the dots keep
     // their spacing at every zoom.
-    final origin = geometry.toScreen(0, 0);
-    final perLon = geometry.toScreen(0, 1).dx - origin.dx;
-    final perLat = geometry.toScreen(1, 0).dy - origin.dy;
+    final origin = toScreen(0, 0);
+    final perLon = toScreen(0, 1).dx - origin.dx;
+    final perLat = toScreen(1, 0).dy - origin.dy;
     for (var y = _spacing / 2; y < size.height; y += _spacing) {
       final lat = (y - origin.dy) / perLat;
       for (var x = _spacing / 2; x < size.width; x += _spacing) {
@@ -453,7 +462,7 @@ class _DotsPainter extends CustomPainter {
     );
     final border = Path();
     for (var i = 0; i < nepalOutline.length; i += 2) {
-      final point = geometry.toScreen(nepalOutline[i], nepalOutline[i + 1]);
+      final point = toScreen(nepalOutline[i], nepalOutline[i + 1]);
       i == 0 ? border.moveTo(point.dx, point.dy) : border.lineTo(point.dx, point.dy);
     }
     canvas.drawPath(
@@ -467,7 +476,7 @@ class _DotsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DotsPainter old) => old.geometry.key != geometry.key || old.style != style;
+  bool shouldRepaint(_DotsPainter old) => old.key != key || old.style != style;
 }
 
 class _RoutePainter extends CustomPainter {
@@ -648,4 +657,146 @@ class _RoutePainter extends CustomPainter {
       old.style != style ||
       old.vehicle != vehicle ||
       old.delivered != delivered;
+}
+
+/// KCPL's lanes into Nepal, alive: the sign-in screen's backdrop. Each lane
+/// is a faint crimson arc with a point of light running along it, staggered
+/// so something is always arriving. Still under reduce-motion.
+class AmbientRouteMap extends StatefulWidget {
+  const AmbientRouteMap({super.key, required this.style});
+  final RouteMapStyle style;
+
+  static const lanes = [
+    ('kolkata', 'birgunj'),
+    ('haldia', 'biratnagar'),
+    ('visakhapatnam', 'birgunj icd'),
+    ('new delhi', 'bhairahawa'),
+    ('mumbai', 'nepalgunj'),
+    ('chittagong', 'kakarvitta'),
+    ('lhasa', 'kathmandu'),
+    ('kunming', 'kathmandu'),
+  ];
+
+  @override
+  State<AmbientRouteMap> createState() => _AmbientRouteMapState();
+}
+
+class _AmbientRouteMapState extends State<AmbientRouteMap> with SingleTickerProviderStateMixin {
+  late final AnimationController _clock = AnimationController(vsync: this, duration: const Duration(seconds: 9));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.reduced(context)) {
+      _clock.stop();
+      _clock.value = 0.35;
+    } else if (!_clock.isAnimating) {
+      _clock.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _clock.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        if (!size.isFinite || size.width < 40 || size.height < 40) return const SizedBox.shrink();
+        // Framed on Nepal, with the ports of India and the roads from Tibet
+        // and Yunnan reaching in from the edges.
+        final toScreen = _Geometry._project(size, const [GeoPoint(21.5, 80.5), GeoPoint(30.5, 90.5)], minSpan: 14);
+        final lanes = <Path>[];
+        for (final (from, to) in AmbientRouteMap.lanes) {
+          final a = locate(from)!;
+          final b = locate(to)!;
+          final start = toScreen(a.lat, a.lon);
+          final path = Path()..moveTo(start.dx, start.dy);
+          _Geometry._bow(path, start, toScreen(b.lat, b.lon), 0.18);
+          lanes.add(path);
+        }
+        final key = '${size.width.round()}x${size.height.round()}';
+        return ClipRect(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              RepaintBoundary(
+                child: _EdgeFade(
+                  axis: Axis.vertical,
+                  child: CustomPaint(painter: _DotsPainter(toScreen, key, widget.style)),
+                ),
+              ),
+              RepaintBoundary(
+                child: _EdgeFade(
+                  axis: Axis.vertical,
+                  child: CustomPaint(painter: _LanesPainter(lanes, _clock, widget.style)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LanesPainter extends CustomPainter {
+  _LanesPainter(this.lanes, this.clock, this.style) : super(repaint: clock);
+  final List<Path> lanes;
+  final Animation<double> clock;
+  final RouteMapStyle style;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = style.route.withValues(alpha: 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round;
+    final glow = Paint()
+      ..color = style.glow.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    for (var i = 0; i < lanes.length; i++) {
+      final metric = lanes[i].computeMetrics().first;
+      canvas.drawPath(lanes[i], line);
+      // Each lane's light sets off at its own moment and takes 60% of the
+      // cycle to arrive, fading in at the port and out at the gateway.
+      final t = ((clock.value + i * 0.37) % 1.0) / 0.6;
+      if (t > 1) continue;
+      final eased = Curves.easeInOut.transform(t);
+      final head = metric.length * eased;
+      final tail = math.max(0.0, head - 46);
+      final fade = math.sin(t * math.pi);
+      final comet = metric.extractPath(tail, head);
+      canvas.drawPath(comet, glow..color = style.glow.withValues(alpha: 0.55 * fade));
+      canvas.drawPath(
+        comet,
+        Paint()
+          ..shader = ui.Gradient.linear(metric.getTangentForOffset(tail)!.position, metric.getTangentForOffset(head)!.position, [
+            style.route.withValues(alpha: 0),
+            style.route.withValues(alpha: fade),
+          ])
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawCircle(metric.getTangentForOffset(head)!.position, 2.4, Paint()..color = style.route.withValues(alpha: fade));
+    }
+    // The gateways the lanes end at, as small lit ports.
+    for (final lane in lanes) {
+      final metric = lane.computeMetrics().first;
+      final end = metric.getTangentForOffset(metric.length)!.position;
+      canvas.drawCircle(end, 2.6, Paint()..color = style.route.withValues(alpha: 0.7));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LanesPainter old) => old.lanes != lanes || old.style != style;
 }

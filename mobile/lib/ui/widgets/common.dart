@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../motion.dart';
@@ -255,8 +257,8 @@ class EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 28, color: p.tertiary),
-          const SizedBox(height: 14),
+          EmptyArt(icon: icon),
+          const SizedBox(height: 18),
           Text(title, style: context.type.titleMedium, textAlign: TextAlign.center),
           const SizedBox(height: 6),
           Text(
@@ -355,4 +357,104 @@ class Skeleton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The picture above an empty state: the icon on a raised disc inside two
+/// dashed orbits, with one crimson point slowly circling, like a shipment
+/// on its way. Still under reduce-motion.
+class EmptyArt extends StatefulWidget {
+  const EmptyArt({super.key, required this.icon});
+  final IconData icon;
+
+  @override
+  State<EmptyArt> createState() => _EmptyArtState();
+}
+
+class _EmptyArtState extends State<EmptyArt> with SingleTickerProviderStateMixin {
+  late final AnimationController _orbit = AnimationController(vsync: this, duration: const Duration(seconds: 14));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.reduced(context)) {
+      _orbit.stop();
+      _orbit.value = 0.125;
+    } else if (!_orbit.isAnimating) {
+      _orbit.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _orbit.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return SizedBox.square(
+      dimension: 124,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: _Orbits(_orbit, ring: p.hairline, point: p.accent, glow: p.glow),
+              ),
+            ),
+          ),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: p.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: p.hairline, width: 0.5),
+              boxShadow: p.lift,
+            ),
+            child: Icon(widget.icon, size: 28, color: p.ink),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Orbits extends CustomPainter {
+  _Orbits(this.orbit, {required this.ring, required this.point, required this.glow}) : super(repaint: orbit);
+  final Animation<double> orbit;
+  final Color ring;
+  final Color point;
+  final Color glow;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = size.center(Offset.zero);
+    final paint = Paint()
+      ..color = ring
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    for (final (radius, dashes) in [(46.0, 40), (60.0, 56)]) {
+      final sweep = 2 * math.pi / dashes;
+      for (var i = 0; i < dashes; i++) {
+        canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), i * sweep, sweep * 0.45, false, paint);
+      }
+    }
+    final angle = orbit.value * 2 * math.pi - math.pi / 2;
+    final at = centre + Offset(math.cos(angle), math.sin(angle)) * 60;
+    canvas.drawCircle(
+      at,
+      7,
+      Paint()
+        ..color = glow.withValues(alpha: 0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawCircle(at, 3.5, Paint()..color = point);
+  }
+
+  @override
+  bool shouldRepaint(_Orbits old) => old.ring != ring || old.point != point;
 }

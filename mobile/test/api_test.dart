@@ -114,14 +114,17 @@ void main() {
     final api = HttpKcplApi(
       base: Uri.parse('https://kcpl.example'),
       auth: FakeAuth(),
-      client: MockClient((request) async =>
-          _json({'ok': false, 'code': 'denied', 'error': 'This account does not have KCPL portal access.'}, 403)),
+      client: MockClient(
+        (request) async => _json({'ok': false, 'code': 'denied', 'error': 'This account does not have KCPL portal access.'}, 403),
+      ),
     );
     await expectLater(
       api.session(),
-      throwsA(isA<ApiException>()
-          .having((e) => e.code, 'code', 'denied')
-          .having((e) => e.message, 'message', 'This account does not have KCPL portal access.')),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.code, 'code', 'denied')
+            .having((e) => e.message, 'message', 'This account does not have KCPL portal access.'),
+      ),
     );
   });
 
@@ -164,12 +167,28 @@ void main() {
         {'id': 'e1', 'title': 'Departed', 'location': null, 'details': null, 'event_time': '2026-09-19T10:00:00.000Z'},
       ],
       'documents': [
-        {'id': 3, 'shipment_reference': 'KCPL-S-1', 'filename': 'bl.pdf', 'content_type': 'application/pdf', 'size_bytes': 1200,
-         'document_type': 'bill_of_lading', 'uploaded_at': '2026-09-19T10:00:00.000Z', 'shipment_status': 'in_transit',
-         'from_customer': false, 'review_state': 'released'},
+        {
+          'id': 3,
+          'shipment_reference': 'KCPL-S-1',
+          'filename': 'bl.pdf',
+          'content_type': 'application/pdf',
+          'size_bytes': 1200,
+          'document_type': 'bill_of_lading',
+          'uploaded_at': '2026-09-19T10:00:00.000Z',
+          'shipment_status': 'in_transit',
+          'from_customer': false,
+          'review_state': 'released',
+        },
       ],
       'checklist': [
-        {'document_type': 'packing_list', 'required': true, 'state': 'needed', 'uploadable': true, 'submitted_count': 0, 'last_submitted_at': null},
+        {
+          'document_type': 'packing_list',
+          'required': true,
+          'state': 'needed',
+          'uploadable': true,
+          'submitted_count': 0,
+          'last_submitted_at': null,
+        },
       ],
     });
     expect(detail.shipment.destination, 'वीरगन्ज');

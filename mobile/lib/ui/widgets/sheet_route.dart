@@ -38,7 +38,10 @@ class SheetRoute<T> extends PageRoute<T> {
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) =>
       // Its own messenger, so a snack bar shows on the sheet alone and not
       // also on the page still visible behind it.
-      _SheetFrame(route: this, child: ScaffoldMessenger(child: Builder(builder: builder)));
+      _SheetFrame(
+        route: this,
+        child: ScaffoldMessenger(child: Builder(builder: builder)),
+      );
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
@@ -46,9 +49,10 @@ class SheetRoute<T> extends PageRoute<T> {
     // Under the finger the sheet tracks it one to one; otherwise it eases.
     final linear = navigator?.userGestureInProgress ?? false;
     return SlideTransition(
-      position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(
-        linear ? animation : CurvedAnimation(parent: animation, curve: Motion.drawer, reverseCurve: Curves.easeInCubic),
-      ),
+      position: Tween(
+        begin: const Offset(0, 1),
+        end: Offset.zero,
+      ).animate(linear ? animation : CurvedAnimation(parent: animation, curve: Motion.drawer, reverseCurve: Curves.easeInCubic)),
       child: child,
     );
   }

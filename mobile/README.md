@@ -118,23 +118,43 @@ flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # 
 | `lib/api/` | `KcplApi` and its HTTP client. Each call carries the bearer token and the chosen customer. A `401` is retried once with a forced refresh; a second `401` signs out. |
 | `lib/demo/` | Invented sample data for `KCPL_DEMO` builds, labelled on screen. |
 | `lib/app_controller.dart` | Signed-in state, chosen customer and language. Switching customer bumps a generation counter, and every open screen refetches rather than show the previous customer's data. |
-| `lib/ui/` | Screens and widgets. `AsyncPage` gives every screen the same large collapsing title, skeleton, failure, retry and pull-to-refresh behaviour. |
+| `lib/ui/` | Screens and widgets. `AsyncPage` gives every screen the same large collapsing title, skeleton, failure, retry and pull-to-refresh behaviour. `lib/ui/map/` holds the route map and its generated land mask. |
 | `lib/l10n/` | Generated. **Don't edit the ARB files by hand.** |
 
 ### Design
 
 Black and white, with greys only for hierarchy (`Palette` in `lib/ui/theme.dart`), and dark
-mode is true black. KCPL crimson is kept for four things: the brand mark, journey
-progress, whatever needs the customer to act or is costing them money, and Sign out.
-Status is written as words, never shown as a coloured pill.
+mode is true black. KCPL crimson is kept for the brand mark, the route a shipment has
+travelled, whatever needs someone to act or is costing them money, and the glow of the
+dark pass. Status is written as words, never shown as a coloured pill.
 
-The patterns come from apps that do this well:
+- **Type:** Inter for reading and Inter Tight for display, bundled, so both apps look
+  the same on every phone. Figures use tabular digits. Nepali falls back to the bundled
+  Noto Sans Devanagari.
+- **Icons:** Phosphor. Its fonts are bundled directly and named in `lib/ui/icons.dart`.
+  Outline icons by default; the filled one marks the chosen tab.
+- **The pass** (`lib/ui/widgets/pass.dart`): the shipment or job that matters most leads
+  each home screen as a dark, Wallet-style pass. It has a crimson glow, film grain, an
+  edge that catches the light, and a perforated stub for the status and ETA. It stays
+  dark in light mode, and tips back and recedes as you scroll away. The same pass heads
+  the detail page, and it flies there as a shared element.
+- **The route map** (`lib/ui/map/`): the pass draws the journey on the land it actually
+  crosses. The land is dots, Nepal is outlined and a shade brighter, and a crimson arc
+  glows where the cargo has already been. The vehicle sits where the cargo is. Places are
+  matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)"). When either end
+  is unknown, the pass falls back to the plain journey line rather than guessing. An end
+  beyond the map (Rotterdam, say) is drawn at the frame's edge, pointing the right way.
+- **Bento figures** (`lib/ui/widgets/bento.dart`): the figures are tiles, each with a
+  small chart built from the same records as its number: shipments by stage, arrivals
+  across the next seven days, and the share of jobs that are urgent. Nothing is charted
+  that the server does not send.
+- **Chrome:** a floating glass tab bar with an ink pill that slides to the chosen tab.
+  Detail pages open as sheets that you pull down from the top to close. Rows lead with
+  a tile showing the mode of transport (crimson when something has gone wrong).
 
-- **Flighty:** a shipment is drawn like a flight, with big endpoints and a journey line
-  the vehicle travels along.
-- **Uber and Cash App:** black buttons, oversized numbers, no decoration.
-- **Apple's own apps:** large titles that collapse as you scroll, full-width rows with
-  inset hairlines, settings-style checkmarks, and a red destructive action.
+The patterns come from apps that do this well: Flighty (a shipment drawn like a flight),
+Apple Wallet and Maps (the pass, the sheets), Revolut and Cash App (bento figures, ink
+buttons) and Apple's own apps (large titles that collapse as you scroll).
 
 Tabs keep their state and scroll position, and selection changes give a light haptic
 tick.
@@ -146,13 +166,16 @@ Every animation has a job, and all of them draw on one set of curves and duratio
 
 | Where | What it does |
 |---|---|
-| Sign-in | Assembles top to bottom on launch. The crimson button presses in, and its label morphs into a spinner. A wrong password shakes the fields with a haptic buzz. |
-| Sign-in → app | Fades up with a slight settle instead of cutting. |
+| Launch | The native splash hands over to the K, whose strokes assemble and then carry a crimson charge until the app is ready. |
+| Sign-in | KCPL's lanes into Nepal run behind the form, each with a point of light arriving at its gateway. The form assembles top to bottom. The crimson button presses in, and its label becomes the charging K. A wrong password shakes the fields with a haptic buzz. |
 | Every screen | Content fades up in a 40ms stagger when it arrives; the skeleton shimmers while loading. A refresh updates in place. |
-| Overview → shipment | The journey card flies into the detail page (a shared element), and the detail page draws its journey on the first frame from what the list already knew. |
-| Journey line | Fills to the current stage once per shipment per session; a soft ring pulses around the moving vehicle. |
-| Figures and balances | Count up when they first appear. |
-| Controls | Checkmarks pop, the download arrow turns into a spinner and then a tick, the chosen tab's icon pops, and lists crossfade on a filter change. |
+| Pull to refresh | Pulling assembles the K stroke by stroke, a tick says it will refresh on release, and the K charges while the page reloads. |
+| Home → detail | The pass flies into the sheet as it rises. Pull the sheet down to close it; it follows the finger. |
+| Route map | The land fades in, then the route draws out to where the cargo is, and a soft ring breathes around the vehicle. |
+| Figures | Count up when they first appear; the charts grow in. |
+| Tab bar | The ink pill slides to the chosen tab and settles with a slight overshoot; the icon pops. |
+| Tasks | Ticking one pops the check and throws a small crimson burst. |
+| Empty states | One crimson point circles slowly on dashed orbits around the icon. |
 
 Tab switching and language changes stay instant, as native apps keep them.
 
@@ -160,6 +183,13 @@ With the system's Reduce Motion setting on, nothing moves or loops and only shor
 remain. The flow tests run under that setting, so a looping animation that ignored it
 would hang them. Two further tests run with full motion: the shared-element flight, and
 the crimson button with its shake.
+
+The route map's land comes from Natural Earth (public domain). To rebuild it:
+
+```sh
+npm pack world-atlas && tar xzf world-atlas-*.tgz
+node mobile/tool/build_route_map.mjs package/countries-50m.json package/land-50m.json
+```
 
 ### Keeping current
 
@@ -223,7 +253,7 @@ In the demo build (`KCPL_DEMO=true`), "Turn on" sends a sample push after four s
 - **Display:** Android phones with 90 or 120Hz screens are asked for their highest refresh
   rate (`lib/platform/display.dart`). iOS ProMotion is enabled in `Info.plist`.
 - **Glass:** only floating chrome is frosted: the tab bar, the title bar once it collapses,
-  and the push banner. Content scrolls under them. Cards stay solid because they carry
+  the pull-to-refresh K and the push banner. Content scrolls under them. Cards stay solid because they carry
   reading, not chrome. With the system's high-contrast setting on, glass turns solid.
 
 ### Strings
@@ -241,13 +271,15 @@ Strings only the app needs live in that script with both languages side by side.
 
 Dates and amounts are records and read the same in either language, as on the web. Nepali
 renders in the bundled Noto Sans Devanagari (SIL OFL), so it looks the same on every
-handset.
+handset. Inter and Inter Tight are also SIL OFL, and Phosphor is MIT; the licences are in
+`assets/fonts/`.
 
 ## Checks
 
 ```sh
 flutter analyze
 flutter test
+dart format -l 140 lib test   # the house line length
 ```
 
 The widget tests sign in and walk every screen in English and Nepali at 1.6× system text

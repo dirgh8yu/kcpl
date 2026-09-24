@@ -36,6 +36,7 @@ class JobRow extends StatelessWidget {
     final (flag, emphasis) = jobFlag(l, job);
     return RowTile(
       onTap: () => openJob(context, job.reference, preview: job),
+      leading: ModeBadge(mode: job.mode, status: job.status),
       title: RouteText(place(job.origin), place(job.destination)),
       subtitle: Text(
         [job.reference, if (job.customerName.isNotEmpty) job.customerName].join(' · '),
@@ -50,7 +51,12 @@ class JobRow extends StatelessWidget {
           StatusText(flag, emphasis, style: context.type.bodySmall),
         ],
       ),
-      below: job.status == 'delivered' ? null : JourneyBar(status: job.status, reference: job.reference),
+      below: job.status == 'delivered'
+          ? null
+          : Padding(
+              padding: const EdgeInsetsDirectional.only(start: 56),
+              child: JourneyBar(status: job.status, reference: job.reference),
+            ),
     );
   }
 }

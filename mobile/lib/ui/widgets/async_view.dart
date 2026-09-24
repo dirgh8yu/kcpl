@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../motion.dart';
 import '../theme.dart';
 import 'common.dart';
+import 'k_refresh.dart';
 import 'large_title.dart';
 import 'sheet_route.dart';
 
@@ -223,7 +224,6 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
     final data = _data;
     final error = _error;
 
@@ -250,6 +250,6 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
     );
     // In a sheet, pulling down closes it; the page still refreshes itself.
     if (SheetRoute.of(context)) return scroll;
-    return RefreshIndicator(onRefresh: _refresh, color: p.ink, backgroundColor: p.paper, edgeOffset: 108, child: scroll);
+    return KRefresh(onRefresh: _refresh, edgeOffset: MediaQuery.paddingOf(context).top + 108, child: scroll);
   }
 }

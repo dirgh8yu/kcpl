@@ -45,30 +45,30 @@ class SlowFirstApi extends DemoApi {
   }
 
   Overview _renamed(Overview o, String tag) => Overview(
-        shipments: [
-          for (final s in o.shipments)
-            Shipment(
-              reference: '${s.reference}-$tag',
-              status: s.status,
-              mode: s.mode,
-              origin: s.origin,
-              destination: s.destination,
-              eta: s.eta,
-              createdAt: s.createdAt,
-              updatedAt: s.updatedAt,
-            ),
-        ],
-        activeCount: o.activeCount,
-        inTransitCount: o.inTransitCount,
-        arrivingCount: o.arrivingCount,
-        attentionCount: o.attentionCount,
-        deliveredCount: o.deliveredCount,
-        documents: o.documents,
-        outstanding: const [],
-        outstandingCount: 0,
-        freeTime: const [],
-        finance: o.finance,
-      );
+    shipments: [
+      for (final s in o.shipments)
+        Shipment(
+          reference: '${s.reference}-$tag',
+          status: s.status,
+          mode: s.mode,
+          origin: s.origin,
+          destination: s.destination,
+          eta: s.eta,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
+        ),
+    ],
+    activeCount: o.activeCount,
+    inTransitCount: o.inTransitCount,
+    arrivingCount: o.arrivingCount,
+    attentionCount: o.attentionCount,
+    deliveredCount: o.deliveredCount,
+    documents: o.documents,
+    outstanding: const [],
+    outstandingCount: 0,
+    freeTime: const [],
+    finance: o.finance,
+  );
 }
 
 Future<void> settle(WidgetTester tester) async {

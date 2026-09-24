@@ -130,3 +130,40 @@ class JourneyBar extends StatelessWidget {
     );
   }
 }
+
+/// An icon on a rounded tile at the start of a row: crimson-tinted for
+/// trouble, quiet for anything already dealt with.
+class IconTile extends StatelessWidget {
+  const IconTile({super.key, required this.icon, this.attention = false, this.muted = false});
+  final IconData icon;
+  final bool attention;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: attention ? Color.alphaBlend(p.accent.withValues(alpha: 0.10), p.paper) : p.fill,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, size: 19, color: attention ? p.accent : (muted ? p.secondary : p.ink)),
+    );
+  }
+}
+
+/// How a shipment travels, as the tile at the start of its row: crimson
+/// when something has gone wrong, a tick once it is delivered.
+class ModeBadge extends StatelessWidget {
+  const ModeBadge({super.key, required this.mode, required this.status});
+  final String mode;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final delivered = status == 'delivered';
+    return IconTile(icon: delivered ? KIcons.check : modeIcon(mode), attention: status == 'exception', muted: delivered);
+  }
+}
