@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kcpl_customer/ui/map/map_data.dart';
 import 'package:kcpl_customer/ui/map/places.dart';
 import 'package:kcpl_customer/ui/map/route_map.dart';
 import 'package:kcpl_customer/ui/theme.dart';
@@ -39,13 +40,6 @@ void main() {
       expect(locate('Kolkata')!.onMap, isTrue);
     });
 
-    test('the land mask knows Nepal, India and the sea', () {
-      expect(landAt(27.7, 85.3), 2, reason: 'Kathmandu is in Nepal');
-      expect(landAt(22.6, 88.4), 1, reason: 'Kolkata is land');
-      expect(landAt(18.0, 89.0), 0, reason: 'the Bay of Bengal is sea');
-      expect(landAt(60, 10), 0, reason: 'outside the mask is sea');
-    });
-
     test('a route is drawn only when both ends are known and one is on the map', () {
       expect(RouteMap.canDraw('Haldia, India', 'Biratnagar, Nepal'), isTrue);
       expect(RouteMap.canDraw('Rotterdam', 'Kathmandu'), isTrue, reason: 'it leaves the frame towards Europe');
@@ -55,7 +49,24 @@ void main() {
     });
   });
 
+  test('the bundled map decodes, with roads, water and Nepal\'s towns', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final map = await MapData.load();
+    expect(map.places.map((p) => p.name), containsAll(['Kathmandu', 'Birganj', 'Biratnagar', 'Kolkata']));
+    for (final path in [map.land, map.lakes, map.roadsMajor, map.borders]) {
+      final bounds = path.getBounds();
+      expect(bounds.isEmpty, isFalse);
+      // Everything sits inside the frame the map covers.
+      expect(bounds.left, greaterThanOrEqualTo(mapWest - 1));
+      expect(bounds.right, lessThanOrEqualTo(mapEast + 1));
+      expect(bounds.top, greaterThanOrEqualTo(mercatorY(mapNorth) - 1));
+      expect(bounds.bottom, lessThanOrEqualTo(mercatorY(mapSouth) + 1));
+    }
+    expect(map.roadsMajor.contains(Offset(85.32, mercatorY(27.7))), isFalse, reason: 'roads are lines, not areas');
+  });
+
   testWidgets('a route map draws, including one leaving the frame', (tester) async {
+    await tester.runAsync(MapData.load);
     await pumpStill(
       tester,
       const SizedBox(

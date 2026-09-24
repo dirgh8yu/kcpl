@@ -289,16 +289,23 @@ class JourneyGraphic extends StatelessWidget {
           const SizedBox(height: 18),
           Endpoints(origin: s.origin, destination: s.destination),
           if (mapped)
-            SizedBox(
-              height: 190,
-              child: RouteMap(
-                origin: s.origin,
-                destination: s.destination,
-                current: s.currentLocation,
-                progress: journeyFraction(s.status),
-                vehicle: modeIcon(s.mode),
-                delivered: s.delivered,
-                reference: s.reference,
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 4),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 180,
+                  child: RouteMap(
+                    origin: s.origin,
+                    destination: s.destination,
+                    current: s.currentLocation,
+                    progress: journeyFraction(s.status),
+                    vehicle: modeIcon(s.mode),
+                    delivered: s.delivered,
+                    attention: s.status == 'exception',
+                    reference: s.reference,
+                  ),
+                ),
               ),
             )
           else
@@ -325,7 +332,7 @@ class _Chip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: PassColors.ink),
+          Icon(icon, size: 11, color: PassColors.secondary),
           const SizedBox(width: 5),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 120),
@@ -372,7 +379,7 @@ class Endpoints extends StatelessWidget {
         end(origin, CrossAxisAlignment.start),
         Padding(
           padding: const EdgeInsets.only(top: 10),
-          child: Icon(KIcons.arrowRight, size: 18, color: p.tertiary),
+          child: Icon(KIcons.arrowRight, size: 14, color: p.tertiary),
         ),
         const SizedBox(width: 12),
         end(destination, CrossAxisAlignment.end),

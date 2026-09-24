@@ -49,6 +49,8 @@ flutter:
 
   assets:
     - assets/brand/
+    # The basemap (Natural Earth, public domain): tool/build_map_data.mjs.
+    - assets/map/
 
   # Inter for reading and Inter Tight for display: one face on every phone,
   # rather than whichever system font a handset carries. Nepali renders in

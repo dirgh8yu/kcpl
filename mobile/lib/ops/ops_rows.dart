@@ -54,7 +54,7 @@ class JobRow extends StatelessWidget {
       below: job.status == 'delivered'
           ? null
           : Padding(
-              padding: const EdgeInsetsDirectional.only(start: 56),
+              padding: const EdgeInsetsDirectional.only(start: 34),
               child: JourneyBar(status: job.status, reference: job.reference),
             ),
     );

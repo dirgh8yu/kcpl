@@ -185,7 +185,7 @@ class _OwnerRow extends StatelessWidget {
         child: Material(
           color: p.fill,
           shape: const CircleBorder(),
-          child: IconButton(tooltip: label, icon: Icon(icon, size: 20), onPressed: () => _launch(context, uri)),
+          child: IconButton(tooltip: label, icon: Icon(icon, size: 18), onPressed: () => _launch(context, uri)),
         ),
       ),
     );
@@ -301,8 +301,8 @@ class _CheckRow extends StatelessWidget {
           child: AnimatedContainer(
             duration: duration,
             curve: Motion.easeOut,
-            width: 26,
-            height: 26,
+            width: 22,
+            height: 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: completed ? p.ink : Colors.transparent,
@@ -313,7 +313,7 @@ class _CheckRow extends StatelessWidget {
               switchInCurve: Motion.easeOut,
               transitionBuilder: morphTransition,
               child: completed
-                  ? Icon(KIcons.check, key: const ValueKey('on'), size: 17, color: p.paper)
+                  ? Icon(KIcons.check, key: const ValueKey('on'), size: 13, color: p.paper)
                   : const SizedBox(key: ValueKey('off')),
             ),
           ),

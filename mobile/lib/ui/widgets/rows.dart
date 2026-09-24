@@ -66,11 +66,11 @@ class ShipmentRow extends StatelessWidget {
           Text(shipment.delivered ? l.statusDelivered : l.overviewColEta, style: context.type.bodySmall),
         ],
       ),
-      // Under the text, clear of the badge.
+      // Under the text, clear of the icon.
       below: shipment.delivered
           ? null
           : Padding(
-              padding: const EdgeInsetsDirectional.only(start: 56),
+              padding: const EdgeInsetsDirectional.only(start: 34),
               child: JourneyBar(status: shipment.status, reference: shipment.reference),
             ),
     );
@@ -154,8 +154,8 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: p.ink),
                       )
                     : _done
-                    ? Icon(KIcons.check, key: const ValueKey('done'), size: 22, color: p.ink)
-                    : Icon(KIcons.download, key: const ValueKey('ready'), size: 20, color: p.ink, semanticLabel: l.commonDownload),
+                    ? Icon(KIcons.check, key: const ValueKey('done'), size: 18, color: p.ink)
+                    : Icon(KIcons.download, key: const ValueKey('ready'), size: 17, color: p.ink, semanticLabel: l.commonDownload),
               ),
             ),
     );

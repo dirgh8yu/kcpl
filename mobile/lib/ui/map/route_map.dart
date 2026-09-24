@@ -6,80 +6,126 @@ import 'package:flutter/material.dart';
 import '../format.dart';
 import '../motion.dart';
 import '../theme.dart';
-import 'land_mask.dart' show nepalOutline;
+import 'map_data.dart';
 import 'places.dart';
 
-/// Colours for a route map on a given surface.
+/// A map in the plain style of a ride-hailing app: pale grey land, soft
+/// water, white roads, small grey town names, and the route in ink.
 @immutable
 class RouteMapStyle {
   const RouteMapStyle({
+    required this.water,
     required this.land,
-    required this.nepal,
-    required this.track,
-    required this.route,
-    required this.glow,
-    required this.port,
-    required this.label,
-    required this.onVehicle,
-    required this.halo,
+    required this.road,
+    required this.roadCasing,
     required this.border,
+    required this.river,
+    required this.label,
+    required this.route,
+    required this.behind,
+    required this.onRoute,
   });
 
+  final Color water;
   final Color land;
-  final Color nepal;
-
-  /// The part of the route still ahead.
-  final Color track;
-
-  /// The part travelled, and the vehicle.
-  final Color route;
-  final Color glow;
-  final Color port;
-  final Color label;
-  final Color onVehicle;
-
-  /// Behind labels, so they read over the dots.
-  final Color halo;
-
-  /// Nepal's border.
+  final Color road;
+  final Color roadCasing;
   final Color border;
+  final Color river;
+  final Color label;
 
-  /// On the dark pass: dots of light on black, a crimson route that glows.
-  static const pass = RouteMapStyle(
-    land: Color(0x30FFFFFF),
-    nepal: Color(0x8CFFFFFF),
-    track: Color(0x40FFFFFF),
-    route: PassColors.accent,
-    glow: Color(0xFFFF2D55),
-    port: Color(0xFFFFFFFF),
-    label: Color(0xB3FFFFFF),
-    onVehicle: Color(0xFFFFFFFF),
-    halo: PassColors.base,
-    border: Color(0x73FFFFFF),
+  /// The way still ahead, the markers and the callouts.
+  final Color route;
+
+  /// The way already travelled.
+  final Color behind;
+
+  /// Text and icons on [route]-coloured shapes.
+  final Color onRoute;
+
+  static const light = RouteMapStyle(
+    water: Color(0xFFD4DCE3),
+    land: Color(0xFFF2F2F0),
+    road: Color(0xFFFFFFFF),
+    roadCasing: Color(0xFFDDDDDB),
+    border: Color(0xFFBDBDBD),
+    river: Color(0xFFD4DCE3),
+    label: Color(0xFF8A8A8A),
+    route: Color(0xFF000000),
+    behind: Color(0xFFB4B4B4),
+    onRoute: Color(0xFFFFFFFF),
   );
 
-  /// On an ordinary page, light or dark.
-  factory RouteMapStyle.page(Palette p) => RouteMapStyle(
-    land: p.isDark ? const Color(0x26FFFFFF) : const Color(0xFFDADADF),
-    nepal: p.isDark ? const Color(0x61FFFFFF) : const Color(0xFF9A9AA2),
-    track: p.isDark ? const Color(0x47FFFFFF) : const Color(0xFFBDBDC4),
-    route: p.accent,
-    glow: p.glow,
-    port: p.ink,
-    label: p.secondary,
-    onVehicle: Colors.white,
-    halo: p.paper,
-    border: p.isDark ? const Color(0x80FFFFFF) : const Color(0x66000000),
+  static const dark = RouteMapStyle(
+    water: Color(0xFF0C0F13),
+    land: Color(0xFF1B1B1D),
+    road: Color(0xFF2E2E31),
+    roadCasing: Color(0xFF1B1B1D),
+    border: Color(0xFF3E3E42),
+    river: Color(0xFF0C0F13),
+    label: Color(0xFF7C7C82),
+    route: Color(0xFFFFFFFF),
+    behind: Color(0xFF55555A),
+    onRoute: Color(0xFF000000),
   );
+
+  /// Inside the dark pass.
+  static const pass = dark;
+
+  /// On an ordinary page, following light or dark mode.
+  factory RouteMapStyle.page(Palette p) => p.isDark ? dark : light;
 }
 
-/// A shipment's journey drawn on the map it actually crosses: a field of
-/// dots for the land (Nepal a shade brighter), and a crimson arc from
-/// origin to destination that glows where the cargo has already been.
+/// The frame a map is drawn in: Web Mercator, scaled and shifted so the
+/// given points sit comfortably inside [size].
+class _Frame {
+  _Frame(this.size, this.left, this.top, this.scale);
+  final Size size;
+  final double left;
+  final double top;
+
+  /// Screen pixels per degree of longitude.
+  final double scale;
+
+  Offset toScreen(double lat, double lon) => Offset((lon - left) * scale, (mercatorY(lat) - top) * scale);
+
+  String get key =>
+      '${size.width.round()}x${size.height.round()}:${left.toStringAsFixed(3)},${top.toStringAsFixed(3)},${scale.toStringAsFixed(2)}';
+
+  /// Fits [points] with padding, never showing less than [minSpan] degrees
+  /// of longitude, so there is always enough map around a route to read.
+  static _Frame fit(Size size, List<GeoPoint> points, {required double minSpan}) {
+    var west = points.map((p) => p.lon).reduce(math.min);
+    var east = points.map((p) => p.lon).reduce(math.max);
+    var north = points.map((p) => mercatorY(p.lat)).reduce(math.min);
+    var south = points.map((p) => mercatorY(p.lat)).reduce(math.max);
+    final padX = math.max((east - west) * 0.3, (minSpan - (east - west)) / 2);
+    final padY = math.max((south - north) * 0.3, (minSpan * 0.3 - (south - north)) / 2);
+    west -= padX;
+    east += padX;
+    north -= padY;
+    south += padY;
+    final aspect = size.width / size.height;
+    if ((east - west) / (south - north) > aspect) {
+      final grow = ((east - west) / aspect - (south - north)) / 2;
+      north -= grow;
+      south += grow;
+    } else {
+      final grow = ((south - north) * aspect - (east - west)) / 2;
+      west -= grow;
+      east += grow;
+    }
+    return _Frame(size, west, north, size.width / (east - west));
+  }
+}
+
+/// A shipment's journey on a real map: the land, water, roads and towns it
+/// crosses, the route in ink from origin (a dot) to destination (a square),
+/// greyed behind the cargo, and the cargo itself as a small disc.
 ///
-/// Only drawn when both ends are known places ([RouteMap.canDraw]); a route
-/// to somewhere off the map (Rotterdam, say) leaves it at the edge,
-/// pointing the right way.
+/// Drawn only when both ends are known places ([RouteMap.canDraw]); an end
+/// beyond the map (Rotterdam, say) is placed at the edge, pointing the
+/// right way.
 class RouteMap extends StatefulWidget {
   const RouteMap({
     super.key,
@@ -89,9 +135,9 @@ class RouteMap extends StatefulWidget {
     required this.progress,
     required this.vehicle,
     this.delivered = false,
+    this.attention = false,
     this.style = RouteMapStyle.pass,
     this.reference,
-    this.labels = true,
   });
 
   final String origin;
@@ -104,8 +150,10 @@ class RouteMap extends StatefulWidget {
   final double progress;
   final IconData vehicle;
   final bool delivered;
+
+  /// Something has gone wrong: the cargo's disc is crimson.
+  final bool attention;
   final RouteMapStyle style;
-  final bool labels;
 
   /// When given, the route draws itself in only the first time this
   /// shipment is shown in a session.
@@ -115,7 +163,6 @@ class RouteMap extends StatefulWidget {
     final from = locate(origin);
     final to = locate(destination);
     if (from == null || to == null) return false;
-    // At least one end must be on the map, and the two must be apart.
     if (!from.onMap && !to.onMap) return false;
     return (from.lat - to.lat).abs() + (from.lon - to.lon).abs() > 0.2;
   }
@@ -126,36 +173,37 @@ class RouteMap extends StatefulWidget {
   State<RouteMap> createState() => _RouteMapState();
 }
 
-class _RouteMapState extends State<RouteMap> with TickerProviderStateMixin {
-  late final AnimationController _draw = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
-  late final AnimationController _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
+class _RouteMapState extends State<RouteMap> with SingleTickerProviderStateMixin {
+  late final AnimationController _draw = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+  MapData? _map = MapData.ready;
   bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_map == null) {
+      MapData.load().then((map) {
+        if (mounted) setState(() => _map = map);
+      });
+    }
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final reduced = Motion.reduced(context);
-    if (!_started) {
-      _started = true;
-      final seen = widget.reference != null && !RouteMap._drawn.add(widget.reference!);
-      if (reduced || seen) {
-        _draw.value = 1;
-      } else {
-        _draw.forward();
-      }
-    }
-    if (reduced || widget.delivered) {
-      _pulse.stop();
-      _pulse.value = 0;
-    } else if (!_pulse.isAnimating) {
-      _pulse.repeat();
+    if (_started) return;
+    _started = true;
+    final seen = widget.reference != null && !RouteMap._drawn.add(widget.reference!);
+    if (Motion.reduced(context) || seen) {
+      _draw.value = 1;
+    } else {
+      _draw.forward();
     }
   }
 
   @override
   void dispose() {
     _draw.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
@@ -163,9 +211,8 @@ class _RouteMapState extends State<RouteMap> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final size = constraints.biggest;
         final geometry = _Geometry.fit(
-          size,
+          constraints.biggest,
           origin: widget.origin,
           destination: widget.destination,
           current: widget.current,
@@ -173,46 +220,23 @@ class _RouteMapState extends State<RouteMap> with TickerProviderStateMixin {
           delivered: widget.delivered,
         );
         if (geometry == null) return const SizedBox.shrink();
-        final text = Theme.of(context).textTheme.labelSmall;
+        final text = Theme.of(context).textTheme.labelSmall ?? const TextStyle();
         return Stack(
           fit: StackFit.expand,
           children: [
-            // The land fades out towards the edges, so the map has no frame.
             RepaintBoundary(
-              child: FadeTransition(
-                opacity: CurvedAnimation(
-                  parent: _draw,
-                  curve: const Interval(0, 0.4, curve: Curves.easeOut),
-                ),
-                child: _EdgeFade(
-                  axis: Axis.horizontal,
-                  child: _EdgeFade(
-                    axis: Axis.vertical,
-                    child: CustomPaint(painter: _DotsPainter(geometry.toScreen, geometry.key, widget.style)),
-                  ),
-                ),
-              ),
+              child: CustomPaint(painter: _MapPainter(_map, geometry.frame, widget.style, text, avoid: geometry.clearOf)),
             ),
             RepaintBoundary(
               child: CustomPaint(
                 painter: _RoutePainter(
                   geometry: geometry,
                   style: widget.style,
-                  draw: CurvedAnimation(
-                    parent: _draw,
-                    curve: const Interval(0.1, 1, curve: Motion.easeOut),
-                  ),
-                  pulse: _pulse,
+                  draw: CurvedAnimation(parent: _draw, curve: Motion.easeOut),
                   vehicle: widget.vehicle,
                   delivered: widget.delivered,
-                  labels: widget.labels,
-                  labelStyle: (text ?? const TextStyle()).copyWith(
-                    color: widget.style.label,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
-                    shadows: [Shadow(color: widget.style.halo, blurRadius: 6)],
-                  ),
+                  attention: widget.attention ? Theme.of(context).extension<Palette>()!.accent : null,
+                  text: text,
                 ),
               ),
             ),
@@ -223,63 +247,32 @@ class _RouteMapState extends State<RouteMap> with TickerProviderStateMixin {
   }
 }
 
-/// Fades a child out over its last stretch at both ends of [axis].
-class _EdgeFade extends StatelessWidget {
-  const _EdgeFade({required this.axis, required this.child});
-  final Axis axis;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final horizontal = axis == Axis.horizontal;
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (rect) => LinearGradient(
-        begin: horizontal ? Alignment.centerLeft : Alignment.topCenter,
-        end: horizontal ? Alignment.centerRight : Alignment.bottomCenter,
-        colors: const [Colors.transparent, Colors.white, Colors.white, Colors.transparent],
-        stops: horizontal ? const [0, 0.12, 0.88, 1] : const [0, 0.08, 0.9, 1],
-      ).createShader(rect),
-      child: child,
-    );
-  }
-}
-
-/// Where everything sits on screen for one route at one size.
+/// Where the route sits on screen for one frame.
 class _Geometry {
   _Geometry({
-    required this.size,
-    required this.toScreen,
+    required this.frame,
     required this.path,
     required this.travelled,
     required this.from,
     required this.to,
-    required this.current,
     required this.fromLabel,
     required this.toLabel,
-    required this.fromOffMap,
-    required this.toOffMap,
   });
 
-  final Size size;
-  final Offset Function(double lat, double lon) toScreen;
+  final _Frame frame;
   final Path path;
 
   /// Length along [path] the cargo has covered.
   final double travelled;
   final Offset from;
   final Offset to;
-  final Offset? current;
   final String fromLabel;
   final String toLabel;
-  final bool fromOffMap;
-  final bool toOffMap;
 
   late final ui.PathMetric metric = path.computeMetrics().first;
 
-  // Keyed on what decides the picture, so a rebuild at the same size reuses it.
-  late final String key =
-      '${size.width.round()}x${size.height.round()}:${from.dx.round()},${from.dy.round()}:${to.dx.round()},${to.dy.round()}';
+  /// Points town names keep clear of: the ends and the route between them.
+  late final List<Offset> clearOf = [from, to, for (var d = 0.0; d < metric.length; d += 14) metric.getTangentForOffset(d)!.position];
 
   static _Geometry? fit(
     Size size, {
@@ -299,28 +292,20 @@ class _Geometry {
     if (c != null && _near(c, a)) progress = 0.06;
     if (c != null && (!c.onMap || _near(c, a) || _near(c, b))) c = null;
 
-    final anchors = [a, b, ?c].where((p) => p.onMap).toList();
-    // A route into or out of Nepal shows all of Nepal, so its shape is there
-    // to recognise.
-    if (anchors.any(_inNepal)) anchors.addAll(const [GeoPoint(26.4, 80.1), GeoPoint(30.4, 88.2)]);
-    final toScreen = _project(size, anchors, minSpan: 16);
-
-    final rect = Offset.zero & size;
-    final inset = rect.deflate(14);
-    var from = toScreen(a.lat, a.lon);
-    var to = toScreen(b.lat, b.lon);
-    // An end off the map is brought to the frame's edge, on the line
-    // towards it, so the route still leaves in the right direction.
+    final frame = _Frame.fit(size, [a, b, ?c].where((p) => p.onMap).toList(), minSpan: 9);
+    final inset = (Offset.zero & size).deflate(18);
+    var from = frame.toScreen(a.lat, a.lon);
+    var to = frame.toScreen(b.lat, b.lon);
     if (!a.onMap || !inset.contains(from)) from = _toEdge(to, from, inset);
     if (!b.onMap || !inset.contains(to)) to = _toEdge(from, to, inset);
-    final now = c == null ? null : toScreen(c.lat, c.lon);
+    final now = c == null ? null : frame.toScreen(c.lat, c.lon);
 
     final path = Path()..moveTo(from.dx, from.dy);
     if (now != null) {
-      _bow(path, from, now, 0.16);
-      _bow(path, now, to, 0.16);
+      bow(path, from, now, 0.1);
+      bow(path, now, to, 0.1);
     } else {
-      _bow(path, from, to, 0.2);
+      bow(path, from, to, 0.12);
     }
     final metrics = path.computeMetrics().toList();
     if (metrics.isEmpty) return null;
@@ -330,69 +315,26 @@ class _Geometry {
       travelled = length;
     } else if (now != null) {
       final first = Path()..moveTo(from.dx, from.dy);
-      _bow(first, from, now, 0.16);
+      bow(first, from, now, 0.1);
       travelled = first.computeMetrics().first.length;
     } else {
       travelled = length * progress.clamp(0.0, 1.0);
     }
-
     return _Geometry(
-      size: size,
-      toScreen: toScreen,
+      frame: frame,
       path: path,
       travelled: travelled,
       from: from,
       to: to,
-      current: now,
-      fromLabel: place(origin).toUpperCase(),
-      toLabel: place(destination).toUpperCase(),
-      fromOffMap: !a.onMap,
-      toOffMap: !b.onMap,
+      fromLabel: place(origin),
+      toLabel: place(destination),
     );
   }
 
-  /// An equirectangular projection (longitude scaled for latitude) that
-  /// frames [anchors], padded and at least [minSpan] degrees wide, in [size].
-  static Offset Function(double lat, double lon) _project(Size size, List<GeoPoint> anchors, {required double minSpan}) {
-    final midLat = anchors.map((p) => p.lat).reduce((x, y) => x + y) / anchors.length;
-    final kx = math.cos(midLat * math.pi / 180);
-
-    // The frame: the on-map points, padded, never tighter than a region a
-    // person can recognise, matched to the widget's shape.
-    var west = anchors.map((p) => p.lon * kx).reduce(math.min);
-    var east = anchors.map((p) => p.lon * kx).reduce(math.max);
-    var north = anchors.map((p) => -p.lat).reduce(math.min);
-    var south = anchors.map((p) => -p.lat).reduce(math.max);
-    // Wide enough to take in Nepal and the Bay of Bengal together.
-    final span = minSpan * kx;
-    final padX = math.max((east - west) * 0.3, (span - (east - west)) / 2);
-    final padY = math.max((south - north) * 0.3, (span * 0.35 - (south - north)) / 2);
-    west -= padX;
-    east += padX;
-    north -= padY;
-    south += padY;
-    final spanX = east - west;
-    final spanY = south - north;
-    final aspect = size.width / size.height;
-    if (spanX / spanY > aspect) {
-      final grow = (spanX / aspect - spanY) / 2;
-      north -= grow;
-      south += grow;
-    } else {
-      final grow = (spanY * aspect - spanX) / 2;
-      west -= grow;
-      east += grow;
-    }
-    final scale = size.width / (east - west);
-    return (lat, lon) => Offset((lon * kx - west) * scale, (-lat - north) * scale);
-  }
-
-  static bool _inNepal(GeoPoint p) => p.lat > 26.3 && p.lat < 30.5 && p.lon > 80 && p.lon < 88.3;
-
   static bool _near(GeoPoint x, GeoPoint y) => (x.lat - y.lat).abs() + (x.lon - y.lon).abs() < 0.4;
 
-  /// A gentle arc, bowed away from the equator as great circles look.
-  static void _bow(Path path, Offset from, Offset to, double amount) {
+  /// A gentle arc between two points, bowed to the north.
+  static void bow(Path path, Offset from, Offset to, double amount) {
     final mid = (from + to) / 2;
     final delta = to - from;
     var normal = Offset(delta.dy, -delta.dx);
@@ -413,70 +355,86 @@ class _Geometry {
   }
 }
 
-class _DotsPainter extends CustomPainter {
-  _DotsPainter(this.toScreen, this.key, this.style);
-  final Offset Function(double lat, double lon) toScreen;
-
-  /// Changes only when the frame does.
-  final String key;
+/// The basemap: water, land, lakes, rivers, borders, roads and town names,
+/// with detail added as the frame zooms in.
+class _MapPainter extends CustomPainter {
+  _MapPainter(this.map, this.frame, this.style, this.text, {this.avoid = const []});
+  final MapData? map;
+  final _Frame frame;
   final RouteMapStyle style;
+  final TextStyle text;
 
-  static const _spacing = 6.0;
+  /// Screen points town names keep clear of (the route's ends).
+  final List<Offset> avoid;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final land = <Offset>[];
-    final nepal = <Offset>[];
-    // Invert the projection at each dot of an even grid, so the dots keep
-    // their spacing at every zoom.
-    final origin = toScreen(0, 0);
-    final perLon = toScreen(0, 1).dx - origin.dx;
-    final perLat = toScreen(1, 0).dy - origin.dy;
-    for (var y = _spacing / 2; y < size.height; y += _spacing) {
-      final lat = (y - origin.dy) / perLat;
-      for (var x = _spacing / 2; x < size.width; x += _spacing) {
-        final lon = (x - origin.dx) / perLon;
-        switch (landAt(lat, lon)) {
-          case 1:
-            land.add(Offset(x, y));
-          case 2:
-            nepal.add(Offset(x, y));
-        }
-      }
+    final bounds = Offset.zero & size;
+    final map = this.map;
+    canvas.drawRect(bounds, Paint()..color = map == null ? style.land : style.water);
+    if (map == null) return;
+    final z = frame.scale; // pixels per degree
+    // Paths are moved into screen pixels rather than drawn under a scaled
+    // canvas: hairline strokes at a large scale break up on the web renderer.
+    final matrix = (Matrix4.diagonal3Values(z, z, 1)..translateByDouble(-frame.left, -frame.top, 0, 1)).storage;
+    Path screen(Path path) => path.transform(matrix);
+    Paint stroke(Color color, double px) => Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = px
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.save();
+    canvas.clipRect(bounds);
+    canvas.drawPath(screen(map.land), Paint()..color = style.land);
+    canvas.drawPath(screen(map.lakes), Paint()..color = style.water);
+    canvas.drawPath(screen(map.riversMajor), stroke(style.river, 1.4));
+    if (z > 30) canvas.drawPath(screen(map.riversMinor), stroke(style.river, 1));
+    if (z > 22) canvas.drawPath(screen(map.states), stroke(style.border.withValues(alpha: 0.45), 0.6));
+    canvas.drawPath(screen(map.borders), stroke(style.border, 1));
+    // Roads: a casing under a white line, heavier for highways.
+    final roads = [
+      (screen(map.roadsMajor), 2.2, true),
+      if (z > 14) (screen(map.roadsMid), 1.4, true),
+      if (z > 34) (screen(map.roadsMinor), 1.0, false),
+    ];
+    for (final (path, width, cased) in roads) {
+      if (cased) canvas.drawPath(path, stroke(style.roadCasing, width + 1.2));
     }
-    final paint = Paint()..strokeCap = StrokeCap.round;
-    canvas.drawPoints(
-      ui.PointMode.points,
-      land,
-      paint
-        ..color = style.land
-        ..strokeWidth = 2,
-    );
-    // Nepal, where every route ends or begins, a size up and brighter.
-    canvas.drawPoints(
-      ui.PointMode.points,
-      nepal,
-      paint
-        ..color = style.nepal
-        ..strokeWidth = 2.6,
-    );
-    final border = Path();
-    for (var i = 0; i < nepalOutline.length; i += 2) {
-      final point = toScreen(nepalOutline[i], nepalOutline[i + 1]);
-      i == 0 ? border.moveTo(point.dx, point.dy) : border.lineTo(point.dx, point.dy);
+    for (final (path, width, _) in roads) {
+      canvas.drawPath(path, stroke(style.road, width));
     }
-    canvas.drawPath(
-      border..close(),
-      Paint()
-        ..color = style.border
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..strokeJoin = StrokeJoin.round,
-    );
+    canvas.restore();
+
+    // Town names: the biggest first, never overlapping each other or the
+    // route's ends, and more of them as the map zooms in.
+    final maxRank = z < 16 ? 3 : (z < 28 ? 5 : (z < 60 ? 7 : 10));
+    final placed = <Rect>[for (final (i, point) in avoid.indexed) Rect.fromCircle(center: point, radius: i < 2 ? 26 : 9)];
+    var shown = 0;
+    for (final town in map.places) {
+      if (town.rank > maxRank || shown >= 12) continue;
+      final at = frame.toScreen(town.lat, town.lon);
+      if (!bounds.deflate(12).contains(at)) continue;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: town.name,
+          style: text.copyWith(fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 0, color: style.label),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      final rect = Rect.fromCenter(center: at, width: painter.width + 6, height: painter.height + 2);
+      if (!bounds.contains(rect.topLeft) || !bounds.contains(rect.bottomRight)) continue;
+      if (placed.any((r) => r.overlaps(rect))) continue;
+      placed.add(rect);
+      painter.paint(canvas, rect.center - Offset(painter.width / 2, painter.height / 2));
+      shown++;
+    }
   }
 
   @override
-  bool shouldRepaint(_DotsPainter old) => old.key != key || old.style != style;
+  bool shouldRepaint(_MapPainter old) => old.map != map || old.frame.key != frame.key || old.style != style;
 }
 
 class _RoutePainter extends CustomPainter {
@@ -484,136 +442,78 @@ class _RoutePainter extends CustomPainter {
     required this.geometry,
     required this.style,
     required this.draw,
-    required this.pulse,
     required this.vehicle,
     required this.delivered,
-    required this.labels,
-    required this.labelStyle,
-  }) : super(repaint: Listenable.merge([draw, pulse]));
+    required this.attention,
+    required this.text,
+  }) : super(repaint: draw);
 
   final _Geometry geometry;
   final RouteMapStyle style;
   final Animation<double> draw;
-  final Animation<double> pulse;
   final IconData vehicle;
   final bool delivered;
-  final bool labels;
-  final TextStyle labelStyle;
+
+  /// The cargo's colour when something has gone wrong.
+  final Color? attention;
+  final TextStyle text;
 
   @override
   void paint(Canvas canvas, Size size) {
     final metric = geometry.metric;
     final t = draw.value;
     final length = metric.length;
-
-    // The way ahead: a fine dashed line.
-    final track = Paint()
-      ..color = style.track.withValues(alpha: style.track.a * t)
+    // The route draws out from the origin; the cargo rides its leading edge
+    // until it reaches where it is.
+    final shown = length * t;
+    final head = math.min(shown, geometry.travelled);
+    Paint line(Color color) => Paint()
+      ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
+      ..strokeWidth = 3.2
       ..strokeCap = StrokeCap.round;
-    for (var d = geometry.travelled; d < length; d += 7) {
-      canvas.drawPath(metric.extractPath(d, math.min(d + 3, length)), track);
-    }
+    if (head > 0.5) canvas.drawPath(metric.extractPath(0, head), line(style.behind));
+    if (shown > head) canvas.drawPath(metric.extractPath(head, shown), line(style.route));
 
-    // The way travelled: a glow under a bright line that fades in from the
-    // origin, so the eye runs to where the cargo is.
-    final head = geometry.travelled * t;
-    if (head > 0.5) {
-      final done = metric.extractPath(0, head);
-      final tip = metric.getTangentForOffset(head)!.position;
-      canvas.drawPath(
-        done,
-        Paint()
-          ..color = style.glow.withValues(alpha: 0.55)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 7
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-      canvas.drawPath(
-        done,
-        Paint()
-          ..shader = ui.Gradient.linear(geometry.from, tip, [style.route.withValues(alpha: 0.35), style.route])
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.6
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-
-    // Ports: the origin lit once the cargo has left, the destination once
-    // it has arrived; a waypoint the cargo has reached glows faintly.
-    _port(canvas, geometry.from, lit: t > 0.05, offMap: geometry.fromOffMap);
-    _port(canvas, geometry.to, lit: delivered && t > 0.95, offMap: geometry.toOffMap);
-
-    if (labels) {
-      final vehicleAt = delivered ? null : metric.getTangentForOffset(math.max(geometry.travelled, 0.01))!.position;
-      _label(canvas, size, geometry.fromLabel, geometry.from, other: geometry.to, avoid: vehicleAt);
-      _label(canvas, size, geometry.toLabel, geometry.to, other: geometry.from, avoid: vehicleAt);
-    }
-
-    if (!delivered) _vehicle(canvas, metric.getTangentForOffset(math.max(head, 0.01))!.position, t);
+    _origin(canvas, geometry.from);
+    if (t > 0.98) _destination(canvas, geometry.to);
+    final cargo = delivered ? null : metric.getTangentForOffset(math.max(head, 0.01))!.position;
+    _callout(canvas, size, geometry.fromLabel, geometry.from, other: geometry.to, cargo: cargo);
+    if (t > 0.98) _callout(canvas, size, geometry.toLabel, geometry.to, other: geometry.from, cargo: cargo);
+    if (cargo != null) _cargo(canvas, cargo);
   }
 
-  void _port(Canvas canvas, Offset at, {required bool lit, required bool offMap}) {
-    if (offMap) {
-      canvas.drawCircle(at, 2.5, Paint()..color = style.track);
-      return;
-    }
-    if (lit) {
-      canvas.drawCircle(
-        at,
-        9,
-        Paint()
-          ..color = style.glow.withValues(alpha: 0.35)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-      );
-      canvas.drawCircle(at, 4.5, Paint()..color = style.route);
-      canvas.drawCircle(at, 1.8, Paint()..color = style.onVehicle);
-    } else {
-      canvas.drawCircle(
-        at,
-        4.5,
-        Paint()
-          ..color = style.port
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.6,
-      );
-    }
+  /// Origin: a dot with a hole.
+  void _origin(Canvas canvas, Offset at) {
+    canvas.drawCircle(at, 5.5, Paint()..color = style.route);
+    canvas.drawCircle(at, 2, Paint()..color = style.onRoute);
   }
 
-  void _vehicle(Canvas canvas, Offset at, double t) {
-    final appear = Curves.easeOut.transform(((t - 0.15) / 0.3).clamp(0.0, 1.0));
-    if (appear == 0) return;
-    // A soft ring breathes out from the vehicle while it moves.
-    final p = pulse.value;
-    if (p > 0) {
-      canvas.drawCircle(
-        at,
-        12 + 16 * Curves.easeOut.transform(p),
-        Paint()
-          ..color = style.route.withValues(alpha: 0.4 * (1 - p) * appear)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5,
-      );
-    }
-    final radius = 13.0 * (0.6 + 0.4 * appear);
+  /// Destination: a square with a hole.
+  void _destination(Canvas canvas, Offset at) {
+    canvas.drawRect(Rect.fromCenter(center: at, width: 11, height: 11), Paint()..color = style.route);
+    canvas.drawRect(Rect.fromCenter(center: at, width: 4, height: 4), Paint()..color = style.onRoute);
+  }
+
+  /// The cargo: a small disc with the mode's icon, lifted by a soft shadow.
+  void _cargo(Canvas canvas, Offset at) {
+    final fill = attention ?? style.route;
     canvas.drawCircle(
-      at,
-      radius + 6,
+      at + const Offset(0, 1.5),
+      11,
       Paint()
-        ..color = style.glow.withValues(alpha: 0.5 * appear)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        ..color = Colors.black.withValues(alpha: 0.25)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
     );
-    canvas.drawCircle(at, radius, Paint()..color = style.route.withValues(alpha: appear));
+    canvas.drawCircle(at, 11, Paint()..color = fill);
     final icon = TextPainter(
       text: TextSpan(
         text: String.fromCharCode(vehicle.codePoint),
         style: TextStyle(
           fontFamily: vehicle.fontFamily,
           package: vehicle.fontPackage,
-          fontSize: 14 * (0.6 + 0.4 * appear),
-          color: style.onVehicle.withValues(alpha: appear),
+          fontSize: 12,
+          color: attention != null ? Colors.white : style.onRoute,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -621,46 +521,57 @@ class _RoutePainter extends CustomPainter {
     icon.paint(canvas, at - Offset(icon.width / 2, icon.height / 2));
   }
 
-  void _label(Canvas canvas, Size size, String text, Offset at, {required Offset other, Offset? avoid}) {
-    // Clear of the vehicle when it sits at this port.
-    final gap = avoid != null && (avoid - at).distance < 30 ? 26.0 : 12.0;
-    if (text.isEmpty) return;
+  /// A small ink label above a marker (below it when there is no room, or
+  /// when the route leaves upwards).
+  void _callout(Canvas canvas, Size size, String label, Offset at, {required Offset other, Offset? cargo}) {
+    if (label.isEmpty) return;
     final painter = TextPainter(
-      text: TextSpan(text: text, style: labelStyle),
+      text: TextSpan(
+        text: label,
+        style: text.copyWith(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0, color: style.onRoute),
+      ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
       ellipsis: '…',
-    )..layout(maxWidth: size.width * 0.45);
-    // Beside the port when the route runs north–south, else below it (or
-    // above, when the other end is below), always away from the route.
-    final d = other - at;
-    double x;
-    double y;
-    if (d.dy.abs() > d.dx.abs() * 1.4) {
-      x = at.dx + gap;
-      y = at.dy - painter.height / 2;
-      if (x + painter.width > size.width - 6) x = at.dx - gap - painter.width;
-    } else {
-      final below = other.dy <= at.dy + 8 || at.dy < 24;
-      y = below ? at.dy + 10 : at.dy - 10 - painter.height;
-      x = at.dx - painter.width / 2;
+    )..layout(maxWidth: size.width * 0.4);
+    final w = painter.width + 14;
+    final h = painter.height + 8;
+    final above = other.dy > at.dy - 4 && at.dy - 14 - h > 2;
+    var top = above ? at.dy - 12 - h : at.dy + 12;
+    var left = at.dx - w / 2;
+    // With the cargo at this end, the label moves beside the marker, on the
+    // side away from it.
+    if (cargo != null && (cargo - at).distance < 34) {
+      top = at.dy - h / 2;
+      left = cargo.dx <= at.dx ? at.dx + 12 : at.dx - 12 - w;
+      if (left + w > size.width - 4) left = at.dx - 12 - w;
+      if (left < 4) left = at.dx + 12;
     }
-    x = x.clamp(6.0, size.width - painter.width - 6);
-    y = y.clamp(4.0, size.height - painter.height - 4);
-    painter.paint(canvas, Offset(x, y));
+    left = left.clamp(4.0, size.width - w - 4);
+    top = top.clamp(4.0, size.height - h - 4);
+    final rect = RRect.fromRectAndRadius(Rect.fromLTWH(left, top, w, h), const Radius.circular(6));
+    canvas.drawRRect(
+      rect.shift(const Offset(0, 1)),
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.18)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+    );
+    canvas.drawRRect(rect, Paint()..color = style.route);
+    painter.paint(canvas, Offset(left + 7, top + 4));
   }
 
   @override
   bool shouldRepaint(_RoutePainter old) =>
-      old.geometry.key != geometry.key ||
+      old.geometry.frame.key != geometry.frame.key ||
       old.geometry.travelled != geometry.travelled ||
       old.style != style ||
       old.vehicle != vehicle ||
-      old.delivered != delivered;
+      old.delivered != delivered ||
+      old.attention != attention;
 }
 
-/// KCPL's lanes into Nepal, alive: the sign-in screen's backdrop. Each lane
-/// is a faint crimson arc with a point of light running along it, staggered
+/// KCPL's lanes into Nepal on the map: the sign-in screen's backdrop. Each
+/// lane is a fine ink line with a small dot travelling along it, staggered
 /// so something is always arriving. Still under reduce-motion.
 class AmbientRouteMap extends StatefulWidget {
   const AmbientRouteMap({super.key, required this.style});
@@ -674,7 +585,6 @@ class AmbientRouteMap extends StatefulWidget {
     ('mumbai', 'nepalgunj'),
     ('chittagong', 'kakarvitta'),
     ('lhasa', 'kathmandu'),
-    ('kunming', 'kathmandu'),
   ];
 
   @override
@@ -682,7 +592,18 @@ class AmbientRouteMap extends StatefulWidget {
 }
 
 class _AmbientRouteMapState extends State<AmbientRouteMap> with SingleTickerProviderStateMixin {
-  late final AnimationController _clock = AnimationController(vsync: this, duration: const Duration(seconds: 9));
+  late final AnimationController _clock = AnimationController(vsync: this, duration: const Duration(seconds: 10));
+  MapData? _map = MapData.ready;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_map == null) {
+      MapData.load().then((map) {
+        if (mounted) setState(() => _map = map);
+      });
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -707,35 +628,40 @@ class _AmbientRouteMapState extends State<AmbientRouteMap> with SingleTickerProv
       builder: (context, constraints) {
         final size = constraints.biggest;
         if (!size.isFinite || size.width < 40 || size.height < 40) return const SizedBox.shrink();
-        // Framed on Nepal, with the ports of India and the roads from Tibet
-        // and Yunnan reaching in from the edges.
-        final toScreen = _Geometry._project(size, const [GeoPoint(21.5, 80.5), GeoPoint(30.5, 90.5)], minSpan: 14);
+        final frame = _Frame.fit(size, const [GeoPoint(21, 80), GeoPoint(30.5, 90)], minSpan: 12);
         final lanes = <Path>[];
         for (final (from, to) in AmbientRouteMap.lanes) {
           final a = locate(from)!;
           final b = locate(to)!;
-          final start = toScreen(a.lat, a.lon);
+          final start = frame.toScreen(a.lat, a.lon);
           final path = Path()..moveTo(start.dx, start.dy);
-          _Geometry._bow(path, start, toScreen(b.lat, b.lon), 0.18);
+          _Geometry.bow(path, start, frame.toScreen(b.lat, b.lon), 0.14);
           lanes.add(path);
         }
-        final key = '${size.width.round()}x${size.height.round()}';
+        final text = Theme.of(context).textTheme.labelSmall ?? const TextStyle();
         return ClipRect(
           child: Stack(
             fit: StackFit.expand,
             children: [
               RepaintBoundary(
-                child: _EdgeFade(
-                  axis: Axis.vertical,
-                  child: CustomPaint(painter: _DotsPainter(toScreen, key, widget.style)),
+                child: CustomPaint(
+                  // Town names keep clear of where the lanes begin and end.
+                  painter: _MapPainter(
+                    _map,
+                    frame,
+                    widget.style,
+                    text,
+                    avoid: [
+                      for (final lane in lanes)
+                        for (final metric in lane.computeMetrics()) ...[
+                          metric.getTangentForOffset(0)!.position,
+                          metric.getTangentForOffset(metric.length)!.position,
+                        ],
+                    ],
+                  ),
                 ),
               ),
-              RepaintBoundary(
-                child: _EdgeFade(
-                  axis: Axis.vertical,
-                  child: CustomPaint(painter: _LanesPainter(lanes, _clock, widget.style)),
-                ),
-              ),
+              RepaintBoundary(child: CustomPaint(painter: _LanesPainter(lanes, _clock, widget.style))),
             ],
           ),
         );
@@ -753,47 +679,22 @@ class _LanesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final line = Paint()
-      ..color = style.route.withValues(alpha: 0.22)
+      ..color = style.route.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3
+      ..strokeWidth = 1.4
       ..strokeCap = StrokeCap.round;
-    final glow = Paint()
-      ..color = style.glow.withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     for (var i = 0; i < lanes.length; i++) {
       final metric = lanes[i].computeMetrics().first;
       canvas.drawPath(lanes[i], line);
-      // Each lane's light sets off at its own moment and takes 60% of the
-      // cycle to arrive, fading in at the port and out at the gateway.
+      final end = metric.getTangentForOffset(metric.length)!.position;
+      canvas.drawRect(Rect.fromCenter(center: end, width: 6, height: 6), Paint()..color = style.route);
+      // Each lane's dot sets off at its own moment and takes 60% of the
+      // cycle to arrive.
       final t = ((clock.value + i * 0.37) % 1.0) / 0.6;
       if (t > 1) continue;
-      final eased = Curves.easeInOut.transform(t);
-      final head = metric.length * eased;
-      final tail = math.max(0.0, head - 46);
+      final at = metric.getTangentForOffset(metric.length * Curves.easeInOut.transform(t))!.position;
       final fade = math.sin(t * math.pi);
-      final comet = metric.extractPath(tail, head);
-      canvas.drawPath(comet, glow..color = style.glow.withValues(alpha: 0.55 * fade));
-      canvas.drawPath(
-        comet,
-        Paint()
-          ..shader = ui.Gradient.linear(metric.getTangentForOffset(tail)!.position, metric.getTangentForOffset(head)!.position, [
-            style.route.withValues(alpha: 0),
-            style.route.withValues(alpha: fade),
-          ])
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..strokeCap = StrokeCap.round,
-      );
-      canvas.drawCircle(metric.getTangentForOffset(head)!.position, 2.4, Paint()..color = style.route.withValues(alpha: fade));
-    }
-    // The gateways the lanes end at, as small lit ports.
-    for (final lane in lanes) {
-      final metric = lane.computeMetrics().first;
-      final end = metric.getTangentForOffset(metric.length)!.position;
-      canvas.drawCircle(end, 2.6, Paint()..color = style.route.withValues(alpha: 0.7));
+      canvas.drawCircle(at, 3.5, Paint()..color = style.route.withValues(alpha: fade));
     }
   }
 

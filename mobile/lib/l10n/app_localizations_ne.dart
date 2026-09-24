@@ -119,15 +119,13 @@ class AppLocalizationsNe extends AppLocalizations {
   String get freeTimeDeadline => 'अन्तिम फ्री दिन';
 
   @override
-  String get freeTimeConsequence =>
-      'फ्री टाइम सकिएपछि क्यारियर वा टर्मिनलले सामान रहेको प्रत्येक दिनको भण्डारण र डेमरेज शुल्क लगाउन सक्छ।';
+  String get freeTimeConsequence => 'फ्री टाइम सकिएपछि क्यारियर वा टर्मिनलले सामान रहेको प्रत्येक दिनको भण्डारण र डेमरेज शुल्क लगाउन सक्छ।';
 
   @override
   String get ftsNotSet => 'फ्री टाइम अवधि तोकिएको छैन।';
 
   @override
-  String get ftsExpiredYesterday =>
-      'फ्री टाइम हिजो सकियो। अब शुल्क लाग्न सक्छ।';
+  String get ftsExpiredYesterday => 'फ्री टाइम हिजो सकियो। अब शुल्क लाग्न सक्छ।';
 
   @override
   String ftsExpiredYesterdayAt(String location) {
@@ -231,8 +229,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get docUnknown => 'कागजात';
 
   @override
-  String get overviewDescription =>
-      'तपाईंका चालू ढुवानी, जारी भएका कागजात र KCPL सँगको खाताको अवस्था।';
+  String get overviewDescription => 'तपाईंका चालू ढुवानी, जारी भएका कागजात र KCPL सँगको खाताको अवस्था।';
 
   @override
   String get overviewKpiActive => 'चालू ढुवानी';
@@ -256,15 +253,13 @@ class AppLocalizationsNe extends AppLocalizations {
   String get overviewFreeTimeTitle => 'फ्री टाइम सकिँदै';
 
   @override
-  String get overviewFreeTimeDescription =>
-      'क्यारियरको फ्री दिन सकिएपछि भण्डारण र डेमरेज सुरु हुन्छ। त्यसअघि सामान छुटाए शुल्क लाग्दैन।';
+  String get overviewFreeTimeDescription => 'क्यारियरको फ्री दिन सकिएपछि भण्डारण र डेमरेज सुरु हुन्छ। त्यसअघि सामान छुटाए शुल्क लाग्दैन।';
 
   @override
   String get overviewOutstandingTitle => 'KCPL ले पर्खिरहेको कागजात';
 
   @override
-  String get overviewOutstandingDescription =>
-      'सामान अघि बढाइराख्न यी कागजात ढुवानीबाट पठाउनुहोस्।';
+  String get overviewOutstandingDescription => 'सामान अघि बढाइराख्न यी कागजात ढुवानीबाट पठाउनुहोस्।';
 
   @override
   String get overviewAccountTitle => 'KCPL सँग बाँकी';
@@ -317,8 +312,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get overviewEmptyNoneTitle => 'अहिलेसम्म कुनै ढुवानी छैन';
 
   @override
-  String get overviewEmptyNoneDescription =>
-      'KCPL ले तपाईंको पहिलो ढुवानी बुक गरेपछि यहाँ प्रत्यक्ष अद्यावधिकसहित देखिनेछ।';
+  String get overviewEmptyNoneDescription => 'KCPL ले तपाईंको पहिलो ढुवानी बुक गरेपछि यहाँ प्रत्यक्ष अद्यावधिकसहित देखिनेछ।';
 
   @override
   String get overviewPaperworkTitle => 'हालै जारी भएका कागजात';
@@ -330,8 +324,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get overviewNoDocumentsTitle => 'अहिलेसम्म कुनै कागजात जारी भएको छैन';
 
   @override
-  String get overviewNoDocumentsDescription =>
-      'KCPL ले तपाईंको खातामा जारी गरेपछि बिल अफ लेडिङ, एयर वेबिल र भन्सार कागजात यहाँ देखिनेछन्।';
+  String get overviewNoDocumentsDescription => 'KCPL ले तपाईंको खातामा जारी गरेपछि बिल अफ लेडिङ, एयर वेबिल र भन्सार कागजात यहाँ देखिनेछन्।';
 
   @override
   String get overviewViewInvoices => 'बिल हेर्नुहोस्';
@@ -367,15 +360,13 @@ class AppLocalizationsNe extends AppLocalizations {
   String get shipsEmptyFilteredTitle => 'यो दृश्यमा कुनै ढुवानी मिलेन';
 
   @override
-  String get shipsEmptyFilteredDescription =>
-      'अर्को फिल्टर प्रयोग गर्नुहोस् वा खोज हटाउनुहोस्।';
+  String get shipsEmptyFilteredDescription => 'अर्को फिल्टर प्रयोग गर्नुहोस् वा खोज हटाउनुहोस्।';
 
   @override
   String get shipsEmptyTitle => 'अहिलेसम्म कुनै ढुवानी छैन';
 
   @override
-  String get shipsEmptyDescription =>
-      'KCPL ले तपाईंको खाताका लागि ढुवानी बुक गरेपछि यहाँ चरण र कागजातसहित देखिनेछ।';
+  String get shipsEmptyDescription => 'KCPL ले तपाईंको खाताका लागि ढुवानी बुक गरेपछि यहाँ चरण र कागजातसहित देखिनेछ।';
 
   @override
   String docsCoverage(String scanned, String total) {
@@ -407,19 +398,16 @@ class AppLocalizationsNe extends AppLocalizations {
   String get docsEmptyTitle => 'अहिलेसम्म कुनै कागजात छैन';
 
   @override
-  String get docsEmptyDescription =>
-      'KCPL ले तपाईंलाई जारी गर्ने कागजात र तपाईंले ढुवानीबाट पठाउने जुनसुकै कागजात यहाँ सूचीबद्ध हुन्छ।';
+  String get docsEmptyDescription => 'KCPL ले तपाईंलाई जारी गर्ने कागजात र तपाईंले ढुवानीबाट पठाउने जुनसुकै कागजात यहाँ सूचीबद्ध हुन्छ।';
 
   @override
-  String get docsSearchPlaceholder =>
-      'फाइलको नाम, प्रकार वा ढुवानी खोज्नुहोस्…';
+  String get docsSearchPlaceholder => 'फाइलको नाम, प्रकार वा ढुवानी खोज्नुहोस्…';
 
   @override
   String get invPositionTitle => 'मौज्दात';
 
   @override
-  String get invPositionDescription =>
-      'बिल जारी भएको मुद्रा अनुसार जोड गरिएको हो; KCPL ले यहाँ मुद्रा साटफेर गर्दैन।';
+  String get invPositionDescription => 'बिल जारी भएको मुद्रा अनुसार जोड गरिएको हो; KCPL ले यहाँ मुद्रा साटफेर गर्दैन।';
 
   @override
   String invInvoicedReceipted(String invoiced, String paid) {
@@ -451,8 +439,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get invEmptyTitle => 'कुनै बिल जारी भएको छैन';
 
   @override
-  String get invEmptyDescription =>
-      'KCPL ले तपाईंको खातामा बिल जारी गरेपछि यहाँ देखिनेछ।';
+  String get invEmptyDescription => 'KCPL ले तपाईंको खातामा बिल जारी गरेपछि यहाँ देखिनेछ।';
 
   @override
   String get invFootnote =>
@@ -474,8 +461,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get invdNoLinesTitle => 'छुट्टाछुट्टै शुल्क विवरण छैन';
 
   @override
-  String get invdNoLinesDescription =>
-      'यो बिलमा लाइनवार विवरणविनै जम्मा रकम मात्र छ।';
+  String get invdNoLinesDescription => 'यो बिलमा लाइनवार विवरणविनै जम्मा रकम मात्र छ।';
 
   @override
   String get invdSubtotal => 'उप-जम्मा';
@@ -509,15 +495,13 @@ class AppLocalizationsNe extends AppLocalizations {
   String get invdNoAccessTitle => 'यो लगइनसँग खाताको बिलिङ साझा गरिएको छैन';
 
   @override
-  String get invdNoAccessDescription =>
-      'बिलमा पहुँच चाहिएमा आफ्नो खाता स्वामी वा KCPL खाता प्रबन्धकलाई सोध्नुहोस्।';
+  String get invdNoAccessDescription => 'बिलमा पहुँच चाहिएमा आफ्नो खाता स्वामी वा KCPL खाता प्रबन्धकलाई सोध्नुहोस्।';
 
   @override
   String get shipNotFoundTitle => 'ढुवानी भेटिएन';
 
   @override
-  String get shipNotFoundDescription =>
-      'सन्दर्भ जाँच्नुहोस्, वा आफ्नो सूचीबाट ढुवानी खोल्नुहोस्।';
+  String get shipNotFoundDescription => 'सन्दर्भ जाँच्नुहोस्, वा आफ्नो सूचीबाट ढुवानी खोल्नुहोस्।';
 
   @override
   String shipOpened(String date) {
@@ -530,12 +514,10 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
-  String get shipFreeTimeExpiredDescription =>
-      'यो सामानमा भण्डारण वा डेमरेज शुल्क लागिरहेको हुन सक्छ।';
+  String get shipFreeTimeExpiredDescription => 'यो सामानमा भण्डारण वा डेमरेज शुल्क लागिरहेको हुन सक्छ।';
 
   @override
-  String get shipFreeTimeDescription =>
-      'यो मितिअघि सामान छुटाए भण्डारण र डेमरेज शुल्क लाग्दैन।';
+  String get shipFreeTimeDescription => 'यो मितिअघि सामान छुटाए भण्डारण र डेमरेज शुल्क लाग्दैन।';
 
   @override
   String get shipLocation => 'स्थान';
@@ -566,8 +548,7 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
-  String get shipFreeTimeFootnote =>
-      'फ्री दिन क्यारियर वा टर्मिनलले दिने हो। थप समय चाहिए आफ्नो KCPL खाता प्रबन्धकलाई सम्पर्क गर्नुहोस्।';
+  String get shipFreeTimeFootnote => 'फ्री दिन क्यारियर वा टर्मिनलले दिने हो। थप समय चाहिए आफ्नो KCPL खाता प्रबन्धकलाई सम्पर्क गर्नुहोस्।';
 
   @override
   String get shipMovementTitle => 'ढुवानीको विवरण';
@@ -597,19 +578,16 @@ class AppLocalizationsNe extends AppLocalizations {
   String get shipNoMilestonesTitle => 'अहिलेसम्म कुनै चरण दर्ता भएको छैन';
 
   @override
-  String get shipNoMilestonesDescription =>
-      'KCPL ले ढुवानी अघि बढाउँदै जाँदा अद्यावधिक यहाँ देखिनेछ।';
+  String get shipNoMilestonesDescription => 'KCPL ले ढुवानी अघि बढाउँदै जाँदा अद्यावधिक यहाँ देखिनेछ।';
 
   @override
-  String get shipDocumentsDescription =>
-      'KCPL ले तपाईंलाई जारी गरेका र तपाईंले पठाएका कागजात।';
+  String get shipDocumentsDescription => 'KCPL ले तपाईंलाई जारी गरेका र तपाईंले पठाएका कागजात।';
 
   @override
   String get shipNoDocumentsTitle => 'अहिलेसम्म कुनै कागजात छैन';
 
   @override
-  String get shipNoDocumentsDescription =>
-      'KCPL ले तपाईंलाई जारी गर्ने र तपाईंले पठाउने कागजात यहाँ सूचीबद्ध हुनेछ।';
+  String get shipNoDocumentsDescription => 'KCPL ले तपाईंलाई जारी गर्ने र तपाईंले पठाउने कागजात यहाँ सूचीबद्ध हुनेछ।';
 
   @override
   String get shipsColCarrier => 'क्यारियर';
@@ -652,8 +630,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get signInTitle => 'KCPL मा साइन इन गर्नुहोस्';
 
   @override
-  String get signInSubtitle =>
-      'कपिलेश्वर कार्गोसँगका तपाईंका ढुवानी, कागजात र बिल।';
+  String get signInSubtitle => 'कपिलेश्वर कार्गोसँगका तपाईंका ढुवानी, कागजात र बिल।';
 
   @override
   String get emailLabel => 'इमेल ठेगाना';
@@ -677,24 +654,19 @@ class AppLocalizationsNe extends AppLocalizations {
   String get forgotPassword => 'पासवर्ड बिर्सनुभयो?';
 
   @override
-  String get resetNeedsEmail =>
-      'पहिले इमेल ठेगाना लेख्नुहोस्, त्यसपछि पासवर्ड बिर्सनुभयो? छान्नुहोस्।';
+  String get resetNeedsEmail => 'पहिले इमेल ठेगाना लेख्नुहोस्, त्यसपछि पासवर्ड बिर्सनुभयो? छान्नुहोस्।';
 
   @override
-  String get resetSent =>
-      'त्यो ठेगानामा KCPL पोर्टल पहुँच छ भने पासवर्ड रिसेट लिङ्क पठाइँदैछ।';
+  String get resetSent => 'त्यो ठेगानामा KCPL पोर्टल पहुँच छ भने पासवर्ड रिसेट लिङ्क पठाइँदैछ।';
 
   @override
-  String get signInFailed =>
-      'साइन इन हुन सकेन। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।';
+  String get signInFailed => 'साइन इन हुन सकेन। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।';
 
   @override
-  String get tooManyAttempts =>
-      'धेरै पटक प्रयास भयो। केही मिनेट पर्खेर फेरि प्रयास गर्नुहोस्।';
+  String get tooManyAttempts => 'धेरै पटक प्रयास भयो। केही मिनेट पर्खेर फेरि प्रयास गर्नुहोस्।';
 
   @override
-  String get networkError =>
-      'KCPL सम्म पुग्न सकिएन। इन्टरनेट जडान जाँचेर फेरि प्रयास गर्नुहोस्।';
+  String get networkError => 'KCPL सम्म पुग्न सकिएन। इन्टरनेट जडान जाँचेर फेरि प्रयास गर्नुहोस्।';
 
   @override
   String get sessionEnded => 'तपाईंको सत्र सकियो। फेरि साइन इन गर्नुहोस्।';
@@ -720,8 +692,7 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
-  String get helpContact =>
-      'सहयोग चाहियो? आफ्नो KCPL खाता प्रबन्धकलाई सम्पर्क गर्नुहोस्।';
+  String get helpContact => 'सहयोग चाहियो? आफ्नो KCPL खाता प्रबन्धकलाई सम्पर्क गर्नुहोस्।';
 
   @override
   String get demoBanner => 'नमुना विवरण, वास्तविक खाता होइन';
@@ -744,8 +715,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get pushPrimerTitle => 'सामान सर्ने बित्तिकै थाहा पाउनुहोस्';
 
   @override
-  String get pushPrimerBody =>
-      'ढुवानी अघि बढ्दा, कागजात तयार हुँदा वा फ्री टाइम सकिन लाग्दा सूचना पाउनुहोस्।';
+  String get pushPrimerBody => 'ढुवानी अघि बढ्दा, कागजात तयार हुँदा वा फ्री टाइम सकिन लाग्दा सूचना पाउनुहोस्।';
 
   @override
   String get pushTurnOn => 'खोल्नुहोस्';
@@ -772,6 +742,5 @@ class AppLocalizationsNe extends AppLocalizations {
   String get pushUnavailable => 'यो संस्करणमा उपलब्ध छैन';
 
   @override
-  String get pushBlockedHelp =>
-      'फोनको सेटिङमा KCPL का लागि सूचना अनुमति दिनुहोस्।';
+  String get pushBlockedHelp => 'फोनको सेटिङमा KCPL का लागि सूचना अनुमति दिनुहोस्।';
 }

@@ -136,7 +136,25 @@ class _SignInScreenState extends State<SignInScreen> {
             right: 0,
             height: MediaQuery.sizeOf(context).height * 0.46,
             child: IgnorePointer(
-              child: Reveal(child: AmbientRouteMap(style: RouteMapStyle.page(p))),
+              child: Reveal(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AmbientRouteMap(style: RouteMapStyle.page(p)),
+                    // The map gives way to the page beneath it.
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [p.paper.withValues(alpha: 0), p.paper.withValues(alpha: 0), p.paper],
+                          stops: const [0, 0.55, 1],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           SafeArea(
@@ -206,7 +224,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                           hintText: l.passwordLabel,
                                           suffixIcon: IconButton(
                                             tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                            icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 22),
+                                            icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 19),
                                             onPressed: () => setState(() => _obscure = !_obscure),
                                           ),
                                         ),

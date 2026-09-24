@@ -29,7 +29,7 @@ class CheckRow extends StatelessWidget {
         switchInCurve: Motion.easeOut,
         transitionBuilder: morphTransition,
         child: selected
-            ? Icon(KIcons.check, key: const ValueKey('on'), size: 22, color: context.palette.ink)
+            ? Icon(KIcons.check, key: const ValueKey('on'), size: 18, color: context.palette.ink)
             : const SizedBox(key: ValueKey('off'), width: 22, height: 22),
       ),
     ),

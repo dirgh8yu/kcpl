@@ -146,7 +146,6 @@ class _Figures extends StatelessWidget {
           BentoTile(
             label: l.overviewKpiActive,
             value: overview.activeCount,
-            icon: KIcons.shipments,
             large: true,
             onTap: () => onNavigate(HomeTab.shipments),
             chart: StageBar(
@@ -169,7 +168,6 @@ class _Figures extends StatelessWidget {
           BentoTile(
             label: l.overviewKpiAttention,
             value: overview.attentionCount,
-            icon: KIcons.warning,
             attention: true,
             caption: trouble.isEmpty ? null : trouble.take(2).join('\n'),
             onTap: () => onNavigate(HomeTab.shipments),
@@ -200,7 +198,7 @@ class _AccountLine extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (many) Icon(KIcons.expand, size: 20, color: p.secondary),
+        if (many) Icon(KIcons.expand, size: 14, color: p.secondary),
       ],
     );
     return Padding(

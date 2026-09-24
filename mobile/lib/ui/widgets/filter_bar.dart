@@ -31,7 +31,7 @@ class FilterBar<T> extends StatelessWidget {
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: hint,
-              prefixIcon: Icon(KIcons.search, size: 22),
+              prefixIcon: Icon(KIcons.search, size: 18),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 12),
             ),

@@ -1,7 +1,8 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'land_mask.dart';
+/// The frame the bundled map covers (assets/map/asia.kmap).
+const mapWest = 48.0;
+const mapEast = 142.0;
+const mapSouth = -2.0;
+const mapNorth = 46.0;
 
 /// A point on the globe, in degrees.
 class GeoPoint {
@@ -10,11 +11,7 @@ class GeoPoint {
   final double lon;
 
   /// Whether the land mask covers it, so the map can be drawn around it.
-  bool get onMap =>
-      lon >= landMaskWest &&
-      lon < landMaskWest + landMaskColumns * landMaskStep &&
-      lat <= landMaskNorth &&
-      lat > landMaskNorth - landMaskRows * landMaskStep;
+  bool get onMap => lon >= mapWest && lon <= mapEast && lat >= mapSouth && lat <= mapNorth;
 }
 
 /// The places KCPL's freight passes through, by the names desks write
@@ -147,27 +144,4 @@ GeoPoint? locate(String? text) {
     }
     return null;
   });
-}
-
-Uint8List? _land;
-
-/// 0 sea, 1 land, 2 Nepal. Outside the mask is sea.
-int landAt(double lat, double lon) {
-  final grid = _land ??= _decode();
-  final column = ((lon - landMaskWest) / landMaskStep).floor();
-  final row = ((landMaskNorth - lat) / landMaskStep).floor();
-  if (column < 0 || row < 0 || column >= landMaskColumns || row >= landMaskRows) return 0;
-  return grid[row * landMaskColumns + column];
-}
-
-Uint8List _decode() {
-  final runs = base64.decode(landMaskRuns);
-  final grid = Uint8List(landMaskColumns * landMaskRows);
-  var at = 0;
-  for (final run in runs) {
-    final length = run & 63;
-    grid.fillRange(at, at + length, run >> 6);
-    at += length;
-  }
-  return grid;
 }

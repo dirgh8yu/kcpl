@@ -101,28 +101,9 @@ class PushPrimer extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(color: p.ink, shape: BoxShape.circle),
-                            child: Icon(KIcons.bellRinging, size: 18, color: p.paper),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(copy.primerTitle, style: context.type.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(copy.primerBody, style: context.type.bodySmall),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      Text(copy.primerTitle, style: context.type.titleMedium),
+                      const SizedBox(height: 4),
+                      Text(copy.primerBody, style: context.type.bodySmall),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,

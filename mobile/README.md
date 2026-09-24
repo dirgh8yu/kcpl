@@ -118,7 +118,7 @@ flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # 
 | `lib/api/` | `KcplApi` and its HTTP client. Each call carries the bearer token and the chosen customer. A `401` is retried once with a forced refresh; a second `401` signs out. |
 | `lib/demo/` | Invented sample data for `KCPL_DEMO` builds, labelled on screen. |
 | `lib/app_controller.dart` | Signed-in state, chosen customer and language. Switching customer bumps a generation counter, and every open screen refetches rather than show the previous customer's data. |
-| `lib/ui/` | Screens and widgets. `AsyncPage` gives every screen the same large collapsing title, skeleton, failure, retry and pull-to-refresh behaviour. `lib/ui/map/` holds the route map and its generated land mask. |
+| `lib/ui/` | Screens and widgets. `AsyncPage` gives every screen the same large collapsing title, skeleton, failure, retry and pull-to-refresh behaviour. `lib/ui/map/` holds the route map; its data is `assets/map/asia.kmap`. |
 | `lib/l10n/` | Generated. **Don't edit the ARB files by hand.** |
 
 ### Design
@@ -138,19 +138,23 @@ dark pass. Status is written as words, never shown as a coloured pill.
   edge that catches the light, and a perforated stub for the status and ETA. It stays
   dark in light mode, and tips back and recedes as you scroll away. The same pass heads
   the detail page, and it flies there as a shared element.
-- **The route map** (`lib/ui/map/`): the pass draws the journey on the land it actually
-  crosses. The land is dots, Nepal is outlined and a shade brighter, and a crimson arc
-  glows where the cargo has already been. The vehicle sits where the cargo is. Places are
-  matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)"). When either end
-  is unknown, the pass falls back to the plain journey line rather than guessing. An end
-  beyond the map (Rotterdam, say) is drawn at the frame's edge, pointing the right way.
+- **The route map** (`lib/ui/map/`): drawn the way ride-hailing apps draw theirs. It
+  shows pale land, soft water, white roads, rivers, borders and small grey town names.
+  The route is in ink from origin (a dot) to destination (a square), grey behind the
+  cargo, and the cargo is a small disc with its mode. Both ends carry an ink label. The
+  map is dark inside the pass and follows light or dark mode elsewhere. It is drawn from
+  bundled data (about 480 KB), so it needs no map service, API key or network.
+  Places are matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)"). When
+  either end is unknown, the pass falls back to the plain journey line rather than
+  guessing. An end beyond the map (Rotterdam, say) is placed at the frame's edge,
+  pointing the right way.
 - **Bento figures** (`lib/ui/widgets/bento.dart`): the figures are tiles, each with a
   small chart built from the same records as its number: shipments by stage, arrivals
   across the next seven days, and the share of jobs that are urgent. Nothing is charted
   that the server does not send.
 - **Chrome:** a floating glass tab bar with an ink pill that slides to the chosen tab.
-  Detail pages open as sheets that you pull down from the top to close. Rows lead with
-  a tile showing the mode of transport (crimson when something has gone wrong).
+  Detail pages open as sheets that you pull down from the top to close. Icons are
+  small (18pt in rows, 19pt in the tab bar) and plain, without tiles behind them.
 
 The patterns come from apps that do this well: Flighty (a shipment drawn like a flight),
 Apple Wallet and Maps (the pass, the sheets), Revolut and Cash App (bento figures, ink
@@ -167,15 +171,14 @@ Every animation has a job, and all of them draw on one set of curves and duratio
 | Where | What it does |
 |---|---|
 | Launch | The native splash hands over to the K, whose strokes assemble and then carry a crimson charge until the app is ready. |
-| Sign-in | KCPL's lanes into Nepal run behind the form, each with a point of light arriving at its gateway. The form assembles top to bottom. The crimson button presses in, and its label becomes the charging K. A wrong password shakes the fields with a haptic buzz. |
+| Sign-in | KCPL's lanes into Nepal run across the map behind the form, each with a dot travelling to its gateway. The form assembles top to bottom. The crimson button presses in, and its label becomes the charging K. A wrong password shakes the fields with a haptic buzz. |
 | Every screen | Content fades up in a 40ms stagger when it arrives; the skeleton shimmers while loading. A refresh updates in place. |
 | Pull to refresh | Pulling assembles the K stroke by stroke, a tick says it will refresh on release, and the K charges while the page reloads. |
 | Home → detail | The pass flies into the sheet as it rises. Pull the sheet down to close it; it follows the finger. |
-| Route map | The land fades in, then the route draws out to where the cargo is, and a soft ring breathes around the vehicle. |
+| Route map | The route draws out from the origin, with the cargo riding its leading edge until it reaches where it is. |
 | Figures | Count up when they first appear; the charts grow in. |
 | Tab bar | The ink pill slides to the chosen tab and settles with a slight overshoot; the icon pops. |
 | Tasks | Ticking one pops the check and throws a small crimson burst. |
-| Empty states | One crimson point circles slowly on dashed orbits around the icon. |
 
 Tab switching and language changes stay instant, as native apps keep them.
 
@@ -184,11 +187,13 @@ remain. The flow tests run under that setting, so a looping animation that ignor
 would hang them. Two further tests run with full motion: the shared-element flight, and
 the crimson button with its shake.
 
-The route map's land comes from Natural Earth (public domain). To rebuild it:
+The map data is Natural Earth 1:10m (public domain): land, lakes, rivers, roads,
+borders and towns, clipped to South, East and South-East Asia and the Gulf. To rebuild
+it, download the `ne_10m_*.geojson` files named in `tool/build_map_data.mjs` from
+github.com/nvkelso/natural-earth-vector (the `geojson` folder) and run:
 
 ```sh
-npm pack world-atlas && tar xzf world-atlas-*.tgz
-node mobile/tool/build_route_map.mjs package/countries-50m.json package/land-50m.json
+node mobile/tool/build_map_data.mjs <folder with the geojson files>
 ```
 
 ### Keeping current

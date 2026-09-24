@@ -135,7 +135,7 @@ class TabBarItem extends StatelessWidget {
     final p = context.palette;
     final colour = selected ? p.paper : p.secondary;
     final duration = Motion.reduced(context) ? Duration.zero : const Duration(milliseconds: 200);
-    Widget icon = Icon(selected ? item.selectedIcon : item.icon, size: 22, color: colour);
+    Widget icon = Icon(selected ? item.selectedIcon : item.icon, size: 19, color: colour);
     if (selected) icon = PopIn(key: ValueKey(item.label), child: icon);
     if (item.badge > 0) {
       icon = Badge(backgroundColor: p.accent, textColor: Colors.white, label: Text(item.badge > 99 ? '99+' : '${item.badge}'), child: icon);
