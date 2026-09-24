@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../ui/motion.dart';
 import '../../ui/theme.dart';
+import '../../ui/widgets/async_view.dart' show autoRefreshEvery;
 import '../ops_controller.dart';
 import 'alerts_screen.dart';
 import 'jobs_screen.dart';
@@ -18,24 +21,47 @@ class OpsShell extends StatefulWidget {
   State<OpsShell> createState() => _OpsShellState();
 }
 
-class _OpsShellState extends State<OpsShell> {
+class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
   OpsTab _tab = OpsTab.today;
   final Set<OpsTab> _visited = {OpsTab.today};
   int _selections = 0;
 
+  Timer? _badgeTimer;
+
   @override
   void initState() {
     super.initState();
-    // The badge should be right before Alerts is ever opened.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final controller = OpsScope.read(context);
-      try {
-        controller.setUnread((await controller.api.alerts()).unreadCount);
-      } catch (_) {
-        // A missing badge is not worth an error; Alerts will say why.
-      }
-    });
+    WidgetsBinding.instance.addObserver(this);
+    // The badge should be right before Alerts is ever opened, and stay right
+    // on every tab: counted now, then every minute while the app is open.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _countUnread());
+    _badgeTimer = Timer.periodic(autoRefreshEvery, (_) => _countUnread());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _badgeTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _badgeTimer?.cancel();
+    _badgeTimer = null;
+    if (state != AppLifecycleState.resumed) return;
+    _countUnread();
+    _badgeTimer = Timer.periodic(autoRefreshEvery, (_) => _countUnread());
+  }
+
+  Future<void> _countUnread() async {
+    if (!mounted) return;
+    final controller = OpsScope.read(context);
+    try {
+      controller.setUnread((await controller.api.alerts()).unreadCount);
+    } catch (_) {
+      // A missing badge is not worth an error; Alerts will say why.
+    }
   }
 
   void _select(OpsTab tab) {
@@ -80,7 +106,12 @@ class _OpsShellState extends State<OpsShell> {
     return Scaffold(
       body: IndexedStack(
         index: _tab.index,
-        children: [for (final tab in OpsTab.values) _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()],
+        // Hidden tabs have tickers off: their animations stop, and their
+        // pages know not to refresh until they are shown again.
+        children: [
+          for (final tab in OpsTab.values)
+            TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
+        ],
       ),
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(border: Border(top: BorderSide(color: p.hairline, width: 0.5))),

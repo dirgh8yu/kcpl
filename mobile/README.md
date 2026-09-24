@@ -148,6 +148,23 @@ remain. The flow tests run under that setting, so a looping animation that ignor
 would hang them. Two further tests run with full motion: the shared-element flight, and
 the crimson button with its shake.
 
+### Keeping current
+
+There is one copy of the data: the apps read and write the same database as the website,
+through the server, and store none of it on the phone. What can lag is a screen, so every
+screen refreshes itself:
+
+- every **60 seconds** while it is on show, the web register's own interval;
+- on **coming back** to it (switching back to its tab, returning from a detail page,
+  reopening the app) unless it loaded in the last 5 seconds;
+- **never** while hidden: background tabs, covered pages and a closed app make no requests.
+
+A refresh updates the page in place: numbers glide to their new values, with no skeleton
+and no scroll jump. A failed background refresh keeps what is shown. Only the newest request
+may land, so a slow reply can never overwrite a newer one, including across a customer
+switch. The Ops alert badge counts unread every minute on every tab. `test/refresh_test.dart`
+holds all of this on a fake clock.
+
 ### Strings
 
 The Nepali is the web portal's own (`app/portal/portal-i18n.ts`), which was written for

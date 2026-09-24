@@ -36,6 +36,16 @@ class _FailingSaves extends DemoOpsApi {
       throw const ApiException(403, 'forbidden', 'That item is outside your branch access.');
 }
 
+/// Counts how often Today is fetched.
+class _CountingToday extends DemoOpsApi {
+  int todays = 0;
+  @override
+  Future<TodayBundle> today() {
+    todays++;
+    return super.today();
+  }
+}
+
 /// Firebase accepts the password; KCPL does not know the login as staff.
 class _NotStaff extends DemoOpsApi {
   @override
@@ -244,5 +254,20 @@ void main() {
     await signIn(tester);
     expect(controller.status, OpsStatus.signedOut);
     expect(find.textContaining('not authorised for KCPL Operations'), findsOneWidget);
+  });
+
+  testWidgets('coming back from a job refreshes Today, so a tick shows in its numbers', (tester) async {
+    final api = _CountingToday();
+    await pumpOps(tester, api: api);
+    await signIn(tester);
+    expect(api.todays, 1);
+    await tester.tap(find.text('KCPL-2609-0142'));
+    await settle(tester);
+    await tapInView(tester, find.text('Call customer with revised ETA'));
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 6));
+    await tester.tap(find.byType(BackButton));
+    await settle(tester);
+    expect(api.todays, 2);
   });
 }

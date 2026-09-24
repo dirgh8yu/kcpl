@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -47,11 +50,46 @@ class AsyncPage<T> extends StatefulWidget {
   State<AsyncPage<T>> createState() => _AsyncPageState<T>();
 }
 
-class _AsyncPageState<T> extends State<AsyncPage<T>> {
+/// How often a page on screen refreshes itself: the web register's interval.
+const autoRefreshEvery = Duration(seconds: 60);
+
+/// Coming back to a page refreshes it unless it loaded more recently than
+/// this, so a quick glance away and back does not refetch.
+const refreshOnReturnAfter = Duration(seconds: 5);
+
+class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver {
   T? _data;
   Object? _error;
   bool _loading = true;
   int? _generation;
+
+  /// Stays current while it is on screen and the app is open: every minute,
+  /// and again on coming back to it. Hidden tabs, covered pages and a
+  /// backgrounded app make no requests.
+  Timer? _timer;
+  bool? _visible;
+  bool _foreground = true;
+  DateTime? _loadedAt;
+
+  /// Only the newest request may land, so a slow reply for the previous
+  /// customer can never overwrite the current one.
+  int _request = 0;
+  bool _inFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _foreground = WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused &&
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.hidden;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -64,6 +102,43 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
       if (!first) setState(() => _data = null);
       _fetch();
     }
+    // Covered pages and hidden tabs have their tickers turned off; that is
+    // the signal for "not on screen".
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible != _visible) {
+      final returning = _visible != null;
+      _visible = visible;
+      if (visible && returning) _refreshIfStale();
+      _schedule();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    if (foreground == _foreground) return;
+    _foreground = foreground;
+    if (foreground && _visible == true) _refreshIfStale();
+    _schedule();
+  }
+
+  void _schedule() {
+    _timer?.cancel();
+    _timer = null;
+    if (_visible != true || !_foreground) return;
+    _timer = Timer.periodic(autoRefreshEvery, (_) => _quietRefresh());
+  }
+
+  void _refreshIfStale() {
+    final loadedAt = _loadedAt;
+    if (loadedAt == null || clock.now().difference(loadedAt) >= refreshOnReturnAfter) _quietRefresh();
+  }
+
+  /// A refresh nobody asked for: the page stays as it is and simply updates
+  /// in place when the answer arrives. A failure keeps what is shown.
+  void _quietRefresh() {
+    if (_inFlight || _data == null || !mounted) return;
+    _fetch(quiet: true);
   }
 
   Future<void> _refresh() {
@@ -82,16 +157,22 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
           : Reveal(key: ValueKey('${loaded ? 'data' : 'wait'}$i'), index: i - widget.leading, child: children[i]),
   ];
 
-  Future<void> _fetch() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _fetch({bool quiet = false}) async {
+    final request = ++_request;
+    _inFlight = true;
+    if (!quiet) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final data = await widget.load();
-      if (!mounted) return;
+      if (!mounted || request != _request) return;
+      _loadedAt = clock.now();
       setState(() {
         _data = data;
+        _error = null;
         _loading = false;
       });
     } on SignedOutException {
@@ -102,17 +183,19 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
         await SessionScope.read(context).expire();
         return;
       }
-      if (!mounted) return;
+      if (!mounted || request != _request || quiet) return;
       setState(() {
         _error = error;
         _loading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || request != _request || quiet) return;
       setState(() {
         _error = error;
         _loading = false;
       });
+    } finally {
+      if (request == _request) _inFlight = false;
     }
   }
 

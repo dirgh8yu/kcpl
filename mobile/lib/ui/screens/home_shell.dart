@@ -77,7 +77,12 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       body: IndexedStack(
         index: tabs.indexOf(tab),
-        children: [for (final item in tabs) _visited.contains(item) ? screen(item) : const SizedBox.shrink()],
+        // Hidden tabs have tickers off: their animations stop, and their
+        // pages know not to refresh until they are shown again.
+        children: [
+          for (final item in tabs)
+            TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
+        ],
       ),
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
