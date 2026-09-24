@@ -54,6 +54,11 @@ test("the preview is the only bypass in the portal auth path", () => {
   // Type declarations write `kind: "authorized";`, returns write it with a
   // comma or a closing brace, so this counts the returns only.
   const returned = source.match(/kind: "authorized"\s*[,}]/g) ?? [];
-  assert.equal(returned.length, 3, `authorized is returned from ${returned.length} places; expected the preview, authorizePortalIdentity and getPortalAccess`);
-  assert.match(source, /portalQaPreviewEnabled\(\)/);
+  // Two resolvers (cookie and mobile bearer) each return the preview and their
+  // verified session; authorizePortalIdentity is the fifth.
+  assert.equal(returned.length, 5, `authorized is returned from ${returned.length} places; expected the preview and the verified session in each of getPortalAccess and getPortalAccessFromBearer, plus authorizePortalIdentity`);
+  // Each preview return sits behind the fenced flag, and nothing else is a preview.
+  const previews = source.match(/if \(portalQaPreviewEnabled\(\)\) return \{ kind: "authorized", session: portalQaPreviewSession\(\) \};/g) ?? [];
+  assert.equal(previews.length, 2);
+  assert.equal((source.match(/portalQaPreviewSession\(\)/g) ?? []).length, 2);
 });
