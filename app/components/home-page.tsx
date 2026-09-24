@@ -6,13 +6,6 @@ import { guides } from "../guide-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
 import { ClientRail } from "./client-rail";
-import { CapacityCount } from "./capacity-count";
-
-/* Places are records, not copy: the same spellings appear on the documents, so
- * they are not translated and not re-ordered per language. */
-const origins = ["Shanghai", "Ningbo", "Qingdao", "Shekou", "Hong Kong", "Bangkok", "Port Klang", "Singapore"];
-const gateways = ["Kolkata", "Visakhapatnam", "Haldia", "Raxaul", "Birgunj"];
-const destinations = ["United States", "Canada", "United Kingdom", "Germany", "Netherlands", "Australia", "South Korea", "Brazil"];
 
 export function HomePage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
@@ -22,14 +15,10 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
     { title: t("home.cap_3_title"), copy: t("home.cap_3_copy"), href: "/services/project-cargo" },
     { title: t("home.cap_4_title"), copy: t("home.cap_4_copy"), href: "/services/delivery" },
   ];
-  const rail = [
-    { value: t("stats.clients_value"), detail: t("stats.clients_label") },
-    { value: t("stats.projects_value"), detail: t("stats.projects_label") },
-  ];
   const credibility = [
-    { label: t("company.established_short"), detail: t("company.established_where") },
     { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
+    { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
     { label: t("home.credibility_projects"), detail: t("home.credibility_projects_detail") },
   ];
 
@@ -45,11 +34,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
           </div>
           <p className="hero-trust">{t("home.hero_trust")}</p>
-        </div>
-        <div className="hero-rail">
-          {rail.map((item) => (
-            <span key={item.detail} className="hero-rail-item"><span className="hero-rail-value">{item.value}</span>{item.detail}</span>
-          ))}
         </div>
       </section>
 
@@ -103,18 +87,12 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <h3 className="corridor-title">{t("home.corridor_in_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_in_copy")}</p>
             <Link href={sitePath(locale, "/guides/importing-to-nepal")} className="section-link">{guides[locale]["importing-to-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
-            <p className="corridor-label">{t("home.corridor_origins")}</p>
-            <ul className="corridor-tags">{origins.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
-            <p className="corridor-label">{t("home.corridor_gateways")}</p>
-            <ul className="corridor-tags">{gateways.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
           </article>
           <article className="corridor-leg">
             <figure className="corridor-figure"><Image src="/images/unsplash/nepal-road.jpg" alt="" width={900} height={600} sizes="(max-width: 900px) 100vw, 50vw" className="corridor-photo"/></figure>
             <h3 className="corridor-title">{t("home.corridor_out_title")}</h3>
             <p className="corridor-copy">{t("home.corridor_out_copy")}</p>
             <Link href={sitePath(locale, "/guides/exporting-from-nepal")} className="section-link">{guides[locale]["exporting-from-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
-            <p className="corridor-label">{t("home.corridor_destinations")}</p>
-            <ul className="corridor-tags">{destinations.map((place) => <li key={place} className="corridor-tag">{place}</li>)}</ul>
           </article>
         </div>
         <Link href={sitePath(locale, "/network")} className="section-link">{t("home.corridor_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
@@ -132,11 +110,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
                 </li>
               ))}
             </ul>
-          </div>
-          <div className="credibility-capacity reveal">
-            <p className="credibility-label">{t("home.credibility_storage")}</p>
-            <div className="capacity-metric"><CapacityCount value={1000} locale={locale}/><span>{t("home.storage_air_label")}</span></div>
-            <div className="capacity-metric"><CapacityCount value={6000} locale={locale}/><span>{t("home.storage_road_label")}</span></div>
           </div>
         </div>
         <dl className="credibility-facts reveal-group">

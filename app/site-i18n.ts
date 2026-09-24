@@ -123,7 +123,7 @@ const en = {
   "home.hero_secondary": "See what we handle",
   "home.hero_trust": "Established 2015 · Export Excellence Award, 2022–2025",
 
-  "home.capability_title": "What a shipment needs, from one desk.",
+  "home.capability_title": "Freight, clearance and delivery on one plan.",
   "home.capability_intro": "Delays often begin between documents, customs and carrier deadlines. One team keeps those handoffs together.",
   "home.cap_1_title": "Freight",
   "home.cap_1_copy": "Air, ocean and road freight, FCL and LCL, chosen around the cargo, the deadline and the route rather than a default lane.",
@@ -147,7 +147,7 @@ const en = {
   "home.corridor_link": "Network & coverage",
 
   "home.proof_eyebrow": "Selected work",
-  "home.proof_title": "The work behind the promise.",
+  "home.proof_title": "Movements from the record.",
   "home.proof_intro": "Three movements documented in KCPL's operational correspondence. Customer and project identities are withheld.",
   "home.proof_1_kicker": "Breakbulk, infrastructure",
   "home.proof_1_title": "Breakbulk delivered to an inland project site",
@@ -193,7 +193,7 @@ const en = {
   "work.story_3_coordination": "KCPL reviewed the bill-of-lading details, followed original documents and Kolkata-side clearance and dispatch, then supplied unloading photographs and a delivery receipt.",
   "work.story_3_outcome": "The containers were unloaded at Nepalgunj and a receipt was sent on 17 April 2026. This account does not claim delivery beyond Nepalgunj.",
 
-  "home.credibility_title": "Capacity and project work.",
+  "home.credibility_title": "A Kathmandu freight forwarder since 2015.",
   "home.credibility_copy": "KCPL works from Kathmandu, with counterpart agents abroad and customs capability at Nepal's entry points.",
   "home.credibility_award": "Export Excellence Award",
   "home.credibility_award_detail": "Lalitpur Chamber of Commerce, 2022-2025",
@@ -563,7 +563,7 @@ const ne: Record<SiteTextKey, string> = {
   "home.hero_secondary": "हामी के ह्यान्डल गर्छौं",
   "home.hero_trust": "स्थापना २०१५ · निर्यात उत्कृष्टता पुरस्कार, २०२२–२०२५",
 
-  "home.capability_title": "शिपमेन्टलाई चाहिने कुरा, एउटै डेस्कबाट।",
+  "home.capability_title": "फ्रेट, भन्सार र डेलिभरीको एउटै योजना।",
   "home.capability_intro": "धेरैजसो ढिलाइ ट्रान्सपोर्टको कारणले हुँदैन। कागजात, भन्सारको आवश्यकता र क्यारियरको समयसीमा जोडिने ठाउँमा कसैले जिम्मा नलिँदा हुन्छ।",
   "home.cap_1_title": "फ्रेट",
   "home.cap_1_copy": "एयर, ओसन र रोड फ्रेट, FCL र LCL: कार्गो, समयसीमा र रुट हेरेर छनोट गरिन्छ, बानीको लेन हेरेर होइन।",
@@ -587,7 +587,7 @@ const ne: Record<SiteTextKey, string> = {
   "home.corridor_link": "सञ्जाल र कभरेज",
 
   "home.proof_eyebrow": "चुनिएका काम",
-  "home.proof_title": "वाचाभन्दा पछाडिको काम।",
+  "home.proof_title": "अभिलेखमा रहेका मुभमेन्ट।",
   "home.proof_intro": "KCPL का परिचालन इमेलमा अभिलेख भएका तीन मुभमेन्ट। ग्राहक र परियोजनाको पहिचान गोप्य राखिएको छ।",
   "home.proof_1_kicker": "ब्रेकबल्क, पूर्वाधार",
   "home.proof_1_title": "ब्रेकबल्क कार्गो भित्री परियोजना साइटसम्म",
@@ -633,7 +633,7 @@ const ne: Record<SiteTextKey, string> = {
   "work.story_3_coordination": "KCPL ले बिल अफ लेडिङ विवरण जाँच्यो, मूल कागजात र कोलकाताको भन्सार तथा डिस्प्याच पछ्यायो अनि अनलोडिङका तस्बिर र डेलिभरी रसिद पठायो।",
   "work.story_3_outcome": "कन्टेनर नेपालगन्जमा अनलोड भए र १७ अप्रिल २०२६ मा रसिद पठाइयो। यो विवरणले नेपालगन्जभन्दा अगाडिको डेलिभरी दाबी गर्दैन।",
 
-  "home.credibility_title": "क्षमता र पूर्वाधार काम।",
+  "home.credibility_title": "सन् २०१५ देखि काठमाडौंमा रहेको फ्रेट फर्वार्डर।",
   "home.credibility_copy": "KCPL काठमाडौँबाट काम गर्छ, विदेशमा समकक्षी एजेन्ट र नेपालका प्रवेश नाकाहरूमा भन्सार क्षमतासहित।",
   "home.credibility_award": "निर्यात उत्कृष्टता पुरस्कार",
   "home.credibility_award_detail": "ललितपुर उद्योग वाणिज्य संघ, २०२२-२०२५",
