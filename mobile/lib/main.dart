@@ -6,6 +6,7 @@ import 'app_controller.dart';
 import 'auth/firebase_rest_auth.dart';
 import 'auth/token_store.dart';
 import 'config.dart';
+import 'session_host.dart';
 import 'demo/demo_backend.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/format.dart';
@@ -44,41 +45,44 @@ class KcplApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScope(
-      controller: controller,
-      child: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => MaterialApp(
-          title: 'KCPL',
-          debugShowCheckedModeBanner: false,
-          theme: kcplTheme(Brightness.light),
-          darkTheme: kcplTheme(Brightness.dark),
-          locale: controller.locale,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          // Signing in and out is the biggest change the app makes; the new
-          // world fades up with a slight settle rather than cutting.
-          home: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 480),
-            switchInCurve: Motion.drawer,
-            switchOutCurve: Motion.easeOut,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(scale: Tween(begin: 0.97, end: 1.0).animate(animation), child: child),
-            ),
-            child: KeyedSubtree(
-              key: ValueKey(controller.status),
-              child: switch (controller.status) {
-                AppStatus.starting => const Scaffold(body: Center(child: CircularProgressIndicator(strokeWidth: 2.5))),
-                AppStatus.unconfigured => const _Unconfigured(),
-                AppStatus.signedOut => const SignInScreen(),
-                AppStatus.signedIn => HomeShell(demo: demo, version: appVersion),
-              },
+    return SessionScope(
+      host: controller,
+      child: AppScope(
+        controller: controller,
+        child: ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => MaterialApp(
+            title: 'KCPL',
+            debugShowCheckedModeBanner: false,
+            theme: kcplTheme(Brightness.light),
+            darkTheme: kcplTheme(Brightness.dark),
+            locale: controller.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            // Signing in and out is the biggest change the app makes; the new
+            // world fades up with a slight settle rather than cutting.
+            home: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 480),
+              switchInCurve: Motion.drawer,
+              switchOutCurve: Motion.easeOut,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(scale: Tween(begin: 0.97, end: 1.0).animate(animation), child: child),
+              ),
+              child: KeyedSubtree(
+                key: ValueKey(controller.status),
+                child: switch (controller.status) {
+                  AppStatus.starting => const Scaffold(body: Center(child: CircularProgressIndicator(strokeWidth: 2.5))),
+                  AppStatus.unconfigured => const _Unconfigured(),
+                  AppStatus.signedOut => const SignInScreen(),
+                  AppStatus.signedIn => HomeShell(demo: demo, version: appVersion),
+                },
+              ),
             ),
           ),
         ),

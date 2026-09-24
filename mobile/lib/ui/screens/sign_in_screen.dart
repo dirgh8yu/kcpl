@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../api/kcpl_api.dart';
-import '../../app_controller.dart';
+import '../../session_host.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../motion.dart';
@@ -10,7 +10,11 @@ import '../theme.dart';
 import '../widgets/common.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.title, this.subtitle});
+
+  /// Overrides for an app other than the customer one (the staff app).
+  final String? title;
+  final String? subtitle;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -47,7 +51,7 @@ class _SignInScreenState extends State<SignInScreen> {
       _notice = null;
     });
     try {
-      await AppScope.read(context).signIn(_email.text, _password.text);
+      await SessionScope.read(context).signIn(_email.text, _password.text);
     } on AuthFailure catch (failure) {
       setState(
         () => _error = switch (failure.kind) {
@@ -91,7 +95,7 @@ class _SignInScreenState extends State<SignInScreen> {
       _error = null;
     });
     try {
-      await AppScope.read(context).auth.sendPasswordReset(_email.text);
+      await SessionScope.read(context).auth.sendPasswordReset(_email.text);
       setState(() => _notice = l.resetSent);
     } on AuthFailure catch (failure) {
       setState(() => _error = failure.kind == AuthFailureKind.network ? l.networkError : l.tooManyAttempts);
@@ -104,7 +108,7 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final p = context.palette;
-    final controller = AppScope.of(context);
+    final controller = SessionScope.of(context);
     final language = Localizations.localeOf(context).languageCode;
 
     Widget languageButton(String code, String label) => TextButton(
@@ -149,11 +153,14 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                           ),
                           const SizedBox(height: 56),
-                          Reveal(index: 1, child: Text(l.signInTitle, style: context.type.headlineMedium)),
+                          Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.headlineMedium)),
                           const SizedBox(height: 10),
                           Reveal(
                             index: 2,
-                            child: Text(l.signInSubtitle, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
+                            child: Text(
+                              widget.subtitle ?? l.signInSubtitle,
+                              style: context.type.bodyLarge?.copyWith(color: p.secondary),
+                            ),
                           ),
                           const SizedBox(height: 36),
                           Reveal(
@@ -264,15 +271,16 @@ class _SignInScreenState extends State<SignInScreen> {
                             child: Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
                           ),
                           const SizedBox(height: 6),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              languageButton('en', 'English'),
-                              Text('·', style: TextStyle(color: p.tertiary)),
-                              languageButton('ne', 'नेपाली'),
-                            ],
-                          ),
+                          if (controller.multilingual)
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                languageButton('en', 'English'),
+                                Text('·', style: TextStyle(color: p.tertiary)),
+                                languageButton('ne', 'नेपाली'),
+                              ],
+                            ),
                           const SizedBox(height: 12),
                         ],
                       ),

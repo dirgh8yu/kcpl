@@ -66,10 +66,10 @@ class OverviewScreen extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Figure(label: l.overviewKpiActive, value: overview.activeCount, onTap: () => onNavigate(HomeTab.shipments)),
-            _Figure(label: l.overviewKpiInTransit, value: overview.inTransitCount, onTap: () => onNavigate(HomeTab.shipments)),
-            _Figure(label: l.overviewKpiArriving, value: overview.arrivingCount),
-            _Figure(
+            Figure(label: l.overviewKpiActive, value: overview.activeCount, onTap: () => onNavigate(HomeTab.shipments)),
+            Figure(label: l.overviewKpiInTransit, value: overview.inTransitCount, onTap: () => onNavigate(HomeTab.shipments)),
+            Figure(label: l.overviewKpiArriving, value: overview.arrivingCount),
+            Figure(
               label: l.overviewKpiAttention,
               value: overview.attentionCount,
               attention: overview.attentionCount > 0,
@@ -333,8 +333,8 @@ class Endpoints extends StatelessWidget {
   }
 }
 
-class _Figure extends StatelessWidget {
-  const _Figure({required this.label, required this.value, this.attention = false, this.onTap});
+class Figure extends StatelessWidget {
+  const Figure({super.key, required this.label, required this.value, this.attention = false, this.onTap});
   final String label;
   final int value;
   final bool attention;

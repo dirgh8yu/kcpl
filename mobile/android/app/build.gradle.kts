@@ -29,6 +29,28 @@ android {
         versionName = flutter.versionName
     }
 
+    // One codebase, two apps: `customer` (KCPL, lib/main.dart) and `ops`
+    // (KCPL Ops, lib/ops/main.dart). Build with --flavor and -t together;
+    // see mobile/README.md.
+    buildFeatures {
+        // The flavours name each app through a generated string resource.
+        resValues = true
+    }
+
+    flavorDimensions += "app"
+    productFlavors {
+        create("customer") {
+            dimension = "app"
+            applicationId = "np.com.kapileshworcargo.kcpl_customer"
+            resValue("string", "app_name", "KCPL")
+        }
+        create("ops") {
+            dimension = "app"
+            applicationId = "np.com.kapileshworcargo.kcpl_ops"
+            resValue("string", "app_name", "KCPL Ops")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

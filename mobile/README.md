@@ -16,6 +16,50 @@ It talks to KCPL's own site (`/api/mobile/v1`, see *Mobile app API* in
 `docs/customer-portal.md`). The server decides everything a customer can see, so the app
 can never show more than the web portal does.
 
+## Two apps, one codebase
+
+This project builds two apps that share their sign-in, design system and motion:
+
+| App | Who | Entry point | Android flavour | Package |
+|---|---|---|---|---|
+| **KCPL** | Customers | `lib/main.dart` | `customer` | `np.com.kapileshworcargo.kcpl_customer` |
+| **KCPL Ops** | KCPL staff | `lib/ops/main.dart` | `ops` | `np.com.kapileshworcargo.kcpl_ops` |
+
+Android needs both `--flavor` and `-t`:
+
+```sh
+flutter run   --flavor customer -t lib/main.dart     --dart-define=KCPL_FIREBASE_API_KEY=<key>
+flutter run   --flavor ops      -t lib/ops/main.dart --dart-define=KCPL_FIREBASE_API_KEY=<key>
+flutter build appbundle --release --flavor ops -t lib/ops/main.dart --dart-define=KCPL_FIREBASE_API_KEY=<key>
+```
+
+iOS has no flavours configured yet. Building KCPL Ops for iOS needs an Xcode scheme and
+bundle id of its own, which is a one-time setup on a Mac. Until then `-t lib/ops/main.dart`
+builds it under the customer bundle id, for testing only.
+
+### KCPL Ops
+
+The staff app is the operations desk in a pocket. It talks to `/api/mobile/ops/v1`:
+
+- **Today:** the command centre. Your most pressing job leads, drawn as a journey card,
+  followed by the day's figures and your jobs. Anything in trouble comes next, and each
+  branch's load is a bar with its urgent share in crimson.
+- **Jobs:** every active job in your branches. It starts on your own work, with the web's
+  filters (Mine, All, Urgent, Overdue, Customs, Exceptions) and search.
+- **Job detail:** the journey, the owner with one-tap call and WhatsApp, tasks and
+  customs steps you can tick, what stands between the job and closeout, notes and
+  details. Profitability appears only for roles that manage costs.
+- **Alerts:** the web notification centre's feed. Opening an alert marks it read and
+  goes to its job; the tab badge counts unread.
+- **Me:** role, branches and sign-out.
+
+Access is the web admin's own: a Firebase login that `isAuthorizedAdminUser` accepts, with
+role, permissions and branch scope from `getStaffContext`. The app can change three things:
+tick a task, tick a customs step, and mark an alert read. Ticking goes through the same
+guarded function the web Job File uses. A tick shows at once and is saved behind it; if the
+server refuses, it comes back off and says why. Anything else (assigning, closing,
+costs) stays on the web for now.
+
 ## Running it
 
 ```sh

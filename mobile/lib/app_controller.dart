@@ -4,16 +4,18 @@ import 'api/kcpl_api.dart';
 import 'api/models.dart';
 import 'auth/auth_repository.dart';
 import 'auth/token_store.dart';
+import 'session_host.dart';
 
 enum AppStatus { starting, unconfigured, signedOut, signedIn }
 
 /// App-wide state: who is signed in, which customer they are looking at, and
 /// which language. Screens load their own data; they listen here only to
 /// know when to reload (customer switched) or leave (signed out).
-class AppController extends ChangeNotifier {
+class AppController extends SessionHost {
   AppController({required this.auth, required this.api, required this.prefs, required bool configured})
-      : _status = configured ? AppStatus.starting : AppStatus.unconfigured;
+    : _status = configured ? AppStatus.starting : AppStatus.unconfigured;
 
+  @override
   final AuthRepository auth;
   final KcplApi api;
 
@@ -30,14 +32,18 @@ class AppController extends ChangeNotifier {
   SessionView? _session;
   SessionView? get session => _session;
 
-  /// Set when the app was sent back to sign-in rather than signing out.
+  @override
   bool sessionEnded = false;
+
+  @override
+  bool get multilingual => true;
 
   Locale? _locale;
   Locale? get locale => _locale;
 
   /// Bumped when the customer changes, so every open screen refetches.
   int _generation = 0;
+  @override
   int get generation => _generation;
 
   Future<void> start() async {
@@ -68,6 +74,7 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  @override
   Future<void> signIn(String email, String password) async {
     await auth.signIn(email, password);
     try {
@@ -110,12 +117,14 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
   Future<void> setLocale(Locale locale) async {
     _locale = locale;
     await prefs.write(_localeKey, locale.languageCode);
     notifyListeners();
   }
 
+  @override
   Future<void> signOut() async {
     await auth.signOut();
     await prefs.delete(_customerKey);
@@ -124,7 +133,7 @@ class AppController extends ChangeNotifier {
     _set(AppStatus.signedOut);
   }
 
-  /// Called by a screen that hit [SignedOutException] mid-use.
+  @override
   Future<void> expire() async {
     if (_status != AppStatus.signedIn) return;
     sessionEnded = true;
@@ -141,9 +150,7 @@ class AppController extends ChangeNotifier {
 class AppScope extends InheritedNotifier<AppController> {
   const AppScope({super.key, required AppController controller, required super.child}) : super(notifier: controller);
 
-  static AppController of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
+  static AppController of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
 
-  static AppController read(BuildContext context) =>
-      context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
+  static AppController read(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
 }

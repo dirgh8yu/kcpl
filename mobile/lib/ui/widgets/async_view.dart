@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../api/kcpl_api.dart';
-import '../../app_controller.dart';
+import '../../session_host.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../motion.dart';
@@ -56,7 +56,7 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final generation = AppScope.of(context).generation;
+    final generation = SessionScope.of(context).generation;
     if (_generation != generation) {
       final first = _generation == null;
       _generation = generation;
@@ -95,11 +95,11 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> {
         _loading = false;
       });
     } on SignedOutException {
-      if (mounted) await AppScope.read(context).expire();
+      if (mounted) await SessionScope.read(context).expire();
     } on ApiException catch (error) {
       // Access withdrawn mid-session: retrying cannot help.
       if (error.code == 'denied' && mounted) {
-        await AppScope.read(context).expire();
+        await SessionScope.read(context).expire();
         return;
       }
       if (!mounted) return;
