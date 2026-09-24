@@ -22,7 +22,7 @@ export function PortalLoginPage({ notice }: { notice?: string }) {
           <PortalLogin/>
           <div className="portal-login-footnote">
             <span><ShieldCheck size={14} aria-hidden="true"/> Access is provisioned by your KCPL account manager.</span>
-            <Link href="/tracking">Track without signing in</Link>
+            <Link href="/track">Track without signing in</Link>
           </div>
         </section>
       </div>

@@ -24,7 +24,7 @@ export function PortalUnavailable({
           <p className="portal-login-intro">{detail}</p>
           <div className="portal-login-footnote">
             <Link href="/">Public website</Link>
-            <Link href="/tracking">Track a shipment</Link>
+            <Link href="/track">Track a shipment</Link>
           </div>
         </section>
       </div>
