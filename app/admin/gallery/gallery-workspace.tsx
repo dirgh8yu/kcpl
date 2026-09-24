@@ -54,7 +54,7 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
   }
 
   async function remove(item: GalleryEntry) {
-    if (busyId || !window.confirm(`Delete “${item.title}” permanently?`)) return;
+    if (busyId || !window.confirm(`Delete ${item.title ? `“${item.title}”` : "this image"} permanently?`)) return;
     setBusyId(item.id);
     setNotice("");
     try {
@@ -73,8 +73,6 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
     <OpsSurface title="Upload image" description="New images start as drafts. JPG, PNG or WebP, up to 10 MB. Location metadata is removed on upload.">
       <form ref={formRef} onSubmit={upload} className="site-gallery-upload">
         <OpsField label="Image" hint="At least 400 × 300 pixels"><input className="ops-input" name="file" type="file" accept="image/jpeg,image/png,image/webp" required /></OpsField>
-        <OpsField label="Caption"><input className="ops-input" name="title" type="text" maxLength={120} minLength={2} placeholder="e.g. Project cargo at Kathmandu" required /></OpsField>
-        <OpsField label="Image description" hint="Describe what is visible for screen readers and search"><input className="ops-input" name="alt" type="text" maxLength={220} minLength={8} placeholder="e.g. Cargo being secured for road transport" required /></OpsField>
         <OpsButton variant="primary" type="submit" disabled={Boolean(busyId)}><Upload size={14} />{busyId === "upload" ? "Uploading…" : "Upload draft"}</OpsButton>
       </form>
     </OpsSurface>
@@ -93,7 +91,7 @@ function GalleryRow({ item, busy, active, onUpdate, onDelete }: { item: GalleryE
     <div className="site-gallery-preview"><Image src={`/api/admin/gallery/${item.id}/image`} alt={item.alt} width={item.width} height={item.height} unoptimized /></div>
     <div className="site-gallery-row-main">
       <div className="site-gallery-row-heading"><span className="site-gallery-state" data-published={item.published}>{item.published ? "Published" : "Draft"}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleDateString("en-NP", { year: "numeric", month: "short", day: "numeric" })}</time></div>
-      <div className="site-gallery-row-fields"><OpsField label="Caption"><input className="ops-input" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} /></OpsField><OpsField label="Image description"><input className="ops-input" value={alt} onChange={(event) => setAlt(event.target.value)} maxLength={220} /></OpsField></div>
+      <div className="site-gallery-row-fields"><OpsField label="Caption (optional)"><input className="ops-input" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} /></OpsField><OpsField label="Image description (optional)"><input className="ops-input" value={alt} onChange={(event) => setAlt(event.target.value)} maxLength={220} /></OpsField></div>
       <div className="site-gallery-row-actions">
         <OpsButton size="sm" variant="secondary" disabled={busy || !changed} onClick={() => onUpdate(item, { title: title.trim(), alt: alt.trim(), published: item.published })}>Save details</OpsButton>
         <OpsButton size="sm" variant={item.published ? "secondary" : "primary"} disabled={busy || changed} onClick={() => onUpdate(item, { title: item.title, alt: item.alt, published: !item.published })}>{active ? "Saving…" : item.published ? "Unpublish" : "Publish"}</OpsButton>

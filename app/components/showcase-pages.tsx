@@ -33,13 +33,13 @@ export async function GalleryPage({ locale }: { locale: SiteLocale }) {
       </section>
       <section className="section gallery-section" aria-label={t("chrome.gallery")}>
         <div className="gallery-grid">
-          {images.map((item) => (
+          {images.map((item, index) => (
             <figure className="gallery-item" key={item.src}>
-              <a href={item.src} target="_blank" rel="noopener noreferrer" aria-label={`${item.title} — ${t("chrome.gallery")}`}>
+              <a href={item.src} target="_blank" rel="noopener noreferrer" aria-label={item.title ? `${item.title} — ${t("chrome.gallery")}` : `${t("chrome.gallery")} ${index + 1}`}>
                 <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 700px) 100vw, 60vw" className="gallery-photo" unoptimized={item.managed} />
                 <span className="gallery-view" aria-hidden="true"><ArrowUpRight size={20} /></span>
               </a>
-              <figcaption>{item.title}</figcaption>
+              {item.title ? <figcaption>{item.title}</figcaption> : null}
             </figure>
           ))}
         </div>
