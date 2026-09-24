@@ -14,20 +14,11 @@
  * they need no same-origin check.
  */
 
-/** Firebase ID tokens are compact JWS: three base64url segments. */
-const BEARER_PATTERN = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/;
-
-/** Generous for a Firebase ID token (about 1 KB with custom claims) while
- * refusing to hand an arbitrarily large string to the verifier. */
-const MAX_BEARER_LENGTH = 4096;
+import { bearerToken } from "../bearer-token.ts";
 
 export const PORTAL_MOBILE_CUSTOMER_HEADER = "x-kcpl-customer";
 
-export function portalBearerToken(header: string | null | undefined): string | null {
-  if (typeof header !== "string" || header.length > MAX_BEARER_LENGTH) return null;
-  const match = BEARER_PATTERN.exec(header.trim());
-  return match ? match[1] : null;
-}
+export const portalBearerToken = bearerToken;
 
 /**
  * The customer an agent asked to look at. As with the portal's customer

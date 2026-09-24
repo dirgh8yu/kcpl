@@ -9,13 +9,12 @@ import {
   addJobCost,
   addJobTask,
   getDigitalJobFile,
-  toggleCustomsStep,
-  toggleJobTask,
   updateDigitalJobFile,
 } from "../../../../admin/job-file.server";
 import { jobCostCategories, jobPriorities, type JobCostCategory, type JobPriority } from "../../../../admin/job-file";
 import { closeShipmentJob, getShipmentWorkflowReadiness, reopenShipmentJob } from "../../../../admin/workflow-guard.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
+import { toggleJobChild, type JobChildToggleResult } from "../../../../admin/job-file-actions.server";
 
 const NEPAL_OFFSET_MINUTES = 5 * 60 + 45;
 
@@ -76,12 +75,10 @@ async function shipmentGuard(reference: string, staff: Awaited<ReturnType<typeof
   return null;
 }
 
-async function childBranchGuard(reference: string, collection: "job_tasks" | "customs_steps", childId: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
-  const ref = firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).collection(collection).doc(childId);
-  const snapshot = await ref.get();
-  if (!snapshot.exists) return json({ ok: false, error: "The requested Job File item was not found." }, 404);
-  const branch = typeof snapshot.get("branch") === "string" ? snapshot.get("branch") as string : "";
-  return staffCanAccessBranch(staff, branch) ? null : json({ ok: false, error: "This work item belongs to a branch outside your staff access." }, 403);
+function toggleError(kind: Exclude<JobChildToggleResult["kind"], "updated">) {
+  if (kind === "missing_child") return json({ ok: false, error: "The requested Job File item was not found." }, 404);
+  if (kind === "forbidden_child") return json({ ok: false, error: "This work item belongs to a branch outside your staff access." }, 403);
+  return resultError(kind);
 }
 
 async function touchShipment(reference: string) {
@@ -204,11 +201,8 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (action === "toggle_task") {
     const taskId = clean(body.taskId, 180);
     if (!taskId) return json({ ok: false, error: "Task not found." }, 404);
-    const childError = await childBranchGuard(reference, "job_tasks", taskId, auth.staff);
-    if (childError) return childError;
-    const result = await toggleJobTask(reference, taskId, body.completed === true, actor, auth.staff);
-    if (result.kind !== "updated") return resultError(result.kind);
-    await touchShipment(reference);
+    const result = await toggleJobChild(reference, "job_tasks", taskId, body.completed === true, actor, auth.staff);
+    if (result.kind !== "updated") return toggleError(result.kind);
     return json({ ok: true });
   }
 
@@ -232,11 +226,8 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (action === "toggle_customs") {
     const stepId = clean(body.stepId, 180);
     if (!stepId) return json({ ok: false, error: "Customs step not found." }, 404);
-    const childError = await childBranchGuard(reference, "customs_steps", stepId, auth.staff);
-    if (childError) return childError;
-    const result = await toggleCustomsStep(reference, stepId, body.completed === true, actor, auth.staff);
-    if (result.kind !== "updated") return resultError(result.kind);
-    await touchShipment(reference);
+    const result = await toggleJobChild(reference, "customs_steps", stepId, body.completed === true, actor, auth.staff);
+    if (result.kind !== "updated") return toggleError(result.kind);
     return json({ ok: true });
   }
 

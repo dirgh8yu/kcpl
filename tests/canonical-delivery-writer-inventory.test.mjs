@@ -5,7 +5,10 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const productionPathspec = [":!tests", ":!docs", ":!node_modules", ":!.next", ":!.git"];
+// mobile/ holds the Flutter apps. They carry no Firestore credentials or SDK
+// and can only change anything through the server routes, which stay in
+// scope here; the test below keeps that true.
+const productionPathspec = [":!tests", ":!docs", ":!node_modules", ":!.next", ":!.git", ":!mobile"];
 
 // Canonical Delivered writer classes. Every production module that touches shipment
 // persistence is reviewed into exactly one of these.
@@ -685,4 +688,19 @@ test("repository-wide canonical Delivered writer inventory fails closed", () => 
     0,
     `Read-only (category F) module gained a persistence mutation:\n${readOnlyViolations.map((violation) => `  ${violation.file}\n${violation.patterns.map((pattern) => `    ${pattern}`).join("\n")}`).join("\n")}`,
   );
+});
+
+test("the mobile apps cannot write shipment persistence directly", () => {
+  // Excluding mobile/ from the inventory is only sound while the apps have no
+  // way to reach Firestore except through the reviewed server routes.
+  const pubspec = readFileSync(new URL("../mobile/pubspec.yaml", import.meta.url), "utf8");
+  assert.doesNotMatch(pubspec, /cloud_firestore|firebase_database|firebase_admin|googleapis/);
+  let dart = [];
+  try {
+    dart = git(["grep", "-l", "-E", "firestore\\.googleapis|cloud_firestore|FirebaseFirestore", "--", "mobile"]).split("\n").filter(Boolean);
+  } catch (error) {
+    // git grep exits 1 when nothing matches, which is the passing case.
+    if (error.status !== 1) throw error;
+  }
+  assert.deepEqual(dart, []);
 });
