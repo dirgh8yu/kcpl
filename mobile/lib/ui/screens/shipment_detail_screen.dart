@@ -8,7 +8,9 @@ import '../labels.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
-import '../widgets/tiles.dart';
+import '../widgets/journey.dart';
+import '../widgets/rows.dart';
+import 'overview_screen.dart' show Endpoints;
 
 class ShipmentDetailScreen extends StatelessWidget {
   const ShipmentDetailScreen({super.key, required this.reference});
@@ -19,155 +21,142 @@ class ShipmentDetailScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final api = AppScope.of(context).api;
     return Scaffold(
-      appBar: AppBar(title: Text(reference)),
-      body: AsyncView<ShipmentDetail>(
+      body: AsyncPage<ShipmentDetail>(
+        title: reference,
         load: () => api.shipment(reference),
-        onMissing: (context, _) => ListView(children: [
-          EmptyState(icon: Icons.search_off_rounded, title: l.shipNotFoundTitle, description: l.shipNotFoundDescription),
-        ]),
-        builder: (context, detail) => _ShipmentBody(detail: detail),
+        onMissing: (context, _) =>
+            EmptyState(icon: Icons.search_off_rounded, title: l.shipNotFoundTitle, description: l.shipNotFoundDescription),
+        builder: (context, detail) => _body(context, detail),
       ),
     );
   }
-}
 
-class _ShipmentBody extends StatelessWidget {
-  const _ShipmentBody({required this.detail});
-  final ShipmentDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
+  List<Widget> _body(BuildContext context, ShipmentDetail detail) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final p = context.palette;
     final shipment = detail.shipment;
     final freeTime = detail.freeTime;
-    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final emphasis = statusEmphasis(shipment.status);
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 40),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Icon(modeIcon(shipment.mode), size: 16, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 6),
-                Expanded(child: Text(modeLabel(l, shipment.mode), style: muted, overflow: TextOverflow.ellipsis)),
-                const SizedBox(width: 8),
-                TrailingBadge(statusLabel(l, shipment.status), statusTone(shipment.status)),
-              ]),
-              const SizedBox(height: 12),
-              _RouteLine(origin: shipment.origin, destination: shipment.destination),
-              const SizedBox(height: 8),
-              Text(l.shipLastUpdate(formatDateTime(shipment.updatedAt)), style: muted),
-            ],
-          ),
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        child: Text(
+          [modeLabel(l, shipment.mode), if (shipment.carrier != null) shipment.carrier!].join(' · '),
+          style: context.type.bodyLarge?.copyWith(color: p.secondary),
         ),
-        if (shipment.customerNote != null) ...[
-          const SizedBox(height: 16),
-          Callout(tone: statusTone(shipment.status), icon: Icons.info_outline_rounded, title: shipment.customerNote!),
-        ],
-        if (freeTime != null) ...[
-          SectionHeader(l.freeTimeLabel),
-          Callout(
-            tone: freeTimeTone(freeTime.status),
-            icon: Icons.timer_outlined,
+      ),
+      // The journey, large: where from, where to, and how far along.
+      Padding(
+        padding: const EdgeInsets.fromLTRB(kGutter, 28, kGutter, 0),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Endpoints(origin: shipment.origin, destination: shipment.destination),
+          const SizedBox(height: 22),
+          JourneyBar(status: shipment.status, mode: shipment.mode, large: true),
+          const SizedBox(height: 22),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                StatusText(statusLabel(l, shipment.status), emphasis, style: context.type.titleLarge),
+                const SizedBox(height: 4),
+                Text(
+                  shipment.currentLocation != null && !shipment.delivered
+                      ? l.overviewNowAt(shipment.currentLocation!)
+                      : l.shipLastUpdate(formatDateTime(shipment.updatedAt)),
+                  style: context.type.bodySmall,
+                ),
+              ]),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Align(
+                alignment: AlignmentDirectional.topEnd,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(l.shipEta, style: context.type.bodySmall, textAlign: TextAlign.end),
+                const SizedBox(height: 2),
+                Text(shipment.eta == null ? l.shipToBeConfirmed : formatShortDate(shipment.eta),
+                    style: context.type.titleLarge, textAlign: TextAlign.end),
+                ]),
+              ),
+            ),
+          ]),
+        ]),
+      ),
+      if (shipment.customerNote != null) ...[
+        const SizedBox(height: 28),
+        Notice(title: shipment.customerNote!, emphasis: emphasis == Emphasis.attention ? Emphasis.attention : Emphasis.normal),
+      ],
+      if (freeTime != null) ...[
+        SectionHeader(l.freeTimeLabel),
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 8),
+          child: Notice(
+            emphasis: freeTimeEmphasis(freeTime.status),
             title: freeTimeSummary(l, freeTime.location, freeTime.status),
             body: freeTime.status.state == 'expired' ? l.shipFreeTimeExpiredDescription : l.shipFreeTimeDescription,
           ),
-          const SizedBox(height: 10),
-          Panel(children: [
-            InfoRow(l.shipLocation, freeTime.location ?? l.shipAsAdvised),
-            InfoRow(l.freeTimeDeadline, formatDate(freeTime.status.deadline)),
-            InfoRow(
-              freeTime.status.state == 'expired' ? l.shipDaysOverdue : l.shipDaysRemaining,
-              '${freeTime.status.state == 'expired' ? freeTime.status.daysOverdue : freeTime.status.daysRemaining}',
-              emphasis: true,
-            ),
-            if (freeTime.days != null) InfoRow(l.shipAllowance, l.shipAllowanceDays('${freeTime.days}')),
-            if (freeTime.dailyCharge != null && freeTime.chargeCurrency != null)
-              InfoRow(l.shipChargeAfterExpiry, l.shipPerDay(freeTime.chargeCurrency!, formatAmount(freeTime.dailyCharge!, freeTime.chargeCurrency!))),
-          ]),
-          Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: Text(l.shipFreeTimeFootnote, style: muted)),
-        ],
-        SectionHeader(l.shipMovementTitle),
-        Panel(children: [
-          InfoRow(l.shipMode, modeLabel(l, shipment.mode)),
-          InfoRow(l.shipCurrentLocation, shipment.currentLocation ?? l.shipNotReported),
-          InfoRow(l.shipEta, shipment.eta == null ? l.shipToBeConfirmed : formatDate(shipment.eta)),
-          InfoRow(l.shipsColCarrier, shipment.carrier ?? l.shipToBeConfirmed),
-          InfoRow(l.shipCarrierReference, shipment.carrierReference ?? l.shipToBeConfirmed),
+        ),
+        RowGroup(children: [
+          DetailRow(l.shipLocation, freeTime.location ?? l.shipAsAdvised),
+          DetailRow(l.freeTimeDeadline, formatDate(freeTime.status.deadline)),
+          DetailRow(
+            freeTime.status.state == 'expired' ? l.shipDaysOverdue : l.shipDaysRemaining,
+            '${freeTime.status.state == 'expired' ? freeTime.status.daysOverdue : freeTime.status.daysRemaining}',
+            strong: true,
+            emphasis: freeTimeEmphasis(freeTime.status),
+          ),
+          if (freeTime.days != null) DetailRow(l.shipAllowance, l.shipAllowanceDays('${freeTime.days}')),
+          if (freeTime.dailyCharge != null && freeTime.chargeCurrency != null)
+            DetailRow(l.shipChargeAfterExpiry,
+                l.shipPerDay(freeTime.chargeCurrency!, formatAmount(freeTime.dailyCharge!, freeTime.chargeCurrency!))),
         ]),
-        if (detail.checklist.isNotEmpty) ...[
-          SectionHeader(l.xchgTitle),
-          Panel(children: [
-            for (final row in detail.checklist)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(children: [
-                  Expanded(child: Text(documentTypeLabel(l, row.documentType), style: theme.textTheme.bodyMedium)),
-                  const SizedBox(width: 8),
-                  Builder(builder: (context) {
-                    final (label, tone) = requirementState(l, row.state);
-                    return TrailingBadge(label, tone);
-                  }),
-                ]),
-              ),
-          ]),
-        ],
-        SectionHeader(l.shipMilestonesTitle),
-        if (detail.events.isEmpty)
-          EmptyState(icon: Icons.timeline_rounded, title: l.shipNoMilestonesTitle, description: l.shipNoMilestonesDescription)
-        else
-          Panel(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Column(children: [
-                for (var i = 0; i < detail.events.length; i++)
-                  _Milestone(event: detail.events[i], latest: i == 0, last: i == detail.events.length - 1),
-              ]),
-            ),
-          ]),
-        SectionHeader(l.commonDocuments, description: l.shipDocumentsDescription),
-        if (detail.documents.isEmpty)
-          EmptyState(icon: Icons.description_outlined, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription)
-        else
-          Panel(children: [for (final document in detail.documents) DocumentTile(document, showShipment: false)]),
+        Footnote(l.shipFreeTimeFootnote),
       ],
-    );
-  }
-}
-
-class _RouteLine extends StatelessWidget {
-  const _RouteLine({required this.origin, required this.destination});
-  final String origin;
-  final String destination;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l = AppLocalizations.of(context);
-    Widget end(String label, String value, CrossAxisAlignment align) => Expanded(
-          child: Column(crossAxisAlignment: align, children: [
-            Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 2),
-            Text(value.isEmpty ? '—' : value,
-                style: theme.textTheme.titleMedium, textAlign: align == CrossAxisAlignment.end ? TextAlign.end : TextAlign.start),
+      if (detail.checklist.isNotEmpty) ...[
+        SectionHeader(l.xchgTitle),
+        RowGroup(children: [
+          for (final row in detail.checklist)
+            Builder(builder: (context) {
+              final (label, state) = requirementState(l, row.state);
+              return RowTile(
+                title: Text(documentTypeLabel(l, row.documentType), style: context.type.bodyLarge),
+                trailing: StatusText(label, state),
+              );
+            }),
+        ]),
+      ],
+      SectionHeader(l.shipMilestonesTitle),
+      if (detail.events.isEmpty)
+        EmptyState(icon: Icons.timeline_rounded, title: l.shipNoMilestonesTitle, description: l.shipNoMilestonesDescription)
+      else
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kGutter, 10, kGutter, 0),
+          child: Column(children: [
+            for (var i = 0; i < detail.events.length; i++)
+              _Milestone(event: detail.events[i], latest: i == 0, last: i == detail.events.length - 1),
           ]),
-        );
-    return Row(children: [
-      end(l.overviewOrigin, origin, CrossAxisAlignment.start),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Icon(Icons.arrow_forward_rounded, color: theme.colorScheme.onSurfaceVariant, size: 20),
-      ),
-      end(l.overviewDestination, destination, CrossAxisAlignment.end),
-    ]);
+        ),
+      SectionHeader(l.shipMovementTitle),
+      RowGroup(children: [
+        DetailRow(l.shipMode, modeLabel(l, shipment.mode)),
+        DetailRow(l.shipCurrentLocation, shipment.currentLocation ?? l.shipNotReported),
+        DetailRow(l.shipEta, shipment.eta == null ? l.shipToBeConfirmed : formatDate(shipment.eta)),
+        DetailRow(l.shipsColCarrier, shipment.carrier ?? l.shipToBeConfirmed),
+        DetailRow(l.shipCarrierReference, shipment.carrierReference ?? l.shipToBeConfirmed),
+        DetailRow(l.overviewOrigin, shipment.origin.isEmpty ? '—' : shipment.origin),
+        DetailRow(l.overviewDestination, shipment.destination.isEmpty ? '—' : shipment.destination),
+      ]),
+      SectionHeader(l.commonDocuments),
+      if (detail.documents.isEmpty)
+        EmptyState(icon: Icons.description_outlined, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription)
+      else
+        RowGroup(children: [for (final document in detail.documents) DocumentRowTile(document, showShipment: false)]),
+    ];
   }
 }
 
+/// One step of the timeline. The newest is marked in crimson; older steps
+/// step back in grey, the way a tracker shows what has already happened.
 class _Milestone extends StatelessWidget {
   const _Milestone({required this.event, required this.latest, required this.last});
   final ShipmentEvent event;
@@ -176,43 +165,43 @@ class _Milestone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dot = latest ? KcplColors.crimson : theme.colorScheme.outline;
+    final p = context.palette;
     return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 20,
-            child: Column(children: [
-              const SizedBox(height: 4),
-              Container(width: 10, height: 10, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
-              if (!last) Expanded(child: Container(width: 1.5, color: theme.colorScheme.outlineVariant)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        SizedBox(
+          width: 14,
+          child: Column(children: [
+            const SizedBox(height: 5),
+            Container(
+              width: latest ? 12 : 8,
+              height: latest ? 12 : 8,
+              decoration: BoxDecoration(color: latest ? p.accent : p.tertiary, shape: BoxShape.circle),
+            ),
+            if (!last) Expanded(child: Container(width: 1, margin: const EdgeInsets.symmetric(vertical: 4), color: p.hairline)),
+          ]),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: last ? 0 : 22),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                event.title,
+                style: latest ? context.type.titleMedium : context.type.bodyLarge?.copyWith(color: p.secondary),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                [formatDateTime(event.eventTime), if (event.location != null) event.location!].join(' · '),
+                style: context.type.bodySmall,
+              ),
+              if (event.details != null) ...[
+                const SizedBox(height: 4),
+                Text(event.details!, style: context.type.bodyMedium?.copyWith(color: p.secondary)),
+              ],
             ]),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: last ? 12 : 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(event.title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: latest ? FontWeight.w600 : FontWeight.w500)),
-                  const SizedBox(height: 2),
-                  Text(
-                    [formatDateTime(event.eventTime), if (event.location != null) event.location!].join(' · '),
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  if (event.details != null) ...[
-                    const SizedBox(height: 4),
-                    Text(event.details!, style: theme.textTheme.bodySmall),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 }

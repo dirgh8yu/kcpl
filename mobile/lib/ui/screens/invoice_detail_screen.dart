@@ -5,9 +5,10 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../format.dart';
 import '../labels.dart';
+import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
-import 'shipment_detail_screen.dart';
+import '../widgets/rows.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   const InvoiceDetailScreen({super.key, required this.reference});
@@ -18,107 +19,83 @@ class InvoiceDetailScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final api = AppScope.of(context).api;
     return Scaffold(
-      appBar: AppBar(title: Text(reference)),
-      body: AsyncView<Invoice>(
+      body: AsyncPage<Invoice>(
+        title: reference,
         load: () => api.invoice(reference),
-        onMissing: (context, _) => ListView(children: [
-          EmptyState(icon: Icons.search_off_rounded, title: l.invdNotFoundTitle, description: l.invdNotFoundDescription),
-        ]),
-        builder: (context, invoice) => _InvoiceBody(invoice: invoice),
+        onMissing: (context, _) =>
+            EmptyState(icon: Icons.search_off_rounded, title: l.invdNotFoundTitle, description: l.invdNotFoundDescription),
+        builder: (context, invoice) => _body(context, invoice),
       ),
     );
   }
-}
 
-class _InvoiceBody extends StatelessWidget {
-  const _InvoiceBody({required this.invoice});
-  final Invoice invoice;
-
-  @override
-  Widget build(BuildContext context) {
+  List<Widget> _body(BuildContext context, Invoice invoice) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final p = context.palette;
     String money(double value) => formatMoney(value, invoice.currency);
-    final tabular = const [FontFeature.tabularFigures()];
+    const tabular = [FontFeature.tabularFigures()];
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 40),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Expanded(child: Text(invoice.recordType == 'statement' ? l.invdStatement : l.invBillingTitle, style: muted)),
-                TrailingBadge(invoiceStatusLabel(l, invoice), invoiceTone(invoice)),
-              ]),
-              const SizedBox(height: 8),
-              Text(l.invdBalanceDue, style: muted),
-              Text(money(invoice.balanceDue), style: theme.textTheme.headlineSmall?.copyWith(fontFeatures: tabular)),
-              const SizedBox(height: 4),
-              Text(
-                [
-                  l.invdIssuedOn(formatDate(invoice.issueDate)),
-                  if (invoice.dueDate.isNotEmpty) l.invdDueOn(formatDate(invoice.dueDate)),
-                ].join(' · '),
-                style: muted,
-              ),
-            ],
-          ),
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        child: Text(
+          [
+            l.invdIssuedOn(formatDate(invoice.issueDate)),
+            if (invoice.dueDate.isNotEmpty) l.invdDueOn(formatDate(invoice.dueDate)),
+          ].join(' · '),
+          style: context.type.bodyLarge?.copyWith(color: p.secondary),
         ),
-        if (invoice.shipmentReference != null) ...[
-          const SizedBox(height: 16),
-          Panel(children: [
-            ListTile(
-              leading: const Icon(Icons.inventory_2_outlined),
-              title: Text(l.commonShipment),
-              subtitle: Text(invoice.shipmentReference!),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => ShipmentDetailScreen(reference: invoice.shipmentReference!),
-              )),
-            ),
-          ]),
-        ],
-        SectionHeader(l.invdColCharge),
-        if (invoice.lines.isEmpty)
-          EmptyState(icon: Icons.receipt_long_outlined, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription)
-        else
-          Panel(children: [
-            for (final line in invoice.lines)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(line.description, style: theme.textTheme.bodyMedium),
-                          if (line.quantity != 1)
-                            Text('${line.quantity.toStringAsFixed(line.quantity % 1 == 0 ? 0 : 2)} × ${money(line.unitPrice)}', style: muted),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(money(line.total), style: theme.textTheme.bodyMedium?.copyWith(fontFeatures: tabular)),
-                  ],
-                ),
-              ),
-          ]),
-        const SizedBox(height: 12),
-        Panel(children: [
-          InfoRow(l.invdSubtotal, money(invoice.subtotal)),
-          InfoRow(l.invdTax, money(invoice.taxTotal)),
-          InfoRow(l.invColTotal, money(invoice.total), emphasis: true),
-          InfoRow(l.invdReceipted, money(invoice.amountPaid)),
-          InfoRow(l.invdBalanceDue, money(invoice.balanceDue), emphasis: true),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(kGutter, 28, kGutter, 0),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(l.invdBalanceDue, style: context.type.bodySmall),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(money(invoice.balanceDue), style: context.type.headlineLarge),
+          ),
+          const SizedBox(height: 6),
+          StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice)),
         ]),
-        Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Text(l.invFootnote, style: muted)),
+      ),
+      if (invoice.shipmentReference != null) ...[
+        const SizedBox(height: 20),
+        const Divider(indent: kGutter, endIndent: kGutter),
+        RowTile(
+          onTap: () => openShipment(context, invoice.shipmentReference!),
+          leading: Icon(Icons.inventory_2_outlined, size: 22, color: p.ink),
+          title: Text(invoice.shipmentReference!),
+          subtitle: Text(l.commonShipment),
+          chevron: true,
+        ),
+        const Divider(indent: kGutter, endIndent: kGutter),
       ],
-    );
+      SectionHeader(invoice.recordType == 'statement' ? l.invdStatement : l.invdColCharge),
+      if (invoice.lines.isEmpty)
+        EmptyState(icon: Icons.receipt_long_outlined, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription)
+      else
+        RowGroup(children: [
+          for (final line in invoice.lines)
+            RowTile(
+              title: Text(line.description, style: context.type.bodyLarge),
+              subtitle: line.quantity != 1
+                  ? Text('${line.quantity.toStringAsFixed(line.quantity % 1 == 0 ? 0 : 2)} × ${money(line.unitPrice)}')
+                  : null,
+              trailing: Text(money(line.total), style: context.type.titleSmall?.copyWith(fontFeatures: tabular)),
+            ),
+        ]),
+      const SizedBox(height: 16),
+      RowGroup(children: [
+        DetailRow(l.invdSubtotal, money(invoice.subtotal)),
+        DetailRow(l.invdTax, money(invoice.taxTotal)),
+        DetailRow(l.invColTotal, money(invoice.total), strong: true),
+        DetailRow(l.invdReceipted, money(invoice.amountPaid)),
+        DetailRow(l.invdBalanceDue, money(invoice.balanceDue), strong: true,
+            emphasis: invoice.status == 'overdue' ? Emphasis.attention : Emphasis.normal),
+      ]),
+      Footnote(l.invFootnote),
+    ];
   }
 }

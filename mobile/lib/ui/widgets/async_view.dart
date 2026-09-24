@@ -4,25 +4,37 @@ import '../../api/kcpl_api.dart';
 import '../../app_controller.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../theme.dart';
 import 'common.dart';
+import 'large_title.dart';
 
-/// Loads one thing and renders it, with the same loading, failure, retry and
-/// pull-to-refresh behaviour on every screen. Reloads by itself when the
-/// agent switches customer.
-class AsyncView<T> extends StatefulWidget {
-  const AsyncView({super.key, required this.load, required this.builder, this.onMissing});
+/// A screen with a large title that collapses into the bar as it scrolls,
+/// which loads one thing and renders it. Every screen gets the same
+/// skeleton, failure, retry and pull-to-refresh behaviour, and reloads by
+/// itself when an agent switches customer.
+class AsyncPage<T> extends StatefulWidget {
+  const AsyncPage({
+    super.key,
+    required this.title,
+    required this.load,
+    required this.builder,
+    this.onMissing,
+  });
 
+  final String title;
   final Future<T> Function() load;
-  final Widget Function(BuildContext context, T data) builder;
+
+  /// The page body, as plain widgets laid out top to bottom.
+  final List<Widget> Function(BuildContext context, T data) builder;
 
   /// Shown instead of the generic failure when the server says "not found".
   final Widget Function(BuildContext context, ApiException error)? onMissing;
 
   @override
-  State<AsyncView<T>> createState() => _AsyncViewState<T>();
+  State<AsyncPage<T>> createState() => _AsyncPageState<T>();
 }
 
-class _AsyncViewState<T> extends State<AsyncView<T>> {
+class _AsyncPageState<T> extends State<AsyncPage<T>> {
   T? _data;
   Object? _error;
   bool _loading = true;
@@ -35,13 +47,9 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
     if (_generation != generation) {
       final first = _generation == null;
       _generation = generation;
-      if (first) {
-        _fetch();
-      } else {
-        // A different customer: never show the previous one's data meanwhile.
-        setState(() => _data = null);
-        _fetch();
-      }
+      // A different customer: never show the previous one's data meanwhile.
+      if (!first) setState(() => _data = null);
+      _fetch();
     }
   }
 
@@ -60,8 +68,7 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
     } on SignedOutException {
       if (mounted) await AppScope.read(context).expire();
     } on ApiException catch (error) {
-      // Access withdrawn mid-session: the login itself is no longer valid
-      // for the portal, so retrying cannot help.
+      // Access withdrawn mid-session: retrying cannot help.
       if (error.code == 'denied' && mounted) {
         await AppScope.read(context).expire();
         return;
@@ -80,15 +87,7 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final data = _data;
-    final error = _error;
-    if (data != null) {
-      return RefreshIndicator(onRefresh: _fetch, child: widget.builder(context, data));
-    }
-    if (_loading) return const Center(child: CircularProgressIndicator(strokeWidth: 2.5));
-
+  Widget _failure(BuildContext context, Object error) {
     if (error is ApiException && error.missing && widget.onMissing != null) {
       return widget.onMissing!(context, error);
     }
@@ -100,15 +99,42 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
         : network
             ? l.networkError
             : l.commonUnavailableDetail;
-    return ListView(
-      children: [
-        EmptyState(
-          icon: network ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
-          title: l.commonUnavailableTitle,
-          description: message,
-          action: OutlinedButton(onPressed: _fetch, child: Text(l.retry)),
-        ),
-      ],
+    return EmptyState(
+      icon: network ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+      title: l.commonUnavailableTitle,
+      description: message,
+      action: OutlinedButton(onPressed: _fetch, child: Text(l.retry)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final data = _data;
+    final error = _error;
+
+    final body = <Widget>[
+      if (data != null)
+        SliverList(delegate: SliverChildListDelegate(widget.builder(context, data)))
+      else if (_loading)
+        const SliverToBoxAdapter(child: Skeleton())
+      else if (error != null)
+        SliverFillRemaining(hasScrollBody: false, child: Center(child: _failure(context, error))),
+      const SliverToBoxAdapter(child: SizedBox(height: 48)),
+    ];
+
+    return RefreshIndicator(
+      onRefresh: _fetch,
+      color: p.ink,
+      backgroundColor: p.paper,
+      edgeOffset: 108,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          LargeTitleBar(title: widget.title),
+          ...body,
+        ],
+      ),
     );
   }
 }

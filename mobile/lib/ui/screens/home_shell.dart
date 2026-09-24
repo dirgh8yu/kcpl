@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
@@ -21,80 +22,74 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   HomeTab _tab = HomeTab.overview;
 
+  /// Tabs are built on first visit and then kept, so switching back keeps
+  /// the scroll position and never refetches, as native tab bars do.
+  final Set<HomeTab> _visited = {HomeTab.overview};
+
+  void _select(HomeTab tab) {
+    if (tab == _tab) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _tab = tab;
+      _visited.add(tab);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final p = context.palette;
     final session = AppScope.of(context).session;
     final canViewFinance = session?.canViewFinance ?? false;
     // A login without finance access never sees the tab, as on the web.
     final tabs = [for (final tab in HomeTab.values) if (tab != HomeTab.invoices || canViewFinance) tab];
     final tab = tabs.contains(_tab) ? _tab : HomeTab.overview;
 
-    final titles = {
+    final labels = {
       HomeTab.overview: l.chromeOverview,
       HomeTab.shipments: l.chromeShipments,
       HomeTab.documents: l.chromeDocuments,
       HomeTab.invoices: l.chromeInvoices,
       HomeTab.account: l.chromeAccount,
     };
-    final icons = {
-      HomeTab.overview: (Icons.space_dashboard_outlined, Icons.space_dashboard_rounded),
+    const icons = {
+      HomeTab.overview: (Icons.home_outlined, Icons.home_rounded),
       HomeTab.shipments: (Icons.inventory_2_outlined, Icons.inventory_2_rounded),
       HomeTab.documents: (Icons.description_outlined, Icons.description_rounded),
       HomeTab.invoices: (Icons.receipt_long_outlined, Icons.receipt_long_rounded),
-      HomeTab.account: (Icons.account_circle_outlined, Icons.account_circle_rounded),
+      HomeTab.account: (Icons.person_outline_rounded, Icons.person_rounded),
     };
 
-    final Widget body = switch (tab) {
-      HomeTab.overview => OverviewScreen(onNavigate: (next) => setState(() => _tab = next)),
-      HomeTab.shipments => const ShipmentsScreen(),
-      HomeTab.documents => const DocumentsScreen(),
-      HomeTab.invoices => const InvoicesScreen(),
-      HomeTab.account => AccountScreen(version: widget.version),
-    };
+    Widget screen(HomeTab item) => switch (item) {
+          HomeTab.overview => OverviewScreen(onNavigate: _select),
+          HomeTab.shipments => const ShipmentsScreen(),
+          HomeTab.documents => const DocumentsScreen(),
+          HomeTab.invoices => const InvoicesScreen(),
+          HomeTab.account => AccountScreen(version: widget.version),
+        };
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 64,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(titles[tab]!, style: theme.appBarTheme.titleTextStyle),
-            if (session != null)
-              Text(
-                session.customerName,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
-        bottom: widget.demo
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(28),
-                child: Container(
-                  height: 28,
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  color: ToneColors.of(context, Tone.warning).background,
-                  child: Text(l.demoBanner,
-                      style: theme.textTheme.labelSmall?.copyWith(color: ToneColors.of(context, Tone.warning).foreground)),
-                ),
-              )
-            : null,
+      body: IndexedStack(
+        index: tabs.indexOf(tab),
+        children: [for (final item in tabs) _visited.contains(item) ? screen(item) : const SizedBox.shrink()],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 160),
-        switchInCurve: Curves.easeOut,
-        child: KeyedSubtree(key: ValueKey(tab), child: body),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tabs.indexOf(tab),
-        onDestinationSelected: (index) => setState(() => _tab = tabs[index]),
-        destinations: [
-          for (final item in tabs)
-            NavigationDestination(icon: Icon(icons[item]!.$1), selectedIcon: Icon(icons[item]!.$2), label: titles[item]!),
-        ],
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: p.hairline, width: 0.5))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (widget.demo)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(l.demoBanner, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
+            ),
+          NavigationBar(
+            selectedIndex: tabs.indexOf(tab),
+            onDestinationSelected: (index) => _select(tabs[index]),
+            destinations: [
+              for (final item in tabs)
+                NavigationDestination(icon: Icon(icons[item]!.$1), selectedIcon: Icon(icons[item]!.$2), label: labels[item]!),
+            ],
+          ),
+        ]),
       ),
     );
   }

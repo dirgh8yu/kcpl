@@ -61,8 +61,26 @@ flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # 
 | `lib/api/` | `KcplApi` and its HTTP client. Each call carries the bearer token and the chosen customer. A `401` is retried once with a forced refresh; a second `401` signs out. |
 | `lib/demo/` | Invented sample data for `KCPL_DEMO` builds, labelled on screen. |
 | `lib/app_controller.dart` | Signed-in state, chosen customer and language. Switching customer bumps a generation counter, and every open screen refetches rather than show the previous customer's data. |
-| `lib/ui/` | Screens and widgets. `AsyncView` gives every screen the same loading, failure, retry and pull-to-refresh behaviour. |
+| `lib/ui/` | Screens and widgets. `AsyncPage` gives every screen the same large collapsing title, skeleton, failure, retry and pull-to-refresh behaviour. |
 | `lib/l10n/` | Generated. **Don't edit the ARB files by hand.** |
+
+### Design
+
+Black and white, with greys only for hierarchy (`Palette` in `lib/ui/theme.dart`), and dark
+mode is true black. KCPL crimson is kept for four things: the brand mark, journey
+progress, whatever needs the customer to act or is costing them money, and Sign out.
+Status is written as words, never shown as a coloured pill.
+
+The patterns come from apps that do this well:
+
+- **Flighty:** a shipment is drawn like a flight, with big endpoints and a journey line
+  the vehicle travels along.
+- **Uber and Cash App:** black buttons, oversized numbers, no decoration.
+- **Apple's own apps:** large titles that collapse as you scroll, full-width rows with
+  inset hairlines, settings-style checkmarks, and a red destructive action.
+
+Tabs keep their state and scroll position, and selection changes give a light haptic
+tick.
 
 ### Strings
 

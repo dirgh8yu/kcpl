@@ -5,7 +5,8 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
-import '../widgets/tiles.dart';
+import '../widgets/filter_bar.dart';
+import '../widgets/rows.dart';
 
 enum ShipmentFocus { all, active, inTransit, attention, delivered }
 
@@ -39,63 +40,32 @@ class _ShipmentsScreenState extends State<ShipmentsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final labels = {
-      ShipmentFocus.all: l.shipsFocusAll,
-      ShipmentFocus.active: l.shipsFocusActive,
-      ShipmentFocus.inTransit: l.shipsFocusInTransit,
-      ShipmentFocus.attention: l.shipsFocusAttention,
-      ShipmentFocus.delivered: l.shipsFocusDelivered,
-    };
-
-    return AsyncView<List<Shipment>>(
+    return AsyncPage<List<Shipment>>(
+      title: l.chromeShipments,
       load: AppScope.of(context).api.shipments,
       builder: (context, shipments) {
         final visible = shipments.where((s) => matchesFocus(s, _focus) && matchesQuery(s, _query)).toList();
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 32),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: l.shipsSearchPlaceholder,
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  isDense: true,
-                ),
-                onChanged: (value) => setState(() => _query = value),
-              ),
-            ),
-            SizedBox(
-              height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                children: [
-                  for (final focus in ShipmentFocus.values)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(labels[focus]!),
-                        selected: _focus == focus,
-                        onSelected: (_) => setState(() => _focus = focus),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (shipments.isEmpty)
-              EmptyState(icon: Icons.inventory_2_outlined, title: l.shipsEmptyTitle, description: l.shipsEmptyDescription)
-            else if (visible.isEmpty)
-              EmptyState(
-                icon: Icons.filter_alt_off_outlined,
-                title: l.shipsEmptyFilteredTitle,
-                description: l.shipsEmptyFilteredDescription,
-              )
-            else
-              Panel(children: [for (final shipment in visible) ShipmentTile(shipment)]),
-          ],
-        );
+        return [
+          FilterBar<ShipmentFocus>(
+            hint: l.shipsSearchPlaceholder,
+            onQuery: (value) => setState(() => _query = value),
+            options: {
+              ShipmentFocus.all: l.shipsFocusAll,
+              ShipmentFocus.active: l.shipsFocusActive,
+              ShipmentFocus.inTransit: l.shipsFocusInTransit,
+              ShipmentFocus.attention: l.shipsFocusAttention,
+              ShipmentFocus.delivered: l.shipsFocusDelivered,
+            },
+            selected: _focus,
+            onSelected: (focus) => setState(() => _focus = focus),
+          ),
+          if (shipments.isEmpty)
+            EmptyState(icon: Icons.inventory_2_outlined, title: l.shipsEmptyTitle, description: l.shipsEmptyDescription)
+          else if (visible.isEmpty)
+            EmptyState(icon: Icons.search_off_rounded, title: l.shipsEmptyFilteredTitle, description: l.shipsEmptyFilteredDescription)
+          else
+            RowGroup(children: [for (final shipment in visible) ShipmentRow(shipment)]),
+        ];
       },
     );
   }

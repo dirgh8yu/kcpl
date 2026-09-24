@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 Future<void> initFormatting() => initializeDateFormatting('en_GB');
 
 final _date = DateFormat('d MMM yyyy', 'en_GB');
+final _shortDate = DateFormat('d MMM', 'en_GB');
 final _dateTime = DateFormat('d MMM yyyy, HH:mm', 'en_GB');
 
 DateTime? _parse(String? value) {
@@ -52,3 +53,20 @@ String route(String origin, String destination) {
 String formatAmount(double amount, String currency) =>
     NumberFormat.currency(locale: 'en_US', name: currency, symbol: '', decimalDigits: currency == 'JPY' ? 0 : 2)
         .format(amount);
+
+/// "27 Sept": for rows, where the year is almost always this one.
+String formatShortDate(String? value) {
+  final parsed = _parse(value);
+  if (parsed == null) return value == null || value.isEmpty ? '—' : value;
+  final day = value!.length <= 10 ? parsed.toUtc() : parsed.toLocal();
+  return day.year == DateTime.now().year ? _shortDate.format(day) : _date.format(day);
+}
+
+/// "Kolkata" from "Kolkata, India": the name a row can afford.
+String place(String value) => value.split(',').first.trim();
+
+/// "India" from "Kolkata, India", or empty.
+String region(String value) {
+  final at = value.indexOf(',');
+  return at < 0 ? '' : value.substring(at + 1).trim();
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../api/kcpl_api.dart';
 import '../../app_controller.dart';
@@ -33,6 +34,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future<void> _signIn() async {
     final l = AppLocalizations.of(context);
+    FocusScope.of(context).unfocus();
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
       setState(() => _error = l.signInFailed);
       return;
@@ -63,6 +65,7 @@ class _SignInScreenState extends State<SignInScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+    if (_error != null) HapticFeedback.heavyImpact();
   }
 
   Future<void> _reset() async {
@@ -91,107 +94,130 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final p = context.palette;
     final controller = AppScope.of(context);
+    final language = Localizations.localeOf(context).languageCode;
+
+    Widget languageButton(String code, String label) => TextButton(
+          onPressed: language == code
+              ? null
+              : () {
+                  HapticFeedback.selectionClick();
+                  controller.setLocale(Locale(code));
+                },
+          style: TextButton.styleFrom(
+            disabledForegroundColor: p.ink,
+            foregroundColor: p.tertiary,
+            textStyle: context.type.labelLarge,
+          ),
+          child: Text(label),
+        );
+
+    final message = _error ?? _notice ?? (controller.sessionEnded ? l.sessionEnded : null);
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: AutofillGroup(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Image.asset('assets/brand/k-mark.png', width: 32, height: 32, semanticLabel: 'KCPL'),
-                        const SizedBox(width: 12),
-                        Flexible(child: Text('Kapileshwor Cargo', style: theme.textTheme.titleMedium)),
-                      ],
-                    ),
-                    const SizedBox(height: 40),
-                    Text(l.signInTitle, style: theme.textTheme.headlineSmall),
-                    const SizedBox(height: 8),
-                    Text(l.signInSubtitle, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 28),
-                    if (controller.sessionEnded && _error == null) ...[
-                      Callout(margin: EdgeInsets.zero, tone: Tone.info, icon: Icons.lock_clock_outlined, title: l.sessionEnded),
-                      const SizedBox(height: 16),
-                    ],
-                    TextField(
-                      controller: _email,
-                      enabled: !_busy,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      autofillHints: const [AutofillHints.email, AutofillHints.username],
-                      decoration: InputDecoration(labelText: l.emailLabel),
-                      onSubmitted: (_) => _passwordFocus.requestFocus(),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _password,
-                      focusNode: _passwordFocus,
-                      enabled: !_busy,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.password],
-                      decoration: InputDecoration(
-                        labelText: l.passwordLabel,
-                        suffixIcon: IconButton(
-                          tooltip: _obscure ? l.showPassword : l.hidePassword,
-                          icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                      ),
-                      onSubmitted: (_) => _signIn(),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(onPressed: _busy ? null : _reset, child: Text(l.forgotPassword)),
-                    ),
-                    const SizedBox(height: 8),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      child: _error != null
-                          ? Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Callout(margin: EdgeInsets.zero, tone: Tone.danger, icon: Icons.error_outline_rounded, title: _error!),
-                            )
-                          : _notice != null
-                              ? Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: Callout(margin: EdgeInsets.zero, tone: Tone.success, icon: Icons.mark_email_read_outlined, title: _notice!),
-                                )
-                              : const SizedBox.shrink(),
-                    ),
-                    FilledButton(
-                      onPressed: _busy ? null : _signIn,
-                      child: Text(_busy ? l.signingIn : l.signIn),
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      l.helpContact,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(value: 'en', label: Text('English')),
-                          ButtonSegment(value: 'ne', label: Text('नेपाली')),
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: IntrinsicHeight(
+                    child: AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 28),
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Image.asset('assets/brand/k-mark.png', width: 34, height: 34, semanticLabel: 'KCPL'),
+                          ),
+                          const SizedBox(height: 56),
+                          Text(l.signInTitle, style: context.type.headlineMedium),
+                          const SizedBox(height: 10),
+                          Text(l.signInSubtitle, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
+                          const SizedBox(height: 36),
+                          TextField(
+                            controller: _email,
+                            enabled: !_busy,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            autofillHints: const [AutofillHints.email, AutofillHints.username],
+                            style: context.type.bodyLarge,
+                            decoration: InputDecoration(hintText: l.emailLabel),
+                            onSubmitted: (_) => _passwordFocus.requestFocus(),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _password,
+                            focusNode: _passwordFocus,
+                            enabled: !_busy,
+                            obscureText: _obscure,
+                            textInputAction: TextInputAction.go,
+                            autofillHints: const [AutofillHints.password],
+                            style: context.type.bodyLarge,
+                            decoration: InputDecoration(
+                              hintText: l.passwordLabel,
+                              suffixIcon: IconButton(
+                                tooltip: _obscure ? l.showPassword : l.hidePassword,
+                                icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 22),
+                                onPressed: () => setState(() => _obscure = !_obscure),
+                              ),
+                            ),
+                            onSubmitted: (_) => _signIn(),
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            alignment: Alignment.topCenter,
+                            child: message == null
+                                ? const SizedBox(width: double.infinity)
+                                : Padding(
+                                    padding: const EdgeInsets.only(top: 18),
+                                    child: Notice(
+                                      padding: EdgeInsets.zero,
+                                      title: message,
+                                      emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 24),
+                          FilledButton(
+                            onPressed: _busy ? null : _signIn,
+                            child: _busy
+                                ? Semantics(
+                                    label: l.signingIn,
+                                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: p.tertiary)),
+                                  )
+                                : Text(l.signIn),
+                          ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: TextButton(
+                              onPressed: _busy ? null : _reset,
+                              style: TextButton.styleFrom(foregroundColor: p.secondary),
+                              child: Text(l.forgotPassword),
+                            ),
+                          ),
+                          const Spacer(),
+                          const SizedBox(height: 32),
+                          Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
+                          const SizedBox(height: 6),
+                          Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                            languageButton('en', 'English'),
+                            Text('·', style: TextStyle(color: p.tertiary)),
+                            languageButton('ne', 'नेपाली'),
+                          ]),
+                          const SizedBox(height: 12),
                         ],
-                        selected: {Localizations.localeOf(context).languageCode},
-                        showSelectedIcon: false,
-                        onSelectionChanged: (value) => controller.setLocale(Locale(value.first)),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

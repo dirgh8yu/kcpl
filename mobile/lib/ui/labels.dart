@@ -16,12 +16,10 @@ String statusLabel(AppLocalizations l, String status) => switch (status) {
       _ => l.statusUnknown,
     };
 
-Tone statusTone(String status) => switch (status) {
-      'delivered' => Tone.success,
-      'exception' => Tone.danger,
-      'customs_clearance' || 'out_for_delivery' => Tone.warning,
-      'in_transit' => Tone.info,
-      _ => Tone.neutral,
+Emphasis statusEmphasis(String status) => switch (status) {
+      'exception' => Emphasis.attention,
+      'delivered' => Emphasis.muted,
+      _ => Emphasis.normal,
     };
 
 String modeLabel(AppLocalizations l, String mode) => switch (mode) {
@@ -63,26 +61,26 @@ String invoiceStatusLabel(AppLocalizations l, Invoice invoice) => switch (invoic
       _ => l.invoiceOpen,
     };
 
-Tone invoiceTone(Invoice invoice) => switch (invoice.status) {
-      'paid' => Tone.success,
-      'overdue' => Tone.danger,
-      'partially_paid' => Tone.warning,
-      _ => Tone.neutral,
+Emphasis invoiceEmphasis(Invoice invoice) => switch (invoice.status) {
+      'overdue' => Emphasis.attention,
+      'paid' => Emphasis.muted,
+      _ => Emphasis.normal,
     };
 
 /// `null` for a released document, which needs no badge.
-(String, Tone)? reviewState(AppLocalizations l, String state) => switch (state) {
-      'confirmed' => (l.docsStateConfirmed, Tone.success),
-      'resend' => (l.docsStateResend, Tone.danger),
-      'with_kcpl' => (l.docsStateWithKcpl, Tone.info),
+(String, Emphasis)? reviewState(AppLocalizations l, String state) => switch (state) {
+      'confirmed' => (l.docsStateConfirmed, Emphasis.muted),
+      'resend' => (l.docsStateResend, Emphasis.attention),
+      'with_kcpl' => (l.docsStateWithKcpl, Emphasis.muted),
       _ => null,
     };
 
-(String, Tone) requirementState(AppLocalizations l, String state) => switch (state) {
-      'confirmed' => (l.xchgStateConfirmed, Tone.success),
-      'resend' => (l.xchgStateResend, Tone.danger),
-      'with_kcpl' => (l.xchgStateWithKcpl, Tone.info),
-      _ => (l.xchgStateNeeded, Tone.warning),
+/// Only what waits on the customer is crimson; what waits on KCPL is grey.
+(String, Emphasis) requirementState(AppLocalizations l, String state) => switch (state) {
+      'confirmed' => (l.xchgStateConfirmed, Emphasis.muted),
+      'with_kcpl' => (l.xchgStateWithKcpl, Emphasis.muted),
+      'resend' => (l.xchgStateResend, Emphasis.attention),
+      _ => (l.xchgStateNeeded, Emphasis.attention),
     };
 
 /// Port of `freeTimeSummary` in app/shipment-free-time.ts. Each case has its
@@ -106,8 +104,7 @@ String freeTimeSummary(AppLocalizations l, String? location, FreeTimeStatus stat
   }
 }
 
-Tone freeTimeTone(FreeTimeStatus status) => switch (status.state) {
-      'expired' => Tone.danger,
-      'last_day' => Tone.warning,
-      _ => Tone.info,
+Emphasis freeTimeEmphasis(FreeTimeStatus status) => switch (status.state) {
+      'expired' || 'last_day' => Emphasis.attention,
+      _ => Emphasis.normal,
     };
