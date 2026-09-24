@@ -1,276 +1,324 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "eb94b38bb4c8de55",
-      "lastmod": "2026-09-23"
+      "fingerprint": "f419e1cbe4bcfd74",
+      "lastmod": "2026-09-24"
     },
     "ne/": {
-      "fingerprint": "7a077cedf9f91f83",
-      "lastmod": "2026-09-23"
+      "fingerprint": "bb25ed3c7580f5ed",
+      "lastmod": "2026-09-24"
     },
     "zh/": {
-      "fingerprint": "ba586428f5f9d476",
-      "lastmod": "2026-09-23"
+      "fingerprint": "35d2028f01e352b7",
+      "lastmod": "2026-09-24"
     },
     "hi/": {
-      "fingerprint": "05697927c1ddb3fb",
-      "lastmod": "2026-09-23"
+      "fingerprint": "ce79d41efadbf9a8",
+      "lastmod": "2026-09-24"
     },
     "en/services": {
-      "fingerprint": "fa8b6c353494f2b8",
-      "lastmod": "2026-09-23"
+      "fingerprint": "acd945bec2615135",
+      "lastmod": "2026-09-24"
     },
     "ne/services": {
-      "fingerprint": "202bdba60ba4a809",
-      "lastmod": "2026-09-23"
+      "fingerprint": "a3f3554969f70b14",
+      "lastmod": "2026-09-24"
     },
     "zh/services": {
-      "fingerprint": "d2bcfd3780f90a40",
-      "lastmod": "2026-09-23"
+      "fingerprint": "9b17594f66bf4969",
+      "lastmod": "2026-09-24"
     },
     "hi/services": {
-      "fingerprint": "c524f801856eef09",
-      "lastmod": "2026-09-23"
+      "fingerprint": "7adcce3afafd232c",
+      "lastmod": "2026-09-24"
     },
     "en/sectors": {
-      "fingerprint": "baa7e187b6fe8573",
-      "lastmod": "2026-09-23"
+      "fingerprint": "6e1c6298d94a4a0a",
+      "lastmod": "2026-09-24"
     },
     "ne/sectors": {
-      "fingerprint": "9e4ec1c534b694dc",
-      "lastmod": "2026-09-23"
+      "fingerprint": "fe7606a30d4a2d1b",
+      "lastmod": "2026-09-24"
     },
     "zh/sectors": {
-      "fingerprint": "7ef5e61a473c91d5",
-      "lastmod": "2026-09-23"
+      "fingerprint": "83a32409b7b438de",
+      "lastmod": "2026-09-24"
     },
     "hi/sectors": {
-      "fingerprint": "35fb5add8101661e",
-      "lastmod": "2026-09-23"
+      "fingerprint": "83ac76ad27f982ab",
+      "lastmod": "2026-09-24"
+    },
+    "en/work": {
+      "fingerprint": "d13c727689c56234",
+      "lastmod": "2026-09-24"
+    },
+    "ne/work": {
+      "fingerprint": "383fb4ab9f51a5af",
+      "lastmod": "2026-09-24"
+    },
+    "zh/work": {
+      "fingerprint": "5fe11986dc563a2d",
+      "lastmod": "2026-09-24"
+    },
+    "hi/work": {
+      "fingerprint": "09972cc0a973d0c3",
+      "lastmod": "2026-09-24"
     },
     "en/network": {
-      "fingerprint": "fc0360fa022234d8",
-      "lastmod": "2026-09-23"
+      "fingerprint": "d04ba222e39cba45",
+      "lastmod": "2026-09-24"
     },
     "ne/network": {
-      "fingerprint": "88f7a7b30dd8055f",
-      "lastmod": "2026-09-23"
+      "fingerprint": "2eed60353083d2e3",
+      "lastmod": "2026-09-24"
     },
     "zh/network": {
-      "fingerprint": "9a3584c9403cd7ea",
-      "lastmod": "2026-09-23"
+      "fingerprint": "83856c88bb2bb3b6",
+      "lastmod": "2026-09-24"
     },
     "hi/network": {
-      "fingerprint": "7f948dfb129a4682",
-      "lastmod": "2026-09-23"
+      "fingerprint": "e11c5d09da5a3d5e",
+      "lastmod": "2026-09-24"
+    },
+    "en/gallery": {
+      "fingerprint": "50547c52016a59ea",
+      "lastmod": "2026-09-24"
+    },
+    "ne/gallery": {
+      "fingerprint": "bb06a0bbbbac4ba1",
+      "lastmod": "2026-09-24"
+    },
+    "zh/gallery": {
+      "fingerprint": "d30448962ef89d1d",
+      "lastmod": "2026-09-24"
+    },
+    "hi/gallery": {
+      "fingerprint": "199ad124c4c9ae5b",
+      "lastmod": "2026-09-24"
+    },
+    "en/awards": {
+      "fingerprint": "f4a6dfc16bda384c",
+      "lastmod": "2026-09-24"
+    },
+    "ne/awards": {
+      "fingerprint": "07679f4f13eb0042",
+      "lastmod": "2026-09-24"
+    },
+    "zh/awards": {
+      "fingerprint": "7db78b50a70a8b79",
+      "lastmod": "2026-09-24"
+    },
+    "hi/awards": {
+      "fingerprint": "0ffbb97b775eee6a",
+      "lastmod": "2026-09-24"
     },
     "en/about": {
-      "fingerprint": "5f81ba67bb09d009",
-      "lastmod": "2026-09-23"
+      "fingerprint": "d9e93b6a2010fb3e",
+      "lastmod": "2026-09-24"
     },
     "ne/about": {
-      "fingerprint": "881207fd3caa42e5",
-      "lastmod": "2026-09-23"
+      "fingerprint": "b002de59a4d88fa9",
+      "lastmod": "2026-09-24"
     },
     "zh/about": {
-      "fingerprint": "0a87393e4ebcdb1b",
-      "lastmod": "2026-09-23"
+      "fingerprint": "1530a1e2587589c6",
+      "lastmod": "2026-09-24"
     },
     "hi/about": {
-      "fingerprint": "f90013a2d5fd56d5",
-      "lastmod": "2026-09-23"
+      "fingerprint": "be64333d1640e3f1",
+      "lastmod": "2026-09-24"
     },
     "en/contact": {
-      "fingerprint": "4cd3339b71a9c306",
-      "lastmod": "2026-09-23"
+      "fingerprint": "124c43210b52944f",
+      "lastmod": "2026-09-24"
     },
     "ne/contact": {
-      "fingerprint": "3e15d09238788739",
-      "lastmod": "2026-09-23"
+      "fingerprint": "7f250bd8d15b3add",
+      "lastmod": "2026-09-24"
     },
     "zh/contact": {
-      "fingerprint": "4ce46edbc7eb3c2d",
-      "lastmod": "2026-09-23"
+      "fingerprint": "ee24e84c594cb98c",
+      "lastmod": "2026-09-24"
     },
     "hi/contact": {
-      "fingerprint": "406610a1f6a7bdef",
-      "lastmod": "2026-09-23"
+      "fingerprint": "44d0a36317e879a0",
+      "lastmod": "2026-09-24"
     },
     "en/quote": {
-      "fingerprint": "eb9895d152186631",
-      "lastmod": "2026-09-23"
+      "fingerprint": "e5e1659b7162c23a",
+      "lastmod": "2026-09-24"
     },
     "ne/quote": {
-      "fingerprint": "00b878045db1ca39",
-      "lastmod": "2026-09-23"
+      "fingerprint": "83d619e2c8e3bd86",
+      "lastmod": "2026-09-24"
     },
     "zh/quote": {
-      "fingerprint": "4846120a30978bab",
-      "lastmod": "2026-09-23"
+      "fingerprint": "c9852d853496a449",
+      "lastmod": "2026-09-24"
     },
     "hi/quote": {
-      "fingerprint": "fb7c2a7737b92899",
-      "lastmod": "2026-09-23"
+      "fingerprint": "9c6a460479246337",
+      "lastmod": "2026-09-24"
     },
     "en/track": {
-      "fingerprint": "e615c4fcf079e038",
-      "lastmod": "2026-09-23"
+      "fingerprint": "47500c7a5b3c71cd",
+      "lastmod": "2026-09-24"
     },
     "ne/track": {
-      "fingerprint": "5395383f1f34b925",
-      "lastmod": "2026-09-23"
+      "fingerprint": "253d1260c4f0827d",
+      "lastmod": "2026-09-24"
     },
     "zh/track": {
-      "fingerprint": "959a3a5bb11a4950",
-      "lastmod": "2026-09-23"
+      "fingerprint": "7988e292eea22ae6",
+      "lastmod": "2026-09-24"
     },
     "hi/track": {
-      "fingerprint": "37fd079fbf9d366a",
-      "lastmod": "2026-09-23"
+      "fingerprint": "8716a006a091e688",
+      "lastmod": "2026-09-24"
     },
     "en/privacy": {
-      "fingerprint": "207c87879e3710fc",
-      "lastmod": "2026-09-23"
+      "fingerprint": "42d7e610a6ba2cfa",
+      "lastmod": "2026-09-24"
     },
     "ne/privacy": {
-      "fingerprint": "21e305c12dc46203",
-      "lastmod": "2026-09-23"
+      "fingerprint": "70ff74cf591ffbeb",
+      "lastmod": "2026-09-24"
     },
     "zh/privacy": {
-      "fingerprint": "fd222de29486d4bf",
-      "lastmod": "2026-09-23"
+      "fingerprint": "037c7cec380c8166",
+      "lastmod": "2026-09-24"
     },
     "hi/privacy": {
-      "fingerprint": "3732b19fe7a03b3a",
-      "lastmod": "2026-09-23"
+      "fingerprint": "843d013c496a3ab3",
+      "lastmod": "2026-09-24"
     },
     "en/terms": {
-      "fingerprint": "4def5028c36e2829",
-      "lastmod": "2026-09-23"
+      "fingerprint": "4bfa41d4ec783570",
+      "lastmod": "2026-09-24"
     },
     "ne/terms": {
-      "fingerprint": "6d5cc054a95fea1a",
-      "lastmod": "2026-09-23"
+      "fingerprint": "59efe1ed3fdbaa03",
+      "lastmod": "2026-09-24"
     },
     "zh/terms": {
-      "fingerprint": "fb49d41a4f670c91",
-      "lastmod": "2026-09-23"
+      "fingerprint": "6c100e7acab6e934",
+      "lastmod": "2026-09-24"
     },
     "hi/terms": {
-      "fingerprint": "85c21f1545ee37f5",
-      "lastmod": "2026-09-23"
+      "fingerprint": "e1c91424c7100086",
+      "lastmod": "2026-09-24"
     },
     "en/services/air-freight": {
-      "fingerprint": "4ecbb4680fb58713",
-      "lastmod": "2026-09-23"
+      "fingerprint": "a51e73c0ed39b6a6",
+      "lastmod": "2026-09-24"
     },
     "ne/services/air-freight": {
-      "fingerprint": "2e4ca37287d49309",
-      "lastmod": "2026-09-23"
+      "fingerprint": "02b5eebebfc47361",
+      "lastmod": "2026-09-24"
     },
     "zh/services/air-freight": {
-      "fingerprint": "656f25378a227a03",
-      "lastmod": "2026-09-23"
+      "fingerprint": "3294edaa878f7883",
+      "lastmod": "2026-09-24"
     },
     "hi/services/air-freight": {
-      "fingerprint": "af9429ff2be0e22f",
-      "lastmod": "2026-09-23"
+      "fingerprint": "dee69f50e11aa7a3",
+      "lastmod": "2026-09-24"
     },
     "en/services/ocean-freight": {
-      "fingerprint": "28f509a7e34c8c90",
-      "lastmod": "2026-09-23"
+      "fingerprint": "cd6cb372bcb1ad8f",
+      "lastmod": "2026-09-24"
     },
     "ne/services/ocean-freight": {
-      "fingerprint": "d74667c971f4176b",
-      "lastmod": "2026-09-23"
+      "fingerprint": "f918a19a71811d2e",
+      "lastmod": "2026-09-24"
     },
     "zh/services/ocean-freight": {
-      "fingerprint": "385e510bd6face9a",
-      "lastmod": "2026-09-23"
+      "fingerprint": "c5f76e9cfbdfd43c",
+      "lastmod": "2026-09-24"
     },
     "hi/services/ocean-freight": {
-      "fingerprint": "a4f9c0197b883900",
-      "lastmod": "2026-09-23"
+      "fingerprint": "2e5a6a2a932e3f36",
+      "lastmod": "2026-09-24"
     },
     "en/services/road-freight": {
-      "fingerprint": "3928f7fcdfa5bcad",
-      "lastmod": "2026-09-23"
+      "fingerprint": "a8ce013685af42f6",
+      "lastmod": "2026-09-24"
     },
     "ne/services/road-freight": {
-      "fingerprint": "65347806705454ff",
-      "lastmod": "2026-09-23"
+      "fingerprint": "49e1b1183732aa2e",
+      "lastmod": "2026-09-24"
     },
     "zh/services/road-freight": {
-      "fingerprint": "68e79fdd98c28bbf",
-      "lastmod": "2026-09-23"
+      "fingerprint": "76c55e0084dee986",
+      "lastmod": "2026-09-24"
     },
     "hi/services/road-freight": {
-      "fingerprint": "5d152ef211e812c6",
-      "lastmod": "2026-09-23"
+      "fingerprint": "eb9596545e0dddf6",
+      "lastmod": "2026-09-24"
     },
     "en/services/customs-clearance": {
-      "fingerprint": "0d7e7759b1fa2929",
-      "lastmod": "2026-09-23"
+      "fingerprint": "da1fd9a25660e437",
+      "lastmod": "2026-09-24"
     },
     "ne/services/customs-clearance": {
-      "fingerprint": "36da35ee6c25971c",
-      "lastmod": "2026-09-23"
+      "fingerprint": "022a8eb29e0b6885",
+      "lastmod": "2026-09-24"
     },
     "zh/services/customs-clearance": {
-      "fingerprint": "9fc529e53e539463",
-      "lastmod": "2026-09-23"
+      "fingerprint": "78b7d1dde1d9f904",
+      "lastmod": "2026-09-24"
     },
     "hi/services/customs-clearance": {
-      "fingerprint": "ad79e49fdc55387d",
-      "lastmod": "2026-09-23"
+      "fingerprint": "6cd1b28beb2fe0ec",
+      "lastmod": "2026-09-24"
     },
     "en/services/project-cargo": {
-      "fingerprint": "cd17e712995801f3",
-      "lastmod": "2026-09-23"
+      "fingerprint": "f7b828ca5c60e390",
+      "lastmod": "2026-09-24"
     },
     "ne/services/project-cargo": {
-      "fingerprint": "968d2c1c761f5cb4",
-      "lastmod": "2026-09-23"
+      "fingerprint": "68eadbc3d2f1b6f0",
+      "lastmod": "2026-09-24"
     },
     "zh/services/project-cargo": {
-      "fingerprint": "3724355c7ccc2287",
-      "lastmod": "2026-09-23"
+      "fingerprint": "84ff57210d3522e9",
+      "lastmod": "2026-09-24"
     },
     "hi/services/project-cargo": {
-      "fingerprint": "6d4aba17655d8a64",
-      "lastmod": "2026-09-23"
+      "fingerprint": "a979865ee34e0235",
+      "lastmod": "2026-09-24"
     },
     "en/services/warehousing": {
-      "fingerprint": "7c809588a8cbebe7",
-      "lastmod": "2026-09-23"
+      "fingerprint": "6c9fdc77abbe0d4b",
+      "lastmod": "2026-09-24"
     },
     "ne/services/warehousing": {
-      "fingerprint": "93d8a7c3616edb60",
-      "lastmod": "2026-09-23"
+      "fingerprint": "a61cbc6f1a094e72",
+      "lastmod": "2026-09-24"
     },
     "zh/services/warehousing": {
-      "fingerprint": "83ffb4c90aef8839",
-      "lastmod": "2026-09-23"
+      "fingerprint": "e6e3bffaa3965c53",
+      "lastmod": "2026-09-24"
     },
     "hi/services/warehousing": {
-      "fingerprint": "0b200e900d247257",
-      "lastmod": "2026-09-23"
+      "fingerprint": "6f50e7f2b1ace3a3",
+      "lastmod": "2026-09-24"
     },
     "en/services/delivery": {
-      "fingerprint": "e282d33176d7db26",
-      "lastmod": "2026-09-23"
+      "fingerprint": "f7b0239fa00c7d64",
+      "lastmod": "2026-09-24"
     },
     "ne/services/delivery": {
-      "fingerprint": "6962e1681abfefc9",
-      "lastmod": "2026-09-23"
+      "fingerprint": "b28563d85b5ba4b3",
+      "lastmod": "2026-09-24"
     },
     "zh/services/delivery": {
-      "fingerprint": "70b508f26acb94a9",
-      "lastmod": "2026-09-23"
+      "fingerprint": "598d9c23ae2d705f",
+      "lastmod": "2026-09-24"
     },
     "hi/services/delivery": {
-      "fingerprint": "60714027816dca00",
-      "lastmod": "2026-09-23"
+      "fingerprint": "0fd382d9f3c07ddb",
+      "lastmod": "2026-09-24"
     },
     "en/guides/importing-to-nepal": {
       "fingerprint": "db0169511b55e431",

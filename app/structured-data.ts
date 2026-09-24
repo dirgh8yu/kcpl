@@ -85,7 +85,10 @@ export function websiteNode(description: string) {
 const crumbLabels: Record<string, SiteTextKey> = {
   "/services": "chrome.services",
   "/sectors": "chrome.sectors",
+  "/work": "chrome.work",
   "/network": "chrome.network",
+  "/gallery": "chrome.gallery",
+  "/awards": "chrome.awards",
   "/about": "chrome.about",
   "/contact": "chrome.contact",
   "/quote": "chrome.quote",

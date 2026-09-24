@@ -43,8 +43,8 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           <p className="hero-intro">{t("home.hero_intro")}</p>
           <div className="hero-actions">
             <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-            <Link href={sitePath(locale, "/services")} className="button-ghost">{t("home.hero_secondary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
           </div>
+          <p className="hero-trust">{t("home.hero_trust")}</p>
         </div>
         <div className="hero-rail">
           {rail.map((item) => (
@@ -52,7 +52,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           ))}
         </div>
       </section>
-      <ClientRail locale={locale}/>
 
       <section className="section section-capability">
         <div className="capability-layout">
@@ -72,6 +71,28 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           </dl>
         </div>
       </section>
+
+      <section className="section section-proof section-home-proof">
+        <div className="section-head">
+          <p className="eyebrow">{t("home.proof_eyebrow")}</p>
+          <h2 className="section-title reveal">{t("home.proof_title")}</h2>
+          <p className="section-intro">{t("home.proof_intro")}</p>
+        </div>
+        <div className="proof-stories">
+          {([1, 2, 3] as const).map((number) => (
+            <article className="proof-story reveal" key={number}>
+              <p className="proof-kicker">{t(`home.proof_${number}_kicker`)}</p>
+              <div className="proof-story-body">
+                <h3 className="proof-title"><Link href={sitePath(locale, `/work#${["", "infrastructure", "air-export", "western-nepal"][number]}`)}>{t(`home.proof_${number}_title`)}<ArrowRight size={22} weight="bold" aria-hidden="true"/></Link></h3>
+                <div><p className="proof-copy">{t(`home.proof_${number}_copy`)}</p><p className="proof-meta">{t(`home.proof_${number}_meta`)}</p></div>
+              </div>
+            </article>
+          ))}
+        </div>
+        <Link href={sitePath(locale, "/work")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+      </section>
+
+      <ClientRail locale={locale}/>
 
       <section className="section section-corridor">
         <h2 className="section-title corridor-heading">{t("home.corridor_title")}</h2>
@@ -97,38 +118,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           </article>
         </div>
         <Link href={sitePath(locale, "/network")} className="section-link">{t("home.corridor_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-      </section>
-
-      <section className="section section-proof">
-        <div className="section-head">
-          <p className="eyebrow">{t("home.proof_eyebrow")}</p>
-          <h2 className="section-title reveal">{t("home.proof_title")}</h2>
-          <p className="section-intro">{t("home.proof_intro")}</p>
-        </div>
-        <article className="proof-lead">
-          <figure className="proof-figure"><Image src="/images/unsplash/port-aerial.jpg" alt="" width={1200} height={800} sizes="(max-width: 1080px) 100vw, 55vw" className="proof-photo"/></figure>
-          <div>
-            <p className="proof-kicker">{t("home.proof_1_kicker")}</p>
-            <h3 className="proof-lead-title">{t("home.proof_1_title")}</h3>
-            <p className="proof-copy">{t("home.proof_1_copy")}</p>
-            <p className="proof-meta">{t("home.proof_1_meta")}</p>
-          </div>
-        </article>
-        <div className="proof-more reveal-group">
-          <article className="proof-support reveal">
-            <p className="proof-kicker">{t("home.proof_2_kicker")}</p>
-            <h3 className="proof-title">{t("home.proof_2_title")}</h3>
-            <p className="proof-copy">{t("home.proof_2_copy")}</p>
-            <p className="proof-meta">{t("home.proof_2_meta")}</p>
-          </article>
-          <article className="proof-support reveal">
-            <p className="proof-kicker">{t("home.proof_3_kicker")}</p>
-            <h3 className="proof-title">{t("home.proof_3_title")}</h3>
-            <p className="proof-copy">{t("home.proof_3_copy")}</p>
-            <p className="proof-meta">{t("home.proof_3_meta")}</p>
-          </article>
-        </div>
-        <Link href={sitePath(locale, "/sectors")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
       </section>
 
       <section className="section section-credibility">

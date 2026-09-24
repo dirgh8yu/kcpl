@@ -6,13 +6,17 @@ import { company } from "../company-data";
 import { guides } from "../guide-data";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
+import { SiteMotion } from "./site-motion";
 import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
 /** Nav is declared once: the header, the mobile disclosure and the footer all read it. */
 const navigation = [
   { path: "/services", key: "chrome.services" },
   { path: "/sectors", key: "chrome.sectors" },
+  { path: "/work", key: "chrome.work" },
   { path: "/network", key: "chrome.network" },
+  { path: "/gallery", key: "chrome.gallery" },
+  { path: "/awards", key: "chrome.awards" },
   { path: "/about", key: "chrome.about" },
   { path: "/contact", key: "chrome.contact" },
 ] as const;
@@ -159,6 +163,7 @@ export function SiteShell({ locale, path, children }: { locale: SiteLocale; path
         * that knows both which page and which language. */}
       {breadcrumb ? <StructuredData data={breadcrumb}/> : null}
       <SiteHeader locale={locale} path={path}/>
+      <SiteMotion/>
       <main id="main">{children}</main>
       <SiteFooter locale={locale} path={path}/>
     </div>
