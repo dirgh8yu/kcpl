@@ -8,7 +8,7 @@ import { SiteShell } from "./site-chrome";
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
-  const sectorImages = ["/images/services/specialist-open-top.jpg", "/images/services/packaging-storage.jpg", "/images/ocean-freight.jpg"];
+  const sectorImages = ["/images/unsplash/port-crane.jpg", "/images/unsplash/warehouse-forklift.jpg", "/images/unsplash/ship-aerial.jpg"];
   const sectors = [1, 2, 3].map((n) => ({
     title: t(`sectors.s${n}_title` as "sectors.s1_title"),
     copy: t(`sectors.s${n}_copy` as "sectors.s1_copy"),
@@ -32,7 +32,6 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
           <article key={sector.title} className="sector-row reveal">
             <figure className="sector-figure"><Image src={sector.image} alt="" width={800} height={560} sizes="(max-width: 700px) 100vw, 45vw" className={`sector-photo sector-photo-${index + 1}`}/></figure>
             <div className="sector-content">
-              <span className="sector-number" aria-hidden="true">{String(index + 1).padStart(2, "0")} / 03</span>
               <h2 className="sector-title">{sector.title}</h2>
               <p className="sector-copy">{sector.copy}</p>
               <p className="sector-list-line">{sector.list}</p>
@@ -72,8 +71,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
     copy: t(`about.desk_${n}_copy` as "about.desk_1_copy"),
   }));
   const credentials = [
-    { label: t("stats.clients_value"), detail: t("stats.clients_label") },
-    { label: t("stats.projects_value"), detail: t("stats.projects_label") },
+    { label: t("company.established_short"), detail: t("company.established_where") },
     { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
@@ -86,7 +84,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("about.intro")}</p>
       </section>
       <section className="about-banner">
-        <Image src="/images/services/warehousing.jpg" alt="" fill sizes="100vw" className="about-banner-image"/>
+        <Image src="/images/unsplash/warehouse-forklift.jpg" alt="" fill sizes="100vw" className="about-banner-image"/>
       </section>
       <section className="section about-split">
         <div>

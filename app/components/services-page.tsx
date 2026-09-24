@@ -20,9 +20,8 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("services.intro")}</p>
       </section>
       <section className="section service-index reveal-group">
-        {services.map((service, index) => (
+        {services.map((service) => (
           <Link key={service.slug} href={sitePath(locale, `/services/${service.slug}`)} className="service-row reveal">
-            <span className="service-row-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
             <div className="service-row-body">
               <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
               <p className="service-row-copy">{t(text(service.key, "summary"))}</p>

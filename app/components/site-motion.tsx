@@ -4,29 +4,11 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const revealSelector = [
-  ".reveal",
-  ".section-head",
-  ".corridor-leg",
-  ".proof-lead",
-  ".network-note",
-  ".lane-column",
-  ".service-detail-main",
-  ".service-detail-aside",
-  ".service-expanded > *",
-  ".service-question",
-  ".service-related-grid",
-  ".record",
-  ".contact-cell",
-  ".about-split > div",
-  ".about-credibility .credibility-copy",
-  ".about-credibility .credibility-fact",
-  ".freight-guide-section",
-  ".freight-guide-actions",
-  ".freight-guide-next",
-  ".cargo-types > *",
-  ".section-cta > *",
-  ".service-banner-copy > *",
-  ".page-head > *",
+  ".section-title",
+  ".proof-story",
+  ".work-record",
+  ".sector-row",
+  ".service-row",
 ].join(", ");
 
 export function SiteMotion() {
@@ -37,8 +19,7 @@ export function SiteMotion() {
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (!root || motionPreference.matches || !window.IntersectionObserver) return;
 
-    const targets = [...root.querySelectorAll<HTMLElement>(revealSelector)]
-      .filter((element) => !element.parentElement?.closest(revealSelector));
+    const targets = [...root.querySelectorAll<HTMLElement>(revealSelector)];
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
