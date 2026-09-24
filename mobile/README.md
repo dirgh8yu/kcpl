@@ -284,7 +284,7 @@ handset. Inter and Inter Tight are also SIL OFL, and Phosphor is MIT; the licenc
 ```sh
 flutter analyze
 flutter test
-dart format -l 140 lib test   # the house line length
+dart format -l 140 $(git ls-files "lib/*.dart" "test/*.dart" | grep -v /l10n/)   # house line length; l10n is generated
 ```
 
 The widget tests sign in and walk every screen in English and Nepali at 1.6× system text
