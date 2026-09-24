@@ -52,12 +52,20 @@
 }
 
 .createActions {
+  /* Pinned to the bottom of the scrolling dialog, so Create is reachable on a
+   * phone without scrolling past every field first. The negative margin and
+   * matching padding carry the surface to the dialog edges and cover the
+   * form's own bottom padding, so fields do not show through underneath. */
+  position: sticky;
+  bottom: -16px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  margin: 0 -16px -16px;
   border-top: 1px solid var(--admin-line);
-  padding-top: 12px;
+  padding: 12px 16px 16px;
+  background: var(--admin-surface);
 }
 
 .createError {

@@ -60,7 +60,8 @@ export async function POST(request: Request) {
   if (action === "create_order") {
     const branch = clean(body.branch, 80) as KcplBranch;
     const mode = clean(body.mode, 30) as TmsMode;
-    if (!kcplBranches.includes(branch) || !tmsModes.includes(mode)) return json({ ok: false, error: "Choose a valid branch and transport mode." }, 400);
+    if (!kcplBranches.includes(branch)) return json({ ok: false, error: "Choose a valid branch." }, 400);
+    if (!tmsModes.includes(mode)) return json({ ok: false, error: "Choose a valid transport mode." }, 400);
     const result = await createTmsOrder({
       branch,
       customerId: clean(body.customerId, 120),

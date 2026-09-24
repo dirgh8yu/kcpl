@@ -44,6 +44,7 @@ import {
   type OverviewSectionId,
 } from "../operations-arrangeable";
 import { useStaffArrangement } from "../use-staff-arrangement";
+import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
 import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
@@ -54,8 +55,11 @@ import extras from "./overview-dashboard-extras.module.css";
 const DAY_MS = 86_400_000;
 // Mirrors --app-duration-fast in overview-dashboard.module.css; keep the two in step.
 const LAUNCHER_EXIT_MS = 120;
-const creationModes = ["road", "ocean", "air", "rail"] as const;
-type CreationMode = typeof creationModes[number];
+// Must be the server's own list. A hand-rolled copy here once offered "ocean",
+// which create_order has never accepted (sea freight is "sea"), so every
+// ocean shipment failed with "Choose a valid branch and transport mode".
+const creationModes = tmsModes;
+type CreationMode = TmsMode;
 type Tone = "danger" | "warning" | "success" | "info" | "neutral" | "violet";
 
 type DashboardProps = {

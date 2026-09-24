@@ -92,3 +92,20 @@ test("Overview preserves server authority, branch scope and return context with 
   assert.match(notes, /staffCanAccessBranch/);
   assert.match(notes, /canManageJobFile/);
 });
+
+// The New shipment modal posts create_order, which validates mode against
+// tmsModes. The modal once hand-rolled its own list and offered "ocean", which
+// the server has never accepted (sea freight is "sea"), so every ocean shipment
+// failed with a validation error even with every field filled in. The modal
+// must offer exactly the server's list, not a copy of it.
+test("the New shipment modal offers only modes create_order accepts", async () => {
+  const overview = await readFile(overviewPath, "utf8");
+  const route = await readFile(new URL("../app/api/admin/rating/route.ts", import.meta.url), "utf8");
+  const { tmsModes } = await import("../app/admin/rating/tms-rating.ts");
+
+  assert.match(route, /tmsModes\.includes\(mode\)/, "create_order must validate mode against tmsModes");
+  assert.match(overview, /from "\.\.\/rating\/tms-rating"/, "the modal must import the server's mode list");
+  assert.match(overview, /const creationModes = tmsModes;/, "the modal must offer tmsModes, not its own copy");
+  assert.ok(!/const creationModes = \[/.test(overview), "a hand-rolled mode list must not come back");
+  assert.ok(tmsModes.includes("sea") && !tmsModes.includes("ocean"), "sea freight is 'sea' on the server");
+});
