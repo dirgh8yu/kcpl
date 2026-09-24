@@ -8,15 +8,15 @@ import '../labels.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
-import '../widgets/bento.dart';
+import '../widgets/stats.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/common.dart';
-import '../widgets/journey.dart' show IconTile, journeyStage;
-import '../widgets/pass.dart';
+import '../widgets/journey.dart' show IconTile;
+import '../widgets/shipment_card.dart';
 import '../widgets/push_ui.dart';
 import '../widgets/rows.dart';
 
-export '../widgets/pass.dart' show JourneyGraphic, Endpoints;
+export '../widgets/shipment_card.dart' show JourneyGraphic;
 
 enum HomeTab { overview, shipments, documents, invoices, account }
 
@@ -63,10 +63,10 @@ class OverviewScreen extends StatelessWidget {
       PushPrimer(copy: customerPushCopy(l)),
       if (hero != null)
         Padding(
-          padding: const EdgeInsets.fromLTRB(kGutter, 20, kGutter, 0),
+          padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
           child: HeroShipment(shipment: hero),
         ),
-      const SizedBox(height: 24),
+      const SizedBox(height: 12),
       _Figures(overview: overview, onNavigate: onNavigate),
       if (overview.freeTime.isNotEmpty) ...[
         SectionHeader(l.overviewFreeTimeTitle),
@@ -126,8 +126,7 @@ class OverviewScreen extends StatelessWidget {
   }
 }
 
-/// The figures as a bento: where the active shipments are, what arrives
-/// this week, and what has gone wrong.
+/// The four figures that matter, in one quiet row.
 class _Figures extends StatelessWidget {
   const _Figures({required this.overview, required this.onNavigate});
   final Overview overview;
@@ -136,43 +135,13 @@ class _Figures extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final active = overview.shipments.where((s) => !s.delivered).toList();
-    int count(bool Function(String status) test) => active.where((s) => test(s.status)).length;
-    final trouble = active.where((s) => s.status == 'exception').map((s) => s.reference).toList();
-    final arrivals = [for (final s in active) ?DateTime.tryParse(s.eta ?? '')];
-    return Bento(
-      rows: [
-        [
-          BentoTile(
-            label: l.overviewKpiActive,
-            value: overview.activeCount,
-            large: true,
-            onTap: () => onNavigate(HomeTab.shipments),
-            chart: StageBar(
-              stages: [
-                Stage(l.statusBookingConfirmed, count((s) => journeyStage(s) == 0 && s != 'exception')),
-                Stage(l.statusInTransit, count((s) => s == 'in_transit')),
-                Stage(l.statusCustomsClearance, count((s) => s == 'customs_clearance')),
-                Stage(l.statusOutForDelivery, count((s) => s == 'out_for_delivery')),
-                if (trouble.isNotEmpty) Stage(l.statusException, trouble.length, attention: true),
-              ],
-            ),
-          ),
-        ],
-        [
-          BentoTile(
-            label: l.overviewKpiArriving,
-            value: overview.arrivingCount,
-            chart: WeekStrip(dates: arrivals),
-          ),
-          BentoTile(
-            label: l.overviewKpiAttention,
-            value: overview.attentionCount,
-            attention: true,
-            caption: trouble.isEmpty ? null : trouble.take(2).join('\n'),
-            onTap: () => onNavigate(HomeTab.shipments),
-          ),
-        ],
+    void shipments() => onNavigate(HomeTab.shipments);
+    return StatRow(
+      stats: [
+        Stat(l.overviewKpiActive, overview.activeCount, onTap: shipments),
+        Stat(l.overviewKpiInTransit, overview.inTransitCount, onTap: shipments),
+        Stat(l.overviewKpiArriving, overview.arrivingCount, onTap: shipments),
+        Stat(l.overviewKpiAttention, overview.attentionCount, attention: true, onTap: shipments),
       ],
     );
   }
@@ -229,43 +198,6 @@ class HeroShipment extends StatelessWidget {
   );
 }
 
-class Figure extends StatelessWidget {
-  const Figure({super.key, required this.label, required this.value, this.attention = false, this.onTap});
-  final String label;
-  final int value;
-  final bool attention;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CountUp(
-                value: value.toDouble(),
-                format: (v) => '${v.round()}',
-                style: context.type.headlineSmall?.copyWith(
-                  color: attention ? p.accent : p.ink,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(label, style: context.type.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// One currency's balance, in the large figure a balance deserves.
 class BalanceFigure extends StatelessWidget {
   const BalanceFigure({super.key, required this.balance, this.detail = false});
@@ -285,7 +217,7 @@ class BalanceFigure extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
-            child: CountUp(value: balance.outstanding, format: (v) => formatMoney(v, balance.currency), style: context.type.headlineLarge),
+            child: CountUp(value: balance.outstanding, format: (v) => formatMoney(v, balance.currency), style: context.type.headlineMedium),
           ),
           const SizedBox(height: 6),
           if (balance.overdue > 0)

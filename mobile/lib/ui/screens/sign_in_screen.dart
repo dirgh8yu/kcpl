@@ -182,7 +182,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                               // On a tall screen the map has room to breathe.
                               SizedBox(height: constraints.maxHeight > 700 ? MediaQuery.sizeOf(context).height * 0.46 - 120 : 56),
-                              Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.headlineMedium)),
+                              Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.displaySmall)),
                               const SizedBox(height: 10),
                               Reveal(
                                 index: 2,

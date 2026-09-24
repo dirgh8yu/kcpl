@@ -6,7 +6,7 @@ import '../../ui/motion.dart';
 import '../../ui/screens/overview_screen.dart' show JourneyGraphic;
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
-import '../../ui/widgets/bento.dart';
+import '../../ui/widgets/stats.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/push_ui.dart';
 import '../ops_controller.dart';
@@ -74,49 +74,34 @@ class TodayScreen extends StatelessWidget {
       const PushPrimer(copy: opsPushCopy),
       if (lead != null)
         Padding(
-          padding: const EdgeInsets.fromLTRB(kGutter, 20, kGutter, 0),
+          padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
           child: _LeadCard(job: lead, mine: lead.ownedBy(session.email)),
         ),
       // Crimson only where something has gone wrong: late work and exceptions.
-      const SizedBox(height: 24),
-      Bento(
-        rows: [
-          [
-            BentoTile(
-              label: 'Active jobs',
-              value: totals.active,
-              large: true,
-              flex: 3,
-              caption: '${totals.urgent} urgent · ${totals.unassigned} unassigned',
-              onTap: () => onNavigate(OpsTab.jobs),
-              chart: Row(
-                children: [
-                  RingChart(fraction: totals.active == 0 ? 0 : totals.urgent / totals.active, size: 36, attention: totals.urgent > 0),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      totals.active == 0 ? 'Nothing active' : '${(100 * totals.urgent / totals.active).round()}% urgent',
-                      style: context.type.labelMedium?.copyWith(color: p.secondary),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            BentoTile(
-              label: 'Overdue tasks',
-              value: totals.overdueTasks,
-              caption: bundle.jobs.where((j) => j.overdueTasks > 0).take(3).map((j) => j.reference).join('\n'),
-              attention: true,
-              flex: 2,
-              onTap: () => onNavigate(OpsTab.jobs),
-            ),
-          ],
-          [
-            BentoTile(label: 'Customs blocks', value: totals.customsBlockers, onTap: () => onNavigate(OpsTab.jobs)),
-            BentoTile(label: 'Exceptions', value: totals.exceptions, attention: true),
-            BentoTile(label: 'Deliveries today', value: totals.deliveriesToday),
-          ],
+      const SizedBox(height: 12),
+      StatRow(
+        stats: [
+          Stat('Active jobs', totals.active, onTap: () => onNavigate(OpsTab.jobs)),
+          Stat('Urgent', totals.urgent, onTap: () => onNavigate(OpsTab.jobs)),
+          Stat('Overdue tasks', totals.overdueTasks, attention: true, onTap: () => onNavigate(OpsTab.jobs)),
+          Stat('Customs blocks', totals.customsBlockers, onTap: () => onNavigate(OpsTab.jobs)),
         ],
+      ),
+      // The rest in a line of words: worth knowing, not worth a figure each.
+      Padding(
+        padding: const EdgeInsets.fromLTRB(kGutter + 2, 10, kGutter, 0),
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '${totals.exceptions} ${totals.exceptions == 1 ? 'exception' : 'exceptions'}',
+                style: TextStyle(color: totals.exceptions > 0 ? p.accent : null),
+              ),
+              TextSpan(text: '  ·  ${totals.deliveriesToday} delivering today  ·  ${totals.unassigned} unassigned'),
+            ],
+          ),
+          style: context.type.bodySmall,
+        ),
       ),
       if (mine.isNotEmpty) ...[
         SectionHeader('Your jobs', actionLabel: 'All jobs', onAction: () => onNavigate(OpsTab.jobs)),

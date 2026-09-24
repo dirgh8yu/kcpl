@@ -1,11 +1,10 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kcpl_customer/ui/map/map_data.dart';
 import 'package:kcpl_customer/ui/map/places.dart';
 import 'package:kcpl_customer/ui/map/route_map.dart';
 import 'package:kcpl_customer/ui/theme.dart';
-import 'package:kcpl_customer/ui/widgets/bento.dart';
+import 'package:kcpl_customer/ui/widgets/stats.dart';
 
 Future<void> pumpStill(WidgetTester tester, Widget child) async {
   tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
@@ -85,20 +84,18 @@ void main() {
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
-  testWidgets('the week strip counts only the next seven days', (tester) async {
-    await withClock(Clock.fixed(DateTime(2026, 9, 24, 10)), () async {
-      await pumpStill(
-        tester,
-        SizedBox(
-          width: 200,
-          child: WeekStrip(dates: [DateTime(2026, 9, 24), DateTime(2026, 9, 24, 18), DateTime(2026, 9, 30), DateTime(2026, 10, 1)]),
-        ),
-      );
-    });
-    final bars = tester.widgetList<Container>(find.descendant(of: find.byType(WeekStrip), matching: find.byType(Container))).toList();
-    expect(bars, hasLength(7));
-    double height(Container c) => c.constraints!.maxHeight;
-    expect(height(bars[0]), greaterThan(height(bars[6])), reason: 'two arrivals today, one on day seven');
-    expect(height(bars[1]), 4, reason: 'nothing tomorrow is a stub, not a gap');
+  testWidgets('a figure is crimson only when something has gone wrong', (tester) async {
+    await pumpStill(
+      tester,
+      const SizedBox(
+        width: 360,
+        child: StatRow(stats: [Stat('Active', 4), Stat('Overdue', 1, attention: true), Stat('Exceptions', 0, attention: true)]),
+      ),
+    );
+    Color? colour(String text) => tester.widget<Text>(find.text(text)).style?.color;
+    final accent = Theme.of(tester.element(find.byType(StatRow))).extension<Palette>()!.accent;
+    expect(colour('1'), accent);
+    expect(colour('4'), isNot(accent));
+    expect(colour('0'), isNot(accent), reason: 'nothing wrong, nothing red');
   });
 }

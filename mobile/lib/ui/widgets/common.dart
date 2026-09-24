@@ -5,7 +5,7 @@ import '../theme.dart';
 
 /// A bold section title with an optional quiet action, aligned to the gutter.
 class SectionHeader extends StatelessWidget {
-  const SectionHeader(this.title, {super.key, this.actionLabel, this.onAction, this.top = 36});
+  const SectionHeader(this.title, {super.key, this.actionLabel, this.onAction, this.top = 28});
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
@@ -69,7 +69,7 @@ class RowTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kGutter, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: kGutter, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -81,7 +81,10 @@ class RowTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        DefaultTextStyle.merge(style: context.type.titleMedium, child: title),
+                        DefaultTextStyle.merge(
+                          style: context.type.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                          child: title,
+                        ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 3),
                           DefaultTextStyle.merge(style: context.type.bodySmall, child: subtitle!),

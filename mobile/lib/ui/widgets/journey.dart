@@ -53,9 +53,9 @@ class JourneyBar extends StatelessWidget {
     final p = context.palette;
     final delivered = status == 'delivered';
     final target = journeyFraction(status);
-    // Done is calm: a finished journey is ink, not an alert colour.
-    final fillColor = delivered ? p.ink : p.accent;
-    final lineHeight = large ? 4.0 : 2.5;
+    // Progress is ink; crimson is kept for a journey that has gone wrong.
+    final fillColor = status == 'exception' ? p.accent : p.ink;
+    final lineHeight = large ? 3.0 : 2.0;
     final vehicle = large ? 34.0 : 0.0;
     // Later rebuilds find the reference already drawn; the tween then
     // simply carries on from wherever it is.

@@ -250,6 +250,6 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
     );
     // In a sheet, pulling down closes it; the page still refreshes itself.
     if (SheetRoute.of(context)) return scroll;
-    return KRefresh(onRefresh: _refresh, edgeOffset: MediaQuery.paddingOf(context).top + 108, child: scroll);
+    return KRefresh(onRefresh: _refresh, edgeOffset: MediaQuery.paddingOf(context).top + 98, child: scroll);
   }
 }

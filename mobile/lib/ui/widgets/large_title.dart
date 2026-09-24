@@ -13,7 +13,7 @@ class LargeTitleBar extends StatelessWidget {
   final String title;
 
   static const _toolbar = 52.0;
-  static const _extra = 56.0;
+  static const _extra = 46.0;
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +67,9 @@ class LargeTitleBar extends StatelessWidget {
                     title,
                     maxLines: 1,
                     style: context.type.headlineMedium?.copyWith(
-                      fontSize: lerpDouble(17, 32, t),
+                      fontSize: lerpDouble(17, 28, t),
                       fontWeight: FontWeight.lerp(FontWeight.w600, FontWeight.w700, t),
-                      letterSpacing: lerpDouble(-0.2, -1.0, t),
+                      letterSpacing: lerpDouble(-0.2, -0.7, t),
                       height: 1.15,
                     ),
                   ),

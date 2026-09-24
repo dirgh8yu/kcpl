@@ -46,13 +46,13 @@ class Palette extends ThemeExtension<Palette> {
   static const light = Palette(
     ink: Color(0xFF000000),
     paper: Color(0xFFFFFFFF),
-    secondary: Color(0xFF6B6B70),
-    tertiary: Color(0xFFABABB0),
-    hairline: Color(0xFFE8E8EB),
-    fill: Color(0xFFF4F4F5),
+    secondary: Color(0xFF737373),
+    tertiary: Color(0xFFA3A3A3),
+    hairline: Color(0xFFEBEBEB),
+    fill: Color(0xFFF5F5F5),
     accent: KcplColors.crimson,
     surface: Color(0xFFFFFFFF),
-    shadow: Color(0x14000000),
+    shadow: Color(0x0A000000),
     glow: Color(0xFFFF2D55),
   );
 
@@ -124,18 +124,6 @@ class Palette extends ThemeExtension<Palette> {
       offset: const Offset(0, 1),
     ),
   ];
-}
-
-/// The dark pass that leads each home screen: the same in light and dark
-/// mode, as a Wallet pass is.
-class PassColors {
-  static const base = Color(0xFF0B0B0D);
-  static const raised = Color(0xFF17171A);
-  static const ink = Color(0xFFFFFFFF);
-  static const secondary = Color(0xFF9C9CA3);
-  static const tertiary = Color(0xFF55555C);
-  static const hairline = Color(0x1FFFFFFF);
-  static const accent = Color(0xFFFF3358);
 }
 
 extension PaletteOf on BuildContext {
@@ -219,23 +207,26 @@ ThemeData kcplTheme(Brightness brightness) {
     height: height,
     fontFeatures: _tabular,
   );
+  // A quiet scale, as the best phone apps keep it: one 28pt title per
+  // page, 17pt section titles, 15pt reading text and 13pt for the rest.
+  // Figures stay small; hierarchy comes from weight and grey, not size.
   final text = t.copyWith(
-    displaySmall: display(t.displaySmall, 44, FontWeight.w800, -1.8, 1.02),
-    headlineLarge: display(t.headlineLarge, 36, FontWeight.w800, -1.3, 1.08),
-    headlineMedium: display(t.headlineMedium, 30, FontWeight.w700, -1.0, 1.12),
-    headlineSmall: display(t.headlineSmall, 24, FontWeight.w700, -0.6, 1.18),
-    titleLarge: display(t.titleLarge, 20, FontWeight.w700, -0.4, 1.22),
-    titleMedium: t.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.25, height: 1.3),
-    titleSmall: t.titleSmall?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, height: 1.3),
-    bodyLarge: t.bodyLarge?.copyWith(fontSize: 16, letterSpacing: -0.2, height: 1.42),
-    bodyMedium: t.bodyMedium?.copyWith(fontSize: 15, letterSpacing: -0.15, height: 1.42),
-    bodySmall: t.bodySmall?.copyWith(fontSize: 13, letterSpacing: -0.05, height: 1.36, color: p.secondary),
+    displaySmall: display(t.displaySmall, 28, FontWeight.w700, -0.7, 1.12),
+    headlineLarge: display(t.headlineLarge, 26, FontWeight.w700, -0.6, 1.15),
+    headlineMedium: display(t.headlineMedium, 22, FontWeight.w700, -0.5, 1.18),
+    headlineSmall: display(t.headlineSmall, 20, FontWeight.w600, -0.4, 1.2),
+    titleLarge: t.titleLarge?.copyWith(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.3, height: 1.25),
+    titleMedium: t.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, height: 1.3),
+    titleSmall: t.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.15, height: 1.3),
+    bodyLarge: t.bodyLarge?.copyWith(fontSize: 15, letterSpacing: -0.15, height: 1.4),
+    bodyMedium: t.bodyMedium?.copyWith(fontSize: 14, letterSpacing: -0.1, height: 1.4),
+    bodySmall: t.bodySmall?.copyWith(fontSize: 13, letterSpacing: -0.05, height: 1.35, color: p.secondary),
     labelLarge: t.labelLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.15),
-    labelMedium: t.labelMedium?.copyWith(fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.05),
-    labelSmall: t.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.2),
+    labelMedium: t.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0),
+    labelSmall: t.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0),
   );
 
-  final radius = BorderRadius.circular(14);
+  final radius = BorderRadius.circular(12);
 
   return base.copyWith(
     textTheme: text,
@@ -273,9 +264,9 @@ ThemeData kcplTheme(Brightness brightness) {
         foregroundColor: p.paper,
         disabledBackgroundColor: p.fill,
         disabledForegroundColor: p.tertiary,
-        minimumSize: const Size.fromHeight(54),
+        minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: radius),
-        textStyle: text.titleMedium?.copyWith(fontSize: 17),
+        textStyle: text.titleMedium,
         splashFactory: NoSplash.splashFactory,
       ),
     ),
@@ -300,7 +291,7 @@ ThemeData kcplTheme(Brightness brightness) {
       floatingLabelStyle: text.bodySmall?.copyWith(color: p.secondary),
       prefixIconColor: p.secondary,
       suffixIconColor: p.secondary,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
       disabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
@@ -321,10 +312,14 @@ ThemeData kcplTheme(Brightness brightness) {
       side: BorderSide.none,
       shape: const StadiumBorder(),
       showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 8),
       labelStyle: WidgetStateTextStyle.resolveWith(
-        (states) =>
-            (text.labelLarge ?? const TextStyle()).copyWith(fontSize: 14, color: states.contains(WidgetState.selected) ? p.paper : p.ink),
+        (states) => (text.labelLarge ?? const TextStyle()).copyWith(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: states.contains(WidgetState.selected) ? p.paper : p.ink,
+        ),
       ),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: p.ink, circularTrackColor: Colors.transparent),

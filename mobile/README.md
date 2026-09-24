@@ -123,42 +123,30 @@ flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # 
 
 ### Design
 
-Black and white, with greys only for hierarchy (`Palette` in `lib/ui/theme.dart`), and dark
-mode is true black. KCPL crimson is kept for the brand mark, the route a shipment has
-travelled, whatever needs someone to act or is costing them money, and the glow of the
-dark pass. Status is written as words, never shown as a coloured pill.
+Quiet, in the manner of the best ride-hailing and banking apps: white (true black in dark
+mode), grey for hierarchy, and crimson only where something has gone wrong, on the sign-in
+button and in the K. Status is written as words, never shown as a coloured pill.
 
-- **Type:** Inter for reading and Inter Tight for display, bundled, so both apps look
-  the same on every phone. Figures use tabular digits. Nepali falls back to the bundled
-  Noto Sans Devanagari.
-- **Icons:** Phosphor. Its fonts are bundled directly and named in `lib/ui/icons.dart`.
-  Outline icons by default; the filled one marks the chosen tab.
-- **The pass** (`lib/ui/widgets/pass.dart`): the shipment or job that matters most leads
-  each home screen as a dark, Wallet-style pass. It has a crimson glow, film grain, an
-  edge that catches the light, and a perforated stub for the status and ETA. It stays
-  dark in light mode, and tips back and recedes as you scroll away. The same pass heads
-  the detail page, and it flies there as a shared element.
-- **The route map** (`lib/ui/map/`): drawn the way ride-hailing apps draw theirs. It
-  shows pale land, soft water, white roads, rivers, borders and small grey town names.
-  The route is in ink from origin (a dot) to destination (a square), grey behind the
-  cargo, and the cargo is a small disc with its mode. Both ends carry an ink label. The
-  map is dark inside the pass and follows light or dark mode elsewhere. It is drawn from
-  bundled data (about 480 KB), so it needs no map service, API key or network.
-  Places are matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)"). When
-  either end is unknown, the pass falls back to the plain journey line rather than
-  guessing. An end beyond the map (Rotterdam, say) is placed at the frame's edge,
-  pointing the right way.
-- **Bento figures** (`lib/ui/widgets/bento.dart`): the figures are tiles, each with a
-  small chart built from the same records as its number: shipments by stage, arrivals
-  across the next seven days, and the share of jobs that are urgent. Nothing is charted
-  that the server does not send.
-- **Chrome:** a floating glass tab bar with an ink pill that slides to the chosen tab.
-  Detail pages open as sheets that you pull down from the top to close. Icons are
-  small (18pt in rows, 19pt in the tab bar) and plain, without tiles behind them.
-
-The patterns come from apps that do this well: Flighty (a shipment drawn like a flight),
-Apple Wallet and Maps (the pass, the sheets), Revolut and Cash App (bento figures, ink
-buttons) and Apple's own apps (large titles that collapse as you scroll).
+- **Type:** Inter, bundled, on one small scale. Page titles are 28pt (17pt once collapsed),
+  section titles 17pt, reading text 15pt and secondary text 13pt. Figures are 20pt.
+  Hierarchy comes from weight and grey, not size.
+- **The shipment card** (`lib/ui/widgets/shipment_card.dart`): the shipment or job that matters
+  most leads each home screen as one white card. Its route is on the map at the top, and
+  three lines sit below: from and to with the date, the reference, and the status. The
+  same card heads the detail page and moves there as a shared element.
+- **The map** (`lib/ui/map/`): drawn the way ride-hailing apps draw theirs. It shows pale
+  land, soft water, white roads, rivers, borders and small grey town names. The route is
+  in ink from origin (a dot) to destination (a square), grey behind the cargo, and the
+  cargo is a small disc with its mode. Both ends carry an ink label. It is drawn from
+  bundled data (about 480 KB), so it needs no map service, API key or network. Places are
+  matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)"). When either end is
+  unknown, the card shows a plain progress line instead of guessing.
+- **Figures** (`lib/ui/widgets/stats.dart`): four small figures in one card, split by
+  hairlines.
+- **Chrome:** a plain frosted tab bar with grey outline icons and the chosen tab in ink.
+  Detail pages open as sheets that you pull down from the top to close. Icons are 18pt
+  in rows and 22pt in the tab bar, with nothing behind them. Cards have a hairline edge and
+  no shadow.
 
 Tabs keep their state and scroll position, and selection changes give a light haptic
 tick.
@@ -174,10 +162,10 @@ Every animation has a job, and all of them draw on one set of curves and duratio
 | Sign-in | KCPL's lanes into Nepal run across the map behind the form, each with a dot travelling to its gateway. The form assembles top to bottom. The crimson button presses in, and its label becomes the charging K. A wrong password shakes the fields with a haptic buzz. |
 | Every screen | Content fades up in a 40ms stagger when it arrives; the skeleton shimmers while loading. A refresh updates in place. |
 | Pull to refresh | Pulling assembles the K stroke by stroke, a tick says it will refresh on release, and the K charges while the page reloads. |
-| Home → detail | The pass flies into the sheet as it rises. Pull the sheet down to close it; it follows the finger. |
+| Home → detail | The shipment card moves into the sheet as it rises. Pull the sheet down to close it; it follows the finger. |
 | Route map | The route draws out from the origin, with the cargo riding its leading edge until it reaches where it is. |
-| Figures | Count up when they first appear; the charts grow in. |
-| Tab bar | The ink pill slides to the chosen tab and settles with a slight overshoot; the icon pops. |
+| Figures | Count up when they first appear. |
+| Tab bar | The chosen tab's icon fills and pops, once. |
 | Tasks | Ticking one pops the check and throws a small crimson burst. |
 
 Tab switching and language changes stay instant, as native apps keep them.

@@ -8,7 +8,7 @@ import '../../push/push_service.dart';
 import '../../session_host.dart';
 import '../motion.dart';
 import '../theme.dart';
-import 'bento.dart' show Surface;
+import 'stats.dart' show Surface;
 import 'common.dart';
 import 'glass.dart';
 
@@ -95,34 +95,36 @@ class PushPrimer extends StatelessWidget {
         final card = !show
             ? const SizedBox(width: double.infinity)
             : Padding(
-                padding: const EdgeInsets.only(top: 20),
+                padding: const EdgeInsets.only(top: 16),
                 child: Surface(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 6, 6),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(copy.primerTitle, style: context.type.titleMedium),
-                      const SizedBox(height: 4),
-                      Text(copy.primerBody, style: context.type.bodySmall),
-                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(copy.primerTitle, style: context.type.titleSmall),
+                      ),
+                      const SizedBox(height: 2),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(copy.primerBody, style: context.type.bodySmall),
+                      ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
                             onPressed: () => push.dismissPrimer(),
-                            style: TextButton.styleFrom(foregroundColor: p.secondary),
+                            style: TextButton.styleFrom(
+                              foregroundColor: p.secondary,
+                              textStyle: context.type.labelLarge?.copyWith(fontSize: 14),
+                            ),
                             child: Text(copy.notNow),
                           ),
-                          const SizedBox(width: 4),
-                          Pressable(
-                            child: FilledButton(
-                              onPressed: () => _turnOn(context),
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 40),
-                                padding: const EdgeInsets.symmetric(horizontal: 18),
-                              ),
-                              child: Text(copy.turnOn),
-                            ),
+                          TextButton(
+                            onPressed: () => _turnOn(context),
+                            style: TextButton.styleFrom(foregroundColor: p.ink, textStyle: context.type.labelLarge?.copyWith(fontSize: 14)),
+                            child: Text(copy.turnOn),
                           ),
                         ],
                       ),
