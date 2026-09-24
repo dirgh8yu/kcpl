@@ -21,6 +21,24 @@ These integrations are operationally useful but do not make the whole KCPL runti
 - Google Routes road estimates.
 - SendGrid transactional email.
 - Bootstrap/recovery admin allowlist when active Firestore staff profiles already exist.
+- EDI transport, carrier tracking ingestion, pickup integration and the GPT action surface. Each
+  fails closed: with no secret the endpoint answers 503, never an unauthenticated write. The cost
+  of an unset secret is a silently unavailable integration, not an open one.
+- Portal web push, which needs all three VAPID variables or the sweep skips the transport.
+- Maersk, DHL Express and SeaRates lookups.
+- `KCPL_RATE_LIMIT_SALT`, as described under public endpoint abuse controls.
+
+A capability that needs several variables reports *partial* configuration separately from absence,
+because half an integration usually fails at the first call rather than staying quietly off.
+
+## Quote attestation is all or nothing
+
+`CLOUDFLARE_TURNSTILE_SECRET_KEY` set **without** `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` is a
+blocked check rather than a warning. The form renders no widget and sends no token,
+`quoteChallengeRequired()` is still true because the secret exists, and every public enquiry is
+refused with a 403. One unset variable takes down the whole enquiry funnel, so the probe treats it
+as a core blocker. The reverse — a site key with no secret — is a warning: the widget loads, nothing
+verifies it, and quotes still submit.
 
 ## Canonical production runtime — decided
 

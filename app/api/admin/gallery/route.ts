@@ -25,7 +25,6 @@ export async function POST(request: Request) {
   const title = galleryText(form.get("title"), 120);
   const alt = galleryText(form.get("alt"), 220);
   if (!(file instanceof File)) return galleryJson({ ok: false, error: "Choose an image." }, 400);
-  if (title.length < 2 || alt.length < 8) return galleryJson({ ok: false, error: "Add a title and a descriptive image description." }, 400);
   try {
     const image = await prepareGalleryImage(file);
     const item = await createGalleryEntry({ title, alt, image });

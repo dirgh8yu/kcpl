@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try { body = await request.json() as Record<string, unknown>; } catch { return galleryJson({ ok: false, error: "The changes could not be read." }, 400); }
   const title = galleryText(body.title, 120);
   const alt = galleryText(body.alt, 220);
-  if (title.length < 2 || alt.length < 8 || typeof body.published !== "boolean") return galleryJson({ ok: false, error: "Add a title, image description and valid publication status." }, 400);
+  if (typeof body.published !== "boolean") return galleryJson({ ok: false, error: "Choose whether the image is published." }, 400);
   try {
     const item = await updateGalleryEntry(id, { title, alt, published: body.published });
     if (!item) return galleryJson({ ok: false, error: "Gallery image not found." }, 404);
