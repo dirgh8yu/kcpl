@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../api/kcpl_api.dart';
 import '../../session_host.dart';
@@ -145,10 +144,8 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
     _fetch(quiet: true);
   }
 
-  Future<void> _refresh() {
-    HapticFeedback.mediumImpact();
-    return _fetch();
-  }
+  // The pull itself gives the haptic (KRefresh), once.
+  Future<void> _refresh() => _fetch();
 
   /// Wraps each widget so the page arrives top to bottom. The shared lead
   /// keeps its identity across loading and loaded; the rest is keyed by

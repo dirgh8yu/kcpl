@@ -217,7 +217,11 @@ class BalanceFigure extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
-            child: CountUp(value: balance.outstanding, format: (v) => formatMoney(v, balance.currency), style: context.type.headlineMedium),
+            child: FigureText(
+              value: balance.outstanding,
+              format: (v) => formatMoney(v, balance.currency),
+              style: context.type.headlineMedium,
+            ),
           ),
           const SizedBox(height: 6),
           if (balance.overdue > 0)

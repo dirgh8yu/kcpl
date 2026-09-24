@@ -207,6 +207,7 @@ ThemeData kcplTheme(Brightness brightness) {
     height: height,
     fontFeatures: _tabular,
   );
+  // Tracking follows size: tighter as type grows, a touch open below 13pt.
   // A quiet scale, as the best phone apps keep it: one 28pt title per
   // page, 17pt section titles, 15pt reading text and 13pt for the rest.
   // Figures stay small; hierarchy comes from weight and grey, not size.
@@ -220,10 +221,10 @@ ThemeData kcplTheme(Brightness brightness) {
     titleSmall: t.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.15, height: 1.3),
     bodyLarge: t.bodyLarge?.copyWith(fontSize: 15, letterSpacing: -0.15, height: 1.4),
     bodyMedium: t.bodyMedium?.copyWith(fontSize: 14, letterSpacing: -0.1, height: 1.4),
-    bodySmall: t.bodySmall?.copyWith(fontSize: 13, letterSpacing: -0.05, height: 1.35, color: p.secondary),
+    bodySmall: t.bodySmall?.copyWith(fontSize: 13, letterSpacing: 0, height: 1.35, color: p.secondary),
     labelLarge: t.labelLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.15),
-    labelMedium: t.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0),
-    labelSmall: t.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0),
+    labelMedium: t.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.1),
+    labelSmall: t.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.2),
   );
 
   final radius = BorderRadius.circular(12);

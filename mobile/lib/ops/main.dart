@@ -87,7 +87,7 @@ class OpsApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             home: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 480),
+              duration: const Duration(milliseconds: 400),
               switchInCurve: Motion.drawer,
               switchOutCurve: Motion.easeOut,
               transitionBuilder: (child, animation) => FadeTransition(

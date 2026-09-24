@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'glass.dart';
 
-/// A large title that eases into the bar as the page scrolls: 32pt and bold
-/// at rest, 17pt beside the back button when collapsed, with a hairline
-/// appearing only once content runs under it.
+/// A large title that eases into the bar as the page scrolls: 28pt and bold
+/// at rest, 17pt beside the back button when collapsed, where the bar turns
+/// to frost. The frost marks the edge; there is no rule under it.
 class LargeTitleBar extends StatelessWidget {
   const LargeTitleBar({super.key, required this.title});
   final String title;
@@ -73,15 +73,6 @@ class LargeTitleBar extends StatelessWidget {
                       height: 1.15,
                     ),
                   ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Opacity(
-                  opacity: (1 - t * 3).clamp(0.0, 1.0),
-                  child: Container(height: 0.5, color: p.hairline),
                 ),
               ),
             ],

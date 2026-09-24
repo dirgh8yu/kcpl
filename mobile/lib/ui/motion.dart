@@ -20,7 +20,7 @@ class Motion {
   static const press = Duration(milliseconds: 100);
   static const release = Duration(milliseconds: 160);
   static const swap = Duration(milliseconds: 180);
-  static const reveal = Duration(milliseconds: 420);
+  static const reveal = Duration(milliseconds: 300);
   static const stagger = Duration(milliseconds: 40);
 
   /// The system's reduce-motion setting. When on, nothing moves or loops;
@@ -85,7 +85,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
         if (t >= 1) return child!;
         return Opacity(
           opacity: t,
-          child: _reduced ? child : Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+          child: _reduced ? child : Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
         );
       },
     );
@@ -137,7 +137,7 @@ class Shake extends StatefulWidget {
 }
 
 class ShakeState extends State<Shake> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 460));
+  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
 
   void shake() {
     if (Motion.reduced(context)) return;
@@ -163,98 +163,16 @@ class ShakeState extends State<Shake> with SingleTickerProviderStateMixin {
   );
 }
 
-/// A number that counts up to its value when it first appears, and glides
-/// to a new value when the data changes.
-class CountUp extends StatelessWidget {
-  const CountUp({super.key, required this.value, required this.format, this.style});
+/// A figure, shown as it is. Figures are data people read, and data does not
+/// move for style: no count-up, no glide.
+class FigureText extends StatelessWidget {
+  const FigureText({super.key, required this.value, required this.format, this.style});
   final double value;
   final String Function(double value) format;
   final TextStyle? style;
 
   @override
-  Widget build(BuildContext context) {
-    final reduced = Motion.reduced(context);
-    return Semantics(
-      label: format(value),
-      excludeSemantics: true,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: reduced ? value : 0, end: value),
-        duration: reduced ? Duration.zero : const Duration(milliseconds: 900),
-        curve: Motion.easeOut,
-        builder: (context, current, _) => Text(format(current), style: style),
-      ),
-    );
-  }
-}
-
-/// A soft ring breathing out from [child]: the "this is live" cue that
-/// location-sharing apps put on a moving dot.
-class LivePulse extends StatefulWidget {
-  const LivePulse({super.key, required this.child, required this.size, this.active = true});
-  final Widget child;
-  final double size;
-  final bool active;
-
-  @override
-  State<LivePulse> createState() => _LivePulseState();
-}
-
-class _LivePulseState extends State<LivePulse> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(LivePulse oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _sync();
-  }
-
-  void _sync() {
-    final run = widget.active && !Motion.reduced(context);
-    if (run && !_controller.isAnimating) _controller.repeat();
-    if (!run && _controller.isAnimating) _controller.stop();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.active || Motion.reduced(context)) return widget.child;
-    final color = context.palette.accent;
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            final t = Motion.easeOut.transform(_controller.value);
-            return Transform.scale(
-              scale: 1 + t * 0.9,
-              child: Container(
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: 0.28 * (1 - t)),
-                ),
-              ),
-            );
-          },
-        ),
-        widget.child,
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Text(format(value), style: style);
 }
 
 /// A highlight sweeping across loading placeholders, so a wait reads as
@@ -314,7 +232,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 /// becoming a spinner becoming a tick.
 Widget morphTransition(Widget child, Animation<double> animation) => FadeTransition(
   opacity: animation,
-  child: ScaleTransition(scale: Tween(begin: 0.6, end: 1.0).animate(animation), child: child),
+  child: ScaleTransition(scale: Tween(begin: 0.9, end: 1.0).animate(animation), child: child),
 );
 
 /// Crossfades a list when a filter changes, so the new set arrives rather
@@ -333,92 +251,4 @@ class FilterSwap extends StatelessWidget {
     layoutBuilder: (current, previous) => Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
     child: KeyedSubtree(key: ValueKey(filter), child: child),
   );
-}
-
-/// A small pop when something becomes selected: the tab you just chose.
-class PopIn extends StatelessWidget {
-  const PopIn({super.key, required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (Motion.reduced(context)) return child;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.82, end: 1),
-      duration: const Duration(milliseconds: 220),
-      curve: Motion.easeOut,
-      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
-      child: child,
-    );
-  }
-}
-
-/// A small crimson burst around [child] each time [on] turns true: a ring
-/// that opens and eight sparks that fly out and fade. The reward for
-/// finishing something, not for anything else. Nothing under reduce-motion.
-class Burst extends StatefulWidget {
-  const Burst({super.key, required this.on, required this.child});
-  final bool on;
-  final Widget child;
-
-  @override
-  State<Burst> createState() => _BurstState();
-}
-
-class _BurstState extends State<Burst> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 620));
-
-  @override
-  void didUpdateWidget(Burst old) {
-    super.didUpdateWidget(old);
-    if (widget.on && !old.on && !Motion.reduced(context)) _controller.forward(from: 0);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colour = context.palette.accent;
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) =>
-          CustomPaint(foregroundPainter: _controller.isAnimating ? _BurstPainter(_controller.value, colour) : null, child: child),
-    );
-  }
-}
-
-class _BurstPainter extends CustomPainter {
-  _BurstPainter(this.t, this.colour);
-  final double t;
-  final Color colour;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final centre = size.center(Offset.zero);
-    final base = size.shortestSide / 2;
-    final open = Motion.easeOut.transform(t);
-    final fade = 1 - Curves.easeIn.transform(t);
-    canvas.drawCircle(
-      centre,
-      base + base * 0.9 * open,
-      Paint()
-        ..color = colour.withValues(alpha: 0.5 * fade)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2 * fade + 0.5,
-    );
-    final spark = Paint()..color = colour.withValues(alpha: fade);
-    for (var i = 0; i < 8; i++) {
-      final angle = i * math.pi / 4 + math.pi / 8;
-      final distance = base * (1.1 + 1.0 * open);
-      canvas.drawCircle(centre + Offset(math.cos(angle), math.sin(angle)) * distance, 2.2 * fade + 0.3, spark);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_BurstPainter old) => old.t != t || old.colour != colour;
 }

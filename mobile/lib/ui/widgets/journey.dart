@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../motion.dart';
 import '../theme.dart';
 
 /// Where a shipment is on its way: booked, moving, customs, out for
@@ -32,99 +31,35 @@ IconData modeIcon(String mode) => switch (mode) {
   _ => KIcons.route,
 };
 
-/// The journey as a line, filled in crimson up to where the cargo is. The
-/// large variant carries the vehicle on its leading edge, as flight trackers
-/// do; the thin one sits under list rows.
+/// The journey as a thin line, filled in ink up to where the cargo is
+/// (crimson when the journey has gone wrong). It is drawn where it stands:
+/// progress is data, and data does not animate for style.
 class JourneyBar extends StatelessWidget {
-  const JourneyBar({super.key, required this.status, this.mode, this.large = false, this.reference});
+  const JourneyBar({super.key, required this.status});
   final String status;
-  final String? mode;
-  final bool large;
-
-  /// When given, the fill animates only the first time this shipment is
-  /// drawn in a session. A bar that flies in from another screen, or is
-  /// refreshed, must not drain and refill.
-  final String? reference;
-
-  static final Set<String> _drawn = {};
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final delivered = status == 'delivered';
-    final target = journeyFraction(status);
-    // Progress is ink; crimson is kept for a journey that has gone wrong.
-    final fillColor = status == 'exception' ? p.accent : p.ink;
-    final lineHeight = large ? 3.0 : 2.0;
-    final vehicle = large ? 34.0 : 0.0;
-    // Later rebuilds find the reference already drawn; the tween then
-    // simply carries on from wherever it is.
-    final seen = reference != null && !_drawn.add(reference!);
-    final animate = !seen && !Motion.reduced(context);
-
+    final fill = status == 'exception' ? p.accent : p.ink;
     return Semantics(
       value: '${journeyStage(status) + 1} / $journeyStageCount',
-      child: SizedBox(
-        height: large ? vehicle : lineHeight,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: animate ? 0 : target, end: target),
-              duration: const Duration(milliseconds: 1100),
-              curve: Motion.easeOut,
-              builder: (context, value, _) {
-                final head = (width * value).clamp(vehicle / 2, width - vehicle / 2).toDouble();
-                return Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Container(
-                      height: lineHeight,
-                      decoration: BoxDecoration(color: p.hairline, borderRadius: BorderRadius.circular(lineHeight)),
-                    ),
-                    if (large)
-                      for (var i = 1; i < journeyStageCount - 1; i++)
-                        Positioned(
-                          left: width * i / (journeyStageCount - 1) - 3,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: width * i / (journeyStageCount - 1) <= width * value ? fillColor : p.hairline,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: p.paper, width: 1.5),
-                            ),
-                          ),
-                        ),
-                    Container(
-                      width: large ? head : width * value,
-                      height: lineHeight,
-                      decoration: BoxDecoration(color: fillColor, borderRadius: BorderRadius.circular(lineHeight)),
-                    ),
-                    if (large)
-                      Positioned(
-                        left: head - vehicle / 2,
-                        child: LivePulse(
-                          size: vehicle,
-                          active: !delivered,
-                          child: Container(
-                            width: vehicle,
-                            height: vehicle,
-                            decoration: BoxDecoration(
-                              color: p.paper,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: fillColor, width: 2),
-                            ),
-                            child: Icon(delivered ? KIcons.check : modeIcon(mode ?? ''), size: 17, color: fillColor),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            );
-          },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(1),
+        child: SizedBox(
+          height: 2,
+          child: Row(
+            children: [
+              Expanded(
+                flex: (journeyFraction(status) * 1000).round(),
+                child: ColoredBox(color: fill),
+              ),
+              Expanded(
+                flex: ((1 - journeyFraction(status)) * 1000).round(),
+                child: ColoredBox(color: p.hairline),
+              ),
+            ],
+          ),
         ),
       ),
     );

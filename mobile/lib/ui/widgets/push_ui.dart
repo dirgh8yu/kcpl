@@ -207,6 +207,7 @@ class _PushRouterState extends State<PushRouter> {
   StreamSubscription<PushTarget>? _taps;
   StreamSubscription<PushNotice>? _notices;
   OverlayEntry? _banner;
+  GlobalKey<_BannerState>? _bannerKey;
   Timer? _hide;
 
   @override
@@ -222,11 +223,13 @@ class _PushRouterState extends State<PushRouter> {
 
   void _show(PushNotice notice) {
     if (!mounted) return;
-    _dismiss();
+    _dismiss(animate: false);
     HapticFeedback.lightImpact();
     final overlay = Overlay.of(context);
+    final key = GlobalKey<_BannerState>();
     final entry = OverlayEntry(
       builder: (context) => _Banner(
+        key: key,
         notice: notice,
         onTap: () {
           _dismiss();
@@ -237,22 +240,33 @@ class _PushRouterState extends State<PushRouter> {
       ),
     );
     _banner = entry;
+    _bannerKey = key;
     overlay.insert(entry);
     _hide = Timer(const Duration(milliseconds: 4500), _dismiss);
   }
 
-  void _dismiss() {
+  /// The banner leaves the way it came, back up off the top; replaced by a
+  /// newer one, or with the page going away, it simply goes.
+  void _dismiss({bool animate = true}) {
     _hide?.cancel();
     _hide = null;
-    _banner?.remove();
+    final entry = _banner;
+    final banner = _bannerKey?.currentState;
     _banner = null;
+    _bannerKey = null;
+    if (entry == null) return;
+    if (animate && banner != null) {
+      banner.leave().whenComplete(entry.remove);
+    } else {
+      entry.remove();
+    }
   }
 
   @override
   void dispose() {
     _taps?.cancel();
     _notices?.cancel();
-    _dismiss();
+    _dismiss(animate: false);
     super.dispose();
   }
 
@@ -263,7 +277,7 @@ class _PushRouterState extends State<PushRouter> {
 /// A frosted banner that drops in from the top, iOS-style, and can be
 /// flicked back up.
 class _Banner extends StatefulWidget {
-  const _Banner({required this.notice, required this.onTap, required this.onDismiss});
+  const _Banner({super.key, required this.notice, required this.onTap, required this.onDismiss});
   final PushNotice notice;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
@@ -272,9 +286,13 @@ class _Banner extends StatefulWidget {
   State<_Banner> createState() => _BannerState();
 }
 
-class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
+class _BannerState extends State<_Banner> with TickerProviderStateMixin {
   late final AnimationController _enter = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  // Settles a partial drag back into place instead of snapping.
+  late final AnimationController _settle = AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
+    ..addListener(() => setState(() => _drag = _from * (1 - Motion.easeOut.transform(_settle.value))));
   double _drag = 0;
+  double _from = 0;
 
   @override
   void didChangeDependencies() {
@@ -286,9 +304,25 @@ class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
     }
   }
 
+  /// Up follows the finger; down resists more the further it goes, rather
+  /// than stopping dead: there is nothing below, but the banner is alive.
+  static double _follow(double drag) {
+    if (drag <= 0) return drag;
+    const dimension = 120.0;
+    const constant = 0.55;
+    return drag * dimension * constant / (dimension + constant * drag);
+  }
+
+  /// Back up and out: 200ms, ease-out, from wherever it is now.
+  Future<void> leave() {
+    if (Motion.reduced(context)) return Future.value();
+    return _enter.animateBack(0, duration: const Duration(milliseconds: 200), curve: Motion.easeOut);
+  }
+
   @override
   void dispose() {
     _enter.dispose();
+    _settle.dispose();
     super.dispose();
   }
 
@@ -305,18 +339,22 @@ class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
         builder: (context, child) {
           final t = Motion.drawer.transform(_enter.value);
           return Transform.translate(
-            offset: Offset(0, (1 - t) * -(top + 90) + _drag.clamp(-200.0, 12.0)),
+            offset: Offset(0, (1 - t) * -(top + 90) + _follow(_drag)),
             child: Opacity(opacity: t.clamp(0.0, 1.0), child: child),
           );
         },
         child: GestureDetector(
           onTap: widget.onTap,
+          onVerticalDragStart: (_) => _settle.stop(),
           onVerticalDragUpdate: (details) => setState(() => _drag += details.delta.dy),
           onVerticalDragEnd: (details) {
-            if (_drag < -24 || (details.primaryVelocity ?? 0) < -300) {
+            if (_drag < -24 || (details.primaryVelocity ?? 0) < -110) {
               widget.onDismiss();
-            } else {
+            } else if (Motion.reduced(context)) {
               setState(() => _drag = 0);
+            } else {
+              _from = _drag;
+              _settle.forward(from: 0);
             }
           },
           child: Material(

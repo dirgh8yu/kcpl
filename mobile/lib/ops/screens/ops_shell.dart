@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../ui/theme.dart';
 import '../../ui/widgets/tab_bar.dart';
@@ -13,6 +12,7 @@ import 'alerts_screen.dart';
 import 'jobs_screen.dart';
 import 'me_screen.dart';
 import 'today_screen.dart';
+import '../../ui/widgets/sheet_route.dart';
 
 class OpsShell extends StatefulWidget {
   const OpsShell({super.key, required this.demo, required this.version});
@@ -67,7 +67,6 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
 
   void _select(OpsTab tab) {
     if (tab == _tab) return;
-    HapticFeedback.selectionClick();
     setState(() {
       _tab = tab;
       _visited.add(tab);
@@ -102,26 +101,29 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
           _select(OpsTab.alerts);
         }
       },
-      child: Scaffold(
-        // Content runs beneath the tab bar and shows through its frosted glass.
-        extendBody: true,
-        body: IndexedStack(
-          index: _tab.index,
-          // Hidden tabs have tickers off: their animations stop, and their
-          // pages know not to refresh until they are shown again.
-          children: [
-            for (final tab in OpsTab.values)
-              TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
-          ],
-        ),
-        bottomNavigationBar: FloatingTabBar(
-          note: widget.demo ? 'Demo data, not real operations' : null,
-          selected: _tab.index,
-          onSelected: (index) => _select(OpsTab.values[index]),
-          items: [
-            for (final tab in OpsTab.values)
-              TabItem(icon: icons[tab]!.$1, selectedIcon: icons[tab]!.$2, label: labels[tab]!, badge: tab == OpsTab.alerts ? unread : 0),
-          ],
+      // Recedes while a detail sheet is up over it.
+      child: SheetDepth(
+        child: Scaffold(
+          // Content runs beneath the tab bar and shows through its frosted glass.
+          extendBody: true,
+          body: IndexedStack(
+            index: _tab.index,
+            // Hidden tabs have tickers off: their animations stop, and their
+            // pages know not to refresh until they are shown again.
+            children: [
+              for (final tab in OpsTab.values)
+                TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
+            ],
+          ),
+          bottomNavigationBar: FloatingTabBar(
+            note: widget.demo ? 'Demo data, not real operations' : null,
+            selected: _tab.index,
+            onSelected: (index) => _select(OpsTab.values[index]),
+            items: [
+              for (final tab in OpsTab.values)
+                TabItem(icon: icons[tab]!.$1, selectedIcon: icons[tab]!.$2, label: labels[tab]!, badge: tab == OpsTab.alerts ? unread : 0),
+            ],
+          ),
         ),
       ),
     );

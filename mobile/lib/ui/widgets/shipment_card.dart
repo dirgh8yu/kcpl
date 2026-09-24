@@ -69,13 +69,12 @@ class JourneyGraphic extends StatelessWidget {
                       delivered: s.delivered,
                       attention: s.status == 'exception',
                       style: RouteMapStyle.page(p),
-                      reference: s.reference,
                     ),
                   )
                 else
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 2),
-                    child: JourneyBar(status: s.status, reference: s.reference),
+                    child: JourneyBar(status: s.status),
                   ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),

@@ -71,7 +71,7 @@ class ShipmentRow extends StatelessWidget {
           ? null
           : Padding(
               padding: const EdgeInsetsDirectional.only(start: 34),
-              child: JourneyBar(status: shipment.status, reference: shipment.reference),
+              child: JourneyBar(status: shipment.status),
             ),
     );
   }
@@ -94,7 +94,6 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
     final l = AppLocalizations.of(context);
     final controller = AppScope.read(context);
     final messenger = ScaffoldMessenger.of(context);
-    HapticFeedback.selectionClick();
     setState(() => _busy = true);
     try {
       final file = await controller.api.download(widget.document);

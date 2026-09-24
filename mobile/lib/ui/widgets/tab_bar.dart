@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../motion.dart';
 import '../theme.dart';
 import 'glass.dart';
 
@@ -15,8 +14,7 @@ class TabItem {
   final int badge;
 }
 
-/// The tab bar, kept plain: frosted white across the bottom edge with a
-/// hairline above, grey outline icons, and the chosen tab in ink with its
+/// The tab bar, kept plain: frosted white across the bottom edge, grey outline icons, and the chosen tab in ink with its
 /// filled icon. Nothing slides or glows; the tab is simply there.
 class FloatingTabBar extends StatelessWidget {
   const FloatingTabBar({super.key, required this.items, required this.selected, required this.onSelected, this.note});
@@ -35,33 +33,29 @@ class FloatingTabBar extends StatelessWidget {
       maxScaleFactor: 1.15,
       child: Glass(
         opacity: 0.92,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: p.hairline, width: 0.5)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (note != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Text(note!, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
-                  ),
-                SizedBox(
-                  height: 54,
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < items.length; i++)
-                        Expanded(
-                          child: TabBarItem(item: items[i], selected: i == selected, onTap: () => onSelected(i)),
-                        ),
-                    ],
-                  ),
+        // No rule above it: the frost is the edge, as iOS draws it.
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (note != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Text(note!, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
                 ),
-              ],
-            ),
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < items.length; i++)
+                      Expanded(
+                        child: TabBarItem(item: items[i], selected: i == selected, onTap: () => onSelected(i)),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -80,7 +74,6 @@ class TabBarItem extends StatelessWidget {
     final p = context.palette;
     final colour = selected ? p.ink : p.tertiary;
     Widget icon = Icon(selected ? item.selectedIcon : item.icon, size: 22, color: colour);
-    if (selected) icon = PopIn(key: ValueKey(item.label), child: icon);
     if (item.badge > 0) {
       icon = Badge(
         backgroundColor: p.accent,

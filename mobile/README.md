@@ -153,24 +153,34 @@ tick.
 
 ### Motion
 
-Every animation has a job, and all of them draw on one set of curves and durations
-(`lib/ui/motion.dart`):
+Motion follows Emil Kowalski's rules: every animation has a purpose, anything seen tens
+of times a day barely moves, UI stays under 300ms, entrances and exits ease out, and data
+people read never moves for style. Curves and durations live in `lib/ui/motion.dart`
+(`easeOut` 0.23, 1, 0.32, 1; `drawer` 0.32, 0.72, 0, 1; press 100ms, release 160ms,
+reveal 300ms, stagger 40ms).
 
-| Where | What it does |
-|---|---|
-| Launch | The native splash hands over to the K, whose strokes assemble and then carry a crimson charge until the app is ready. |
-| Sign-in | KCPL's lanes into Nepal run across the map behind the form, each with a dot travelling to its gateway. The form assembles top to bottom. The crimson button presses in, and its label becomes the charging K. A wrong password shakes the fields with a haptic buzz. |
-| Every screen | Content fades up in a 40ms stagger when it arrives; the skeleton shimmers while loading. A refresh updates in place. |
-| Pull to refresh | Pulling assembles the K stroke by stroke, a tick says it will refresh on release, and the K charges while the page reloads. |
-| Home → detail | The shipment card moves into the sheet as it rises. Pull the sheet down to close it; it follows the finger. |
-| Route map | The route draws out from the origin, with the cargo riding its leading edge until it reaches where it is. |
-| Figures | Count up when they first appear. |
-| Tab bar | The chosen tab's icon fills and pops, once. |
-| Tasks | Ticking one pops the check and throws a small crimson burst. |
+| Where | What it does | Why |
+|---|---|---|
+| Launch | The K's strokes assemble, then a crimson charge cycles (1s) until the app is ready. | Status; rare |
+| Sign-in | KCPL's lanes into Nepal move on the map behind the form. The crimson button presses in and its label becomes the charging K. A wrong password shakes the fields (400ms) with a haptic. | Rare, so it may delight; feedback |
+| Sign-in ↔ app | A 400ms fade with a slight scale. | Prevents a jarring swap |
+| Pages | Content fades up 8px over 300ms, 40ms apart; skeletons shimmer while loading. Refreshes update in place. | Prevents teleporting content |
+| Pull to refresh | The K assembles with the pull, a tick says release will refresh, and it charges while loading, then leaves in 200ms. | Feedback during the gesture |
+| Detail sheets | Rise in 420ms (drawer curve), leave in 300ms. The page behind scales back and rounds, as iOS does. Pull down to close: after 10px the sheet follows the finger 1:1. A flick (over 0.11 px/ms) decides by its direction. A slow release decides by distance. It springs back from the finger's own velocity. | Spatial consistency; direct manipulation |
+| Push banner | Drops in from the top, leaves the same way (200ms), and flicks up to dismiss. It rubber-bands if pulled down, and settles back if let go part-way. | Spatial consistency |
+| Presses | Buttons and cards scale to 0.97 (cards 0.985) on touch-down. | Feedback |
+| Checks and downloads | Icons crossfade from 0.9 scale in 180ms. | State change |
 
-Tab switching and language changes stay instant, as native apps keep them.
+**Deliberately not animated:**
+- Figures (no count-up), progress lines, the route on the map, and branch load bars: these are data.
+- Tab switches: no pop and no haptic.
+- The ticked-task burst: tens a day.
+- The loops behind live items.
 
-With the system's Reduce Motion setting on, nothing moves or loops and only short fades
+Haptics mark only meaningful moments: a tick, a success, an error, arming a refresh, and
+closing a sheet.
+
+With the system's Reduce Motion setting on, nothing moves or loops, and short fades
 remain. The flow tests run under that setting, so a looping animation that ignored it
 would hang them. Two further tests run with full motion: the shared-element flight, and
 the crimson button with its shake.

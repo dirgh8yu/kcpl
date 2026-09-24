@@ -33,5 +33,5 @@ class Glass extends StatelessWidget {
     return clipped;
   }
 
-  Widget _blur(bool solid, Widget child) => solid ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24), child: child);
+  Widget _blur(bool solid, Widget child) => solid ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), child: child);
 }

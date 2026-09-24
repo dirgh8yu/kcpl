@@ -57,7 +57,7 @@ class InvoiceDetailScreen extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: AlignmentDirectional.centerStart,
-              child: CountUp(value: invoice.balanceDue, format: money, style: context.type.headlineMedium),
+              child: FigureText(value: invoice.balanceDue, format: money, style: context.type.headlineMedium),
             ),
             const SizedBox(height: 6),
             StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice)),

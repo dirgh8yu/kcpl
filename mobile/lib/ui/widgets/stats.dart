@@ -60,7 +60,7 @@ class _Cell extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CountUp(
+            FigureText(
               value: stat.value.toDouble(),
               format: (v) => '${v.round()}',
               style: context.type.headlineSmall?.copyWith(color: hot ? p.accent : p.ink),

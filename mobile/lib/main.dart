@@ -86,7 +86,7 @@ class KcplApp extends StatelessWidget {
             // Signing in and out is the biggest change the app makes; the new
             // world fades up with a slight settle rather than cutting.
             home: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 480),
+              duration: const Duration(milliseconds: 400),
               switchInCurve: Motion.drawer,
               switchOutCurve: Motion.easeOut,
               transitionBuilder: (child, animation) => FadeTransition(

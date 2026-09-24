@@ -28,7 +28,7 @@ class _KRefreshState extends State<KRefresh> with TickerProviderStateMixin {
   static const _trigger = 90.0;
 
   late final AnimationController _wave = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
-  late final AnimationController _hide = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
+  late final AnimationController _hide = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
   double _pull = 0;
   bool _dragging = false;
   bool _armed = false;
@@ -125,7 +125,7 @@ class _KRefreshState extends State<KRefresh> with TickerProviderStateMixin {
                 child: AnimatedBuilder(
                   animation: Listenable.merge([_wave, _hide]),
                   builder: (context, _) {
-                    final out = Curves.easeIn.transform(_hide.value);
+                    final out = Motion.easeOut.transform(_hide.value);
                     return Opacity(
                       opacity: (progress * 1.6).clamp(0.0, 1.0) * (1 - out),
                       child: Transform.scale(

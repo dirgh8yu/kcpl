@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
@@ -12,6 +11,7 @@ import 'documents_screen.dart';
 import 'invoices_screen.dart';
 import 'overview_screen.dart';
 import 'shipments_screen.dart';
+import '../widgets/sheet_route.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.demo, required this.version});
@@ -31,7 +31,6 @@ class _HomeShellState extends State<HomeShell> {
 
   void _select(HomeTab tab) {
     if (tab == _tab) return;
-    HapticFeedback.selectionClick();
     setState(() {
       _tab = tab;
       _visited.add(tab);
@@ -79,23 +78,26 @@ class _HomeShellState extends State<HomeShell> {
         final reference = target.reference;
         if (target.kind == 'shipment' && reference != null) openShipment(context, reference);
       },
-      child: Scaffold(
-        // Content runs beneath the tab bar and shows through its frosted glass.
-        extendBody: true,
-        body: IndexedStack(
-          index: tabs.indexOf(tab),
-          // Hidden tabs have tickers off: their animations stop, and their
-          // pages know not to refresh until they are shown again.
-          children: [
-            for (final item in tabs)
-              TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
-          ],
-        ),
-        bottomNavigationBar: FloatingTabBar(
-          note: widget.demo ? l.demoBanner : null,
-          selected: tabs.indexOf(tab),
-          onSelected: (index) => _select(tabs[index]),
-          items: [for (final item in tabs) TabItem(icon: icons[item]!.$1, selectedIcon: icons[item]!.$2, label: labels[item]!)],
+      // Recedes while a detail sheet is up over it.
+      child: SheetDepth(
+        child: Scaffold(
+          // Content runs beneath the tab bar and shows through its frosted glass.
+          extendBody: true,
+          body: IndexedStack(
+            index: tabs.indexOf(tab),
+            // Hidden tabs have tickers off: their animations stop, and their
+            // pages know not to refresh until they are shown again.
+            children: [
+              for (final item in tabs)
+                TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
+            ],
+          ),
+          bottomNavigationBar: FloatingTabBar(
+            note: widget.demo ? l.demoBanner : null,
+            selected: tabs.indexOf(tab),
+            onSelected: (index) => _select(tabs[index]),
+            items: [for (final item in tabs) TabItem(icon: icons[item]!.$1, selectedIcon: icons[item]!.$2, label: labels[item]!)],
+          ),
         ),
       ),
     );

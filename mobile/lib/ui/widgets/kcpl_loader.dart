@@ -24,7 +24,7 @@ class KcplLoader extends StatefulWidget {
 
 class _KcplLoaderState extends State<KcplLoader> with TickerProviderStateMixin {
   late final AnimationController _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
-  late final AnimationController _wave = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+  late final AnimationController _wave = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
   bool _started = false;
 
   @override

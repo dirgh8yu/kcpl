@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
@@ -33,7 +32,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Future<void> _open(OpsAlert alert, int unreadAtLoad) async {
     final controller = OpsScope.read(context);
     if (alert.unread && _readHere.add(alert.id)) {
-      HapticFeedback.selectionClick();
       setState(() {});
       controller.setUnread((unreadAtLoad - _readHere.length).clamp(0, 9999));
       // Best effort: a failed receipt only means it shows unread again later.

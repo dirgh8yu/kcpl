@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../theme.dart';
 
@@ -53,7 +52,6 @@ class FilterBar<T> extends StatelessWidget {
                     selected: entry.key == selected,
                     onSelected: (_) {
                       if (entry.key == selected) return;
-                      HapticFeedback.selectionClick();
                       onSelected(entry.key);
                     },
                   ),

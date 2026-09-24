@@ -137,7 +137,6 @@ class RouteMap extends StatefulWidget {
     this.delivered = false,
     this.attention = false,
     this.style = RouteMapStyle.pass,
-    this.reference,
   });
 
   final String origin;
@@ -155,10 +154,6 @@ class RouteMap extends StatefulWidget {
   final bool attention;
   final RouteMapStyle style;
 
-  /// When given, the route draws itself in only the first time this
-  /// shipment is shown in a session.
-  final String? reference;
-
   static bool canDraw(String origin, String destination) {
     final from = locate(origin);
     final to = locate(destination);
@@ -167,16 +162,15 @@ class RouteMap extends StatefulWidget {
     return (from.lat - to.lat).abs() + (from.lon - to.lon).abs() > 0.2;
   }
 
-  static final Set<String> _drawn = {};
-
   @override
   State<RouteMap> createState() => _RouteMapState();
 }
 
-class _RouteMapState extends State<RouteMap> with SingleTickerProviderStateMixin {
-  late final AnimationController _draw = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+// The route is drawn where it stands: where the cargo is, is data, and data
+// does not animate for style. Only the map itself fades in, once, when its
+// data first loads, so it arrives rather than popping.
+class _RouteMapState extends State<RouteMap> {
   MapData? _map = MapData.ready;
-  bool _started = false;
 
   @override
   void initState() {
@@ -186,25 +180,6 @@ class _RouteMapState extends State<RouteMap> with SingleTickerProviderStateMixin
         if (mounted) setState(() => _map = map);
       });
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    final seen = widget.reference != null && !RouteMap._drawn.add(widget.reference!);
-    if (Motion.reduced(context) || seen) {
-      _draw.value = 1;
-    } else {
-      _draw.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _draw.dispose();
-    super.dispose();
   }
 
   @override
@@ -224,15 +199,20 @@ class _RouteMapState extends State<RouteMap> with SingleTickerProviderStateMixin
         return Stack(
           fit: StackFit.expand,
           children: [
-            RepaintBoundary(
-              child: CustomPaint(painter: _MapPainter(_map, geometry.frame, widget.style, text, avoid: geometry.clearOf)),
+            ColoredBox(color: widget.style.land),
+            AnimatedOpacity(
+              opacity: _map == null ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              curve: Motion.easeOut,
+              child: RepaintBoundary(
+                child: CustomPaint(painter: _MapPainter(_map, geometry.frame, widget.style, text, avoid: geometry.clearOf)),
+              ),
             ),
             RepaintBoundary(
               child: CustomPaint(
                 painter: _RoutePainter(
                   geometry: geometry,
                   style: widget.style,
-                  draw: CurvedAnimation(parent: _draw, curve: Motion.easeOut),
                   vehicle: widget.vehicle,
                   delivered: widget.delivered,
                   attention: widget.attention ? Theme.of(context).extension<Palette>()!.accent : null,
@@ -441,16 +421,14 @@ class _RoutePainter extends CustomPainter {
   _RoutePainter({
     required this.geometry,
     required this.style,
-    required this.draw,
     required this.vehicle,
     required this.delivered,
     required this.attention,
     required this.text,
-  }) : super(repaint: draw);
+  });
 
   final _Geometry geometry;
   final RouteMapStyle style;
-  final Animation<double> draw;
   final IconData vehicle;
   final bool delivered;
 
@@ -461,10 +439,9 @@ class _RoutePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final metric = geometry.metric;
-    final t = draw.value;
+    const t = 1.0;
     final length = metric.length;
-    // The route draws out from the origin; the cargo rides its leading edge
-    // until it reaches where it is.
+    // Behind the cargo in grey, ahead of it in ink.
     final shown = length * t;
     final head = math.min(shown, geometry.travelled);
     Paint line(Color color) => Paint()

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../ui/labels.dart';
-import '../../ui/motion.dart';
 import '../../ui/screens/overview_screen.dart' show JourneyGraphic;
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
@@ -153,7 +152,6 @@ class _BranchLoad extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final peak = branches.fold<int>(1, (m, b) => b.active > m ? b.active : m);
-    final reduced = Motion.reduced(context);
     return Surface(
       margin: const EdgeInsets.fromLTRB(kGutter, 8, kGutter, 0),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -180,29 +178,25 @@ class _BranchLoad extends StatelessWidget {
                       final b = branches[i];
                       final full = constraints.maxWidth * b.active / peak;
                       final urgent = b.active == 0 ? 0.0 : full * b.urgent / b.active;
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: reduced ? 1 : 0, end: 1),
-                        duration: Duration(milliseconds: reduced ? 0 : 700 + i * 80),
-                        curve: Motion.easeOut,
-                        builder: (context, t, _) => Stack(
-                          children: [
+                      // Load is data: drawn where it stands, not grown in.
+                      return Stack(
+                        children: [
+                          Container(
+                            height: 4,
+                            decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(2)),
+                          ),
+                          Container(
+                            width: full,
+                            height: 4,
+                            decoration: BoxDecoration(color: p.ink, borderRadius: BorderRadius.circular(2)),
+                          ),
+                          if (urgent > 0)
                             Container(
-                              height: 8,
-                              decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(4)),
+                              width: urgent,
+                              height: 4,
+                              decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(2)),
                             ),
-                            Container(
-                              width: full * t,
-                              height: 8,
-                              decoration: BoxDecoration(color: p.ink, borderRadius: BorderRadius.circular(4)),
-                            ),
-                            if (urgent > 0)
-                              Container(
-                                width: urgent * t,
-                                height: 8,
-                                decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(4)),
-                              ),
-                          ],
-                        ),
+                        ],
                       );
                     },
                   ),
