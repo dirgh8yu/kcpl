@@ -38,6 +38,7 @@ export function PortalSettingsWorkspace({
   team,
   locale,
   pushPublicKey,
+  textNotices,
 }: {
   email: string;
   customerName: string;
@@ -51,6 +52,8 @@ export function PortalSettingsWorkspace({
   locale: PortalLocale;
   /** Empty when KCPL has not configured VAPID keys, which hides the control. */
   pushPublicKey: string;
+  /** SMS / WhatsApp: rendered by the page, which reads the account's setting. */
+  textNotices?: React.ReactNode;
 }) {
   const t = portalTranslator(locale);
   const [preferences, setPreferences] = useState(initialPreferences);
@@ -172,6 +175,8 @@ export function PortalSettingsWorkspace({
           </OpsSurface>
 
           {pushPublicKey ? <PortalPushControl publicKey={pushPublicKey} locale={locale}/> : null}
+
+          {textNotices}
 
           {team ? <PortalTeamPanel initialTeam={team} currentEmail={email} locale={locale}/> : null}
 

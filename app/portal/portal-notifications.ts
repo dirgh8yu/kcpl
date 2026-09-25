@@ -202,6 +202,85 @@ export function portalDocumentReleaseMessage(facts: PortalDocumentReleaseFacts, 
   return { subject, text, html };
 }
 
+export type PortalDocumentRequestFacts = {
+  reference: string;
+  documentType: string;
+  /** KCPL has asked for it, or sent back what was supplied. */
+  resend: boolean;
+  origin: string;
+  destination: string;
+  customerName: string;
+  portalUrl: string;
+};
+
+/** "KCPL needs your packing list": a line of the checklist the customer can
+ * satisfy themselves, newly waiting on them. */
+export function portalDocumentRequestMessage(facts: PortalDocumentRequestFacts, locale: PortalLocale = "en"): PortalMilestoneMessage {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  const label = portalDocumentLabel(facts.documentType, locale);
+  const lane = facts.origin && facts.destination ? `${facts.origin} → ${facts.destination}` : facts.reference;
+  const inline = locale === "en" ? label.toLowerCase() : label;
+  const headline = say(facts.resend ? "mail.docreq_resend_subject" : "mail.docreq_subject", { document: inline });
+  const body = say(facts.resend ? "mail.docreq_resend_body" : "mail.docreq_body", { document: inline });
+  const subject = `${facts.reference} · ${headline}`;
+  const text = [
+    body,
+    "",
+    `${say("mail.label_shipment")}: ${facts.reference}`,
+    `${say("mail.label_route")}: ${lane}`,
+    `${say("mail.label_document")}: ${label}`,
+    "",
+    say("mail.docreq_send_line", { url: facts.portalUrl }),
+    "",
+    say("mail.turn_off"),
+  ].join("\n");
+  const html = [
+    `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">${escapeHtml(say("mail.brand"))}</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(headline)}</h2>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(body)}</p>`,
+    `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_shipment"))}</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_route"))}</td><td>${escapeHtml(lane)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_document"))}</td><td>${escapeHtml(label)}</td></tr>`,
+    `</table>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.docreq_send"))}</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.sent_because", { customer: facts.customerName }))}</p>`,
+    `</div>`,
+  ].join("");
+  return { subject, text, html };
+}
+
+/**
+ * The fact a checklist line is news about, or null when it is not news: a
+ * line already waiting before this shipment was under notification is back
+ * catalogue. "needed" is news once, from when the requirement was set; a
+ * "resend" is news each time KCPL sends a copy back, keyed by that review.
+ */
+export function portalDocumentRequestFact(input: {
+  documentType: string;
+  state: string;
+  requirement: Record<string, unknown> | undefined;
+  documents: Array<Record<string, unknown>>;
+  baseline: string;
+}): string | null {
+  const text = (value: unknown) => (typeof value === "string" ? value : "");
+  if (input.state === "needed") {
+    const since = text(input.requirement?.created_at) || text(input.requirement?.updated_at);
+    return since && since > input.baseline ? `docreq-${input.documentType}-needed` : null;
+  }
+  if (input.state === "resend") {
+    const rejected = input.documents
+      .filter((document) => document.document_type === input.documentType && document.review_status === "rejected")
+      .map((document) => text(document.reviewed_at) || text(document.updated_at) || text(document.uploaded_at))
+      .filter(Boolean)
+      .sort();
+    const latest = rejected.at(-1);
+    return latest && latest > input.baseline ? `docreq-${input.documentType}-resend-${latest}` : null;
+  }
+  return null;
+}
+
 export type PortalFreeTimeFacts = {
   reference: string;
   origin: string;

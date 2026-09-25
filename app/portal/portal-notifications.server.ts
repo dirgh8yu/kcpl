@@ -1,7 +1,10 @@
+import { sendSms, smsConfigured } from "../integrations/sms.server";
+import { sendWhatsappTemplate, whatsappConfigured } from "../integrations/whatsapp.server";
+import { storedTextNotice, textNoticeSms, type TextNoticeSettings } from "./portal-text-notices";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
-import { normalizePortalEmail, portalShipmentView } from "./portal-access-policy";
+import { normalizePortalEmail, portalDocumentChecklist, portalOutstandingUploads, portalShipmentView } from "./portal-access-policy";
 import { listShipmentDocuments } from "../shipment-documents.server";
 import { portalLocaleValue, portalText, type PortalLocale } from "./portal-i18n";
 import { portalStatusLabel } from "./portal-format";
@@ -16,6 +19,8 @@ import { customerPushTarget, liveActivityState } from "../mobile-push-policy";
 import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
+  portalDocumentRequestFact,
+  portalDocumentRequestMessage,
   portalFreeTimeMessage,
   portalInvoiceMessage,
   portalInvoiceReminder,
@@ -44,6 +49,9 @@ const ACCOUNT_SCAN_LIMIT = 500;
 const SHIPMENT_SCAN_LIMIT = 200;
 /** A defensive ceiling: a first run against a large account should not turn
  * into thousands of emails even if the watermark logic is wrong. */
+/** How often an active shipment's document checklist is re-read when
+ * nothing on the shipment itself has changed. */
+const DOCUMENT_REQUEST_RECHECK_MS = 6 * 60 * 60 * 1000;
 const MAX_EMAILS_PER_SWEEP = 200;
 
 type Account = {
@@ -53,6 +61,8 @@ type Account = {
   preferences: ReturnType<typeof portalNotificationPreferences>;
   /** Only an owner sees invoices, so only an owner is reminded of them. */
   owner: boolean;
+  /** SMS or WhatsApp, when the customer asked for it. */
+  textNotice: TextNoticeSettings;
   /** Each recipient is written to in their own language, which is why the
    * preference lives on the account: this sweep has no browser to ask. */
   locale: PortalLocale;
@@ -86,6 +96,7 @@ async function activePortalAccounts(): Promise<Account[]> {
       locale: portalLocaleValue(data.locale),
       preferences: portalNotificationPreferences(data),
       owner: data.role === "owner",
+      textNotice: storedTextNotice(data),
     }];
   });
 }
@@ -120,6 +131,8 @@ async function pushOnce(input: {
   /** The account's app installs, looked up once per recipient per sweep. */
   mobileDevices: Map<string, Promise<MobileDevice[]>>;
 }) {
+  // SMS or WhatsApp rides on the same fact, for a customer who asked for it.
+  await textOnce(input.key, input.account, input.subject, input.text);
   const targets = portalPushConfigured() ? input.subscriptions.get(input.account.email) ?? [] : [];
   let devices = input.mobileDevices.get(input.account.email);
   if (!devices) {
@@ -174,6 +187,33 @@ async function pushOnce(input: {
         (status) => portalStatusLabel(status, locale),
         (date) => portalText(locale, "overview.col_eta") + " " + date,
       ));
+  }
+}
+
+/**
+ * The fact as one SMS or WhatsApp message, once. Claimed under its own
+ * collection, so it is independent of email and push; a provider failure is
+ * logged and never costs the other channels.
+ */
+async function textOnce(key: string, account: Account, subject: string, text: string) {
+  const notice = account.textNotice;
+  if (notice.channel === "none" || !notice.phone) return;
+  if (notice.channel === "sms" ? !smsConfigured() : !whatsappConfigured()) return;
+  const reference = firebaseAdminDb().collection("portal_text_deliveries").doc(deliveryId(`${key}|${notice.channel}`));
+  try {
+    await reference.create({ key, channel: notice.channel, recipient_email: account.email, started_at: new Date().toISOString() });
+  } catch {
+    return;
+  }
+  const line = text.split("\n")[0] ?? "";
+  try {
+    if (notice.channel === "sms") await sendSms(notice.phone, textNoticeSms(subject, line));
+    else await sendWhatsappTemplate(notice.phone, subject, line, account.locale === "ne" ? "ne" : "en");
+    // "accepted": the provider took the message; handset delivery is theirs to report.
+    await reference.update({ status: "accepted", accepted_at: new Date().toISOString() });
+  } catch (error) {
+    await reference.update({ status: "failed", error: error instanceof Error ? error.message.slice(0, 300) : "failed" }).catch(() => undefined);
+    console.error("KCPL text notice failed", { channel: notice.channel, error });
   }
 }
 
@@ -281,6 +321,9 @@ export async function dispatchPortalNotifications() {
 
       const now = new Date().toISOString();
       const stateUpdate: Record<string, string> = { customer_id: customerId, last_seen_at: now };
+      const requestsCheckedAt = state.exists && typeof state.get("requests_checked_at") === "string"
+        ? state.get("requests_checked_at") as string
+        : null;
       if (previous !== shipment.status) stateUpdate.last_status = shipment.status;
       if (lastSeenUpdatedAt !== shipment.updated_at) stateUpdate.last_seen_updated_at = shipment.updated_at;
       if (!documentsBaseline) stateUpdate.documents_baseline_at = now;
@@ -382,6 +425,52 @@ export async function dispatchPortalNotifications() {
               subscriptions: pushSubscriptions,
               mobileDevices,
             });
+          }
+        }
+      }
+
+      // What KCPL is waiting on from the customer. A requirement or a rejected
+      // copy doesn't always touch the shipment, so an active shipment is also
+      // looked at every few hours; otherwise only when it changed.
+      const requestsDue = documentsBaseline
+        && documentSubscribers.length > 0
+        && shipment.status !== "delivered"
+        && sent < MAX_EMAILS_PER_SWEEP
+        && (lastSeenUpdatedAt !== shipment.updated_at || !requestsCheckedAt || Date.parse(requestsCheckedAt) < Date.now() - DOCUMENT_REQUEST_RECHECK_MS);
+      if (requestsDue) {
+        stateUpdate.requests_checked_at = now;
+        const [listing, requirementSnapshot] = await Promise.all([
+          listShipmentDocuments(shipment.reference),
+          db.collection("shipments").doc(shipment.reference).collection("document_requirements").limit(100).get(),
+        ]);
+        const documents = listing.kind === "ready" ? listing.documents.map((entry) => entry as unknown as Record<string, unknown>) : [];
+        const requirements = requirementSnapshot.docs.map((entry) => entry.data() as Record<string, unknown>);
+        for (const row of portalOutstandingUploads(portalDocumentChecklist({ requirements, documents }))) {
+          const fact = portalDocumentRequestFact({
+            documentType: row.document_type,
+            state: row.state,
+            requirement: requirements.find((entry) => entry.document_type === row.document_type),
+            documents,
+            baseline: documentsBaseline,
+          });
+          if (!fact) continue;
+          // The app opens the send sheet for this document from the push.
+          const url = portalUrl(`/portal/shipments/${encodeURIComponent(shipment.reference)}?send=${encodeURIComponent(row.document_type)}#documents`);
+          for (const account of documentSubscribers) {
+            if (sent >= MAX_EMAILS_PER_SWEEP) break;
+            const message = portalDocumentRequestMessage({
+              reference: shipment.reference,
+              documentType: row.document_type,
+              resend: row.state === "resend",
+              origin: shipment.origin,
+              destination: shipment.destination,
+              customerName: account.customerName,
+              portalUrl: url,
+            }, account.locale);
+            const key = portalNotificationKey({ topic: "documents", reference: shipment.reference, fact, recipient: account.email });
+            const result = await sendOnce({ key, to: account.email, subject: message.subject, text: message.text, html: message.html, reference: shipment.reference });
+            if (result.kind === "sent") sent += 1;
+            await pushOnce({ key, account, subject: message.subject, text: message.text, url, subscriptions: pushSubscriptions, mobileDevices });
           }
         }
       }

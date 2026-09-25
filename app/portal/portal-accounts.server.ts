@@ -1,3 +1,4 @@
+import { storedTextNotice, type TextNoticeSettings } from "./portal-text-notices";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { isAllowedAdminEmail } from "../admin/admin-auth";
 import { staffProfileByEmail } from "../admin/staff-directory.server";
@@ -570,5 +571,43 @@ export async function setPortalAccountCustomerLink(input: {
   } catch (error) {
     console.error("KCPL portal customer link change failed", error);
     return { kind: "unavailable" };
+  }
+}
+
+/** The account's SMS / WhatsApp setting. */
+export async function getPortalTextNotices(email: string): Promise<TextNoticeSettings | null> {
+  if (!firebaseRuntimeConfigured()) return null;
+  try {
+    const snapshot = await firebaseAdminDb().collection(PORTAL_ACCOUNTS).doc(portalAccountKey(email)).get();
+    return snapshot.exists ? storedTextNotice(snapshot.data() as Record<string, unknown>) : null;
+  } catch (error) {
+    console.error("KCPL portal text notice read failed", error);
+    return null;
+  }
+}
+
+/**
+ * Saves the account's own SMS / WhatsApp setting, with when the customer
+ * agreed. Scoped to the session's account, as the email settings are.
+ */
+export async function savePortalTextNotices(email: string, settings: TextNoticeSettings) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  const key = portalAccountKey(email);
+  if (!key) return { kind: "missing" as const };
+  try {
+    const reference = firebaseAdminDb().collection(PORTAL_ACCOUNTS).doc(key);
+    const snapshot = await reference.get();
+    if (!snapshot.exists) return { kind: "missing" as const };
+    const now = new Date().toISOString();
+    await reference.update({
+      text_notices: settings.channel === "none"
+        ? { channel: "none", phone: null, updated_at: now }
+        : { channel: settings.channel, phone: settings.phone, consented_at: now, updated_at: now },
+      updated_at: now,
+    });
+    return { kind: "saved" as const };
+  } catch (error) {
+    console.error("KCPL portal text notice save failed", error);
+    return { kind: "unavailable" as const };
   }
 }

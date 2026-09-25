@@ -1,3 +1,4 @@
+import { bookingPickupFromBody, bookingPickupSummary } from "./portal-booking-pickup";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
 import { checkQuoteRateLimit, quoteRateLimitPolicies } from "../api/quotes/quote-rate-limit-policy";
@@ -156,6 +157,12 @@ export async function requestPortalBooking(
   const quoteReference = bookingText(payload.quoteReference).toUpperCase();
   const note = bookingText(payload.note).slice(0, 2000);
   if (!quoteReference) return { status: 400, body: { ok: false, error: "A quote reference is required." } };
+  // Where and when to collect the cargo, if KCPL is to pick it up. A request
+  // for the pickup desk, never an appointment.
+  const nepalToday = new Date(Date.now() + 345 * 60_000).toISOString().slice(0, 10);
+  const pickupResult = bookingPickupFromBody(payload, nepalToday);
+  if (!pickupResult.ok) return { status: 400, body: { ok: false, code: "invalid", error: pickupResult.error } };
+  const pickup = pickupResult.pickup;
 
   const db = firebaseAdminDb();
   const quoteRef = db.collection("quotes").doc(quoteReference);
@@ -172,9 +179,10 @@ export async function requestPortalBooking(
     batch.set(quoteRef.collection("notes").doc(String(noteId)), {
       id: noteId,
       quote_reference: quoteReference,
-      note: note
-        ? `${door} booking request from ${session.email}: ${note}`
-        : `${door} booking request from ${session.email}.`,
+      note: [
+        note ? `${door} booking request from ${session.email}: ${note}` : `${door} booking request from ${session.email}.`,
+        pickup ? bookingPickupSummary(pickup) : null,
+      ].filter(Boolean).join(" "),
       author_name: session.displayName,
       author_email: session.email,
       created_at: now,
@@ -183,7 +191,7 @@ export async function requestPortalBooking(
     // gives the enquiry workspace a visible "customer asked to proceed" marker.
     batch.update(quoteRef, {
       note_count: FieldValue.increment(1),
-      portal_booking_request: { requested_at: now, requested_by_email: session.email, note: note || null, source },
+      portal_booking_request: { requested_at: now, requested_by_email: session.email, note: note || null, source, pickup },
       updated_at: now,
     });
     await batch.commit();

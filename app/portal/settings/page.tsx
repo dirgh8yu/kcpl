@@ -1,5 +1,8 @@
 import { getPortalAccess } from "../portal-auth";
-import { getPortalNotificationPreferences, listPortalTeam } from "../portal-accounts.server";
+import { getPortalNotificationPreferences, getPortalTextNotices, listPortalTeam } from "../portal-accounts.server";
+import { smsConfigured } from "../../integrations/sms.server";
+import { whatsappConfigured } from "../../integrations/whatsapp.server";
+import { PortalTextNoticesPanel } from "./portal-text-notices-panel";
 import { portalNotificationPreferences, portalNotificationTopicsFor } from "../portal-notifications";
 import { transactionalEmailConfigured } from "../../integrations/sendgrid-email.server";
 import { PortalLoginPage } from "../portal-login-page";
@@ -16,11 +19,13 @@ export default async function PortalSettingsPage() {
   if (access.kind === "unconfigured") return <PortalUnavailable/>;
   if (access.kind === "signed-out") return <PortalLoginPage/>;
 
-  const [stored, team] = await Promise.all([
+  const [stored, team, textNotices] = await Promise.all([
     getPortalNotificationPreferences(access.session.email),
     // Only an account owner manages logins, so only an owner is served the list.
     access.session.role === "owner" ? listPortalTeam(access.session.customerId) : Promise.resolve(null),
+    getPortalTextNotices(access.session.email),
   ]);
+  const channels = { sms: smsConfigured(), whatsapp: whatsappConfigured() };
   return (
     <PortalShell
       session={access.session}
@@ -35,6 +40,9 @@ export default async function PortalSettingsPage() {
         team={team}
         locale={access.session.locale}
         pushPublicKey={portalPushConfigured() ? portalPushPublicKey() : ""}
+        textNotices={channels.sms || channels.whatsapp
+          ? <PortalTextNoticesPanel initial={textNotices ?? { channel: "none", phone: null }} channels={channels} locale={access.session.locale}/>
+          : null}
       />
     </PortalShell>
   );

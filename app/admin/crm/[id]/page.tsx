@@ -20,6 +20,7 @@ import { CrmOperationsHistoryPanel } from "./crm-operations-history";
 import { CrmQuoteMatchDock } from "./crm-quote-match-dock";
 import { CrmRateCardPanel } from "./crm-rate-card-panel";
 import { Customer360Workspace } from "./customer-360-workspace";
+import { CrmStatementPanel } from "./crm-statement-panel";
 import "./customer-360.css";
 
 export const dynamic = "force-dynamic";
@@ -124,6 +125,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
         <Tool title="Master profile" detail="Edit identity, ownership, relationship classification and permitted commercial settings."><CrmCustomerProfileEditor customer={reconciledCustomer} permissions={permissions}/></Tool>
         <Tool title="Operations history" detail="Review the customer’s quote and shipment trail within your branch access."><CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/></Tool>
         {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific commercial rates and pricing references."><CrmRateCardPanel customerId={reconciledCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}
+        {permissions.canManageFinance ? <Tool title="Statement of account" detail="The customer's statement as a PDF: view it, or email it to their portal owners."><CrmStatementPanel customerId={reconciledCustomer.id}/></Tool> : null}
         {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="Private account-level files stored through Firebase Storage."><CrmCustomerDocumentsPanel customerId={reconciledCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}
         <Tool title="Quote matching" detail="Link historical or suggested enquiries to this customer record within your branch access."><CrmQuoteMatchDock customerId={reconciledCustomer.id} initialLinked={linked} initialSuggested={suggested}/></Tool>
       </div>

@@ -62,6 +62,9 @@ export function PortalRequestsWorkspace({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [bookingBusy, setBookingBusy] = useState("");
+  // The quote being accepted, and the pickup asked for with it.
+  const [proceeding, setProceeding] = useState<PortalQuoteView | null>(null);
+  const [pickup, setPickup] = useState({ collect: true, date: "", window: "any", address: "", contactName: "", contactPhone: "", note: "" });
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -95,8 +98,16 @@ export function PortalRequestsWorkspace({
     }
   }
 
+  function startBooking(quote: PortalQuoteView) {
+    setProceeding(quote);
+    setPickup({ collect: true, date: "", window: "any", address: quote.origin, contactName: "", contactPhone: "", note: "" });
+    setError("");
+    setNotice("");
+  }
+
   async function requestBooking(reference: string) {
     if (bookingBusy) return;
+    const collect = proceeding?.reference === reference && pickup.collect;
     setBookingBusy(reference);
     setError("");
     setNotice("");
@@ -104,11 +115,20 @@ export function PortalRequestsWorkspace({
       const response = await fetch("/api/portal/requests", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: "booking", quoteReference: reference }),
+        body: JSON.stringify({
+          kind: "booking",
+          quoteReference: reference,
+          note: pickup.note,
+          // A request for the pickup desk; KCPL confirms the time.
+          pickup: collect
+            ? { date: pickup.date, window: pickup.window, address: pickup.address, contact_name: pickup.contactName, contact_phone: pickup.contactPhone }
+            : null,
+        }),
       });
       const data = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || t("req.booking_failed"));
       setNotice(t("req.booking_sent", { reference }));
+      setProceeding(null);
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("req.booking_failed"));
@@ -239,7 +259,7 @@ export function PortalRequestsWorkspace({
                               size="sm"
                               variant="secondary"
                               disabled={bookingBusy === quote.reference}
-                              onClick={() => requestBooking(quote.reference)}
+                              onClick={() => startBooking(quote)}
                             >
                               {bookingBusy === quote.reference ? t("req.sending") : t("req.ask_to_proceed")}
                             </OpsButton>
@@ -250,7 +270,56 @@ export function PortalRequestsWorkspace({
                   </tbody>
                 </table>
               </OpsTableWrap>
-            ) : (
+            ) : null}
+            {proceeding ? (
+              <form
+                className="portal-pickup-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void requestBooking(proceeding.reference);
+                }}
+              >
+                <h3>{t("pk.title")} · {proceeding.reference}</h3>
+                <p>{t("pk.description")}</p>
+                <label className="portal-pickup-check">
+                  <input type="checkbox" checked={pickup.collect} onChange={(event) => setPickup({ ...pickup, collect: event.target.checked })}/>
+                  {t("pk.collect")}
+                </label>
+                {pickup.collect ? (
+                  <div className="portal-pickup-grid">
+                    <OpsField label={t("pk.date")}>
+                      <input type="date" required value={pickup.date} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setPickup({ ...pickup, date: event.target.value })}/>
+                    </OpsField>
+                    <OpsField label={t("pk.window")}>
+                      <select value={pickup.window} onChange={(event) => setPickup({ ...pickup, window: event.target.value })}>
+                        <option value="morning">{t("pk.morning")}</option>
+                        <option value="afternoon">{t("pk.afternoon")}</option>
+                        <option value="any">{t("pk.any")}</option>
+                      </select>
+                    </OpsField>
+                    <OpsField label={t("pk.address")} className="portal-pickup-wide">
+                      <input required minLength={5} maxLength={300} value={pickup.address} onChange={(event) => setPickup({ ...pickup, address: event.target.value })}/>
+                    </OpsField>
+                    <OpsField label={t("pk.contact")}>
+                      <input maxLength={120} value={pickup.contactName} onChange={(event) => setPickup({ ...pickup, contactName: event.target.value })}/>
+                    </OpsField>
+                    <OpsField label={t("pk.phone")}>
+                      <input type="tel" maxLength={30} value={pickup.contactPhone} onChange={(event) => setPickup({ ...pickup, contactPhone: event.target.value })}/>
+                    </OpsField>
+                  </div>
+                ) : null}
+                <OpsField label={t("pk.note")}>
+                  <input maxLength={2000} value={pickup.note} onChange={(event) => setPickup({ ...pickup, note: event.target.value })}/>
+                </OpsField>
+                <div className="portal-pickup-actions">
+                  <OpsButton type="submit" variant="primary" disabled={Boolean(bookingBusy)}>
+                    {bookingBusy ? t("req.sending") : t("pk.send")}
+                  </OpsButton>
+                  <OpsButton type="button" variant="ghost" onClick={() => setProceeding(null)}>{t("pk.cancel")}</OpsButton>
+                </div>
+              </form>
+            ) : null}
+            {quotes.length ? null : (
               <div className="portal-empty-wrap">
                 <OpsEmptyState
                   kind="neutral"

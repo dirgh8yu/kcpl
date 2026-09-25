@@ -34,6 +34,11 @@ function completeEnv() {
     DHL_EXPRESS_API_PASSWORD: "dhl-password-value",
     SEARATES_FREIGHT_INDEX_API_KEY: "searates-key-value",
     KCPL_RATE_LIMIT_SALT: "rate-limit-salt-value",
+    // Customers' SMS and WhatsApp notices, each optional.
+    SPARROW_SMS_TOKEN: "sparrow-token-value",
+    SPARROW_SMS_FROM: "KCPL",
+    WHATSAPP_ACCESS_TOKEN: "whatsapp-token-value",
+    WHATSAPP_PHONE_NUMBER_ID: "1234567890",
     CLOUDFLARE_TURNSTILE_SECRET_KEY: "turnstile-secret-value",
     NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: "turnstile-site-key-value",
   };

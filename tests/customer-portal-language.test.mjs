@@ -87,7 +87,8 @@ test("every Nepali string is actually Nepali", async () => {
 
   // A handful of entries are legitimately not Devanagari: an em dash, a Latin
   // placeholder address, and the language's own English name.
-  const exempt = new Set(["common.none", "team.email_placeholder", "req.weight_placeholder"]);
+  // "SMS" and "WhatsApp" are the channels' own names, written the same in Nepali.
+  const exempt = new Set(["common.none", "team.email_placeholder", "req.weight_placeholder", "text.sms", "text.whatsapp"]);
   const untranslated = entries
     .filter(([, key]) => !exempt.has(key))
     .filter(([, , value]) => !devanagari.test(value))
@@ -256,9 +257,9 @@ test("the language lives on the account, because the sweep has no browser", asyn
   assert.match(accounts, /locale: portalLocaleValue\(locale\)/);
   const sweep = code(await readFile(repo("app/portal/portal-notifications.server.ts"), "utf8"));
   assert.match(sweep, /locale: portalLocaleValue\(data\.locale\)/);
-  // Every one of the four message builders (milestones, documents, free
-  // time, invoices) is handed the recipient's language.
-  assert.equal((sweep.match(/\}, account\.locale\)/g) ?? []).length, 4);
+  // Every one of the five message builders (milestones, document releases,
+  // document requests, free time, invoices) is handed the recipient's language.
+  assert.equal((sweep.match(/\}, account\.locale\)/g) ?? []).length, 5);
 });
 
 test("a customer can only ever change their own language", async () => {

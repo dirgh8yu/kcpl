@@ -36,6 +36,8 @@ export function PortalInvoicesWorkspace({
           <span>{invoices.length === 1 ? t("inv.count_one") : t("inv.count", { count: invoices.length })}</span>
           <span>{t("inv.open_overdue", { open: summary.openInvoices, overdue: summary.overdueInvoices })}</span>
         </>}
+        // What is owed, how overdue, and what was paid, as a PDF.
+        actions={<a className="ops-button" data-variant="secondary" data-size="sm" href="/api/portal/statement">{t("inv.statement")}</a>}
       />
       <div className="ops-content">
         <div className="ops-stack portal-stack">

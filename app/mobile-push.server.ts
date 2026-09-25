@@ -85,7 +85,11 @@ export type MobilePushMessage = {
  */
 export async function sendMobilePush(devices: MobileDevice[], message: MobilePushMessage) {
   if (!devices.length) return { sent: 0 };
-  const data: Record<string, string> = { kind: message.target.kind, reference: message.target.reference ?? "" };
+  const data: Record<string, string> = {
+    kind: message.target.kind,
+    reference: message.target.reference ?? "",
+    ...(message.target.documentType ? { document_type: message.target.documentType } : {}),
+  };
   try {
     const response = await firebaseAdminMessaging().sendEachForMulticast({
       tokens: devices.map((device) => device.token),

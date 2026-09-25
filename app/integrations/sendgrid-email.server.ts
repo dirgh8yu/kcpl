@@ -22,6 +22,8 @@ type TransactionalEmailInput = {
   html: string;
   category?: string;
   customArgs?: Record<string, string>;
+  /** Files sent with the email, such as a statement PDF. */
+  attachments?: Array<{ filename: string; content: Buffer; type: string }>;
 };
 
 export type TransactionalEmailResult = {
@@ -84,6 +86,16 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput): Pr
       { type: "text/html", value: input.html },
     ],
     categories: [input.category || "kcpl-transactional"],
+    ...(input.attachments?.length
+      ? {
+          attachments: input.attachments.map((file) => ({
+            content: file.content.toString("base64"),
+            filename: file.filename,
+            type: file.type,
+            disposition: "attachment",
+          })),
+        }
+      : {}),
   };
 
   const controller = new AbortController();

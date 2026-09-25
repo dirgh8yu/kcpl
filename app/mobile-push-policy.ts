@@ -38,11 +38,19 @@ export function mobileDeviceId(audience: MobilePushAudience, token: string) {
 }
 
 /** What the app does when the notification is tapped. */
-export type MobilePushTarget = { kind: "shipment" | "invoice" | "job" | "alerts"; reference: string | null };
+export type MobilePushTarget = {
+  kind: "shipment" | "invoice" | "job" | "alerts" | "document_request";
+  reference: string | null;
+  /** For a document request: which document, so the app opens its camera for it. */
+  documentType?: string;
+};
 
 /** A portal link becomes the shipment the app should open. */
 export function customerPushTarget(url: string): MobilePushTarget {
   const match = /\/portal\/shipments\/([^/?#]+)/.exec(url);
+  // "KCPL needs your packing list": the app opens the send sheet for it.
+  const send = /[?&]send=([a-z_]{2,40})(?:[&#]|$)/.exec(url);
+  if (match && send) return { kind: "document_request", reference: decodeURIComponent(match[1]), documentType: send[1] };
   if (match) return { kind: "shipment", reference: decodeURIComponent(match[1]) };
   // An invoice reminder opens the invoice, where it can be paid.
   const invoice = /\/portal\/invoices\/([^/?#]+)/.exec(url);

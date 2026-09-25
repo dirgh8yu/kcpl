@@ -178,6 +178,17 @@ export function productionRuntimeReadiness(env: RuntimeEnv = process.env): Produ
     { key: "SEARATES_FREIGHT_INDEX_API_KEY", value: text(env, "SEARATES_FREIGHT_INDEX_API_KEY") },
   ], "SEARATES_FREIGHT_INDEX_API_KEY is missing; market rate estimates are unavailable.");
 
+  // Customers' SMS and WhatsApp notices. Each is optional; the portal only
+  // offers a channel that is configured.
+  capability(checks, "sms-notices", "SMS notices (Sparrow SMS)", [
+    { key: "SPARROW_SMS_TOKEN", value: text(env, "SPARROW_SMS_TOKEN") },
+    { key: "SPARROW_SMS_FROM", value: text(env, "SPARROW_SMS_FROM") },
+  ], "SPARROW_SMS_TOKEN and SPARROW_SMS_FROM are missing; customers are not offered SMS notices.");
+  capability(checks, "whatsapp-notices", "WhatsApp notices", [
+    { key: "WHATSAPP_ACCESS_TOKEN", value: text(env, "WHATSAPP_ACCESS_TOKEN") },
+    { key: "WHATSAPP_PHONE_NUMBER_ID", value: text(env, "WHATSAPP_PHONE_NUMBER_ID") },
+  ], "WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are missing; customers are not offered WhatsApp notices. The approved template is WHATSAPP_TEMPLATE (default kcpl_update).");
+
   const rateLimitSalt = text(env, "KCPL_RATE_LIMIT_SALT");
   checks.push(rateLimitSalt
     ? check("rate-limit-salt", "Quote rate-limit salt", "ready", "Rate-limit subjects are hashed with a private salt.")

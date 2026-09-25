@@ -1,3 +1,4 @@
+import { bookingPickupSummary, bookingPickupWindowTimes, storedBookingPickup } from "../../portal/portal-booking-pickup";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
@@ -132,6 +133,16 @@ async function sourceSnapshots(shipment: Record<string, unknown>) {
   };
 }
 
+/** The pickup the customer asked for on their booking request, if any. */
+function customerPickupRequest(quote: Record<string, unknown>) {
+  const request = quote.portal_booking_request;
+  if (!request || typeof request !== "object") return null;
+  const raw = (request as Record<string, unknown>).pickup;
+  if (!raw || typeof raw !== "object") return null;
+  const pickup = storedBookingPickup(raw);
+  return pickup ? { pickup, ...bookingPickupWindowTimes(pickup) } : null;
+}
+
 export async function listPickupWorkspace(staff: KcplStaffContext) {
   if (qaMockDataEnabled()) return mockPickupWorkspace(staff);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
@@ -156,7 +167,11 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
   });
 
   const customerIds = accessible.map((doc) => nullable(doc.get("customer_id"))).filter((value): value is string => Boolean(value));
-  const quoteIds = accessible.map((doc) => nullable(doc.get("quote_reference"))).filter((value): value is string => Boolean(value));
+  // The customer's own quote too, where their booking request (and any
+  // pickup they asked for) lives.
+  const quoteIds = accessible
+    .flatMap((doc) => [nullable(doc.get("quote_reference")), nullable(doc.get("customer_quote_reference"))])
+    .filter((value): value is string => Boolean(value));
   const tenderIds = accessible.map((doc) => nullable(doc.get("tender_id"))).filter((value): value is string => Boolean(value));
   const [customers, quotes, tenders] = await Promise.all([loadMap("customers", customerIds), loadMap("quotes", quoteIds), loadMap("transport_tenders", tenderIds)]);
   const now = new Date().toISOString();
@@ -172,6 +187,9 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
     }
     const customerId = nullable(data.customer_id);
     const quote = quotes.get(text(data.quote_reference)) ?? {};
+    // A pickup the customer asked for when accepting the quote fills the
+    // desk's form; the desk still schedules it.
+    const asked = customerPickupRequest(quotes.get(text(data.customer_quote_reference)) ?? quote);
     const customer = customerId ? customers.get(customerId) ?? {} : {};
     const tenderId = nullable(data.tender_id);
     const tender = tenderId ? tenders.get(tenderId) ?? {} : {};
@@ -190,13 +208,13 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
       destination: text(quote.destination, text(data.destination)),
       status: "unscheduled",
       channel: "manual",
-      requested_window_start: null,
-      requested_window_end: null,
+      requested_window_start: asked?.start ?? null,
+      requested_window_end: asked?.end ?? null,
       confirmed_window_start: null,
       confirmed_window_end: null,
-      pickup_location: text(quote.origin, text(data.origin)) || null,
-      contact_name: null,
-      contact_phone: null,
+      pickup_location: asked?.pickup.address ?? (text(quote.origin, text(data.origin)) || null),
+      contact_name: asked?.pickup.contact_name ?? null,
+      contact_phone: asked?.pickup.contact_phone ?? null,
       provider_reference: null,
       driver_name: null,
       driver_phone: null,
@@ -205,7 +223,7 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
       picked_up_at: null,
       missed_at: null,
       missed_reason: null,
-      notes: null,
+      notes: asked ? `Customer: ${bookingPickupSummary(asked.pickup)}` : null,
       created_at: null,
       updated_at: text(data.updated_at, now),
       shipment_status: text(data.status, "booking_confirmed"),

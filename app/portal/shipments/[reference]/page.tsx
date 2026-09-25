@@ -27,6 +27,9 @@ import { PortalDeliveryRating } from "./portal-delivery-rating";
 import { ShipmentThread } from "../../../shipment-thread";
 import { deliveryRatable } from "../../portal-delivery-rating";
 import { portalDeliveryRating } from "../../portal-delivery-rating.server";
+import { portalProofOfDelivery } from "../../portal-proof-of-delivery.server";
+import type { PortalProofOfDelivery } from "../../portal-proof-of-delivery";
+import { PortalProofOfDeliveryCard } from "./portal-proof-of-delivery";
 import {
   portalDate,
   portalDateTime,
@@ -48,16 +51,21 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
   const t = portalTranslator(access.session.locale);
   const { reference } = await params;
   const result = await getPortalShipment(access.session, decodeURIComponent(reference));
-  const rated = result.kind === "ready" && deliveryRatable(result.detail.shipment.status)
-    ? await portalDeliveryRating(access.session, result.detail.shipment.reference) !== null
-    : true;
+  const delivered = result.kind === "ready" && deliveryRatable(result.detail.shipment.status);
+  const [rating, proof] = delivered && result.kind === "ready"
+    ? await Promise.all([
+        portalDeliveryRating(access.session, result.detail.shipment.reference),
+        portalProofOfDelivery(access.session, result.detail.shipment.reference),
+      ])
+    : [null, null];
+  const rated = !delivered || rating !== null;
 
   return (
     <PortalShell
       session={access.session}
     >
       {result.kind === "ready"
-        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests} canRate={!rated} locale={access.session.locale}/>
+        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests} canRate={!rated} proof={proof} locale={access.session.locale}/>
         : null}
       {result.kind === "missing" ? (
         <OpsPage>
@@ -80,7 +88,7 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
   );
 }
 
-function ShipmentDetail({ detail, canSend, canRate, locale }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; locale: PortalLocale }) {
+function ShipmentDetail({ detail, canSend, canRate, proof, locale }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; locale: PortalLocale }) {
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
 
@@ -188,6 +196,8 @@ function ShipmentDetail({ detail, canSend, canRate, locale }: { detail: PortalSh
               />}
             />
           </OpsSurface>
+
+          {proof ? <PortalProofOfDeliveryCard reference={shipment.reference} proof={proof} locale={locale}/> : null}
 
           {canRate ? <PortalDeliveryRating reference={shipment.reference} locale={locale}/> : null}
 
