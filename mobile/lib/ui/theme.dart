@@ -58,7 +58,9 @@ class Palette extends ThemeExtension<Palette> {
   static const light = Palette(
     ink: Color(0xFF000000),
     paper: Color(0xFFF2F2F7),
-    secondary: Color(0xFF8A8A8E),
+    // Darker than Apple's secondaryLabel so small grey text reads at WCAG
+    // AA (4.5:1) on white, the grouped grey and the fill.
+    secondary: Color(0xFF636366),
     tertiary: Color(0xFFC4C4C7),
     hairline: Color(0xFFC6C6C8),
     fill: Color(0xFFE9E9EE),
@@ -72,7 +74,8 @@ class Palette extends ThemeExtension<Palette> {
   static const dark = Palette(
     ink: Color(0xFFFFFFFF),
     paper: Color(0xFF000000),
-    secondary: Color(0xFF8E8E93),
+    // Likewise at 4.5:1 or more on black and both raised greys.
+    secondary: Color(0xFF98989D),
     tertiary: Color(0xFF5A5A5F),
     hairline: Color(0xFF38383A),
     fill: Color(0xFF1C1C1E),
@@ -301,7 +304,8 @@ ThemeData kcplTheme(Brightness brightness, {TargetPlatform? platform}) {
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(foregroundColor: p.ink, splashFactory: NoSplash.splashFactory),
+      // 44 points: Apple's smallest comfortable target, for every icon button.
+      style: IconButton.styleFrom(foregroundColor: p.ink, splashFactory: NoSplash.splashFactory, minimumSize: const Size.square(44)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,

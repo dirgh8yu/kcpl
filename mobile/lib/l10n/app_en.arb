@@ -866,7 +866,7 @@
     }
   },
   "estStorageRow": "What will storage cost?",
-  "estStorageTitle": "Storage and demurrage",
+  "estStorageTitle": "Storage charges",
   "estDaysOver": "{days, plural, =0{Collected within free time} =1{1 day after free time} other{{days} days after free time}}",
   "@estDaysOver": {
     "placeholders": {
@@ -897,7 +897,7 @@
   "estStorageFoot": "At the daily rate KCPL recorded from the carrier. The carrier's own invoice decides the charge.",
   "estNoRate": "No daily rate is recorded for this shipment yet. Ask your account manager.",
   "estDutyRow": "Estimate customs duty",
-  "estDutyTitle": "Customs duty estimate",
+  "estDutyTitle": "Customs duty",
   "estCif": "Value of the goods (CIF, NPR)",
   "estDutyRate": "Customs duty rate",
   "estExcise": "Excise duty",
@@ -908,6 +908,13 @@
   "estLineVat": "VAT",
   "estTotal": "Estimated total at customs",
   "estDutyFoot": "A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.",
+  "sheetGrabber": "Show more or less of the list",
+  "splitShipment": "Choose a shipment",
+  "splitShipmentBody": "Its journey, documents and messages open here.",
+  "splitInvoice": "Choose an invoice",
+  "splitInvoiceBody": "Its balance, receipts and paying online open here.",
+  "opsSplitJob": "Choose a job",
+  "opsSplitJobBody": "Its tasks, delivery and messages open here.",
   "qaTrack": "Track a shipment",
   "qaQuote": "Request a quote",
   "qaPay": "Pay an invoice",

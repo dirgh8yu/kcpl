@@ -14,6 +14,7 @@ import 'package:kcpl_customer/ops/ops_demo.dart';
 import 'package:kcpl_customer/ops/route_order.dart';
 import 'package:kcpl_customer/ops/screens/driver_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/icons.dart';
 
 import 'ops_test.dart' show pumpOps, settle, signIn, tapInView;
 
@@ -142,7 +143,7 @@ void main() {
     await settle(tester);
     expect(opened, ['Teku Road 14, Kathmandu']);
 
-    final second = tester.getCenter(find.byIcon(Icons.drag_handle_rounded).at(1));
+    final second = tester.getCenter(find.byIcon(KIcons.dragHandle).at(1));
     final drag = await tester.startGesture(second);
     await tester.pump(const Duration(milliseconds: 100));
     for (var i = 0; i < 15; i++) {

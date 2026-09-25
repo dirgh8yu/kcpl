@@ -11,6 +11,10 @@ import '../widgets/tab_bar.dart';
 import '../../platform/app_shortcuts.dart';
 import 'quote_screen.dart' show openQuote;
 import 'account_screen.dart';
+import 'invoice_detail_screen.dart';
+import 'shipment_detail_screen.dart';
+import '../widgets/common.dart' show EmptyState;
+import '../widgets/split_view.dart';
 import 'documents_screen.dart';
 import 'invoices_screen.dart';
 import 'overview_screen.dart';
@@ -126,9 +130,18 @@ class _HomeShellState extends State<HomeShell> {
 
     Widget screen(HomeTab item) => switch (item) {
       HomeTab.overview => OverviewScreen(onNavigate: _select),
-      HomeTab.shipments => const ShipmentsScreen(),
+      // On a tablet, the list with the chosen one beside it.
+      HomeTab.shipments => SplitView(
+        list: const ShipmentsScreen(),
+        detail: (context, reference) => ShipmentDetailScreen(reference: reference),
+        placeholder: EmptyState(icon: KIcons.shipments, title: l.splitShipment, description: l.splitShipmentBody),
+      ),
       HomeTab.documents => const DocumentsScreen(),
-      HomeTab.invoices => const InvoicesScreen(),
+      HomeTab.invoices => SplitView(
+        list: const InvoicesScreen(),
+        detail: (context, reference) => InvoiceDetailScreen(reference: reference),
+        placeholder: EmptyState(icon: KIcons.invoices, title: l.splitInvoice, description: l.splitInvoiceBody),
+      ),
       HomeTab.account => AccountScreen(version: widget.version),
     };
 

@@ -12,6 +12,9 @@ import 'alerts_screen.dart';
 import 'jobs_screen.dart';
 import 'me_screen.dart';
 import 'today_screen.dart';
+import 'job_detail_screen.dart';
+import '../../ui/widgets/common.dart' show EmptyState;
+import '../../ui/widgets/split_view.dart';
 import '../../ui/widgets/sheet_route.dart';
 import '../ops_l10n.dart';
 
@@ -77,7 +80,12 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final unread = OpsScope.of(context).unread;
-    final labels = {OpsTab.today: context.l.opsToday, OpsTab.jobs: context.l.opsJobs, OpsTab.alerts: context.l.opsAlerts, OpsTab.me: context.l.opsMe};
+    final labels = {
+      OpsTab.today: context.l.opsToday,
+      OpsTab.jobs: context.l.opsJobs,
+      OpsTab.alerts: context.l.opsAlerts,
+      OpsTab.me: context.l.opsMe,
+    };
     const icons = {
       OpsTab.today: (KIcons.today, KIcons.todayOn),
       OpsTab.jobs: (KIcons.shipments, KIcons.shipmentsOn),
@@ -86,8 +94,17 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
     };
 
     Widget screen(OpsTab tab) => switch (tab) {
-      OpsTab.today => TodayScreen(onNavigate: _select),
-      OpsTab.jobs => const JobsScreen(),
+      // On a tablet, the list with the chosen job beside it.
+      OpsTab.today => SplitView(
+        list: TodayScreen(onNavigate: _select),
+        detail: (context, reference) => JobDetailScreen(reference: reference),
+        placeholder: EmptyState(icon: KIcons.shipments, title: context.l.opsSplitJob, description: context.l.opsSplitJobBody),
+      ),
+      OpsTab.jobs => SplitView(
+        list: const JobsScreen(),
+        detail: (context, reference) => JobDetailScreen(reference: reference),
+        placeholder: EmptyState(icon: KIcons.shipments, title: context.l.opsSplitJob, description: context.l.opsSplitJobBody),
+      ),
       OpsTab.alerts => const AlertsScreen(),
       OpsTab.me => MeScreen(version: widget.version),
     };

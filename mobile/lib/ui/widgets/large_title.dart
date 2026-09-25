@@ -68,9 +68,15 @@ class LargeTitleBar extends StatelessWidget {
                     alignment: AlignmentDirectional.bottomStart,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 8),
+                      // The page's heading for VoiceOver and TalkBack while
+                      // it shows; once it has gone under the bar, the inline
+                      // title takes over. Never both, so it is read once.
                       child: Opacity(
                         opacity: t,
-                        child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.type.displaySmall),
+                        child: Semantics(
+                          header: true,
+                          child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.type.displaySmall),
+                        ),
                       ),
                     ),
                   ),
@@ -86,7 +92,13 @@ class LargeTitleBar extends StatelessWidget {
                   leading: canPop && !sheet ? const _Back() : null,
                   middle: Opacity(
                     opacity: inline,
-                    child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.type.titleLarge),
+                    child: ExcludeSemantics(
+                      excluding: !collapsed,
+                      child: Semantics(
+                        header: true,
+                        child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.type.titleLarge),
+                      ),
+                    ),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

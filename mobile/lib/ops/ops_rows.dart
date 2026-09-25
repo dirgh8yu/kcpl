@@ -10,13 +10,18 @@ import 'ops_controller.dart';
 import 'ops_models.dart';
 import 'screens/job_detail_screen.dart';
 import '../ui/widgets/sheet_route.dart';
+import '../ui/widgets/split_view.dart';
 import 'ops_l10n.dart';
 
-void openJob(BuildContext context, String reference, {OpsJob? preview}) => Navigator.of(context).push(
-  SheetRoute<void>(
-    builder: (_) => JobDetailScreen(reference: reference, preview: preview),
-  ),
-);
+/// Beside the list on a tablet; as a sheet otherwise.
+void openJob(BuildContext context, String reference, {OpsJob? preview}) {
+  if (SplitView.select(context, reference)) return;
+  Navigator.of(context).push(
+    SheetRoute<void>(
+      builder: (_) => JobDetailScreen(reference: reference, preview: preview),
+    ),
+  );
+}
 
 /// The one thing about a job a desk should see first: trouble, then late
 /// work, then urgency, then plain status.
@@ -45,26 +50,29 @@ class JobRow extends StatelessWidget {
     final (flag, emphasis) = jobFlag(l, job);
     final email = OpsScope.of(context).session?.email ?? '';
     final who = owner ? (job.ownedBy(email) ? context.l.opsYours : (job.ownerName ?? context.l.opsUnassigned)) : job.customerName;
-    return RowTile(
-      onTap: () => openJob(context, job.reference, preview: job),
-      leading: ModeBadge(mode: job.mode, status: job.status),
-      title: RouteText(place(job.origin), place(job.destination)),
-      accessory: Text(job.eta == null ? '—' : formatShortDate(job.eta)),
-      subtitle: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: flag,
-              style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
-            ),
-            TextSpan(text: ' · ${job.reference}'),
-            if (who.isNotEmpty) TextSpan(text: ' · $who'),
-          ],
+    return SplitSelected(
+      id: job.reference,
+      child: RowTile(
+        onTap: () => openJob(context, job.reference, preview: job),
+        leading: ModeBadge(mode: job.mode, status: job.status),
+        title: RouteText(place(job.origin), place(job.destination)),
+        accessory: Text(job.eta == null ? '—' : formatShortDate(job.eta)),
+        subtitle: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: flag,
+                style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
+              ),
+              TextSpan(text: ' · ${job.reference}'),
+              if (who.isNotEmpty) TextSpan(text: ' · $who'),
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        below: job.status == 'delivered' ? null : JourneyBar(status: job.status),
       ),
-      below: job.status == 'delivered' ? null : JourneyBar(status: job.status),
     );
   }
 }

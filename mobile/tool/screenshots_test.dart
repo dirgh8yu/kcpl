@@ -20,6 +20,7 @@ import 'package:kcpl_customer/ops/main.dart';
 import 'package:kcpl_customer/ops/ops_controller.dart';
 import 'package:kcpl_customer/ops/ops_demo.dart';
 import 'package:kcpl_customer/api/models.dart';
+import 'package:kcpl_customer/ops/screens/driver_screen.dart';
 import 'package:kcpl_customer/ops/screens/scan_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
 import 'package:kcpl_customer/ui/screens/pay_screen.dart';
@@ -348,6 +349,118 @@ void main() {
       await _shot(tester, 'ops-$mode-4-alerts');
       await _tab(tester, 'Me');
       await _shot(tester, 'ops-$mode-5-me');
+    }, variant: iPhone);
+
+    testWidgets('customer extras $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      final controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(KcplApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'imports@annapurna.example');
+      PaymentBrowser.open = (_) async => true;
+      await _tab(tester, 'Shipments');
+      await tester.tap(find.textContaining('KCPL-S-24012', findRichText: true).first);
+      await _wait(tester);
+      await tester.scrollUntilVisible(find.text('How did this delivery go?'), 300, scrollable: find.byType(Scrollable).last);
+      await tester.tap(find.byTooltip('5 out of 5'));
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-11a-rate');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.textContaining('KCPL-S-24091', findRichText: true).first);
+      await _wait(tester);
+      await tester.scrollUntilVisible(find.text('Estimate customs duty'), 300, scrollable: find.byType(Scrollable).last);
+      await Scrollable.ensureVisible(tester.element(find.text('Message KCPL')), alignment: 0.5);
+      await _wait(tester, 4);
+      await _shot(tester, 'customer-$mode-11b-shipment-tools');
+      await tester.tap(find.text('Message KCPL'));
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-11c-messages');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await Scrollable.ensureVisible(tester.element(find.text('What will storage cost?')), alignment: 0.5);
+      await _wait(tester, 4);
+      await tester.tap(find.text('What will storage cost?'));
+      await _wait(tester);
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byTooltip('Later'));
+        await tester.pump();
+      }
+      await _shot(tester, 'customer-$mode-11d-storage');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await Scrollable.ensureVisible(tester.element(find.text('Estimate customs duty')), alignment: 0.5);
+      await _wait(tester, 4);
+      await tester.tap(find.text('Estimate customs duty'));
+      await _wait(tester);
+      await tester.enterText(find.byType(TextField).last, '1250000');
+      await _wait(tester, 3);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await _shot(tester, 'customer-$mode-11e-duty');
+      await tester.pumpWidget(const SizedBox());
+      await _wait(tester);
+    }, variant: iPhone);
+
+    testWidgets('ops extras $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      final controller = OpsController(auth: DemoAuth(), api: DemoOpsApi(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(OpsApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'anil@kcpl.example');
+      openDriver(tester.element(find.byType(Scaffold).first));
+      await _wait(tester);
+      await _shot(tester, 'ops-$mode-7a-driver');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.textContaining('KCPL-2609-0142').first);
+      await _wait(tester);
+      await tester.scrollUntilVisible(find.text('Messages with the customer'), 300, scrollable: find.byType(Scrollable).last);
+      await Scrollable.ensureVisible(tester.element(find.text('Messages with the customer')), alignment: 0.5);
+      await _wait(tester);
+      await tester.tap(find.text('Messages with the customer'));
+      await _wait(tester);
+      await _shot(tester, 'ops-$mode-7b-customer-messages');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await controller.setLocale(const Locale('ne'));
+      await _wait(tester);
+      await _shot(tester, 'ops-$mode-7c-today-nepali');
+    }, variant: iPhone);
+
+    testWidgets('ipad $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      tester.view.physicalSize = const Size(2360, 1640);
+      tester.view.devicePixelRatio = 2;
+      tester.view.padding = const FakeViewPadding(top: 24 * 2, bottom: 20 * 2);
+      tester.view.viewPadding = const FakeViewPadding(top: 24 * 2, bottom: 20 * 2);
+      final controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(KcplApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'imports@annapurna.example');
+      await _tab(tester, 'Shipments');
+      await tester.tap(find.textContaining('KCPL-S-24091', findRichText: true).first);
+      await _wait(tester);
+      await _shot(tester, 'ipad-$mode-1-shipments');
+      await _tab(tester, 'Invoices');
+      await tester.tap(find.textContaining('KCPL-I-20260918-011', findRichText: true).first);
+      await _wait(tester);
+      await _shot(tester, 'ipad-$mode-2-invoices');
+      await tester.pumpWidget(const SizedBox());
+      await _wait(tester);
+
+      final ops = OpsController(auth: DemoAuth(), api: DemoOpsApi(), configured: true);
+      await ops.start();
+      await tester.pumpWidget(OpsApp(controller: ops, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'anil@kcpl.example');
+      await tester.tap(find.textContaining('KCPL-2609-0142').first);
+      await _wait(tester);
+      await _shot(tester, 'ipad-$mode-3-ops-today');
     }, variant: iPhone);
   }
 }

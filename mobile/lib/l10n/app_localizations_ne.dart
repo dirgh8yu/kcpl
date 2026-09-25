@@ -1533,7 +1533,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get estStorageRow => 'भण्डारण शुल्क कति लाग्छ?';
 
   @override
-  String get estStorageTitle => 'भण्डारण र डेमरेज';
+  String get estStorageTitle => 'भण्डारण शुल्क';
 
   @override
   String estDaysOver(int days) {
@@ -1584,7 +1584,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get estDutyRow => 'भन्सार महसुल अनुमान';
 
   @override
-  String get estDutyTitle => 'भन्सार महसुल अनुमान';
+  String get estDutyTitle => 'भन्सार महसुल';
 
   @override
   String get estCif => 'सामानको मूल्य (CIF, रु.)';
@@ -1616,6 +1616,28 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get estDutyFoot =>
       'तपाईंले छानेका दरबाट मोटामोटी अनुमान। तपाईंको सामानको दर HS कोडअनुसार हुन्छ; जाँचपासअघि KCPL ले पक्का गर्छ।';
+
+  @override
+  String get sheetGrabber => 'सूची धेरै वा थोरै देखाउनुहोस्';
+
+  @override
+  String get splitShipment => 'ढुवानी छान्नुहोस्';
+
+  @override
+  String get splitShipmentBody => 'यसको यात्रा, कागजात र सन्देश यहाँ खुल्छन्।';
+
+  @override
+  String get splitInvoice => 'बिल छान्नुहोस्';
+
+  @override
+  String get splitInvoiceBody =>
+      'यसको बाँकी, रसिद र अनलाइन भुक्तानी यहाँ खुल्छन्।';
+
+  @override
+  String get opsSplitJob => 'जब छान्नुहोस्';
+
+  @override
+  String get opsSplitJobBody => 'यसका काम, डेलिभरी र सन्देश यहाँ खुल्छन्।';
 
   @override
   String get qaTrack => 'ढुवानी हेर्नुहोस्';

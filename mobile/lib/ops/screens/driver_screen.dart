@@ -135,8 +135,10 @@ class _RouteState extends State<_Route> {
                 setState(() => _mineOnly = value);
               },
               children: {
-                true: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsMineCount(mine))),
-                false: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsAllCount(all.length))),
+                // Taller than the usual segment: used standing up, often
+                // one-handed, by the van.
+                true: Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text(context.l.opsMineCount(mine))),
+                false: Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text(context.l.opsAllCount(all.length))),
               },
             ),
           ),
@@ -159,7 +161,10 @@ class _RouteState extends State<_Route> {
                   onPressed: () => _navigate(stops.first),
                   style: FilledButton.styleFrom(backgroundColor: p.accent, foregroundColor: Colors.white),
                   icon: const Icon(KIcons.location, size: 18),
-                  label: Text(context.l.opsDirectionsTo(stops.first.customerName.isEmpty ? stops.first.reference : stops.first.customerName), overflow: TextOverflow.ellipsis),
+                  label: Text(
+                    context.l.opsDirectionsTo(stops.first.customerName.isEmpty ? stops.first.reference : stops.first.customerName),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ),
@@ -171,7 +176,8 @@ class _RouteState extends State<_Route> {
             padding: const EdgeInsets.symmetric(horizontal: kGutter),
             itemCount: stops.length,
             onReorderItem: _reorder,
-            proxyDecorator: (child, index, animation) => Material(color: Colors.transparent, elevation: 6, borderRadius: BorderRadius.circular(kCardRadius), child: child),
+            proxyDecorator: (child, index, animation) =>
+                Material(color: Colors.transparent, elevation: 6, borderRadius: BorderRadius.circular(kCardRadius), child: child),
             itemBuilder: (context, index) {
               final stop = stops[index];
               return Padding(
@@ -196,7 +202,14 @@ class _RouteState extends State<_Route> {
 }
 
 class _Stop extends StatelessWidget {
-  const _Stop({required this.index, required this.stop, required this.waiting, required this.onNavigate, required this.onRecord, required this.onOpen});
+  const _Stop({
+    required this.index,
+    required this.stop,
+    required this.waiting,
+    required this.onNavigate,
+    required this.onRecord,
+    required this.onOpen,
+  });
   final int index;
   final DriverDelivery stop;
   final bool waiting;
@@ -260,7 +273,10 @@ class _Stop extends StatelessWidget {
                   index: index,
                   child: Semantics(
                     label: context.l.opsReorder(stop.reference),
-                    child: Padding(padding: const EdgeInsets.all(10), child: Icon(Icons.drag_handle_rounded, color: p.tertiary)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Icon(KIcons.dragHandle, color: p.tertiary),
+                    ),
                   ),
                 ),
               ],

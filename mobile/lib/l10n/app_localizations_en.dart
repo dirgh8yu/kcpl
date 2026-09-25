@@ -1545,7 +1545,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estStorageRow => 'What will storage cost?';
 
   @override
-  String get estStorageTitle => 'Storage and demurrage';
+  String get estStorageTitle => 'Storage charges';
 
   @override
   String estDaysOver(int days) {
@@ -1597,7 +1597,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estDutyRow => 'Estimate customs duty';
 
   @override
-  String get estDutyTitle => 'Customs duty estimate';
+  String get estDutyTitle => 'Customs duty';
 
   @override
   String get estCif => 'Value of the goods (CIF, NPR)';
@@ -1629,6 +1629,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get estDutyFoot =>
       'A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.';
+
+  @override
+  String get sheetGrabber => 'Show more or less of the list';
+
+  @override
+  String get splitShipment => 'Choose a shipment';
+
+  @override
+  String get splitShipmentBody =>
+      'Its journey, documents and messages open here.';
+
+  @override
+  String get splitInvoice => 'Choose an invoice';
+
+  @override
+  String get splitInvoiceBody =>
+      'Its balance, receipts and paying online open here.';
+
+  @override
+  String get opsSplitJob => 'Choose a job';
+
+  @override
+  String get opsSplitJobBody => 'Its tasks, delivery and messages open here.';
 
   @override
   String get qaTrack => 'Track a shipment';

@@ -76,6 +76,19 @@ The staff app is the operations desk in a pocket. It talks to `/api/mobile/ops/v
   "Waiting for signal", and sends itself when the signal returns (on coming back to the
   app, and every 45 seconds while anything waits). Only the login that wrote it sees or
   sends it; a note KCPL refuses is kept with the reason, to delete.
+- **Deliveries without signal:** a delivery recorded out of reach (even one whose attempt
+  couldn't be started) is kept on the phone with the time it happened, and sent step by
+  step once KCPL can be reached: the attempt, the outcome, then each piece of proof. Each
+  step that lands is written off, so a signal lost halfway resumes where it stopped.
+- **Offline reading:** Today, jobs, a job, its delivery, alerts and the staff list open
+  with no signal from the last answer, marked offline with its time.
+- **Today's deliveries** (driver mode, from Today): today's stops in your branches, yours
+  first, in the order you drag them into (kept for the day), with directions in Apple or
+  Google Maps and the delivery screen one tap away.
+- **Messages with the customer** (job detail): the shipment's conversation with the
+  customer, the same one the web Job File shows. The customer sees your first name.
+- **Nepali:** every Ops screen, chosen on sign-in or in Me. References, places, task
+  titles and notes stay as KCPL holds them.
 - **Alerts:** the web notification centre's feed. Opening an alert marks it read and
   goes to its job; the tab badge counts unread.
 - **Me:** role, branches and sign-out.
@@ -215,10 +228,48 @@ They appear only to logins that may send things to KCPL.
   answer (the return page's **Back to KCPL** opens the app). A paid amount that differs,
   or an invoice that changed meanwhile, is received and matched by accounts by hand.
 
+## Messages, ratings and estimates
+
+- **Message KCPL** (a shipment): one conversation per shipment with the person handling
+  it, the same thread as the web portal and the Job File. The job's owner is told at once
+  in KCPL Ops and the web notification centre; a reply comes as a push. It checks for a
+  reply every 30 seconds while open, and a thread already read opens offline.
+- **How did this delivery go?** (a delivered shipment): once per login. One tap on a star
+  answers; a comment is optional. Three or fewer goes to the desk as a complaint. Four or
+  five may offer KCPL's public review page (`KCPL_REVIEW_URL`, https only).
+- **What will storage cost?** (a shipment with free time): days past free time if the cargo
+  is collected on a chosen day, at the daily rate KCPL recorded. The carrier's invoice
+  decides the charge.
+- **Estimate customs duty** (a shipment): customs duty on the CIF value, excise on value
+  plus duty, then 13% VAT on all three, at the bands the customer picks. A rough guide;
+  the HS code decides the real rates.
+- **Invoice reminders:** three days before an invoice is due and when it becomes overdue,
+  by email and push to account owners who can see invoices. The push opens the invoice,
+  where Pay online is.
+
+## Shortcuts and the lock screen
+
+- **Home screen:** long-press the KCPL icon for Track a shipment, Request a quote and Pay
+  an invoice (each only when the login may do it).
+- **Siri and Spotlight (iPhone, iOS 16+):** "Track a shipment with KCPL", "Request a
+  quote from KCPL", "Pay a KCPL invoice", and the same three in the Shortcuts app, with
+  nothing to set up. They are App Shortcuts in `AppDelegate.swift`.
+- **Follow a shipment on Android:** the share button's **Follow in notifications** keeps
+  the shipment as an ongoing progress notification. On Android 16 it is a Live Update: it
+  can sit at the top of the lock screen and as a chip in the status bar. The app moves it
+  whenever it reads the shipment and ends it on delivery; a tap opens the shipment.
+
+## Tablets
+
+On an iPad (or any screen 740 points wide or more) Shipments and Invoices in KCPL, and
+Today and Jobs in KCPL Ops, show the list and the chosen item side by side, as Mail does.
+On a phone a row opens its sheet as before.
+
 ## Settings
 
-- **Email me about** (Account): the portal's three topics (milestones, documents, free
-  time), switched here or on the web; they are the same setting.
+- **Email me about** (Account): the portal's topics (milestones, documents, free time,
+  and invoices coming due for logins that see invoices), switched here or on the web;
+  they are the same setting.
 - **Dates:** Gregorian or Bikram Sambat ("9 Ashwin 2083 BS"). Kept on the phone. The
   instant is the same either way; BS times are Nepal time.
 
@@ -521,11 +572,19 @@ dart format -l 140 $(git ls-files "lib/*.dart" "test/*.dart" | grep -v /l10n/)  
 The widget tests sign in and walk every screen in English and Nepali at 1.6× system text
 size. A layout overflow fails the test, so a long label can't clip on a real phone.
 
+`test/accessibility_test.dart` holds the newest screens of both apps to Flutter's
+accessibility guidelines: every control named for VoiceOver and TalkBack, 44-point targets,
+and text at WCAG AA contrast (4.5:1). The secondary grey is a shade darker than Apple's to
+pass on every surface it sits on. `test/tablet_test.dart` covers the two-column layout.
+
 ## Not in this version
 
 - Paying part of an invoice, or a foreign-currency invoice, online. Those stay with KCPL
   accounts; the app sends the receipt.
-- The Swift code (the widget, the Live Activity, text recognition) is compiled only on a
-  Mac. CI builds Android; the iOS side has not been built since this change.
+- The Swift code (the widget, the Live Activity, text recognition, the App Shortcuts) is
+  compiled only on a Mac. CI builds Android; the iOS side has not been built since this
+  change.
+- An Android followed shipment is moved by the app, not by KCPL's push as the iPhone's
+  Live Activity is.
 - Online payment has been tested against the gateways' published signature formats, not
   a live gateway: the first payment in `KCPL_PAYMENTS_ENV=test` is the first round trip.

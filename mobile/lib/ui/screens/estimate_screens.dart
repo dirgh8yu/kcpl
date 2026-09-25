@@ -13,7 +13,8 @@ import '../widgets/sheet_route.dart';
 Future<void> openStorageEstimate(BuildContext context, FreeTime freeTime) =>
     Navigator.of(context).push(SheetRoute<void>(builder: (_) => StorageEstimateScreen(freeTime: freeTime)));
 
-Future<void> openDutyEstimate(BuildContext context) => Navigator.of(context).push(SheetRoute<void>(builder: (_) => const DutyEstimateScreen()));
+Future<void> openDutyEstimate(BuildContext context) =>
+    Navigator.of(context).push(SheetRoute<void>(builder: (_) => const DutyEstimateScreen()));
 
 /// "What will storage cost if we collect on Thursday?": days past free time
 /// at the daily rate KCPL recorded.
@@ -57,18 +58,14 @@ class _StorageEstimateScreenState extends State<StorageEstimateScreen> {
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
           child: Row(
             children: [
-              IconButton(
-                tooltip: l.estSooner,
-                onPressed: _inDays == 0 ? null : () => _step(-1),
-                icon: const Icon(Icons.remove_rounded),
-              ),
+              IconButton(tooltip: l.estSooner, onPressed: _inDays == 0 ? null : () => _step(-1), icon: const Icon(KIcons.minus)),
               Expanded(
                 child: Semantics(
                   liveRegion: true,
                   child: Text(l.estCollect(_inDays), textAlign: TextAlign.center, style: context.type.titleMedium),
                 ),
               ),
-              IconButton(tooltip: l.estLater, onPressed: () => _step(1), icon: const Icon(Icons.add_rounded)),
+              IconButton(tooltip: l.estLater, onPressed: () => _step(1), icon: const Icon(KIcons.plus)),
             ],
           ),
         ),
@@ -121,9 +118,16 @@ class _DutyEstimateScreenState extends State<DutyEstimateScreen> {
       children: [
         for (final rate in rates)
           ChoiceChip(
-            label: Text(rate == 0 && zero != null ? zero : _percent(rate)),
+            // Set here: chips don't resolve a per-state label colour from
+            // the theme on every platform.
+            label: Text(
+              rate == 0 && zero != null ? zero : _percent(rate),
+              style: TextStyle(color: rate == selected ? context.palette.surface : context.palette.ink),
+            ),
             selected: rate == selected,
             showCheckmark: false,
+            // A 48-point target around the 32-point chip.
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             onSelected: (_) {
               HapticFeedback.selectionClick();
               onSelected(rate);

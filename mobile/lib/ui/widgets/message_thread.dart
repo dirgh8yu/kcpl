@@ -193,7 +193,9 @@ class _ThreadState extends State<_Thread> {
                 ),
               ),
               if (widget.failure case final failure?)
-                SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.only(top: 24), child: failure))
+                SliverToBoxAdapter(
+                  child: Padding(padding: const EdgeInsets.only(top: 24), child: failure),
+                )
               else if (loading)
                 const SliverToBoxAdapter(child: Skeleton(rows: 3))
               else if (all.isEmpty)
@@ -251,14 +253,17 @@ class _ThreadState extends State<_Thread> {
                             decoration: cardField(l.msgPlaceholder).copyWith(
                               counterText: '',
                               isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 4),
                       _sending
-                          ? const Padding(padding: EdgeInsets.all(12), child: SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2)))
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                            )
                           : IconButton(
                               tooltip: l.msgSend,
                               onPressed: _text.text.trim().isEmpty ? null : _send,
@@ -300,10 +305,7 @@ class _Bubble extends StatelessWidget {
             if (first)
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
-                child: Text(
-                  [author, if (when.isNotEmpty) when].join(' · '),
-                  style: context.type.bodySmall?.copyWith(color: p.secondary),
-                ),
+                child: Text([author, if (when.isNotEmpty) when].join(' · '), style: context.type.bodySmall?.copyWith(color: p.secondary)),
               ),
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
@@ -311,10 +313,7 @@ class _Bubble extends StatelessWidget {
                 decoration: BoxDecoration(color: mine ? p.accent : p.surface, borderRadius: BorderRadius.circular(18)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  child: SelectableText(
-                    message.body,
-                    style: context.type.bodyLarge?.copyWith(color: mine ? Colors.white : p.ink),
-                  ),
+                  child: SelectableText(message.body, style: context.type.bodyLarge?.copyWith(color: mine ? Colors.white : p.ink)),
                 ),
               ),
             ),

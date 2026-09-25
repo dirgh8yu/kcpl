@@ -355,18 +355,24 @@ class _Grabber extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    key: const ValueKey('home-sheet-grabber'),
-    behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: AppLocalizations.of(context).sheetGrabber,
     onTap: onTap,
-    child: SizedBox(
-      height: 22,
-      child: Align(
-        alignment: const Alignment(0, -0.2),
-        child: Container(
-          width: 36,
-          height: 5,
-          decoration: BoxDecoration(color: context.palette.tertiary, borderRadius: BorderRadius.circular(3)),
+    excludeSemantics: true,
+    child: GestureDetector(
+      key: const ValueKey('home-sheet-grabber'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: 22,
+        child: Align(
+          alignment: const Alignment(0, -0.2),
+          child: Container(
+            width: 36,
+            height: 5,
+            decoration: BoxDecoration(color: context.palette.tertiary, borderRadius: BorderRadius.circular(3)),
+          ),
         ),
       ),
     ),

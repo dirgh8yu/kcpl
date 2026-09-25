@@ -16,17 +16,25 @@ import '../theme.dart';
 import 'common.dart';
 import 'journey.dart';
 import 'sheet_route.dart';
+import 'split_view.dart';
 
 /// Opens a shipment. [preview] is what the caller already knows, so the
 /// detail page draws its journey on the first frame instead of a skeleton.
-void openInvoice(BuildContext context, String reference) =>
-    Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: reference)));
+/// Beside the list on a tablet; as a sheet otherwise.
+void openInvoice(BuildContext context, String reference) {
+  if (SplitView.select(context, reference)) return;
+  Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: reference)));
+}
 
-void openShipment(BuildContext context, String reference, {Shipment? preview}) => Navigator.of(context).push(
-  SheetRoute<void>(
-    builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview),
-  ),
-);
+/// Beside the list on a tablet; as a sheet otherwise.
+void openShipment(BuildContext context, String reference, {Shipment? preview}) {
+  if (SplitView.select(context, reference)) return;
+  Navigator.of(context).push(
+    SheetRoute<void>(
+      builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview),
+    ),
+  );
+}
 
 /// A shipment as a flight tracker lists a flight: where it's going in bold,
 /// the reference and status beneath, the date that matters on the right,
@@ -42,26 +50,29 @@ class ShipmentRow extends StatelessWidget {
     final emphasis = statusEmphasis(shipment.status);
     final date = shipment.delivered ? shipment.updatedAt : shipment.eta;
 
-    return RowTile(
-      onTap: () => openShipment(context, shipment.reference, preview: shipment),
-      leading: ModeBadge(mode: shipment.mode, status: shipment.status),
-      title: RouteText(place(shipment.origin), place(shipment.destination)),
-      subtitle: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: '${shipment.reference} · '),
-            TextSpan(
-              text: statusLabel(l, shipment.status),
-              style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
-            ),
-          ],
+    return SplitSelected(
+      id: shipment.reference,
+      child: RowTile(
+        onTap: () => openShipment(context, shipment.reference, preview: shipment),
+        leading: ModeBadge(mode: shipment.mode, status: shipment.status),
+        title: RouteText(place(shipment.origin), place(shipment.destination)),
+        subtitle: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: '${shipment.reference} · '),
+              TextSpan(
+                text: statusLabel(l, shipment.status),
+                style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
+              ),
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        accessory: Text(date == null ? '—' : formatShortDate(date)),
+        // Under the text, clear of the icon.
+        below: shipment.delivered ? null : JourneyBar(status: shipment.status),
       ),
-      accessory: Text(date == null ? '—' : formatShortDate(date)),
-      // Under the text, clear of the icon.
-      below: shipment.delivered ? null : JourneyBar(status: shipment.status),
     );
   }
 }
@@ -154,24 +165,27 @@ class InvoiceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final open = invoice.balanceDue > 0;
-    return RowTile(
-      onTap: () => openInvoice(context, invoice.reference),
-      title: Text(invoice.externalInvoiceNumber ?? invoice.reference, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(
-        open && invoice.dueDate.isNotEmpty
-            ? l.invdDueOn(formatShortDate(invoice.dueDate))
-            : l.invdIssuedOn(formatShortDate(invoice.issueDate)),
-      ),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            formatMoney(open ? invoice.balanceDue : invoice.total, invoice.currency),
-            style: context.type.bodyLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-          const SizedBox(height: 2),
-          StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice), style: context.type.bodyMedium),
-        ],
+    return SplitSelected(
+      id: invoice.reference,
+      child: RowTile(
+        onTap: () => openInvoice(context, invoice.reference),
+        title: Text(invoice.externalInvoiceNumber ?? invoice.reference, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(
+          open && invoice.dueDate.isNotEmpty
+              ? l.invdDueOn(formatShortDate(invoice.dueDate))
+              : l.invdIssuedOn(formatShortDate(invoice.issueDate)),
+        ),
+        trailing: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              formatMoney(open ? invoice.balanceDue : invoice.total, invoice.currency),
+              style: context.type.bodyLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+            const SizedBox(height: 2),
+            StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice), style: context.type.bodyMedium),
+          ],
+        ),
       ),
     );
   }

@@ -79,6 +79,9 @@ abstract final class KIcons {
   static const IconData star = CupertinoIcons.star;
   static const IconData starOn = CupertinoIcons.star_fill;
   static const IconData estimate = CupertinoIcons.function;
+  static const IconData dragHandle = CupertinoIcons.line_horizontal_3;
+  static const IconData minus = CupertinoIcons.minus;
+  static const IconData plus = CupertinoIcons.plus;
 
   // Controls.
   static const IconData search = CupertinoIcons.search;

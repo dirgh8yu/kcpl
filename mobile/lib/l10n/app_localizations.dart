@@ -2777,7 +2777,7 @@ abstract class AppLocalizations {
   /// No description provided for @estStorageTitle.
   ///
   /// In en, this message translates to:
-  /// **'Storage and demurrage'**
+  /// **'Storage charges'**
   String get estStorageTitle;
 
   /// No description provided for @estDaysOver.
@@ -2837,7 +2837,7 @@ abstract class AppLocalizations {
   /// No description provided for @estDutyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Customs duty estimate'**
+  /// **'Customs duty'**
   String get estDutyTitle;
 
   /// No description provided for @estCif.
@@ -2899,6 +2899,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.'**
   String get estDutyFoot;
+
+  /// No description provided for @sheetGrabber.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more or less of the list'**
+  String get sheetGrabber;
+
+  /// No description provided for @splitShipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a shipment'**
+  String get splitShipment;
+
+  /// No description provided for @splitShipmentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its journey, documents and messages open here.'**
+  String get splitShipmentBody;
+
+  /// No description provided for @splitInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an invoice'**
+  String get splitInvoice;
+
+  /// No description provided for @splitInvoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its balance, receipts and paying online open here.'**
+  String get splitInvoiceBody;
+
+  /// No description provided for @opsSplitJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a job'**
+  String get opsSplitJob;
+
+  /// No description provided for @opsSplitJobBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its tasks, delivery and messages open here.'**
+  String get opsSplitJobBody;
 
   /// No description provided for @qaTrack.
   ///
