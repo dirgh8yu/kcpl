@@ -5,15 +5,19 @@ import 'package:http/http.dart' as http;
 
 import '../auth/auth_repository.dart';
 import 'kcpl_api.dart';
+import 'offline_cache.dart';
 import 'models.dart';
 
 /// [KcplApi] over KCPL's `/api/mobile/v1` endpoints.
 class HttpKcplApi extends KcplApi {
-  HttpKcplApi({required this.base, required this.auth, http.Client? client}) : _client = client ?? http.Client();
+  HttpKcplApi({required this.base, required this.auth, http.Client? client, this.cache}) : _client = client ?? http.Client();
 
   final Uri base;
   final AuthRepository auth;
   final http.Client _client;
+
+  /// Keeps the last answer to each read for when KCPL can't be reached.
+  final OfflineCache? cache;
 
   static const _timeout = Duration(seconds: 30);
 
@@ -75,10 +79,27 @@ class HttpKcplApi extends KcplApi {
     }
   }
 
+  /// A read. Its answer is kept for the customer it was asked for; when
+  /// KCPL can't be reached, the kept answer is given instead and the screen
+  /// is told how old it is. Refusals are never papered over: only a network
+  /// failure falls back.
   Future<Map<String, dynamic>> _json(String path) async {
-    final response = await _get(path);
-    return (jsonDecode(utf8.decode(response.bodyBytes)) as Map).cast<String, dynamic>();
+    final key = '${customerId ?? '-'}|$path';
+    String body;
+    try {
+      body = utf8.decode((await _get(path)).bodyBytes);
+      unawaited(cache?.write(key, body));
+    } on ApiException catch (error) {
+      final kept = error.code == 'network' ? await cache?.read(key) : null;
+      if (kept == null) rethrow;
+      OfflineReport.served(kept.savedAt);
+      body = kept.body;
+    }
+    return (jsonDecode(body) as Map).cast<String, dynamic>();
   }
+
+  @override
+  Future<void> forget() async => cache?.clear();
 
   List<Map<String, dynamic>> _rows(Object? value) =>
       value is List ? value.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : const [];

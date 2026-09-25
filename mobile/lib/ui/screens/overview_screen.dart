@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
@@ -7,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'quote_screen.dart';
 
 import '../../api/models.dart';
+import '../../api/offline_cache.dart';
+import '../../platform/home_widget_bridge.dart';
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../format.dart';
@@ -77,10 +80,15 @@ class _OverviewScreenState extends State<OverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = AppScope.of(context);
+    final l = AppLocalizations.of(context);
     return AsyncPage<OverviewBundle>.custom(
       load: () async {
         final bundle = await controller.api.overview();
         controller.updateSession(bundle.session);
+        // The widget shows only what was true just now, never a kept answer.
+        if (!OfflineReport.servedOffline) {
+          unawaited(controller.homeWidget.publish(widgetSnapshot(l, bundle.overview), emptyTitle: l.homeOnTheWay(0)));
+        }
         return bundle;
       },
       layout: _layout,
@@ -471,4 +479,24 @@ class BalanceFigure extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The widget's glance, in the reader's language.
+WidgetSnapshot? widgetSnapshot(AppLocalizations l, Overview overview) {
+  final lead = leadShipment(overview.shipments);
+  if (lead == null) return null;
+  final active = activeShipments(overview.shipments).length;
+  return WidgetSnapshot(
+    reference: lead.reference,
+    route: route(place(lead.origin), place(lead.destination)),
+    status: statusLabel(l, lead.status),
+    detail: lead.currentLocation != null && lead.status != 'booking_confirmed'
+        ? l.overviewNowAt(lead.currentLocation!)
+        : lead.eta != null
+        ? l.shareExpected(formatDate(lead.eta))
+        : '',
+    progress: journeyFraction(lead.status),
+    attention: statusEmphasis(lead.status) == Emphasis.attention,
+    summary: l.homeOnTheWay(active),
+  );
 }

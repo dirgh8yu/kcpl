@@ -89,6 +89,13 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    // On-device text recognition for scanning container numbers (see
+    // MainActivity). The unbundled model comes from Google Play services
+    // rather than adding megabytes to the app.
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+}
+
 // Push needs the Firebase project's config: app/google-services.json, or one
 // per flavour in app/src/customer/ and app/src/ops/. Until it is added the
 // apps build and run with push shown as unavailable.

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kcpl_widget_surface">#1C1C1E</color>
+    <color name="kcpl_widget_ink">#FFFFFF</color>
+    <color name="kcpl_widget_secondary">#8E8E93</color>
+    <color name="kcpl_widget_track">#3A3A3C</color>
+</resources>

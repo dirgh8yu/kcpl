@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'platform/device_unlock.dart';
 import 'platform/display.dart';
+import 'platform/home_widget_bridge.dart';
 
 import 'api/http_kcpl_api.dart';
+import 'api/offline_cache.dart';
 import 'app_controller.dart';
 import 'auth/firebase_rest_auth.dart';
 import 'auth/token_store.dart';
@@ -20,6 +24,7 @@ import 'ui/screens/home_shell.dart';
 import 'ui/screens/sign_in_screen.dart';
 import 'ui/theme.dart';
 import 'ui/widgets/kcpl_loader.dart';
+import 'ui/widgets/lock_gate.dart';
 
 const appVersion = '1.0.0';
 
@@ -44,12 +49,14 @@ Future<void> main() async {
           target: PushTarget('shipment', 'KCPL-S-24091'),
         ),
       ),
+      unlock: LocalDeviceUnlock(apple: defaultTargetPlatform == TargetPlatform.iOS),
+      homeWidget: const DeviceHomeWidget(),
     );
   } else {
     final auth = FirebaseRestAuth(apiKey: config.firebaseApiKey, store: store);
     controller = AppController(
       auth: auth,
-      api: HttpKcplApi(base: config.apiBase, auth: auth),
+      api: HttpKcplApi(base: config.apiBase, auth: auth, cache: FileOfflineCache()),
       prefs: store,
       configured: config.configured,
       push: await FcmPushService.create(store),
@@ -58,6 +65,8 @@ Future<void> main() async {
         googleServerClientId: config.googleServerClientId,
         appleEnabled: config.appleSignIn,
       ),
+      unlock: LocalDeviceUnlock(apple: defaultTargetPlatform == TargetPlatform.iOS),
+      homeWidget: const DeviceHomeWidget(),
     );
   }
   controller.start();
@@ -106,7 +115,11 @@ class KcplApp extends StatelessWidget {
                   AppStatus.starting => const Scaffold(body: Center(child: KcplLoader(size: 64))),
                   AppStatus.unconfigured => const _Unconfigured(),
                   AppStatus.signedOut => const SignInScreen(),
-                  AppStatus.signedIn => HomeShell(demo: demo, version: appVersion),
+                  AppStatus.signedIn => LockGate(
+                    lock: controller.lock,
+                    onSignOut: controller.signOut,
+                    child: HomeShell(demo: demo, version: appVersion),
+                  ),
                 },
               ),
             ),

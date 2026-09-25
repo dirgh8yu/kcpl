@@ -85,6 +85,25 @@
 					<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
 				</array>
 			</dict>
+			<!-- The home screen widget opens a shipment as kcpl://shipment/<reference>. -->
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Viewer</string>
+				<key>CFBundleURLName</key>
+				<string>np.com.kapileshworcargo.kcpl</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>kcpl</string>
+				</array>
+			</dict>
 		</array>
+		<!-- Asked for only when the person chooses to take a photo, pick one or
+		     turn on Face ID. -->
+		<key>NSCameraUsageDescription</key>
+		<string>KCPL uses the camera to photograph documents and receipts you send to KCPL, and to scan container numbers and barcodes.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>KCPL opens your photos when you choose one to send to KCPL.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>KCPL uses Face ID to keep your shipments and invoices private when you turn it on.</string>
 	</dict>
 </plist>

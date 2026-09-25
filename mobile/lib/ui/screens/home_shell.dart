@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app_controller.dart';
@@ -28,6 +30,23 @@ class _HomeShellState extends State<HomeShell> {
   /// Tabs are built on first visit and then kept, so switching back keeps
   /// the scroll position and never refetches, as native tab bars do.
   final Set<HomeTab> _visited = {HomeTab.overview};
+
+  /// A tap on the home screen widget opens the shipment it shows.
+  StreamSubscription<String>? _widgetTaps;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _widgetTaps ??= AppScope.read(context).homeWidget.opened.listen((reference) {
+      if (mounted) openShipment(context, reference);
+    });
+  }
+
+  @override
+  void dispose() {
+    _widgetTaps?.cancel();
+    super.dispose();
+  }
 
   void _select(HomeTab tab) {
     if (tab == _tab) return;

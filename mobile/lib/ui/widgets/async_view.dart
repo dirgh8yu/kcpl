@@ -4,9 +4,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
 import '../../api/kcpl_api.dart';
+import '../../api/offline_cache.dart';
 import '../../session_host.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../format.dart';
 import '../motion.dart';
 import '../theme.dart';
 import 'common.dart';
@@ -105,6 +107,9 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
   bool _foreground = true;
   DateTime? _loadedAt;
 
+  /// Set while what is shown is not live: when it was last true.
+  DateTime? _asOf;
+
   /// Only the newest request may land, so a slow reply for the previous
   /// customer can never overwrite the current one.
   int _request = 0;
@@ -201,13 +206,16 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       });
     }
     try {
-      final data = await widget.load();
+      final report = OfflineReport();
+      final data = await report.watch(widget.load);
       if (!mounted || request != _request) return;
-      _loadedAt = clock.now();
+      // An answer kept on the phone keeps its own time; a live one is now.
+      _loadedAt = report.asOf == null ? clock.now() : null;
       setState(() {
         _data = data;
         _error = null;
         _loading = false;
+        _asOf = report.asOf;
       });
     } on SignedOutException {
       if (mounted) await SessionScope.read(context).expire();
@@ -216,6 +224,11 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       if (error.code == 'denied' && mounted) {
         await SessionScope.read(context).expire();
         return;
+      }
+      // A background refresh that could not reach KCPL keeps the page, and
+      // now says how old it is.
+      if (quiet && error.code == 'network' && mounted && request == _request && _asOf == null && _loadedAt != null) {
+        setState(() => _asOf = _loadedAt);
       }
       if (!mounted || request != _request || quiet) return;
       setState(() {
@@ -258,11 +271,33 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
     final error = _error;
     final layout = widget.layout;
     if (layout != null) {
-      return layout(context, data, data == null && error != null && !_loading ? _failure(context, error) : null, _refresh);
+      final page = layout(context, data, data == null && error != null && !_loading ? _failure(context, error) : null, _refresh);
+      final asOf = _asOf;
+      if (asOf == null || data == null) return page;
+      // Floats under the status bar, as iOS shows "No Internet Connection".
+      return Stack(
+        children: [
+          page,
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 6,
+            left: 0,
+            right: 0,
+            child: Center(child: OfflinePill(asOf: asOf)),
+          ),
+        ],
+      );
     }
 
     final placeholder = widget.placeholder;
+    final asOf = _asOf;
     final body = <Widget>[
+      if (data != null && asOf != null)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Center(child: OfflinePill(asOf: asOf)),
+          ),
+        ),
       if (data != null)
         SliverList(delegate: SliverChildListDelegate(_staged(widget.builder(context, data), loaded: true)))
       else if (_loading && placeholder != null)
@@ -288,5 +323,48 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
     // In a sheet, pulling down closes it; the page still refreshes itself.
     if (SheetRoute.of(context)) return scroll;
     return KRefresh(onRefresh: _refresh, edgeOffset: MediaQuery.paddingOf(context).top + LargeTitleBar.toolbar, child: scroll);
+  }
+}
+
+/// "Offline · as of 10:42": what is on screen was true then, not now. Quiet
+/// and small, because the page is still useful; the time is what matters.
+class OfflinePill extends StatelessWidget {
+  const OfflinePill({super.key, required this.asOf});
+  final DateTime asOf;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = context.palette;
+    final local = asOf.toLocal();
+    final now = clock.now();
+    final today = local.year == now.year && local.month == now.month && local.day == now.day;
+    final time = today ? formatClock(local) : formatDateTime(local.toUtc().toIso8601String());
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: p.raised.surface,
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [BoxShadow(color: p.shadow, blurRadius: 12, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(KIcons.offline, size: 14, color: p.secondary),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                l.offlineAsOf(time),
+                style: context.type.labelMedium?.copyWith(color: p.secondary, fontFeatures: const [FontFeature.tabularFigures()]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

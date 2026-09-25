@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../../platform/device_unlock.dart';
 import '../theme.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/journey.dart' show IconTile;
 import '../widgets/common.dart';
 import '../widgets/large_title.dart';
+import '../widgets/lock_gate.dart' show unlockMethodName;
 import '../widgets/push_ui.dart';
 import '../widgets/tab_bar.dart' show KTabBar;
 import 'team_screen.dart';
@@ -91,6 +94,12 @@ class AccountScreen extends StatelessWidget {
             ],
             SectionHeader(l.pushSection),
             RowGroup(children: [PushSettingRow(copy: customerPushCopy(l))]),
+            // Offered only where the phone can prove its owner.
+            if (controller.lock.method case final method?) ...[
+              SectionHeader(l.lockSection),
+              RowGroup(children: [_LockRow(method: method)]),
+              Footnote(l.lockFootnote(unlockMethodName(l, method))),
+            ],
             SectionHeader(l.settingsLanguage),
             RowGroup(
               children: [
@@ -116,6 +125,32 @@ class AccountScreen extends StatelessWidget {
           ]),
         ),
       ],
+    );
+  }
+}
+
+class _LockRow extends StatelessWidget {
+  const _LockRow({required this.method});
+  final UnlockMethod method;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = context.palette;
+    final lock = AppScope.of(context).lock;
+    return ListenableBuilder(
+      listenable: lock,
+      builder: (context, _) => RowTile(
+        title: Text(l.lockRequire(unlockMethodName(l, method))),
+        trailing: Switch.adaptive(
+          value: lock.enabled,
+          activeTrackColor: p.ink,
+          onChanged: (on) async {
+            HapticFeedback.selectionClick();
+            await lock.setEnabled(on, l.lockReason);
+          },
+        ),
+      ),
     );
   }
 }

@@ -54,6 +54,10 @@ abstract class KcplApi {
   /// [active] false disables a member's login; true restores it.
   Future<void> setMemberActive(String email, bool active);
 
+  /// Removes everything kept on the phone for the signed-in login. Called at
+  /// sign-out, before the next person can use the phone.
+  Future<void> forget() async {}
+
   /// This phone, for push to the signed-in login.
   Future<void> registerPush(String token, String platform);
   Future<void> unregisterPush(String token);

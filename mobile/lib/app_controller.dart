@@ -2,9 +2,12 @@ import 'package:flutter/widgets.dart';
 
 import 'api/kcpl_api.dart';
 import 'api/models.dart';
+import 'app_lock.dart';
 import 'auth/auth_repository.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
+import 'platform/device_unlock.dart';
+import 'platform/home_widget_bridge.dart';
 import 'push/push_service.dart';
 import 'session_host.dart';
 
@@ -21,8 +24,17 @@ class AppController extends SessionHost {
     required bool configured,
     PushService? push,
     this.social = SocialSignIn.none,
+    DeviceUnlock unlock = const NoDeviceUnlock(),
+    this.homeWidget = const NoHomeWidget(),
   }) : push = push ?? NoPushService(),
+       lock = AppLock(prefs: prefs, device: unlock),
        _status = configured ? AppStatus.starting : AppStatus.unconfigured;
+
+  /// Face ID for the app, when the person has turned it on.
+  final AppLock lock;
+
+  /// The home and lock screen widget's copy of the lead shipment.
+  final HomeWidgetBridge homeWidget;
 
   @override
   final SocialSignIn social;
@@ -80,16 +92,21 @@ class AppController extends SessionHost {
       _set(AppStatus.signedOut);
       return;
     }
+    // Before anything signed-in is drawn, so a locked app never flashes.
+    await lock.load(signedIn: true);
     try {
       await _loadSession();
       _set(AppStatus.signedIn);
       _resumePush();
     } on SignedOutException {
+      await lock.reset();
       _set(AppStatus.signedOut);
     } on ApiException catch (error) {
       if (error.code == 'denied') {
         // KCPL withdrew this login's portal access since the last launch.
         await auth.signOut();
+        await api.forget();
+        await lock.reset();
         _set(AppStatus.signedOut);
         return;
       }
@@ -126,6 +143,9 @@ class AppController extends SessionHost {
       rethrow;
     }
     sessionEnded = false;
+    // Just signed in: the person is present, so nothing is locked, but the
+    // setting is read so Account can offer it.
+    await lock.load(signedIn: false);
     _set(AppStatus.signedIn);
     _resumePush();
   }
@@ -172,6 +192,11 @@ class AppController extends SessionHost {
       await push.disable(api.unregisterPush, optOut: false);
     } catch (_) {}
     await auth.signOut();
+    // What was kept for offline use, the widget's copy and the lock
+    // belonged to that login.
+    await api.forget();
+    await homeWidget.clear();
+    await lock.reset();
     await prefs.delete(_customerKey);
     api.customerId = null;
     _session = null;

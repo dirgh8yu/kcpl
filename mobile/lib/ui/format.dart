@@ -12,6 +12,10 @@ Future<void> initFormatting() => initializeDateFormatting('en_GB');
 final _date = DateFormat('d MMM yyyy', 'en_GB');
 final _shortDate = DateFormat('d MMM', 'en_GB');
 final _dateTime = DateFormat('d MMM yyyy, HH:mm', 'en_GB');
+final _clock = DateFormat('HH:mm', 'en_GB');
+
+/// "10:42", in the phone's own time zone.
+String formatClock(DateTime value) => _clock.format(value.toLocal());
 
 DateTime? _parse(String? value) {
   if (value == null || value.isEmpty) return null;
