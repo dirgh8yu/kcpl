@@ -21,6 +21,7 @@ import 'delivery_queue.dart';
 import 'note_queue.dart';
 import 'route_order.dart';
 import 'ops_api.dart';
+import 'ops_l10n.dart';
 import 'ops_controller.dart';
 import 'ops_demo.dart';
 import 'screens/ops_shell.dart';
@@ -59,6 +60,7 @@ Future<void> main() async {
       notes: NoteQueue(store: FileNoteQueueStore()),
       deliveries: DeliveryQueue(store: FileDeliveryQueueStore()),
       routes: FileRouteOrderStore(),
+      prefs: store,
     );
   }
   controller.start();
@@ -83,9 +85,8 @@ class OpsApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: kcplTheme(Brightness.light),
             darkTheme: kcplTheme(Brightness.dark),
-            // The admin portal is English; so is its app. The shared widgets
-            // still read their strings through AppLocalizations.
-            locale: const Locale('en'),
+            // English unless the person chose Nepali, on sign-in or in Me.
+            locale: controller.locale,
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -117,9 +118,8 @@ class OpsApp extends StatelessWidget {
                       ),
                     ),
                   ),
-                  OpsStatus.signedOut => const SignInScreen(
-                    title: 'KCPL Operations',
-                    subtitle: 'Jobs, tasks and alerts across your branches.',
+                  OpsStatus.signedOut => Builder(
+                    builder: (context) => SignInScreen(title: context.l.opsSignInTitle, subtitle: context.l.opsSignInSubtitle),
                   ),
                   OpsStatus.signedIn => OpsShell(demo: demo, version: opsVersion),
                 },

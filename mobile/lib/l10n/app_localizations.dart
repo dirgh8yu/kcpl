@@ -2617,6 +2617,1548 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan document'**
   String get captureScan;
+
+  /// No description provided for @opsSignInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL Operations'**
+  String get opsSignInTitle;
+
+  /// No description provided for @opsSignInSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs, tasks and alerts across your branches.'**
+  String get opsSignInSubtitle;
+
+  /// No description provided for @opsPriorityStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get opsPriorityStandard;
+
+  /// No description provided for @opsPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get opsPriorityHigh;
+
+  /// No description provided for @opsPriorityUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get opsPriorityUrgent;
+
+  /// No description provided for @opsJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get opsJustNow;
+
+  /// No description provided for @opsNoDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get opsNoDueDate;
+
+  /// No description provided for @opsYours.
+  ///
+  /// In en, this message translates to:
+  /// **'Yours'**
+  String get opsYours;
+
+  /// No description provided for @opsUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get opsUnassigned;
+
+  /// No description provided for @opsAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get opsAlerts;
+
+  /// No description provided for @opsAllCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up'**
+  String get opsAllCaughtUp;
+
+  /// No description provided for @opsAlertsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts for your branches and jobs appear here.'**
+  String get opsAlertsEmpty;
+
+  /// No description provided for @opsOutForDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Out for delivery'**
+  String get opsOutForDelivery;
+
+  /// No description provided for @opsStartDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Start delivery'**
+  String get opsStartDelivery;
+
+  /// No description provided for @opsTakenBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken by'**
+  String get opsTakenBy;
+
+  /// No description provided for @opsDriverHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver or field staff'**
+  String get opsDriverHint;
+
+  /// No description provided for @opsVehicleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle number (optional)'**
+  String get opsVehicleHint;
+
+  /// No description provided for @opsStartFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts attempt now and shows it on the Job File and to the customer as out for delivery.'**
+  String get opsStartFootnote;
+
+  /// No description provided for @opsRelConsignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Consignee'**
+  String get opsRelConsignee;
+
+  /// No description provided for @opsRelStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Their staff'**
+  String get opsRelStaff;
+
+  /// No description provided for @opsRelSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get opsRelSecurity;
+
+  /// No description provided for @opsRelFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get opsRelFamily;
+
+  /// No description provided for @opsRelOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get opsRelOther;
+
+  /// No description provided for @opsRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get opsRecipient;
+
+  /// No description provided for @opsNeedRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Who received it? Enter their name.'**
+  String get opsNeedRecipient;
+
+  /// No description provided for @opsNeedProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a signature or a photo as proof of delivery.'**
+  String get opsNeedProof;
+
+  /// No description provided for @opsNeedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Say why it could not be delivered.'**
+  String get opsNeedReason;
+
+  /// No description provided for @opsSavedOnPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this phone'**
+  String get opsSavedOnPhone;
+
+  /// No description provided for @opsSavedDeliveryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No signal. The delivery and its proof go to KCPL by themselves, with the time they happened, as soon as there is signal.'**
+  String get opsSavedDeliveryBody;
+
+  /// No description provided for @opsProofSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof sent'**
+  String get opsProofSent;
+
+  /// No description provided for @opsDeliveryRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery recorded'**
+  String get opsDeliveryRecorded;
+
+  /// No description provided for @opsAttemptRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt recorded'**
+  String get opsAttemptRecorded;
+
+  /// No description provided for @opsSendProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Send proof of delivery'**
+  String get opsSendProof;
+
+  /// No description provided for @opsRecordDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Record delivery'**
+  String get opsRecordDelivery;
+
+  /// No description provided for @opsRecordAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Record attempt'**
+  String get opsRecordAttempt;
+
+  /// No description provided for @opsProofOfDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery'**
+  String get opsProofOfDelivery;
+
+  /// No description provided for @opsDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get opsDelivery;
+
+  /// No description provided for @opsDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get opsDelivered;
+
+  /// No description provided for @opsNotDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Not delivered'**
+  String get opsNotDelivered;
+
+  /// No description provided for @opsRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get opsRefused;
+
+  /// No description provided for @opsWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Where'**
+  String get opsWhere;
+
+  /// No description provided for @opsProofFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence reaches the desk as received. Verifying it, and marking the shipment Delivered, stays with the desk.'**
+  String get opsProofFootnote;
+
+  /// No description provided for @opsExceptionFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens an exception on the job for the desk.'**
+  String get opsExceptionFootnote;
+
+  /// No description provided for @opsReceivedByHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Received by'**
+  String get opsReceivedByHeader;
+
+  /// No description provided for @opsFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get opsFullName;
+
+  /// No description provided for @opsPhoneOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get opsPhoneOptional;
+
+  /// No description provided for @opsRelationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Relation to the consignee'**
+  String get opsRelationHint;
+
+  /// No description provided for @opsProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof'**
+  String get opsProof;
+
+  /// No description provided for @opsGetSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a signature'**
+  String get opsGetSignature;
+
+  /// No description provided for @opsSigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed'**
+  String get opsSigned;
+
+  /// No description provided for @opsSignAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to sign again'**
+  String get opsSignAgain;
+
+  /// No description provided for @opsPhotographDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the delivery'**
+  String get opsPhotographDelivery;
+
+  /// No description provided for @opsAnotherPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another photo'**
+  String get opsAnotherPhoto;
+
+  /// No description provided for @opsPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The cargo at the door, a stamped delivery note'**
+  String get opsPhotoHint;
+
+  /// No description provided for @opsWhyRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it was refused'**
+  String get opsWhyRefused;
+
+  /// No description provided for @opsWhyNotDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it could not be delivered'**
+  String get opsWhyNotDelivered;
+
+  /// No description provided for @opsRefusedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged carton, wrong goods, not ordered…'**
+  String get opsRefusedHint;
+
+  /// No description provided for @opsFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody at the address, gate closed, road blocked…'**
+  String get opsFailedHint;
+
+  /// No description provided for @opsRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get opsRemovePhoto;
+
+  /// No description provided for @opsLocating.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding where you are…'**
+  String get opsLocating;
+
+  /// No description provided for @opsNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location not available'**
+  String get opsNoLocation;
+
+  /// No description provided for @opsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get opsLocation;
+
+  /// No description provided for @opsLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location and tap to try again. The delivery can be recorded without it.'**
+  String get opsLocationHint;
+
+  /// No description provided for @opsTodaysDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Today’s deliveries'**
+  String get opsTodaysDeliveries;
+
+  /// No description provided for @opsMapsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maps could not be opened on this phone.'**
+  String get opsMapsFailed;
+
+  /// No description provided for @opsDeliveryOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The delivery could not be opened. Try again.'**
+  String get opsDeliveryOpenFailed;
+
+  /// No description provided for @opsNoDeliveriesMine.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries for you today'**
+  String get opsNoDeliveriesMine;
+
+  /// No description provided for @opsNoDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries today'**
+  String get opsNoDeliveries;
+
+  /// No description provided for @opsDeliveriesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries under way or due out today in your branches appear here.'**
+  String get opsDeliveriesEmpty;
+
+  /// No description provided for @opsRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get opsRoute;
+
+  /// No description provided for @opsRouteFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold the handle and drag to put stops in the order you will drive them. The order is kept for today.'**
+  String get opsRouteFootnote;
+
+  /// No description provided for @opsRecordedWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded · waiting for signal'**
+  String get opsRecordedWaiting;
+
+  /// No description provided for @opsReadyToGo.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to go'**
+  String get opsReadyToGo;
+
+  /// No description provided for @opsDirections.
+  ///
+  /// In en, this message translates to:
+  /// **'Directions'**
+  String get opsDirections;
+
+  /// No description provided for @opsRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get opsRecord;
+
+  /// No description provided for @opsStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get opsStart;
+
+  /// No description provided for @opsNoteSavedOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No signal. Saved on this phone; it goes to the job by itself.'**
+  String get opsNoteSavedOffline;
+
+  /// No description provided for @opsNeedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a note or add a photo.'**
+  String get opsNeedNote;
+
+  /// No description provided for @opsAddToJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to job'**
+  String get opsAddToJob;
+
+  /// No description provided for @opsNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you see? Seal, damage, who you spoke to…'**
+  String get opsNoteHint;
+
+  /// No description provided for @opsPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get opsPhoto;
+
+  /// No description provided for @opsPhotoFiled.
+  ///
+  /// In en, this message translates to:
+  /// **'Filed in the job’s Document Vault for review.'**
+  String get opsPhotoFiled;
+
+  /// No description provided for @opsFileAs.
+  ///
+  /// In en, this message translates to:
+  /// **'File it as'**
+  String get opsFileAs;
+
+  /// No description provided for @opsNoteFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows on the Job File timeline on the web, with your name.'**
+  String get opsNoteFootnote;
+
+  /// No description provided for @opsSearchStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or branch'**
+  String get opsSearchStaff;
+
+  /// No description provided for @opsStaffFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The staff list could not be loaded.'**
+  String get opsStaffFailed;
+
+  /// No description provided for @opsNobodyFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody found'**
+  String get opsNobodyFound;
+
+  /// No description provided for @opsStaffEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Only staff who share one of your branches are listed.'**
+  String get opsStaffEmpty;
+
+  /// No description provided for @opsStaffHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff in your branches'**
+  String get opsStaffHeader;
+
+  /// No description provided for @opsAssignJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign job'**
+  String get opsAssignJob;
+
+  /// No description provided for @opsGiveJobTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Give job to'**
+  String get opsGiveJobTo;
+
+  /// No description provided for @opsReassignFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The job was not reassigned. Try again.'**
+  String get opsReassignFailed;
+
+  /// No description provided for @opsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get opsDone;
+
+  /// No description provided for @opsNeedTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the task a title.'**
+  String get opsNeedTaskTitle;
+
+  /// No description provided for @opsNewTask.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get opsNewTask;
+
+  /// No description provided for @opsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get opsTitle;
+
+  /// No description provided for @opsNotesOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get opsNotesOptional;
+
+  /// No description provided for @opsDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get opsDue;
+
+  /// No description provided for @opsNoDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No date'**
+  String get opsNoDate;
+
+  /// No description provided for @opsToday5pm.
+  ///
+  /// In en, this message translates to:
+  /// **'Today, 5 PM'**
+  String get opsToday5pm;
+
+  /// No description provided for @opsTomorrow10am.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow, 10 AM'**
+  String get opsTomorrow10am;
+
+  /// No description provided for @opsPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick…'**
+  String get opsPick;
+
+  /// No description provided for @opsAssignedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned to'**
+  String get opsAssignedTo;
+
+  /// No description provided for @opsAssignTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign task'**
+  String get opsAssignTask;
+
+  /// No description provided for @opsNobodyYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody yet'**
+  String get opsNobodyYet;
+
+  /// No description provided for @opsBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get opsBranch;
+
+  /// No description provided for @opsNeedOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'Say why it is being closed anyway (at least 8 characters).'**
+  String get opsNeedOverride;
+
+  /// No description provided for @opsNotClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not closed: something still stands in the way.'**
+  String get opsNotClosed;
+
+  /// No description provided for @opsJobClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Job closed'**
+  String get opsJobClosed;
+
+  /// No description provided for @opsJobClosedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The Job File is closed, with your name and the time.'**
+  String get opsJobClosedBody;
+
+  /// No description provided for @opsCloseJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Close job'**
+  String get opsCloseJob;
+
+  /// No description provided for @opsCloseAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Close anyway'**
+  String get opsCloseAnyway;
+
+  /// No description provided for @opsReadyToClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to close'**
+  String get opsReadyToClose;
+
+  /// No description provided for @opsReadyToCloseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks, customs and proof of delivery are all in order.'**
+  String get opsReadyToCloseBody;
+
+  /// No description provided for @opsStillOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Still open'**
+  String get opsStillOpen;
+
+  /// No description provided for @opsOverrideReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason to close anyway'**
+  String get opsOverrideReason;
+
+  /// No description provided for @opsOverrideHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded on the Job File with your name'**
+  String get opsOverrideHint;
+
+  /// No description provided for @opsCloseBlockedFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear these first, or ask Management to close it with a reason.'**
+  String get opsCloseBlockedFootnote;
+
+  /// No description provided for @opsJobNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Job not found'**
+  String get opsJobNotFound;
+
+  /// No description provided for @opsJobNotFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It may have been closed or moved outside your branches.'**
+  String get opsJobNotFoundBody;
+
+  /// No description provided for @opsOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get opsOwner;
+
+  /// No description provided for @opsAssignSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign someone'**
+  String get opsAssignSomeone;
+
+  /// No description provided for @opsGiveToSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Give to someone else'**
+  String get opsGiveToSomeone;
+
+  /// No description provided for @opsNoOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody owns this job yet.'**
+  String get opsNoOwner;
+
+  /// No description provided for @opsTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get opsTasks;
+
+  /// No description provided for @opsNoTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet. Tasks added here or in the Job File show on both.'**
+  String get opsNoTasks;
+
+  /// No description provided for @opsCustoms.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs'**
+  String get opsCustoms;
+
+  /// No description provided for @opsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get opsRequired;
+
+  /// No description provided for @opsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get opsOptional;
+
+  /// No description provided for @opsBeforeCloseout.
+  ///
+  /// In en, this message translates to:
+  /// **'Before closeout'**
+  String get opsBeforeCloseout;
+
+  /// No description provided for @opsFromField.
+  ///
+  /// In en, this message translates to:
+  /// **'From the field'**
+  String get opsFromField;
+
+  /// No description provided for @opsNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get opsNotes;
+
+  /// No description provided for @opsDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get opsDetails;
+
+  /// No description provided for @opsCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get opsCustomer;
+
+  /// No description provided for @opsPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get opsPriority;
+
+  /// No description provided for @opsHandling.
+  ///
+  /// In en, this message translates to:
+  /// **'Handling'**
+  String get opsHandling;
+
+  /// No description provided for @opsInternalRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal ref'**
+  String get opsInternalRef;
+
+  /// No description provided for @opsProfitability.
+  ///
+  /// In en, this message translates to:
+  /// **'Profitability'**
+  String get opsProfitability;
+
+  /// No description provided for @opsRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get opsRevenue;
+
+  /// No description provided for @opsCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get opsCost;
+
+  /// No description provided for @opsProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get opsProfit;
+
+  /// No description provided for @opsMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin'**
+  String get opsMargin;
+
+  /// No description provided for @opsJobIsClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This job is closed.'**
+  String get opsJobIsClosed;
+
+  /// No description provided for @opsCloseJobEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Close job…'**
+  String get opsCloseJobEllipsis;
+
+  /// No description provided for @opsQueuedDeliveryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This delivery is on your phone and goes to KCPL, with the time it happened, as soon as there is signal.'**
+  String get opsQueuedDeliveryBody;
+
+  /// No description provided for @opsDeleteDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this delivery'**
+  String get opsDeleteDelivery;
+
+  /// No description provided for @opsRecordHowItWent.
+  ///
+  /// In en, this message translates to:
+  /// **'Record how it went'**
+  String get opsRecordHowItWent;
+
+  /// No description provided for @opsAddProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Add proof of delivery'**
+  String get opsAddProof;
+
+  /// No description provided for @opsWaitingForSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for signal'**
+  String get opsWaitingForSignal;
+
+  /// No description provided for @opsSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature'**
+  String get opsSignature;
+
+  /// No description provided for @opsDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get opsDocument;
+
+  /// No description provided for @opsScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get opsScheduled;
+
+  /// No description provided for @opsPodReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof received · the desk verifies it'**
+  String get opsPodReceived;
+
+  /// No description provided for @opsPodVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery verified'**
+  String get opsPodVerified;
+
+  /// No description provided for @opsPodRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof rejected by the desk · add new proof'**
+  String get opsPodRejected;
+
+  /// No description provided for @opsPodNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No proof of delivery yet'**
+  String get opsPodNone;
+
+  /// No description provided for @opsQueuedNoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This note is on your phone and goes to the job as soon as KCPL can be reached.'**
+  String get opsQueuedNoteBody;
+
+  /// No description provided for @opsDeleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note'**
+  String get opsDeleteNote;
+
+  /// No description provided for @opsAddNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note or photo'**
+  String get opsAddNote;
+
+  /// No description provided for @opsCouldNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'That could not be opened on this device.'**
+  String get opsCouldNotOpen;
+
+  /// No description provided for @opsChangeNotSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'That change was not saved. Try again.'**
+  String get opsChangeNotSaved;
+
+  /// No description provided for @opsMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get opsMine;
+
+  /// No description provided for @opsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get opsAll;
+
+  /// No description provided for @opsOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get opsOverdue;
+
+  /// No description provided for @opsExceptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Exceptions'**
+  String get opsExceptions;
+
+  /// No description provided for @opsJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs'**
+  String get opsJobs;
+
+  /// No description provided for @opsScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get opsScan;
+
+  /// No description provided for @opsSearchJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search reference, customer, route or owner…'**
+  String get opsSearchJobs;
+
+  /// No description provided for @opsNoActiveJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'No active jobs'**
+  String get opsNoActiveJobs;
+
+  /// No description provided for @opsNothingMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches'**
+  String get opsNothingMatches;
+
+  /// No description provided for @opsJobsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs in your branches appear here.'**
+  String get opsJobsEmpty;
+
+  /// No description provided for @opsJobsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another filter or clear the search.'**
+  String get opsJobsNoMatch;
+
+  /// No description provided for @opsMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get opsMe;
+
+  /// No description provided for @opsRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get opsRole;
+
+  /// No description provided for @opsBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get opsBranches;
+
+  /// No description provided for @opsAllBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'All branches'**
+  String get opsAllBranches;
+
+  /// No description provided for @opsCostsAndMargins.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs and margins'**
+  String get opsCostsAndMargins;
+
+  /// No description provided for @opsVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible'**
+  String get opsVisible;
+
+  /// No description provided for @opsNotShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared with this role'**
+  String get opsNotShared;
+
+  /// No description provided for @opsRolesFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and branch access are managed by KCPL Management in the web admin.'**
+  String get opsRolesFootnote;
+
+  /// No description provided for @opsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get opsNotifications;
+
+  /// No description provided for @opsSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get opsSignOut;
+
+  /// No description provided for @opsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get opsToday;
+
+  /// No description provided for @opsDemoBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo data, not real operations'**
+  String get opsDemoBanner;
+
+  /// No description provided for @opsReadingText.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the text…'**
+  String get opsReadingText;
+
+  /// No description provided for @opsPointAtCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Point at a barcode or QR code'**
+  String get opsPointAtCode;
+
+  /// No description provided for @opsScanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Or read a container number off the door, or type a reference.'**
+  String get opsScanHint;
+
+  /// No description provided for @opsReadText.
+  ///
+  /// In en, this message translates to:
+  /// **'Read text'**
+  String get opsReadText;
+
+  /// No description provided for @opsTypeIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it'**
+  String get opsTypeIt;
+
+  /// No description provided for @opsNoNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'No number in that photo'**
+  String get opsNoNumber;
+
+  /// No description provided for @opsTapNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the number to find'**
+  String get opsTapNumber;
+
+  /// No description provided for @opsTryCloser.
+  ///
+  /// In en, this message translates to:
+  /// **'Try closer, straight on, in good light.'**
+  String get opsTryCloser;
+
+  /// No description provided for @opsCheckDigitFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Container numbers that pass their check digit come first.'**
+  String get opsCheckDigitFirst;
+
+  /// No description provided for @opsScanAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan again'**
+  String get opsScanAgain;
+
+  /// No description provided for @opsLookupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Job, container, B/L or AWB number'**
+  String get opsLookupHint;
+
+  /// No description provided for @opsFindJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Find job'**
+  String get opsFindJob;
+
+  /// No description provided for @opsBackToCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to camera'**
+  String get opsBackToCamera;
+
+  /// No description provided for @opsNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Only jobs in your branches can be found. Check the number, or search Jobs.'**
+  String get opsNoMatchBody;
+
+  /// No description provided for @opsCameraDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow the camera for KCPL Ops in Settings to scan. You can still type a reference below.'**
+  String get opsCameraDenied;
+
+  /// No description provided for @opsCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera is not available. You can still type a reference below.'**
+  String get opsCameraUnavailable;
+
+  /// No description provided for @opsCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get opsCancel;
+
+  /// No description provided for @opsClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get opsClear;
+
+  /// No description provided for @opsSignatureArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature area. Sign with one finger.'**
+  String get opsSignatureArea;
+
+  /// No description provided for @opsNeedsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs action'**
+  String get opsNeedsAction;
+
+  /// No description provided for @opsMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving'**
+  String get opsMoving;
+
+  /// No description provided for @opsAllJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'All jobs'**
+  String get opsAllJobs;
+
+  /// No description provided for @opsNothingWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waiting on you'**
+  String get opsNothingWaiting;
+
+  /// No description provided for @opsNothingWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No active jobs in your branches need attention right now.'**
+  String get opsNothingWaitingBody;
+
+  /// No description provided for @opsMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min ago'**
+  String opsMinutesAgo(int minutes);
+
+  /// No description provided for @opsHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h ago'**
+  String opsHoursAgo(int hours);
+
+  /// No description provided for @opsDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d ago'**
+  String opsDaysAgo(int days);
+
+  /// No description provided for @opsOverdueDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue · due {when}'**
+  String opsOverdueDue(String when);
+
+  /// No description provided for @opsDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today {time}'**
+  String opsDueToday(String time);
+
+  /// No description provided for @opsDueTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due tomorrow {time}'**
+  String opsDueTomorrow(String time);
+
+  /// No description provided for @opsDueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String opsDueOn(String date);
+
+  /// No description provided for @opsOverdueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} overdue'**
+  String opsOverdueCount(int count);
+
+  /// No description provided for @opsCustomsOpenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} customs open'**
+  String opsCustomsOpenCount(int count);
+
+  /// No description provided for @opsPodWithDesk.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery is with the desk to verify. KCPL marks {reference} Delivered once it is checked.'**
+  String opsPodWithDesk(String reference);
+
+  /// No description provided for @opsExceptionOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'The desk has an exception on {reference} to follow up and arrange the next attempt.'**
+  String opsExceptionOpened(String reference);
+
+  /// No description provided for @opsSendTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {reference}'**
+  String opsSendTo(String reference);
+
+  /// No description provided for @opsAttemptN.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt {number}'**
+  String opsAttemptN(int number);
+
+  /// No description provided for @opsSignedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'{signer} · tap to sign again'**
+  String opsSignedBy(String signer);
+
+  /// No description provided for @opsWithinMetres.
+  ///
+  /// In en, this message translates to:
+  /// **'Within {metres} m · recorded with the delivery'**
+  String opsWithinMetres(int metres);
+
+  /// No description provided for @opsMineCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine · {count}'**
+  String opsMineCount(int count);
+
+  /// No description provided for @opsAllCount.
+  ///
+  /// In en, this message translates to:
+  /// **'All · {count}'**
+  String opsAllCount(int count);
+
+  /// No description provided for @opsDirectionsTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Directions to {place}'**
+  String opsDirectionsTo(String place);
+
+  /// No description provided for @opsOutForDeliveryAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Out for delivery · attempt {number}'**
+  String opsOutForDeliveryAttempt(int number);
+
+  /// No description provided for @opsReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder {reference}'**
+  String opsReorder(String reference);
+
+  /// No description provided for @opsSaveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to {reference}'**
+  String opsSaveTo(String reference);
+
+  /// No description provided for @opsNowWith.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} is now with {name}.'**
+  String opsNowWith(String reference, String name);
+
+  /// No description provided for @opsAddTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {reference}'**
+  String opsAddTo(String reference);
+
+  /// No description provided for @opsTaskFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'For {branch}. Shows on the Job File and the assignee’s task list.'**
+  String opsTaskFootnote(String branch);
+
+  /// No description provided for @opsCloseReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Close {reference}'**
+  String opsCloseReference(String reference);
+
+  /// No description provided for @opsReceivedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Received by {name}'**
+  String opsReceivedBy(String name);
+
+  /// No description provided for @opsProofCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} proof'**
+  String opsProofCount(int count);
+
+  /// No description provided for @opsAttemptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt {number} · {label}'**
+  String opsAttemptLabel(int number, String label);
+
+  /// No description provided for @opsPhotoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String opsPhotoCount(int count);
+
+  /// No description provided for @opsCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call {name}'**
+  String opsCall(String name);
+
+  /// No description provided for @opsWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp {name}'**
+  String opsWhatsApp(String name);
+
+  /// No description provided for @opsDoneOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} · {done} of {total} done'**
+  String opsDoneOf(String label, int done, int total);
+
+  /// No description provided for @opsVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL Ops {version}'**
+  String opsVersion(String version);
+
+  /// No description provided for @opsFinding.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding {query}…'**
+  String opsFinding(String query);
+
+  /// No description provided for @opsNoJobMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No job matches {query}'**
+  String opsNoJobMatches(String query);
+
+  /// No description provided for @opsJobsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} jobs match {query}'**
+  String opsJobsMatch(int count, String query);
+
+  /// No description provided for @opsDueTodaySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} due today · your route, directions and proof'**
+  String opsDueTodaySummary(int count);
+
+  /// No description provided for @opsOverdueTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 overdue task} other{{count} overdue tasks}}'**
+  String opsOverdueTasks(int count);
+
+  /// No description provided for @opsCustomsBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 customs block} other{{count} customs blocks}}'**
+  String opsCustomsBlocks(int count);
+
+  /// No description provided for @opsDeliveringToday.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} delivering today'**
+  String opsDeliveringToday(int count);
+
+  /// No description provided for @opsUnassignedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unassigned'**
+  String opsUnassignedCount(int count);
+
+  /// No description provided for @opsUrgentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} urgent'**
+  String opsUrgentCount(int count);
+
+  /// No description provided for @opsCustomsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} customs'**
+  String opsCustomsCount(int count);
+
+  /// No description provided for @opsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get opsLanguage;
+
+  /// No description provided for @opsSignAbove.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign above the line'**
+  String get opsSignAbove;
+
+  /// No description provided for @opsPushPrimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get alerts as they happen'**
+  String get opsPushPrimerTitle;
+
+  /// No description provided for @opsPushPrimerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignments, overdue tasks, customs and exceptions for your jobs, on this phone.'**
+  String get opsPushPrimerBody;
+
+  /// No description provided for @opsPushBlockedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications for KCPL Ops in your phone\'s Settings.'**
+  String get opsPushBlockedHelp;
+
+  /// No description provided for @opsLanguageFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Records (references, places, notes from the desk) stay as KCPL holds them.'**
+  String get opsLanguageFootnote;
 }
 
 class _AppLocalizationsDelegate

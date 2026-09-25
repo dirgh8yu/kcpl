@@ -20,6 +20,7 @@ import '../note_queue.dart';
 import 'delivery_screen.dart';
 import 'field_note_screen.dart';
 import 'job_actions.dart';
+import '../ops_l10n.dart';
 
 class JobDetailScreen extends StatelessWidget {
   const JobDetailScreen({super.key, required this.reference, this.preview});
@@ -47,10 +48,10 @@ class JobDetailScreen extends StatelessWidget {
         },
         leading: preview == null ? 0 : 2,
         placeholder: preview == null ? null : (context) => _lead(context, preview),
-        onMissing: (context, _) => const EmptyState(
+        onMissing: (context, _) => EmptyState(
           icon: KIcons.noResults,
-          title: 'Job not found',
-          description: 'It may have been closed or moved outside your branches.',
+          title: context.l.opsJobNotFound,
+          description: context.l.opsJobNotFoundBody,
         ),
         builder: (context, file) => [..._lead(context, file.job), ..._body(context, file)],
       ),
@@ -72,7 +73,7 @@ class JobDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
         child: JourneyGraphic(
           shipment: job.asShipment,
-          trailing: job.urgent ? 'Urgent' : null,
+          trailing: job.urgent ? context.l.opsPriorityUrgent : null,
           subtitle: job.currentLocation != null && job.status != 'delivered' ? l.overviewNowAt(job.currentLocation!) : job.primaryBranch,
         ),
       ),
@@ -84,7 +85,7 @@ class JobDetailScreen extends StatelessWidget {
     final job = file.job;
 
     return [
-      SectionHeader('Owner'),
+      SectionHeader(context.l.opsOwner),
       RowGroup(
         indent: job.ownerName == null ? RowGroup.iconIndent : 68,
         children: [
@@ -92,30 +93,30 @@ class JobDetailScreen extends StatelessWidget {
           if (!file.jobClosed)
             _ActionRow(
               icon: KIcons.reassign,
-              label: job.ownerName == null ? 'Assign someone' : 'Give to someone else',
+              label: job.ownerName == null ? context.l.opsAssignSomeone : context.l.opsGiveToSomeone,
               onTap: () async {
                 if (await reassignJob(context, job) && context.mounted) await AsyncPage.reload(context);
               },
             ),
         ],
       ),
-      if (job.ownerName == null) const Footnote('Nobody owns this job yet.'),
+      if (job.ownerName == null) Footnote(context.l.opsNoOwner),
       if (file.tasks.isEmpty) ...[
-        SectionHeader('Tasks'),
+        SectionHeader(context.l.opsTasks),
         RowGroup(
           indent: RowGroup.iconIndent,
           children: [
             if (!file.jobClosed)
               _ActionRow(
                 icon: KIcons.add,
-                label: 'New task',
+                label: context.l.opsNewTask,
                 onTap: () async {
                   if (await openAddTask(context, file) && context.mounted) await AsyncPage.reload(context);
                 },
               ),
           ],
         ),
-        const Footnote('No tasks yet. Tasks added here or in the Job File show on both.'),
+        Footnote(context.l.opsNoTasks),
       ] else
         _Checklist(
           add: file.jobClosed
@@ -123,14 +124,14 @@ class JobDetailScreen extends StatelessWidget {
               : () async {
                   if (await openAddTask(context, file) && context.mounted) await AsyncPage.reload(context);
                 },
-          label: 'Tasks',
+          label: context.l.opsTasks,
           key: ValueKey('tasks-${job.reference}'),
           items: [
             for (final task in file.tasks)
               _Item(
                 id: task.id,
                 title: task.title,
-                detail: [if (!task.completed) dueLine(task.dueAt), if (task.assignee != null) task.assignee!].join(' · '),
+                detail: [if (!task.completed) dueLine(context.l, task.dueAt), if (task.assignee != null) task.assignee!].join(' · '),
                 attention: task.overdue(DateTime.now()),
                 completed: task.completed,
               ),
@@ -139,17 +140,17 @@ class JobDetailScreen extends StatelessWidget {
         ),
       if (file.customs.isNotEmpty) ...[
         _Checklist(
-          label: 'Customs',
+          label: context.l.opsCustoms,
           key: ValueKey('customs-${job.reference}'),
           items: [
             for (final step in file.customs)
-              _Item(id: step.id, title: step.title, detail: step.required ? 'Required' : 'Optional', completed: step.completed),
+              _Item(id: step.id, title: step.title, detail: step.required ? context.l.opsRequired : context.l.opsOptional, completed: step.completed),
           ],
           onToggle: (id, value) => OpsScope.read(context).api.setCustomsStep(job.reference, id, value),
         ),
       ],
       if (file.blockers.isNotEmpty) ...[
-        SectionHeader('Before closeout'),
+        SectionHeader(context.l.opsBeforeCloseout),
         for (final blocker in file.blockers)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -157,50 +158,50 @@ class JobDetailScreen extends StatelessWidget {
           ),
       ],
       _DeliverySection(file: file),
-      SectionHeader('From the field'),
+      SectionHeader(context.l.opsFromField),
       _FieldNotes(reference: job.reference, notes: file.fieldNotes),
       if (file.internalNotes != null) ...[
-        SectionHeader('Notes'),
+        SectionHeader(context.l.opsNotes),
         GroupCard(
           padding: const EdgeInsets.fromLTRB(kGutter, 12, kGutter, 12),
           child: Text(file.internalNotes!, style: context.type.bodyLarge),
         ),
       ],
-      SectionHeader('Details'),
+      SectionHeader(context.l.opsDetails),
       RowGroup(
         children: [
-          if (job.customerName.isNotEmpty) DetailRow('Customer', job.customerName),
-          DetailRow('Priority', priorityLabels[job.priority] ?? job.priority, emphasis: job.urgent ? Emphasis.attention : Emphasis.normal),
-          DetailRow('Branch', job.primaryBranch),
-          if (file.handlingBranches.any((b) => b != job.primaryBranch)) DetailRow('Handling', file.handlingBranches.join(', ')),
+          if (job.customerName.isNotEmpty) DetailRow(context.l.opsCustomer, job.customerName),
+          DetailRow(context.l.opsPriority, priorityLabel(context.l, job.priority), emphasis: job.urgent ? Emphasis.attention : Emphasis.normal),
+          DetailRow(context.l.opsBranch, job.primaryBranch),
+          if (file.handlingBranches.any((b) => b != job.primaryBranch)) DetailRow(context.l.opsHandling, file.handlingBranches.join(', ')),
           DetailRow(l.shipsColCarrier, job.carrier ?? '—'),
           DetailRow(l.shipCarrierReference, file.carrierReference ?? '—'),
           DetailRow(l.shipCurrentLocation, job.currentLocation ?? l.shipNotReported),
-          if (file.internalReference != null) DetailRow('Internal ref', file.internalReference!),
+          if (file.internalReference != null) DetailRow(context.l.opsInternalRef, file.internalReference!),
           DetailRow(l.overviewOrigin, job.origin.isEmpty ? '—' : job.origin),
           DetailRow(l.overviewDestination, job.destination.isEmpty ? '—' : job.destination),
         ],
       ),
       if (file.canViewCosts && (file.revenueTotals.isNotEmpty || file.costTotals.isNotEmpty)) ...[
-        SectionHeader('Profitability'),
+        SectionHeader(context.l.opsProfitability),
         for (final currency in {...file.revenueTotals.keys, ...file.costTotals.keys})
           RowGroup(
             children: [
-              DetailRow('Revenue', formatMoney(file.revenueTotals[currency] ?? 0, currency)),
-              DetailRow('Cost', formatMoney(file.costTotals[currency] ?? 0, currency)),
+              DetailRow(context.l.opsRevenue, formatMoney(file.revenueTotals[currency] ?? 0, currency)),
+              DetailRow(context.l.opsCost, formatMoney(file.costTotals[currency] ?? 0, currency)),
               DetailRow(
-                'Profit',
+                context.l.opsProfit,
                 formatMoney(file.profitTotals[currency] ?? 0, currency),
                 strong: true,
                 emphasis: (file.profitTotals[currency] ?? 0) < 0 ? Emphasis.attention : Emphasis.normal,
               ),
-              if (file.marginPercent[currency] != null) DetailRow('Margin', '${file.marginPercent[currency]!.toStringAsFixed(1)}%'),
+              if (file.marginPercent[currency] != null) DetailRow(context.l.opsMargin, '${file.marginPercent[currency]!.toStringAsFixed(1)}%'),
             ],
           ),
       ],
       const SizedBox(height: 28),
       if (file.jobClosed)
-        const Footnote('This job is closed.')
+        Footnote(context.l.opsJobIsClosed)
       else
         RowGroup(
           children: [
@@ -208,7 +209,7 @@ class JobDetailScreen extends StatelessWidget {
               onTap: () async {
                 if (await openCloseJob(context, file) && context.mounted) await AsyncPage.reload(context);
               },
-              title: Center(child: Text('Close job…', style: TextStyle(color: context.palette.accent))),
+              title: Center(child: Text(context.l.opsCloseJobEllipsis, style: TextStyle(color: context.palette.accent))),
             ),
           ],
         ),
@@ -264,7 +265,7 @@ class _DeliverySectionState extends State<_DeliverySection> {
             Padding(
               padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 12),
               child: Text(
-                delivery.refusal ?? 'This delivery is on your phone and goes to KCPL, with the time it happened, as soon as there is signal.',
+                delivery.refusal ?? context.l.opsQueuedDeliveryBody,
                 style: sheet.type.bodyMedium?.copyWith(color: sheet.palette.secondary),
               ),
             ),
@@ -272,7 +273,7 @@ class _DeliverySectionState extends State<_DeliverySection> {
               children: [
                 RowTile(
                   onTap: () => Navigator.of(sheet).pop(true),
-                  title: Center(child: Text('Delete this delivery', style: TextStyle(color: sheet.palette.accent))),
+                  title: Center(child: Text(context.l.opsDeleteDelivery, style: TextStyle(color: sheet.palette.accent))),
                 ),
               ],
             ),
@@ -294,18 +295,18 @@ class _DeliverySectionState extends State<_DeliverySection> {
     final String? action = pending != null || control == null || file.jobClosed
         ? null
         : control.open != null
-        ? 'Record how it went'
+        ? context.l.opsRecordHowItWent
         : control.awaitingPod != null
-        ? 'Add proof of delivery'
+        ? context.l.opsAddProof
         : file.job.status == 'delivered'
         ? null
-        : 'Start delivery';
+        : context.l.opsStartDelivery;
     if (latest == null && action == null && pending == null) return const SizedBox.shrink();
     final photos = control?.evidence.where((e) => e.kind == 'photo').length ?? 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader('Delivery'),
+        SectionHeader(context.l.opsDelivery),
         RowGroup(
           indent: RowGroup.iconIndent,
           children: [
@@ -314,19 +315,19 @@ class _DeliverySectionState extends State<_DeliverySection> {
                 onTap: () => _queued(pending),
                 leading: Icon(KIcons.outbox, size: 20, color: pending.refusal == null ? p.secondary : p.accent),
                 title: Text(pending.delivered
-                    ? (pending.recipientName.isEmpty ? 'Delivered' : 'Received by ${pending.recipientName}')
+                    ? (pending.recipientName.isEmpty ? context.l.opsDelivered : context.l.opsReceivedBy(pending.recipientName))
                     : pending.status == 'refused'
-                    ? 'Refused'
-                    : 'Not delivered'),
+                    ? context.l.opsRefused
+                    : context.l.opsNotDelivered),
                 subtitle: Text(
-                  pending.refusal ?? ['Waiting for signal', formatDateTime(pending.recordedAt.toUtc().toIso8601String()), if (pending.evidence.isNotEmpty) '${pending.evidence.length} proof'].join(' · '),
+                  pending.refusal ?? [context.l.opsWaitingForSignal, formatDateTime(pending.recordedAt.toUtc().toIso8601String()), if (pending.evidence.isNotEmpty) context.l.opsProofCount(pending.evidence.length)].join(' · '),
                   style: pending.refusal == null ? null : TextStyle(color: p.accent),
                 ),
               ),
             if (latest != null)
               RowTile(
                 leading: Icon(KIcons.truck, size: 20, color: latest.status == 'failed' || latest.status == 'refused' ? p.accent : p.secondary),
-                title: Text('Attempt ${latest.number} · ${attemptLabel(latest)}'),
+                title: Text(context.l.opsAttemptLabel(latest.number, attemptLabel(context.l, latest))),
                 subtitle: Text(
                   [
                     if (latest.failureReason != null) latest.failureReason!,
@@ -338,14 +339,14 @@ class _DeliverySectionState extends State<_DeliverySection> {
             if (control != null && (latest?.status == 'delivered' || control.evidence.isNotEmpty))
               RowTile(
                 leading: Icon(KIcons.signature, size: 20, color: control.podStatus == 'rejected' ? p.accent : p.secondary),
-                title: Text(podLabel(control.podStatus)),
+                title: Text(podLabel(context.l, control.podStatus)),
                 subtitle: control.evidence.isEmpty
                     ? null
                     : Text(
                         [
-                          if (control.evidence.any((e) => e.kind == 'signature')) 'Signature',
-                          if (photos > 0) '$photos photo${photos == 1 ? '' : 's'}',
-                          if (control.evidence.any((e) => e.kind == 'document')) 'Document',
+                          if (control.evidence.any((e) => e.kind == 'signature')) context.l.opsSignature,
+                          if (photos > 0) context.l.opsPhotoCount(photos),
+                          if (control.evidence.any((e) => e.kind == 'document')) context.l.opsDocument,
                         ].join(' · '),
                       ),
               ),
@@ -364,19 +365,19 @@ class _DeliverySectionState extends State<_DeliverySection> {
   }
 }
 
-String attemptLabel(DeliveryAttempt attempt) => switch (attempt.status) {
-  'scheduled' => 'Scheduled',
-  'out_for_delivery' => 'Out for delivery',
-  'delivered' => attempt.recipientName == null ? 'Delivered' : 'Received by ${attempt.recipientName}',
-  'refused' => 'Refused',
-  _ => 'Not delivered',
+String attemptLabel(AppLocalizations l, DeliveryAttempt attempt) => switch (attempt.status) {
+  'scheduled' => l.opsScheduled,
+  'out_for_delivery' => l.opsOutForDelivery,
+  'delivered' => attempt.recipientName == null ? l.opsDelivered : l.opsReceivedBy(attempt.recipientName!),
+  'refused' => l.opsRefused,
+  _ => l.opsNotDelivered,
 };
 
-String podLabel(String status) => switch (status) {
-  'received' => 'Proof received · the desk verifies it',
-  'verified' => 'Proof of delivery verified',
-  'rejected' => 'Proof rejected by the desk · add new proof',
-  _ => 'No proof of delivery yet',
+String podLabel(AppLocalizations l, String status) => switch (status) {
+  'received' => l.opsPodReceived,
+  'verified' => l.opsPodVerified,
+  'rejected' => l.opsPodRejected,
+  _ => l.opsPodNone,
 };
 
 /// An action in a list, in the accent colour, as iOS writes "Add…" rows.
@@ -445,7 +446,7 @@ class _FieldNotesState extends State<_FieldNotes> {
             Padding(
               padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 12),
               child: Text(
-                note.refusal ?? 'This note is on your phone and goes to the job as soon as KCPL can be reached.',
+                note.refusal ?? context.l.opsQueuedNoteBody,
                 style: sheet.type.bodyMedium?.copyWith(color: sheet.palette.secondary),
               ),
             ),
@@ -453,7 +454,7 @@ class _FieldNotesState extends State<_FieldNotes> {
               children: [
                 RowTile(
                   onTap: () => Navigator.of(sheet).pop(true),
-                  title: Center(child: Text('Delete note', style: TextStyle(color: sheet.palette.accent))),
+                  title: Center(child: Text(context.l.opsDeleteNote, style: TextStyle(color: sheet.palette.accent))),
                 ),
               ],
             ),
@@ -474,7 +475,7 @@ class _FieldNotesState extends State<_FieldNotes> {
       children: [
         _ActionRow(
           icon: KIcons.camera,
-          label: 'Add a note or photo',
+          label: context.l.opsAddNote,
           onTap: () async {
             if (await openFieldNote(context, widget.reference) && context.mounted) await AsyncPage.reload(context);
           },
@@ -483,18 +484,18 @@ class _FieldNotesState extends State<_FieldNotes> {
           RowTile(
             onTap: () => _queued(note),
             leading: Icon(KIcons.outbox, size: 20, color: note.refusal == null ? p.secondary : p.accent),
-            title: Text(note.text.isEmpty ? (note.photo?.filename ?? 'Photo') : note.text),
+            title: Text(note.text.isEmpty ? (note.photo?.filename ?? context.l.opsPhoto) : note.text),
             subtitle: Text(
-              note.refusal ?? ['Waiting for signal', formatDateTime(note.createdAt.toUtc().toIso8601String()), if (note.photo != null) 'Photo'].join(' · '),
+              note.refusal ?? [context.l.opsWaitingForSignal, formatDateTime(note.createdAt.toUtc().toIso8601String()), if (note.photo != null) context.l.opsPhoto].join(' · '),
               style: note.refusal == null ? null : TextStyle(color: p.accent),
             ),
           ),
         for (final note in widget.notes)
           RowTile(
             leading: Icon(note.photoFilename == null ? KIcons.note : KIcons.image, size: 20, color: p.secondary),
-            title: Text(note.text.isEmpty ? (note.photoFilename ?? 'Photo') : note.text),
+            title: Text(note.text.isEmpty ? (note.photoFilename ?? context.l.opsPhoto) : note.text),
             subtitle: Text(
-              [?note.author, formatDateTime(note.createdAt), if (note.photoFilename != null && note.text.isNotEmpty) 'Photo'].join(' · '),
+              [?note.author, formatDateTime(note.createdAt), if (note.photoFilename != null && note.text.isNotEmpty) context.l.opsPhoto].join(' · '),
             ),
           ),
       ],
@@ -511,8 +512,9 @@ class _OwnerRow extends StatelessWidget {
 
   Future<void> _launch(BuildContext context, Uri uri) async {
     final messenger = ScaffoldMessenger.of(context);
+    final failed = context.l.opsCouldNotOpen;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      messenger.showSnackBar(const SnackBar(content: Text('That could not be opened on this device.')));
+      messenger.showSnackBar(SnackBar(content: Text(failed)));
     }
   }
 
@@ -543,8 +545,8 @@ class _OwnerRow extends StatelessWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                action(KIcons.phone, 'Call $name', Uri(scheme: 'tel', path: digits)),
-                action(KIcons.whatsapp, 'WhatsApp $name', Uri.https('wa.me', '/${digits.replaceAll('+', '')}')),
+                action(KIcons.phone, context.l.opsCall(name), Uri(scheme: 'tel', path: digits)),
+                action(KIcons.whatsapp, context.l.opsWhatsApp(name), Uri.https('wa.me', '/${digits.replaceAll('+', '')}')),
               ],
             ),
     );
@@ -601,7 +603,7 @@ class _ChecklistState extends State<_Checklist> {
       if (!mounted) return;
       setState(() => _pending.remove(item.id));
       HapticFeedback.heavyImpact();
-      final message = error is ApiException && error.message.isNotEmpty ? error.message : 'That change was not saved. Try again.';
+      final message = error is ApiException && error.message.isNotEmpty ? error.message : context.l.opsChangeNotSaved;
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -612,13 +614,13 @@ class _ChecklistState extends State<_Checklist> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader('${widget.label} · $done of ${widget.items.length} done'),
+        SectionHeader(context.l.opsDoneOf(widget.label, done, widget.items.length)),
         RowGroup(
           indent: RowGroup.iconIndent,
           children: [
             for (final item in widget.items)
               _CheckRow(item: item, completed: _pending[item.id] ?? item.completed, onTap: () => _toggle(item)),
-            if (widget.add != null) _ActionRow(icon: KIcons.add, label: 'New task', onTap: widget.add!),
+            if (widget.add != null) _ActionRow(icon: KIcons.add, label: context.l.opsNewTask, onTap: widget.add!),
           ],
         ),
       ],

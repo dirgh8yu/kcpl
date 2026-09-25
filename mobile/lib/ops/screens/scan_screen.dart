@@ -17,6 +17,7 @@ import '../ops_controller.dart';
 import '../ops_models.dart';
 import '../scan_codes.dart';
 import 'job_detail_screen.dart';
+import '../ops_l10n.dart';
 
 void openScan(BuildContext context) => Navigator.of(context).push(SheetRoute<void>(builder: (_) => const ScanScreen()));
 
@@ -180,10 +181,10 @@ class _ScanScreenState extends State<ScanScreen> {
     final reduced = Motion.reduced(context);
     final content = switch (_stage) {
       _Stage.scanning => _idle(context),
-      _Stage.reading => const _Busy(label: 'Reading the text…'),
+      _Stage.reading => _Busy(label: context.l.opsReadingText),
       _Stage.choosing => _choose(context),
       _Stage.typing => _type(context),
-      _Stage.finding => _Busy(label: 'Finding $_query…'),
+      _Stage.finding => _Busy(label: context.l.opsFinding(_query)),
       _Stage.found => _found(context),
     };
     final body = Padding(
@@ -210,10 +211,10 @@ class _ScanScreenState extends State<ScanScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Point at a barcode or QR code', style: context.type.titleLarge, textAlign: TextAlign.center),
+        Text(context.l.opsPointAtCode, style: context.type.titleLarge, textAlign: TextAlign.center),
         const SizedBox(height: 4),
         Text(
-          'Or read a container number off the door, or type a reference.',
+          context.l.opsScanHint,
           style: context.type.bodyMedium?.copyWith(color: p.secondary),
           textAlign: TextAlign.center,
         ),
@@ -222,7 +223,7 @@ class _ScanScreenState extends State<ScanScreen> {
           children: [
             Expanded(
               child: Pressable(
-                child: OutlinedButton.icon(onPressed: _read, icon: const Icon(KIcons.camera, size: 18), label: const Text('Read text')),
+                child: OutlinedButton.icon(onPressed: _read, icon: const Icon(KIcons.camera, size: 18), label: Text(context.l.opsReadText)),
               ),
             ),
             const SizedBox(width: 10),
@@ -231,7 +232,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _to(_Stage.typing),
                   icon: const Icon(KIcons.search, size: 18),
-                  label: const Text('Type it'),
+                  label: Text(context.l.opsTypeIt),
                 ),
               ),
             ),
@@ -248,13 +249,13 @@ class _ScanScreenState extends State<ScanScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          _candidates.isEmpty ? 'No number in that photo' : 'Tap the number to find',
+          _candidates.isEmpty ? context.l.opsNoNumber : context.l.opsTapNumber,
           style: context.type.titleLarge,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         Text(
-          _candidates.isEmpty ? 'Try closer, straight on, in good light.' : 'Container numbers that pass their check digit come first.',
+          _candidates.isEmpty ? context.l.opsTryCloser : context.l.opsCheckDigitFirst,
           style: context.type.bodyMedium?.copyWith(color: p.secondary),
           textAlign: TextAlign.center,
         ),
@@ -274,7 +275,7 @@ class _ScanScreenState extends State<ScanScreen> {
             ],
           ),
         const SizedBox(height: 10),
-        TextButton(onPressed: () => _to(_Stage.scanning), child: const Text('Scan again')),
+        TextButton(onPressed: () => _to(_Stage.scanning), child: Text(context.l.opsScanAgain)),
       ],
     );
   }
@@ -291,13 +292,13 @@ class _ScanScreenState extends State<ScanScreen> {
           textCapitalization: TextCapitalization.characters,
           textInputAction: TextInputAction.search,
           onSubmitted: _find,
-          decoration: const InputDecoration(hintText: 'Job, container, B/L or AWB number'),
+          decoration: InputDecoration(hintText: context.l.opsLookupHint),
         ),
         const SizedBox(height: 12),
         Pressable(
-          child: FilledButton(onPressed: () => _find(_typed.text), child: const Text('Find job')),
+          child: FilledButton(onPressed: () => _find(_typed.text), child: Text(context.l.opsFindJob)),
         ),
-        TextButton(onPressed: () => _to(_Stage.scanning), child: const Text('Back to camera')),
+        TextButton(onPressed: () => _to(_Stage.scanning), child: Text(context.l.opsBackToCamera)),
       ],
     );
   }
@@ -313,15 +314,15 @@ class _ScanScreenState extends State<ScanScreen> {
         if (error != null)
           Notice(card: false, title: error)
         else if (_matches.isEmpty) ...[
-          Text('No job matches $_query', style: context.type.titleLarge, textAlign: TextAlign.center),
+          Text(context.l.opsNoJobMatches(_query), style: context.type.titleLarge, textAlign: TextAlign.center),
           const SizedBox(height: 4),
           Text(
-            'Only jobs in your branches can be found. Check the number, or search Jobs.',
+            context.l.opsNoMatchBody,
             style: context.type.bodyMedium?.copyWith(color: p.secondary),
             textAlign: TextAlign.center,
           ),
         ] else ...[
-          Text('${_matches.length} jobs match $_query', style: context.type.titleLarge, textAlign: TextAlign.center),
+          Text(context.l.opsJobsMatch(_matches.length, _query), style: context.type.titleLarge, textAlign: TextAlign.center),
           const SizedBox(height: 12),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.4),
@@ -343,7 +344,7 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
         ],
         const SizedBox(height: 10),
-        TextButton(onPressed: () => _to(_Stage.scanning), child: const Text('Scan again')),
+        TextButton(onPressed: () => _to(_Stage.scanning), child: Text(context.l.opsScanAgain)),
       ],
     );
   }
@@ -469,8 +470,8 @@ class _LiveCameraState extends State<_LiveCamera> {
         padding: const EdgeInsets.all(32),
         child: Text(
           error.errorCode == MobileScannerErrorCode.permissionDenied
-              ? 'Allow the camera for KCPL Ops in Settings to scan. You can still type a reference below.'
-              : 'The camera is not available. You can still type a reference below.',
+              ? context.l.opsCameraDenied
+              : context.l.opsCameraUnavailable,
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white),
         ),

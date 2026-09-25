@@ -1457,4 +1457,910 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureScan => 'Scan document';
+
+  @override
+  String get opsSignInTitle => 'KCPL Operations';
+
+  @override
+  String get opsSignInSubtitle =>
+      'Jobs, tasks and alerts across your branches.';
+
+  @override
+  String get opsPriorityStandard => 'Standard';
+
+  @override
+  String get opsPriorityHigh => 'High';
+
+  @override
+  String get opsPriorityUrgent => 'Urgent';
+
+  @override
+  String get opsJustNow => 'just now';
+
+  @override
+  String get opsNoDueDate => 'No due date';
+
+  @override
+  String get opsYours => 'Yours';
+
+  @override
+  String get opsUnassigned => 'Unassigned';
+
+  @override
+  String get opsAlerts => 'Alerts';
+
+  @override
+  String get opsAllCaughtUp => 'All caught up';
+
+  @override
+  String get opsAlertsEmpty => 'Alerts for your branches and jobs appear here.';
+
+  @override
+  String get opsOutForDelivery => 'Out for delivery';
+
+  @override
+  String get opsStartDelivery => 'Start delivery';
+
+  @override
+  String get opsTakenBy => 'Taken by';
+
+  @override
+  String get opsDriverHint => 'Driver or field staff';
+
+  @override
+  String get opsVehicleHint => 'Vehicle number (optional)';
+
+  @override
+  String get opsStartFootnote =>
+      'Starts attempt now and shows it on the Job File and to the customer as out for delivery.';
+
+  @override
+  String get opsRelConsignee => 'Consignee';
+
+  @override
+  String get opsRelStaff => 'Their staff';
+
+  @override
+  String get opsRelSecurity => 'Security';
+
+  @override
+  String get opsRelFamily => 'Family';
+
+  @override
+  String get opsRelOther => 'Other';
+
+  @override
+  String get opsRecipient => 'Recipient';
+
+  @override
+  String get opsNeedRecipient => 'Who received it? Enter their name.';
+
+  @override
+  String get opsNeedProof => 'Add a signature or a photo as proof of delivery.';
+
+  @override
+  String get opsNeedReason => 'Say why it could not be delivered.';
+
+  @override
+  String get opsSavedOnPhone => 'Saved on this phone';
+
+  @override
+  String get opsSavedDeliveryBody =>
+      'No signal. The delivery and its proof go to KCPL by themselves, with the time they happened, as soon as there is signal.';
+
+  @override
+  String get opsProofSent => 'Proof sent';
+
+  @override
+  String get opsDeliveryRecorded => 'Delivery recorded';
+
+  @override
+  String get opsAttemptRecorded => 'Attempt recorded';
+
+  @override
+  String get opsSendProof => 'Send proof of delivery';
+
+  @override
+  String get opsRecordDelivery => 'Record delivery';
+
+  @override
+  String get opsRecordAttempt => 'Record attempt';
+
+  @override
+  String get opsProofOfDelivery => 'Proof of delivery';
+
+  @override
+  String get opsDelivery => 'Delivery';
+
+  @override
+  String get opsDelivered => 'Delivered';
+
+  @override
+  String get opsNotDelivered => 'Not delivered';
+
+  @override
+  String get opsRefused => 'Refused';
+
+  @override
+  String get opsWhere => 'Where';
+
+  @override
+  String get opsProofFootnote =>
+      'Evidence reaches the desk as received. Verifying it, and marking the shipment Delivered, stays with the desk.';
+
+  @override
+  String get opsExceptionFootnote =>
+      'Opens an exception on the job for the desk.';
+
+  @override
+  String get opsReceivedByHeader => 'Received by';
+
+  @override
+  String get opsFullName => 'Full name';
+
+  @override
+  String get opsPhoneOptional => 'Phone (optional)';
+
+  @override
+  String get opsRelationHint => 'Relation to the consignee';
+
+  @override
+  String get opsProof => 'Proof';
+
+  @override
+  String get opsGetSignature => 'Get a signature';
+
+  @override
+  String get opsSigned => 'Signed';
+
+  @override
+  String get opsSignAgain => 'Tap to sign again';
+
+  @override
+  String get opsPhotographDelivery => 'Photograph the delivery';
+
+  @override
+  String get opsAnotherPhoto => 'Add another photo';
+
+  @override
+  String get opsPhotoHint => 'The cargo at the door, a stamped delivery note';
+
+  @override
+  String get opsWhyRefused => 'Why it was refused';
+
+  @override
+  String get opsWhyNotDelivered => 'Why it could not be delivered';
+
+  @override
+  String get opsRefusedHint => 'Damaged carton, wrong goods, not ordered…';
+
+  @override
+  String get opsFailedHint =>
+      'Nobody at the address, gate closed, road blocked…';
+
+  @override
+  String get opsRemovePhoto => 'Remove photo';
+
+  @override
+  String get opsLocating => 'Finding where you are…';
+
+  @override
+  String get opsNoLocation => 'Location not available';
+
+  @override
+  String get opsLocation => 'Location';
+
+  @override
+  String get opsLocationHint =>
+      'Turn on location and tap to try again. The delivery can be recorded without it.';
+
+  @override
+  String get opsTodaysDeliveries => 'Today’s deliveries';
+
+  @override
+  String get opsMapsFailed => 'Maps could not be opened on this phone.';
+
+  @override
+  String get opsDeliveryOpenFailed =>
+      'The delivery could not be opened. Try again.';
+
+  @override
+  String get opsNoDeliveriesMine => 'No deliveries for you today';
+
+  @override
+  String get opsNoDeliveries => 'No deliveries today';
+
+  @override
+  String get opsDeliveriesEmpty =>
+      'Deliveries under way or due out today in your branches appear here.';
+
+  @override
+  String get opsRoute => 'Route';
+
+  @override
+  String get opsRouteFootnote =>
+      'Hold the handle and drag to put stops in the order you will drive them. The order is kept for today.';
+
+  @override
+  String get opsRecordedWaiting => 'Recorded · waiting for signal';
+
+  @override
+  String get opsReadyToGo => 'Ready to go';
+
+  @override
+  String get opsDirections => 'Directions';
+
+  @override
+  String get opsRecord => 'Record';
+
+  @override
+  String get opsStart => 'Start';
+
+  @override
+  String get opsNoteSavedOffline =>
+      'No signal. Saved on this phone; it goes to the job by itself.';
+
+  @override
+  String get opsNeedNote => 'Write a note or add a photo.';
+
+  @override
+  String get opsAddToJob => 'Add to job';
+
+  @override
+  String get opsNoteHint => 'What did you see? Seal, damage, who you spoke to…';
+
+  @override
+  String get opsPhoto => 'Photo';
+
+  @override
+  String get opsPhotoFiled => 'Filed in the job’s Document Vault for review.';
+
+  @override
+  String get opsFileAs => 'File it as';
+
+  @override
+  String get opsNoteFootnote =>
+      'Shows on the Job File timeline on the web, with your name.';
+
+  @override
+  String get opsSearchStaff => 'Search by name or branch';
+
+  @override
+  String get opsStaffFailed => 'The staff list could not be loaded.';
+
+  @override
+  String get opsNobodyFound => 'Nobody found';
+
+  @override
+  String get opsStaffEmpty =>
+      'Only staff who share one of your branches are listed.';
+
+  @override
+  String get opsStaffHeader => 'Staff in your branches';
+
+  @override
+  String get opsAssignJob => 'Assign job';
+
+  @override
+  String get opsGiveJobTo => 'Give job to';
+
+  @override
+  String get opsReassignFailed => 'The job was not reassigned. Try again.';
+
+  @override
+  String get opsDone => 'Done';
+
+  @override
+  String get opsNeedTaskTitle => 'Give the task a title.';
+
+  @override
+  String get opsNewTask => 'New task';
+
+  @override
+  String get opsTitle => 'Title';
+
+  @override
+  String get opsNotesOptional => 'Notes (optional)';
+
+  @override
+  String get opsDue => 'Due';
+
+  @override
+  String get opsNoDate => 'No date';
+
+  @override
+  String get opsToday5pm => 'Today, 5 PM';
+
+  @override
+  String get opsTomorrow10am => 'Tomorrow, 10 AM';
+
+  @override
+  String get opsPick => 'Pick…';
+
+  @override
+  String get opsAssignedTo => 'Assigned to';
+
+  @override
+  String get opsAssignTask => 'Assign task';
+
+  @override
+  String get opsNobodyYet => 'Nobody yet';
+
+  @override
+  String get opsBranch => 'Branch';
+
+  @override
+  String get opsNeedOverride =>
+      'Say why it is being closed anyway (at least 8 characters).';
+
+  @override
+  String get opsNotClosed => 'Not closed: something still stands in the way.';
+
+  @override
+  String get opsJobClosed => 'Job closed';
+
+  @override
+  String get opsJobClosedBody =>
+      'The Job File is closed, with your name and the time.';
+
+  @override
+  String get opsCloseJob => 'Close job';
+
+  @override
+  String get opsCloseAnyway => 'Close anyway';
+
+  @override
+  String get opsReadyToClose => 'Ready to close';
+
+  @override
+  String get opsReadyToCloseBody =>
+      'Tasks, customs and proof of delivery are all in order.';
+
+  @override
+  String get opsStillOpen => 'Still open';
+
+  @override
+  String get opsOverrideReason => 'Reason to close anyway';
+
+  @override
+  String get opsOverrideHint => 'Recorded on the Job File with your name';
+
+  @override
+  String get opsCloseBlockedFootnote =>
+      'Clear these first, or ask Management to close it with a reason.';
+
+  @override
+  String get opsJobNotFound => 'Job not found';
+
+  @override
+  String get opsJobNotFoundBody =>
+      'It may have been closed or moved outside your branches.';
+
+  @override
+  String get opsOwner => 'Owner';
+
+  @override
+  String get opsAssignSomeone => 'Assign someone';
+
+  @override
+  String get opsGiveToSomeone => 'Give to someone else';
+
+  @override
+  String get opsNoOwner => 'Nobody owns this job yet.';
+
+  @override
+  String get opsTasks => 'Tasks';
+
+  @override
+  String get opsNoTasks =>
+      'No tasks yet. Tasks added here or in the Job File show on both.';
+
+  @override
+  String get opsCustoms => 'Customs';
+
+  @override
+  String get opsRequired => 'Required';
+
+  @override
+  String get opsOptional => 'Optional';
+
+  @override
+  String get opsBeforeCloseout => 'Before closeout';
+
+  @override
+  String get opsFromField => 'From the field';
+
+  @override
+  String get opsNotes => 'Notes';
+
+  @override
+  String get opsDetails => 'Details';
+
+  @override
+  String get opsCustomer => 'Customer';
+
+  @override
+  String get opsPriority => 'Priority';
+
+  @override
+  String get opsHandling => 'Handling';
+
+  @override
+  String get opsInternalRef => 'Internal ref';
+
+  @override
+  String get opsProfitability => 'Profitability';
+
+  @override
+  String get opsRevenue => 'Revenue';
+
+  @override
+  String get opsCost => 'Cost';
+
+  @override
+  String get opsProfit => 'Profit';
+
+  @override
+  String get opsMargin => 'Margin';
+
+  @override
+  String get opsJobIsClosed => 'This job is closed.';
+
+  @override
+  String get opsCloseJobEllipsis => 'Close job…';
+
+  @override
+  String get opsQueuedDeliveryBody =>
+      'This delivery is on your phone and goes to KCPL, with the time it happened, as soon as there is signal.';
+
+  @override
+  String get opsDeleteDelivery => 'Delete this delivery';
+
+  @override
+  String get opsRecordHowItWent => 'Record how it went';
+
+  @override
+  String get opsAddProof => 'Add proof of delivery';
+
+  @override
+  String get opsWaitingForSignal => 'Waiting for signal';
+
+  @override
+  String get opsSignature => 'Signature';
+
+  @override
+  String get opsDocument => 'Document';
+
+  @override
+  String get opsScheduled => 'Scheduled';
+
+  @override
+  String get opsPodReceived => 'Proof received · the desk verifies it';
+
+  @override
+  String get opsPodVerified => 'Proof of delivery verified';
+
+  @override
+  String get opsPodRejected => 'Proof rejected by the desk · add new proof';
+
+  @override
+  String get opsPodNone => 'No proof of delivery yet';
+
+  @override
+  String get opsQueuedNoteBody =>
+      'This note is on your phone and goes to the job as soon as KCPL can be reached.';
+
+  @override
+  String get opsDeleteNote => 'Delete note';
+
+  @override
+  String get opsAddNote => 'Add a note or photo';
+
+  @override
+  String get opsCouldNotOpen => 'That could not be opened on this device.';
+
+  @override
+  String get opsChangeNotSaved => 'That change was not saved. Try again.';
+
+  @override
+  String get opsMine => 'Mine';
+
+  @override
+  String get opsAll => 'All';
+
+  @override
+  String get opsOverdue => 'Overdue';
+
+  @override
+  String get opsExceptions => 'Exceptions';
+
+  @override
+  String get opsJobs => 'Jobs';
+
+  @override
+  String get opsScan => 'Scan';
+
+  @override
+  String get opsSearchJobs => 'Search reference, customer, route or owner…';
+
+  @override
+  String get opsNoActiveJobs => 'No active jobs';
+
+  @override
+  String get opsNothingMatches => 'Nothing matches';
+
+  @override
+  String get opsJobsEmpty => 'Jobs in your branches appear here.';
+
+  @override
+  String get opsJobsNoMatch => 'Try another filter or clear the search.';
+
+  @override
+  String get opsMe => 'Me';
+
+  @override
+  String get opsRole => 'Role';
+
+  @override
+  String get opsBranches => 'Branches';
+
+  @override
+  String get opsAllBranches => 'All branches';
+
+  @override
+  String get opsCostsAndMargins => 'Costs and margins';
+
+  @override
+  String get opsVisible => 'Visible';
+
+  @override
+  String get opsNotShared => 'Not shared with this role';
+
+  @override
+  String get opsRolesFootnote =>
+      'Roles and branch access are managed by KCPL Management in the web admin.';
+
+  @override
+  String get opsNotifications => 'Notifications';
+
+  @override
+  String get opsSignOut => 'Sign out';
+
+  @override
+  String get opsToday => 'Today';
+
+  @override
+  String get opsDemoBanner => 'Demo data, not real operations';
+
+  @override
+  String get opsReadingText => 'Reading the text…';
+
+  @override
+  String get opsPointAtCode => 'Point at a barcode or QR code';
+
+  @override
+  String get opsScanHint =>
+      'Or read a container number off the door, or type a reference.';
+
+  @override
+  String get opsReadText => 'Read text';
+
+  @override
+  String get opsTypeIt => 'Type it';
+
+  @override
+  String get opsNoNumber => 'No number in that photo';
+
+  @override
+  String get opsTapNumber => 'Tap the number to find';
+
+  @override
+  String get opsTryCloser => 'Try closer, straight on, in good light.';
+
+  @override
+  String get opsCheckDigitFirst =>
+      'Container numbers that pass their check digit come first.';
+
+  @override
+  String get opsScanAgain => 'Scan again';
+
+  @override
+  String get opsLookupHint => 'Job, container, B/L or AWB number';
+
+  @override
+  String get opsFindJob => 'Find job';
+
+  @override
+  String get opsBackToCamera => 'Back to camera';
+
+  @override
+  String get opsNoMatchBody =>
+      'Only jobs in your branches can be found. Check the number, or search Jobs.';
+
+  @override
+  String get opsCameraDenied =>
+      'Allow the camera for KCPL Ops in Settings to scan. You can still type a reference below.';
+
+  @override
+  String get opsCameraUnavailable =>
+      'The camera is not available. You can still type a reference below.';
+
+  @override
+  String get opsCancel => 'Cancel';
+
+  @override
+  String get opsClear => 'Clear';
+
+  @override
+  String get opsSignatureArea => 'Signature area. Sign with one finger.';
+
+  @override
+  String get opsNeedsAction => 'Needs action';
+
+  @override
+  String get opsMoving => 'Moving';
+
+  @override
+  String get opsAllJobs => 'All jobs';
+
+  @override
+  String get opsNothingWaiting => 'Nothing waiting on you';
+
+  @override
+  String get opsNothingWaitingBody =>
+      'No active jobs in your branches need attention right now.';
+
+  @override
+  String opsMinutesAgo(int minutes) {
+    return '$minutes min ago';
+  }
+
+  @override
+  String opsHoursAgo(int hours) {
+    return '$hours h ago';
+  }
+
+  @override
+  String opsDaysAgo(int days) {
+    return '$days d ago';
+  }
+
+  @override
+  String opsOverdueDue(String when) {
+    return 'Overdue · due $when';
+  }
+
+  @override
+  String opsDueToday(String time) {
+    return 'Due today $time';
+  }
+
+  @override
+  String opsDueTomorrow(String time) {
+    return 'Due tomorrow $time';
+  }
+
+  @override
+  String opsDueOn(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String opsOverdueCount(int count) {
+    return '$count overdue';
+  }
+
+  @override
+  String opsCustomsOpenCount(int count) {
+    return '$count customs open';
+  }
+
+  @override
+  String opsPodWithDesk(String reference) {
+    return 'Proof of delivery is with the desk to verify. KCPL marks $reference Delivered once it is checked.';
+  }
+
+  @override
+  String opsExceptionOpened(String reference) {
+    return 'The desk has an exception on $reference to follow up and arrange the next attempt.';
+  }
+
+  @override
+  String opsSendTo(String reference) {
+    return 'Send to $reference';
+  }
+
+  @override
+  String opsAttemptN(int number) {
+    return 'Attempt $number';
+  }
+
+  @override
+  String opsSignedBy(String signer) {
+    return '$signer · tap to sign again';
+  }
+
+  @override
+  String opsWithinMetres(int metres) {
+    return 'Within $metres m · recorded with the delivery';
+  }
+
+  @override
+  String opsMineCount(int count) {
+    return 'Mine · $count';
+  }
+
+  @override
+  String opsAllCount(int count) {
+    return 'All · $count';
+  }
+
+  @override
+  String opsDirectionsTo(String place) {
+    return 'Directions to $place';
+  }
+
+  @override
+  String opsOutForDeliveryAttempt(int number) {
+    return 'Out for delivery · attempt $number';
+  }
+
+  @override
+  String opsReorder(String reference) {
+    return 'Reorder $reference';
+  }
+
+  @override
+  String opsSaveTo(String reference) {
+    return 'Save to $reference';
+  }
+
+  @override
+  String opsNowWith(String reference, String name) {
+    return '$reference is now with $name.';
+  }
+
+  @override
+  String opsAddTo(String reference) {
+    return 'Add to $reference';
+  }
+
+  @override
+  String opsTaskFootnote(String branch) {
+    return 'For $branch. Shows on the Job File and the assignee’s task list.';
+  }
+
+  @override
+  String opsCloseReference(String reference) {
+    return 'Close $reference';
+  }
+
+  @override
+  String opsReceivedBy(String name) {
+    return 'Received by $name';
+  }
+
+  @override
+  String opsProofCount(int count) {
+    return '$count proof';
+  }
+
+  @override
+  String opsAttemptLabel(int number, String label) {
+    return 'Attempt $number · $label';
+  }
+
+  @override
+  String opsPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String opsCall(String name) {
+    return 'Call $name';
+  }
+
+  @override
+  String opsWhatsApp(String name) {
+    return 'WhatsApp $name';
+  }
+
+  @override
+  String opsDoneOf(String label, int done, int total) {
+    return '$label · $done of $total done';
+  }
+
+  @override
+  String opsVersion(String version) {
+    return 'KCPL Ops $version';
+  }
+
+  @override
+  String opsFinding(String query) {
+    return 'Finding $query…';
+  }
+
+  @override
+  String opsNoJobMatches(String query) {
+    return 'No job matches $query';
+  }
+
+  @override
+  String opsJobsMatch(int count, String query) {
+    return '$count jobs match $query';
+  }
+
+  @override
+  String opsDueTodaySummary(int count) {
+    return '$count due today · your route, directions and proof';
+  }
+
+  @override
+  String opsOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count overdue tasks',
+      one: '1 overdue task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String opsCustomsBlocks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count customs blocks',
+      one: '1 customs block',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String opsDeliveringToday(int count) {
+    return '$count delivering today';
+  }
+
+  @override
+  String opsUnassignedCount(int count) {
+    return '$count unassigned';
+  }
+
+  @override
+  String opsUrgentCount(int count) {
+    return '$count urgent';
+  }
+
+  @override
+  String opsCustomsCount(int count) {
+    return '$count customs';
+  }
+
+  @override
+  String get opsLanguage => 'Language';
+
+  @override
+  String get opsSignAbove => 'Sign above the line';
+
+  @override
+  String get opsPushPrimerTitle => 'Get alerts as they happen';
+
+  @override
+  String get opsPushPrimerBody =>
+      'Assignments, overdue tasks, customs and exceptions for your jobs, on this phone.';
+
+  @override
+  String get opsPushBlockedHelp =>
+      'Allow notifications for KCPL Ops in your phone\'s Settings.';
+
+  @override
+  String get opsLanguageFootnote =>
+      'Records (references, places, notes from the desk) stay as KCPL holds them.';
 }

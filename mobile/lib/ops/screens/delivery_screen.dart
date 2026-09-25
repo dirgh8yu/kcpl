@@ -17,6 +17,7 @@ import '../ops_api.dart';
 import '../ops_controller.dart';
 import '../ops_models.dart';
 import 'signature_screen.dart';
+import '../ops_l10n.dart';
 
 /// Opens the right step for where the delivery stands. True when something
 /// was recorded.
@@ -96,11 +97,11 @@ class _StartDeliveryScreenState extends State<StartDeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     return ComposeScaffold(
-      title: 'Out for delivery',
+      title: context.l.opsOutForDelivery,
       error: _error,
-      action: SendButton(label: 'Start delivery', onPressed: _start, busy: _busy),
+      action: SendButton(label: context.l.opsStartDelivery, onPressed: _start, busy: _busy),
       children: [
-        const SectionHeader('Taken by', top: 8),
+        SectionHeader(context.l.opsTakenBy, top: 8),
         GroupCard(
           child: Column(
             children: [
@@ -109,7 +110,7 @@ class _StartDeliveryScreenState extends State<StartDeliveryScreen> {
                 enabled: !_busy,
                 textCapitalization: TextCapitalization.words,
                 style: context.type.bodyLarge,
-                decoration: cardField('Driver or field staff'),
+                decoration: cardField(context.l.opsDriverHint),
               ),
               Divider(height: 0.33, thickness: 0.33, indent: kGutter, color: context.palette.hairline),
               TextField(
@@ -117,12 +118,12 @@ class _StartDeliveryScreenState extends State<StartDeliveryScreen> {
                 enabled: !_busy,
                 textCapitalization: TextCapitalization.characters,
                 style: context.type.bodyLarge,
-                decoration: cardField('Vehicle number (optional)'),
+                decoration: cardField(context.l.opsVehicleHint),
               ),
             ],
           ),
         ),
-        const Footnote('Starts attempt now and shows it on the Job File and to the customer as out for delivery.'),
+        Footnote(context.l.opsStartFootnote),
       ],
     );
   }
@@ -130,7 +131,17 @@ class _StartDeliveryScreenState extends State<StartDeliveryScreen> {
 
 enum _Outcome { delivered, failed, refused }
 
+/// Who took it, as KCPL records it (in English, as a record); the chips show
+/// each in the reader's language.
 const _relations = ['Consignee', 'Their staff', 'Security', 'Family'];
+
+String _relationLabel(BuildContext context, String relation) => switch (relation) {
+  'Consignee' => context.l.opsRelConsignee,
+  'Their staff' => context.l.opsRelStaff,
+  'Security' => context.l.opsRelSecurity,
+  'Family' => context.l.opsRelFamily,
+  _ => context.l.opsRelOther,
+};
 
 /// How the attempt ended. Delivered takes who received it, a signature
 /// and photos, and where it happened; the rest take a reason. Evidence goes
@@ -205,7 +216,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
 
   String get _signer {
     final name = _recipient.text.trim();
-    final relation = _relationChoice == 'Other' ? _relation.text.trim() : (_relationChoice ?? '');
+    final relation = _relationChoice == context.l.opsRelOther ? _relation.text.trim() : (_relationChoice ?? '');
     return [if (name.isNotEmpty) name, if (relation.isNotEmpty) relation].join(' · ');
   }
 
@@ -214,7 +225,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
     final signature = await captureSignature(
       context,
       name: 'pod-signature-${widget.reference}-${DateTime.now().millisecondsSinceEpoch}',
-      signer: _signer.isEmpty ? 'Recipient' : _signer,
+      signer: _signer.isEmpty ? context.l.opsRecipient : _signer,
     );
     if (signature != null && mounted) setState(() => (_signature = signature, _error = null));
   }
@@ -236,11 +247,11 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
 
   String? _check() {
     if (_outcome == _Outcome.delivered) {
-      if (!_recorded && _recipient.text.trim().length < 2) return 'Who received it? Enter their name.';
-      if (_signature == null && _photos.isEmpty) return 'Add a signature or a photo as proof of delivery.';
+      if (!_recorded && _recipient.text.trim().length < 2) return context.l.opsNeedRecipient;
+      if (_signature == null && _photos.isEmpty) return context.l.opsNeedProof;
       return null;
     }
-    if (_reason.text.trim().length < 6) return 'Say why it could not be delivered.';
+    if (_reason.text.trim().length < 6) return context.l.opsNeedReason;
     return null;
   }
 
@@ -273,7 +284,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
           attemptId: widget.offline ? null : widget.attempt.id,
           driverName: widget.offlineDriver ?? '',
           recipientName: _recipient.text.trim(),
-          recipientRelation: _relationChoice == 'Other' ? _relation.text.trim() : (_relationChoice ?? ''),
+          recipientRelation: _relationChoice == context.l.opsRelOther ? _relation.text.trim() : (_relationChoice ?? ''),
           recipientPhone: _phone.text.trim(),
           failureReason: _reason.text.trim(),
           latitude: _fix?.latitude,
@@ -311,7 +322,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
         widget.attempt.id,
         status: _outcome.name,
         recipientName: _recipient.text.trim(),
-        recipientRelation: _relationChoice == 'Other' ? _relation.text.trim() : (_relationChoice ?? ''),
+        recipientRelation: _relationChoice == context.l.opsRelOther ? _relation.text.trim() : (_relationChoice ?? ''),
         recipientPhone: _phone.text.trim(),
         failureReason: _reason.text.trim(),
         latitude: _fix?.latitude,
@@ -346,35 +357,35 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
   Widget build(BuildContext context) {
     if (_done && _kept) {
       return DoneView(
-        title: 'Saved on this phone',
-        body: 'No signal. The delivery and its proof go to KCPL by themselves, with the time they happened, as soon as there is signal.',
+        title: context.l.opsSavedOnPhone,
+        body: context.l.opsSavedDeliveryBody,
         reference: widget.reference,
       );
     }
     if (_done) {
       final delivered = _outcome == _Outcome.delivered;
       return DoneView(
-        title: delivered ? (widget.podOnly ? 'Proof sent' : 'Delivery recorded') : 'Attempt recorded',
+        title: delivered ? (widget.podOnly ? context.l.opsProofSent : context.l.opsDeliveryRecorded) : context.l.opsAttemptRecorded,
         body: delivered
-            ? 'Proof of delivery is with the desk to verify. KCPL marks ${widget.reference} Delivered once it is checked.'
-            : 'The desk has an exception on ${widget.reference} to follow up and arrange the next attempt.',
+            ? context.l.opsPodWithDesk(widget.reference)
+            : context.l.opsExceptionOpened(widget.reference),
         reference: widget.reference,
       );
     }
     final delivered = _outcome == _Outcome.delivered;
     final action = _recorded && !widget.podOnly
-        ? 'Send proof of delivery'
+        ? context.l.opsSendProof
         : widget.podOnly
-        ? 'Send to ${widget.reference}'
+        ? context.l.opsSendTo(widget.reference)
         : delivered
-        ? 'Record delivery'
-        : 'Record attempt';
+        ? context.l.opsRecordDelivery
+        : context.l.opsRecordAttempt;
     return ComposeScaffold(
       title: widget.podOnly
-          ? 'Proof of delivery'
+          ? context.l.opsProofOfDelivery
           : widget.offline
-          ? 'Delivery'
-          : 'Attempt ${widget.attempt.number}',
+          ? context.l.opsDelivery
+          : context.l.opsAttemptN(widget.attempt.number),
       error: _error,
       action: SendButton(label: action, onPressed: _submit, busy: _busy, progress: _progress),
       children: [
@@ -392,10 +403,10 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
                         HapticFeedback.selectionClick();
                         setState(() => (_outcome = value, _error = null));
                       },
-                children: const {
-                  _Outcome.delivered: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('Delivered')),
-                  _Outcome.failed: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('Not delivered')),
-                  _Outcome.refused: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('Refused')),
+                children: {
+                  _Outcome.delivered: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsDelivered)),
+                  _Outcome.failed: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsNotDelivered)),
+                  _Outcome.refused: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsRefused)),
                 },
               ),
             ),
@@ -412,11 +423,11 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: delivered ? _deliveredFields(context) : _failedFields(context)),
           ),
         ),
-        if (!widget.podOnly && !_recorded) ...[const SectionHeader('Where'), _LocationRow(fix: _fix, locating: _locating, located: _located, onRetry: _locate)],
+        if (!widget.podOnly && !_recorded) ...[SectionHeader(context.l.opsWhere), _LocationRow(fix: _fix, locating: _locating, located: _located, onRetry: _locate)],
         Footnote(
           delivered
-              ? 'Evidence reaches the desk as received. Verifying it, and marking the shipment Delivered, stays with the desk.'
-              : 'Opens an exception on the job for the desk.',
+              ? context.l.opsProofFootnote
+              : context.l.opsExceptionFootnote,
         ),
       ],
     );
@@ -426,7 +437,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
     final p = context.palette;
     return [
       if (!_recorded) ...[
-        const SectionHeader('Received by'),
+        SectionHeader(context.l.opsReceivedByHeader),
         GroupCard(
           child: Column(
             children: [
@@ -436,7 +447,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
                 textCapitalization: TextCapitalization.words,
                 style: context.type.bodyLarge,
                 onChanged: (_) => setState(() {}),
-                decoration: cardField('Full name'),
+                decoration: cardField(context.l.opsFullName),
               ),
               Divider(height: 0.33, thickness: 0.33, indent: kGutter, color: p.hairline),
               TextField(
@@ -444,7 +455,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
                 enabled: !_busy,
                 keyboardType: TextInputType.phone,
                 style: context.type.bodyLarge,
-                decoration: cardField('Phone (optional)'),
+                decoration: cardField(context.l.opsPhoneOptional),
               ),
             ],
           ),
@@ -459,7 +470,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
                 ChoiceChip(
                   // Set here: chips don't resolve a per-state label colour
                   // from the theme on every platform.
-                  label: Text(relation, style: TextStyle(color: _relationChoice == relation ? p.surface : p.ink)),
+                  label: Text(_relationLabel(context, relation), style: TextStyle(color: _relationChoice == relation ? p.surface : p.ink)),
                   selected: _relationChoice == relation,
                   onSelected: _busy
                       ? null
@@ -471,7 +482,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
             ],
           ),
         ),
-        if (_relationChoice == 'Other')
+        if (_relationChoice == context.l.opsRelOther)
           GroupCard(
             margin: const EdgeInsets.fromLTRB(kGutter, 10, kGutter, 0),
             child: TextField(
@@ -480,19 +491,19 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
               style: context.type.bodyLarge,
-              decoration: cardField('Relation to the consignee'),
+              decoration: cardField(context.l.opsRelationHint),
             ),
           ),
       ],
-      const SectionHeader('Proof'),
+      SectionHeader(context.l.opsProof),
       RowGroup(
         indent: RowGroup.iconIndent,
         children: [
           RowTile(
             onTap: _busy ? null : _sign,
             leading: Icon(KIcons.signature, size: 22, color: _signature == null ? p.accent : p.ink),
-            title: Text(_signature == null ? 'Get a signature' : 'Signed', style: TextStyle(color: _signature == null ? p.accent : null)),
-            subtitle: _signature == null ? null : Text(_signer.isEmpty ? 'Tap to sign again' : '$_signer · tap to sign again'),
+            title: Text(_signature == null ? context.l.opsGetSignature : context.l.opsSigned, style: TextStyle(color: _signature == null ? p.accent : null)),
+            subtitle: _signature == null ? null : Text(_signer.isEmpty ? context.l.opsSignAgain : context.l.opsSignedBy(_signer)),
             trailing: _signature == null
                 ? null
                 : ClipRRect(
@@ -503,8 +514,8 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
           RowTile(
             onTap: _busy ? null : _addPhoto,
             leading: Icon(KIcons.camera, size: 22, color: p.accent),
-            title: Text(_photos.isEmpty ? 'Photograph the delivery' : 'Add another photo', style: TextStyle(color: p.accent)),
-            subtitle: _photos.isEmpty ? const Text('The cargo at the door, a stamped delivery note') : null,
+            title: Text(_photos.isEmpty ? context.l.opsPhotographDelivery : context.l.opsAnotherPhoto, style: TextStyle(color: p.accent)),
+            subtitle: _photos.isEmpty ? Text(context.l.opsPhotoHint) : null,
           ),
         ],
       ),
@@ -531,7 +542,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
   }
 
   List<Widget> _failedFields(BuildContext context) => [
-    SectionHeader(_outcome == _Outcome.refused ? 'Why it was refused' : 'Why it could not be delivered'),
+    SectionHeader(_outcome == _Outcome.refused ? context.l.opsWhyRefused : context.l.opsWhyNotDelivered),
     GroupCard(
       child: TextField(
         controller: _reason,
@@ -540,7 +551,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
         maxLines: 6,
         textCapitalization: TextCapitalization.sentences,
         style: context.type.bodyLarge,
-        decoration: cardField(_outcome == _Outcome.refused ? 'Damaged carton, wrong goods, not ordered…' : 'Nobody at the address, gate closed, road blocked…'),
+        decoration: cardField(_outcome == _Outcome.refused ? context.l.opsRefusedHint : context.l.opsFailedHint),
       ),
     ),
   ];
@@ -567,7 +578,7 @@ class _Thumb extends StatelessWidget {
             right: -6,
             child: Semantics(
               button: true,
-              label: 'Remove photo',
+              label: context.l.opsRemovePhoto,
               child: GestureDetector(
                 onTap: onRemove,
                 child: Container(
@@ -602,14 +613,14 @@ class _LocationRow extends StatelessWidget {
     final String title;
     final String? subtitle;
     if (locating) {
-      title = 'Finding where you are…';
+      title = context.l.opsLocating;
       subtitle = null;
     } else if (fix != null) {
       title = '${fix.latitude.toStringAsFixed(5)}, ${fix.longitude.toStringAsFixed(5)}';
-      subtitle = 'Within ${fix.accuracy.round()} m · recorded with the delivery';
+      subtitle = context.l.opsWithinMetres(fix.accuracy.round());
     } else {
-      title = located ? 'Location not available' : 'Location';
-      subtitle = 'Turn on location and tap to try again. The delivery can be recorded without it.';
+      title = located ? context.l.opsNoLocation : context.l.opsLocation;
+      subtitle = context.l.opsLocationHint;
     }
     return RowGroup(
       indent: RowGroup.iconIndent,

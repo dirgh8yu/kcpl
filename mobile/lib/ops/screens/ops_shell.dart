@@ -13,6 +13,7 @@ import 'jobs_screen.dart';
 import 'me_screen.dart';
 import 'today_screen.dart';
 import '../../ui/widgets/sheet_route.dart';
+import '../ops_l10n.dart';
 
 class OpsShell extends StatefulWidget {
   const OpsShell({super.key, required this.demo, required this.version});
@@ -76,7 +77,7 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final unread = OpsScope.of(context).unread;
-    const labels = {OpsTab.today: 'Today', OpsTab.jobs: 'Jobs', OpsTab.alerts: 'Alerts', OpsTab.me: 'Me'};
+    final labels = {OpsTab.today: context.l.opsToday, OpsTab.jobs: context.l.opsJobs, OpsTab.alerts: context.l.opsAlerts, OpsTab.me: context.l.opsMe};
     const icons = {
       OpsTab.today: (KIcons.today, KIcons.todayOn),
       OpsTab.jobs: (KIcons.shipments, KIcons.shipmentsOn),
@@ -116,7 +117,7 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
             ],
           ),
           bottomNavigationBar: KTabBar(
-            note: widget.demo ? 'Demo data, not real operations' : null,
+            note: widget.demo ? context.l.opsDemoBanner : null,
             selected: _tab.index,
             onSelected: (index) => _select(OpsTab.values[index]),
             items: [

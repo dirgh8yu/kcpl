@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../api/models.dart' show Attachment;
 import '../../ui/theme.dart';
+import '../ops_l10n.dart';
 
 /// Opens the signing page. Null when the person backs out.
 Future<Attachment?> captureSignature(BuildContext context, {required String name, required String signer}) =>
@@ -79,14 +80,14 @@ class _SignatureScreenState extends State<SignatureScreen> {
       backgroundColor: p.paper,
       appBar: AppBar(
         backgroundColor: p.paper,
-        leading: TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        leading: TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.l.opsCancel)),
         leadingWidth: 88,
-        title: const Text('Signature'),
+        title: Text(context.l.opsSignature),
         actions: [
-          TextButton(onPressed: _signed ? _clear : null, child: const Text('Clear')),
+          TextButton(onPressed: _signed ? _clear : null, child: Text(context.l.opsClear)),
           TextButton(
             onPressed: _signed && !_saving ? _done : null,
-            child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(context.l.opsDone, style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -101,7 +102,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
                 builder: (context, constraints) {
                   _size = constraints.biggest;
                   return Semantics(
-                    label: 'Signature area. Sign with one finger.',
+                    label: context.l.opsSignatureArea,
                     child: Listener(
                       key: const ValueKey('signature-pad'),
                       behavior: HitTestBehavior.opaque,
@@ -111,7 +112,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
                       onPointerCancel: _up,
                       child: CustomPaint(
                         size: constraints.biggest,
-                        painter: _SignaturePainter(strokes: _strokes, ink: p.ink, guide: p.hairline, hint: p.tertiary, signer: widget.signer, empty: _strokes.isEmpty),
+                        painter: _SignaturePainter(strokes: _strokes, ink: p.ink, guide: p.hairline, hint: p.tertiary, signer: widget.signer, prompt: context.l.opsSignAbove, empty: _strokes.isEmpty),
                       ),
                     ),
                   );
@@ -183,7 +184,7 @@ Future<List<int>> renderSignaturePng(List<List<Offset>> strokes, Size size) asyn
 }
 
 class _SignaturePainter extends CustomPainter {
-  _SignaturePainter({required this.strokes, required this.ink, required this.guide, required this.hint, required this.signer, required this.empty})
+  _SignaturePainter({required this.strokes, required this.ink, required this.guide, required this.hint, required this.signer, required this.prompt, required this.empty})
     : _version = strokes.fold(0, (n, s) => n + s.length);
 
   final List<List<Offset>> strokes;
@@ -191,6 +192,9 @@ class _SignaturePainter extends CustomPainter {
   final Color guide;
   final Color hint;
   final String signer;
+
+  /// "Sign above the line", in the reader's language.
+  final String prompt;
   final bool empty;
   final int _version;
 
@@ -199,7 +203,7 @@ class _SignaturePainter extends CustomPainter {
     final baseline = size.height * 0.68;
     canvas.drawLine(Offset(28, baseline), Offset(size.width - 28, baseline), Paint()..color = guide..strokeWidth = 1);
     final label = TextPainter(
-      text: TextSpan(text: empty ? 'Sign above the line' : signer, style: TextStyle(color: hint, fontSize: 15)),
+      text: TextSpan(text: empty ? prompt : signer, style: TextStyle(color: hint, fontSize: 15)),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.width - 56);
     label.paint(canvas, Offset(28, baseline + 10));

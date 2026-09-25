@@ -9,16 +9,18 @@ import '../ops_models.dart';
 import '../ops_rows.dart';
 import 'scan_screen.dart';
 import '../../ui/icons.dart';
+import '../../l10n/app_localizations.dart';
+import '../ops_l10n.dart';
 
 enum JobFilter { mine, all, urgent, overdue, customs, exceptions }
 
-const jobFilterLabels = {
-  JobFilter.mine: 'Mine',
-  JobFilter.all: 'All',
-  JobFilter.urgent: 'Urgent',
-  JobFilter.overdue: 'Overdue',
-  JobFilter.customs: 'Customs',
-  JobFilter.exceptions: 'Exceptions',
+Map<JobFilter, String> jobFilterLabels(AppLocalizations l) => {
+  JobFilter.mine: l.opsMine,
+  JobFilter.all: l.opsAll,
+  JobFilter.urgent: l.opsPriorityUrgent,
+  JobFilter.overdue: l.opsOverdue,
+  JobFilter.customs: l.opsCustoms,
+  JobFilter.exceptions: l.opsExceptions,
 };
 
 bool matchesJobFilter(OpsJob job, JobFilter filter, String email) => switch (filter) {
@@ -58,8 +60,8 @@ class _JobsScreenState extends State<JobsScreen> {
   Widget build(BuildContext context) {
     final controller = OpsScope.of(context);
     return AsyncPage<TodayBundle>(
-      title: 'Jobs',
-      actions: [IconButton(tooltip: 'Scan', icon: const Icon(KIcons.scan, size: 22), onPressed: () => openScan(context))],
+      title: context.l.opsJobs,
+      actions: [IconButton(tooltip: context.l.opsScan, icon: const Icon(KIcons.scan, size: 22), onPressed: () => openScan(context))],
       load: controller.api.today,
       builder: (context, bundle) {
         final email = bundle.session.email;
@@ -68,9 +70,9 @@ class _JobsScreenState extends State<JobsScreen> {
         final visible = bundle.jobs.where((j) => matchesJobFilter(j, filter, email) && matchesJobQuery(j, _query)).toList();
         return [
           FilterBar<JobFilter>(
-            hint: 'Search reference, customer, route or owner…',
+            hint: context.l.opsSearchJobs,
             onQuery: (value) => setState(() => _query = value),
-            options: jobFilterLabels,
+            options: jobFilterLabels(context.l),
             selected: filter,
             onSelected: (next) => setState(() => _filter = next),
           ),
@@ -79,8 +81,8 @@ class _JobsScreenState extends State<JobsScreen> {
             child: visible.isEmpty
                 ? EmptyState(
                     icon: KIcons.noResults,
-                    title: bundle.jobs.isEmpty ? 'No active jobs' : 'Nothing matches',
-                    description: bundle.jobs.isEmpty ? 'Jobs in your branches appear here.' : 'Try another filter or clear the search.',
+                    title: bundle.jobs.isEmpty ? context.l.opsNoActiveJobs : context.l.opsNothingMatches,
+                    description: bundle.jobs.isEmpty ? context.l.opsJobsEmpty : context.l.opsJobsNoMatch,
                   )
                 : RowGroup(indent: RowGroup.iconIndent, children: [for (final job in visible) JobRow(job)]),
           ),

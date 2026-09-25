@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../api/kcpl_api.dart' show ApiException;
 import '../auth/auth_repository.dart';
+import '../auth/token_store.dart';
 import '../push/push_service.dart';
 import '../session_host.dart';
 import 'delivery_queue.dart';
@@ -22,7 +23,9 @@ class OpsController extends SessionHost {
     NoteQueue? notes,
     DeliveryQueue? deliveries,
     RouteOrderStore? routes,
+    TokenStore? prefs,
   }) : push = push ?? NoPushService(),
+       prefs = prefs ?? MemoryTokenStore(),
        routes = routes ?? MemoryRouteOrderStore(),
        notes = notes ?? NoteQueue(),
        deliveries = deliveries ?? DeliveryQueue(),
@@ -36,6 +39,15 @@ class OpsController extends SessionHost {
 
   /// The order the driver put today's stops in.
   final RouteOrderStore routes;
+
+  /// The language, kept on the phone across sign-ins.
+  final TokenStore prefs;
+  static const _localeKey = 'kcpl.ops.locale';
+
+  Locale? _locale;
+
+  /// English unless the person chose Nepali: the web admin is English.
+  Locale get locale => _locale ?? const Locale('en');
 
   /// The outbox follows whoever is signed in; it needs their email to know
   /// which notes are theirs.
@@ -79,12 +91,18 @@ class OpsController extends SessionHost {
   int get generation => 0;
 
   @override
-  bool get multilingual => false;
+  bool get multilingual => true;
 
   @override
-  Future<void> setLocale(Locale locale) async {}
+  Future<void> setLocale(Locale locale) async {
+    _locale = locale;
+    await prefs.write(_localeKey, locale.languageCode);
+    notifyListeners();
+  }
 
   Future<void> start() async {
+    final saved = await prefs.read(_localeKey);
+    if (saved == 'en' || saved == 'ne') _locale = Locale(saved!);
     if (_status == OpsStatus.unconfigured) return;
     if (!await auth.restore()) return _set(OpsStatus.signedOut);
     try {

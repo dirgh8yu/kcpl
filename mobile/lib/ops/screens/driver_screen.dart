@@ -16,6 +16,7 @@ import '../ops_models.dart';
 import '../route_order.dart';
 import 'delivery_screen.dart';
 import 'job_detail_screen.dart';
+import '../ops_l10n.dart';
 
 void openDriver(BuildContext context) => Navigator.of(context).push(SheetRoute<void>(builder: (_) => const DriverScreen()));
 
@@ -41,7 +42,7 @@ class DriverScreen extends StatelessWidget {
     final api = OpsScope.of(context).api;
     return Scaffold(
       body: AsyncPage<DriverDay>(
-        title: 'Today’s deliveries',
+        title: context.l.opsTodaysDeliveries,
         load: api.deliveries,
         builder: (context, day) => [_Route(day: day)],
       ),
@@ -91,14 +92,16 @@ class _RouteState extends State<_Route> {
 
   Future<void> _navigate(DriverDelivery stop) async {
     final messenger = ScaffoldMessenger.of(context);
+    final failed = context.l.opsMapsFailed;
     if (!await DriverMaps.open(stop.address)) {
-      messenger.showSnackBar(const SnackBar(content: Text('Maps could not be opened on this phone.')));
+      messenger.showSnackBar(SnackBar(content: Text(failed)));
     }
   }
 
   Future<void> _record(DriverDelivery stop) async {
     final controller = OpsScope.read(context);
     final messenger = ScaffoldMessenger.of(context);
+    final failed = context.l.opsDeliveryOpenFailed;
     try {
       final control = await controller.api.delivery(stop.reference);
       if (!mounted) return;
@@ -106,7 +109,7 @@ class _RouteState extends State<_Route> {
     } on SignedOutException {
       await controller.expire();
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text('The delivery could not be opened. Try again.')));
+      messenger.showSnackBar(SnackBar(content: Text(failed)));
     }
   }
 
@@ -132,8 +135,8 @@ class _RouteState extends State<_Route> {
                 setState(() => _mineOnly = value);
               },
               children: {
-                true: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text('Mine · $mine')),
-                false: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text('All · ${all.length}')),
+                true: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsMineCount(mine))),
+                false: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(context.l.opsAllCount(all.length))),
               },
             ),
           ),
@@ -143,8 +146,8 @@ class _RouteState extends State<_Route> {
             padding: const EdgeInsets.only(top: 24),
             child: EmptyState(
               icon: KIcons.truck,
-              title: _mineOnly ? 'No deliveries for you today' : 'No deliveries today',
-              description: 'Deliveries under way or due out today in your branches appear here.',
+              title: _mineOnly ? context.l.opsNoDeliveriesMine : context.l.opsNoDeliveries,
+              description: context.l.opsDeliveriesEmpty,
             ),
           )
         else ...[
@@ -156,11 +159,11 @@ class _RouteState extends State<_Route> {
                   onPressed: () => _navigate(stops.first),
                   style: FilledButton.styleFrom(backgroundColor: p.accent, foregroundColor: Colors.white),
                   icon: const Icon(KIcons.location, size: 18),
-                  label: Text('Directions to ${stops.first.customerName.isEmpty ? stops.first.reference : stops.first.customerName}', overflow: TextOverflow.ellipsis),
+                  label: Text(context.l.opsDirectionsTo(stops.first.customerName.isEmpty ? stops.first.reference : stops.first.customerName), overflow: TextOverflow.ellipsis),
                 ),
               ),
             ),
-          const SectionHeader('Route', top: 20),
+          SectionHeader(context.l.opsRoute, top: 20),
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -185,7 +188,7 @@ class _RouteState extends State<_Route> {
               );
             },
           ),
-          const Footnote('Hold the handle and drag to put stops in the order you will drive them. The order is kept for today.'),
+          Footnote(context.l.opsRouteFootnote),
         ],
       ],
     );
@@ -206,10 +209,10 @@ class _Stop extends StatelessWidget {
     final p = context.palette;
     final when = stop.scheduledFor == null ? null : formatClock(DateTime.parse(stop.scheduledFor!));
     final state = waiting
-        ? 'Recorded · waiting for signal'
+        ? context.l.opsRecordedWaiting
         : stop.underway
-        ? 'Out for delivery${stop.attemptNumber > 1 ? ' · attempt ${stop.attemptNumber}' : ''}'
-        : 'Ready to go';
+        ? (stop.attemptNumber > 1 ? context.l.opsOutForDeliveryAttempt(stop.attemptNumber) : context.l.opsOutForDelivery)
+        : context.l.opsReadyToGo;
     return DecoratedBox(
       decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(kCardRadius)),
       child: Padding(
@@ -256,7 +259,7 @@ class _Stop extends StatelessWidget {
                 ReorderableDragStartListener(
                   index: index,
                   child: Semantics(
-                    label: 'Reorder ${stop.reference}',
+                    label: context.l.opsReorder(stop.reference),
                     child: Padding(padding: const EdgeInsets.all(10), child: Icon(Icons.drag_handle_rounded, color: p.tertiary)),
                   ),
                 ),
@@ -271,7 +274,7 @@ class _Stop extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: stop.address.isEmpty ? null : onNavigate,
                       icon: const Icon(KIcons.location, size: 16),
-                      label: const Text('Directions'),
+                      label: Text(context.l.opsDirections),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -279,7 +282,7 @@ class _Stop extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: waiting ? null : onRecord,
                       icon: const Icon(KIcons.delivery, size: 16),
-                      label: Text(stop.underway ? 'Record' : 'Start'),
+                      label: Text(stop.underway ? context.l.opsRecord : context.l.opsStart),
                     ),
                   ),
                 ],

@@ -10,6 +10,7 @@ import 'ops_controller.dart';
 import 'ops_models.dart';
 import 'screens/job_detail_screen.dart';
 import '../ui/widgets/sheet_route.dart';
+import 'ops_l10n.dart';
 
 void openJob(BuildContext context, String reference, {OpsJob? preview}) => Navigator.of(context).push(
   SheetRoute<void>(
@@ -21,9 +22,9 @@ void openJob(BuildContext context, String reference, {OpsJob? preview}) => Navig
 /// work, then urgency, then plain status.
 (String, Emphasis) jobFlag(AppLocalizations l, OpsJob job) {
   if (job.exception) return (statusLabel(l, job.status), Emphasis.attention);
-  if (job.overdueTasks > 0) return ('${job.overdueTasks} overdue', Emphasis.attention);
-  if (job.urgent) return ('Urgent', Emphasis.attention);
-  if (job.customsOpen > 0 && job.status == 'customs_clearance') return ('${job.customsOpen} customs open', Emphasis.normal);
+  if (job.overdueTasks > 0) return (l.opsOverdueCount(job.overdueTasks), Emphasis.attention);
+  if (job.urgent) return (l.opsPriorityUrgent, Emphasis.attention);
+  if (job.customsOpen > 0 && job.status == 'customs_clearance') return (l.opsCustomsOpenCount(job.customsOpen), Emphasis.normal);
   return (statusLabel(l, job.status), Emphasis.muted);
 }
 
@@ -43,7 +44,7 @@ class JobRow extends StatelessWidget {
     final p = context.palette;
     final (flag, emphasis) = jobFlag(l, job);
     final email = OpsScope.of(context).session?.email ?? '';
-    final who = owner ? (job.ownedBy(email) ? 'Yours' : (job.ownerName ?? 'Unassigned')) : job.customerName;
+    final who = owner ? (job.ownedBy(email) ? context.l.opsYours : (job.ownerName ?? context.l.opsUnassigned)) : job.customerName;
     return RowTile(
       onTap: () => openJob(context, job.reference, preview: job),
       leading: ModeBadge(mode: job.mode, status: job.status),

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../ui/theme.dart';
+import '../../ui/widgets/choice_rows.dart' show CheckRow;
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/large_title.dart';
 import '../../ui/widgets/push_ui.dart';
 import '../../ui/widgets/tab_bar.dart' show KTabBar;
 import '../ops_controller.dart';
 import '../ops_format.dart';
+import '../ops_l10n.dart';
 
 class MeScreen extends StatelessWidget {
   const MeScreen({super.key, required this.version});
@@ -19,7 +21,7 @@ class MeScreen extends StatelessWidget {
     final session = controller.session;
     return CustomScrollView(
       slivers: [
-        const LargeTitleBar(title: 'Me'),
+        LargeTitleBar(title: context.l.opsMe),
         SliverList(
           delegate: SliverChildListDelegate([
             if (session != null) ...[
@@ -54,28 +56,36 @@ class MeScreen extends StatelessWidget {
               const SizedBox(height: 24),
               RowGroup(
                 children: [
-                  DetailRow('Role', session.roleLabel),
-                  DetailRow('Branches', session.canAccessAllBranches ? 'All branches' : session.branches.join(', ')),
-                  DetailRow('Costs and margins', session.canViewCosts ? 'Visible' : 'Not shared with this role'),
+                  DetailRow(context.l.opsRole, session.roleLabel),
+                  DetailRow(context.l.opsBranches, session.canAccessAllBranches ? context.l.opsAllBranches : session.branches.join(', ')),
+                  DetailRow(context.l.opsCostsAndMargins, session.canViewCosts ? context.l.opsVisible : context.l.opsNotShared),
                 ],
               ),
             ],
-            const Footnote('Roles and branch access are managed by KCPL Management in the web admin.'),
-            const SectionHeader('Notifications'),
-            const RowGroup(children: [PushSettingRow(copy: opsPushCopy)]),
+            Footnote(context.l.opsRolesFootnote),
+            SectionHeader(context.l.opsNotifications),
+            RowGroup(children: [PushSettingRow(copy: opsPushCopy(context.l))]),
+            SectionHeader(context.l.opsLanguage),
+            RowGroup(
+              children: [
+                for (final (code, label) in const [('en', 'English'), ('ne', 'नेपाली')])
+                  CheckRow(label: label, selected: controller.locale.languageCode == code, onTap: () => controller.setLocale(Locale(code))),
+              ],
+            ),
+            Footnote(context.l.opsLanguageFootnote),
             const SizedBox(height: 28),
             RowGroup(
               children: [
                 RowTile(
                   onTap: controller.signOut,
                   title: Center(
-                    child: Text('Sign out', style: TextStyle(color: p.accent)),
+                    child: Text(context.l.opsSignOut, style: TextStyle(color: p.accent)),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            Center(child: Text('KCPL Ops $version', style: context.type.bodySmall)),
+            Center(child: Text(context.l.opsVersion(version), style: context.type.bodySmall)),
             SizedBox(height: KTabBar.height + 28 + MediaQuery.paddingOf(context).bottom),
           ]),
         ),

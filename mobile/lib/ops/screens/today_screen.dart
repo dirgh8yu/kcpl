@@ -10,6 +10,7 @@ import 'driver_screen.dart';
 import 'scan_screen.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
+import '../ops_l10n.dart';
 
 enum OpsTab { today, jobs, alerts, me }
 
@@ -43,8 +44,8 @@ class TodayScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = OpsScope.of(context);
     return AsyncPage<TodayBundle>(
-      title: 'Today',
-      actions: [IconButton(tooltip: 'Scan', icon: const Icon(KIcons.scan, size: 22), onPressed: () => openScan(context))],
+      title: context.l.opsToday,
+      actions: [IconButton(tooltip: context.l.opsScan, icon: const Icon(KIcons.scan, size: 22), onPressed: () => openScan(context))],
       load: () async {
         final bundle = await controller.api.today();
         controller.updateSession(bundle.session);
@@ -76,11 +77,11 @@ class TodayScreen extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
-          [session.displayName, session.roleLabel, session.canAccessAllBranches ? 'All branches' : session.branches.join(', ')].join(' · '),
+          [session.displayName, session.roleLabel, session.canAccessAllBranches ? context.l.opsAllBranches : session.branches.join(', ')].join(' · '),
           style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
-      const PushPrimer(copy: opsPushCopy),
+      PushPrimer(copy: opsPushCopy(context.l)),
       RowGroup(
         margin: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
         indent: RowGroup.iconIndent,
@@ -88,39 +89,39 @@ class TodayScreen extends StatelessWidget {
           RowTile(
             onTap: () => openDriver(context),
             leading: Icon(KIcons.truck, size: 22, color: p.accent),
-            title: Text('Today’s deliveries', style: TextStyle(color: p.accent)),
-            subtitle: Text('${totals.deliveriesToday} due today · your route, directions and proof'),
+            title: Text(context.l.opsTodaysDeliveries, style: TextStyle(color: p.accent)),
+            subtitle: Text(context.l.opsDueTodaySummary(totals.deliveriesToday)),
             chevron: true,
           ),
         ],
       ),
       if (action.isNotEmpty) ...[
-        SectionHeader('Needs action', count: action.length, attention: true, top: 20),
+        SectionHeader(context.l.opsNeedsAction, count: action.length, attention: true, top: 20),
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in action.take(8)) JobRow(job, owner: true)]),
       ],
       if (moving.isNotEmpty) ...[
-        SectionHeader('Moving', count: moving.length, actionLabel: 'All jobs', onAction: () => onNavigate(OpsTab.jobs)),
+        SectionHeader(context.l.opsMoving, count: moving.length, actionLabel: context.l.opsAllJobs, onAction: () => onNavigate(OpsTab.jobs)),
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in moving.take(8)) JobRow(job, owner: true)]),
       ],
       if (done.isNotEmpty) ...[
-        SectionHeader('Delivered', count: done.length),
+        SectionHeader(context.l.opsDelivered, count: done.length),
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in done.take(5)) JobRow(job, owner: true)]),
       ],
       // The rest of the day in a line of words.
       Footnote(
         [
-          '${totals.overdueTasks} overdue ${totals.overdueTasks == 1 ? 'task' : 'tasks'}',
-          '${totals.customsBlockers} customs ${totals.customsBlockers == 1 ? 'block' : 'blocks'}',
-          '${totals.deliveriesToday} delivering today',
-          '${totals.unassigned} unassigned',
+          context.l.opsOverdueTasks(totals.overdueTasks),
+          context.l.opsCustomsBlocks(totals.customsBlockers),
+          context.l.opsDeliveringToday(totals.deliveriesToday),
+          context.l.opsUnassignedCount(totals.unassigned),
         ].join(' · '),
       ),
-      if (bundle.branches.length > 1) ...[const SectionHeader('Branches'), _BranchLoad(branches: bundle.branches)],
+      if (bundle.branches.length > 1) ...[SectionHeader(context.l.opsBranches), _BranchLoad(branches: bundle.branches)],
       if (action.isEmpty && moving.isEmpty && done.isEmpty)
-        const EmptyState(
+        EmptyState(
           icon: KIcons.today,
-          title: 'Nothing waiting on you',
-          description: 'No active jobs in your branches need attention right now.',
+          title: context.l.opsNothingWaiting,
+          description: context.l.opsNothingWaitingBody,
         ),
     ];
   }
@@ -188,9 +189,9 @@ class _BranchLoad extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     [
-                      '${branches[i].urgent} urgent',
-                      '${branches[i].customsBlockers} customs',
-                      '${branches[i].deliveriesToday} delivering today',
+                      context.l.opsUrgentCount(branches[i].urgent),
+                      context.l.opsCustomsCount(branches[i].customsBlockers),
+                      context.l.opsDeliveringToday(branches[i].deliveriesToday),
                     ].join(' · '),
                     style: context.type.bodySmall,
                   ),

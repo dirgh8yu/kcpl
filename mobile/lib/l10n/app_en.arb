@@ -825,5 +825,578 @@
   "liveFollowing": "On your Lock Screen",
   "liveStop": "Stop following",
   "liveUnavailable": "Live Activities are turned off for KCPL in Settings.",
-  "captureScan": "Scan document"
+  "captureScan": "Scan document",
+  "opsSignInTitle": "KCPL Operations",
+  "opsSignInSubtitle": "Jobs, tasks and alerts across your branches.",
+  "opsPriorityStandard": "Standard",
+  "opsPriorityHigh": "High",
+  "opsPriorityUrgent": "Urgent",
+  "opsJustNow": "just now",
+  "opsNoDueDate": "No due date",
+  "opsYours": "Yours",
+  "opsUnassigned": "Unassigned",
+  "opsAlerts": "Alerts",
+  "opsAllCaughtUp": "All caught up",
+  "opsAlertsEmpty": "Alerts for your branches and jobs appear here.",
+  "opsOutForDelivery": "Out for delivery",
+  "opsStartDelivery": "Start delivery",
+  "opsTakenBy": "Taken by",
+  "opsDriverHint": "Driver or field staff",
+  "opsVehicleHint": "Vehicle number (optional)",
+  "opsStartFootnote": "Starts attempt now and shows it on the Job File and to the customer as out for delivery.",
+  "opsRelConsignee": "Consignee",
+  "opsRelStaff": "Their staff",
+  "opsRelSecurity": "Security",
+  "opsRelFamily": "Family",
+  "opsRelOther": "Other",
+  "opsRecipient": "Recipient",
+  "opsNeedRecipient": "Who received it? Enter their name.",
+  "opsNeedProof": "Add a signature or a photo as proof of delivery.",
+  "opsNeedReason": "Say why it could not be delivered.",
+  "opsSavedOnPhone": "Saved on this phone",
+  "opsSavedDeliveryBody": "No signal. The delivery and its proof go to KCPL by themselves, with the time they happened, as soon as there is signal.",
+  "opsProofSent": "Proof sent",
+  "opsDeliveryRecorded": "Delivery recorded",
+  "opsAttemptRecorded": "Attempt recorded",
+  "opsSendProof": "Send proof of delivery",
+  "opsRecordDelivery": "Record delivery",
+  "opsRecordAttempt": "Record attempt",
+  "opsProofOfDelivery": "Proof of delivery",
+  "opsDelivery": "Delivery",
+  "opsDelivered": "Delivered",
+  "opsNotDelivered": "Not delivered",
+  "opsRefused": "Refused",
+  "opsWhere": "Where",
+  "opsProofFootnote": "Evidence reaches the desk as received. Verifying it, and marking the shipment Delivered, stays with the desk.",
+  "opsExceptionFootnote": "Opens an exception on the job for the desk.",
+  "opsReceivedByHeader": "Received by",
+  "opsFullName": "Full name",
+  "opsPhoneOptional": "Phone (optional)",
+  "opsRelationHint": "Relation to the consignee",
+  "opsProof": "Proof",
+  "opsGetSignature": "Get a signature",
+  "opsSigned": "Signed",
+  "opsSignAgain": "Tap to sign again",
+  "opsPhotographDelivery": "Photograph the delivery",
+  "opsAnotherPhoto": "Add another photo",
+  "opsPhotoHint": "The cargo at the door, a stamped delivery note",
+  "opsWhyRefused": "Why it was refused",
+  "opsWhyNotDelivered": "Why it could not be delivered",
+  "opsRefusedHint": "Damaged carton, wrong goods, not ordered…",
+  "opsFailedHint": "Nobody at the address, gate closed, road blocked…",
+  "opsRemovePhoto": "Remove photo",
+  "opsLocating": "Finding where you are…",
+  "opsNoLocation": "Location not available",
+  "opsLocation": "Location",
+  "opsLocationHint": "Turn on location and tap to try again. The delivery can be recorded without it.",
+  "opsTodaysDeliveries": "Today’s deliveries",
+  "opsMapsFailed": "Maps could not be opened on this phone.",
+  "opsDeliveryOpenFailed": "The delivery could not be opened. Try again.",
+  "opsNoDeliveriesMine": "No deliveries for you today",
+  "opsNoDeliveries": "No deliveries today",
+  "opsDeliveriesEmpty": "Deliveries under way or due out today in your branches appear here.",
+  "opsRoute": "Route",
+  "opsRouteFootnote": "Hold the handle and drag to put stops in the order you will drive them. The order is kept for today.",
+  "opsRecordedWaiting": "Recorded · waiting for signal",
+  "opsReadyToGo": "Ready to go",
+  "opsDirections": "Directions",
+  "opsRecord": "Record",
+  "opsStart": "Start",
+  "opsNoteSavedOffline": "No signal. Saved on this phone; it goes to the job by itself.",
+  "opsNeedNote": "Write a note or add a photo.",
+  "opsAddToJob": "Add to job",
+  "opsNoteHint": "What did you see? Seal, damage, who you spoke to…",
+  "opsPhoto": "Photo",
+  "opsPhotoFiled": "Filed in the job’s Document Vault for review.",
+  "opsFileAs": "File it as",
+  "opsNoteFootnote": "Shows on the Job File timeline on the web, with your name.",
+  "opsSearchStaff": "Search by name or branch",
+  "opsStaffFailed": "The staff list could not be loaded.",
+  "opsNobodyFound": "Nobody found",
+  "opsStaffEmpty": "Only staff who share one of your branches are listed.",
+  "opsStaffHeader": "Staff in your branches",
+  "opsAssignJob": "Assign job",
+  "opsGiveJobTo": "Give job to",
+  "opsReassignFailed": "The job was not reassigned. Try again.",
+  "opsDone": "Done",
+  "opsNeedTaskTitle": "Give the task a title.",
+  "opsNewTask": "New task",
+  "opsTitle": "Title",
+  "opsNotesOptional": "Notes (optional)",
+  "opsDue": "Due",
+  "opsNoDate": "No date",
+  "opsToday5pm": "Today, 5 PM",
+  "opsTomorrow10am": "Tomorrow, 10 AM",
+  "opsPick": "Pick…",
+  "opsAssignedTo": "Assigned to",
+  "opsAssignTask": "Assign task",
+  "opsNobodyYet": "Nobody yet",
+  "opsBranch": "Branch",
+  "opsNeedOverride": "Say why it is being closed anyway (at least 8 characters).",
+  "opsNotClosed": "Not closed: something still stands in the way.",
+  "opsJobClosed": "Job closed",
+  "opsJobClosedBody": "The Job File is closed, with your name and the time.",
+  "opsCloseJob": "Close job",
+  "opsCloseAnyway": "Close anyway",
+  "opsReadyToClose": "Ready to close",
+  "opsReadyToCloseBody": "Tasks, customs and proof of delivery are all in order.",
+  "opsStillOpen": "Still open",
+  "opsOverrideReason": "Reason to close anyway",
+  "opsOverrideHint": "Recorded on the Job File with your name",
+  "opsCloseBlockedFootnote": "Clear these first, or ask Management to close it with a reason.",
+  "opsJobNotFound": "Job not found",
+  "opsJobNotFoundBody": "It may have been closed or moved outside your branches.",
+  "opsOwner": "Owner",
+  "opsAssignSomeone": "Assign someone",
+  "opsGiveToSomeone": "Give to someone else",
+  "opsNoOwner": "Nobody owns this job yet.",
+  "opsTasks": "Tasks",
+  "opsNoTasks": "No tasks yet. Tasks added here or in the Job File show on both.",
+  "opsCustoms": "Customs",
+  "opsRequired": "Required",
+  "opsOptional": "Optional",
+  "opsBeforeCloseout": "Before closeout",
+  "opsFromField": "From the field",
+  "opsNotes": "Notes",
+  "opsDetails": "Details",
+  "opsCustomer": "Customer",
+  "opsPriority": "Priority",
+  "opsHandling": "Handling",
+  "opsInternalRef": "Internal ref",
+  "opsProfitability": "Profitability",
+  "opsRevenue": "Revenue",
+  "opsCost": "Cost",
+  "opsProfit": "Profit",
+  "opsMargin": "Margin",
+  "opsJobIsClosed": "This job is closed.",
+  "opsCloseJobEllipsis": "Close job…",
+  "opsQueuedDeliveryBody": "This delivery is on your phone and goes to KCPL, with the time it happened, as soon as there is signal.",
+  "opsDeleteDelivery": "Delete this delivery",
+  "opsRecordHowItWent": "Record how it went",
+  "opsAddProof": "Add proof of delivery",
+  "opsWaitingForSignal": "Waiting for signal",
+  "opsSignature": "Signature",
+  "opsDocument": "Document",
+  "opsScheduled": "Scheduled",
+  "opsPodReceived": "Proof received · the desk verifies it",
+  "opsPodVerified": "Proof of delivery verified",
+  "opsPodRejected": "Proof rejected by the desk · add new proof",
+  "opsPodNone": "No proof of delivery yet",
+  "opsQueuedNoteBody": "This note is on your phone and goes to the job as soon as KCPL can be reached.",
+  "opsDeleteNote": "Delete note",
+  "opsAddNote": "Add a note or photo",
+  "opsCouldNotOpen": "That could not be opened on this device.",
+  "opsChangeNotSaved": "That change was not saved. Try again.",
+  "opsMine": "Mine",
+  "opsAll": "All",
+  "opsOverdue": "Overdue",
+  "opsExceptions": "Exceptions",
+  "opsJobs": "Jobs",
+  "opsScan": "Scan",
+  "opsSearchJobs": "Search reference, customer, route or owner…",
+  "opsNoActiveJobs": "No active jobs",
+  "opsNothingMatches": "Nothing matches",
+  "opsJobsEmpty": "Jobs in your branches appear here.",
+  "opsJobsNoMatch": "Try another filter or clear the search.",
+  "opsMe": "Me",
+  "opsRole": "Role",
+  "opsBranches": "Branches",
+  "opsAllBranches": "All branches",
+  "opsCostsAndMargins": "Costs and margins",
+  "opsVisible": "Visible",
+  "opsNotShared": "Not shared with this role",
+  "opsRolesFootnote": "Roles and branch access are managed by KCPL Management in the web admin.",
+  "opsNotifications": "Notifications",
+  "opsSignOut": "Sign out",
+  "opsToday": "Today",
+  "opsDemoBanner": "Demo data, not real operations",
+  "opsReadingText": "Reading the text…",
+  "opsPointAtCode": "Point at a barcode or QR code",
+  "opsScanHint": "Or read a container number off the door, or type a reference.",
+  "opsReadText": "Read text",
+  "opsTypeIt": "Type it",
+  "opsNoNumber": "No number in that photo",
+  "opsTapNumber": "Tap the number to find",
+  "opsTryCloser": "Try closer, straight on, in good light.",
+  "opsCheckDigitFirst": "Container numbers that pass their check digit come first.",
+  "opsScanAgain": "Scan again",
+  "opsLookupHint": "Job, container, B/L or AWB number",
+  "opsFindJob": "Find job",
+  "opsBackToCamera": "Back to camera",
+  "opsNoMatchBody": "Only jobs in your branches can be found. Check the number, or search Jobs.",
+  "opsCameraDenied": "Allow the camera for KCPL Ops in Settings to scan. You can still type a reference below.",
+  "opsCameraUnavailable": "The camera is not available. You can still type a reference below.",
+  "opsCancel": "Cancel",
+  "opsClear": "Clear",
+  "opsSignatureArea": "Signature area. Sign with one finger.",
+  "opsNeedsAction": "Needs action",
+  "opsMoving": "Moving",
+  "opsAllJobs": "All jobs",
+  "opsNothingWaiting": "Nothing waiting on you",
+  "opsNothingWaitingBody": "No active jobs in your branches need attention right now.",
+  "opsMinutesAgo": "{minutes} min ago",
+  "@opsMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "opsHoursAgo": "{hours} h ago",
+  "@opsHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "opsDaysAgo": "{days} d ago",
+  "@opsDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "opsOverdueDue": "Overdue · due {when}",
+  "@opsOverdueDue": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "opsDueToday": "Due today {time}",
+  "@opsDueToday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "opsDueTomorrow": "Due tomorrow {time}",
+  "@opsDueTomorrow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "opsDueOn": "Due {date}",
+  "@opsDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "opsOverdueCount": "{count} overdue",
+  "@opsOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsCustomsOpenCount": "{count} customs open",
+  "@opsCustomsOpenCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsPodWithDesk": "Proof of delivery is with the desk to verify. KCPL marks {reference} Delivered once it is checked.",
+  "@opsPodWithDesk": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsExceptionOpened": "The desk has an exception on {reference} to follow up and arrange the next attempt.",
+  "@opsExceptionOpened": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsSendTo": "Send to {reference}",
+  "@opsSendTo": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsAttemptN": "Attempt {number}",
+  "@opsAttemptN": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "opsSignedBy": "{signer} · tap to sign again",
+  "@opsSignedBy": {
+    "placeholders": {
+      "signer": {
+        "type": "String"
+      }
+    }
+  },
+  "opsWithinMetres": "Within {metres} m · recorded with the delivery",
+  "@opsWithinMetres": {
+    "placeholders": {
+      "metres": {
+        "type": "int"
+      }
+    }
+  },
+  "opsMineCount": "Mine · {count}",
+  "@opsMineCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsAllCount": "All · {count}",
+  "@opsAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsDirectionsTo": "Directions to {place}",
+  "@opsDirectionsTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "opsOutForDeliveryAttempt": "Out for delivery · attempt {number}",
+  "@opsOutForDeliveryAttempt": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "opsReorder": "Reorder {reference}",
+  "@opsReorder": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsSaveTo": "Save to {reference}",
+  "@opsSaveTo": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsNowWith": "{reference} is now with {name}.",
+  "@opsNowWith": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "opsAddTo": "Add to {reference}",
+  "@opsAddTo": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsTaskFootnote": "For {branch}. Shows on the Job File and the assignee’s task list.",
+  "@opsTaskFootnote": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "opsCloseReference": "Close {reference}",
+  "@opsCloseReference": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "opsReceivedBy": "Received by {name}",
+  "@opsReceivedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "opsProofCount": "{count} proof",
+  "@opsProofCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsAttemptLabel": "Attempt {number} · {label}",
+  "@opsAttemptLabel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "opsPhotoCount": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@opsPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsCall": "Call {name}",
+  "@opsCall": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "opsWhatsApp": "WhatsApp {name}",
+  "@opsWhatsApp": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "opsDoneOf": "{label} · {done} of {total} done",
+  "@opsDoneOf": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "opsVersion": "KCPL Ops {version}",
+  "@opsVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "opsFinding": "Finding {query}…",
+  "@opsFinding": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "opsNoJobMatches": "No job matches {query}",
+  "@opsNoJobMatches": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "opsJobsMatch": "{count} jobs match {query}",
+  "@opsJobsMatch": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "opsDueTodaySummary": "{count} due today · your route, directions and proof",
+  "@opsDueTodaySummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsOverdueTasks": "{count, plural, =1{1 overdue task} other{{count} overdue tasks}}",
+  "@opsOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsCustomsBlocks": "{count, plural, =1{1 customs block} other{{count} customs blocks}}",
+  "@opsCustomsBlocks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsDeliveringToday": "{count} delivering today",
+  "@opsDeliveringToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsUnassignedCount": "{count} unassigned",
+  "@opsUnassignedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsUrgentCount": "{count} urgent",
+  "@opsUrgentCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsCustomsCount": "{count} customs",
+  "@opsCustomsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opsLanguage": "Language",
+  "opsSignAbove": "Sign above the line",
+  "opsPushPrimerTitle": "Get alerts as they happen",
+  "opsPushPrimerBody": "Assignments, overdue tasks, customs and exceptions for your jobs, on this phone.",
+  "opsPushBlockedHelp": "Allow notifications for KCPL Ops in your phone's Settings.",
+  "opsLanguageFootnote": "Records (references, places, notes from the desk) stay as KCPL holds them."
 }

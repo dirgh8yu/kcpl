@@ -8,6 +8,7 @@ import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
+import '../ops_l10n.dart';
 
 IconData alertIcon(String category) => switch (category) {
   'assignments' => KIcons.userPlus,
@@ -45,7 +46,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Widget build(BuildContext context) {
     final controller = OpsScope.of(context);
     return AsyncPage<AlertsPage>(
-      title: 'Alerts',
+      title: context.l.opsAlerts,
       load: () async {
         final page = await controller.api.alerts();
         _readHere.clear();
@@ -54,8 +55,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
       },
       builder: (context, page) {
         if (page.alerts.isEmpty) {
-          return const [
-            EmptyState(icon: KIcons.alerts, title: 'All caught up', description: 'Alerts for your branches and jobs appear here.'),
+          return [
+            EmptyState(icon: KIcons.alerts, title: context.l.opsAllCaughtUp, description: context.l.opsAlertsEmpty),
           ];
         }
         final p = context.palette;
@@ -76,7 +77,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         style: TextStyle(fontWeight: unread ? FontWeight.w600 : FontWeight.w400, color: unread ? p.ink : p.secondary),
                       ),
                       subtitle: Text(
-                        '${alert.detail.isEmpty ? '' : '${alert.detail}\n'}${ago(alert.createdAt)}${alert.branch == null ? '' : ' · ${alert.branch}'}',
+                        '${alert.detail.isEmpty ? '' : '${alert.detail}\n'}${ago(context.l, alert.createdAt)}${alert.branch == null ? '' : ' · ${alert.branch}'}',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),

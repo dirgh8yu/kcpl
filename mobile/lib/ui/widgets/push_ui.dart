@@ -54,18 +54,18 @@ PushCopy customerPushCopy(AppLocalizations l) => PushCopy(
   blockedHelp: l.pushBlockedHelp,
 );
 
-/// The staff app's push words (the admin portal is English).
-const opsPushCopy = PushCopy(
-  primerTitle: 'Get alerts as they happen',
-  primerBody: 'Assignments, overdue tasks, customs and exceptions for your jobs, on this phone.',
-  turnOn: 'Turn on',
-  notNow: 'Not now',
-  setting: 'Push notifications',
-  on: 'On',
-  off: 'Off',
-  blocked: "Blocked in your phone's Settings",
-  unavailable: 'Not available in this build',
-  blockedHelp: "Allow notifications for KCPL Ops in your phone's Settings.",
+/// The staff app's push words: its own invitation, the shared switch words.
+PushCopy opsPushCopy(AppLocalizations l) => PushCopy(
+  primerTitle: l.opsPushPrimerTitle,
+  primerBody: l.opsPushPrimerBody,
+  turnOn: l.pushTurnOn,
+  notNow: l.pushNotNow,
+  setting: l.pushSetting,
+  on: l.pushOn,
+  off: l.pushOff,
+  blocked: l.pushBlocked,
+  unavailable: l.pushUnavailable,
+  blockedHelp: l.opsPushBlockedHelp,
 );
 
 /// A one-time invitation to turn push on, shown only while it would do

@@ -11,15 +11,17 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/compose.dart';
 import '../../ui/widgets/sheet_route.dart';
 import '../ops_controller.dart';
+import '../ops_l10n.dart';
 
 /// True when the note was saved, or kept on the phone to send later.
 Future<bool> openFieldNote(BuildContext context, String reference) async {
   // A sheet has a messenger of its own; the word about a kept note belongs
   // on the job it returns to.
   final messenger = ScaffoldMessenger.of(context);
+  final kept = context.l.opsNoteSavedOffline;
   final result = await Navigator.of(context).push<Object>(SheetRoute<Object>(builder: (_) => FieldNoteScreen(reference: reference)));
   if (result == _kept) {
-    messenger.showSnackBar(const SnackBar(content: Text('No signal. Saved on this phone; it goes to the job by itself.')));
+    messenger.showSnackBar(SnackBar(content: Text(kept)));
   }
   return result != null;
 }
@@ -70,7 +72,7 @@ class _FieldNoteScreenState extends State<FieldNoteScreen> {
     final photo = _photo;
     if (text.isEmpty && photo == null) {
       HapticFeedback.heavyImpact();
-      setState(() => _error = 'Write a note or add a photo.');
+      setState(() => _error = context.l.opsNeedNote);
       return;
     }
     final controller = OpsScope.read(context);
@@ -109,9 +111,9 @@ class _FieldNoteScreenState extends State<FieldNoteScreen> {
     final l = AppLocalizations.of(context);
     final p = context.palette;
     return ComposeScaffold(
-      title: 'Add to job',
+      title: context.l.opsAddToJob,
       error: _error,
-      action: SendButton(label: 'Save to ${widget.reference}', onPressed: _save, busy: _busy, progress: _progress),
+      action: SendButton(label: context.l.opsSaveTo(widget.reference), onPressed: _save, busy: _busy, progress: _progress),
       children: [
         GroupCard(
           child: TextField(
@@ -124,13 +126,13 @@ class _FieldNoteScreenState extends State<FieldNoteScreen> {
             buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
             textCapitalization: TextCapitalization.sentences,
             style: context.type.bodyLarge,
-            decoration: cardField('What did you see? Seal, damage, who you spoke to…'),
+            decoration: cardField(context.l.opsNoteHint),
           ),
         ),
-        SectionHeader('Photo'),
-        AttachmentField(file: _photo, onPick: _pick, enabled: !_busy, hint: 'Filed in the job’s Document Vault for review.'),
+        SectionHeader(context.l.opsPhoto),
+        AttachmentField(file: _photo, onPick: _pick, enabled: !_busy, hint: context.l.opsPhotoFiled),
         if (_photo != null) ...[
-          SectionHeader('File it as'),
+          SectionHeader(context.l.opsFileAs),
           RowGroup(
             children: [
               for (final type in _photoTypes)
@@ -144,14 +146,14 @@ class _FieldNoteScreenState extends State<FieldNoteScreen> {
                             HapticFeedback.selectionClick();
                             setState(() => _type = type);
                           },
-                    title: Text(type == 'other' ? 'Photo' : documentTypeLabel(l, type)),
+                    title: Text(type == 'other' ? context.l.opsPhoto : documentTypeLabel(l, type)),
                     trailing: type == _type ? Icon(KIcons.check, size: 20, color: p.ink) : const SizedBox(width: 20),
                   ),
                 ),
             ],
           ),
         ],
-        const Footnote('Shows on the Job File timeline on the web, with your name.'),
+        Footnote(context.l.opsNoteFootnote),
       ],
     );
   }

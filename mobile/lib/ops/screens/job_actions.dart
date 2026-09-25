@@ -12,6 +12,7 @@ import '../../ui/widgets/sheet_route.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
+import '../ops_l10n.dart';
 
 Future<T?> _sheet<T>(BuildContext context, Widget screen) => Navigator.of(context).push<T>(SheetRoute<T>(builder: (_) => screen));
 
@@ -62,7 +63,7 @@ class _StaffPickerScreenState extends State<StaffPickerScreen> {
             controller: _query,
             onChanged: (_) => setState(() {}),
             style: context.type.bodyLarge,
-            decoration: cardField('Search by name or branch', suffix: Icon(KIcons.search, size: 18, color: p.tertiary)),
+            decoration: cardField(context.l.opsSearchStaff, suffix: Icon(KIcons.search, size: 18, color: p.tertiary)),
           ),
         ),
         FutureBuilder<List<StaffOption>>(
@@ -73,7 +74,7 @@ class _StaffPickerScreenState extends State<StaffPickerScreen> {
               if (error is SignedOutException) OpsScope.read(context).expire();
               return Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Notice(title: error is ApiException && error.message.isNotEmpty ? error.message : 'The staff list could not be loaded.'),
+                child: Notice(title: error is ApiException && error.message.isNotEmpty ? error.message : context.l.opsStaffFailed),
               );
             }
             if (!snapshot.hasData) return const Padding(padding: EdgeInsets.only(top: 16), child: Skeleton(rows: 4));
@@ -82,15 +83,15 @@ class _StaffPickerScreenState extends State<StaffPickerScreen> {
                 .where((s) => query.isEmpty || s.name.toLowerCase().contains(query) || s.branches.any((b) => b.toLowerCase().contains(query)))
                 .toList();
             if (matches.isEmpty) {
-              return const Padding(
+              return Padding(
                 padding: EdgeInsets.only(top: 16),
-                child: EmptyState(icon: KIcons.noResults, title: 'Nobody found', description: 'Only staff who share one of your branches are listed.'),
+                child: EmptyState(icon: KIcons.noResults, title: context.l.opsNobodyFound, description: context.l.opsStaffEmpty),
               );
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SectionHeader('Staff in your branches', top: 20),
+                SectionHeader(context.l.opsStaffHeader, top: 20),
                 RowGroup(
                   indent: 68,
                   children: [
@@ -125,22 +126,23 @@ class _StaffPickerScreenState extends State<StaffPickerScreen> {
 
 /// Gives the job to someone else, after one confirming tap. True when done.
 Future<bool> reassignJob(BuildContext context, OpsJob job) async {
-  final owner = await pickStaff(context, title: job.ownerName == null ? 'Assign job' : 'Give job to', current: job.ownerEmail);
+  final owner = await pickStaff(context, title: job.ownerName == null ? context.l.opsAssignJob : context.l.opsGiveJobTo, current: job.ownerEmail);
   if (owner == null || !context.mounted) return false;
   if (owner.email.toLowerCase() == job.ownerEmail?.toLowerCase()) return false;
   final messenger = ScaffoldMessenger.of(context);
   final controller = OpsScope.read(context);
+  final l = context.l;
   try {
     await controller.api.reassign(job.reference, owner);
     HapticFeedback.mediumImpact();
-    messenger.showSnackBar(SnackBar(content: Text('${job.reference} is now with ${owner.name}.')));
+    messenger.showSnackBar(SnackBar(content: Text(l.opsNowWith(job.reference, owner.name))));
     return true;
   } on SignedOutException {
     await controller.expire();
   } catch (error) {
     HapticFeedback.heavyImpact();
     messenger.showSnackBar(
-      SnackBar(content: Text(error is ApiException && error.message.isNotEmpty ? error.message : 'The job was not reassigned. Try again.')),
+      SnackBar(content: Text(error is ApiException && error.message.isNotEmpty ? error.message : l.opsReassignFailed)),
     );
   }
   return false;
@@ -219,7 +221,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             children: [
               Align(
                 alignment: Alignment.centerRight,
-                child: CupertinoButton(onPressed: () => Navigator.of(popup).pop(true), child: const Text('Done')),
+                child: CupertinoButton(onPressed: () => Navigator.of(popup).pop(true), child: Text(context.l.opsDone)),
               ),
               Expanded(
                 child: CupertinoDatePicker(
@@ -242,7 +244,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final title = _title.text.trim();
     if (title.isEmpty) {
       HapticFeedback.heavyImpact();
-      setState(() => _error = 'Give the task a title.');
+      setState(() => _error = context.l.opsNeedTaskTitle);
       return;
     }
     final api = OpsScope.read(context).api;
@@ -287,9 +289,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             },
     );
     return ComposeScaffold(
-      title: 'New task',
+      title: context.l.opsNewTask,
       error: _error,
-      action: SendButton(label: 'Add to ${widget.file.job.reference}', onPressed: _save, busy: _busy),
+      action: SendButton(label: context.l.opsAddTo(widget.file.job.reference), onPressed: _save, busy: _busy),
       children: [
         GroupCard(
           margin: const EdgeInsets.fromLTRB(kGutter, 4, kGutter, 0),
@@ -301,7 +303,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 autofocus: true,
                 textCapitalization: TextCapitalization.sentences,
                 style: context.type.bodyLarge,
-                decoration: cardField('Title'),
+                decoration: cardField(context.l.opsTitle),
               ),
               Divider(height: 0.33, thickness: 0.33, indent: kGutter, color: p.hairline),
               TextField(
@@ -311,43 +313,43 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
                 style: context.type.bodyLarge,
-                decoration: cardField('Notes (optional)'),
+                decoration: cardField(context.l.opsNotesOptional),
               ),
             ],
           ),
         ),
-        const SectionHeader('Due'),
+        SectionHeader(context.l.opsDue),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: kGutter),
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              chip(_Due.none, 'No date'),
-              chip(_Due.today, 'Today, 5 PM'),
-              chip(_Due.tomorrow, 'Tomorrow, 10 AM'),
-              chip(_Due.pick, _due == _Due.pick && _picked != null ? formatDateTime(_picked!.toUtc().toIso8601String()) : 'Pick…'),
+              chip(_Due.none, context.l.opsNoDate),
+              chip(_Due.today, context.l.opsToday5pm),
+              chip(_Due.tomorrow, context.l.opsTomorrow10am),
+              chip(_Due.pick, _due == _Due.pick && _picked != null ? formatDateTime(_picked!.toUtc().toIso8601String()) : context.l.opsPick),
             ],
           ),
         ),
-        const SectionHeader('Assigned to'),
+        SectionHeader(context.l.opsAssignedTo),
         RowGroup(
           children: [
             RowTile(
               onTap: _busy
                   ? null
                   : () async {
-                      final person = await pickStaff(context, title: 'Assign task', current: _assignee?.email);
+                      final person = await pickStaff(context, title: context.l.opsAssignTask, current: _assignee?.email);
                       if (person != null && mounted) setState(() => _assignee = person);
                     },
-              title: Text(_assignee?.name ?? 'Nobody yet'),
+              title: Text(_assignee?.name ?? context.l.opsNobodyYet),
               subtitle: _assignee == null ? null : Text(_assignee!.jobTitle ?? _assignee!.email),
               chevron: true,
             ),
           ],
         ),
         if (_branches.length > 1) ...[
-          const SectionHeader('Branch'),
+          SectionHeader(context.l.opsBranch),
           RowGroup(
             children: [
               for (final branch in _branches)
@@ -368,7 +370,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             ],
           ),
         ] else
-          Footnote('For $_branch. Shows on the Job File and the assignee’s task list.'),
+          Footnote(context.l.opsTaskFootnote(_branch)),
       ],
     );
   }
@@ -408,7 +410,7 @@ class _CloseJobScreenState extends State<CloseJobScreen> {
     final overriding = _blockers.isNotEmpty;
     if (overriding && _reason.text.trim().length < 8) {
       HapticFeedback.heavyImpact();
-      setState(() => _error = 'Say why it is being closed anyway (at least 8 characters).');
+      setState(() => _error = context.l.opsNeedOverride);
       return;
     }
     final api = OpsScope.read(context).api;
@@ -429,7 +431,7 @@ class _CloseJobScreenState extends State<CloseJobScreen> {
         _busy = false;
         _blockers = refusal.blockers;
         _canOverride = refusal.canOverride;
-        _error = 'Not closed: something still stands in the way.';
+        _error = context.l.opsNotClosed;
       });
       return;
     }
@@ -446,28 +448,28 @@ class _CloseJobScreenState extends State<CloseJobScreen> {
   Widget build(BuildContext context) {
     final reference = widget.file.job.reference;
     if (_closed) {
-      return DoneView(title: 'Job closed', body: 'The Job File is closed, with your name and the time.', reference: reference);
+      return DoneView(title: context.l.opsJobClosed, body: context.l.opsJobClosedBody, reference: reference);
     }
     final blocked = _blockers.isNotEmpty;
     return ComposeScaffold(
-      title: 'Close job',
+      title: context.l.opsCloseJob,
       error: _error,
       // Without the authority to close over blockers there is nothing to press.
-      action: blocked && !_canOverride ? null : SendButton(label: blocked ? 'Close anyway' : 'Close $reference', onPressed: _close, busy: _busy),
+      action: blocked && !_canOverride ? null : SendButton(label: blocked ? context.l.opsCloseAnyway : context.l.opsCloseReference(reference), onPressed: _close, busy: _busy),
       children: [
         if (!blocked) ...[
           const SizedBox(height: 4),
-          const Notice(
-            title: 'Ready to close',
-            body: 'Tasks, customs and proof of delivery are all in order.',
+          Notice(
+            title: context.l.opsReadyToClose,
+            body: context.l.opsReadyToCloseBody,
             emphasis: Emphasis.normal,
           ),
         ] else ...[
-          const SectionHeader('Still open', top: 8),
+          SectionHeader(context.l.opsStillOpen, top: 8),
           for (final blocker in _blockers)
             Padding(padding: const EdgeInsets.only(bottom: 8), child: Notice(title: blocker)),
           if (_canOverride) ...[
-            const SectionHeader('Reason to close anyway'),
+            SectionHeader(context.l.opsOverrideReason),
             GroupCard(
               child: TextField(
                 controller: _reason,
@@ -476,11 +478,11 @@ class _CloseJobScreenState extends State<CloseJobScreen> {
                 maxLines: 5,
                 textCapitalization: TextCapitalization.sentences,
                 style: context.type.bodyLarge,
-                decoration: cardField('Recorded on the Job File with your name'),
+                decoration: cardField(context.l.opsOverrideHint),
               ),
             ),
           ] else
-            const Footnote('Clear these first, or ask Management to close it with a reason.'),
+            Footnote(context.l.opsCloseBlockedFootnote),
         ],
       ],
     );

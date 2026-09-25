@@ -195,7 +195,7 @@ void main() {
   testWidgets('sign in lands on Today with your lead job and the numbers', (tester) async {
     await pumpOps(tester);
     expect(find.text('KCPL Operations'), findsOneWidget);
-    expect(find.text('English'), findsNothing, reason: 'the staff app is English only');
+    expect(find.text('English'), findsOneWidget, reason: 'the staff app offers Nepali from sign-in');
     await signIn(tester);
 
     expect(find.text('Today'), findsWidgets);
@@ -284,5 +284,25 @@ void main() {
     await tester.tap(find.byType(SheetCloseButton));
     await settle(tester);
     expect(api.todays, 2);
+  });
+
+  testWidgets('KCPL Ops reads in Nepali when chosen, and keeps the choice', (tester) async {
+    final controller = await pumpOps(tester);
+    await signIn(tester);
+    await tester.tap(find.text('Me').last);
+    await settle(tester);
+    await tester.scrollUntilVisible(find.text('नेपाली'), 200, scrollable: find.byType(Scrollable).hitTestable().first);
+    // Clear of the floating tab bar.
+    await tester.ensureVisible(find.text('नेपाली'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('नेपाली'));
+    await settle(tester);
+    expect(find.text('आज'), findsWidgets, reason: 'the Today tab');
+    expect(find.text('भाषा'), findsOneWidget);
+    expect(await controller.prefs.read('kcpl.ops.locale'), 'ne');
+    await tester.tap(find.text('आज').last);
+    await settle(tester);
+    expect(find.textContaining('काम गर्नुपर्ने'), findsOneWidget, reason: 'Needs action, in Nepali');
+    expect(tester.takeException(), isNull);
   });
 }
