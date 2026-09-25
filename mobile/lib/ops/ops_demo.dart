@@ -1,5 +1,5 @@
 import '../api/kcpl_api.dart' show ApiException;
-import '../api/models.dart' show Attachment, SendProgress;
+import '../api/models.dart' show Attachment, SendProgress, ShipmentMessage;
 import 'ops_api.dart';
 import 'ops_models.dart';
 
@@ -564,6 +564,35 @@ class DemoOpsApi implements OpsApi {
         stop('KCPL-2609-0151', 'Machhapuchhre Pharma', 'Birgunj ICD Gate 2', mine: false, hour: 15),
       ],
     );
+  }
+
+  late final Map<String, List<ShipmentMessage>> threads = {
+    'KCPL-2609-0142': [
+      ShipmentMessage(
+        id: 'm1',
+        fromKcpl: false,
+        author: 'Rina Shrestha',
+        body: 'Can the truck come after 2pm? The warehouse is closed at lunch.',
+        createdAt: _at(2),
+      ),
+    ],
+  };
+
+  @override
+  Future<List<ShipmentMessage>> messages(String reference) => _later([...?threads[reference]]);
+
+  @override
+  Future<ShipmentMessage> reply(String reference, String body) async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    final message = ShipmentMessage(
+      id: 'r${DateTime.now().microsecondsSinceEpoch}',
+      fromKcpl: true,
+      author: 'Anil Karki',
+      body: body.trim(),
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+    );
+    (threads[reference] ??= []).add(message);
+    return message;
   }
 
   @override

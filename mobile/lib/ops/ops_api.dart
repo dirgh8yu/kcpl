@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 
 import '../api/kcpl_api.dart' show ApiException;
-import '../api/models.dart' show Attachment, SendProgress;
+import '../api/models.dart' show Attachment, SendProgress, ShipmentMessage;
 import '../api/offline_cache.dart';
 import '../api/upload.dart';
 import '../auth/auth_repository.dart';
@@ -82,6 +82,11 @@ abstract class OpsApi {
 
   /// Today's deliveries in the caller's branches, theirs first.
   Future<DriverDay> deliveries();
+
+  /// The customer's conversation on the shipment; replies are signed with
+  /// the staff member's first name.
+  Future<List<ShipmentMessage>> messages(String reference);
+  Future<ShipmentMessage> reply(String reference, String body);
 
   /// Removes what was kept on the phone for offline use. At sign-out.
   Future<void> forget() async {}
@@ -349,4 +354,14 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<DriverDay> deliveries() async => DriverDay.fromJson(await _read('deliveries'));
+
+  @override
+  Future<List<ShipmentMessage>> messages(String reference) async => [
+    for (final m in ((await _read('jobs/${_ref(reference)}/messages'))['messages'] as List? ?? const []).whereType<Map>())
+      ShipmentMessage.fromJson(m.cast<String, dynamic>()),
+  ];
+
+  @override
+  Future<ShipmentMessage> reply(String reference, String body) async =>
+      ShipmentMessage.fromJson(((await _send('jobs/${_ref(reference)}/messages', body: {'body': body}))['message'] as Map).cast<String, dynamic>());
 }

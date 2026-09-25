@@ -1,3 +1,4 @@
+import 'platform/app_shortcuts.dart';
 import 'package:flutter/widgets.dart';
 
 import 'api/kcpl_api.dart';
@@ -27,7 +28,9 @@ class AppController extends SessionHost {
     this.social = SocialSignIn.none,
     DeviceUnlock unlock = const NoDeviceUnlock(),
     this.homeWidget = const NoHomeWidget(),
+    AppShortcuts? shortcuts,
   }) : push = push ?? NoPushService(),
+       shortcuts = shortcuts ?? NoAppShortcuts(),
        lock = AppLock(prefs: prefs, device: unlock),
        _status = configured ? AppStatus.starting : AppStatus.unconfigured;
 
@@ -36,6 +39,9 @@ class AppController extends SessionHost {
 
   /// The home and lock screen widget's copy of the lead shipment.
   final HomeWidgetBridge homeWidget;
+
+  /// Track, quote and pay from the home screen icon and Siri.
+  final AppShortcuts shortcuts;
 
   @override
   final SocialSignIn social;
@@ -211,6 +217,8 @@ class AppController extends SessionHost {
     // belonged to that login.
     await api.forget();
     await homeWidget.clear();
+    await shortcuts.clear();
+    shortcuts.consume();
     await lock.reset();
     await prefs.delete(_customerKey);
     api.customerId = null;

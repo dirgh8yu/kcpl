@@ -74,6 +74,11 @@ abstract final class KIcons {
   static const IconData delivery = CupertinoIcons.hand_raised;
   static const IconData outbox = CupertinoIcons.tray_arrow_up;
   static const IconData undo = CupertinoIcons.arrow_counterclockwise;
+  static const IconData message = CupertinoIcons.chat_bubble_2;
+  static const IconData send = CupertinoIcons.arrow_up_circle_fill;
+  static const IconData star = CupertinoIcons.star;
+  static const IconData starOn = CupertinoIcons.star_fill;
+  static const IconData estimate = CupertinoIcons.function;
 
   // Controls.
   static const IconData search = CupertinoIcons.search;

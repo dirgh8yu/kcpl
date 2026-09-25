@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13+: asked for only when the person turns push on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Android 16: lets a followed shipment show as a Live Update (a chip
+         in the status bar and the top of the lock screen). -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
     <!-- No backup of any kind: the sign-in and the offline copies stay on
          this phone. The document scanner plugin brings backup rules and an
          application theme of its own; ours win, and its theme is dropped. -->

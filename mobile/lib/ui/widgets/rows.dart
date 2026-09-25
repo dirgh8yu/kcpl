@@ -19,6 +19,9 @@ import 'sheet_route.dart';
 
 /// Opens a shipment. [preview] is what the caller already knows, so the
 /// detail page draws its journey on the first frame instead of a skeleton.
+void openInvoice(BuildContext context, String reference) =>
+    Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: reference)));
+
 void openShipment(BuildContext context, String reference, {Shipment? preview}) => Navigator.of(context).push(
   SheetRoute<void>(
     builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview),
@@ -152,7 +155,7 @@ class InvoiceRow extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final open = invoice.balanceDue > 0;
     return RowTile(
-      onTap: () => Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: invoice.reference))),
+      onTap: () => openInvoice(context, invoice.reference),
       title: Text(invoice.externalInvoiceNumber ?? invoice.reference, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         open && invoice.dueDate.isNotEmpty

@@ -331,6 +331,8 @@ class DemoApi extends KcplApi {
         ],
         confirmation: confirmations[reference],
         canConfirmDelivery: shipment.status == 'delivered' || shipment.status == 'out_for_delivery',
+        canRate: shipment.status == 'delivered' && !ratings.containsKey(reference),
+        rating: ratings[reference],
       ),
     );
   }
@@ -605,6 +607,53 @@ class DemoApi extends KcplApi {
     final found = payments[intent];
     if (found == null) throw const ApiException(404, 'missing', 'Payment not found.');
     return _later(found);
+  }
+
+  // Messages and ratings.
+
+  late final Map<String, List<ShipmentMessage>> threads = {
+    'KCPL-S-24091': [
+      ShipmentMessage(id: 'm1', fromKcpl: false, author: 'You', body: 'Is the declaration in? We need the goods by Friday.', createdAt: _at(5)),
+      ShipmentMessage(
+        id: 'm2',
+        fromKcpl: true,
+        author: 'KCPL · Sita',
+        body: 'Lodged this morning. Inspection is booked for tomorrow; I will write as soon as it clears.',
+        createdAt: _at(3),
+      ),
+    ],
+  };
+
+  final Map<String, DeliveryRating> ratings = {};
+
+  @override
+  Future<List<ShipmentMessage>> messages(String reference) => _later([...?threads[reference]]);
+
+  @override
+  Future<ShipmentMessage> sendMessage(String reference, String body) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final message = ShipmentMessage(
+      id: 'm${DateTime.now().microsecondsSinceEpoch}',
+      fromKcpl: false,
+      author: 'You',
+      body: body.trim(),
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+    );
+    (threads[reference] ??= []).add(message);
+    return message;
+  }
+
+  @override
+  Future<RatingReceipt> rateDelivery(String reference, int score, {String comment = ''}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (ratings.containsKey(reference)) throw const ApiException(409, 'conflict', 'You have already rated this delivery.');
+    ratings[reference] = DeliveryRating(score: score, createdAt: DateTime.now().toUtc().toIso8601String());
+    final complaint = score <= 3;
+    return RatingReceipt(
+      message: complaint ? 'Thank you. The team that handled this delivery will be in touch.' : 'Thank you for telling us.',
+      complaint: complaint,
+      reviewUrl: complaint ? null : Uri.parse('https://g.page/r/kcpl-demo/review'),
+    );
   }
 
   // Tracking links.

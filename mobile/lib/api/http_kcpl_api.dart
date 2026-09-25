@@ -229,6 +229,19 @@ class HttpKcplApi extends KcplApi {
       PaymentStatus.fromJson(((_decode(await _get('payments/${_enc(intent)}')))['payment'] as Map).cast<String, dynamic>());
 
   @override
+  Future<List<ShipmentMessage>> messages(String reference) async =>
+      _rows((await _json('shipments/${_enc(reference)}/messages'))['messages']).map(ShipmentMessage.fromJson).toList();
+
+  @override
+  Future<ShipmentMessage> sendMessage(String reference, String body) async => ShipmentMessage.fromJson(
+    ((_decode(await _send('POST', 'shipments/${_enc(reference)}/messages', body: {'body': body})))['message'] as Map).cast<String, dynamic>(),
+  );
+
+  @override
+  Future<RatingReceipt> rateDelivery(String reference, int score, {String comment = ''}) async =>
+      RatingReceipt.fromJson(_decode(await _send('POST', 'shipments/${_enc(reference)}/rating', body: {'score': score, 'comment': comment})));
+
+  @override
   Future<TrackingLink> createTrackingLink(String reference) async {
     final body = _decode(await _send('POST', 'shipments/${_enc(reference)}/tracking-link'));
     return TrackingLink(url: Uri.parse('${body['url']}'), expiresAt: '${body['expires_at'] ?? ''}');

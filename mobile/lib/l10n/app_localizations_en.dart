@@ -626,6 +626,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get topicFreeTime => 'Free time running out';
 
   @override
+  String get topicInvoices => 'Invoices coming due';
+
+  @override
   String get topicShipmentUpdatesHint =>
       'When a shipment is booked, moves, clears customs, is out for delivery or is delivered.';
 
@@ -636,6 +639,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get topicFreeTimeHint =>
       'Before storage or demurrage charges start on cargo at a port or depot.';
+
+  @override
+  String get topicInvoicesHint =>
+      'Three days before an invoice is due, and if it becomes overdue.';
 
   @override
   String get settingsEmailTitle => 'What we send you';
@@ -1446,6 +1453,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveFollow => 'Follow on Lock Screen';
 
   @override
+  String get liveFollowAndroid => 'Follow in notifications';
+
+  @override
+  String get liveFollowingAndroid => 'Following in your notifications';
+
+  @override
+  String get liveUnavailableAndroid =>
+      'Notifications are turned off for KCPL in Settings.';
+
+  @override
+  String get liveChannel => 'Shipment progress';
+
+  @override
   String get liveFollowing => 'On your Lock Screen';
 
   @override
@@ -1457,6 +1477,167 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureScan => 'Scan document';
+
+  @override
+  String get msgRow => 'Message KCPL';
+
+  @override
+  String get msgRowHint => 'About this shipment, to the person handling it';
+
+  @override
+  String get msgTitle => 'Messages';
+
+  @override
+  String get msgPlaceholder => 'Write a message';
+
+  @override
+  String get msgSend => 'Send';
+
+  @override
+  String get msgEmpty => 'No messages yet';
+
+  @override
+  String get msgEmptyBody =>
+      'Ask anything about this shipment. The person handling it replies here and on the web.';
+
+  @override
+  String get msgYou => 'You';
+
+  @override
+  String get opsMsgRow => 'Messages with the customer';
+
+  @override
+  String get opsMsgEmptyBody =>
+      'When the customer asks about this shipment, it appears here and on the Job File.';
+
+  @override
+  String get opsMsgFootnote => 'The customer sees your first name on replies.';
+
+  @override
+  String get rateTitle => 'How did this delivery go?';
+
+  @override
+  String get rateHint => 'One tap. It goes to the team that handled it.';
+
+  @override
+  String rateScore(int score) {
+    return '$score out of 5';
+  }
+
+  @override
+  String get rateComment => 'Anything we should know? (optional)';
+
+  @override
+  String get rateSend => 'Send rating';
+
+  @override
+  String get rateThanks => 'Thank you';
+
+  @override
+  String get rateReview => 'Leave a public review';
+
+  @override
+  String rateRated(int score) {
+    return 'You rated this delivery $score out of 5';
+  }
+
+  @override
+  String get estStorageRow => 'What will storage cost?';
+
+  @override
+  String get estStorageTitle => 'Storage and demurrage';
+
+  @override
+  String estDaysOver(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days after free time',
+      one: '1 day after free time',
+      zero: 'Collected within free time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String estPerDay(String amount) {
+    return '$amount a day';
+  }
+
+  @override
+  String estCollect(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Collected in $days days',
+      one: 'Collected tomorrow',
+      zero: 'Collected today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get estCharge => 'Estimated charge';
+
+  @override
+  String get estLater => 'Later';
+
+  @override
+  String get estSooner => 'Sooner';
+
+  @override
+  String get estStorageFoot =>
+      'At the daily rate KCPL recorded from the carrier. The carrier\'s own invoice decides the charge.';
+
+  @override
+  String get estNoRate =>
+      'No daily rate is recorded for this shipment yet. Ask your account manager.';
+
+  @override
+  String get estDutyRow => 'Estimate customs duty';
+
+  @override
+  String get estDutyTitle => 'Customs duty estimate';
+
+  @override
+  String get estCif => 'Value of the goods (CIF, NPR)';
+
+  @override
+  String get estDutyRate => 'Customs duty rate';
+
+  @override
+  String get estExcise => 'Excise duty';
+
+  @override
+  String get estNone => 'None';
+
+  @override
+  String get estVat => 'VAT at 13%';
+
+  @override
+  String get estLineDuty => 'Customs duty';
+
+  @override
+  String get estLineExcise => 'Excise duty';
+
+  @override
+  String get estLineVat => 'VAT';
+
+  @override
+  String get estTotal => 'Estimated total at customs';
+
+  @override
+  String get estDutyFoot =>
+      'A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.';
+
+  @override
+  String get qaTrack => 'Track a shipment';
+
+  @override
+  String get qaQuote => 'Request a quote';
+
+  @override
+  String get qaPay => 'Pay an invoice';
 
   @override
   String get opsSignInTitle => 'KCPL Operations';

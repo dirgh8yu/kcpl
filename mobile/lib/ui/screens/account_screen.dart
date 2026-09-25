@@ -258,6 +258,8 @@ class _EmailSettingsState extends State<_EmailSettings> {
             row(l.topicShipmentUpdates, l.topicShipmentUpdatesHint, preferences.shipmentUpdates, (on) => preferences.copyWith(shipmentUpdates: on)),
             row(l.topicDocuments, l.topicDocumentsHint, preferences.documents, (on) => preferences.copyWith(documents: on)),
             row(l.topicFreeTime, l.topicFreeTimeHint, preferences.freeTime, (on) => preferences.copyWith(freeTime: on)),
+            if (AppScope.of(context).session?.canViewFinance ?? false)
+              row(l.topicInvoices, l.topicInvoicesHint, preferences.invoices, (on) => preferences.copyWith(invoices: on)),
           ],
         ),
         Footnote(l.settingsEmailDescription),

@@ -64,7 +64,7 @@ Future<void> showShipmentActions(BuildContext context, BuildContext anchor, Ship
         if (liveOk)
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(sheet, running == null ? 'follow' : 'unfollow'),
-            child: Text(running == null ? l.liveFollow : l.liveStop),
+            child: Text(running == null ? (LiveActivities.asNotification ? l.liveFollowAndroid : l.liveFollow) : l.liveStop),
           ),
         if (canShare)
           CupertinoActionSheetAction(isDestructiveAction: true, onPressed: () => Navigator.pop(sheet, 'revoke'), child: Text(l.trackStopSharing)),
@@ -94,9 +94,10 @@ Future<void> showShipmentActions(BuildContext context, BuildContext anchor, Ship
           reference: shipment.reference,
           route: route(place(shipment.origin), place(shipment.destination)),
           state: liveState(l, shipment),
+          channel: l.liveChannel,
         );
         if (handle == null) {
-          say(l.liveUnavailable);
+          say(LiveActivities.asNotification ? l.liveUnavailableAndroid : l.liveUnavailable);
           return;
         }
         HapticFeedback.mediumImpact();
@@ -107,7 +108,7 @@ Future<void> showShipmentActions(BuildContext context, BuildContext anchor, Ship
         if (push != null && token != null) {
           await controller.api.followLive(shipment.reference, activityToken: token, pushToken: push);
         }
-        say(l.liveFollowing);
+        say(LiveActivities.asNotification ? l.liveFollowingAndroid : l.liveFollowing);
       case 'unfollow':
         if (running == null) return;
         await live.end(running.id);
@@ -120,7 +121,7 @@ Future<void> showShipmentActions(BuildContext context, BuildContext anchor, Ship
     HapticFeedback.heavyImpact();
     say(describeFailure(l, error));
   } catch (_) {
-    say(choice == 'follow' ? l.liveUnavailable : l.commonUnavailableDetail);
+    say(choice == 'follow' ? (LiveActivities.asNotification ? l.liveUnavailableAndroid : l.liveUnavailable) : l.commonUnavailableDetail);
   }
 }
 

@@ -1,6 +1,9 @@
 import Flutter
 import UIKit
 import Vision
+#if canImport(AppIntents)
+import AppIntents
+#endif
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -22,8 +25,103 @@ import ActivityKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "KcplLiveActivity") {
       LiveActivityChannel.register(with: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "KcplShortcuts") {
+      ShortcutsChannel.register(with: registrar.messenger())
+    }
   }
 }
+
+/// Where a Siri phrase or a Shortcut asked to go ("track", "quote", "pay"),
+/// kept until the app asks: an intent can run before Flutter is listening,
+/// when it is what launched the app (lib/platform/app_shortcuts.dart).
+@MainActor
+enum ShortcutsChannel {
+  private static var channel: FlutterMethodChannel?
+  private static var pending: String?
+
+  static func register(with messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "kcpl/shortcuts", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "take" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      result(pending)
+      pending = nil
+    }
+    self.channel = channel
+  }
+
+  static func open(_ action: String) {
+    pending = action
+    // A running app takes it at once; a launching one asks when it is ready.
+    channel?.invokeMethod("ready", arguments: nil)
+  }
+}
+
+#if canImport(AppIntents)
+@available(iOS 16.0, *)
+struct TrackShipmentIntent: AppIntent {
+  static let title: LocalizedStringResource = "Track a shipment"
+  static let openAppWhenRun = true
+
+  @MainActor
+  func perform() async throws -> some IntentResult {
+    ShortcutsChannel.open("track")
+    return .result()
+  }
+}
+
+@available(iOS 16.0, *)
+struct RequestQuoteIntent: AppIntent {
+  static let title: LocalizedStringResource = "Request a quote"
+  static let openAppWhenRun = true
+
+  @MainActor
+  func perform() async throws -> some IntentResult {
+    ShortcutsChannel.open("quote")
+    return .result()
+  }
+}
+
+@available(iOS 16.0, *)
+struct PayInvoiceIntent: AppIntent {
+  static let title: LocalizedStringResource = "Pay an invoice"
+  static let openAppWhenRun = true
+
+  @MainActor
+  func perform() async throws -> some IntentResult {
+    ShortcutsChannel.open("pay")
+    return .result()
+  }
+}
+
+/// "Hey Siri, track a shipment with KCPL", and the same three in Spotlight
+/// and the Shortcuts app, with nothing to set up.
+@available(iOS 16.0, *)
+struct KcplShortcuts: AppShortcutsProvider {
+  static var appShortcuts: [AppShortcut] {
+    AppShortcut(
+      intent: TrackShipmentIntent(),
+      phrases: ["Track a shipment with \(.applicationName)", "Where is my \(.applicationName) shipment"],
+      shortTitle: "Track a shipment",
+      systemImageName: "shippingbox"
+    )
+    AppShortcut(
+      intent: RequestQuoteIntent(),
+      phrases: ["Request a quote from \(.applicationName)", "Get a \(.applicationName) quote"],
+      shortTitle: "Request a quote",
+      systemImageName: "text.badge.plus"
+    )
+    AppShortcut(
+      intent: PayInvoiceIntent(),
+      phrases: ["Pay a \(.applicationName) invoice", "Pay an invoice with \(.applicationName)"],
+      shortTitle: "Pay an invoice",
+      systemImageName: "creditcard"
+    )
+  }
+}
+#endif
 
 /// Reads the text in a photo on the phone, with Apple's Vision: a container
 /// number painted on a door, a reference on a document. Nothing leaves the

@@ -14,6 +14,9 @@ import java.io.File
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // A moving shipment on the lock screen (LiveShipmentNotifications.kt).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "kcpl/live_activity")
+            .setMethodCallHandler(LiveShipmentNotifications(applicationContext))
         // Reads the text in a photo (a container number painted on a door, a
         // reference on a document) on the phone, through Google Play
         // services. The iOS side is in AppDelegate.swift.

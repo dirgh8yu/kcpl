@@ -277,6 +277,8 @@ class ShipmentDetail {
     required this.checklist,
     this.confirmation,
     this.canConfirmDelivery = false,
+    this.canRate = false,
+    this.rating,
   });
 
   final Shipment shipment;
@@ -290,6 +292,12 @@ class ShipmentDetail {
   /// things to KCPL, and the shipment has reached delivery.
   final bool canConfirmDelivery;
 
+  /// Delivered and not yet rated by this login: "How did this delivery go?"
+  final bool canRate;
+
+  /// This login's own rating, once given.
+  final DeliveryRating? rating;
+
   factory ShipmentDetail.fromJson(Map<String, dynamic> json) => ShipmentDetail(
     shipment: Shipment.fromJson(_map(json['shipment'])),
     freeTime: json['freeTime'] is Map ? FreeTime.fromJson(_map(json['freeTime'])) : null,
@@ -298,6 +306,55 @@ class ShipmentDetail {
     checklist: _list(json['checklist']).map(Requirement.fromJson).toList(),
     confirmation: json['confirmation'] is Map ? DeliveryConfirmation.fromJson(_map(json['confirmation'])) : null,
     canConfirmDelivery: _b(json['canConfirmDelivery']),
+    canRate: _b(json['canRate']),
+    rating: json['rating'] is Map ? DeliveryRating.fromJson(_map(json['rating'])) : null,
+  );
+}
+
+class DeliveryRating {
+  const DeliveryRating({required this.score, this.createdAt = ''});
+  final int score;
+  final String createdAt;
+
+  factory DeliveryRating.fromJson(Map<String, dynamic> json) => DeliveryRating(score: _i(json['score']), createdAt: _s(json['created_at']));
+}
+
+/// What KCPL said back to a rating. A low score goes to the team as a
+/// complaint; a happy customer may be offered a public review page.
+class RatingReceipt {
+  const RatingReceipt({required this.message, this.complaint = false, this.reviewUrl});
+  final String message;
+  final bool complaint;
+  final Uri? reviewUrl;
+
+  factory RatingReceipt.fromJson(Map<String, dynamic> json) {
+    final url = _ns(json['reviewUrl']);
+    final uri = url == null ? null : Uri.tryParse(url);
+    return RatingReceipt(
+      message: _s(json['message']),
+      complaint: _b(json['complaint']),
+      // Only ever a web page: nothing else is opened from here.
+      reviewUrl: uri != null && uri.scheme == 'https' ? uri : null,
+    );
+  }
+}
+
+/// One message on a shipment's conversation with KCPL. [author] is already
+/// worded for the reader ("KCPL · Sita" for a customer).
+class ShipmentMessage {
+  const ShipmentMessage({required this.id, required this.fromKcpl, required this.author, required this.body, required this.createdAt});
+  final String id;
+  final bool fromKcpl;
+  final String author;
+  final String body;
+  final String createdAt;
+
+  factory ShipmentMessage.fromJson(Map<String, dynamic> json) => ShipmentMessage(
+    id: _s(json['id']),
+    fromKcpl: json['from'] == 'kcpl',
+    author: _s(json['author']),
+    body: _s(json['body']),
+    createdAt: _s(json['created_at']),
   );
 }
 
@@ -713,24 +770,31 @@ class QuotesPage {
 
 /// Which emails the login receives, as the portal's settings page has them.
 class NotificationPreferences {
-  const NotificationPreferences({required this.shipmentUpdates, required this.documents, required this.freeTime});
+  const NotificationPreferences({required this.shipmentUpdates, required this.documents, required this.freeTime, this.invoices = true});
   final bool shipmentUpdates;
   final bool documents;
   final bool freeTime;
 
-  NotificationPreferences copyWith({bool? shipmentUpdates, bool? documents, bool? freeTime}) => NotificationPreferences(
+  /// Invoices due in three days or overdue. Sent only to logins that can see
+  /// the account's invoices, but always saved back: the server takes a
+  /// missing switch as off.
+  final bool invoices;
+
+  NotificationPreferences copyWith({bool? shipmentUpdates, bool? documents, bool? freeTime, bool? invoices}) => NotificationPreferences(
     shipmentUpdates: shipmentUpdates ?? this.shipmentUpdates,
     documents: documents ?? this.documents,
     freeTime: freeTime ?? this.freeTime,
+    invoices: invoices ?? this.invoices,
   );
 
-  Map<String, bool> toJson() => {'shipment_updates': shipmentUpdates, 'documents': documents, 'free_time': freeTime};
+  Map<String, bool> toJson() => {'shipment_updates': shipmentUpdates, 'documents': documents, 'free_time': freeTime, 'invoices': invoices};
 
   factory NotificationPreferences.fromJson(Map<String, dynamic> json) => NotificationPreferences(
     // Absent means subscribed, as on the web.
     shipmentUpdates: json['shipment_updates'] != false,
     documents: json['documents'] != false,
     freeTime: json['free_time'] != false,
+    invoices: json['invoices'] != false,
   );
 }
 

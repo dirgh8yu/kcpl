@@ -9,9 +9,12 @@ import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
+import '../widgets/message_thread.dart';
+import '../widgets/rate_delivery.dart';
 import '../widgets/rows.dart';
 import '../widgets/shipment_actions.dart';
 import 'confirm_delivery_screen.dart';
+import 'estimate_screens.dart';
 import 'overview_screen.dart' show JourneyGraphic;
 import 'send_document_screen.dart';
 
@@ -76,6 +79,7 @@ class ShipmentDetailScreen extends StatelessWidget {
 
   List<Widget> _body(BuildContext context, ShipmentDetail detail) {
     final l = AppLocalizations.of(context);
+    final api = AppScope.of(context).api;
     final shipment = detail.shipment;
     final freeTime = detail.freeTime;
     final emphasis = statusEmphasis(shipment.status);
@@ -105,6 +109,13 @@ class ShipmentDetailScreen extends StatelessWidget {
             if (await openConfirmDelivery(context, shipment) && context.mounted) await AsyncPage.reload(context);
           },
         ),
+      ],
+      if (detail.canRate) ...[
+        const SizedBox(height: 16),
+        RateDeliveryCard(key: ValueKey('rate-${shipment.reference}'), reference: shipment.reference),
+      ] else if (detail.rating case final rating?) ...[
+        const SizedBox(height: 16),
+        Notice(emphasis: Emphasis.normal, title: l.rateRated(rating.score)),
       ],
       if (shipment.customerNote != null) ...[
         const SizedBox(height: 16),
@@ -164,6 +175,39 @@ class ShipmentDetailScreen extends StatelessWidget {
           ],
         ),
       ],
+      const SizedBox(height: 20),
+      RowGroup(
+        indent: RowGroup.iconIndent,
+        children: [
+          RowTile(
+            onTap: () => openMessageThread(
+              context,
+              reference: shipment.reference,
+              load: () => api.messages(shipment.reference),
+              send: (body) => api.sendMessage(shipment.reference, body),
+              mine: (message) => !message.fromKcpl,
+              emptyBody: l.msgEmptyBody,
+            ),
+            leading: Icon(KIcons.message, size: 22, color: context.palette.accent),
+            title: Text(l.msgRow),
+            subtitle: Text(l.msgRowHint),
+            chevron: true,
+          ),
+          if (freeTime != null)
+            RowTile(
+              onTap: () => openStorageEstimate(context, freeTime),
+              leading: Icon(KIcons.timer, size: 22, color: context.palette.accent),
+              title: Text(l.estStorageRow),
+              chevron: true,
+            ),
+          RowTile(
+            onTap: () => openDutyEstimate(context),
+            leading: Icon(KIcons.estimate, size: 22, color: context.palette.accent),
+            title: Text(l.estDutyRow),
+            chevron: true,
+          ),
+        ],
+      ),
       SectionHeader(l.shipMilestonesTitle),
       if (detail.events.isEmpty)
         GroupCard(

@@ -72,6 +72,13 @@ abstract class KcplApi {
   Future<PaymentStart> startPayment(String invoice, String gateway);
   Future<PaymentStatus> payment(String intent);
 
+  /// The shipment's conversation with the person at KCPL handling it.
+  Future<List<ShipmentMessage>> messages(String reference);
+  Future<ShipmentMessage> sendMessage(String reference, String body);
+
+  /// "How did this delivery go?" Once per login, after delivery.
+  Future<RatingReceipt> rateDelivery(String reference, int score, {String comment = ''});
+
   /// A new link to the shipment's public tracking page.
   Future<TrackingLink> createTrackingLink(String reference);
 

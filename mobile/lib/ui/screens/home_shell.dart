@@ -6,8 +6,10 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme.dart';
 import '../widgets/push_ui.dart';
-import '../widgets/rows.dart' show openShipment;
+import '../widgets/rows.dart' show openInvoice, openShipment;
 import '../widgets/tab_bar.dart';
+import '../../platform/app_shortcuts.dart';
+import 'quote_screen.dart' show openQuote;
 import 'account_screen.dart';
 import 'documents_screen.dart';
 import 'invoices_screen.dart';
@@ -37,14 +39,53 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _widgetTaps ??= AppScope.read(context).homeWidget.opened.listen((reference) {
+    final controller = AppScope.read(context);
+    _widgetTaps ??= controller.homeWidget.opened.listen((reference) {
       if (mounted) openShipment(context, reference);
     });
+    if (_shortcuts == null) {
+      _shortcuts = controller.shortcuts;
+      _shortcuts!.pending.addListener(_onShortcut);
+      // One chosen before sign-in (or that launched the app) is taken now.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onShortcut());
+    }
+    // The icon's menu, in the reader's language and for what this login may do.
+    final l = AppLocalizations.of(context);
+    final session = controller.session;
+    controller.shortcuts
+        .offer(
+          track: l.qaTrack,
+          quote: session?.canSubmitRequests ?? false ? l.qaQuote : null,
+          pay: session?.canViewFinance ?? false ? l.qaPay : null,
+        )
+        .ignore();
+  }
+
+  AppShortcuts? _shortcuts;
+
+  void _onShortcut() {
+    final shortcuts = _shortcuts;
+    final action = shortcuts?.pending.value;
+    if (shortcuts == null || action == null || !mounted) return;
+    shortcuts.consume();
+    final session = AppScope.read(context).session;
+    // Whatever was open gives way to the shortcut.
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    switch (action) {
+      case Shortcut.track:
+        _select(HomeTab.shipments);
+      case Shortcut.quote when session?.canSubmitRequests ?? false:
+        _select(HomeTab.overview);
+        openQuote(context);
+      case Shortcut.pay when session?.canViewFinance ?? false:
+        _select(HomeTab.invoices);
+    }
   }
 
   @override
   void dispose() {
     _widgetTaps?.cancel();
+    _shortcuts?.pending.removeListener(_onShortcut);
     super.dispose();
   }
 
@@ -91,11 +132,14 @@ class _HomeShellState extends State<HomeShell> {
       HomeTab.account => AccountScreen(version: widget.version),
     };
 
-    // A tapped notification opens the shipment it is about.
+    // A tapped notification opens what it is about: a shipment, or an
+    // invoice due or overdue, where Pay online is one tap away.
     return PushRouter(
       onTarget: (context, target) {
         final reference = target.reference;
-        if (target.kind == 'shipment' && reference != null) openShipment(context, reference);
+        if (reference == null) return;
+        if (target.kind == 'shipment') openShipment(context, reference);
+        if (target.kind == 'invoice') openInvoice(context, reference);
       },
       // Recedes while a detail sheet is up over it.
       child: SheetDepth(

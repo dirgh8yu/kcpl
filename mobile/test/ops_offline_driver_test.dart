@@ -157,4 +157,25 @@ void main() {
     await settle(tester);
     expect(find.text('Machhapuchhre Pharma'), findsOneWidget);
   });
+
+  testWidgets('the customer’s question on a job is answered from KCPL Ops', (tester) async {
+    final api = DemoOpsApi();
+    await pumpOps(tester, api: api);
+    await signIn(tester);
+    await tester.tap(find.textContaining('KCPL-2609-0142').first);
+    await settle(tester);
+
+    await tapInView(tester, find.text('Messages with the customer'));
+    await tester.tap(find.text('Messages with the customer'));
+    await settle(tester);
+    expect(find.textContaining('warehouse is closed at lunch'), findsOneWidget);
+    expect(find.text('The customer sees your first name on replies.'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, 'Booked for 2:30pm.');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send'));
+    await settle(tester);
+    expect(api.threads['KCPL-2609-0142']!.last.fromKcpl, isTrue);
+    expect(find.text('Booked for 2:30pm.'), findsOneWidget);
+  });
 }

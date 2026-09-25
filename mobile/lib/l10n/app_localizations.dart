@@ -1196,6 +1196,12 @@ abstract class AppLocalizations {
   /// **'Free time running out'**
   String get topicFreeTime;
 
+  /// No description provided for @topicInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices coming due'**
+  String get topicInvoices;
+
   /// No description provided for @topicShipmentUpdatesHint.
   ///
   /// In en, this message translates to:
@@ -1213,6 +1219,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Before storage or demurrage charges start on cargo at a port or depot.'**
   String get topicFreeTimeHint;
+
+  /// No description provided for @topicInvoicesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Three days before an invoice is due, and if it becomes overdue.'**
+  String get topicInvoicesHint;
 
   /// No description provided for @settingsEmailTitle.
   ///
@@ -2594,6 +2606,30 @@ abstract class AppLocalizations {
   /// **'Follow on Lock Screen'**
   String get liveFollow;
 
+  /// No description provided for @liveFollowAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow in notifications'**
+  String get liveFollowAndroid;
+
+  /// No description provided for @liveFollowingAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Following in your notifications'**
+  String get liveFollowingAndroid;
+
+  /// No description provided for @liveUnavailableAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are turned off for KCPL in Settings.'**
+  String get liveUnavailableAndroid;
+
+  /// No description provided for @liveChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipment progress'**
+  String get liveChannel;
+
   /// No description provided for @liveFollowing.
   ///
   /// In en, this message translates to:
@@ -2617,6 +2653,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan document'**
   String get captureScan;
+
+  /// No description provided for @msgRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Message KCPL'**
+  String get msgRow;
+
+  /// No description provided for @msgRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'About this shipment, to the person handling it'**
+  String get msgRowHint;
+
+  /// No description provided for @msgTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get msgTitle;
+
+  /// No description provided for @msgPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get msgPlaceholder;
+
+  /// No description provided for @msgSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get msgSend;
+
+  /// No description provided for @msgEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get msgEmpty;
+
+  /// No description provided for @msgEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything about this shipment. The person handling it replies here and on the web.'**
+  String get msgEmptyBody;
+
+  /// No description provided for @msgYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get msgYou;
+
+  /// No description provided for @opsMsgRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages with the customer'**
+  String get opsMsgRow;
+
+  /// No description provided for @opsMsgEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When the customer asks about this shipment, it appears here and on the Job File.'**
+  String get opsMsgEmptyBody;
+
+  /// No description provided for @opsMsgFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer sees your first name on replies.'**
+  String get opsMsgFootnote;
+
+  /// No description provided for @rateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How did this delivery go?'**
+  String get rateTitle;
+
+  /// No description provided for @rateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One tap. It goes to the team that handled it.'**
+  String get rateHint;
+
+  /// No description provided for @rateScore.
+  ///
+  /// In en, this message translates to:
+  /// **'{score} out of 5'**
+  String rateScore(int score);
+
+  /// No description provided for @rateComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything we should know? (optional)'**
+  String get rateComment;
+
+  /// No description provided for @rateSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send rating'**
+  String get rateSend;
+
+  /// No description provided for @rateThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you'**
+  String get rateThanks;
+
+  /// No description provided for @rateReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a public review'**
+  String get rateReview;
+
+  /// No description provided for @rateRated.
+  ///
+  /// In en, this message translates to:
+  /// **'You rated this delivery {score} out of 5'**
+  String rateRated(int score);
+
+  /// No description provided for @estStorageRow.
+  ///
+  /// In en, this message translates to:
+  /// **'What will storage cost?'**
+  String get estStorageRow;
+
+  /// No description provided for @estStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage and demurrage'**
+  String get estStorageTitle;
+
+  /// No description provided for @estDaysOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{Collected within free time} =1{1 day after free time} other{{days} days after free time}}'**
+  String estDaysOver(int days);
+
+  /// No description provided for @estPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} a day'**
+  String estPerDay(String amount);
+
+  /// No description provided for @estCollect.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{Collected today} =1{Collected tomorrow} other{Collected in {days} days}}'**
+  String estCollect(int days);
+
+  /// No description provided for @estCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated charge'**
+  String get estCharge;
+
+  /// No description provided for @estLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get estLater;
+
+  /// No description provided for @estSooner.
+  ///
+  /// In en, this message translates to:
+  /// **'Sooner'**
+  String get estSooner;
+
+  /// No description provided for @estStorageFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'At the daily rate KCPL recorded from the carrier. The carrier\'s own invoice decides the charge.'**
+  String get estStorageFoot;
+
+  /// No description provided for @estNoRate.
+  ///
+  /// In en, this message translates to:
+  /// **'No daily rate is recorded for this shipment yet. Ask your account manager.'**
+  String get estNoRate;
+
+  /// No description provided for @estDutyRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate customs duty'**
+  String get estDutyRow;
+
+  /// No description provided for @estDutyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs duty estimate'**
+  String get estDutyTitle;
+
+  /// No description provided for @estCif.
+  ///
+  /// In en, this message translates to:
+  /// **'Value of the goods (CIF, NPR)'**
+  String get estCif;
+
+  /// No description provided for @estDutyRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs duty rate'**
+  String get estDutyRate;
+
+  /// No description provided for @estExcise.
+  ///
+  /// In en, this message translates to:
+  /// **'Excise duty'**
+  String get estExcise;
+
+  /// No description provided for @estNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get estNone;
+
+  /// No description provided for @estVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT at 13%'**
+  String get estVat;
+
+  /// No description provided for @estLineDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs duty'**
+  String get estLineDuty;
+
+  /// No description provided for @estLineExcise.
+  ///
+  /// In en, this message translates to:
+  /// **'Excise duty'**
+  String get estLineExcise;
+
+  /// No description provided for @estLineVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT'**
+  String get estLineVat;
+
+  /// No description provided for @estTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated total at customs'**
+  String get estTotal;
+
+  /// No description provided for @estDutyFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.'**
+  String get estDutyFoot;
+
+  /// No description provided for @qaTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Track a shipment'**
+  String get qaTrack;
+
+  /// No description provided for @qaQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a quote'**
+  String get qaQuote;
+
+  /// No description provided for @qaPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay an invoice'**
+  String get qaPay;
 
   /// No description provided for @opsSignInTitle.
   ///

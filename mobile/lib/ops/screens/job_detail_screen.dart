@@ -12,6 +12,7 @@ import '../../ui/screens/overview_screen.dart' show JourneyGraphic;
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/message_thread.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
@@ -158,6 +159,30 @@ class JobDetailScreen extends StatelessWidget {
           ),
       ],
       _DeliverySection(file: file),
+      SectionHeader(context.l.opsCustomer),
+      RowGroup(
+        indent: RowGroup.iconIndent,
+        children: [
+          RowTile(
+            onTap: () {
+              final api = OpsScope.read(context).api;
+              openMessageThread(
+                context,
+                reference: job.reference,
+                load: () => api.messages(job.reference),
+                send: (body) => api.reply(job.reference, body),
+                mine: (message) => message.fromKcpl,
+                emptyBody: context.l.opsMsgEmptyBody,
+                footnote: context.l.opsMsgFootnote,
+              );
+            },
+            leading: Icon(KIcons.message, size: 22, color: context.palette.accent),
+            title: Text(context.l.opsMsgRow),
+            subtitle: job.customerName.isEmpty ? null : Text(job.customerName),
+            chevron: true,
+          ),
+        ],
+      ),
       SectionHeader(context.l.opsFromField),
       _FieldNotes(reference: job.reference, notes: file.fieldNotes),
       if (file.internalNotes != null) ...[

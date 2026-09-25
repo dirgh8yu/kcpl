@@ -23,17 +23,26 @@ class LiveActivityHandle {
   final String? pushToken;
 }
 
-/// A shipment on the Lock Screen and in the Dynamic Island (iOS 16.2+).
-/// Swapped in tests; elsewhere it reports itself unsupported.
+/// A shipment on the Lock Screen and in the Dynamic Island (iOS 16.2+), or
+/// as an ongoing progress notification on Android (a Live Update on Android
+/// 16; MainActivity's LiveShipmentNotifications). Swapped in tests.
 abstract class LiveActivities {
-  static LiveActivities current = defaultTargetPlatform == TargetPlatform.iOS ? const ChannelLiveActivities() : const NoLiveActivities();
+  static LiveActivities current = switch (defaultTargetPlatform) {
+    TargetPlatform.iOS || TargetPlatform.android => const ChannelLiveActivities(),
+    _ => const NoLiveActivities(),
+  };
+
+  /// Android shows it as a notification, so its words say so; iOS says Lock
+  /// Screen. Swapped in tests alongside [current].
+  static bool asNotification = defaultTargetPlatform == TargetPlatform.android;
 
   /// False on Android, before iOS 16.2, or when turned off in Settings.
   Future<bool> supported();
 
   /// The activities running now, by shipment.
   Future<List<LiveActivityHandle>> running();
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state});
+  /// [channel] names Android's notification channel, in the reader's language.
+  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel});
   Future<void> update(String id, LiveShipmentState state);
   Future<void> end(String id);
 }
@@ -45,7 +54,8 @@ class NoLiveActivities implements LiveActivities {
   @override
   Future<List<LiveActivityHandle>> running() async => const [];
   @override
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state}) async => null;
+  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel}) async =>
+      null;
   @override
   Future<void> update(String id, LiveShipmentState state) async {}
   @override
@@ -82,8 +92,8 @@ class ChannelLiveActivities implements LiveActivities {
   }
 
   @override
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state}) async {
-    final row = await _channel.invokeMapMethod<Object?, Object?>('start', {'reference': reference, 'route': route, ...state.toMap()});
+  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel}) async {
+    final row = await _channel.invokeMapMethod<Object?, Object?>('start', {'reference': reference, 'route': route, 'channel': ?channel, ...state.toMap()});
     return row == null ? null : _handle(row);
   }
 

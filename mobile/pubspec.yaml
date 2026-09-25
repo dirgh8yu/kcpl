@@ -51,6 +51,7 @@ dependencies:
   nepali_utils: ^3.0.8
   cunning_document_scanner: ^3.0.3
   http_parser: ^4.1.2
+  quick_actions: ^1.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

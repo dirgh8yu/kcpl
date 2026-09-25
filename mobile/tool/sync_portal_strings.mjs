@@ -58,8 +58,8 @@ ship.free_time_footnote ship.movement_title ship.mode ship.current_location ship
 ship.carrier_reference ship.to_be_confirmed ship.milestones_title ship.no_milestones_title
 ship.no_milestones_description ship.documents_description ship.no_documents_title ship.no_documents_description
 ships.col_carrier
-topic.shipment_updates topic.documents topic.free_time
-topic.shipment_updates_hint topic.documents_hint topic.free_time_hint
+topic.shipment_updates topic.documents topic.free_time topic.invoices
+topic.shipment_updates_hint topic.documents_hint topic.free_time_hint topic.invoices_hint
 settings.email_title settings.email_description settings.save_failed
 req.quotes_title req.quotes_description req.col_quote req.col_valid req.ask_to_proceed req.no_quotes_title req.no_quotes_description
 req.progress_title req.progress_description req.booking_sent req.booking_failed req.raised_on
@@ -279,11 +279,63 @@ const appStrings = [
   ["trackStoppedNone", "There were no links to stop.", "बन्द गर्नुपर्ने कुनै लिङ्क थिएन।"],
   // Live Activity
   ["liveFollow", "Follow on Lock Screen", "लक स्क्रिनमा हेर्नुहोस्"],
+  ["liveFollowAndroid", "Follow in notifications", "सूचनामा हेर्नुहोस्"],
+  ["liveFollowingAndroid", "Following in your notifications", "तपाईंको सूचनामा देखिँदैछ"],
+  ["liveUnavailableAndroid", "Notifications are turned off for KCPL in Settings.", "सेटिङमा KCPL को सूचना बन्द छ।"],
+  ["liveChannel", "Shipment progress", "ढुवानीको प्रगति"],
   ["liveFollowing", "On your Lock Screen", "लक स्क्रिनमा छ"],
   ["liveStop", "Stop following", "हेर्न बन्द गर्नुहोस्"],
   ["liveUnavailable", "Live Activities are turned off for KCPL in Settings.", "सेटिङमा KCPL का लागि Live Activities बन्द छन्।"],
   // Scanning documents
   ["captureScan", "Scan document", "कागजात स्क्यान गर्नुहोस्"],
+  // Messages on a shipment
+  ["msgRow", "Message KCPL", "KCPL लाई सन्देश"],
+  ["msgRowHint", "About this shipment, to the person handling it", "यो ढुवानीबारे, हेर्ने व्यक्तिलाई"],
+  ["msgTitle", "Messages", "सन्देश"],
+  ["msgPlaceholder", "Write a message", "सन्देश लेख्नुहोस्"],
+  ["msgSend", "Send", "पठाउनुहोस्"],
+  ["msgEmpty", "No messages yet", "अहिलेसम्म कुनै सन्देश छैन"],
+  ["msgEmptyBody", "Ask anything about this shipment. The person handling it replies here and on the web.", "यो ढुवानीबारे जे पनि सोध्नुहोस्। हेर्ने व्यक्तिले यहीँ र वेबमा जवाफ दिनुहुन्छ।"],
+  ["msgYou", "You", "तपाईं"],
+  ["opsMsgRow", "Messages with the customer", "ग्राहकसँगका सन्देश"],
+  ["opsMsgEmptyBody", "When the customer asks about this shipment, it appears here and on the Job File.", "ग्राहकले यो ढुवानीबारे सोधेमा यहाँ र जब फाइलमा देखिन्छ।"],
+  ["opsMsgFootnote", "The customer sees your first name on replies.", "ग्राहकले जवाफमा तपाईंको पहिलो नाम देख्नुहुन्छ।"],
+  // Rating a delivery
+  ["rateTitle", "How did this delivery go?", "यो डेलिभरी कस्तो रह्यो?"],
+  ["rateHint", "One tap. It goes to the team that handled it.", "एक ट्याप। यो काम गर्ने टोलीकहाँ पुग्छ।"],
+  ["rateScore", "{score} out of 5", "५ मा {score}", { score: "int" }],
+  ["rateComment", "Anything we should know? (optional)", "हामीले थाहा पाउनुपर्ने केही? (ऐच्छिक)"],
+  ["rateSend", "Send rating", "मूल्याङ्कन पठाउनुहोस्"],
+  ["rateThanks", "Thank you", "धन्यवाद"],
+  ["rateReview", "Leave a public review", "सार्वजनिक समीक्षा लेख्नुहोस्"],
+  ["rateRated", "You rated this delivery {score} out of 5", "तपाईंले यो डेलिभरीलाई ५ मा {score} दिनुभयो", { score: "int" }],
+  // Estimators
+  ["estStorageRow", "What will storage cost?", "भण्डारण शुल्क कति लाग्छ?"],
+  ["estStorageTitle", "Storage and demurrage", "भण्डारण र डेमरेज"],
+  ["estDaysOver", "{days, plural, =0{Collected within free time} =1{1 day after free time} other{{days} days after free time}}", "{days, plural, =0{फ्री टाइमभित्रै उठाइयो} other{फ्री टाइमपछि {days} दिन}}", { days: "int" }],
+  ["estPerDay", "{amount} a day", "प्रतिदिन {amount}", { amount: "String" }],
+  ["estCollect", "{days, plural, =0{Collected today} =1{Collected tomorrow} other{Collected in {days} days}}", "{days, plural, =0{आज उठाइएमा} =1{भोलि उठाइएमा} other{{days} दिनमा उठाइएमा}}", { days: "int" }],
+  ["estCharge", "Estimated charge", "अनुमानित शुल्क"],
+  ["estLater", "Later", "पछि"],
+  ["estSooner", "Sooner", "छिटो"],
+  ["estStorageFoot", "At the daily rate KCPL recorded from the carrier. The carrier's own invoice decides the charge.", "KCPL ले क्यारियरबाट लेखेको दैनिक दरमा। शुल्क क्यारियरकै बिलले तय गर्छ।"],
+  ["estNoRate", "No daily rate is recorded for this shipment yet. Ask your account manager.", "यो ढुवानीको दैनिक दर अझै लेखिएको छैन। खाता प्रबन्धकलाई सोध्नुहोस्।"],
+  ["estDutyRow", "Estimate customs duty", "भन्सार महसुल अनुमान"],
+  ["estDutyTitle", "Customs duty estimate", "भन्सार महसुल अनुमान"],
+  ["estCif", "Value of the goods (CIF, NPR)", "सामानको मूल्य (CIF, रु.)"],
+  ["estDutyRate", "Customs duty rate", "भन्सार महसुल दर"],
+  ["estExcise", "Excise duty", "अन्तःशुल्क"],
+  ["estNone", "None", "छैन"],
+  ["estVat", "VAT at 13%", "१३% मूल्य अभिवृद्धि कर"],
+  ["estLineDuty", "Customs duty", "भन्सार महसुल"],
+  ["estLineExcise", "Excise duty", "अन्तःशुल्क"],
+  ["estLineVat", "VAT", "मूल्य अभिवृद्धि कर"],
+  ["estTotal", "Estimated total at customs", "भन्सारमा अनुमानित जम्मा"],
+  ["estDutyFoot", "A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.", "तपाईंले छानेका दरबाट मोटामोटी अनुमान। तपाईंको सामानको दर HS कोडअनुसार हुन्छ; जाँचपासअघि KCPL ले पक्का गर्छ।"],
+  // Home screen shortcuts
+  ["qaTrack", "Track a shipment", "ढुवानी हेर्नुहोस्"],
+  ["qaQuote", "Request a quote", "कोटेशन माग्नुहोस्"],
+  ["qaPay", "Pay an invoice", "बिल तिर्नुहोस्"],
   // KCPL Ops
   ["opsSignInTitle", "KCPL Operations", "KCPL अपरेसन"],
   ["opsSignInSubtitle", "Jobs, tasks and alerts across your branches.", "तपाईंका शाखाका काम, कार्य र सूचना।"],

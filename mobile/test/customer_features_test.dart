@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,7 +42,7 @@ class _FakeLive implements LiveActivities {
   @override
   Future<List<LiveActivityHandle>> running() async => [...running_];
   @override
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state}) async {
+  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel}) async {
     last = state;
     final handle = LiveActivityHandle(id: 'a1', reference: reference, pushToken: 'apns-1');
     running_.add(handle);
@@ -121,11 +122,11 @@ void main() {
       expect(page.requests.single.priced, isFalse);
     });
 
-    test('notification switches go as the portal’s three topics', () async {
+    test('notification switches go as the portal’s four topics', () async {
       final seen = <http.Request>[];
       final saved = await api(seen, (request) => {'ok': true, 'preferences': jsonDecode(request.body) as Object})
           .setNotificationPreferences(const NotificationPreferences(shipmentUpdates: true, documents: false, freeTime: true));
-      expect(jsonDecode(seen.single.body), {'shipment_updates': true, 'documents': false, 'free_time': true});
+      expect(jsonDecode(seen.single.body), {'shipment_updates': true, 'documents': false, 'free_time': true, 'invoices': true});
       expect(saved.documents, isFalse);
     });
 
@@ -268,6 +269,8 @@ void main() {
   });
 
   testWidgets('a shipment is shared by link, the links withdrawn, and followed on the Lock Screen', (tester) async {
+    LiveActivities.asNotification = false;
+    addTearDown(() => LiveActivities.asNotification = defaultTargetPlatform == TargetPlatform.android);
     final shared = <String>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('dev.fluttercommunity.plus/share'), (call) async {
       shared.add('${(call.arguments as Map)['text']}');

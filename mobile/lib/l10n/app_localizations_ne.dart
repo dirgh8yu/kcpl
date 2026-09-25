@@ -624,6 +624,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get topicFreeTime => 'फ्री टाइम सकिँदै';
 
   @override
+  String get topicInvoices => 'भुक्तानी गर्नुपर्ने बिल';
+
+  @override
   String get topicShipmentUpdatesHint =>
       'ढुवानी बुक हुँदा, हिँड्दा, भन्सार पास हुँदा, डेलिभरीका लागि निस्कँदा वा डेलिभर हुँदा।';
 
@@ -634,6 +637,10 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get topicFreeTimeHint =>
       'बन्दरगाह वा डिपोमा रहेको सामानमा भण्डारण वा डेमरेज शुल्क सुरु हुनुअघि।';
+
+  @override
+  String get topicInvoicesHint =>
+      'बिल तिर्ने मितिभन्दा तीन दिनअघि, र म्याद नाघेमा।';
 
   @override
   String get settingsEmailTitle => 'हामी तपाईंलाई के पठाउँछौँ';
@@ -1435,6 +1442,18 @@ class AppLocalizationsNe extends AppLocalizations {
   String get liveFollow => 'लक स्क्रिनमा हेर्नुहोस्';
 
   @override
+  String get liveFollowAndroid => 'सूचनामा हेर्नुहोस्';
+
+  @override
+  String get liveFollowingAndroid => 'तपाईंको सूचनामा देखिँदैछ';
+
+  @override
+  String get liveUnavailableAndroid => 'सेटिङमा KCPL को सूचना बन्द छ।';
+
+  @override
+  String get liveChannel => 'ढुवानीको प्रगति';
+
+  @override
   String get liveFollowing => 'लक स्क्रिनमा छ';
 
   @override
@@ -1446,6 +1465,166 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get captureScan => 'कागजात स्क्यान गर्नुहोस्';
+
+  @override
+  String get msgRow => 'KCPL लाई सन्देश';
+
+  @override
+  String get msgRowHint => 'यो ढुवानीबारे, हेर्ने व्यक्तिलाई';
+
+  @override
+  String get msgTitle => 'सन्देश';
+
+  @override
+  String get msgPlaceholder => 'सन्देश लेख्नुहोस्';
+
+  @override
+  String get msgSend => 'पठाउनुहोस्';
+
+  @override
+  String get msgEmpty => 'अहिलेसम्म कुनै सन्देश छैन';
+
+  @override
+  String get msgEmptyBody =>
+      'यो ढुवानीबारे जे पनि सोध्नुहोस्। हेर्ने व्यक्तिले यहीँ र वेबमा जवाफ दिनुहुन्छ।';
+
+  @override
+  String get msgYou => 'तपाईं';
+
+  @override
+  String get opsMsgRow => 'ग्राहकसँगका सन्देश';
+
+  @override
+  String get opsMsgEmptyBody =>
+      'ग्राहकले यो ढुवानीबारे सोधेमा यहाँ र जब फाइलमा देखिन्छ।';
+
+  @override
+  String get opsMsgFootnote => 'ग्राहकले जवाफमा तपाईंको पहिलो नाम देख्नुहुन्छ।';
+
+  @override
+  String get rateTitle => 'यो डेलिभरी कस्तो रह्यो?';
+
+  @override
+  String get rateHint => 'एक ट्याप। यो काम गर्ने टोलीकहाँ पुग्छ।';
+
+  @override
+  String rateScore(int score) {
+    return '५ मा $score';
+  }
+
+  @override
+  String get rateComment => 'हामीले थाहा पाउनुपर्ने केही? (ऐच्छिक)';
+
+  @override
+  String get rateSend => 'मूल्याङ्कन पठाउनुहोस्';
+
+  @override
+  String get rateThanks => 'धन्यवाद';
+
+  @override
+  String get rateReview => 'सार्वजनिक समीक्षा लेख्नुहोस्';
+
+  @override
+  String rateRated(int score) {
+    return 'तपाईंले यो डेलिभरीलाई ५ मा $score दिनुभयो';
+  }
+
+  @override
+  String get estStorageRow => 'भण्डारण शुल्क कति लाग्छ?';
+
+  @override
+  String get estStorageTitle => 'भण्डारण र डेमरेज';
+
+  @override
+  String estDaysOver(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'फ्री टाइमपछि $days दिन',
+      zero: 'फ्री टाइमभित्रै उठाइयो',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String estPerDay(String amount) {
+    return 'प्रतिदिन $amount';
+  }
+
+  @override
+  String estCollect(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days दिनमा उठाइएमा',
+      one: 'भोलि उठाइएमा',
+      zero: 'आज उठाइएमा',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get estCharge => 'अनुमानित शुल्क';
+
+  @override
+  String get estLater => 'पछि';
+
+  @override
+  String get estSooner => 'छिटो';
+
+  @override
+  String get estStorageFoot =>
+      'KCPL ले क्यारियरबाट लेखेको दैनिक दरमा। शुल्क क्यारियरकै बिलले तय गर्छ।';
+
+  @override
+  String get estNoRate =>
+      'यो ढुवानीको दैनिक दर अझै लेखिएको छैन। खाता प्रबन्धकलाई सोध्नुहोस्।';
+
+  @override
+  String get estDutyRow => 'भन्सार महसुल अनुमान';
+
+  @override
+  String get estDutyTitle => 'भन्सार महसुल अनुमान';
+
+  @override
+  String get estCif => 'सामानको मूल्य (CIF, रु.)';
+
+  @override
+  String get estDutyRate => 'भन्सार महसुल दर';
+
+  @override
+  String get estExcise => 'अन्तःशुल्क';
+
+  @override
+  String get estNone => 'छैन';
+
+  @override
+  String get estVat => '१३% मूल्य अभिवृद्धि कर';
+
+  @override
+  String get estLineDuty => 'भन्सार महसुल';
+
+  @override
+  String get estLineExcise => 'अन्तःशुल्क';
+
+  @override
+  String get estLineVat => 'मूल्य अभिवृद्धि कर';
+
+  @override
+  String get estTotal => 'भन्सारमा अनुमानित जम्मा';
+
+  @override
+  String get estDutyFoot =>
+      'तपाईंले छानेका दरबाट मोटामोटी अनुमान। तपाईंको सामानको दर HS कोडअनुसार हुन्छ; जाँचपासअघि KCPL ले पक्का गर्छ।';
+
+  @override
+  String get qaTrack => 'ढुवानी हेर्नुहोस्';
+
+  @override
+  String get qaQuote => 'कोटेशन माग्नुहोस्';
+
+  @override
+  String get qaPay => 'बिल तिर्नुहोस्';
 
   @override
   String get opsSignInTitle => 'KCPL अपरेसन';

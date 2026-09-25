@@ -338,9 +338,11 @@
   "topicShipmentUpdates": "Shipment milestones",
   "topicDocuments": "Document requests and releases",
   "topicFreeTime": "Free time running out",
+  "topicInvoices": "Invoices coming due",
   "topicShipmentUpdatesHint": "When a shipment is booked, moves, clears customs, is out for delivery or is delivered.",
   "topicDocumentsHint": "When KCPL needs paperwork from you, or releases a document to your account.",
   "topicFreeTimeHint": "Before storage or demurrage charges start on cargo at a port or depot.",
+  "topicInvoicesHint": "Three days before an invoice is due, and if it becomes overdue.",
   "settingsEmailTitle": "What we send you",
   "settingsEmailDescription": "Milestones are sent as they happen, not as a digest.",
   "settingsSaveFailed": "The change could not be saved.",
@@ -822,10 +824,93 @@
   },
   "trackStoppedNone": "There were no links to stop.",
   "liveFollow": "Follow on Lock Screen",
+  "liveFollowAndroid": "Follow in notifications",
+  "liveFollowingAndroid": "Following in your notifications",
+  "liveUnavailableAndroid": "Notifications are turned off for KCPL in Settings.",
+  "liveChannel": "Shipment progress",
   "liveFollowing": "On your Lock Screen",
   "liveStop": "Stop following",
   "liveUnavailable": "Live Activities are turned off for KCPL in Settings.",
   "captureScan": "Scan document",
+  "msgRow": "Message KCPL",
+  "msgRowHint": "About this shipment, to the person handling it",
+  "msgTitle": "Messages",
+  "msgPlaceholder": "Write a message",
+  "msgSend": "Send",
+  "msgEmpty": "No messages yet",
+  "msgEmptyBody": "Ask anything about this shipment. The person handling it replies here and on the web.",
+  "msgYou": "You",
+  "opsMsgRow": "Messages with the customer",
+  "opsMsgEmptyBody": "When the customer asks about this shipment, it appears here and on the Job File.",
+  "opsMsgFootnote": "The customer sees your first name on replies.",
+  "rateTitle": "How did this delivery go?",
+  "rateHint": "One tap. It goes to the team that handled it.",
+  "rateScore": "{score} out of 5",
+  "@rateScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "rateComment": "Anything we should know? (optional)",
+  "rateSend": "Send rating",
+  "rateThanks": "Thank you",
+  "rateReview": "Leave a public review",
+  "rateRated": "You rated this delivery {score} out of 5",
+  "@rateRated": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "estStorageRow": "What will storage cost?",
+  "estStorageTitle": "Storage and demurrage",
+  "estDaysOver": "{days, plural, =0{Collected within free time} =1{1 day after free time} other{{days} days after free time}}",
+  "@estDaysOver": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "estPerDay": "{amount} a day",
+  "@estPerDay": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "estCollect": "{days, plural, =0{Collected today} =1{Collected tomorrow} other{Collected in {days} days}}",
+  "@estCollect": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "estCharge": "Estimated charge",
+  "estLater": "Later",
+  "estSooner": "Sooner",
+  "estStorageFoot": "At the daily rate KCPL recorded from the carrier. The carrier's own invoice decides the charge.",
+  "estNoRate": "No daily rate is recorded for this shipment yet. Ask your account manager.",
+  "estDutyRow": "Estimate customs duty",
+  "estDutyTitle": "Customs duty estimate",
+  "estCif": "Value of the goods (CIF, NPR)",
+  "estDutyRate": "Customs duty rate",
+  "estExcise": "Excise duty",
+  "estNone": "None",
+  "estVat": "VAT at 13%",
+  "estLineDuty": "Customs duty",
+  "estLineExcise": "Excise duty",
+  "estLineVat": "VAT",
+  "estTotal": "Estimated total at customs",
+  "estDutyFoot": "A rough guide from the rates you choose. The rate for your goods depends on their HS code; KCPL confirms it before clearance.",
+  "qaTrack": "Track a shipment",
+  "qaQuote": "Request a quote",
+  "qaPay": "Pay an invoice",
   "opsSignInTitle": "KCPL Operations",
   "opsSignInSubtitle": "Jobs, tasks and alerts across your branches.",
   "opsPriorityStandard": "Standard",
