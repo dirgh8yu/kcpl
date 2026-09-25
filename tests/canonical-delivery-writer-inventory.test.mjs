@@ -261,9 +261,9 @@ const reviewedClassifications = [
     rationale: "Pure customer-portal decision module with no Firebase dependency at all; the ShipmentStatus set it holds classifies a status as active for a customer-facing count and never assigns one.",
   },
   {
-    file: "app/api/portal/shipments/[reference]/confirm-delivery/route.ts",
+    file: "app/portal/portal-delivery-confirmation.server.ts",
     category: "A",
-    rationale: "Customer confirmation of receipt. Writes a customer_confirmations record and a Job File activity entry, both shipment-linked evidence, and records the status it observed for context. It never writes shipment status, a delivery attempt or POD evidence: canonical Delivered stays with the delivery authority and its verified proof, and a customer saying the cargo arrived is context for the operator closing the file rather than a substitute for it.",
+    rationale: "Customer confirmation of receipt, shared by the web portal route and the KCPL app route. Writes a customer_confirmations record and a Job File activity entry, both shipment-linked evidence, and records the status it observed for context. It never writes shipment status, a delivery attempt or POD evidence: canonical Delivered stays with the delivery authority and its verified proof, and a customer saying the cargo arrived is context for the operator closing the file rather than a substitute for it.",
   },
   {
     file: "app/shipment-free-time.server.ts",
@@ -449,7 +449,7 @@ const expectedReviewedSurfaces = [
   },
   {
     id: "Customer delivery confirmation stays evidence, never canonical state",
-    file: "app/api/portal/shipments/[reference]/confirm-delivery/route.ts",
+    file: "app/portal/portal-delivery-confirmation.server.ts",
     patterns: [
       /collection\("customer_confirmations"\)/,
       /shipment_status_at_confirmation: status/,

@@ -270,10 +270,10 @@ test("a customer cannot change another account's notification settings", async (
 });
 
 test("an upload notification cannot fail the upload", async () => {
-  const source = await readFile(repo("app/api/portal/documents/[reference]/route.ts"), "utf8");
+  const source = await readFile(repo("app/portal/portal-document-intake.server.ts"), "utf8");
   const notify = source.indexOf("async function notifyAssignedOperator");
   assert.ok(notify > 0);
-  const body = source.slice(notify, source.indexOf("export async function POST"));
+  const body = source.slice(notify);
   assert.match(body, /try \{/);
   assert.match(body, /catch \(error\) \{/);
   assert.doesNotMatch(body, /throw/);

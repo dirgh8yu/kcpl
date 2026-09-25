@@ -87,12 +87,17 @@ test("every denial reason has customer-facing copy", () => {
  * ------------------------------------------------------------------ */
 
 test("the team route takes the customer from the session, never the request", async () => {
-  const source = code(await readFile(repo("app/api/portal/team/route.ts"), "utf8"));
-  assert.match(source, /customerId: access\.session\.customerId/);
-  assert.match(source, /actorRole: access\.session\.role/);
-  assert.match(source, /actorEmail: access\.session\.email/);
+  const source = code(await readFile(repo("app/portal/portal-team.server.ts"), "utf8"));
+  assert.match(source, /customerId: session\.customerId/);
+  assert.match(source, /actorRole: session\.role/);
+  assert.match(source, /actorEmail: session\.email/);
   assert.doesNotMatch(source, /body\.customerId|body\.role/, "neither scope nor access level is caller-supplied");
-  assert.match(source, /isTrustedSameOriginRequest/);
+  // Both doors hand over their own resolved session and nothing else.
+  const web = code(await readFile(repo("app/api/portal/team/route.ts"), "utf8"));
+  assert.match(web, /isTrustedSameOriginRequest/);
+  assert.match(web, /changePortalTeam\(access\.session, body \?\? \{\}\)/);
+  const app = code(await readFile(repo("app/api/mobile/v1/team/route.ts"), "utf8"));
+  assert.match(app, /changePortalTeam\(session, body \?\? \{\}\)/);
 });
 
 test("an owner can only ever mint a member", async () => {
@@ -129,6 +134,9 @@ test("a linked login is not one of the owner's own members", async () => {
 test("only an account owner is served the team list", async () => {
   const page = await readFile(repo("app/portal/settings/page.tsx"), "utf8");
   assert.match(page, /access\.session\.role === "owner" \? listPortalTeam/);
-  const route = await readFile(repo("app/api/portal/team/route.ts"), "utf8");
-  assert.match(route, /access\.session\.role !== "owner"/);
+  const shared = await readFile(repo("app/portal/portal-team.server.ts"), "utf8");
+  assert.match(shared, /session\.role !== "owner"/);
+  for (const route of ["app/api/portal/team/route.ts", "app/api/mobile/v1/team/route.ts"]) {
+    assert.match(await readFile(repo(route), "utf8"), /portalTeamView\(/, `${route} serves the list through the owner check`);
+  }
 });

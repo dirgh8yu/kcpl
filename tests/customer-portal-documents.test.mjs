@@ -153,7 +153,12 @@ test("a withdrawn submission stops being visible", () => {
  * ------------------------------------------------------------------ */
 
 test("the upload route proves ownership and type before it stores anything", async () => {
-  const source = await readFile(repo("app/api/portal/documents/[reference]/route.ts"), "utf8");
+  // The rules live in the intake both doors share; the web door keeps the
+  // same-origin check its cookie needs.
+  const source = await readFile(repo("app/portal/portal-document-intake.server.ts"), "utf8");
+  const route = await readFile(repo("app/api/portal/documents/[reference]/route.ts"), "utf8");
+  assert.match(route, /isTrustedSameOriginRequest/);
+  assert.match(route, /receivePortalDocument\(access\.session, reference, request\)/);
   const ownership = source.indexOf("portalOwnsShipment");
   const typeGate = source.indexOf("portalCanUploadDocumentType");
   const signature = source.indexOf("validateShipmentDocumentBytes");
@@ -161,12 +166,11 @@ test("the upload route proves ownership and type before it stores anything", asy
   assert.ok(ownership > 0 && ownership < store, "ownership is checked before storing");
   assert.ok(typeGate > 0 && typeGate < store, "the document type is checked before storing");
   assert.ok(signature > 0 && signature < store, "the bytes are sniffed before storing");
-  assert.match(source, /isTrustedSameOriginRequest/);
   assert.match(source, /capabilities\.canSubmitRequests/);
 });
 
 test("a customer upload is evidence awaiting review, never verified paperwork", async () => {
-  const source = code(await readFile(repo("app/api/portal/documents/[reference]/route.ts"), "utf8"));
+  const source = code(await readFile(repo("app/portal/portal-document-intake.server.ts"), "utf8"));
   assert.match(source, /source: "customer_portal"/);
   // The route must not be able to set its own review state or release itself.
   assert.doesNotMatch(source, /customerSafe|customer_safe/);

@@ -382,8 +382,23 @@ HttpOnly session cookie, so it presents a **Firebase ID token** as
 - An agent's chosen customer arrives in `X-KCPL-Customer` and goes through the same
   `decidePortalCustomerScope` intersection as the customer cookie: a preference, never
   authority.
-- Every `/api/mobile/v1` route goes through one wrapper (`portal-mobile-api.server.ts`),
-  calls the same redacting readers in `portal-data.server.ts`, and is read-only.
+- Every `/api/mobile/v1` route goes through one wrapper (`portal-mobile-api.server.ts`)
+  and calls the same redacting readers in `portal-data.server.ts`.
+- The app writes only what the web portal writes, through the **same function**. Each
+  customer write is decided once, in a shared module, and reached through two doors: the
+  portal's cookie route (which adds the same-origin check a cookie needs) and the app's
+  bearer route.
+
+  | App route | Shared module | What it may write |
+  |---|---|---|
+  | `POST requests` | `portal-requests.server.ts` | an enquiry with a suggested CRM match |
+  | `POST shipments/{ref}/documents` | `portal-document-intake.server.ts` | a customer-uploadable document, unreviewed and unreleased |
+  | `POST shipments/{ref}/confirm-delivery` | `portal-delivery-confirmation.server.ts` | a confirmation record and Job File activity, never delivery state |
+  | `GET`/`POST invoices/{ref}/remittances` | `portal-remittance-intake.server.ts` | a receipt awaiting accounts, never a ledger entry |
+  | `GET`/`POST team` | `portal-team.server.ts` | owner-only; a member login and its invite |
+
+  The shipment detail also carries `canConfirmDelivery`, decided on the web page's own
+  rule, so the app never has to know which statuses count as delivery.
 - Shipment free time is **allowlisted** before it reaches the wire. A server-rendered page
   never sends fields it doesn't display; JSON would carry who at KCPL last edited the
   allowance and whether its cost has been agreed.
@@ -395,7 +410,8 @@ HttpOnly session cookie, so it presents a **Firebase ID token** as
 
 A refusal is reported as `403` with the same deliberately vague message the web sign-in
 shows, so the app can tell "wrong password" from "no portal access" without learning
-which check failed. `tests/customer-portal-mobile-api.test.mjs` holds all of the above.
+which check failed. `tests/customer-portal-mobile-api.test.mjs` holds all of the above,
+including the list of write routes: a new one fails the test until it is reviewed in.
 
 ## Provisioning (staff runbook)
 

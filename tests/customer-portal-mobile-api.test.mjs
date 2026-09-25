@@ -86,16 +86,26 @@ test("the QA preview on the bearer path is the same fenced preview as the cookie
   assert.match(body, /^[^]*?if \(portalQaPreviewEnabled\(\)\) return \{ kind: "authorized", session: portalQaPreviewSession\(\) \};/);
 });
 
+/** Every route through which the customer app can change anything, and the
+ * shared function that decides it. The web portal's door calls the same one. */
+const mobileWriters = new Map([
+  ["app/api/mobile/v1/push/route.ts", null],
+  ["app/api/mobile/v1/requests/route.ts", "createPortalEnquiry(session"],
+  ["app/api/mobile/v1/shipments/[reference]/documents/route.ts", "receivePortalDocument(session, reference, request)"],
+  ["app/api/mobile/v1/shipments/[reference]/confirm-delivery/route.ts", "confirmPortalDelivery(session, reference"],
+  ["app/api/mobile/v1/invoices/[reference]/remittances/route.ts", "receivePortalRemittance(session, reference, request)"],
+  ["app/api/mobile/v1/team/route.ts", "changePortalTeam(session"],
+]);
+
 test("every mobile route resolves the session through the one wrapper", async () => {
   const routes = await routeFiles("app/api/mobile/v1");
   assert.ok(routes.length >= 8, `expected the mobile read routes, found ${routes.length}`);
   for (const path of routes) {
     const source = code(await readFile(repo(path), "utf8"));
     assert.match(source, /withMobileSession\(request, async \(session\)/, `${path} must go through withMobileSession`);
-    // Only reads, except registering this phone for push and raising a quote
-    // request (an enquiry, checked below): nothing here may act on the
-    // customer's shipments, documents or invoices.
-    if (path !== "app/api/mobile/v1/push/route.ts" && path !== "app/api/mobile/v1/requests/route.ts") {
+    // Only reads, except the writes listed in mobileWriters, each of which is
+    // checked below to go through the same shared module as the web portal.
+    if (!mobileWriters.has(path)) {
       assert.doesNotMatch(source, /export async function (POST|PUT|PATCH|DELETE)/, `${path} must be read-only`);
     }
     // Data comes from the redacting portal readers, never from Firestore directly.
@@ -187,4 +197,31 @@ test("free time reaches the phone without KCPL's internal fields", async () => {
 
   const route = code(await readFile(repo("app/api/mobile/v1/shipments/[reference]/route.ts"), "utf8"));
   assert.match(route, /freeTime: portalMobileFreeTime\(/);
+});
+
+test("every write the app can make is the web portal's own, not a copy", async () => {
+  const routes = await routeFiles("app/api/mobile/v1");
+  const writers = [];
+  for (const path of routes) {
+    if (/export async function (POST|PUT|PATCH|DELETE)/.test(code(await readFile(repo(path), "utf8")))) writers.push(path);
+  }
+  assert.deepEqual(writers.sort(), [...mobileWriters.keys()].sort(), "a new write route must be reviewed into mobileWriters");
+  const web = {
+    "receivePortalDocument(": "app/api/portal/documents/[reference]/route.ts",
+    "confirmPortalDelivery(": "app/api/portal/shipments/[reference]/confirm-delivery/route.ts",
+    "receivePortalRemittance(": "app/api/portal/invoices/[reference]/remittance/route.ts",
+    "changePortalTeam(": "app/api/portal/team/route.ts",
+  };
+  for (const [path, call] of mobileWriters) {
+    if (!call) continue;
+    const source = code(await readFile(repo(path), "utf8"));
+    assert.ok(source.includes(call), `${path} must decide through ${call}`);
+    const fn = call.slice(0, call.indexOf("(") + 1);
+    if (web[fn]) assert.ok(code(await readFile(repo(web[fn]), "utf8")).includes(fn), `${web[fn]} must share ${fn}`);
+  }
+});
+
+test("the app is offered delivery confirmation on the web page's own rule", async () => {
+  const source = code(await readFile(repo("app/api/mobile/v1/shipments/[reference]/route.ts"), "utf8"));
+  assert.match(source, /canConfirmDelivery: session\.capabilities\.canSubmitRequests && portalConfirmableDeliveryStatus\(detail\.shipment\.status\)/);
 });

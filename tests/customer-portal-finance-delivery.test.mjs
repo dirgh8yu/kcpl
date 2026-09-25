@@ -25,7 +25,7 @@ test("a customer can only confirm cargo that has reached delivery", () => {
 });
 
 test("the confirmation route never touches the delivery authority", async () => {
-  const source = code(await readFile(repo("app/api/portal/shipments/[reference]/confirm-delivery/route.ts"), "utf8"));
+  const source = code(await readFile(repo("app/portal/portal-delivery-confirmation.server.ts"), "utf8"));
   // Canonical Delivered is written from verified POD by the delivery authority.
   // A customer saying "it arrived" must not be able to reach any of that.
   for (const forbidden of ["pod_evidence", "delivery_attempts", "delivery_state", "pod_verified"]) {
@@ -37,14 +37,19 @@ test("the confirmation route never touches the delivery authority", async () => 
 });
 
 test("the confirmation is scoped to the session and idempotent", async () => {
-  const source = code(await readFile(repo("app/api/portal/shipments/[reference]/confirm-delivery/route.ts"), "utf8"));
-  assert.match(source, /!== access\.session\.customerId/, "ownership comes from the session");
+  const source = code(await readFile(repo("app/portal/portal-delivery-confirmation.server.ts"), "utf8"));
+  assert.match(source, /!== session\.customerId/, "ownership comes from the session");
   assert.match(source, /alreadyConfirmed/, "a double submit does not stack duplicates");
-  assert.match(source, /isTrustedSameOriginRequest/);
+  assert.match(source, /capabilities\.canSubmitRequests/, "only logins that may send things to KCPL confirm");
+  const web = code(await readFile(repo("app/api/portal/shipments/[reference]/confirm-delivery/route.ts"), "utf8"));
+  assert.match(web, /isTrustedSameOriginRequest/);
+  assert.match(web, /confirmPortalDelivery\(access\.session, reference, body \?\? \{\}, "customer_portal"\)/);
+  const app = code(await readFile(repo("app/api/mobile/v1/shipments/[reference]/confirm-delivery/route.ts"), "utf8"));
+  assert.match(app, /confirmPortalDelivery\(session, reference, body \?\? \{\}, "customer_app"\)/, "the door, not the body, names the source");
 });
 
 test("the operator is told a customer confirmation is not a POD", async () => {
-  const source = await readFile(repo("app/api/portal/shipments/[reference]/confirm-delivery/route.ts"), "utf8");
+  const source = await readFile(repo("app/portal/portal-delivery-confirmation.server.ts"), "utf8");
   assert.match(source, /not a POD/, "the notification says plainly what it is not");
 });
 
@@ -53,11 +58,13 @@ test("the operator is told a customer confirmation is not a POD", async () => {
  * ------------------------------------------------------------------ */
 
 test("a remittance never moves money on the invoice", async () => {
-  const [route, store] = await Promise.all([
+  const [route, intake, appRoute, store] = await Promise.all([
     readFile(repo("app/api/portal/invoices/[reference]/remittance/route.ts"), "utf8"),
+    readFile(repo("app/portal/portal-remittance-intake.server.ts"), "utf8"),
+    readFile(repo("app/api/mobile/v1/invoices/[reference]/remittances/route.ts"), "utf8"),
     readFile(repo("app/portal/portal-remittance.server.ts"), "utf8"),
   ]);
-  for (const source of [code(route), code(store)]) {
+  for (const source of [code(route), code(intake), code(appRoute), code(store)]) {
     for (const ledger of ["amount_paid", "balance_due", "payments"]) {
       assert.equal(source.includes(ledger), false, `${ledger} must not be written`);
     }
@@ -67,7 +74,10 @@ test("a remittance never moves money on the invoice", async () => {
 });
 
 test("a remittance is sniffed and bounded like any other upload", async () => {
-  const source = code(await readFile(repo("app/api/portal/invoices/[reference]/remittance/route.ts"), "utf8"));
+  const source = code(await readFile(repo("app/portal/portal-remittance-intake.server.ts"), "utf8"));
+  const web = code(await readFile(repo("app/api/portal/invoices/[reference]/remittance/route.ts"), "utf8"));
+  assert.match(web, /isTrustedSameOriginRequest/);
+  assert.match(web, /receivePortalRemittance\(auth\.session, reference, request\)/);
   const ownership = source.indexOf("portalOwnsInvoice");
   const signature = source.indexOf("validateShipmentDocumentBytes");
   const save = source.indexOf("saveInvoiceRemittance(");

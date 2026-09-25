@@ -261,8 +261,10 @@ test("linking customers is a Management action with no customer-side route", asy
 
   // An account owner who could link customers could grant themselves another
   // company's shipments, so no portal route may reach the writer.
-  const teamRoute = code(await readFile(repo("app/api/portal/team/route.ts"), "utf8"));
-  assert.doesNotMatch(teamRoute, /setPortalAccountCustomerLink|additional_customer_ids/);
+  for (const path of ["app/api/portal/team/route.ts", "app/api/mobile/v1/team/route.ts", "app/portal/portal-team.server.ts"]) {
+    const teamSource = code(await readFile(repo(path), "utf8"));
+    assert.doesNotMatch(teamSource, /setPortalAccountCustomerLink|additional_customer_ids/, path);
+  }
   const switchRoute = code(await readFile(repo("app/api/portal/customer/route.ts"), "utf8"));
   assert.doesNotMatch(switchRoute, /setPortalAccountCustomerLink|additional_customer_ids/);
 });
