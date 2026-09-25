@@ -1,13 +1,19 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Flutter's template grants this only to debug builds; a release build
          without it cannot reach KCPL at all. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13+: asked for only when the person turns push on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- No backup of any kind: the sign-in and the offline copies stay on
+         this phone. The document scanner plugin brings backup rules and an
+         application theme of its own; ours win, and its theme is dropped. -->
     <application
         android:label="@string/app_name"
         android:allowBackup="false"
         android:fullBackupContent="false"
+        tools:replace="android:fullBackupContent"
+        tools:remove="android:dataExtractionRules,android:theme"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Push notifications: the K in the status bar, in KCPL crimson. -->
