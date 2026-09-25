@@ -256,8 +256,9 @@ test("the language lives on the account, because the sweep has no browser", asyn
   assert.match(accounts, /locale: portalLocaleValue\(locale\)/);
   const sweep = code(await readFile(repo("app/portal/portal-notifications.server.ts"), "utf8"));
   assert.match(sweep, /locale: portalLocaleValue\(data\.locale\)/);
-  // Every one of the three message builders is handed the recipient's language.
-  assert.equal((sweep.match(/\}, account\.locale\)/g) ?? []).length, 3);
+  // Every one of the four message builders (milestones, documents, free
+  // time, invoices) is handed the recipient's language.
+  assert.equal((sweep.match(/\}, account\.locale\)/g) ?? []).length, 4);
 });
 
 test("a customer can only ever change their own language", async () => {

@@ -32,9 +32,10 @@ test("a subscription id is safe as a Firestore document id", () => {
 
 test("push reuses the notification key, so it cannot send what email would not", async () => {
   const sweep = code(await readFile(repo("app/portal/portal-notifications.server.ts"), "utf8"));
-  // Each of the three facts computes one key and hands it to both transports.
-  assert.equal((sweep.match(/await pushOnce\(\{/g) ?? []).length, 3);
-  assert.equal((sweep.match(/const key = portalNotificationKey\(\{/g) ?? []).length, 3);
+  // Each of the four facts (milestones, documents, free time, invoices)
+  // computes one key and hands it to both transports.
+  assert.equal((sweep.match(/await pushOnce\(\{/g) ?? []).length, 4);
+  assert.equal((sweep.match(/const key = portalNotificationKey\(\{/g) ?? []).length, 4);
   assert.match(sweep, /await sendOnce\(\{\s*key,/);
   assert.match(sweep, /await pushOnce\(\{\s*key,/);
   // Whether a customer hears about a fact stays in the pure policy module.

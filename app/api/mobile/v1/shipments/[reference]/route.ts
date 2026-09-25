@@ -1,5 +1,7 @@
 import { getPortalShipment } from "../../../../../portal/portal-data.server";
 import { portalConfirmableDeliveryStatus } from "../../../../../portal/portal-access-policy";
+import { deliveryRatable } from "../../../../../portal/portal-delivery-rating";
+import { portalDeliveryRating } from "../../../../../portal/portal-delivery-rating.server";
 import { portalMobileFreeTime } from "../../../../../portal/portal-mobile-auth";
 import { mobileJson, mobileMissing, mobileUnavailable, withMobileSession } from "../../../../../portal/portal-mobile-api.server";
 
@@ -11,6 +13,7 @@ export async function GET(request: Request, context: { params: Promise<{ referen
     if (result.kind === "missing") return mobileMissing("Shipment");
     if (result.kind !== "ready") return mobileUnavailable();
     const { detail } = result;
+    const rating = deliveryRatable(detail.shipment.status) ? await portalDeliveryRating(session, detail.shipment.reference) : null;
     return mobileJson({
       ok: true,
       detail: {
@@ -19,6 +22,9 @@ export async function GET(request: Request, context: { params: Promise<{ referen
         // Decided here, as the web page decides whether to offer the button, so
         // the app never has to know which statuses count as delivery.
         canConfirmDelivery: session.capabilities.canSubmitRequests && portalConfirmableDeliveryStatus(detail.shipment.status),
+        // Asked once, after delivery, of any login that can see the shipment.
+        canRate: deliveryRatable(detail.shipment.status) && rating === null,
+        rating,
       },
     });
   });

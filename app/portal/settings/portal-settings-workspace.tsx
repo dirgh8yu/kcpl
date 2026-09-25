@@ -15,6 +15,7 @@ import {
   portalNotificationTopicLabel,
   portalNotificationTopics,
   type PortalNotificationPreferences,
+  type PortalNotificationTopic,
 } from "../portal-notifications";
 import {
   portalLocaleLabels,
@@ -32,6 +33,7 @@ export function PortalSettingsWorkspace({
   customerName,
   role,
   initialPreferences,
+  topics,
   emailConfigured,
   team,
   locale,
@@ -41,6 +43,8 @@ export function PortalSettingsWorkspace({
   customerName: string;
   role: PortalRole;
   initialPreferences: PortalNotificationPreferences;
+  /** The topics this login is offered; invoices only with finance access. */
+  topics?: readonly PortalNotificationTopic[];
   emailConfigured: boolean;
   /** Null for anyone who is not an account owner. */
   team: PortalTeamMember[] | null;
@@ -146,7 +150,7 @@ export function PortalSettingsWorkspace({
             description={t("settings.email_description")}
           >
             <ul className="portal-toggle-list">
-              {portalNotificationTopics.map((topic) => (
+              {(topics ?? portalNotificationTopics).map((topic) => (
                 <li key={topic}>
                   <span className="portal-toggle-main">
                     <strong>{portalNotificationTopicLabel(topic, locale)}</strong>

@@ -33,6 +33,7 @@ import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSurface } from "../../operations-ui";
 import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
+import { ShipmentThread } from "../../../shipment-thread";
 
 function dateLabel(value: string | null) {
   if (!value) return "Not set";
@@ -379,6 +380,24 @@ export function JobFileWorkspace({
 
         <div className="ops-stack job-workspace-side">
           <div id="shipment-free-time"><FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/></div>
+          {canManageJobFile ? (
+            <ShipmentThread
+              endpoint={`/api/admin/jobs/${encodeURIComponent(job.reference)}/messages`}
+              viewer="kcpl"
+              labels={{
+                eyebrow: "Customer",
+                title: "Messages with the customer",
+                description: "The customer writes from the portal or the KCPL app, and sees your first name on replies.",
+                placeholder: "Reply to the customer",
+                send: "Send",
+                sending: "Sending…",
+                empty: "No messages yet",
+                emptyDescription: "When the customer asks about this shipment, it appears here and in KCPL Ops.",
+                failed: "The message was not sent. Try again.",
+                loadFailed: "Messages could not be loaded.",
+              }}
+            />
+          ) : null}
           <OpsSurface id="shipment-movement" title={job.customer_name || "Unlinked customer"} description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}>
             <OpsFacts columns={2}>
               <OpsFact label="Customer">{job.customer_name || "Not linked"}</OpsFact>

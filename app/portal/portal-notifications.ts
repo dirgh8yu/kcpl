@@ -20,20 +20,27 @@ import { portalText, type PortalLocale, type PortalTextKey } from "./portal-i18n
  *      recognises what it already sent rather than mailing the customer again.
  */
 
-export const portalNotificationTopics = ["shipment_updates", "documents", "free_time"] as const;
+export const portalNotificationTopics = ["shipment_updates", "documents", "free_time", "invoices"] as const;
 export type PortalNotificationTopic = (typeof portalNotificationTopics)[number];
 
 export const portalNotificationTopicLabels: Record<PortalNotificationTopic, string> = {
   shipment_updates: "Shipment milestones",
   documents: "Document requests and releases",
   free_time: "Free time running out",
+  invoices: "Invoices coming due",
 };
 
 export const portalNotificationTopicHints: Record<PortalNotificationTopic, string> = {
   shipment_updates: "When a shipment is booked, moves, clears customs, is out for delivery or is delivered.",
   documents: "When KCPL needs paperwork from you, or releases a document to your account.",
   free_time: "Before storage or demurrage charges start on cargo at a port or depot.",
+  invoices: "Three days before an invoice is due, and if it becomes overdue. Account owners only.",
 };
+
+/** Topics a login is offered: invoices only to those who can see them. */
+export function portalNotificationTopicsFor(canViewFinance: boolean): PortalNotificationTopic[] {
+  return portalNotificationTopics.filter((topic) => topic !== "invoices" || canViewFinance);
+}
 
 /** The same topics in the reader's language. The English maps above remain for
  * staff-side surfaces, which are not translated. */
@@ -66,6 +73,7 @@ export function portalNotificationPreferences(record: Record<string, unknown> | 
     shipment_updates: stored.shipment_updates !== false,
     documents: stored.documents !== false,
     free_time: stored.free_time !== false,
+    invoices: stored.invoices !== false,
   };
 }
 
@@ -339,4 +347,85 @@ export function portalMilestoneMessage(facts: PortalMilestoneFacts, locale: Port
   ].join("");
 
   return { subject, text: lines.join("\n"), html };
+}
+
+/*
+ * Invoice reminders. Two facts per invoice and due date: it is due within
+ * three days, and it has become overdue. Each is sent once. An invoice that
+ * was already long overdue when reminders started is not news: only the
+ * first fortnight after the due date is.
+ */
+export const INVOICE_DUE_SOON_DAYS = 3;
+export const INVOICE_OVERDUE_NOTICE_DAYS = 14;
+
+export type PortalInvoiceReminder = { fact: "due" | "overdue"; dueDate: string; daysUntilDue: number };
+
+function dayNumber(date: string) {
+  const time = Date.parse(`${date.slice(0, 10)}T00:00:00Z`);
+  return Number.isFinite(time) ? Math.round(time / 86_400_000) : null;
+}
+
+export function portalInvoiceReminder(invoice: Record<string, unknown>, today: string): PortalInvoiceReminder | null {
+  const status = String(invoice.status ?? "");
+  const balance = typeof invoice.balance_due === "number" ? invoice.balance_due : Number(invoice.balance_due);
+  const recordType = invoice.record_type === undefined ? "invoice" : String(invoice.record_type);
+  if (recordType !== "invoice" || !["issued", "partially_paid", "overdue"].includes(status)) return null;
+  if (!Number.isFinite(balance) || balance <= 0) return null;
+  const dueDate = typeof invoice.due_date === "string" ? invoice.due_date.slice(0, 10) : "";
+  const due = dayNumber(dueDate);
+  const now = dayNumber(today);
+  if (due === null || now === null) return null;
+  const daysUntilDue = due - now;
+  if (daysUntilDue >= 0 && daysUntilDue <= INVOICE_DUE_SOON_DAYS) return { fact: "due", dueDate, daysUntilDue };
+  if (daysUntilDue < 0 && -daysUntilDue <= INVOICE_OVERDUE_NOTICE_DAYS) return { fact: "overdue", dueDate, daysUntilDue };
+  return null;
+}
+
+export type PortalInvoiceFacts = {
+  reference: string;
+  reminder: PortalInvoiceReminder;
+  balance: number;
+  currency: string;
+  customerName: string;
+  portalUrl: string;
+};
+
+function money(amount: number, currency: string) {
+  return `${currency} ${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** The reminder: what is owed, by when, and the way to the invoice. */
+export function portalInvoiceMessage(facts: PortalInvoiceFacts, locale: PortalLocale = "en"): PortalMilestoneMessage {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  const amount = money(facts.balance, facts.currency);
+  const vars = { invoice: facts.reference, amount, date: facts.reminder.dueDate };
+  const overdue = facts.reminder.fact === "overdue";
+  const subject = say(overdue ? "mail.inv_overdue_subject" : "mail.inv_due_subject", vars);
+  const headline = say(overdue ? "mail.inv_overdue" : "mail.inv_due", vars);
+
+  const text = [
+    headline,
+    "",
+    `${say("mail.label_invoice")}: ${facts.reference}`,
+    `${say("mail.label_balance")}: ${amount}`,
+    `${say("mail.label_due")}: ${facts.reminder.dueDate}`,
+    "",
+    say("mail.see_invoice_line", { url: facts.portalUrl }),
+  ].join("\n");
+
+  const html = [
+    `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">${escapeHtml(say("mail.brand"))}</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(headline)}</h2>`,
+    `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_invoice"))}</td><td><strong>${escapeHtml(facts.reference)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_balance"))}</td><td>${escapeHtml(amount)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_due"))}</td><td>${escapeHtml(facts.reminder.dueDate)}</td></tr>`,
+    `</table>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.see_invoice"))}</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.inv_sent_because", { customer: facts.customerName }))}</p>`,
+    `</div>`,
+  ].join("");
+
+  return { subject, text, html };
 }

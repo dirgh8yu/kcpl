@@ -38,12 +38,15 @@ export function mobileDeviceId(audience: MobilePushAudience, token: string) {
 }
 
 /** What the app does when the notification is tapped. */
-export type MobilePushTarget = { kind: "shipment" | "job" | "alerts"; reference: string | null };
+export type MobilePushTarget = { kind: "shipment" | "invoice" | "job" | "alerts"; reference: string | null };
 
 /** A portal link becomes the shipment the app should open. */
 export function customerPushTarget(url: string): MobilePushTarget {
   const match = /\/portal\/shipments\/([^/?#]+)/.exec(url);
-  return match ? { kind: "shipment", reference: decodeURIComponent(match[1]) } : { kind: "alerts", reference: null };
+  if (match) return { kind: "shipment", reference: decodeURIComponent(match[1]) };
+  // An invoice reminder opens the invoice, where it can be paid.
+  const invoice = /\/portal\/invoices\/([^/?#]+)/.exec(url);
+  return invoice ? { kind: "invoice", reference: decodeURIComponent(invoice[1]) } : { kind: "alerts", reference: null };
 }
 
 /** An admin link becomes the job the staff app should open. */

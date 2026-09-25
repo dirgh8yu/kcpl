@@ -206,8 +206,9 @@ test("notification settings from the app or the web are the same switches, and o
     shipment_updates: true,
     documents: false,
     free_time: false,
+    invoices: false,
   });
-  assert.deepEqual(portalPreferencesFromBody({}), { shipment_updates: false, documents: false, free_time: false });
+  assert.deepEqual(portalPreferencesFromBody({}), { shipment_updates: false, documents: false, free_time: false, invoices: false });
 });
 
 test("a Live Activity shows the portal's label, where the cargo is, and ends at delivery", () => {

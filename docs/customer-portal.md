@@ -414,6 +414,39 @@ The permission prompt is only ever raised from the button. A permission asked fo
 page load is the fastest way to have it denied permanently, and a denied permission
 cannot be re-requested from script.
 
+## Invoice reminders
+
+A fourth notification topic, **Invoices coming due**, offered only to logins that can see
+invoices (account owners). The sweep sends each fact once, by email and push, keyed by the
+invoice and its due date: three days before an open invoice with a balance is due, and once
+when it becomes overdue. An invoice already more than 14 days overdue when reminders began
+is not treated as news (`portalInvoiceReminder`). In the app the notification opens the
+invoice, where **Pay online** is one tap away.
+
+## Messages on a shipment
+
+Each shipment has one conversation between the customer and KCPL
+(`shipments/{ref}/messages`), shared by four doors through `shipment-messages.server.ts`:
+the portal's shipment page and the KCPL app for the customer, the web Job File and KCPL
+Ops for staff.
+
+- A customer can write about their own shipment only, up to 30 messages an hour. The job
+  owner (`job_assigned_to_email`) is notified in the notification centre and KCPL Ops.
+- Staff reply within their branch access. Every login on the customer's account that has
+  the app gets a push; the portal thread refreshes itself.
+- A customer sees staff as "KCPL · Anil" (first name) and never a staff email.
+- A message is a record, not an instruction: nothing in the thread changes a status, a
+  document or a charge.
+
+## Rating a delivery
+
+Once a shipment is delivered, the portal and the app ask one question: how did it go, one
+to five. Each login answers once (`shipments/{ref}/customer_feedback/{hash of login}`).
+
+- Three or less is a complaint: the job owner is notified, critical at one or two.
+- Four or five is thanked and, when `KCPL_REVIEW_URL` is set to an `https://` address,
+  offered KCPL's public review page. An unhappy customer is never sent to a public review.
+
 ## Public tracking links
 
 A customer can share a shipment with someone who has no KCPL login — a consignee, a
@@ -470,6 +503,8 @@ HttpOnly session cookie, so it presents a **Firebase ID token** as
   | `GET`/`POST invoices/{ref}/pay` | `payments.server.ts` | a payment intent; money only after the gateway confirms |
   | `POST`/`DELETE shipments/{ref}/tracking-link` | `public-tracking.server.ts` | a hashed, expiring share link |
   | `POST`/`DELETE live-activities` | `mobile-push.server.ts` | a lock-screen activity token |
+  | `GET`/`POST shipments/{ref}/messages` | `shipment-messages.server.ts` | a message on the customer's own shipment |
+  | `POST shipments/{ref}/rating` | `portal-delivery-rating.server.ts` | one rating per login, after delivery |
 
   The shipment detail also carries `canConfirmDelivery`, decided on the web page's own
   rule, so the app never has to know which statuses count as delivery.

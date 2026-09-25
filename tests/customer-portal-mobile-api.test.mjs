@@ -99,6 +99,8 @@ const mobileWriters = new Map([
   ["app/api/mobile/v1/invoices/[reference]/pay/route.ts", "createPaymentIntent(session"],
   ["app/api/mobile/v1/shipments/[reference]/tracking-link/route.ts", "createTrackingLink(session"],
   ["app/api/mobile/v1/live-activities/route.ts", "saveLiveActivity("],
+  ["app/api/mobile/v1/shipments/[reference]/messages/route.ts", "customerPostsMessage(session"],
+  ["app/api/mobile/v1/shipments/[reference]/rating/route.ts", "ratePortalDelivery(session"],
 ]);
 
 test("every mobile route resolves the session through the one wrapper", async () => {
@@ -216,6 +218,8 @@ test("every write the app can make is the web portal's own, not a copy", async (
     "receivePortalRemittance(": "app/api/portal/invoices/[reference]/remittance/route.ts",
     "changePortalTeam(": "app/api/portal/team/route.ts",
     "savePortalNotificationPreferences(": "app/api/portal/notifications/route.ts",
+    "customerPostsMessage(": "app/api/portal/shipments/[reference]/messages/route.ts",
+    "ratePortalDelivery(": "app/api/portal/shipments/[reference]/rating/route.ts",
   };
   for (const [path, call] of mobileWriters) {
     if (!call) continue;

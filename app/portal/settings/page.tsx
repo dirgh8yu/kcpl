@@ -1,6 +1,6 @@
 import { getPortalAccess } from "../portal-auth";
 import { getPortalNotificationPreferences, listPortalTeam } from "../portal-accounts.server";
-import { portalNotificationPreferences } from "../portal-notifications";
+import { portalNotificationPreferences, portalNotificationTopicsFor } from "../portal-notifications";
 import { transactionalEmailConfigured } from "../../integrations/sendgrid-email.server";
 import { PortalLoginPage } from "../portal-login-page";
 import { PortalShell } from "../portal-shell";
@@ -29,6 +29,7 @@ export default async function PortalSettingsPage() {
         email={access.session.email}
         customerName={access.session.customerName}
         role={access.session.role}
+        topics={portalNotificationTopicsFor(access.session.capabilities.canViewFinance)}
         initialPreferences={stored ?? portalNotificationPreferences(null)}
         emailConfigured={transactionalEmailConfigured()}
         team={team}

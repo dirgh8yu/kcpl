@@ -17,6 +17,8 @@ import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord }
 import {
   portalDocumentReleaseMessage,
   portalFreeTimeMessage,
+  portalInvoiceMessage,
+  portalInvoiceReminder,
   portalMilestoneMessage,
   portalNotificationKey,
   portalNotificationPreferences,
@@ -49,6 +51,8 @@ type Account = {
   customerId: string;
   customerName: string;
   preferences: ReturnType<typeof portalNotificationPreferences>;
+  /** Only an owner sees invoices, so only an owner is reminded of them. */
+  owner: boolean;
   /** Each recipient is written to in their own language, which is why the
    * preference lives on the account: this sweep has no browser to ask. */
   locale: PortalLocale;
@@ -81,6 +85,7 @@ async function activePortalAccounts(): Promise<Account[]> {
       customerName: typeof data.customer_name === "string" ? data.customer_name : customerId,
       locale: portalLocaleValue(data.locale),
       preferences: portalNotificationPreferences(data),
+      owner: data.role === "owner",
     }];
   });
 }
@@ -430,6 +435,45 @@ export async function dispatchPortalNotifications() {
       }
 
       await stateRef.set(stateUpdate, { merge: true });
+    }
+
+    // Invoices due soon or just overdue, to owners who want them. The keys
+    // carry the due date, so a re-dated invoice is reminded afresh.
+    const invoiceSubscribers = customerAccounts.filter((account) => account.owner && account.preferences.invoices);
+    if (invoiceSubscribers.length && sent < MAX_EMAILS_PER_SWEEP) {
+      let invoices;
+      try {
+        invoices = await db.collection("invoices").where("customer_id", "==", customerId).limit(SHIPMENT_SCAN_LIMIT).get();
+      } catch (error) {
+        console.error("KCPL portal invoice reminder scan failed", { customerId, error });
+        invoices = null;
+      }
+      for (const invoice of invoices?.docs ?? []) {
+        const data = invoice.data() as Record<string, unknown>;
+        const reminder = portalInvoiceReminder(data, today);
+        if (!reminder) continue;
+        const url = portalUrl(`/portal/invoices/${encodeURIComponent(invoice.id)}`);
+        for (const account of invoiceSubscribers) {
+          if (sent >= MAX_EMAILS_PER_SWEEP) break;
+          const message = portalInvoiceMessage({
+            reference: invoice.id,
+            reminder,
+            balance: Number(data.balance_due),
+            currency: String(data.currency ?? "NPR"),
+            customerName: account.customerName,
+            portalUrl: url,
+          }, account.locale);
+          const key = portalNotificationKey({
+            topic: "invoices",
+            reference: invoice.id,
+            fact: `invoice-${reminder.fact}-${reminder.dueDate}`,
+            recipient: account.email,
+          });
+          const result = await sendOnce({ key, to: account.email, subject: message.subject, text: message.text, html: message.html, reference: invoice.id });
+          if (result.kind === "sent") sent += 1;
+          await pushOnce({ key, account, subject: message.subject, text: message.text, url, subscriptions: pushSubscriptions, mobileDevices });
+        }
+      }
     }
   }
 

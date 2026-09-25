@@ -67,6 +67,7 @@ test("the staff app can write only what the phone needs, and only through shared
     "app/api/mobile/ops/v1/jobs/[reference]/customs/[id]/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/delivery/evidence/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/delivery/route.ts",
+    "app/api/mobile/ops/v1/jobs/[reference]/messages/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/notes/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/tasks/[id]/route.ts",
     "app/api/mobile/ops/v1/push/route.ts",
@@ -76,6 +77,27 @@ test("the staff app can write only what the phone needs, and only through shared
     assert.match(source, /toggleJobChild\(/);
     assert.doesNotMatch(source, /toggleJobTask|toggleCustomsStep/);
   }
+});
+
+test("a reply to the customer is the Job File's own, after the same branch check", async () => {
+  const ops = code(await readFile(repo("app/api/mobile/ops/v1/jobs/[reference]/messages/route.ts"), "utf8"));
+  const web = code(await readFile(repo("app/api/admin/jobs/[reference]/messages/route.ts"), "utf8"));
+  for (const source of [ops, web]) {
+    assert.match(source, /staffPostsMessage\(reference, body \?\? \{\}, (user|auth\.user), (staff|auth\.staff)\)/);
+    assert.match(source, /staffReadsMessages\(reference, (staff|auth\.staff)\)/);
+  }
+  const shared = code(await readFile(repo("app/shipment-messages.server.ts"), "utf8"));
+  const post = shared.slice(shared.indexOf("export async function staffPostsMessage"));
+  assert.ok(post.indexOf("staffCanSee(") < post.indexOf("await write("), "branch access is checked before writing");
+  assert.doesNotMatch(shared, /collection\("shipments"\)\.doc\([^)]*\)\.(update|set)\(/, "a message never writes the shipment");
+});
+
+test("driver mode reads Delivery Control's own workspace and writes nothing", async () => {
+  const route = code(await readFile(repo("app/api/mobile/ops/v1/deliveries/route.ts"), "utf8"));
+  assert.doesNotMatch(route, /export async function (POST|PUT|PATCH|DELETE)/);
+  const shared = code(await readFile(repo("app/admin/delivery/driver-deliveries.server.ts"), "utf8"));
+  assert.match(shared, /listDeliveryWorkspace\(staff\)/);
+  assert.doesNotMatch(shared, /\.(update|set|create|delete)\(|runTransaction|batch\(/);
 });
 
 test("the web Job File ticks work through the same guarded function", async () => {
