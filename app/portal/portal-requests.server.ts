@@ -1,3 +1,4 @@
+import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
 import { checkQuoteRateLimit, quoteRateLimitPolicies } from "../api/quotes/quote-rate-limit-policy";
 import { firestoreQuoteRateLimitStore } from "../api/quotes/quote-rate-limit.server";
@@ -135,4 +136,60 @@ export async function createPortalEnquiry(session: PortalSession, values: Portal
       portal_submitted_at: now,
     });
   return reference;
+}
+
+function bookingText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * "I want to proceed" on a priced quote: a note on the quote and a namespaced
+ * marker for the enquiry workspace. It books nothing by itself; KCPL turns
+ * the quote into a booking in the workflow it already uses.
+ */
+export async function requestPortalBooking(
+  session: PortalSession,
+  payload: Record<string, unknown>,
+  source: "customer_portal" | "customer_app" = "customer_portal",
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const door = source === "customer_app" ? "KCPL app" : "Customer portal";
+  const quoteReference = bookingText(payload.quoteReference).toUpperCase();
+  const note = bookingText(payload.note).slice(0, 2000);
+  if (!quoteReference) return { status: 400, body: { ok: false, error: "A quote reference is required." } };
+
+  const db = firebaseAdminDb();
+  const quoteRef = db.collection("quotes").doc(quoteReference);
+  try {
+    const quote = await quoteRef.get();
+    const ownedByCustomer = quote.exists
+      && (String(quote.get("customer_id") ?? "") === session.customerId
+        || String(quote.get("portal_customer_id") ?? "") === session.customerId);
+    if (!ownedByCustomer) return { status: 404, body: { ok: false, error: "Quote not found." } };
+
+    const now = new Date().toISOString();
+    const noteId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    const batch = db.batch();
+    batch.set(quoteRef.collection("notes").doc(String(noteId)), {
+      id: noteId,
+      quote_reference: quoteReference,
+      note: note
+        ? `${door} booking request from ${session.email}: ${note}`
+        : `${door} booking request from ${session.email}.`,
+      author_name: session.displayName,
+      author_email: session.email,
+      created_at: now,
+    });
+    // Namespaced field: nothing downstream reads it as commercial state, and it
+    // gives the enquiry workspace a visible "customer asked to proceed" marker.
+    batch.update(quoteRef, {
+      note_count: FieldValue.increment(1),
+      portal_booking_request: { requested_at: now, requested_by_email: session.email, note: note || null, source },
+      updated_at: now,
+    });
+    await batch.commit();
+    return { status: 201, body: { ok: true, reference: quoteReference, message: "KCPL has been notified that you want to proceed." } };
+  } catch (error) {
+    console.error("KCPL portal booking request failed", error);
+    return { status: 500, body: { ok: false, error: "The booking request could not be sent. Please try again." } };
+  }
 }

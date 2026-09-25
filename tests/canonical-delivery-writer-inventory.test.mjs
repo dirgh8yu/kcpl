@@ -276,6 +276,11 @@ const reviewedClassifications = [
     rationale: "Customer notification sweep. Reads canonical shipment status and writes only its own records: a delivery row per outbound email in portal_email_deliveries, and a per-shipment notification watermark in portal_notification_state. It never writes the shipment document, so it cannot assign or influence canonical status -- reading the result on a schedule is precisely what keeps notifications outside the delivery authority.",
   },
   {
+    file: "app/mobile-push.server.ts",
+    category: "A",
+    rationale: "App push and Live Activity delivery. Writes only its own rows -- device tokens in mobile_push_devices and Live Activity push tokens in mobile_live_activities, each keyed by a hash of the token and owned by one login. A Live Activity update carries a label and progress already derived from canonical status by the notification sweep; nothing here writes the shipment document, so it cannot assign or influence canonical status.",
+  },
+  {
     file: "app/portal/portal-access-log.ts",
     category: "F",
     rationale: "Pure customer document access rollup. No Firebase dependency: it turns download events into per-document summaries and the list of released documents nobody has fetched.",

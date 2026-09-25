@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseAdminMessaging, firebaseRuntimeConfigured } from "./firebase-admin.server";
 import {
   mobileDeviceId,
+  liveActivityEnds,
   mobilePushTokenDead,
+  type LiveActivityState,
   type MobilePushAudience,
   type MobilePushPlatform,
   type MobilePushTarget,
@@ -105,5 +108,90 @@ export async function sendMobilePush(devices: MobileDevice[], message: MobilePus
   } catch (error) {
     console.error("KCPL mobile push delivery failed", error);
     return { sent: 0 };
+  }
+}
+
+const LIVE = "mobile_live_activities";
+
+function liveId(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+/** Registers a Live Activity the app started for one of the customer's own
+ * shipments, with the tokens FCM needs to update it. */
+export async function saveLiveActivity(input: { email: string; customerId: string; shipmentReference: string; activityToken: string; fcmToken: string }) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  await firebaseAdminDb().collection(LIVE).doc(liveId(input.activityToken)).set({
+    email: input.email.trim().toLowerCase(),
+    customer_id: input.customerId,
+    shipment_reference: input.shipmentReference,
+    activity_token: input.activityToken,
+    fcm_token: input.fcmToken,
+    updated_at: new Date().toISOString(),
+  });
+  return { kind: "saved" as const };
+}
+
+/** Forgets an activity, but only the caller's own. */
+export async function deleteLiveActivity(email: string, activityToken: string) {
+  if (!firebaseRuntimeConfigured()) return;
+  const reference = firebaseAdminDb().collection(LIVE).doc(liveId(activityToken));
+  const snapshot = await reference.get();
+  if (snapshot.exists && snapshot.get("email") === email.trim().toLowerCase()) await reference.delete();
+}
+
+/**
+ * Brings a person's Live Activities for a shipment up to date, and ends them
+ * once it is delivered. Never throws: a lock screen that lags must not cost
+ * the notification that carries the same news.
+ */
+export async function refreshLiveActivities(
+  email: string,
+  shipmentReference: string,
+  state: (shipment: Record<string, unknown>) => LiveActivityState,
+) {
+  if (!firebaseRuntimeConfigured()) return;
+  try {
+    const db = firebaseAdminDb();
+    const [activities, shipment] = await Promise.all([
+      db.collection(LIVE).where("email", "==", email.trim().toLowerCase()).where("shipment_reference", "==", shipmentReference).limit(10).get(),
+      db.collection("shipments").doc(shipmentReference).get(),
+    ]);
+    if (activities.empty || !shipment.exists) return;
+    const data = shipment.data() as Record<string, unknown>;
+    // The activity was started for this customer's shipment; if it has moved
+    // to another customer since, it is no longer theirs to follow.
+    const owner = String(data.customer_id ?? "");
+    const ends = liveActivityEnds(data);
+    const now = Math.floor(Date.now() / 1000);
+    for (const activity of activities.docs) {
+      if (String(activity.get("customer_id") ?? "") !== owner) {
+        await activity.ref.delete();
+        continue;
+      }
+      try {
+        await firebaseAdminMessaging().send({
+          token: String(activity.get("fcm_token")),
+          apns: {
+            liveActivityToken: String(activity.get("activity_token")),
+            headers: { "apns-priority": "10" },
+            payload: {
+              aps: {
+                timestamp: now,
+                event: ends ? "end" : "update",
+                "content-state": state(data),
+                ...(ends ? { "dismissal-date": now + 4 * 60 * 60 } : {}),
+              },
+            },
+          },
+        });
+        if (ends) await activity.ref.delete();
+      } catch (error) {
+        const code = (error as { code?: string })?.code;
+        if (mobilePushTokenDead(code)) await activity.ref.delete();
+      }
+    }
+  } catch (error) {
+    console.error("KCPL live activity refresh failed", error);
   }
 }

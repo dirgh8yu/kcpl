@@ -47,6 +47,12 @@ export function portalNotificationTopicHint(topic: PortalNotificationTopic, loca
 
 export type PortalNotificationPreferences = Record<PortalNotificationTopic, boolean>;
 
+/** A change of settings from a request: only the known topics, each on only
+ * when it says so. Nothing in the body can name whose settings they are. */
+export function portalPreferencesFromBody(body: Record<string, unknown>): PortalNotificationPreferences {
+  return Object.fromEntries(portalNotificationTopics.map((topic) => [topic, body[topic] === true])) as PortalNotificationPreferences;
+}
+
 /**
  * Absent preferences mean subscribed. A customer who was given portal access
  * expects to hear about their own cargo; silence is the surprising default, and

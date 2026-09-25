@@ -1,6 +1,6 @@
 import { getPortalAccess } from "../../../portal/portal-auth";
 import { savePortalNotificationPreferences } from "../../../portal/portal-accounts.server";
-import { portalNotificationTopics } from "../../../portal/portal-notifications";
+import { portalPreferencesFromBody } from "../../../portal/portal-notifications";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
 function json(body: unknown, status = 200) {
@@ -27,9 +27,7 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "The change could not be read." }, 400);
   }
 
-  const preferences = Object.fromEntries(
-    portalNotificationTopics.map((topic) => [topic, body[topic] === true]),
-  ) as Record<(typeof portalNotificationTopics)[number], boolean>;
+  const preferences = portalPreferencesFromBody(body);
 
   const result = await savePortalNotificationPreferences(access.session.email, preferences);
   if (result.kind === "missing") return json({ ok: false, error: "This portal account could not be found." }, 404);

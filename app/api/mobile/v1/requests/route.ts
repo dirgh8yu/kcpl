@@ -1,5 +1,5 @@
 import { mobileJson, withMobileSession } from "../../../../portal/portal-mobile-api.server";
-import { checkPortalRequestRateLimit, createPortalEnquiry, validatePortalEnquiry } from "../../../../portal/portal-requests.server";
+import { checkPortalRequestRateLimit, createPortalEnquiry, requestPortalBooking, validatePortalEnquiry } from "../../../../portal/portal-requests.server";
 
 /**
  * A quote request from the KCPL app: the portal's own rules (who may raise
@@ -30,6 +30,12 @@ export async function POST(request: Request) {
         { ok: false, code: "rate_limited", error: "Too many requests from this account. Please try again shortly, or contact your KCPL account manager." },
         429,
       );
+    }
+
+    // Accepting a priced quote: the portal's own booking request.
+    if (payload.kind === "booking") {
+      const booked = await requestPortalBooking(session, payload, "customer_app");
+      return mobileJson(booked.body, booked.status);
     }
 
     const checked = validatePortalEnquiry(payload);

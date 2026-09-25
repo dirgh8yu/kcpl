@@ -752,6 +752,8 @@ export type PortalQuoteView = {
   valid_until: string | null;
   customer_quote_note: string | null;
   shipment_reference: string | null;
+  /** When the customer asked to proceed, if they have. */
+  booking_requested_at: string | null;
 };
 
 export function portalQuoteView(data: Record<string, unknown>): PortalQuoteView {
@@ -771,6 +773,9 @@ export function portalQuoteView(data: Record<string, unknown>): PortalQuoteView 
     valid_until: nullableText(data.valid_until),
     customer_quote_note: nullableText(data.customer_quote_note),
     shipment_reference: nullableText(data.shipment_reference),
+    booking_requested_at: data.portal_booking_request && typeof data.portal_booking_request === "object"
+      ? nullableText((data.portal_booking_request as Record<string, unknown>).requested_at)
+      : null,
   };
 }
 

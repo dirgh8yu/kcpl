@@ -3,15 +3,16 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import { normalizePortalEmail, portalShipmentView } from "./portal-access-policy";
 import { listShipmentDocuments } from "../shipment-documents.server";
-import { portalLocaleValue, type PortalLocale } from "./portal-i18n";
+import { portalLocaleValue, portalText, type PortalLocale } from "./portal-i18n";
+import { portalStatusLabel } from "./portal-format";
 import {
   portalPushConfigured,
   portalPushSubscriptionsByEmail,
   sendPortalPush,
   type PortalPushSubscription,
 } from "./portal-push.server";
-import { mobileDevicesFor, sendMobilePush, type MobileDevice } from "../mobile-push.server";
-import { customerPushTarget } from "../mobile-push-policy";
+import { mobileDevicesFor, refreshLiveActivities, sendMobilePush, type MobileDevice } from "../mobile-push.server";
+import { customerPushTarget, liveActivityState } from "../mobile-push-policy";
 import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
@@ -152,12 +153,23 @@ async function pushOnce(input: {
   }
   // The app gets the same fact under the same claim: one notification per
   // device, and a tap opens the shipment it is about.
+  const target = customerPushTarget(input.url);
   await sendMobilePush(phones, {
     title: input.subject,
     body,
-    target: customerPushTarget(input.url),
+    target,
     tag: input.key,
   });
+  // The shipment on their lock screen, if they follow it there, moves too.
+  if (target.kind === "shipment" && target.reference) {
+    const locale = input.account.locale;
+    await refreshLiveActivities(input.account.email, target.reference, (shipment) =>
+      liveActivityState(
+        shipment,
+        (status) => portalStatusLabel(status, locale),
+        (date) => portalText(locale, "overview.col_eta") + " " + date,
+      ));
+  }
 }
 
 async function sendOnce(input: { key: string; to: string; subject: string; text: string; html: string; reference: string }) {

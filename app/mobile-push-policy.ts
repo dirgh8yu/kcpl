@@ -79,3 +79,35 @@ export function mobilePushTokenDead(code: string | undefined) {
     || code === "messaging/invalid-registration-token"
     || code === "messaging/invalid-argument";
 }
+
+/*
+ * Live Activities: a shipment on the iPhone lock screen and Dynamic Island.
+ * The content state is what the widget extension draws (ios/KCPLWidget), in
+ * the reader's language, and the same keys as its Swift ContentState.
+ */
+
+export type LiveActivityState = { status: string; detail: string; progress: number; attention: boolean };
+
+const liveStages = ["booking_confirmed", "preparing", "in_transit", "customs_clearance", "out_for_delivery", "delivered"];
+
+export function liveActivityState(
+  shipment: Record<string, unknown>,
+  label: (status: string) => string,
+  expected: (date: string) => string,
+): LiveActivityState {
+  const status = typeof shipment.status === "string" ? shipment.status : "booking_confirmed";
+  const stage = liveStages.indexOf(status);
+  const location = typeof shipment.current_location === "string" ? shipment.current_location.trim() : "";
+  const eta = typeof shipment.eta === "string" ? shipment.eta.trim() : "";
+  return {
+    status: label(status),
+    detail: status !== "delivered" && location ? location : eta && status !== "delivered" ? expected(eta) : "",
+    progress: stage < 0 ? 0.05 : Math.max(0.05, stage / (liveStages.length - 1)),
+    attention: status === "exception",
+  };
+}
+
+/** A delivered shipment's activity ends: the lock screen has nothing more to follow. */
+export function liveActivityEnds(shipment: Record<string, unknown>) {
+  return shipment.status === "delivered";
+}

@@ -249,6 +249,48 @@ the staff payments path against a bank statement — a customer's own figure is 
 number on a form until somebody checks it. The same file twice is recognised as a
 double submit rather than a second payment, and the invoice's creator is notified.
 
+### Paying online (Khalti, eSewa, connectIPS)
+
+From the app, an account owner can pay an invoice's whole balance through Nepal's
+gateways. The rules live in `app/payments/payment-gateways.ts` (pure, tested) and
+`app/payments/payments.server.ts`:
+
+- **Only what can be paid.** An NPR invoice, `issued`, `partially_paid` or `overdue`,
+  with a balance. The amount is the balance at the moment the payment starts, in paisa.
+- **Nothing the browser brings back is believed.** Each return is confirmed with the
+  gateway, server to server — Khalti's `epayment/lookup`, eSewa's signed reply plus its
+  status API, connectIPS's `validatetxn` signed with KCPL's creditor key — before a rupee
+  is applied.
+- **Applied once, through accounts' own path.** A verified payment goes through
+  `recordReceivablePaymentWithSettlementIntegrity` as a system actor with finance
+  authority only, keyed `gateway:transaction`, so a second report of the same payment
+  settles nothing.
+- **Never lost, never guessed.** A paid amount that differs from the intent, or an
+  invoice that can no longer take it (paid meanwhile, changed), is marked
+  `needs_review` and the invoice's creator is notified to match it by hand.
+
+A payment is a `payment_intents/{20 hex}` row: invoice, customer, login, gateway,
+amount, status (`created` → `started` → `paid` | `failed` | `needs_review`). The app opens
+`/pay/{intent}` in the browser, which forwards to the gateway, and the gateway returns
+to `/api/payments/{gateway}/return`, which confirms and forwards to `/pay/{intent}/done`.
+That page links back to the app as `kcpl://payment/{intent}`, and the app polls
+`GET /api/mobile/v1/payments/{intent}` for the outcome.
+
+**Switching it on.** Nothing is offered until `KCPL_PAYMENTS_ENV` is `test` or `live`
+*and* a gateway's credentials are all set. Set them as App Hosting secrets, never in the
+repository:
+
+| Gateway | Secrets |
+|---|---|
+| Khalti | `KHALTI_SECRET_KEY` |
+| eSewa | `ESEWA_PRODUCT_CODE`, `ESEWA_SECRET_KEY` |
+| connectIPS | `CONNECTIPS_MERCHANT_ID`, `CONNECTIPS_APP_ID`, `CONNECTIPS_APP_NAME`, `CONNECTIPS_PASSWORD`, `CONNECTIPS_PRIVATE_KEY` (PEM; `\n` escapes are accepted) |
+
+`test` uses each gateway's sandbox (`dev.khalti.com`, `rc-epay.esewa.com.np`,
+`uat.connectips.com`). connectIPS fixes its return addresses at merchant registration:
+give NCHL `https://<site>/api/payments/connectips/return` as **both** the success and
+the failure URL — the route asks NCHL which it was.
+
 Remittances live under the invoice rather than in the shipment Document Vault.
 Keeping them apart matters: `customer_safe` governs what KCPL releases *to* a
 customer, and a bank receipt flowing the other way has no business inheriting
@@ -260,7 +302,9 @@ A customer request (`POST /api/portal/requests`) creates an ordinary enquiry in 
 with `customer_id: null` and `crm_match_state: "suggested"`. The staff-owned CRM link
 stays a staff decision; the portal writes its own `portal_customer_id` field for its own
 scoping. A "ask to proceed" on a quote writes a note and a namespaced
-`portal_booking_request` marker — it never sets a status, a price or a booking. Nothing
+`portal_booking_request` marker — it never sets a status, a price or a booking. The
+app's "Accept" on a quote is the same call (`requestPortalBooking`, marked
+`source: "customer_app"`). Nothing
 in the portal touches the commercial authority chain (commercial versions, approvals,
 tenders, bookings, settlement).
 
@@ -370,6 +414,31 @@ The permission prompt is only ever raised from the button. A permission asked fo
 page load is the fastest way to have it denied permanently, and a denied permission
 cannot be re-requested from script.
 
+## Public tracking links
+
+A customer can share a shipment with someone who has no KCPL login — a consignee, a
+driver, the receiving warehouse — as `/t/{token}`.
+
+- The token is 24 random bytes (32 URL-safe characters). Only its SHA-256 is stored, in
+  `tracking_links/{hash}`, so reading the database yields no working link.
+- A link is made only by a login that may raise requests, for its own customer's
+  shipment, under the shared request rate limit. It expires after 30 days, and
+  `DELETE …/tracking-link` withdraws every link that customer made for the shipment.
+- The page shows the route by place (`Kolkata`, never an address), status, ETA, current
+  location, and up to 20 milestones by title. No customer name, carrier reference, note,
+  document, price or milestone detail (`publicTrackingView`, tested for each).
+- Pages are `force-dynamic` and `noindex, nofollow`; an expired, withdrawn or malformed
+  link reads as not found.
+
+## Live Activities (iOS)
+
+A customer can pin a shipment to the lock screen and Dynamic Island. The app registers
+the activity's push token (`POST /api/mobile/v1/live-activities`, own shipments only);
+the notification sweep, when it pushes a shipment update, also sends the activity its
+new state (`liveActivityState`: the portal's status label, where the cargo is, progress)
+through FCM, and ends it at delivery. Tokens live in `mobile_live_activities/{sha256}`
+with their owner's email; a dead token is dropped like a dead device.
+
 ## Mobile app API
 
 The Flutter customer app (`mobile/`, see `mobile/README.md`) cannot hold the portal's
@@ -396,6 +465,11 @@ HttpOnly session cookie, so it presents a **Firebase ID token** as
   | `POST shipments/{ref}/confirm-delivery` | `portal-delivery-confirmation.server.ts` | a confirmation record and Job File activity, never delivery state |
   | `GET`/`POST invoices/{ref}/remittances` | `portal-remittance-intake.server.ts` | a receipt awaiting accounts, never a ledger entry |
   | `GET`/`POST team` | `portal-team.server.ts` | owner-only; a member login and its invite |
+  | `POST requests` with `kind: "booking"` | `portal-requests.server.ts` | the "ask to proceed" note on a quote |
+  | `GET`/`POST notifications` | `portal-accounts.server.ts` | the signed-in login's own topic switches |
+  | `GET`/`POST invoices/{ref}/pay` | `payments.server.ts` | a payment intent; money only after the gateway confirms |
+  | `POST`/`DELETE shipments/{ref}/tracking-link` | `public-tracking.server.ts` | a hashed, expiring share link |
+  | `POST`/`DELETE live-activities` | `mobile-push.server.ts` | a lock-screen activity token |
 
   The shipment detail also carries `canConfirmDelivery`, decided on the web page's own
   rule, so the app never has to know which statuses count as delivery.
@@ -491,6 +565,10 @@ in server routes only, exactly like the staff product.
 | `GET /api/mobile/v1/overview`, `/shipments`, `/shipments/[reference]` | Mobile app: the same views as the portal pages |
 | `GET /api/mobile/v1/documents`, `/documents/[reference]/[id]` | Mobile app: document list and logged download |
 | `GET /api/mobile/v1/invoices`, `/invoices/[reference]` | Mobile app: invoices (finance capability only) |
+| `GET /api/mobile/v1/quotes` | Mobile app: issued quotes and whether proceeding was asked |
+| `GET`/`POST /api/mobile/v1/invoices/[reference]/pay`, `GET /api/mobile/v1/payments/[intent]` | Mobile app: online payment options, start, outcome |
+| `/pay/[intent]`, `/pay/[intent]/done`, `/api/payments/{khalti,esewa,connectips}/return` | Gateway hand-off and confirmation |
+| `/t/[token]` | Public tracking page (no login) |
 | `GET`/`PUT /api/admin/jobs/[reference]/free-time` | Staff free-time record (Job File) |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |
 
@@ -499,10 +577,8 @@ excluded from public analytics and from the public site's mobile quote CTA.
 
 ## Known gaps
 
-- **The mobile app reads, it does not act.** Uploads, remittances, delivery confirmation,
-  requests and team management stay on the web portal for now, and the app has no native
-  push (that needs FCM and the project's `google-services.json`). An app sign-in is also
-  not written to the account's last-sign-in time, which the web sign-in records.
+- **An app sign-in is not written to the account's last-sign-in time**, which the web
+  sign-in records.
 - **QA preview reaches the screens, not the data.** `KCPL_QA_AUTH_BYPASS` plus a separate
   `KCPL_QA_PORTAL` renders every signed-in surface as an invented customer, so the portal
   can be reviewed without a real account. It is fenced by the same helper as the staff
@@ -517,9 +593,10 @@ excluded from public analytics and from the public site's mobile quote CTA.
 - **Document coverage is bounded.** `/portal/documents` scans the 40 most recently
   updated shipments (documents live in a per-shipment subcollection, so a full history
   scan costs one read per shipment). The workspace states the coverage when it is capped.
-- **No payment capture.** A customer can tell KCPL they paid and attach the receipt,
-  but the portal takes no money and applies none: bank details, payment references and
-  credit terms stay with KCPL accounts.
+- **Online payment is whole-balance, NPR, and untested against live gateways.** The
+  signatures are tested against the gateways' published formats, but the first real
+  payment in `test` mode is the first real round trip. Partial payments and foreign
+  currency invoices stay with KCPL accounts, as does a paid amount that disagrees.
 - **Free time is only as good as what staff record.** Nothing imports carrier free days
   automatically, so an unrecorded allowance simply shows no countdown rather than a
   wrong one.
@@ -552,8 +629,9 @@ excluded from public analytics and from the public site's mobile quote CTA.
 - **Nepali covers the portal, not the data.** Every screen a signed-in customer sees
   and all three notification emails are translated. Place names, shipment references,
   filenames, carrier names and staff notes are records and stay as KCPL holds them.
-  Dates stay Gregorian in both languages, because every carrier document and customs
-  entry the portal reports on is Gregorian. The sign-in page stays English: it renders
+  Dates stay Gregorian in both languages on the web, because every carrier document and
+  customs entry the portal reports on is Gregorian; the app offers Bikram Sambat as a
+  display option only. The sign-in page stays English: it renders
   before anyone has identified themselves.
 - **The portal installs, but stores nothing offline.** The service worker exists to
   receive push and focus a tab. It has no fetch handler and no cache, because a cached
