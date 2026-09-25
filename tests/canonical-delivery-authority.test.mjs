@@ -13,7 +13,8 @@ const deliveryServer = source("app/admin/delivery/delivery-control.server.ts");
 const authorityServer = source("app/admin/delivery/canonical-delivery-authority.server.ts");
 const policySource = source("app/admin/delivery/canonical-delivery-policy.ts");
 const directRoute = source("app/api/admin/shipments/[reference]/route.ts");
-const deliveryRoute = source("app/api/admin/jobs/[reference]/delivery/route.ts");
+// The route and the shared request module both web and KCPL Ops use.
+const deliveryRoute = source("app/api/admin/jobs/[reference]/delivery/route.ts") + source("app/admin/delivery/delivery-requests.server.ts");
 const trackingServer = source("app/admin/visibility/tracking-visibility.server.ts");
 const shipmentData = source("app/shipment-data.server.ts");
 const packageJson = JSON.parse(source("package.json"));

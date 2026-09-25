@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
+import { staffAssignmentOptions } from "../../../../admin/job-file-requests.server";
 import { ensureStaffAssignmentUidMigration, getStaffContext, listStaffProfiles } from "../../../../admin/staff-directory.server";
 
 function json(body: unknown, status = 200) {
@@ -19,24 +20,7 @@ export async function GET() {
     console.error("KCPL staff assignment UID migration failed", error);
   }
 
-  const options = profiles
-    .filter((profile) => profile.active)
-    .filter((profile) => {
-      if (context.can_access_all_branches) return true;
-      if (profile.branch_scope === "all") return true;
-      return profile.branches.some((branch) => context.branches.includes(branch));
-    })
-    .map((profile) => ({
-      uid: profile.uid,
-      display_name: profile.display_name,
-      email: profile.email,
-      phone: profile.phone,
-      job_title: profile.job_title,
-      role: profile.role,
-      branch_scope: profile.branch_scope,
-      branches: profile.branches,
-    }))
-    .sort((a, b) => a.display_name.localeCompare(b.display_name));
+  const options = await staffAssignmentOptions(context, profiles);
 
   return json({ ok: true, options });
 }

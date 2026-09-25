@@ -63,7 +63,10 @@ test("the staff app can write only what the phone needs, and only through shared
   }
   assert.deepEqual(writers.sort(), [
     "app/api/mobile/ops/v1/alerts/[id]/route.ts",
+    "app/api/mobile/ops/v1/jobs/[reference]/actions/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/customs/[id]/route.ts",
+    "app/api/mobile/ops/v1/jobs/[reference]/delivery/evidence/route.ts",
+    "app/api/mobile/ops/v1/jobs/[reference]/delivery/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/notes/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/tasks/[id]/route.ts",
     "app/api/mobile/ops/v1/push/route.ts",
@@ -144,3 +147,37 @@ test("a field photo is filed as other unless its type is named, and never as an 
   assert.equal(opsFieldDocumentType("proof_of_delivery"), "proof_of_delivery");
   assert.equal(opsFieldDocumentType("passport"), null);
 });
+
+test("job actions from the phone are the web Job File's own, after the same branch check", async () => {
+  const route = code(await readFile(repo("app/api/mobile/ops/v1/jobs/[reference]/actions/route.ts"), "utf8"));
+  const check = route.indexOf("checkShipmentBranchAccess(");
+  assert.ok(check > 0 && check < route.indexOf("request.json()"), "access is decided before the body is read");
+  for (const shared of ["addJobTaskFromRequest(", "closeJobFromRequest(", "reassignJob("]) assert.ok(route.includes(shared), shared);
+  const web = code(await readFile(repo("app/api/admin/jobs/[reference]/route.ts"), "utf8"));
+  for (const shared of ["addJobTaskFromRequest(", "closeJobFromRequest("]) assert.ok(web.includes(shared), `the web route shares ${shared}`);
+});
+
+test("a job can only be given to someone the assigner may choose, and nothing else on the file changes", async () => {
+  const source = code(await readFile(repo("app/admin/job-file-requests.server.ts"), "utf8"));
+  const body = source.slice(source.indexOf("export async function reassignJob"));
+  assert.ok(body.indexOf("staffAssignmentOptions(staff)") < body.indexOf("updateDigitalJobFile("));
+  assert.match(body, /options\.find\(\(option\) => option\.uid === uid\)/);
+  assert.match(body, /priority: job\.priority/);
+  assert.match(body, /internalNotes: job\.internal_notes/);
+  assert.doesNotMatch(body, /primaryBranch|handlingBranches/, "branches are not the field's to move");
+});
+
+test("the field records deliveries and attaches POD through Delivery Control, and never verifies POD", async () => {
+  const routes = await Promise.all([
+    readFile(repo("app/api/mobile/ops/v1/jobs/[reference]/delivery/route.ts"), "utf8"),
+    readFile(repo("app/api/mobile/ops/v1/jobs/[reference]/delivery/evidence/route.ts"), "utf8"),
+  ]);
+  const both = routes.map(code).join("\n");
+  assert.match(both, /scheduleDeliveryFromRequest\(/);
+  assert.match(both, /updateDeliveryFromRequest\(/);
+  assert.match(both, /podEvidenceFromForm\(/);
+  assert.doesNotMatch(both, /reviewPod|review_pod|reconcileCanonicalDelivery|adoptTrackedDelivery/);
+  const shared = code(await readFile(repo("app/admin/delivery/delivery-requests.server.ts"), "utf8"));
+  assert.doesNotMatch(shared, /reviewPod\(|firebaseAdminDb/, "the shared module only calls Delivery Control");
+});
+

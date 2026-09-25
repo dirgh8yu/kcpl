@@ -7,16 +7,14 @@ import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "
 import {
   addCustomsStep,
   addJobCost,
-  addJobTask,
   getDigitalJobFile,
   updateDigitalJobFile,
 } from "../../../../admin/job-file.server";
 import { jobCostCategories, jobPriorities, type JobCostCategory, type JobPriority } from "../../../../admin/job-file";
-import { closeShipmentJob, getShipmentWorkflowReadiness, reopenShipmentJob } from "../../../../admin/workflow-guard.server";
+import { getShipmentWorkflowReadiness, reopenShipmentJob } from "../../../../admin/workflow-guard.server";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
 import { toggleJobChild, type JobChildToggleResult } from "../../../../admin/job-file-actions.server";
-
-const NEPAL_OFFSET_MINUTES = 5 * 60 + 45;
+import { addJobTaskFromRequest, closeJobFromRequest, touchShipment } from "../../../../admin/job-file-requests.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -47,26 +45,6 @@ function resultError(kind: string) {
   return json({ ok: false, error: "The Job File action could not be completed." }, 500);
 }
 
-function validDateParts(year: number, month: number, day: number) {
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
-}
-
-function normalizeNepalDateTime(value: string) {
-  if (!value) return "";
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const second = Number(match[6] ?? "0");
-  if (!validDateParts(year, month, day) || hour > 23 || minute > 59 || second > 59) return null;
-  const utcMs = Date.UTC(year, month - 1, day, hour, minute, second) - NEPAL_OFFSET_MINUTES * 60_000;
-  return new Date(utcMs).toISOString();
-}
-
 async function shipmentGuard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
   const access = await checkShipmentBranchAccess(reference, staff);
   if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
@@ -79,10 +57,6 @@ function toggleError(kind: Exclude<JobChildToggleResult["kind"], "updated">) {
   if (kind === "missing_child") return json({ ok: false, error: "The requested Job File item was not found." }, 404);
   if (kind === "forbidden_child") return json({ ok: false, error: "This work item belongs to a branch outside your staff access." }, 403);
   return resultError(kind);
-}
-
-async function touchShipment(reference: string) {
-  await firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).update({ updated_at: new Date().toISOString() });
 }
 
 async function refreshShipmentCustomerFinance(reference: string) {
@@ -158,10 +132,8 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   const actor = { name: auth.user.displayName, email: auth.user.email };
 
   if (action === "close_job") {
-    const result = await closeShipmentJob(reference, actor, workflowStaff, clean(body.overrideReason, 2000));
-    if (result.kind === "closed" || result.kind === "already_closed") return json({ ok: true, workflow: result.readiness, overrideUsed: result.kind === "closed" ? result.overrideUsed : false });
-    if (result.kind === "blocked") return json({ ok: false, error: result.blockers.join(" "), code: "CLOSEOUT_BLOCKED", blockers: result.blockers, canOverride: result.canOverride, workflow: result.readiness }, 409);
-    return resultError(result.kind);
+    const result = await closeJobFromRequest(reference, body, actor, auth.staff);
+    return json(result.body, result.status);
   }
 
   if (action === "reopen_job") {
@@ -173,29 +145,8 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   }
 
   if (action === "add_task") {
-    const title = clean(body.title, 240);
-    const branch = clean(body.branch, 80);
-    const dueAtInput = clean(body.dueAt, 40);
-    const dueAt = normalizeNepalDateTime(dueAtInput);
-    const assignedToEmail = clean(body.assignedToEmail, 240).toLowerCase();
-    if (!title) return json({ ok: false, error: "Add a task title." }, 400);
-    if (!kcplBranches.includes(branch as KcplBranch)) return json({ ok: false, error: "Choose a valid task branch." }, 400);
-    if (!staffCanAccessBranch(auth.staff, branch)) return json({ ok: false, error: "You cannot create work for a branch outside your staff access." }, 403);
-    if (dueAt === null) return json({ ok: false, error: "Choose a real task due date and time." }, 400);
-    if (assignedToEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assignedToEmail)) return json({ ok: false, error: "Enter a valid assignee email address." }, 400);
-    const result = await addJobTask(reference, {
-      title,
-      detail: clean(body.detail, 5000),
-      branch: branch as KcplBranch,
-      dueAt,
-      assignedToUid: clean(body.assignedToUid, 160),
-      assignedToName: clean(body.assignedToName, 160),
-      assignedToEmail,
-      assignedToPhone: clean(body.assignedToPhone, 80),
-    }, actor, auth.staff);
-    if (result.kind !== "created") return resultError(result.kind);
-    await touchShipment(reference);
-    return json({ ok: true, task: result.task }, 201);
+    const result = await addJobTaskFromRequest(reference, body, actor, auth.staff);
+    return json(result.body, result.status);
   }
 
   if (action === "toggle_task") {
