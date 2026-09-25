@@ -4,6 +4,7 @@ import '../api/kcpl_api.dart' show ApiException;
 import '../auth/auth_repository.dart';
 import '../push/push_service.dart';
 import '../session_host.dart';
+import 'note_queue.dart';
 import 'ops_api.dart';
 import 'ops_models.dart';
 
@@ -11,9 +12,20 @@ enum OpsStatus { starting, unconfigured, signedOut, signedIn }
 
 /// The staff app's state: who is signed in and their role and branches.
 class OpsController extends SessionHost {
-  OpsController({required this.auth, required this.api, required bool configured, PushService? push})
+  OpsController({required this.auth, required this.api, required bool configured, PushService? push, NoteQueue? notes})
     : push = push ?? NoPushService(),
+      notes = notes ?? NoteQueue(),
       _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
+
+  /// Field notes written without signal, waiting to go.
+  final NoteQueue notes;
+
+  /// The outbox follows whoever is signed in; it needs their email to know
+  /// which notes are theirs.
+  void _attachNotes() {
+    final email = _session?.email;
+    if (email != null && email.isNotEmpty) notes.attach(api, email).ignore();
+  }
 
   @override
   final PushService push;
@@ -59,6 +71,7 @@ class OpsController extends SessionHost {
       _session = await api.session();
       _set(OpsStatus.signedIn);
       _resumePush();
+      _attachNotes();
     } on SignedOutException {
       _set(OpsStatus.signedOut);
     } on ApiException catch (error) {
@@ -88,10 +101,13 @@ class OpsController extends SessionHost {
     sessionEnded = false;
     _set(OpsStatus.signedIn);
     _resumePush();
+    _attachNotes();
   }
 
   void updateSession(OpsSession session) {
+    final first = _session == null;
     _session = session;
+    if (first) _attachNotes();
     notifyListeners();
   }
 
@@ -108,6 +124,7 @@ class OpsController extends SessionHost {
       await push.disable(api.unregisterPush, optOut: false);
     } catch (_) {}
     await auth.signOut();
+    notes.detach();
     _session = null;
     unread = 0;
     _set(OpsStatus.signedOut);

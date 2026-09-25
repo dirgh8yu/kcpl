@@ -16,6 +16,7 @@ import '../ui/motion.dart';
 import '../ui/screens/sign_in_screen.dart';
 import '../ui/theme.dart';
 import '../ui/widgets/kcpl_loader.dart';
+import 'note_queue.dart';
 import 'ops_api.dart';
 import 'ops_controller.dart';
 import 'ops_demo.dart';
@@ -52,6 +53,7 @@ Future<void> main() async {
       api: HttpOpsApi(base: config.apiBase, auth: auth),
       configured: config.configured,
       push: await FcmPushService.create(store),
+      notes: NoteQueue(store: FileNoteQueueStore()),
     );
   }
   controller.start();

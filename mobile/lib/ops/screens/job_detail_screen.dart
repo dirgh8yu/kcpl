@@ -15,7 +15,10 @@ import '../../ui/widgets/common.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
+import '../note_queue.dart';
+import 'delivery_screen.dart';
 import 'field_note_screen.dart';
+import 'job_actions.dart';
 
 class JobDetailScreen extends StatelessWidget {
   const JobDetailScreen({super.key, required this.reference, this.preview});
@@ -32,7 +35,15 @@ class JobDetailScreen extends StatelessWidget {
     return Scaffold(
       body: AsyncPage<JobFile>(
         title: reference,
-        load: () => api.job(reference),
+        load: () async {
+          // Delivery Control is read beside the Job File; if it cannot be,
+          // the rest of the job still shows.
+          final loaded = await Future.wait<Object?>([
+            api.job(reference),
+            api.delivery(reference).then<DeliveryControl?>((d) => d, onError: (Object _) => null),
+          ]);
+          return (loaded[0] as JobFile).withDelivery(loaded[1] as DeliveryControl?);
+        },
         leading: preview == null ? 0 : 2,
         placeholder: preview == null ? null : (context) => _lead(context, preview),
         onMissing: (context, _) => const EmptyState(
@@ -73,19 +84,44 @@ class JobDetailScreen extends StatelessWidget {
 
     return [
       SectionHeader('Owner'),
-      if (job.ownerName == null)
-        const Notice(title: 'Unassigned', body: 'Nobody owns this job yet. Assign it from the Job File on the web.')
-      else
-        RowGroup(
-          children: [_OwnerRow(name: job.ownerName!, title: file.ownerTitle, phone: job.ownerPhone, branch: job.primaryBranch)],
-        ),
+      RowGroup(
+        indent: job.ownerName == null ? RowGroup.iconIndent : 68,
+        children: [
+          if (job.ownerName != null) _OwnerRow(name: job.ownerName!, title: file.ownerTitle, phone: job.ownerPhone, branch: job.primaryBranch),
+          if (!file.jobClosed)
+            _ActionRow(
+              icon: KIcons.reassign,
+              label: job.ownerName == null ? 'Assign someone' : 'Give to someone else',
+              onTap: () async {
+                if (await reassignJob(context, job) && context.mounted) await AsyncPage.reload(context);
+              },
+            ),
+        ],
+      ),
+      if (job.ownerName == null) const Footnote('Nobody owns this job yet.'),
       if (file.tasks.isEmpty) ...[
         SectionHeader('Tasks'),
-        const GroupCard(
-          child: EmptyState(icon: KIcons.tasks, title: 'No tasks', description: 'Tasks added in the Job File appear here.'),
+        RowGroup(
+          indent: RowGroup.iconIndent,
+          children: [
+            if (!file.jobClosed)
+              _ActionRow(
+                icon: KIcons.add,
+                label: 'New task',
+                onTap: () async {
+                  if (await openAddTask(context, file) && context.mounted) await AsyncPage.reload(context);
+                },
+              ),
+          ],
         ),
+        const Footnote('No tasks yet. Tasks added here or in the Job File show on both.'),
       ] else
         _Checklist(
+          add: file.jobClosed
+              ? null
+              : () async {
+                  if (await openAddTask(context, file) && context.mounted) await AsyncPage.reload(context);
+                },
           label: 'Tasks',
           key: ValueKey('tasks-${job.reference}'),
           items: [
@@ -119,27 +155,9 @@ class JobDetailScreen extends StatelessWidget {
             child: Notice(title: blocker, emphasis: Emphasis.normal),
           ),
       ],
+      if (file.delivery != null) ..._delivery(context, file),
       SectionHeader('From the field'),
-      RowGroup(
-        indent: RowGroup.iconIndent,
-        children: [
-          RowTile(
-            onTap: () async {
-              if (await openFieldNote(context, job.reference) && context.mounted) await AsyncPage.reload(context);
-            },
-            leading: Icon(KIcons.camera, size: 22, color: context.palette.accent),
-            title: Text('Add a note or photo', style: TextStyle(color: context.palette.accent)),
-          ),
-          for (final note in file.fieldNotes)
-            RowTile(
-              leading: Icon(note.photoFilename == null ? KIcons.note : KIcons.image, size: 20, color: context.palette.secondary),
-              title: Text(note.text.isEmpty ? (note.photoFilename ?? 'Photo') : note.text),
-              subtitle: Text(
-                [?note.author, formatDateTime(note.createdAt), if (note.photoFilename != null && note.text.isNotEmpty) 'Photo'].join(' · '),
-              ),
-            ),
-        ],
-      ),
+      _FieldNotes(reference: job.reference, notes: file.fieldNotes),
       if (file.internalNotes != null) ...[
         SectionHeader('Notes'),
         GroupCard(
@@ -179,7 +197,217 @@ class JobDetailScreen extends StatelessWidget {
             ],
           ),
       ],
+      const SizedBox(height: 28),
+      if (file.jobClosed)
+        const Footnote('This job is closed.')
+      else
+        RowGroup(
+          children: [
+            RowTile(
+              onTap: () async {
+                if (await openCloseJob(context, file) && context.mounted) await AsyncPage.reload(context);
+              },
+              title: Center(child: Text('Close job…', style: TextStyle(color: context.palette.accent))),
+            ),
+          ],
+        ),
     ];
+  }
+
+  List<Widget> _delivery(BuildContext context, JobFile file) {
+    final control = file.delivery!;
+    final latest = control.latest;
+    final p = context.palette;
+    final String? action = file.jobClosed
+        ? null
+        : control.open != null
+        ? 'Record how it went'
+        : control.awaitingPod != null
+        ? 'Add proof of delivery'
+        : file.job.status == 'delivered'
+        ? null
+        : 'Start delivery';
+    if (latest == null && action == null) return const [];
+    return [
+      SectionHeader('Delivery'),
+      RowGroup(
+        indent: RowGroup.iconIndent,
+        children: [
+          if (latest != null)
+            RowTile(
+              leading: Icon(KIcons.truck, size: 20, color: latest.status == 'failed' || latest.status == 'refused' ? p.accent : p.secondary),
+              title: Text('Attempt ${latest.number} · ${attemptLabel(latest)}'),
+              subtitle: Text(
+                [
+                  if (latest.failureReason != null) latest.failureReason!,
+                  if (latest.status == 'delivered' && latest.recipientRelation != null) latest.recipientRelation!,
+                  formatDateTime(latest.eventTime ?? latest.scheduledFor),
+                ].join(' · '),
+              ),
+            ),
+          if (latest?.status == 'delivered' || control.evidence.isNotEmpty)
+            RowTile(
+              leading: Icon(KIcons.signature, size: 20, color: control.podStatus == 'rejected' ? p.accent : p.secondary),
+              title: Text(podLabel(control.podStatus)),
+              subtitle: control.evidence.isEmpty
+                  ? null
+                  : Text(
+                      [
+                        if (control.evidence.any((e) => e.kind == 'signature')) 'Signature',
+                        if (control.evidence.any((e) => e.kind == 'photo')) '${control.evidence.where((e) => e.kind == 'photo').length} photo${control.evidence.where((e) => e.kind == 'photo').length == 1 ? '' : 's'}',
+                        if (control.evidence.any((e) => e.kind == 'document')) 'Document',
+                      ].join(' · '),
+                    ),
+            ),
+          if (action != null)
+            _ActionRow(
+              icon: KIcons.delivery,
+              label: action,
+              onTap: () async {
+                if (await openDelivery(context, file.job.reference, control) && context.mounted) await AsyncPage.reload(context);
+              },
+            ),
+        ],
+      ),
+    ];
+  }
+}
+
+String attemptLabel(DeliveryAttempt attempt) => switch (attempt.status) {
+  'scheduled' => 'Scheduled',
+  'out_for_delivery' => 'Out for delivery',
+  'delivered' => attempt.recipientName == null ? 'Delivered' : 'Received by ${attempt.recipientName}',
+  'refused' => 'Refused',
+  _ => 'Not delivered',
+};
+
+String podLabel(String status) => switch (status) {
+  'received' => 'Proof received · the desk verifies it',
+  'verified' => 'Proof of delivery verified',
+  'rejected' => 'Proof rejected by the desk · add new proof',
+  _ => 'No proof of delivery yet',
+};
+
+/// An action in a list, in the accent colour, as iOS writes "Add…" rows.
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.palette.accent;
+    return RowTile(
+      onTap: onTap,
+      leading: Icon(icon, size: 22, color: accent),
+      title: Text(label, style: TextStyle(color: accent)),
+    );
+  }
+}
+
+/// Notes on the job, and under them any written here without signal that
+/// are still on the phone. When one of those goes, the page refreshes to
+/// show it as KCPL has it.
+class _FieldNotes extends StatefulWidget {
+  const _FieldNotes({required this.reference, required this.notes});
+  final String reference;
+  final List<FieldNote> notes;
+
+  @override
+  State<_FieldNotes> createState() => _FieldNotesState();
+}
+
+class _FieldNotesState extends State<_FieldNotes> {
+  late final NoteQueue _queue = OpsScope.read(context).notes;
+  late int _waiting = _queue.waitingFor(widget.reference).length;
+
+  @override
+  void initState() {
+    super.initState();
+    _queue.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    _queue.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    final waiting = _queue.waitingFor(widget.reference).length;
+    final sent = waiting < _waiting;
+    _waiting = waiting;
+    if (!mounted) return;
+    setState(() {});
+    if (sent) AsyncPage.reload(context);
+  }
+
+  Future<void> _queued(QueuedNote note) async {
+    final discard = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 12),
+              child: Text(
+                note.refusal ?? 'This note is on your phone and goes to the job as soon as KCPL can be reached.',
+                style: sheet.type.bodyMedium?.copyWith(color: sheet.palette.secondary),
+              ),
+            ),
+            RowGroup(
+              children: [
+                RowTile(
+                  onTap: () => Navigator.of(sheet).pop(true),
+                  title: Center(child: Text('Delete note', style: TextStyle(color: sheet.palette.accent))),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+    if (discard == true) await _queue.discard(note.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final waiting = _queue.waitingFor(widget.reference);
+    return RowGroup(
+      indent: RowGroup.iconIndent,
+      children: [
+        _ActionRow(
+          icon: KIcons.camera,
+          label: 'Add a note or photo',
+          onTap: () async {
+            if (await openFieldNote(context, widget.reference) && context.mounted) await AsyncPage.reload(context);
+          },
+        ),
+        for (final note in waiting.reversed)
+          RowTile(
+            onTap: () => _queued(note),
+            leading: Icon(KIcons.outbox, size: 20, color: note.refusal == null ? p.secondary : p.accent),
+            title: Text(note.text.isEmpty ? (note.photo?.filename ?? 'Photo') : note.text),
+            subtitle: Text(
+              note.refusal ?? ['Waiting for signal', formatDateTime(note.createdAt.toUtc().toIso8601String()), if (note.photo != null) 'Photo'].join(' · '),
+              style: note.refusal == null ? null : TextStyle(color: p.accent),
+            ),
+          ),
+        for (final note in widget.notes)
+          RowTile(
+            leading: Icon(note.photoFilename == null ? KIcons.note : KIcons.image, size: 20, color: p.secondary),
+            title: Text(note.text.isEmpty ? (note.photoFilename ?? 'Photo') : note.text),
+            subtitle: Text(
+              [?note.author, formatDateTime(note.createdAt), if (note.photoFilename != null && note.text.isNotEmpty) 'Photo'].join(' · '),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -244,7 +472,10 @@ class _Item {
 /// A tickable list, Reminders-style. A tick shows at once and is saved
 /// behind it; if the save fails the tick comes back off and says so.
 class _Checklist extends StatefulWidget {
-  const _Checklist({super.key, required this.label, required this.items, required this.onToggle});
+  const _Checklist({super.key, required this.label, required this.items, required this.onToggle, this.add});
+
+  /// Adds a task: a "New task" row closes the list, as in Reminders.
+  final VoidCallback? add;
 
   /// The section title. The count beside it follows ticks as they happen.
   final String label;
@@ -296,6 +527,7 @@ class _ChecklistState extends State<_Checklist> {
           children: [
             for (final item in widget.items)
               _CheckRow(item: item, completed: _pending[item.id] ?? item.completed, onTap: () => _toggle(item)),
+            if (widget.add != null) _ActionRow(icon: KIcons.add, label: 'New task', onTap: widget.add!),
           ],
         ),
       ],

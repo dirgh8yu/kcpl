@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../api/kcpl_api.dart' show ApiException;
 import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/labels.dart';
@@ -11,9 +12,19 @@ import '../../ui/widgets/compose.dart';
 import '../../ui/widgets/sheet_route.dart';
 import '../ops_controller.dart';
 
-/// True when the note was saved.
-Future<bool> openFieldNote(BuildContext context, String reference) async =>
-    await Navigator.of(context).push<bool>(SheetRoute<bool>(builder: (_) => FieldNoteScreen(reference: reference))) ?? false;
+/// True when the note was saved, or kept on the phone to send later.
+Future<bool> openFieldNote(BuildContext context, String reference) async {
+  // A sheet has a messenger of its own; the word about a kept note belongs
+  // on the job it returns to.
+  final messenger = ScaffoldMessenger.of(context);
+  final result = await Navigator.of(context).push<Object>(SheetRoute<Object>(builder: (_) => FieldNoteScreen(reference: reference)));
+  if (result == _kept) {
+    messenger.showSnackBar(const SnackBar(content: Text('No signal. Saved on this phone; it goes to the job by itself.')));
+  }
+  return result != null;
+}
+
+const _kept = 'kept';
 
 /// What a photo from the field most often is. Anything else is "Other" and
 /// can be refiled from the Document Vault.
@@ -62,24 +73,32 @@ class _FieldNoteScreenState extends State<FieldNoteScreen> {
       setState(() => _error = 'Write a note or add a photo.');
       return;
     }
-    final api = OpsScope.read(context).api;
+    final controller = OpsScope.read(context);
     setState(() => (_busy = true, _error = null, _progress = photo == null ? null : 0));
-    final error = await attempt(
-      context,
-      () => api.addNote(
-        widget.reference,
-        text: text,
-        photo: photo,
-        documentType: _type,
-        onProgress: (fraction) {
-          if (mounted) setState(() => _progress = fraction);
-        },
-      ),
-    );
+    var kept = false;
+    final error = await attempt(context, () async {
+      try {
+        await controller.api.addNote(
+          widget.reference,
+          text: text,
+          photo: photo,
+          documentType: _type,
+          onProgress: (fraction) {
+            if (mounted) setState(() => _progress = fraction);
+          },
+        );
+      } on ApiException catch (failure) {
+        // No signal at a border yard is normal: the note waits on the phone
+        // and goes by itself, rather than being lost or typed twice.
+        if (failure.code != 'network' || !controller.notes.ready) rethrow;
+        await controller.notes.add(widget.reference, text: text, photo: photo, documentType: photo == null ? 'other' : _type);
+        kept = true;
+      }
+    });
     if (!mounted) return;
     if (error == null) {
       HapticFeedback.mediumImpact();
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(kept ? _kept : true);
       return;
     }
     setState(() => (_busy = false, _progress = null, _error = error));

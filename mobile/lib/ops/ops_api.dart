@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 import '../api/kcpl_api.dart' show ApiException;
 import '../api/models.dart' show Attachment, SendProgress;
@@ -30,6 +31,50 @@ abstract class OpsApi {
 
   /// Jobs in the caller's branches that a scanned or typed identifier means.
   Future<List<ScanMatch>> lookup(String query);
+
+  /// Delivery Control for a job: its attempts and where POD stands.
+  Future<DeliveryControl> delivery(String reference);
+
+  /// Opens an attempt now and sets it out for delivery.
+  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = ''});
+
+  /// How an attempt ended. [status] is delivered, failed or refused. A
+  /// delivered outcome never makes the shipment Delivered by itself: POD is
+  /// verified at the desk first.
+  Future<DeliveryOutcome> recordDelivery(
+    String reference,
+    String attemptId, {
+    required String status,
+    String recipientName = '',
+    String recipientRelation = '',
+    String recipientPhone = '',
+    String failureReason = '',
+    double? latitude,
+    double? longitude,
+    String notes = '',
+  });
+
+  /// A signature, photo or document against a delivered attempt. [kind] is
+  /// signature, photo or document.
+  Future<PodEvidence> addPodEvidence(
+    String reference,
+    String attemptId,
+    String kind,
+    Attachment file, {
+    DateTime? capturedAt,
+    SendProgress? onProgress,
+  });
+
+  /// Who a job can be given to.
+  Future<List<StaffOption>> staff();
+
+  /// A task on the job. [dueAt] is Nepal wall-clock time, "2026-09-25T17:00".
+  Future<void> addTask(String reference, {required String title, required String branch, String dueAt = '', String detail = '', StaffOption? assignee});
+
+  Future<void> reassign(String reference, StaffOption owner);
+
+  /// Throws [CloseoutBlocked] while something still stands in the way.
+  Future<void> closeJob(String reference, {String overrideReason = ''});
   Future<void> registerPush(String token, String platform);
   Future<void> unregisterPush(String token);
 }
@@ -80,6 +125,12 @@ class HttpOpsApi implements OpsApi {
         decoded = const {};
       }
       if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
+      if (decoded['code'] == 'CLOSEOUT_BLOCKED') {
+        throw CloseoutBlocked(
+          decoded['blockers'] is List ? (decoded['blockers'] as List).whereType<String>().toList() : const [],
+          canOverride: decoded['canOverride'] == true,
+        );
+      }
       throw ApiException(response.statusCode, '${decoded['code'] ?? 'error'}', '${decoded['error'] ?? ''}');
     }
     await auth.signOut();
@@ -150,4 +201,116 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<void> unregisterPush(String token) => _send('push', body: {'token': token}, method: 'DELETE');
+
+  @override
+  Future<DeliveryControl> delivery(String reference) async => DeliveryControl.fromJson(await _send('jobs/${_ref(reference)}/delivery'));
+
+  @override
+  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = ''}) async {
+    final created = await _send(
+      'jobs/${_ref(reference)}/delivery',
+      body: {
+        'action': 'schedule',
+        'scheduledFor': DateTime.now().toUtc().toIso8601String(),
+        'driverName': driverName,
+        'vehicleReference': vehicle,
+      },
+    );
+    final attempt = DeliveryAttempt.fromJson((created['attempt'] as Map).cast<String, dynamic>());
+    final moving = await _send(
+      'jobs/${_ref(reference)}/delivery',
+      body: {'action': 'update_attempt', 'attemptId': attempt.id, 'status': 'out_for_delivery', 'eventTime': DateTime.now().toUtc().toIso8601String()},
+    );
+    return DeliveryAttempt.fromJson((moving['attempt'] as Map).cast<String, dynamic>());
+  }
+
+  @override
+  Future<DeliveryOutcome> recordDelivery(
+    String reference,
+    String attemptId, {
+    required String status,
+    String recipientName = '',
+    String recipientRelation = '',
+    String recipientPhone = '',
+    String failureReason = '',
+    double? latitude,
+    double? longitude,
+    String notes = '',
+  }) async {
+    final body = await _send(
+      'jobs/${_ref(reference)}/delivery',
+      body: {
+        'action': 'update_attempt',
+        'attemptId': attemptId,
+        'status': status,
+        'eventTime': DateTime.now().toUtc().toIso8601String(),
+        'recipientName': recipientName,
+        'recipientRelation': recipientRelation,
+        'recipientPhone': recipientPhone,
+        'failureReason': failureReason,
+        'latitude': latitude,
+        'longitude': longitude,
+        'notes': notes,
+      },
+    );
+    return DeliveryOutcome(
+      attempt: DeliveryAttempt.fromJson((body['attempt'] as Map).cast<String, dynamic>()),
+      blockers: body['blockers'] is List ? (body['blockers'] as List).whereType<String>().toList() : const [],
+    );
+  }
+
+  @override
+  Future<PodEvidence> addPodEvidence(
+    String reference,
+    String attemptId,
+    String kind,
+    Attachment file, {
+    DateTime? capturedAt,
+    SendProgress? onProgress,
+  }) async {
+    final body = await _dispatch(() {
+      final multipart = http.MultipartRequest('POST', _uri('jobs/${_ref(reference)}/delivery/evidence'))
+        ..fields['attemptId'] = attemptId
+        ..fields['kind'] = kind
+        ..fields['capturedAt'] = (capturedAt ?? DateTime.now()).toUtc().toIso8601String()
+        // The server checks the declared type, so it is sent, not left to default.
+        ..files.add(http.MultipartFile.fromBytes('file', file.bytes, filename: file.filename, contentType: MediaType.parse(file.contentType)));
+      return ProgressingRequest.wrap(multipart, onProgress);
+    }, timeout: const Duration(minutes: 2));
+    return PodEvidence.fromJson((body['evidence'] as Map?)?.cast<String, dynamic>() ?? const {});
+  }
+
+  @override
+  Future<List<StaffOption>> staff() async {
+    final body = await _send('staff');
+    final rows = body['options'] is List ? (body['options'] as List).whereType<Map>() : const <Map>[];
+    return rows.map((e) => StaffOption.fromJson(e.cast<String, dynamic>())).toList();
+  }
+
+  @override
+  Future<void> addTask(String reference, {required String title, required String branch, String dueAt = '', String detail = '', StaffOption? assignee}) =>
+      _send(
+        'jobs/${_ref(reference)}/actions',
+        body: {
+          'action': 'add_task',
+          'title': title,
+          'branch': branch,
+          'dueAt': dueAt,
+          'detail': detail,
+          if (assignee != null) ...{
+            'assignedToUid': assignee.uid,
+            'assignedToName': assignee.name,
+            'assignedToEmail': assignee.email,
+            'assignedToPhone': assignee.phone ?? '',
+          },
+        },
+      );
+
+  @override
+  Future<void> reassign(String reference, StaffOption owner) =>
+      _send('jobs/${_ref(reference)}/actions', body: {'action': 'reassign', 'assignedToUid': owner.uid});
+
+  @override
+  Future<void> closeJob(String reference, {String overrideReason = ''}) =>
+      _send('jobs/${_ref(reference)}/actions', body: {'action': 'close_job', 'overrideReason': overrideReason});
 }

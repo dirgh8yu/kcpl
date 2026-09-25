@@ -47,7 +47,10 @@ dependencies:
   local_auth: ^3.0.2
   home_widget: ^0.10.0
   mobile_scanner: ^7.4.2
-
+  geolocator: ^14.0.1
+  nepali_utils: ^3.0.8
+  cunning_document_scanner: ^3.0.3
+  http_parser: ^4.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

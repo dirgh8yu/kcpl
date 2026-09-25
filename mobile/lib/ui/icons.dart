@@ -66,6 +66,14 @@ abstract final class KIcons {
   static const IconData whatsapp = CupertinoIcons.chat_bubble;
   static const IconData pin = CupertinoIcons.location_solid;
   static const IconData branch = CupertinoIcons.building_2_fill;
+  static const IconData signature = CupertinoIcons.signature;
+  static const IconData add = CupertinoIcons.plus_circle;
+  static const IconData reassign = CupertinoIcons.person_crop_circle_badge_checkmark;
+  static const IconData closeJob = CupertinoIcons.archivebox;
+  static const IconData location = CupertinoIcons.location;
+  static const IconData delivery = CupertinoIcons.hand_raised;
+  static const IconData outbox = CupertinoIcons.tray_arrow_up;
+  static const IconData undo = CupertinoIcons.arrow_counterclockwise;
 
   // Controls.
   static const IconData search = CupertinoIcons.search;

@@ -88,6 +88,27 @@ class OpsJob {
   bool get urgent => priority == 'urgent';
   bool get exception => status == 'exception';
 
+  OpsJob withOwner(String name, String email, String? phone) => OpsJob(
+    reference: reference,
+    customerName: customerName,
+    origin: origin,
+    destination: destination,
+    mode: mode,
+    status: status,
+    primaryBranch: primaryBranch,
+    ownerName: name,
+    ownerEmail: email,
+    ownerPhone: phone,
+    priority: priority,
+    eta: eta,
+    currentLocation: currentLocation,
+    carrier: carrier,
+    openTasks: openTasks,
+    overdueTasks: overdueTasks,
+    customsOpen: customsOpen,
+    updatedAt: updatedAt,
+  );
+
   bool ownedBy(String email) => ownerEmail != null && ownerEmail!.toLowerCase() == email.toLowerCase();
 
   /// The shape the shared journey widgets draw.
@@ -289,7 +310,38 @@ class JobFile {
     required this.marginPercent,
     required this.blockers,
     this.fieldNotes = const [],
+    this.closeBlockers = const [],
+    this.jobClosed = false,
+    this.delivery,
   });
+
+  /// Delivery Control, when it could be read alongside.
+  final DeliveryControl? delivery;
+
+  JobFile withDelivery(DeliveryControl? delivery) => JobFile(
+    job: job,
+    carrierReference: carrierReference,
+    handlingBranches: handlingBranches,
+    ownerTitle: ownerTitle,
+    internalReference: internalReference,
+    internalNotes: internalNotes,
+    tasks: tasks,
+    customs: customs,
+    canViewCosts: canViewCosts,
+    costTotals: costTotals,
+    revenueTotals: revenueTotals,
+    profitTotals: profitTotals,
+    marginPercent: marginPercent,
+    blockers: blockers,
+    fieldNotes: fieldNotes,
+    closeBlockers: closeBlockers,
+    jobClosed: jobClosed,
+    delivery: delivery,
+  );
+
+  /// What stands between this job and closing it, as closeout checks it.
+  final List<String> closeBlockers;
+  final bool jobClosed;
 
   /// Notes and photos added from the field, newest first.
   final List<FieldNote> fieldNotes;
@@ -351,6 +403,8 @@ class JobFile {
       profitTotals: _money(j['profit_totals']),
       marginPercent: _money(j['margin_percent']),
       blockers: workflow == null ? const [] : _strings(workflow['blockers']),
+      closeBlockers: workflow == null ? const [] : _strings(workflow['close_blockers']),
+      jobClosed: workflow != null && _b(workflow['job_closed']),
       fieldNotes: _list(body['fieldNotes']).map(FieldNote.fromJson).toList(),
     );
   }
@@ -458,4 +512,133 @@ class AlertsPage {
   const AlertsPage({required this.alerts, required this.unreadCount});
   final List<OpsAlert> alerts;
   final int unreadCount;
+}
+
+/// One delivery attempt from Delivery Control (delivery-control.ts).
+class DeliveryAttempt {
+  const DeliveryAttempt({
+    required this.id,
+    required this.number,
+    required this.status,
+    this.scheduledFor,
+    this.eventTime,
+    this.location,
+    this.recipientName,
+    this.recipientRelation,
+    this.failureReason,
+    this.driverName,
+  });
+  final String id;
+  final int number;
+
+  /// scheduled, out_for_delivery, delivered, failed or refused.
+  final String status;
+  final String? scheduledFor;
+  final String? eventTime;
+  final String? location;
+  final String? recipientName;
+  final String? recipientRelation;
+  final String? failureReason;
+  final String? driverName;
+
+  /// Still on its way: an outcome can be recorded.
+  bool get open => status == 'scheduled' || status == 'out_for_delivery';
+
+  factory DeliveryAttempt.fromJson(Map<String, dynamic> j) => DeliveryAttempt(
+    id: _s(j['id']),
+    number: _i(j['attempt_number']),
+    status: _s(j['status'], 'scheduled'),
+    scheduledFor: _ns(j['scheduled_for']),
+    eventTime: _ns(j['event_time']),
+    location: _ns(j['location']),
+    recipientName: _ns(j['recipient_name']),
+    recipientRelation: _ns(j['recipient_relation']),
+    failureReason: _ns(j['failure_reason']),
+    driverName: _ns(j['driver_name']),
+  );
+}
+
+/// A signature, photo or document held as proof of delivery.
+class PodEvidence {
+  const PodEvidence({required this.id, required this.attemptId, required this.kind, required this.filename, required this.reviewStatus});
+  final String id;
+  final String attemptId;
+  final String kind;
+  final String filename;
+
+  /// received, verified or rejected. Verification happens at the desk.
+  final String reviewStatus;
+
+  factory PodEvidence.fromJson(Map<String, dynamic> j) => PodEvidence(
+    id: _s(j['id']),
+    attemptId: _s(j['attempt_id']),
+    kind: _s(j['kind'], 'photo'),
+    filename: _s(j['filename']),
+    reviewStatus: _s(j['review_status'], 'received'),
+  );
+}
+
+/// A job's deliveries: attempts newest first, and where POD stands.
+class DeliveryControl {
+  const DeliveryControl({required this.attempts, required this.evidence, required this.shipmentStatus, required this.podStatus});
+  final List<DeliveryAttempt> attempts;
+  final List<PodEvidence> evidence;
+  final String shipmentStatus;
+
+  /// not_received, received, rejected or verified.
+  final String podStatus;
+
+  DeliveryAttempt? get latest => attempts.isEmpty ? null : attempts.first;
+
+  /// The attempt an outcome can be recorded against, if any.
+  DeliveryAttempt? get open => attempts.where((a) => a.open).firstOrNull;
+
+  /// Delivered, waiting on POD: evidence can still be added.
+  DeliveryAttempt? get awaitingPod => podStatus == 'verified' ? null : attempts.where((a) => a.status == 'delivered').firstOrNull;
+
+  factory DeliveryControl.fromJson(Map<String, dynamic> j) {
+    final attempts = _list(j['attempts']).map(DeliveryAttempt.fromJson).toList()..sort((a, b) => b.number.compareTo(a.number));
+    return DeliveryControl(
+      attempts: attempts,
+      evidence: _list(j['evidence']).map(PodEvidence.fromJson).toList(),
+      shipmentStatus: _s(j['shipment_status'], 'booking_confirmed'),
+      podStatus: _s(j['pod_status'], 'not_received'),
+    );
+  }
+}
+
+/// Someone a job can be given to, as the web's picker offers.
+class StaffOption {
+  const StaffOption({required this.uid, required this.name, required this.email, this.phone, this.jobTitle, required this.branches});
+  final String uid;
+  final String name;
+  final String email;
+  final String? phone;
+  final String? jobTitle;
+  final List<String> branches;
+
+  factory StaffOption.fromJson(Map<String, dynamic> j) => StaffOption(
+    uid: _s(j['uid']),
+    name: _s(j['display_name'], _s(j['email'])),
+    email: _s(j['email']),
+    phone: _ns(j['phone']),
+    jobTitle: _ns(j['job_title']),
+    branches: _strings(j['branches']),
+  );
+}
+
+/// Closing was refused: these still stand in the way. Management may close
+/// anyway with a reason, which the Job File records.
+class CloseoutBlocked implements Exception {
+  const CloseoutBlocked(this.blockers, {required this.canOverride});
+  final List<String> blockers;
+  final bool canOverride;
+}
+
+/// What a delivered outcome did: POD is still to be verified at the desk, so
+/// the shipment is not yet Delivered in KCPL's records.
+class DeliveryOutcome {
+  const DeliveryOutcome({required this.attempt, required this.blockers});
+  final DeliveryAttempt attempt;
+  final List<String> blockers;
 }

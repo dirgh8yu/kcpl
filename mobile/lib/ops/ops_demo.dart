@@ -19,11 +19,11 @@ class DemoOpsApi implements OpsApi {
 
   static const _me = 'anil@kcpl.example';
 
-  OpsSession get _session => const OpsSession(
+  OpsSession get _session => OpsSession(
     displayName: 'Anil Karki',
     email: _me,
-    role: 'operations',
-    roleLabel: 'Operations',
+    role: management ? 'management' : 'operations',
+    roleLabel: management ? 'Management' : 'Operations',
     branches: ['Birgunj', 'Kathmandu'],
     canAccessAllBranches: false,
     canViewCosts: false,
@@ -147,7 +147,9 @@ class DemoOpsApi implements OpsApi {
 
   @override
   Future<JobFile> job(String reference) async {
-    final job = _jobs.firstWhere((j) => j.reference == reference, orElse: () => _jobs.first);
+    final listed = _jobs.firstWhere((j) => j.reference == reference, orElse: () => _jobs.first);
+    final owner = owners[reference];
+    final job = owner == null ? listed : listed.withOwner(owner.name, owner.email, owner.phone);
     bool t(String id, bool fallback) => _tasks['$reference/$id'] ?? fallback;
     bool c(String id, bool fallback) => _customs['$reference/$id'] ?? fallback;
     return _later(
@@ -185,6 +187,7 @@ class DemoOpsApi implements OpsApi {
             completed: t('t3', false),
           ),
           JobTask(id: 't4', title: 'Share bill of lading copy', branch: job.primaryBranch, completed: t('t4', true)),
+          ...?addedTasks[reference],
         ],
         customs: [
           CustomsStep(id: 'c1', title: 'Import declaration lodged', branch: job.primaryBranch, required: true, completed: c('c1', true)),
@@ -197,6 +200,8 @@ class DemoOpsApi implements OpsApi {
         profitTotals: const {},
         marginPercent: const {},
         blockers: const ['Required customs steps are still open.', 'Proof of delivery has not been recorded.'],
+        closeBlockers: _closed.contains(reference) ? const [] : _closeBlockers(reference),
+        jobClosed: _closed.contains(reference),
         fieldNotes: [
           ...?notes[reference],
           if (job.exception)
@@ -226,6 +231,7 @@ class DemoOpsApi implements OpsApi {
     String documentType = 'other',
     SendProgress? onProgress,
   }) async {
+    _reachable();
     for (var step = 0; step <= 10; step++) {
       onProgress?.call(step / 10);
       await Future<void>.delayed(const Duration(milliseconds: 40));
@@ -333,4 +339,191 @@ class DemoOpsApi implements OpsApi {
 
   @override
   Future<void> unregisterPush(String token) async {}
+
+  // Field conditions, for the demo and tests.
+
+  /// While true, nothing reaches "KCPL": sends fail as they would with no signal.
+  bool offline = false;
+
+  void _reachable() {
+    if (offline) throw const ApiException(0, 'network', 'KCPL could not be reached.');
+  }
+
+  // Delivery Control.
+
+  final Map<String, List<DeliveryAttempt>> _attempts = {};
+  final Map<String, List<PodEvidence>> _evidence = {};
+
+  /// The last delivered outcome recorded, with where it was recorded.
+  ({String status, String recipient, double? latitude, double? longitude})? lastOutcome;
+
+  @override
+  Future<DeliveryControl> delivery(String reference) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    _reachable();
+    final attempts = _attempts[reference] ?? const [];
+    final evidence = _evidence[reference] ?? const [];
+    final delivered = attempts.any((a) => a.status == 'delivered');
+    return DeliveryControl(
+      attempts: [...attempts.reversed],
+      evidence: evidence,
+      shipmentStatus: delivered ? 'out_for_delivery' : _jobs.firstWhere((j) => j.reference == reference, orElse: () => _jobs.first).status,
+      podStatus: evidence.isEmpty ? 'not_received' : 'received',
+    );
+  }
+
+  @override
+  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = ''}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _reachable();
+    final list = _attempts[reference] ??= [];
+    final attempt = DeliveryAttempt(
+      id: 'attempt-${list.length + 1}',
+      number: list.length + 1,
+      status: 'out_for_delivery',
+      scheduledFor: _at(0),
+      eventTime: _at(0),
+      driverName: driverName.isEmpty ? null : driverName,
+    );
+    list.add(attempt);
+    return attempt;
+  }
+
+  @override
+  Future<DeliveryOutcome> recordDelivery(
+    String reference,
+    String attemptId, {
+    required String status,
+    String recipientName = '',
+    String recipientRelation = '',
+    String recipientPhone = '',
+    String failureReason = '',
+    double? latitude,
+    double? longitude,
+    String notes = '',
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _reachable();
+    final list = _attempts[reference] ?? [];
+    final index = list.indexWhere((a) => a.id == attemptId);
+    if (index < 0) throw const ApiException(404, 'missing', 'Delivery attempt not found.');
+    if (status == 'delivered' && recipientName.trim().length < 2) {
+      throw const ApiException(400, 'invalid', 'Delivered attempts require a recipient name.');
+    }
+    if (status != 'delivered' && failureReason.trim().length < 6) {
+      throw const ApiException(400, 'invalid', 'Failed or refused attempts require a reason of at least 6 characters.');
+    }
+    final old = list[index];
+    final attempt = DeliveryAttempt(
+      id: old.id,
+      number: old.number,
+      status: status,
+      scheduledFor: old.scheduledFor,
+      eventTime: _at(0),
+      recipientName: recipientName.isEmpty ? null : recipientName,
+      recipientRelation: recipientRelation.isEmpty ? null : recipientRelation,
+      failureReason: failureReason.isEmpty ? null : failureReason,
+      driverName: old.driverName,
+    );
+    list[index] = attempt;
+    lastOutcome = (status: status, recipient: recipientName, latitude: latitude, longitude: longitude);
+    return DeliveryOutcome(attempt: attempt, blockers: status == 'delivered' ? const ['POD has not been verified.'] : const []);
+  }
+
+  /// Every POD file sent, by kind, with its type as declared.
+  final List<({String kind, String contentType, int bytes})> podSent = [];
+
+  @override
+  Future<PodEvidence> addPodEvidence(
+    String reference,
+    String attemptId,
+    String kind,
+    Attachment file, {
+    DateTime? capturedAt,
+    SendProgress? onProgress,
+  }) async {
+    for (var step = 0; step <= 5; step++) {
+      onProgress?.call(step / 5);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+    }
+    _reachable();
+    podSent.add((kind: kind, contentType: file.contentType, bytes: file.bytes.length));
+    final evidence = PodEvidence(
+      id: 'pod-${podSent.length}',
+      attemptId: attemptId,
+      kind: kind,
+      filename: file.filename,
+      reviewStatus: 'received',
+    );
+    (_evidence[reference] ??= []).add(evidence);
+    return evidence;
+  }
+
+  // Job actions.
+
+  static const _staff = [
+    StaffOption(uid: 'u-anil', name: 'Anil Karki', email: _me, phone: '+977 980-0000001', jobTitle: 'Operations executive', branches: ['Birgunj', 'Kathmandu']),
+    StaffOption(uid: 'u-sita', name: 'Sita Shrestha', email: 'sita@kcpl.example', phone: '+977 980-0000002', jobTitle: 'Customs lead', branches: ['Birgunj']),
+    StaffOption(uid: 'u-suresh', name: 'Suresh Yadav', email: 'suresh@kcpl.example', phone: '+977 980-0000003', jobTitle: 'Field officer', branches: ['Birgunj']),
+    StaffOption(uid: 'u-maya', name: 'Maya Gurung', email: 'maya@kcpl.example', jobTitle: 'Operations executive', branches: ['Kathmandu']),
+  ];
+
+  final Map<String, ({String name, String email, String? phone})> owners = {};
+  final Map<String, List<JobTask>> addedTasks = {};
+  final Set<String> _closed = {};
+
+  /// Set to let the demo sign-in act as Management.
+  bool management = false;
+
+  List<String> _closeBlockers(String reference) {
+    final evidence = _evidence[reference] ?? const [];
+    return [
+      if (!(_customs['$reference/c2'] ?? false)) 'Required customs steps are still open.',
+      if (evidence.isEmpty) 'Proof of delivery has not been recorded.',
+    ];
+  }
+
+  @override
+  Future<List<StaffOption>> staff() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    _reachable();
+    return _staff;
+  }
+
+  @override
+  Future<void> addTask(String reference, {required String title, required String branch, String dueAt = '', String detail = '', StaffOption? assignee}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    _reachable();
+    if (title.trim().isEmpty) throw const ApiException(400, 'invalid', 'Add a task title.');
+    final list = addedTasks[reference] ??= [];
+    list.add(
+      JobTask(
+        id: 'added-${list.length + 1}',
+        title: title.trim(),
+        detail: detail.isEmpty ? null : detail,
+        branch: branch,
+        dueAt: dueAt.isEmpty ? null : DateTime.parse('$dueAt:00+05:45').toUtc().toIso8601String(),
+        assignee: assignee?.name,
+        completed: false,
+      ),
+    );
+  }
+
+  @override
+  Future<void> reassign(String reference, StaffOption owner) async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    _reachable();
+    owners[reference] = (name: owner.name, email: owner.email, phone: owner.phone);
+  }
+
+  @override
+  Future<void> closeJob(String reference, {String overrideReason = ''}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _reachable();
+    final blockers = _closeBlockers(reference);
+    if (blockers.isNotEmpty && !(management && overrideReason.trim().length >= 8)) {
+      throw CloseoutBlocked(blockers, canOverride: management);
+    }
+    _closed.add(reference);
+  }
 }
