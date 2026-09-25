@@ -46,6 +46,14 @@ abstract final class KIcons {
   static const IconData document = CupertinoIcons.doc_text;
   static const IconData upload = CupertinoIcons.arrow_up_doc;
   static const IconData image = CupertinoIcons.photo;
+  static const IconData camera = CupertinoIcons.camera;
+  static const IconData scan = CupertinoIcons.qrcode_viewfinder;
+  static const IconData share = CupertinoIcons.share;
+  static const IconData arrived = CupertinoIcons.cube_box_fill;
+  static const IconData people = CupertinoIcons.person_2;
+  static const IconData lock = CupertinoIcons.lock_fill;
+  static const IconData faceId = CupertinoIcons.lock_shield;
+  static const IconData note = CupertinoIcons.text_bubble;
   static const IconData invoice = CupertinoIcons.doc_plaintext;
   static const IconData wallet = CupertinoIcons.creditcard;
   static const IconData timer = CupertinoIcons.timer;

@@ -347,142 +347,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewColEta => 'ETA';
 
   @override
-  String homeOnTheWay(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count shipments on the way',
-      one: '1 shipment on the way',
-      zero: 'Nothing on the way',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String homeNeedsAttention(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count need attention',
-      one: '1 needs attention',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String homeArriving(int count) {
-    return '$count arriving this week';
-  }
-
-  @override
-  String get homeAllClear => 'Everything is moving as planned';
-
-  @override
-  String get homeNeedsYou => 'Needs you';
-
-  @override
-  String get quoteWhereTo => 'Where is your cargo going?';
-
-  @override
-  String get quoteTitle => 'Get a quote';
-
-  @override
-  String get quoteFrom => 'From';
-
-  @override
-  String get quoteFromHint => 'Pickup city, port or border';
-
-  @override
-  String get quoteTo => 'To';
-
-  @override
-  String get quoteToHint => 'Where it should arrive';
-
-  @override
-  String get quoteYourRoutes => 'Your routes';
-
-  @override
-  String get quoteModeTitle => 'How should it travel?';
-
-  @override
-  String get quoteModeRoad => 'Road';
-
-  @override
-  String get quoteModeRoadDetail =>
-      'Overland, through the India and China borders';
-
-  @override
-  String get quoteModeSea => 'Sea';
-
-  @override
-  String get quoteModeSeaDetail =>
-      'Via Kolkata, Haldia or Vizag, for the largest loads';
-
-  @override
-  String get quoteModeAir => 'Air';
-
-  @override
-  String get quoteModeAirDetail => 'Fastest, into Kathmandu (TIA)';
-
-  @override
-  String get quoteModeUnsure => 'Let KCPL advise';
-
-  @override
-  String get quoteModeUnsureDetail =>
-      'We will suggest the best way for your cargo';
-
-  @override
-  String get quoteCargoTitle => 'Cargo';
-
-  @override
-  String get quoteCargoHint => 'What is it? Garments, machinery…';
-
-  @override
-  String get quoteWeightHint => 'Weight (optional)';
-
-  @override
-  String get quoteWhenTitle => 'When';
-
-  @override
-  String get quoteWhenSoon => 'As soon as possible';
-
-  @override
-  String get quoteWhenWeeks => 'Within 2 weeks';
-
-  @override
-  String get quoteWhenMonth => 'This month';
-
-  @override
-  String get quoteWhenFlexible => 'Flexible';
-
-  @override
-  String get quoteNotesTitle => 'Anything else';
-
-  @override
-  String get quoteNotesHint =>
-      'Dimensions, packaging, Incoterms, special handling';
-
-  @override
-  String get quoteSubmit => 'Request quote';
-
-  @override
-  String get quoteSending => 'Sending…';
-
-  @override
-  String get quoteNeedsRoute => 'Add where it is coming from and going to.';
-
-  @override
-  String get quoteSentTitle => 'Quote requested';
-
-  @override
-  String quoteSentBody(String route) {
-    return 'KCPL will reply with a price for $route.';
-  }
-
-  @override
-  String get quoteDone => 'Done';
-
-  @override
   String get shipsFocusAll => 'All';
 
   @override
@@ -827,28 +691,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in failed. Check your details and try again.';
 
   @override
-  String get continueWithApple => 'Continue with Apple';
-
-  @override
-  String get continueWithGoogle => 'Continue with Google';
-
-  @override
-  String get signInWithEmail => 'Sign in with email';
-
-  @override
-  String get orWithEmail => 'or with your email';
-
-  @override
-  String linkProvider(String provider) {
-    return 'This email already has a KCPL password. Sign in with it once and $provider will be connected for next time.';
-  }
-
-  @override
-  String providerOff(String provider) {
-    return '$provider sign-in is not switched on for KCPL yet. Use your email and password.';
-  }
-
-  @override
   String get tooManyAttempts =>
       'Too many attempts. Wait a few minutes and try again.';
 
@@ -933,4 +775,452 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pushBlockedHelp =>
       'Allow notifications for KCPL in your phone\'s Settings.';
+
+  @override
+  String homeOnTheWay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count shipments on the way',
+      one: '1 shipment on the way',
+      zero: 'Nothing on the way',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeNeedsAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count need attention',
+      one: '1 needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeArriving(int count) {
+    return '$count arriving this week';
+  }
+
+  @override
+  String get homeAllClear => 'Everything is moving as planned';
+
+  @override
+  String get homeNeedsYou => 'Needs you';
+
+  @override
+  String get quoteWhereTo => 'Where is your cargo going?';
+
+  @override
+  String get quoteTitle => 'Get a quote';
+
+  @override
+  String get quoteFrom => 'From';
+
+  @override
+  String get quoteFromHint => 'Pickup city, port or border';
+
+  @override
+  String get quoteTo => 'To';
+
+  @override
+  String get quoteToHint => 'Where it should arrive';
+
+  @override
+  String get quoteYourRoutes => 'Your routes';
+
+  @override
+  String get quoteModeTitle => 'How should it travel?';
+
+  @override
+  String get quoteModeRoad => 'Road';
+
+  @override
+  String get quoteModeRoadDetail =>
+      'Overland, through the India and China borders';
+
+  @override
+  String get quoteModeSea => 'Sea';
+
+  @override
+  String get quoteModeSeaDetail =>
+      'Via Kolkata, Haldia or Vizag, for the largest loads';
+
+  @override
+  String get quoteModeAir => 'Air';
+
+  @override
+  String get quoteModeAirDetail => 'Fastest, into Kathmandu (TIA)';
+
+  @override
+  String get quoteModeUnsure => 'Let KCPL advise';
+
+  @override
+  String get quoteModeUnsureDetail =>
+      'We will suggest the best way for your cargo';
+
+  @override
+  String get quoteCargoTitle => 'Cargo';
+
+  @override
+  String get quoteCargoHint => 'What is it? Garments, machinery…';
+
+  @override
+  String get quoteWeightHint => 'Weight (optional)';
+
+  @override
+  String get quoteWhenTitle => 'When';
+
+  @override
+  String get quoteWhenSoon => 'As soon as possible';
+
+  @override
+  String get quoteWhenWeeks => 'Within 2 weeks';
+
+  @override
+  String get quoteWhenMonth => 'This month';
+
+  @override
+  String get quoteWhenFlexible => 'Flexible';
+
+  @override
+  String get quoteNotesTitle => 'Anything else';
+
+  @override
+  String get quoteNotesHint =>
+      'Dimensions, packaging, Incoterms, special handling';
+
+  @override
+  String get quoteSubmit => 'Request quote';
+
+  @override
+  String get quoteSending => 'Sending…';
+
+  @override
+  String get quoteNeedsRoute => 'Add where it is coming from and going to.';
+
+  @override
+  String get quoteSentTitle => 'Quote requested';
+
+  @override
+  String quoteSentBody(String route) {
+    return 'KCPL will reply with a price for $route.';
+  }
+
+  @override
+  String get quoteDone => 'Done';
+
+  @override
+  String get continueWithApple => 'Continue with Apple';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInWithEmail => 'Sign in with email';
+
+  @override
+  String get orWithEmail => 'or with your email';
+
+  @override
+  String linkProvider(String provider) {
+    return 'This email already has a KCPL password. Sign in with it once and $provider will be connected for next time.';
+  }
+
+  @override
+  String providerOff(String provider) {
+    return '$provider sign-in is not switched on for KCPL yet. Use your email and password.';
+  }
+
+  @override
+  String get sendDocTitle => 'Send a document';
+
+  @override
+  String get sendDocKind => 'What is it?';
+
+  @override
+  String get sendDocFile => 'The document';
+
+  @override
+  String sendDocFor(String reference) {
+    return 'For $reference';
+  }
+
+  @override
+  String get captureTakePhoto => 'Take photo';
+
+  @override
+  String get captureChoosePhoto => 'Choose photo';
+
+  @override
+  String get captureChooseFile => 'Choose file';
+
+  @override
+  String get captureReplace => 'Replace';
+
+  @override
+  String get captureCameraDenied =>
+      'KCPL can\'t use the camera. Allow it in your phone\'s Settings.';
+
+  @override
+  String get captureUnsupported => 'Send a PDF, JPEG, PNG or WEBP file.';
+
+  @override
+  String captureTooLarge(String size) {
+    return 'Files must be $size MB or smaller.';
+  }
+
+  @override
+  String get captureHint =>
+      'Lay the paper flat in good light, with all four corners in view.';
+
+  @override
+  String get sendToKcpl => 'Send to KCPL';
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String sendingPercent(String percent) {
+    return 'Sending… $percent%';
+  }
+
+  @override
+  String get sendDocFootnote =>
+      'KCPL checks every document before it counts. Bills of lading, customs entries and proofs of delivery are filed by KCPL.';
+
+  @override
+  String get sentTitle => 'Sent to KCPL';
+
+  @override
+  String get sendChooseKind => 'Choose what the document is.';
+
+  @override
+  String get sendChooseFile => 'Add a photo or a file first.';
+
+  @override
+  String get sendAction => 'Send';
+
+  @override
+  String get confirmPrompt => 'Has it arrived?';
+
+  @override
+  String get confirmPromptBody => 'Let KCPL know the cargo reached you.';
+
+  @override
+  String get confirmTitle => 'Confirm receipt';
+
+  @override
+  String get confirmReceivedBy => 'Received by';
+
+  @override
+  String get confirmReceivedByHint => 'Who took delivery';
+
+  @override
+  String get confirmNote => 'Anything KCPL should know';
+
+  @override
+  String get confirmNoteHint => 'Condition, missing pieces, damage…';
+
+  @override
+  String get confirmPhoto => 'Photo of the delivery';
+
+  @override
+  String get confirmPhotoOptional =>
+      'Optional. It is filed on the shipment for KCPL to see.';
+
+  @override
+  String get confirmFootnote =>
+      'This tells KCPL the cargo arrived. It isn\'t a proof of delivery: KCPL still files that.';
+
+  @override
+  String get confirmedTitle => 'Thank you';
+
+  @override
+  String confirmedOn(String date) {
+    return 'You confirmed receipt on $date';
+  }
+
+  @override
+  String confirmedBy(String name) {
+    return 'Received by $name';
+  }
+
+  @override
+  String get receiptSend => 'Send payment receipt';
+
+  @override
+  String get receiptTitle => 'Payment receipt';
+
+  @override
+  String get receiptFile => 'Bank receipt or advice';
+
+  @override
+  String get receiptAmount => 'Amount paid';
+
+  @override
+  String get receiptPaidOn => 'Paid on';
+
+  @override
+  String get receiptNote => 'Note for KCPL accounts';
+
+  @override
+  String get receiptNoteHint => 'Bank, reference number…';
+
+  @override
+  String get receiptFootnote =>
+      'KCPL accounts match every receipt with the bank before the invoice changes.';
+
+  @override
+  String get receiptsTitle => 'Receipts you sent';
+
+  @override
+  String get receiptWithAccounts => 'With KCPL accounts';
+
+  @override
+  String get receiptAcknowledged => 'Acknowledged';
+
+  @override
+  String get receiptInvalidAmount => 'Enter the amount as a number.';
+
+  @override
+  String receiptPaidOnDate(String date) {
+    return 'Paid $date';
+  }
+
+  @override
+  String get teamTitle => 'Team';
+
+  @override
+  String get teamInvite => 'Invite a colleague';
+
+  @override
+  String get teamInviteBody =>
+      'They\'ll see your shipments and documents. Invoices stay with account owners.';
+
+  @override
+  String get teamSendInvite => 'Send invitation';
+
+  @override
+  String get teamInvited => 'Invitation sent';
+
+  @override
+  String teamInviteSentBody(String email) {
+    return '$email will get an email to set a password.';
+  }
+
+  @override
+  String teamInviteLinkBody(String email) {
+    return 'Email isn\'t set up for KCPL yet, so pass this link to $email yourself. It works once.';
+  }
+
+  @override
+  String get teamShareLink => 'Share link';
+
+  @override
+  String get teamStateActive => 'Active';
+
+  @override
+  String get teamStateInvited => 'Invited';
+
+  @override
+  String get teamStateOff => 'Turned off';
+
+  @override
+  String get teamStateLinked => 'Linked by KCPL';
+
+  @override
+  String get teamYou => 'You';
+
+  @override
+  String teamLastSeen(String date) {
+    return 'Last signed in $date';
+  }
+
+  @override
+  String get teamNeverSignedIn => 'Hasn\'t signed in yet';
+
+  @override
+  String get teamTurnOff => 'Turn off login';
+
+  @override
+  String get teamTurnOn => 'Turn login back on';
+
+  @override
+  String teamTurnOffBody(String email) {
+    return '$email won\'t be able to sign in until you turn it back on.';
+  }
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get teamFootnote =>
+      'Members see shipments and documents. Only KCPL can add another account owner.';
+
+  @override
+  String get teamLinkedFootnote =>
+      'A login linked by KCPL belongs to another account. Ask KCPL to remove it.';
+
+  @override
+  String offlineAsOf(String time) {
+    return 'Offline · as of $time';
+  }
+
+  @override
+  String get lockSection => 'Privacy';
+
+  @override
+  String lockRequire(String method) {
+    return 'Require $method';
+  }
+
+  @override
+  String lockFootnote(String method) {
+    return 'KCPL asks for $method when you come back to it after a minute away, and hides its content in the app switcher.';
+  }
+
+  @override
+  String get lockTitle => 'KCPL is locked';
+
+  @override
+  String get lockUnlock => 'Unlock';
+
+  @override
+  String get lockReason => 'Unlock your KCPL account';
+
+  @override
+  String get lockFaceId => 'Face ID';
+
+  @override
+  String get lockTouchId => 'Touch ID';
+
+  @override
+  String get lockFingerprint => 'fingerprint';
+
+  @override
+  String get lockPasscode => 'your passcode';
+
+  @override
+  String get shareStatus => 'Share status';
+
+  @override
+  String shareExpected(String date) {
+    return 'Expected $date';
+  }
+
+  @override
+  String shareDeliveredOn(String date) {
+    return 'Delivered $date';
+  }
+
+  @override
+  String get shareFooter => 'Kapileshwor Cargo · shared from the KCPL app';
+
+  @override
+  String shareCarrierRef(String reference) {
+    return 'Carrier reference $reference';
+  }
 }

@@ -276,7 +276,7 @@ class DemoApi extends KcplApi {
             reference: 'KCPL-S-24077',
             origin: 'Haldia, India',
             destination: 'Biratnagar, Nepal',
-            rows: [Requirement(documentType: 'packing_list', required: true, state: 'resend')],
+            rows: [Requirement(documentType: 'packing_list', required: true, state: 'resend', uploadable: true)],
           ),
         ],
         outstandingCount: 1,
@@ -319,18 +319,157 @@ class DemoApi extends KcplApi {
           ShipmentEvent(id: 'e2', title: 'Departed origin', location: shipment.origin, details: 'Loaded on board.', eventTime: _at(24 * 9)),
           ShipmentEvent(id: 'e1', title: 'Booking confirmed', location: shipment.origin, eventTime: _at(24 * 12)),
         ],
-        documents: _documents.where((d) => d.shipmentReference == reference).toList(),
-        checklist: const [
-          Requirement(documentType: 'commercial_invoice', required: true, state: 'confirmed'),
-          Requirement(documentType: 'packing_list', required: true, state: 'with_kcpl'),
-          Requirement(documentType: 'import_permit', required: true, state: 'needed'),
+        documents: [
+          ...sentDocuments.where((d) => d.shipmentReference == reference),
+          ..._documents.where((d) => d.shipmentReference == reference),
         ],
+        checklist: [
+          for (final row in _checklist(reference))
+            sentDocuments.any((d) => d.shipmentReference == reference && d.documentType == row.documentType)
+                ? Requirement(documentType: row.documentType, required: row.required, state: 'with_kcpl', uploadable: row.uploadable)
+                : row,
+        ],
+        confirmation: confirmations[reference],
+        canConfirmDelivery: shipment.status == 'delivered' || shipment.status == 'out_for_delivery',
       ),
     );
   }
 
+  List<Requirement> _checklist(String reference) => switch (reference) {
+    'KCPL-S-24077' => const [
+      Requirement(documentType: 'commercial_invoice', required: true, state: 'confirmed', uploadable: true),
+      Requirement(documentType: 'packing_list', required: true, state: 'resend', uploadable: true),
+      Requirement(documentType: 'bill_of_lading', required: true, state: 'confirmed'),
+    ],
+    'KCPL-S-24012' => const [Requirement(documentType: 'commercial_invoice', required: true, state: 'confirmed', uploadable: true)],
+    _ => const [
+      Requirement(documentType: 'commercial_invoice', required: true, state: 'confirmed', uploadable: true),
+      Requirement(documentType: 'packing_list', required: true, state: 'with_kcpl', uploadable: true),
+      Requirement(documentType: 'import_permit', required: true, state: 'needed', uploadable: true),
+    ],
+  };
+
+  /// Everything sent from the app in this session, newest first.
+  final sentDocuments = <DocumentRow>[];
+  final confirmations = <String, DeliveryConfirmation>{};
+  final sentRemittances = <String, List<Remittance>>{};
+
+  /// Reports progress in steps, as a real upload on a phone signal would.
+  Future<void> _transfer(SendProgress? onProgress) async {
+    for (var step = 0; step <= 10; step++) {
+      onProgress?.call(step / 10);
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+    }
+  }
+
   @override
-  Future<DocumentsPage> documents() => _later(DocumentsPage(documents: _documents, scanned: 5, total: 5));
+  Future<SendReceipt> sendDocument(String reference, String documentType, Attachment file, {SendProgress? onProgress}) async {
+    await _transfer(onProgress);
+    sentDocuments.insert(
+      0,
+      DocumentRow(
+        id: 'sent-${sentDocuments.length + 1}',
+        shipmentReference: reference,
+        filename: file.filename,
+        contentType: file.contentType,
+        sizeBytes: file.bytes.length,
+        documentType: documentType,
+        uploadedAt: DateTime.now().toUtc().toIso8601String(),
+        fromCustomer: true,
+        reviewState: 'with_kcpl',
+      ),
+    );
+    return const SendReceipt(message: 'Sent to KCPL. It will show as confirmed once the team has checked it.');
+  }
+
+  @override
+  Future<SendReceipt> confirmDelivery(String reference, {String receivedBy = '', String note = ''}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (confirmations.containsKey(reference)) {
+      return const SendReceipt(message: 'You have already confirmed receipt of this shipment.', duplicate: true);
+    }
+    confirmations[reference] = DeliveryConfirmation(
+      confirmedAt: DateTime.now().toUtc().toIso8601String(),
+      receivedBy: receivedBy.trim().isEmpty ? null : receivedBy.trim(),
+    );
+    return const SendReceipt(message: 'Thank you. KCPL has been told the cargo arrived.');
+  }
+
+  @override
+  Future<List<Remittance>> remittances(String invoice) => _later([
+    ...?sentRemittances[invoice],
+    if (invoice == 'KCPL-I-20260821-004')
+      Remittance(
+        id: 'r1',
+        filename: 'nabil-advice-0821.pdf',
+        amount: 800,
+        currency: 'USD',
+        paidOn: _day(-20),
+        uploadedAt: _at(24 * 20),
+        acknowledged: true,
+      ),
+  ]);
+
+  @override
+  Future<SendReceipt> sendRemittance(String invoice, RemittanceDraft draft, {SendProgress? onProgress}) async {
+    await _transfer(onProgress);
+    (sentRemittances[invoice] ??= []).insert(
+      0,
+      Remittance(
+        id: 'sent-${DateTime.now().microsecondsSinceEpoch}',
+        filename: draft.file.filename,
+        amount: draft.amount,
+        currency: draft.currency,
+        paidOn: draft.paidOn,
+        uploadedAt: DateTime.now().toUtc().toIso8601String(),
+        acknowledged: false,
+      ),
+    );
+    return const SendReceipt(message: 'Sent to KCPL accounts. The invoice will update once the payment has been matched.');
+  }
+
+  late final _team = <TeamMember>[
+    TeamMember(email: 'imports@annapurna.example', role: 'owner', active: true, bound: true, lastSignInAt: _at(1), linked: false),
+    TeamMember(email: 'accounts@annapurna.example', role: 'member', active: true, bound: true, lastSignInAt: _at(26), linked: false),
+    const TeamMember(email: 'store@annapurna.example', role: 'member', active: true, bound: false, linked: false),
+    const TeamMember(email: 'old.clerk@annapurna.example', role: 'member', active: false, bound: true, linked: false),
+    TeamMember(email: 'desk@himalaya-agents.example', role: 'member', active: true, bound: true, lastSignInAt: _at(24 * 3), linked: true),
+  ];
+
+  @override
+  Future<List<TeamMember>> team() => _later(List.of(_team));
+
+  @override
+  Future<TeamInvite> invite(String email) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    final address = email.trim().toLowerCase();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(address)) {
+      throw const ApiException(400, 'invalid', 'Enter a valid email address.');
+    }
+    if (_team.any((m) => m.email == address)) throw const ApiException(400, 'invalid', 'That address already has a login.');
+    _team.add(TeamMember(email: address, role: 'member', active: true, bound: false, linked: false));
+    // As a server with no mail provider does: the link comes back to pass on.
+    return TeamInvite(email: address, delivered: false, link: 'https://kcpl.example/portal/invite?demo=$address');
+  }
+
+  @override
+  Future<void> setMemberActive(String email, bool active) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final index = _team.indexWhere((m) => m.email == email);
+    if (index < 0) throw const ApiException(404, 'missing', 'Login not found.');
+    final member = _team[index];
+    _team[index] = TeamMember(
+      email: member.email,
+      role: member.role,
+      active: active,
+      bound: member.bound,
+      lastSignInAt: member.lastSignInAt,
+      linked: member.linked,
+    );
+  }
+
+  @override
+  Future<DocumentsPage> documents() => _later(DocumentsPage(documents: [...sentDocuments, ..._documents], scanned: 5, total: 5));
 
   @override
   Future<InvoicesPage> invoices() => _later(InvoicesPage(invoices: _invoices, summary: _summary));
@@ -352,7 +491,6 @@ class DemoApi extends KcplApi {
     return 'KCPL-Q-${_now.year}${_now.month.toString().padLeft(2, '0')}${_now.day.toString().padLeft(2, '0')}-DEMO${quoteRequests.length.toString().padLeft(2, '0')}';
   }
 
-  @override
   @override
   Future<void> registerPush(String token, String platform) async {}
 

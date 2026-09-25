@@ -36,6 +36,24 @@ abstract class KcplApi {
   /// with a price through its usual channels.
   Future<String> requestQuote(QuoteRequest request);
 
+  /// Sends a document for a shipment. [documentType] must be one the
+  /// customer may originate; the file arrives unreviewed and unreleased.
+  Future<SendReceipt> sendDocument(String reference, String documentType, Attachment file, {SendProgress? onProgress});
+
+  /// "It arrived": evidence for the operator, never delivery itself.
+  Future<SendReceipt> confirmDelivery(String reference, {String receivedBy = '', String note = ''});
+
+  /// Payment receipts sent against an invoice, newest first.
+  Future<List<Remittance>> remittances(String invoice);
+  Future<SendReceipt> sendRemittance(String invoice, RemittanceDraft draft, {SendProgress? onProgress});
+
+  /// The account owner's team. Other logins are refused by the server.
+  Future<List<TeamMember>> team();
+  Future<TeamInvite> invite(String email);
+
+  /// [active] false disables a member's login; true restores it.
+  Future<void> setMemberActive(String email, bool active);
+
   /// This phone, for push to the signed-in login.
   Future<void> registerPush(String token, String platform);
   Future<void> unregisterPush(String token);

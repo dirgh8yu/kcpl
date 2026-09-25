@@ -12,6 +12,7 @@ import '../map/route_map.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/compose.dart';
 import '../widgets/journey.dart';
 import '../widgets/large_title.dart';
 import '../widgets/sheet_route.dart';
@@ -167,7 +168,7 @@ class _QuoteScreenState extends State<QuoteScreen> {
     final p = context.palette;
     final reference = _reference;
     if (reference != null) {
-      return _Sent(route: '${_from.text.trim()} → ${_to.text.trim()}', reference: reference);
+      return DoneView(title: l.quoteSentTitle, body: l.quoteSentBody('${_from.text.trim()} → ${_to.text.trim()}'), reference: reference);
     }
 
     final suggesting = _suggesting;
@@ -495,68 +496,6 @@ class _RouteFields extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Sent: a tick, the route and the reference. Rare, so the tick may arrive
-/// with a little life.
-class _Sent extends StatelessWidget {
-  const _Sent({required this.route, required this.reference});
-  final String route;
-  final String reference;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final p = context.palette;
-    final reduced = Motion.reduced(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          child: Column(
-            children: [
-              const Spacer(),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: 1),
-                duration: reduced ? const Duration(milliseconds: 200) : const Duration(milliseconds: 360),
-                curve: Motion.easeOut,
-                builder: (context, t, child) => Opacity(
-                  opacity: t,
-                  child: Transform.scale(scale: reduced ? 1 : 0.9 + 0.1 * t, child: child),
-                ),
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(color: p.ink, shape: BoxShape.circle),
-                  child: Icon(KIcons.check, size: 30, color: p.surface),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(l.quoteSentTitle, style: context.type.headlineMedium, textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              Text(
-                l.quoteSentBody(route),
-                style: context.type.bodyLarge?.copyWith(color: p.secondary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              // The reference, whole and copyable, for any call to KCPL.
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(10)),
-                child: SelectableText(
-                  reference,
-                  style: context.type.titleSmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                ),
-              ),
-              const Spacer(),
-              FilledButton(onPressed: () => Navigator.of(context).maybePop(), child: Text(l.quoteDone)),
-            ],
-          ),
-        ),
       ),
     );
   }

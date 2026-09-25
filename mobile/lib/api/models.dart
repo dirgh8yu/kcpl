@@ -197,15 +197,26 @@ class DocumentRow {
 }
 
 class Requirement {
-  const Requirement({required this.documentType, required this.required, required this.state});
+  const Requirement({required this.documentType, required this.required, required this.state, this.uploadable = false});
   final String documentType;
   final bool required;
 
   /// `needed`, `with_kcpl`, `confirmed` or `resend`.
   final String state;
 
-  factory Requirement.fromJson(Map<String, dynamic> json) =>
-      Requirement(documentType: _s(json['document_type'], 'other'), required: _b(json['required']), state: _s(json['state'], 'needed'));
+  /// A paper the customer originates and may send from the app. The server
+  /// decides; a bill of lading or a customs entry is KCPL's to file.
+  final bool uploadable;
+
+  /// Waiting on the customer, and something they can send.
+  bool get canSend => uploadable && (state == 'needed' || state == 'resend');
+
+  factory Requirement.fromJson(Map<String, dynamic> json) => Requirement(
+    documentType: _s(json['document_type'], 'other'),
+    required: _b(json['required']),
+    state: _s(json['state'], 'needed'),
+    uploadable: _b(json['uploadable']),
+  );
 }
 
 class FreeTimeStatus {
@@ -247,14 +258,37 @@ class FreeTime {
   }
 }
 
+/// This login's own "it arrived".
+class DeliveryConfirmation {
+  const DeliveryConfirmation({required this.confirmedAt, this.receivedBy});
+  final String confirmedAt;
+  final String? receivedBy;
+
+  factory DeliveryConfirmation.fromJson(Map<String, dynamic> json) =>
+      DeliveryConfirmation(confirmedAt: _s(json['confirmed_at']), receivedBy: _ns(json['received_by']));
+}
+
 class ShipmentDetail {
-  const ShipmentDetail({required this.shipment, this.freeTime, required this.events, required this.documents, required this.checklist});
+  const ShipmentDetail({
+    required this.shipment,
+    this.freeTime,
+    required this.events,
+    required this.documents,
+    required this.checklist,
+    this.confirmation,
+    this.canConfirmDelivery = false,
+  });
 
   final Shipment shipment;
   final FreeTime? freeTime;
   final List<ShipmentEvent> events;
   final List<DocumentRow> documents;
   final List<Requirement> checklist;
+  final DeliveryConfirmation? confirmation;
+
+  /// Decided by the server on the web page's own rule: this login may send
+  /// things to KCPL, and the shipment has reached delivery.
+  final bool canConfirmDelivery;
 
   factory ShipmentDetail.fromJson(Map<String, dynamic> json) => ShipmentDetail(
     shipment: Shipment.fromJson(_map(json['shipment'])),
@@ -262,6 +296,8 @@ class ShipmentDetail {
     events: _list(json['events']).map(ShipmentEvent.fromJson).toList(),
     documents: _list(json['documents']).map(DocumentRow.fromJson).toList(),
     checklist: _list(json['checklist']).map(Requirement.fromJson).toList(),
+    confirmation: json['confirmation'] is Map ? DeliveryConfirmation.fromJson(_map(json['confirmation'])) : null,
+    canConfirmDelivery: _b(json['canConfirmDelivery']),
   );
 }
 
@@ -467,4 +503,119 @@ class DownloadedFile {
   final String filename;
   final String contentType;
   final List<int> bytes;
+}
+
+/// A file on its way to KCPL: a photo from the camera, or a PDF or image
+/// from the phone. [contentType] is what the server will sniff it to be.
+class Attachment {
+  const Attachment({required this.filename, required this.bytes, required this.contentType});
+  final String filename;
+  final List<int> bytes;
+  final String contentType;
+
+  bool get isImage => contentType.startsWith('image/');
+}
+
+/// Reported as bytes leave the phone, from 0 to 1.
+typedef SendProgress = void Function(double fraction);
+
+/// What KCPL said back to something sent. [duplicate] means it already had
+/// this exact file, which is a success, not an error.
+class SendReceipt {
+  const SendReceipt({required this.message, this.duplicate = false});
+  final String message;
+  final bool duplicate;
+
+  factory SendReceipt.fromJson(Map<String, dynamic> json) =>
+      SendReceipt(message: _s(json['message']), duplicate: _b(json['duplicate']) || _b(json['alreadyConfirmed']));
+}
+
+/// A payment receipt the customer sent against an invoice: a claim for KCPL
+/// accounts to match, until they acknowledge it.
+class Remittance {
+  const Remittance({
+    required this.id,
+    required this.filename,
+    this.amount,
+    this.currency,
+    this.paidOn,
+    required this.uploadedAt,
+    required this.acknowledged,
+  });
+
+  final String id;
+  final String filename;
+  final double? amount;
+  final String? currency;
+  final String? paidOn;
+  final String uploadedAt;
+  final bool acknowledged;
+
+  factory Remittance.fromJson(Map<String, dynamic> json) => Remittance(
+    id: _s(json['id']),
+    filename: _s(json['filename'], 'Receipt'),
+    amount: json['amount'] is num ? _n(json['amount']) : null,
+    currency: _ns(json['currency']),
+    paidOn: _ns(json['paid_on']),
+    uploadedAt: _s(json['uploaded_at']),
+    acknowledged: json['review_state'] == 'acknowledged',
+  );
+}
+
+class RemittanceDraft {
+  const RemittanceDraft({required this.file, this.amount, this.currency, this.paidOn, this.note = ''});
+  final Attachment file;
+  final double? amount;
+  final String? currency;
+
+  /// YYYY-MM-DD.
+  final String? paidOn;
+  final String note;
+}
+
+/// A login on the customer's account, as the owner's team panel lists it.
+class TeamMember {
+  const TeamMember({
+    required this.email,
+    required this.role,
+    required this.active,
+    required this.bound,
+    this.lastSignInAt,
+    required this.linked,
+  });
+
+  final String email;
+  final String role;
+  final bool active;
+
+  /// Has signed in at least once; until then the invitation is outstanding.
+  final bool bound;
+  final String? lastSignInAt;
+
+  /// An agent KCPL linked from another account: shown, not the owner's to change.
+  final bool linked;
+
+  bool get owner => role == 'owner';
+
+  factory TeamMember.fromJson(Map<String, dynamic> json) => TeamMember(
+    email: _s(json['email']),
+    role: _s(json['role'], 'member'),
+    active: _b(json['active']),
+    bound: _b(json['bound']),
+    lastSignInAt: _ns(json['last_sign_in_at']),
+    linked: _b(json['linked']),
+  );
+}
+
+/// The result of inviting someone. When KCPL has no mail provider set up,
+/// the one-time [link] comes back for the owner to pass on themselves.
+class TeamInvite {
+  const TeamInvite({required this.email, required this.delivered, this.link, this.warning});
+  final String email;
+  final bool delivered;
+  final String? link;
+  final String? warning;
+
+  factory TeamInvite.fromJson(Map<String, dynamic> json) =>
+      TeamInvite(email: _s(json['email']), delivered: _b(json['delivered']), link: _ns(json['link']), warning: _ns(json['warning']));
 }

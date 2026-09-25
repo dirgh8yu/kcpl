@@ -5,11 +5,15 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../format.dart';
 import '../labels.dart';
+import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/rows.dart';
+import '../widgets/share.dart';
+import 'confirm_delivery_screen.dart';
 import 'overview_screen.dart' show JourneyGraphic;
+import 'send_document_screen.dart';
 
 class ShipmentDetailScreen extends StatelessWidget {
   const ShipmentDetailScreen({super.key, required this.reference, this.preview});
@@ -32,6 +36,15 @@ class ShipmentDetailScreen extends StatelessWidget {
         placeholder: preview == null ? null : (context) => _lead(context, preview),
         onMissing: (context, _) => EmptyState(icon: KIcons.noResults, title: l.shipNotFoundTitle, description: l.shipNotFoundDescription),
         builder: (context, detail) => _body(context, detail),
+        dataActions: (context, detail) => [
+          Builder(
+            builder: (button) => IconButton(
+              tooltip: l.shareStatus,
+              icon: const Icon(KIcons.share, size: 22),
+              onPressed: () => shareText(button, shipmentStatusText(l, detail.shipment), subject: detail.shipment.reference),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -61,9 +74,33 @@ class ShipmentDetailScreen extends StatelessWidget {
     final shipment = detail.shipment;
     final freeTime = detail.freeTime;
     final emphasis = statusEmphasis(shipment.status);
+    final canSend = AppScope.of(context).session?.canSubmitRequests ?? false;
+    final waiting = [
+      for (final row in detail.checklist)
+        if (row.canSend) row.documentType,
+    ];
+
+    Future<void> send({String? type}) async {
+      if (await openSendDocument(context, shipment, type: type, waiting: waiting) && context.mounted) await AsyncPage.reload(context);
+    }
 
     return [
       ..._lead(context, shipment),
+      if (detail.confirmation case final confirmation?) ...[
+        const SizedBox(height: 16),
+        Notice(
+          emphasis: Emphasis.normal,
+          title: l.confirmedOn(formatDate(confirmation.confirmedAt)),
+          body: confirmation.receivedBy == null ? null : l.confirmedBy(confirmation.receivedBy!),
+        ),
+      ] else if (detail.canConfirmDelivery) ...[
+        const SizedBox(height: 16),
+        _ArrivedCard(
+          onConfirm: () async {
+            if (await openConfirmDelivery(context, shipment) && context.mounted) await AsyncPage.reload(context);
+          },
+        ),
+      ],
       if (shipment.customerNote != null) ...[
         const SizedBox(height: 16),
         Notice(title: shipment.customerNote!, emphasis: emphasis == Emphasis.attention ? Emphasis.attention : Emphasis.normal),
@@ -106,6 +143,16 @@ class ShipmentDetailScreen extends StatelessWidget {
               Builder(
                 builder: (context) {
                   final (label, state) = requirementState(l, row.state);
+                  // Waiting on the customer and theirs to send: the row
+                  // offers the send itself, with the state beneath.
+                  if (canSend && row.canSend) {
+                    return RowTile(
+                      onTap: () => send(type: row.documentType),
+                      title: Text(documentTypeLabel(l, row.documentType)),
+                      subtitle: StatusText(label, state),
+                      trailing: _SendPill(onPressed: () => send(type: row.documentType)),
+                    );
+                  }
                   return RowTile(title: Text(documentTypeLabel(l, row.documentType)), trailing: StatusText(label, state));
                 },
               ),
@@ -140,18 +187,116 @@ class ShipmentDetailScreen extends StatelessWidget {
         ],
       ),
       SectionHeader(l.commonDocuments),
-      if (detail.documents.isEmpty)
+      if (detail.documents.isEmpty && !canSend)
         GroupCard(
           child: EmptyState(icon: KIcons.document, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription),
         )
       else
         RowGroup(
           indent: RowGroup.iconIndent,
-          children: [for (final document in detail.documents) DocumentRowTile(document, showShipment: false)],
+          children: [
+            for (final document in detail.documents) DocumentRowTile(document, showShipment: false),
+            if (canSend)
+              RowTile(
+                onTap: send,
+                leading: Icon(KIcons.camera, size: 22, color: context.palette.accent),
+                title: Text(l.sendDocTitle, style: TextStyle(color: context.palette.accent)),
+              ),
+          ],
         ),
     ];
   }
 }
+
+/// The shipment has reached delivery and this login hasn't said it arrived:
+/// ask, once, near the top where it will be seen.
+class _ArrivedCard extends StatelessWidget {
+  const _ArrivedCard({required this.onConfirm});
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = context.palette;
+    return GroupCard(
+      padding: const EdgeInsets.fromLTRB(kGutter, 14, kGutter, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(KIcons.arrived, size: 24, color: p.accent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.confirmPrompt, style: context.type.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(l.confirmPromptBody, style: context.type.bodyMedium?.copyWith(color: p.secondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Pressable(
+            child: FilledButton(
+              onPressed: onConfirm,
+              style: FilledButton.styleFrom(
+                backgroundColor: p.accent,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(44),
+              ),
+              child: Text(l.confirmTitle),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small "Send" on a checklist row, as the App Store puts "Get" on a row.
+class _SendPill extends StatelessWidget {
+  const _SendPill({required this.onPressed});
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = context.palette;
+    return Pressable(
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: p.fill,
+          foregroundColor: p.accent,
+          minimumSize: const Size(0, 30),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          shape: const StadiumBorder(),
+          textStyle: context.type.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        child: Text(l.sendAction),
+      ),
+    );
+  }
+}
+
+/// A shipment's status as a message: what it is, where it is, and when. For a
+/// consignee on WhatsApp, so it carries no link that needs a KCPL login.
+String shipmentStatusText(AppLocalizations l, Shipment shipment) => [
+  '${shipment.reference} · ${place(shipment.origin)} → ${place(shipment.destination)}',
+  [statusLabel(l, shipment.status), if (!shipment.delivered && shipment.currentLocation != null) shipment.currentLocation!].join(' · '),
+  if (shipment.delivered)
+    l.shareDeliveredOn(formatDate(shipment.updatedAt))
+  else if (shipment.eta != null)
+    l.shareExpected(formatDate(shipment.eta)),
+  if (shipment.carrierReference != null) l.shareCarrierRef(shipment.carrierReference!),
+  '',
+  l.shareFooter,
+].join('\n');
 
 /// One step of the timeline. The newest is marked in crimson; older steps
 /// step back in grey, the way a tracker shows what has already happened.

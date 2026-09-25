@@ -173,3 +173,36 @@ class InvoiceRow extends StatelessWidget {
     );
   }
 }
+
+/// "KCPL-S-24091 · Kolkata → Birgunj ICD" in grey: which shipment a form is
+/// about, under its title.
+class ShipmentLine extends StatelessWidget {
+  const ShipmentLine(this.shipment, {super.key});
+  final Shipment shipment;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final style = context.type.bodyMedium?.copyWith(color: p.secondary);
+    final size = (style?.fontSize ?? 15) * 0.78;
+    // One run of text, so at large sizes it wraps rather than overflowing.
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '${shipment.reference} · ${place(shipment.origin)}'),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: size * 0.35),
+              child: Icon(KIcons.arrowRight, size: size, color: p.tertiary),
+            ),
+          ),
+          TextSpan(text: place(shipment.destination)),
+        ],
+      ),
+      style: style,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}

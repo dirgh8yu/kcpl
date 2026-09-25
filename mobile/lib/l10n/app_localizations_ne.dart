@@ -346,133 +346,6 @@ class AppLocalizationsNe extends AppLocalizations {
   String get overviewColEta => 'अनुमानित आगमन';
 
   @override
-  String homeOnTheWay(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ढुवानी बाटोमा',
-      zero: 'बाटोमा केही छैन',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String homeNeedsAttention(int count) {
-    return '$count मा ध्यान चाहिन्छ';
-  }
-
-  @override
-  String homeArriving(int count) {
-    return '$count यो हप्ता आइपुग्दै';
-  }
-
-  @override
-  String get homeAllClear => 'सबै योजनाअनुसार चलिरहेको छ';
-
-  @override
-  String get homeNeedsYou => 'तपाईंको काम';
-
-  @override
-  String get quoteWhereTo => 'तपाईंको कार्गो कहाँ जाँदैछ?';
-
-  @override
-  String get quoteTitle => 'कोटेसन माग्नुहोस्';
-
-  @override
-  String get quoteFrom => 'कहाँबाट';
-
-  @override
-  String get quoteFromHint => 'उठाउने सहर, बन्दरगाह वा नाका';
-
-  @override
-  String get quoteTo => 'कहाँसम्म';
-
-  @override
-  String get quoteToHint => 'कहाँ पुग्नुपर्छ';
-
-  @override
-  String get quoteYourRoutes => 'तपाईंका रुटहरू';
-
-  @override
-  String get quoteModeTitle => 'कसरी ढुवानी गर्ने?';
-
-  @override
-  String get quoteModeRoad => 'सडक';
-
-  @override
-  String get quoteModeRoadDetail => 'भारत र चीन नाका हुँदै स्थलमार्ग';
-
-  @override
-  String get quoteModeSea => 'समुद्री';
-
-  @override
-  String get quoteModeSeaDetail =>
-      'कोलकाता, हल्दिया वा विशाखापत्तनम हुँदै, ठूला मालका लागि';
-
-  @override
-  String get quoteModeAir => 'हवाई';
-
-  @override
-  String get quoteModeAirDetail => 'सबैभन्दा छिटो, काठमाडौं (TIA) सम्म';
-
-  @override
-  String get quoteModeUnsure => 'KCPL लाई सल्लाह दिन दिनुहोस्';
-
-  @override
-  String get quoteModeUnsureDetail =>
-      'तपाईंको कार्गोका लागि उत्तम उपाय हामी सुझाउनेछौं';
-
-  @override
-  String get quoteCargoTitle => 'कार्गो';
-
-  @override
-  String get quoteCargoHint => 'के हो? कपडा, मेसिनरी…';
-
-  @override
-  String get quoteWeightHint => 'तौल (ऐच्छिक)';
-
-  @override
-  String get quoteWhenTitle => 'कहिले';
-
-  @override
-  String get quoteWhenSoon => 'सकेसम्म छिटो';
-
-  @override
-  String get quoteWhenWeeks => '२ हप्ताभित्र';
-
-  @override
-  String get quoteWhenMonth => 'यो महिना';
-
-  @override
-  String get quoteWhenFlexible => 'लचिलो';
-
-  @override
-  String get quoteNotesTitle => 'अरू केही';
-
-  @override
-  String get quoteNotesHint => 'नाप, प्याकेजिङ, इन्कोटर्म्स, विशेष ह्यान्डलिङ';
-
-  @override
-  String get quoteSubmit => 'कोटेसन माग्नुहोस्';
-
-  @override
-  String get quoteSending => 'पठाउँदै…';
-
-  @override
-  String get quoteNeedsRoute => 'कहाँबाट र कहाँसम्म भन्ने थप्नुहोस्।';
-
-  @override
-  String get quoteSentTitle => 'कोटेसन माग गरियो';
-
-  @override
-  String quoteSentBody(String route) {
-    return 'KCPL ले $route को मूल्य पठाउनेछ।';
-  }
-
-  @override
-  String get quoteDone => 'सकियो';
-
-  @override
   String get shipsFocusAll => 'सबै';
 
   @override
@@ -816,28 +689,6 @@ class AppLocalizationsNe extends AppLocalizations {
       'साइन इन हुन सकेन। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।';
 
   @override
-  String get continueWithApple => 'Apple बाट जारी राख्नुहोस्';
-
-  @override
-  String get continueWithGoogle => 'Google बाट जारी राख्नुहोस्';
-
-  @override
-  String get signInWithEmail => 'इमेलबाट साइन इन गर्नुहोस्';
-
-  @override
-  String get orWithEmail => 'वा आफ्नो इमेलबाट';
-
-  @override
-  String linkProvider(String provider) {
-    return 'यो इमेलमा पहिले नै KCPL पासवर्ड छ। एक पटक त्यसबाट साइन इन गर्नुहोस्, अर्को पटकका लागि $provider जोडिनेछ।';
-  }
-
-  @override
-  String providerOff(String provider) {
-    return 'KCPL मा $provider साइन इन अझै सुरु गरिएको छैन। आफ्नो इमेल र पासवर्ड प्रयोग गर्नुहोस्।';
-  }
-
-  @override
   String get tooManyAttempts =>
       'धेरै पटक प्रयास भयो। केही मिनेट पर्खेर फेरि प्रयास गर्नुहोस्।';
 
@@ -923,4 +774,444 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get pushBlockedHelp =>
       'फोनको सेटिङमा KCPL का लागि सूचना अनुमति दिनुहोस्।';
+
+  @override
+  String homeOnTheWay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ढुवानी बाटोमा',
+      zero: 'बाटोमा केही छैन',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeNeedsAttention(int count) {
+    return '$count मा ध्यान चाहिन्छ';
+  }
+
+  @override
+  String homeArriving(int count) {
+    return '$count यो हप्ता आइपुग्दै';
+  }
+
+  @override
+  String get homeAllClear => 'सबै योजनाअनुसार चलिरहेको छ';
+
+  @override
+  String get homeNeedsYou => 'तपाईंको काम';
+
+  @override
+  String get quoteWhereTo => 'तपाईंको कार्गो कहाँ जाँदैछ?';
+
+  @override
+  String get quoteTitle => 'कोटेसन माग्नुहोस्';
+
+  @override
+  String get quoteFrom => 'कहाँबाट';
+
+  @override
+  String get quoteFromHint => 'उठाउने सहर, बन्दरगाह वा नाका';
+
+  @override
+  String get quoteTo => 'कहाँसम्म';
+
+  @override
+  String get quoteToHint => 'कहाँ पुग्नुपर्छ';
+
+  @override
+  String get quoteYourRoutes => 'तपाईंका रुटहरू';
+
+  @override
+  String get quoteModeTitle => 'कसरी ढुवानी गर्ने?';
+
+  @override
+  String get quoteModeRoad => 'सडक';
+
+  @override
+  String get quoteModeRoadDetail => 'भारत र चीन नाका हुँदै स्थलमार्ग';
+
+  @override
+  String get quoteModeSea => 'समुद्री';
+
+  @override
+  String get quoteModeSeaDetail =>
+      'कोलकाता, हल्दिया वा विशाखापत्तनम हुँदै, ठूला मालका लागि';
+
+  @override
+  String get quoteModeAir => 'हवाई';
+
+  @override
+  String get quoteModeAirDetail => 'सबैभन्दा छिटो, काठमाडौं (TIA) सम्म';
+
+  @override
+  String get quoteModeUnsure => 'KCPL लाई सल्लाह दिन दिनुहोस्';
+
+  @override
+  String get quoteModeUnsureDetail =>
+      'तपाईंको कार्गोका लागि उत्तम उपाय हामी सुझाउनेछौं';
+
+  @override
+  String get quoteCargoTitle => 'कार्गो';
+
+  @override
+  String get quoteCargoHint => 'के हो? कपडा, मेसिनरी…';
+
+  @override
+  String get quoteWeightHint => 'तौल (ऐच्छिक)';
+
+  @override
+  String get quoteWhenTitle => 'कहिले';
+
+  @override
+  String get quoteWhenSoon => 'सकेसम्म छिटो';
+
+  @override
+  String get quoteWhenWeeks => '२ हप्ताभित्र';
+
+  @override
+  String get quoteWhenMonth => 'यो महिना';
+
+  @override
+  String get quoteWhenFlexible => 'लचिलो';
+
+  @override
+  String get quoteNotesTitle => 'अरू केही';
+
+  @override
+  String get quoteNotesHint => 'नाप, प्याकेजिङ, इन्कोटर्म्स, विशेष ह्यान्डलिङ';
+
+  @override
+  String get quoteSubmit => 'कोटेसन माग्नुहोस्';
+
+  @override
+  String get quoteSending => 'पठाउँदै…';
+
+  @override
+  String get quoteNeedsRoute => 'कहाँबाट र कहाँसम्म भन्ने थप्नुहोस्।';
+
+  @override
+  String get quoteSentTitle => 'कोटेसन माग गरियो';
+
+  @override
+  String quoteSentBody(String route) {
+    return 'KCPL ले $route को मूल्य पठाउनेछ।';
+  }
+
+  @override
+  String get quoteDone => 'सकियो';
+
+  @override
+  String get continueWithApple => 'Apple बाट जारी राख्नुहोस्';
+
+  @override
+  String get continueWithGoogle => 'Google बाट जारी राख्नुहोस्';
+
+  @override
+  String get signInWithEmail => 'इमेलबाट साइन इन गर्नुहोस्';
+
+  @override
+  String get orWithEmail => 'वा आफ्नो इमेलबाट';
+
+  @override
+  String linkProvider(String provider) {
+    return 'यो इमेलमा पहिले नै KCPL पासवर्ड छ। एक पटक त्यसबाट साइन इन गर्नुहोस्, अर्को पटकका लागि $provider जोडिनेछ।';
+  }
+
+  @override
+  String providerOff(String provider) {
+    return 'KCPL मा $provider साइन इन अझै सुरु गरिएको छैन। आफ्नो इमेल र पासवर्ड प्रयोग गर्नुहोस्।';
+  }
+
+  @override
+  String get sendDocTitle => 'कागजात पठाउनुहोस्';
+
+  @override
+  String get sendDocKind => 'यो के हो?';
+
+  @override
+  String get sendDocFile => 'कागजात';
+
+  @override
+  String sendDocFor(String reference) {
+    return '$reference का लागि';
+  }
+
+  @override
+  String get captureTakePhoto => 'फोटो खिच्नुहोस्';
+
+  @override
+  String get captureChoosePhoto => 'फोटो छान्नुहोस्';
+
+  @override
+  String get captureChooseFile => 'फाइल छान्नुहोस्';
+
+  @override
+  String get captureReplace => 'बदल्नुहोस्';
+
+  @override
+  String get captureCameraDenied =>
+      'KCPL ले क्यामेरा प्रयोग गर्न सक्दैन। फोनको सेटिङमा अनुमति दिनुहोस्।';
+
+  @override
+  String get captureUnsupported => 'PDF, JPEG, PNG वा WEBP फाइल पठाउनुहोस्।';
+
+  @override
+  String captureTooLarge(String size) {
+    return 'फाइल $size MB वा सोभन्दा सानो हुनुपर्छ।';
+  }
+
+  @override
+  String get captureHint =>
+      'कागज समतल राखी राम्रो उज्यालोमा चारै कुना देखिने गरी खिच्नुहोस्।';
+
+  @override
+  String get sendToKcpl => 'KCPL लाई पठाउनुहोस्';
+
+  @override
+  String get sending => 'पठाउँदै…';
+
+  @override
+  String sendingPercent(String percent) {
+    return 'पठाउँदै… $percent%';
+  }
+
+  @override
+  String get sendDocFootnote =>
+      'KCPL ले जाँचेपछि मात्र कागजात मान्य हुन्छ। बिल अफ लेडिङ, भन्सार प्रविष्टि र डेलिभरी प्रमाण KCPL आफैँ राख्छ।';
+
+  @override
+  String get sentTitle => 'KCPL लाई पठाइयो';
+
+  @override
+  String get sendChooseKind => 'कागजात के हो छान्नुहोस्।';
+
+  @override
+  String get sendChooseFile => 'पहिले फोटो वा फाइल थप्नुहोस्।';
+
+  @override
+  String get sendAction => 'पठाउनुहोस्';
+
+  @override
+  String get confirmPrompt => 'सामान आइपुग्यो?';
+
+  @override
+  String get confirmPromptBody =>
+      'सामान तपाईंकहाँ आइपुगेको KCPL लाई जानकारी दिनुहोस्।';
+
+  @override
+  String get confirmTitle => 'प्राप्ति पुष्टि गर्नुहोस्';
+
+  @override
+  String get confirmReceivedBy => 'बुझ्ने व्यक्ति';
+
+  @override
+  String get confirmReceivedByHint => 'सामान बुझ्ने व्यक्तिको नाम';
+
+  @override
+  String get confirmNote => 'KCPL लाई थाहा हुनुपर्ने कुरा';
+
+  @override
+  String get confirmNoteHint => 'अवस्था, नपुगेका टुक्रा, क्षति…';
+
+  @override
+  String get confirmPhoto => 'डेलिभरीको फोटो';
+
+  @override
+  String get confirmPhotoOptional =>
+      'ऐच्छिक। यो KCPL ले हेर्न ढुवानीमा राखिन्छ।';
+
+  @override
+  String get confirmFootnote =>
+      'यसले सामान आइपुगेको KCPL लाई जानकारी दिन्छ। यो डेलिभरी प्रमाण होइन; त्यो KCPL ले नै राख्छ।';
+
+  @override
+  String get confirmedTitle => 'धन्यवाद';
+
+  @override
+  String confirmedOn(String date) {
+    return 'तपाईंले $date मा प्राप्ति पुष्टि गर्नुभयो';
+  }
+
+  @override
+  String confirmedBy(String name) {
+    return 'बुझ्ने: $name';
+  }
+
+  @override
+  String get receiptSend => 'भुक्तानी रसिद पठाउनुहोस्';
+
+  @override
+  String get receiptTitle => 'भुक्तानी रसिद';
+
+  @override
+  String get receiptFile => 'बैंक रसिद वा सूचना';
+
+  @override
+  String get receiptAmount => 'तिरेको रकम';
+
+  @override
+  String get receiptPaidOn => 'तिरेको मिति';
+
+  @override
+  String get receiptNote => 'KCPL लेखाका लागि टिप्पणी';
+
+  @override
+  String get receiptNoteHint => 'बैंक, सन्दर्भ नम्बर…';
+
+  @override
+  String get receiptFootnote =>
+      'बिल परिवर्तन हुनुअघि KCPL लेखाले हरेक रसिद बैंकसँग मिलाउँछ।';
+
+  @override
+  String get receiptsTitle => 'तपाईंले पठाएका रसिद';
+
+  @override
+  String get receiptWithAccounts => 'KCPL लेखामा';
+
+  @override
+  String get receiptAcknowledged => 'स्वीकार गरियो';
+
+  @override
+  String get receiptInvalidAmount => 'रकम अङ्कमा लेख्नुहोस्।';
+
+  @override
+  String receiptPaidOnDate(String date) {
+    return '$date मा तिरेको';
+  }
+
+  @override
+  String get teamTitle => 'टोली';
+
+  @override
+  String get teamInvite => 'सहकर्मीलाई निम्तो दिनुहोस्';
+
+  @override
+  String get teamInviteBody =>
+      'उहाँले तपाईंका ढुवानी र कागजात हेर्न सक्नुहुन्छ। बिल खाता मालिकसँग मात्र रहन्छ।';
+
+  @override
+  String get teamSendInvite => 'निम्तो पठाउनुहोस्';
+
+  @override
+  String get teamInvited => 'निम्तो पठाइयो';
+
+  @override
+  String teamInviteSentBody(String email) {
+    return '$email ले पासवर्ड राख्न इमेल पाउनुहुनेछ।';
+  }
+
+  @override
+  String teamInviteLinkBody(String email) {
+    return 'KCPL को इमेल अझै सेटअप छैन, त्यसैले यो लिङ्क $email लाई आफैँ पठाउनुहोस्। यो एक पटक मात्र चल्छ।';
+  }
+
+  @override
+  String get teamShareLink => 'लिङ्क सेयर गर्नुहोस्';
+
+  @override
+  String get teamStateActive => 'सक्रिय';
+
+  @override
+  String get teamStateInvited => 'निम्तो पठाइएको';
+
+  @override
+  String get teamStateOff => 'बन्द';
+
+  @override
+  String get teamStateLinked => 'KCPL ले जोडेको';
+
+  @override
+  String get teamYou => 'तपाईं';
+
+  @override
+  String teamLastSeen(String date) {
+    return 'अन्तिम साइन इन $date';
+  }
+
+  @override
+  String get teamNeverSignedIn => 'अहिलेसम्म साइन इन गर्नुभएको छैन';
+
+  @override
+  String get teamTurnOff => 'लगइन बन्द गर्नुहोस्';
+
+  @override
+  String get teamTurnOn => 'लगइन फेरि खोल्नुहोस्';
+
+  @override
+  String teamTurnOffBody(String email) {
+    return 'तपाईंले फेरि नखोलेसम्म $email ले साइन इन गर्न सक्नुहुने छैन।';
+  }
+
+  @override
+  String get cancel => 'रद्द गर्नुहोस्';
+
+  @override
+  String get teamFootnote =>
+      'सदस्यले ढुवानी र कागजात हेर्न सक्छन्। अर्को खाता मालिक KCPL ले मात्र थप्न सक्छ।';
+
+  @override
+  String get teamLinkedFootnote =>
+      'KCPL ले जोडेको लगइन अर्को खाताको हो। हटाउन KCPL लाई भन्नुहोस्।';
+
+  @override
+  String offlineAsOf(String time) {
+    return 'अफलाइन · $time सम्मको';
+  }
+
+  @override
+  String get lockSection => 'गोपनीयता';
+
+  @override
+  String lockRequire(String method) {
+    return '$method आवश्यक';
+  }
+
+  @override
+  String lockFootnote(String method) {
+    return 'एक मिनेटभन्दा बढी बाहिर रहेर फर्कंदा KCPL ले $method माग्छ, र एप स्विचरमा विवरण लुकाउँछ।';
+  }
+
+  @override
+  String get lockTitle => 'KCPL लक छ';
+
+  @override
+  String get lockUnlock => 'खोल्नुहोस्';
+
+  @override
+  String get lockReason => 'आफ्नो KCPL खाता खोल्नुहोस्';
+
+  @override
+  String get lockFaceId => 'Face ID';
+
+  @override
+  String get lockTouchId => 'Touch ID';
+
+  @override
+  String get lockFingerprint => 'औंठाछाप';
+
+  @override
+  String get lockPasscode => 'पासकोड';
+
+  @override
+  String get shareStatus => 'स्थिति सेयर गर्नुहोस्';
+
+  @override
+  String shareExpected(String date) {
+    return 'अपेक्षित मिति $date';
+  }
+
+  @override
+  String shareDeliveredOn(String date) {
+    return '$date मा डेलिभर भयो';
+  }
+
+  @override
+  String get shareFooter => 'कपिलेश्वर कार्गो · KCPL एपबाट सेयर गरिएको';
+
+  @override
+  String shareCarrierRef(String reference) {
+    return 'ढुवानी कम्पनीको सन्दर्भ $reference';
+  }
 }

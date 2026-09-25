@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../api/kcpl_api.dart';
 import '../../api/models.dart';
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
@@ -11,6 +12,7 @@ import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/journey.dart' show IconTile;
 import '../widgets/rows.dart';
+import 'send_receipt_screen.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   const InvoiceDetailScreen({super.key, required this.reference});
@@ -21,16 +23,22 @@ class InvoiceDetailScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final api = AppScope.of(context).api;
     return Scaffold(
-      body: AsyncPage<Invoice>(
+      body: AsyncPage<(Invoice, List<Remittance>)>(
         title: reference,
-        load: () => api.invoice(reference),
+        load: () async {
+          final invoice = api.invoice(reference);
+          // Receipts are a courtesy on the invoice: if they can't be read,
+          // the invoice still shows.
+          final receipts = api.remittances(reference).catchError((Object _) => <Remittance>[], test: (e) => e is ApiException);
+          return (await invoice, await receipts);
+        },
         onMissing: (context, _) => EmptyState(icon: KIcons.noResults, title: l.invdNotFoundTitle, description: l.invdNotFoundDescription),
-        builder: (context, invoice) => _body(context, invoice),
+        builder: (context, loaded) => _body(context, loaded.$1, loaded.$2),
       ),
     );
   }
 
-  List<Widget> _body(BuildContext context, Invoice invoice) {
+  List<Widget> _body(BuildContext context, Invoice invoice, List<Remittance> receipts) {
     final l = AppLocalizations.of(context);
     final p = context.palette;
     String money(double value) => formatMoney(value, invoice.currency);
@@ -72,6 +80,15 @@ class InvoiceDetailScreen extends StatelessWidget {
               ],
             ),
           ),
+          // Paying is done at the bank; what the app can do is tell KCPL.
+          if (invoice.balanceDue > 0 && invoice.recordType == 'invoice')
+            RowTile(
+              onTap: () async {
+                if (await openSendReceipt(context, invoice) && context.mounted) await AsyncPage.reload(context);
+              },
+              leading: const IconTile(icon: KIcons.upload, attention: true),
+              title: Text(l.receiptSend, style: TextStyle(color: p.accent)),
+            ),
           if (invoice.shipmentReference != null)
             RowTile(
               onTap: () => openShipment(context, invoice.shipmentReference!),
@@ -116,6 +133,29 @@ class InvoiceDetailScreen extends StatelessWidget {
         ],
       ),
       Footnote(l.invFootnote),
+      if (receipts.isNotEmpty) ...[
+        SectionHeader(l.receiptsTitle),
+        RowGroup(
+          indent: RowGroup.iconIndent,
+          children: [
+            for (final receipt in receipts)
+              RowTile(
+                leading: const IconTile(icon: KIcons.document),
+                title: Text(
+                  receipt.amount == null ? receipt.filename : formatMoney(receipt.amount!, receipt.currency ?? invoice.currency),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(l.receiptPaidOnDate(formatDate(receipt.paidOn ?? receipt.uploadedAt))),
+                trailing: StatusText(
+                  receipt.acknowledged ? l.receiptAcknowledged : l.receiptWithAccounts,
+                  receipt.acknowledged ? Emphasis.normal : Emphasis.muted,
+                ),
+              ),
+          ],
+        ),
+        Footnote(l.receiptFootnote),
+      ],
     ];
   }
 }

@@ -191,71 +191,6 @@
   "overviewOrigin": "Origin",
   "overviewDestination": "Destination",
   "overviewColEta": "ETA",
-  "homeOnTheWay": "{count, plural, =0{Nothing on the way} =1{1 shipment on the way} other{{count} shipments on the way}}",
-  "@homeOnTheWay": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "homeNeedsAttention": "{count, plural, =1{1 needs attention} other{{count} need attention}}",
-  "@homeNeedsAttention": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "homeArriving": "{count} arriving this week",
-  "@homeArriving": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "homeAllClear": "Everything is moving as planned",
-  "homeNeedsYou": "Needs you",
-  "quoteWhereTo": "Where is your cargo going?",
-  "quoteTitle": "Get a quote",
-  "quoteFrom": "From",
-  "quoteFromHint": "Pickup city, port or border",
-  "quoteTo": "To",
-  "quoteToHint": "Where it should arrive",
-  "quoteYourRoutes": "Your routes",
-  "quoteModeTitle": "How should it travel?",
-  "quoteModeRoad": "Road",
-  "quoteModeRoadDetail": "Overland, through the India and China borders",
-  "quoteModeSea": "Sea",
-  "quoteModeSeaDetail": "Via Kolkata, Haldia or Vizag, for the largest loads",
-  "quoteModeAir": "Air",
-  "quoteModeAirDetail": "Fastest, into Kathmandu (TIA)",
-  "quoteModeUnsure": "Let KCPL advise",
-  "quoteModeUnsureDetail": "We will suggest the best way for your cargo",
-  "quoteCargoTitle": "Cargo",
-  "quoteCargoHint": "What is it? Garments, machinery…",
-  "quoteWeightHint": "Weight (optional)",
-  "quoteWhenTitle": "When",
-  "quoteWhenSoon": "As soon as possible",
-  "quoteWhenWeeks": "Within 2 weeks",
-  "quoteWhenMonth": "This month",
-  "quoteWhenFlexible": "Flexible",
-  "quoteNotesTitle": "Anything else",
-  "quoteNotesHint": "Dimensions, packaging, Incoterms, special handling",
-  "quoteSubmit": "Request quote",
-  "quoteSending": "Sending…",
-  "quoteNeedsRoute": "Add where it is coming from and going to.",
-  "quoteSentTitle": "Quote requested",
-  "quoteSentBody": "KCPL will reply with a price for {route}.",
-  "@quoteSentBody": {
-    "placeholders": {
-      "route": {
-        "type": "String"
-      }
-    }
-  },
-  "quoteDone": "Done",
   "shipsFocusAll": "All",
   "shipsFocusActive": "Active",
   "shipsFocusInTransit": "In transit",
@@ -423,26 +358,6 @@
   "resetNeedsEmail": "Enter your email address first, then choose Forgot password.",
   "resetSent": "If that address has KCPL portal access, a password reset link is on its way.",
   "signInFailed": "Sign-in failed. Check your details and try again.",
-  "continueWithApple": "Continue with Apple",
-  "continueWithGoogle": "Continue with Google",
-  "signInWithEmail": "Sign in with email",
-  "orWithEmail": "or with your email",
-  "linkProvider": "This email already has a KCPL password. Sign in with it once and {provider} will be connected for next time.",
-  "@linkProvider": {
-    "placeholders": {
-      "provider": {
-        "type": "String"
-      }
-    }
-  },
-  "providerOff": "{provider} sign-in is not switched on for KCPL yet. Use your email and password.",
-  "@providerOff": {
-    "placeholders": {
-      "provider": {
-        "type": "String"
-      }
-    }
-  },
   "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
   "networkError": "KCPL could not be reached. Check your connection and try again.",
   "sessionEnded": "Your session has ended. Sign in again.",
@@ -482,5 +397,285 @@
   "pushOff": "Off",
   "pushBlocked": "Blocked in your phone's Settings",
   "pushUnavailable": "Not available in this build",
-  "pushBlockedHelp": "Allow notifications for KCPL in your phone's Settings."
+  "pushBlockedHelp": "Allow notifications for KCPL in your phone's Settings.",
+  "homeOnTheWay": "{count, plural, =0{Nothing on the way} =1{1 shipment on the way} other{{count} shipments on the way}}",
+  "@homeOnTheWay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNeedsAttention": "{count, plural, =1{1 needs attention} other{{count} need attention}}",
+  "@homeNeedsAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeArriving": "{count} arriving this week",
+  "@homeArriving": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeAllClear": "Everything is moving as planned",
+  "homeNeedsYou": "Needs you",
+  "quoteWhereTo": "Where is your cargo going?",
+  "quoteTitle": "Get a quote",
+  "quoteFrom": "From",
+  "quoteFromHint": "Pickup city, port or border",
+  "quoteTo": "To",
+  "quoteToHint": "Where it should arrive",
+  "quoteYourRoutes": "Your routes",
+  "quoteModeTitle": "How should it travel?",
+  "quoteModeRoad": "Road",
+  "quoteModeRoadDetail": "Overland, through the India and China borders",
+  "quoteModeSea": "Sea",
+  "quoteModeSeaDetail": "Via Kolkata, Haldia or Vizag, for the largest loads",
+  "quoteModeAir": "Air",
+  "quoteModeAirDetail": "Fastest, into Kathmandu (TIA)",
+  "quoteModeUnsure": "Let KCPL advise",
+  "quoteModeUnsureDetail": "We will suggest the best way for your cargo",
+  "quoteCargoTitle": "Cargo",
+  "quoteCargoHint": "What is it? Garments, machinery…",
+  "quoteWeightHint": "Weight (optional)",
+  "quoteWhenTitle": "When",
+  "quoteWhenSoon": "As soon as possible",
+  "quoteWhenWeeks": "Within 2 weeks",
+  "quoteWhenMonth": "This month",
+  "quoteWhenFlexible": "Flexible",
+  "quoteNotesTitle": "Anything else",
+  "quoteNotesHint": "Dimensions, packaging, Incoterms, special handling",
+  "quoteSubmit": "Request quote",
+  "quoteSending": "Sending…",
+  "quoteNeedsRoute": "Add where it is coming from and going to.",
+  "quoteSentTitle": "Quote requested",
+  "quoteSentBody": "KCPL will reply with a price for {route}.",
+  "@quoteSentBody": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteDone": "Done",
+  "continueWithApple": "Continue with Apple",
+  "continueWithGoogle": "Continue with Google",
+  "signInWithEmail": "Sign in with email",
+  "orWithEmail": "or with your email",
+  "linkProvider": "This email already has a KCPL password. Sign in with it once and {provider} will be connected for next time.",
+  "@linkProvider": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "providerOff": "{provider} sign-in is not switched on for KCPL yet. Use your email and password.",
+  "@providerOff": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "sendDocTitle": "Send a document",
+  "sendDocKind": "What is it?",
+  "sendDocFile": "The document",
+  "sendDocFor": "For {reference}",
+  "@sendDocFor": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "captureTakePhoto": "Take photo",
+  "captureChoosePhoto": "Choose photo",
+  "captureChooseFile": "Choose file",
+  "captureReplace": "Replace",
+  "captureCameraDenied": "KCPL can't use the camera. Allow it in your phone's Settings.",
+  "captureUnsupported": "Send a PDF, JPEG, PNG or WEBP file.",
+  "captureTooLarge": "Files must be {size} MB or smaller.",
+  "@captureTooLarge": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "captureHint": "Lay the paper flat in good light, with all four corners in view.",
+  "sendToKcpl": "Send to KCPL",
+  "sending": "Sending…",
+  "sendingPercent": "Sending… {percent}%",
+  "@sendingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sendDocFootnote": "KCPL checks every document before it counts. Bills of lading, customs entries and proofs of delivery are filed by KCPL.",
+  "sentTitle": "Sent to KCPL",
+  "sendChooseKind": "Choose what the document is.",
+  "sendChooseFile": "Add a photo or a file first.",
+  "sendAction": "Send",
+  "confirmPrompt": "Has it arrived?",
+  "confirmPromptBody": "Let KCPL know the cargo reached you.",
+  "confirmTitle": "Confirm receipt",
+  "confirmReceivedBy": "Received by",
+  "confirmReceivedByHint": "Who took delivery",
+  "confirmNote": "Anything KCPL should know",
+  "confirmNoteHint": "Condition, missing pieces, damage…",
+  "confirmPhoto": "Photo of the delivery",
+  "confirmPhotoOptional": "Optional. It is filed on the shipment for KCPL to see.",
+  "confirmFootnote": "This tells KCPL the cargo arrived. It isn't a proof of delivery: KCPL still files that.",
+  "confirmedTitle": "Thank you",
+  "confirmedOn": "You confirmed receipt on {date}",
+  "@confirmedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmedBy": "Received by {name}",
+  "@confirmedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptSend": "Send payment receipt",
+  "receiptTitle": "Payment receipt",
+  "receiptFile": "Bank receipt or advice",
+  "receiptAmount": "Amount paid",
+  "receiptPaidOn": "Paid on",
+  "receiptNote": "Note for KCPL accounts",
+  "receiptNoteHint": "Bank, reference number…",
+  "receiptFootnote": "KCPL accounts match every receipt with the bank before the invoice changes.",
+  "receiptsTitle": "Receipts you sent",
+  "receiptWithAccounts": "With KCPL accounts",
+  "receiptAcknowledged": "Acknowledged",
+  "receiptInvalidAmount": "Enter the amount as a number.",
+  "receiptPaidOnDate": "Paid {date}",
+  "@receiptPaidOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "teamTitle": "Team",
+  "teamInvite": "Invite a colleague",
+  "teamInviteBody": "They'll see your shipments and documents. Invoices stay with account owners.",
+  "teamSendInvite": "Send invitation",
+  "teamInvited": "Invitation sent",
+  "teamInviteSentBody": "{email} will get an email to set a password.",
+  "@teamInviteSentBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "teamInviteLinkBody": "Email isn't set up for KCPL yet, so pass this link to {email} yourself. It works once.",
+  "@teamInviteLinkBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "teamShareLink": "Share link",
+  "teamStateActive": "Active",
+  "teamStateInvited": "Invited",
+  "teamStateOff": "Turned off",
+  "teamStateLinked": "Linked by KCPL",
+  "teamYou": "You",
+  "teamLastSeen": "Last signed in {date}",
+  "@teamLastSeen": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "teamNeverSignedIn": "Hasn't signed in yet",
+  "teamTurnOff": "Turn off login",
+  "teamTurnOn": "Turn login back on",
+  "teamTurnOffBody": "{email} won't be able to sign in until you turn it back on.",
+  "@teamTurnOffBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "teamFootnote": "Members see shipments and documents. Only KCPL can add another account owner.",
+  "teamLinkedFootnote": "A login linked by KCPL belongs to another account. Ask KCPL to remove it.",
+  "offlineAsOf": "Offline · as of {time}",
+  "@offlineAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "lockSection": "Privacy",
+  "lockRequire": "Require {method}",
+  "@lockRequire": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "lockFootnote": "KCPL asks for {method} when you come back to it after a minute away, and hides its content in the app switcher.",
+  "@lockFootnote": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "lockTitle": "KCPL is locked",
+  "lockUnlock": "Unlock",
+  "lockReason": "Unlock your KCPL account",
+  "lockFaceId": "Face ID",
+  "lockTouchId": "Touch ID",
+  "lockFingerprint": "fingerprint",
+  "lockPasscode": "your passcode",
+  "shareStatus": "Share status",
+  "shareExpected": "Expected {date}",
+  "@shareExpected": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareDeliveredOn": "Delivered {date}",
+  "@shareDeliveredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFooter": "Kapileshwor Cargo · shared from the KCPL app",
+  "shareCarrierRef": "Carrier reference {reference}",
+  "@shareCarrierRef": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  }
 }

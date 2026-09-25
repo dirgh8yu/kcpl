@@ -29,6 +29,7 @@ class AsyncPage<T> extends StatefulWidget {
     this.placeholder,
     this.leading = 0,
     this.actions = const [],
+    this.dataActions,
   }) : layout = null;
 
   /// A page with a layout of its own (the map home), sharing the loading,
@@ -40,7 +41,8 @@ class AsyncPage<T> extends StatefulWidget {
       onMissing = null,
       placeholder = null,
       leading = 0,
-      actions = const [];
+      actions = const [],
+      dataActions = null;
 
   static List<Widget> _noBody(BuildContext context, Object? data) => const [];
 
@@ -67,8 +69,19 @@ class AsyncPage<T> extends StatefulWidget {
   /// Small buttons at the trailing end of the title bar.
   final List<Widget> actions;
 
+  /// Title bar buttons that need what has loaded, such as Share. They
+  /// appear once it has.
+  final List<Widget> Function(BuildContext context, T data)? dataActions;
+
   @override
   State<AsyncPage<T>> createState() => _AsyncPageState<T>();
+
+  /// Refreshes the page [context] is on, in place, after something on it was
+  /// changed from a sheet (a document sent, a receipt confirmed).
+  static Future<void> reload(BuildContext context) async {
+    final state = context.findAncestorStateOfType<_AsyncPageState<Object?>>();
+    if (state != null && state.mounted) await state._fetch(quiet: true);
+  }
 }
 
 /// How often a page on screen refreshes itself: the web register's interval.
@@ -265,7 +278,10 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
     final scroll = CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        LargeTitleBar(title: widget.title, actions: widget.actions),
+        LargeTitleBar(
+          title: widget.title,
+          actions: [...widget.actions, if (data != null && widget.dataActions != null) ...widget.dataActions!(context, data)],
+        ),
         ...body,
       ],
     );

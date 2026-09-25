@@ -704,228 +704,6 @@ abstract class AppLocalizations {
   /// **'ETA'**
   String get overviewColEta;
 
-  /// No description provided for @homeOnTheWay.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing on the way} =1{1 shipment on the way} other{{count} shipments on the way}}'**
-  String homeOnTheWay(int count);
-
-  /// No description provided for @homeNeedsAttention.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 needs attention} other{{count} need attention}}'**
-  String homeNeedsAttention(int count);
-
-  /// No description provided for @homeArriving.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} arriving this week'**
-  String homeArriving(int count);
-
-  /// No description provided for @homeAllClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Everything is moving as planned'**
-  String get homeAllClear;
-
-  /// No description provided for @homeNeedsYou.
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you'**
-  String get homeNeedsYou;
-
-  /// No description provided for @quoteWhereTo.
-  ///
-  /// In en, this message translates to:
-  /// **'Where is your cargo going?'**
-  String get quoteWhereTo;
-
-  /// No description provided for @quoteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Get a quote'**
-  String get quoteTitle;
-
-  /// No description provided for @quoteFrom.
-  ///
-  /// In en, this message translates to:
-  /// **'From'**
-  String get quoteFrom;
-
-  /// No description provided for @quoteFromHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Pickup city, port or border'**
-  String get quoteFromHint;
-
-  /// No description provided for @quoteTo.
-  ///
-  /// In en, this message translates to:
-  /// **'To'**
-  String get quoteTo;
-
-  /// No description provided for @quoteToHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Where it should arrive'**
-  String get quoteToHint;
-
-  /// No description provided for @quoteYourRoutes.
-  ///
-  /// In en, this message translates to:
-  /// **'Your routes'**
-  String get quoteYourRoutes;
-
-  /// No description provided for @quoteModeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'How should it travel?'**
-  String get quoteModeTitle;
-
-  /// No description provided for @quoteModeRoad.
-  ///
-  /// In en, this message translates to:
-  /// **'Road'**
-  String get quoteModeRoad;
-
-  /// No description provided for @quoteModeRoadDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Overland, through the India and China borders'**
-  String get quoteModeRoadDetail;
-
-  /// No description provided for @quoteModeSea.
-  ///
-  /// In en, this message translates to:
-  /// **'Sea'**
-  String get quoteModeSea;
-
-  /// No description provided for @quoteModeSeaDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Via Kolkata, Haldia or Vizag, for the largest loads'**
-  String get quoteModeSeaDetail;
-
-  /// No description provided for @quoteModeAir.
-  ///
-  /// In en, this message translates to:
-  /// **'Air'**
-  String get quoteModeAir;
-
-  /// No description provided for @quoteModeAirDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Fastest, into Kathmandu (TIA)'**
-  String get quoteModeAirDetail;
-
-  /// No description provided for @quoteModeUnsure.
-  ///
-  /// In en, this message translates to:
-  /// **'Let KCPL advise'**
-  String get quoteModeUnsure;
-
-  /// No description provided for @quoteModeUnsureDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'We will suggest the best way for your cargo'**
-  String get quoteModeUnsureDetail;
-
-  /// No description provided for @quoteCargoTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Cargo'**
-  String get quoteCargoTitle;
-
-  /// No description provided for @quoteCargoHint.
-  ///
-  /// In en, this message translates to:
-  /// **'What is it? Garments, machinery…'**
-  String get quoteCargoHint;
-
-  /// No description provided for @quoteWeightHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Weight (optional)'**
-  String get quoteWeightHint;
-
-  /// No description provided for @quoteWhenTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'When'**
-  String get quoteWhenTitle;
-
-  /// No description provided for @quoteWhenSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'As soon as possible'**
-  String get quoteWhenSoon;
-
-  /// No description provided for @quoteWhenWeeks.
-  ///
-  /// In en, this message translates to:
-  /// **'Within 2 weeks'**
-  String get quoteWhenWeeks;
-
-  /// No description provided for @quoteWhenMonth.
-  ///
-  /// In en, this message translates to:
-  /// **'This month'**
-  String get quoteWhenMonth;
-
-  /// No description provided for @quoteWhenFlexible.
-  ///
-  /// In en, this message translates to:
-  /// **'Flexible'**
-  String get quoteWhenFlexible;
-
-  /// No description provided for @quoteNotesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Anything else'**
-  String get quoteNotesTitle;
-
-  /// No description provided for @quoteNotesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Dimensions, packaging, Incoterms, special handling'**
-  String get quoteNotesHint;
-
-  /// No description provided for @quoteSubmit.
-  ///
-  /// In en, this message translates to:
-  /// **'Request quote'**
-  String get quoteSubmit;
-
-  /// No description provided for @quoteSending.
-  ///
-  /// In en, this message translates to:
-  /// **'Sending…'**
-  String get quoteSending;
-
-  /// No description provided for @quoteNeedsRoute.
-  ///
-  /// In en, this message translates to:
-  /// **'Add where it is coming from and going to.'**
-  String get quoteNeedsRoute;
-
-  /// No description provided for @quoteSentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Quote requested'**
-  String get quoteSentTitle;
-
-  /// No description provided for @quoteSentBody.
-  ///
-  /// In en, this message translates to:
-  /// **'KCPL will reply with a price for {route}.'**
-  String quoteSentBody(String route);
-
-  /// No description provided for @quoteDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get quoteDone;
-
   /// No description provided for @shipsFocusAll.
   ///
   /// In en, this message translates to:
@@ -1538,42 +1316,6 @@ abstract class AppLocalizations {
   /// **'Sign-in failed. Check your details and try again.'**
   String get signInFailed;
 
-  /// No description provided for @continueWithApple.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue with Apple'**
-  String get continueWithApple;
-
-  /// No description provided for @continueWithGoogle.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue with Google'**
-  String get continueWithGoogle;
-
-  /// No description provided for @signInWithEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in with email'**
-  String get signInWithEmail;
-
-  /// No description provided for @orWithEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'or with your email'**
-  String get orWithEmail;
-
-  /// No description provided for @linkProvider.
-  ///
-  /// In en, this message translates to:
-  /// **'This email already has a KCPL password. Sign in with it once and {provider} will be connected for next time.'**
-  String linkProvider(String provider);
-
-  /// No description provided for @providerOff.
-  ///
-  /// In en, this message translates to:
-  /// **'{provider} sign-in is not switched on for KCPL yet. Use your email and password.'**
-  String providerOff(String provider);
-
   /// No description provided for @tooManyAttempts.
   ///
   /// In en, this message translates to:
@@ -1729,6 +1471,762 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allow notifications for KCPL in your phone\'s Settings.'**
   String get pushBlockedHelp;
+
+  /// No description provided for @homeOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing on the way} =1{1 shipment on the way} other{{count} shipments on the way}}'**
+  String homeOnTheWay(int count);
+
+  /// No description provided for @homeNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 needs attention} other{{count} need attention}}'**
+  String homeNeedsAttention(int count);
+
+  /// No description provided for @homeArriving.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} arriving this week'**
+  String homeArriving(int count);
+
+  /// No description provided for @homeAllClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is moving as planned'**
+  String get homeAllClear;
+
+  /// No description provided for @homeNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get homeNeedsYou;
+
+  /// No description provided for @quoteWhereTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is your cargo going?'**
+  String get quoteWhereTo;
+
+  /// No description provided for @quoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a quote'**
+  String get quoteTitle;
+
+  /// No description provided for @quoteFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get quoteFrom;
+
+  /// No description provided for @quoteFromHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup city, port or border'**
+  String get quoteFromHint;
+
+  /// No description provided for @quoteTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get quoteTo;
+
+  /// No description provided for @quoteToHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it should arrive'**
+  String get quoteToHint;
+
+  /// No description provided for @quoteYourRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Your routes'**
+  String get quoteYourRoutes;
+
+  /// No description provided for @quoteModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How should it travel?'**
+  String get quoteModeTitle;
+
+  /// No description provided for @quoteModeRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Road'**
+  String get quoteModeRoad;
+
+  /// No description provided for @quoteModeRoadDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Overland, through the India and China borders'**
+  String get quoteModeRoadDetail;
+
+  /// No description provided for @quoteModeSea.
+  ///
+  /// In en, this message translates to:
+  /// **'Sea'**
+  String get quoteModeSea;
+
+  /// No description provided for @quoteModeSeaDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Via Kolkata, Haldia or Vizag, for the largest loads'**
+  String get quoteModeSeaDetail;
+
+  /// No description provided for @quoteModeAir.
+  ///
+  /// In en, this message translates to:
+  /// **'Air'**
+  String get quoteModeAir;
+
+  /// No description provided for @quoteModeAirDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest, into Kathmandu (TIA)'**
+  String get quoteModeAirDetail;
+
+  /// No description provided for @quoteModeUnsure.
+  ///
+  /// In en, this message translates to:
+  /// **'Let KCPL advise'**
+  String get quoteModeUnsure;
+
+  /// No description provided for @quoteModeUnsureDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'We will suggest the best way for your cargo'**
+  String get quoteModeUnsureDetail;
+
+  /// No description provided for @quoteCargoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo'**
+  String get quoteCargoTitle;
+
+  /// No description provided for @quoteCargoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What is it? Garments, machinery…'**
+  String get quoteCargoHint;
+
+  /// No description provided for @quoteWeightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (optional)'**
+  String get quoteWeightHint;
+
+  /// No description provided for @quoteWhenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get quoteWhenTitle;
+
+  /// No description provided for @quoteWhenSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'As soon as possible'**
+  String get quoteWhenSoon;
+
+  /// No description provided for @quoteWhenWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Within 2 weeks'**
+  String get quoteWhenWeeks;
+
+  /// No description provided for @quoteWhenMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get quoteWhenMonth;
+
+  /// No description provided for @quoteWhenFlexible.
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible'**
+  String get quoteWhenFlexible;
+
+  /// No description provided for @quoteNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything else'**
+  String get quoteNotesTitle;
+
+  /// No description provided for @quoteNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions, packaging, Incoterms, special handling'**
+  String get quoteNotesHint;
+
+  /// No description provided for @quoteSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Request quote'**
+  String get quoteSubmit;
+
+  /// No description provided for @quoteSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get quoteSending;
+
+  /// No description provided for @quoteNeedsRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Add where it is coming from and going to.'**
+  String get quoteNeedsRoute;
+
+  /// No description provided for @quoteSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote requested'**
+  String get quoteSentTitle;
+
+  /// No description provided for @quoteSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL will reply with a price for {route}.'**
+  String quoteSentBody(String route);
+
+  /// No description provided for @quoteDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get quoteDone;
+
+  /// No description provided for @continueWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get continueWithApple;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @signInWithEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email'**
+  String get signInWithEmail;
+
+  /// No description provided for @orWithEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'or with your email'**
+  String get orWithEmail;
+
+  /// No description provided for @linkProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'This email already has a KCPL password. Sign in with it once and {provider} will be connected for next time.'**
+  String linkProvider(String provider);
+
+  /// No description provided for @providerOff.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in is not switched on for KCPL yet. Use your email and password.'**
+  String providerOff(String provider);
+
+  /// No description provided for @sendDocTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a document'**
+  String get sendDocTitle;
+
+  /// No description provided for @sendDocKind.
+  ///
+  /// In en, this message translates to:
+  /// **'What is it?'**
+  String get sendDocKind;
+
+  /// No description provided for @sendDocFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The document'**
+  String get sendDocFile;
+
+  /// No description provided for @sendDocFor.
+  ///
+  /// In en, this message translates to:
+  /// **'For {reference}'**
+  String sendDocFor(String reference);
+
+  /// No description provided for @captureTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get captureTakePhoto;
+
+  /// No description provided for @captureChoosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get captureChoosePhoto;
+
+  /// No description provided for @captureChooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get captureChooseFile;
+
+  /// No description provided for @captureReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get captureReplace;
+
+  /// No description provided for @captureCameraDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL can\'t use the camera. Allow it in your phone\'s Settings.'**
+  String get captureCameraDenied;
+
+  /// No description provided for @captureUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a PDF, JPEG, PNG or WEBP file.'**
+  String get captureUnsupported;
+
+  /// No description provided for @captureTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Files must be {size} MB or smaller.'**
+  String captureTooLarge(String size);
+
+  /// No description provided for @captureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Lay the paper flat in good light, with all four corners in view.'**
+  String get captureHint;
+
+  /// No description provided for @sendToKcpl.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to KCPL'**
+  String get sendToKcpl;
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sending;
+
+  /// No description provided for @sendingPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending… {percent}%'**
+  String sendingPercent(String percent);
+
+  /// No description provided for @sendDocFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL checks every document before it counts. Bills of lading, customs entries and proofs of delivery are filed by KCPL.'**
+  String get sendDocFootnote;
+
+  /// No description provided for @sentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to KCPL'**
+  String get sentTitle;
+
+  /// No description provided for @sendChooseKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what the document is.'**
+  String get sendChooseKind;
+
+  /// No description provided for @sendChooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo or a file first.'**
+  String get sendChooseFile;
+
+  /// No description provided for @sendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get sendAction;
+
+  /// No description provided for @confirmPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Has it arrived?'**
+  String get confirmPrompt;
+
+  /// No description provided for @confirmPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Let KCPL know the cargo reached you.'**
+  String get confirmPromptBody;
+
+  /// No description provided for @confirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm receipt'**
+  String get confirmTitle;
+
+  /// No description provided for @confirmReceivedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Received by'**
+  String get confirmReceivedBy;
+
+  /// No description provided for @confirmReceivedByHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Who took delivery'**
+  String get confirmReceivedByHint;
+
+  /// No description provided for @confirmNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything KCPL should know'**
+  String get confirmNote;
+
+  /// No description provided for @confirmNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition, missing pieces, damage…'**
+  String get confirmNoteHint;
+
+  /// No description provided for @confirmPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo of the delivery'**
+  String get confirmPhoto;
+
+  /// No description provided for @confirmPhotoOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. It is filed on the shipment for KCPL to see.'**
+  String get confirmPhotoOptional;
+
+  /// No description provided for @confirmFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'This tells KCPL the cargo arrived. It isn\'t a proof of delivery: KCPL still files that.'**
+  String get confirmFootnote;
+
+  /// No description provided for @confirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you'**
+  String get confirmedTitle;
+
+  /// No description provided for @confirmedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'You confirmed receipt on {date}'**
+  String confirmedOn(String date);
+
+  /// No description provided for @confirmedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Received by {name}'**
+  String confirmedBy(String name);
+
+  /// No description provided for @receiptSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send payment receipt'**
+  String get receiptSend;
+
+  /// No description provided for @receiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment receipt'**
+  String get receiptTitle;
+
+  /// No description provided for @receiptFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank receipt or advice'**
+  String get receiptFile;
+
+  /// No description provided for @receiptAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid'**
+  String get receiptAmount;
+
+  /// No description provided for @receiptPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid on'**
+  String get receiptPaidOn;
+
+  /// No description provided for @receiptNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note for KCPL accounts'**
+  String get receiptNote;
+
+  /// No description provided for @receiptNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank, reference number…'**
+  String get receiptNoteHint;
+
+  /// No description provided for @receiptFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL accounts match every receipt with the bank before the invoice changes.'**
+  String get receiptFootnote;
+
+  /// No description provided for @receiptsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts you sent'**
+  String get receiptsTitle;
+
+  /// No description provided for @receiptWithAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'With KCPL accounts'**
+  String get receiptWithAccounts;
+
+  /// No description provided for @receiptAcknowledged.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledged'**
+  String get receiptAcknowledged;
+
+  /// No description provided for @receiptInvalidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the amount as a number.'**
+  String get receiptInvalidAmount;
+
+  /// No description provided for @receiptPaidOnDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid {date}'**
+  String receiptPaidOnDate(String date);
+
+  /// No description provided for @teamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get teamTitle;
+
+  /// No description provided for @teamInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a colleague'**
+  String get teamInvite;
+
+  /// No description provided for @teamInviteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'ll see your shipments and documents. Invoices stay with account owners.'**
+  String get teamInviteBody;
+
+  /// No description provided for @teamSendInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Send invitation'**
+  String get teamSendInvite;
+
+  /// No description provided for @teamInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent'**
+  String get teamInvited;
+
+  /// No description provided for @teamInviteSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{email} will get an email to set a password.'**
+  String teamInviteSentBody(String email);
+
+  /// No description provided for @teamInviteLinkBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Email isn\'t set up for KCPL yet, so pass this link to {email} yourself. It works once.'**
+  String teamInviteLinkBody(String email);
+
+  /// No description provided for @teamShareLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share link'**
+  String get teamShareLink;
+
+  /// No description provided for @teamStateActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get teamStateActive;
+
+  /// No description provided for @teamStateInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited'**
+  String get teamStateInvited;
+
+  /// No description provided for @teamStateOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turned off'**
+  String get teamStateOff;
+
+  /// No description provided for @teamStateLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked by KCPL'**
+  String get teamStateLinked;
+
+  /// No description provided for @teamYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get teamYou;
+
+  /// No description provided for @teamLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Last signed in {date}'**
+  String teamLastSeen(String date);
+
+  /// No description provided for @teamNeverSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Hasn\'t signed in yet'**
+  String get teamNeverSignedIn;
+
+  /// No description provided for @teamTurnOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off login'**
+  String get teamTurnOff;
+
+  /// No description provided for @teamTurnOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn login back on'**
+  String get teamTurnOn;
+
+  /// No description provided for @teamTurnOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{email} won\'t be able to sign in until you turn it back on.'**
+  String teamTurnOffBody(String email);
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @teamFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Members see shipments and documents. Only KCPL can add another account owner.'**
+  String get teamFootnote;
+
+  /// No description provided for @teamLinkedFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'A login linked by KCPL belongs to another account. Ask KCPL to remove it.'**
+  String get teamLinkedFootnote;
+
+  /// No description provided for @offlineAsOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · as of {time}'**
+  String offlineAsOf(String time);
+
+  /// No description provided for @lockSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get lockSection;
+
+  /// No description provided for @lockRequire.
+  ///
+  /// In en, this message translates to:
+  /// **'Require {method}'**
+  String lockRequire(String method);
+
+  /// No description provided for @lockFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL asks for {method} when you come back to it after a minute away, and hides its content in the app switcher.'**
+  String lockFootnote(String method);
+
+  /// No description provided for @lockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL is locked'**
+  String get lockTitle;
+
+  /// No description provided for @lockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get lockUnlock;
+
+  /// No description provided for @lockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock your KCPL account'**
+  String get lockReason;
+
+  /// No description provided for @lockFaceId.
+  ///
+  /// In en, this message translates to:
+  /// **'Face ID'**
+  String get lockFaceId;
+
+  /// No description provided for @lockTouchId.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch ID'**
+  String get lockTouchId;
+
+  /// No description provided for @lockFingerprint.
+  ///
+  /// In en, this message translates to:
+  /// **'fingerprint'**
+  String get lockFingerprint;
+
+  /// No description provided for @lockPasscode.
+  ///
+  /// In en, this message translates to:
+  /// **'your passcode'**
+  String get lockPasscode;
+
+  /// No description provided for @shareStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Share status'**
+  String get shareStatus;
+
+  /// No description provided for @shareExpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected {date}'**
+  String shareExpected(String date);
+
+  /// No description provided for @shareDeliveredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered {date}'**
+  String shareDeliveredOn(String date);
+
+  /// No description provided for @shareFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Kapileshwor Cargo · shared from the KCPL app'**
+  String get shareFooter;
+
+  /// No description provided for @shareCarrierRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Carrier reference {reference}'**
+  String shareCarrierRef(String reference);
 }
 
 class _AppLocalizationsDelegate

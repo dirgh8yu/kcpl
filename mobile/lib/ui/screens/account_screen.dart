@@ -4,10 +4,12 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme.dart';
 import '../widgets/choice_rows.dart';
+import '../widgets/journey.dart' show IconTile;
 import '../widgets/common.dart';
 import '../widgets/large_title.dart';
 import '../widgets/push_ui.dart';
 import '../widgets/tab_bar.dart' show KTabBar;
+import 'team_screen.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key, required this.version});
@@ -63,6 +65,14 @@ class AccountScreen extends StatelessWidget {
                 children: [
                   DetailRow(l.settingsAccount, session.customerName),
                   DetailRow(l.settingsAccessLevel, session.role == 'owner' ? l.roleOwner : l.roleMember),
+                  // The server lists a team for owners only.
+                  if (session.role == 'owner')
+                    RowTile(
+                      onTap: () => openTeam(context),
+                      leading: const IconTile(icon: KIcons.people),
+                      title: Text(l.teamTitle),
+                      chevron: true,
+                    ),
                 ],
               ),
               if (session.customers.length > 1) ...[

@@ -42,9 +42,7 @@ void main() {
   testWidgets('the panel is KCPL crimson and reads as the company name', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, reduceMotion: true);
-    final box = tester.widget<ColoredBox>(
-      find.descendant(of: find.byType(BrandHero), matching: find.byType(ColoredBox)).first,
-    );
+    final box = tester.widget<ColoredBox>(find.descendant(of: find.byType(BrandHero), matching: find.byType(ColoredBox)).first);
     expect(box.color, KcplColors.crimson);
     expect(find.bySemanticsLabel('Kapileshwor Cargo Pvt. Ltd.'), findsOneWidget);
     semantics.dispose();

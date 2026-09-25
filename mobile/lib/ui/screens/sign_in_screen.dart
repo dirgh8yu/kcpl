@@ -168,11 +168,7 @@ class _SignInScreenState extends State<SignInScreen> {
               HapticFeedback.selectionClick();
               controller.setLocale(Locale(code));
             },
-      style: TextButton.styleFrom(
-        disabledForegroundColor: p.ink,
-        foregroundColor: p.tertiary,
-        textStyle: context.type.labelLarge,
-      ),
+      style: TextButton.styleFrom(disabledForegroundColor: p.ink, foregroundColor: p.tertiary, textStyle: context.type.labelLarge),
       child: Text(label),
     );
 
@@ -187,11 +183,7 @@ class _SignInScreenState extends State<SignInScreen> {
           ? const SizedBox(width: double.infinity)
           : Padding(
               padding: const EdgeInsets.only(top: 18),
-              child: Notice(
-                card: false,
-                title: message,
-                emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
-              ),
+              child: Notice(card: false, title: message, emphasis: _error != null ? Emphasis.attention : Emphasis.normal),
             ),
     );
 
@@ -232,10 +224,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   const SizedBox(height: 28),
-                                  Reveal(
-                                    index: 1,
-                                    child: Text(widget.title ?? l.signInTitle, style: context.type.displaySmall),
-                                  ),
+                                  Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.displaySmall)),
                                   const SizedBox(height: 6),
                                   Reveal(
                                     index: 2,
@@ -306,11 +295,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                                 decoration: _field(l.passwordLabel).copyWith(
                                                   suffixIcon: IconButton(
                                                     tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                                    icon: Icon(
-                                                      _obscure ? KIcons.show : KIcons.hide,
-                                                      size: 20,
-                                                      color: p.secondary,
-                                                    ),
+                                                    icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 20, color: p.secondary),
                                                     onPressed: () => setState(() => _obscure = !_obscure),
                                                   ),
                                                 ),
@@ -368,11 +353,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                   const SizedBox(height: 40),
                                   Reveal(
                                     index: 5,
-                                    child: Text(
-                                      l.helpContact,
-                                      textAlign: TextAlign.center,
-                                      style: context.type.bodySmall,
-                                    ),
+                                    child: Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
                                   ),
                                   const SizedBox(height: 6),
                                   if (controller.multilingual)
@@ -399,11 +380,7 @@ class _SignInScreenState extends State<SignInScreen> {
               // The sheet runs to the bottom of the screen, and through the
               // bounce past it, so its edge never shows. Painted a point up
               // under the form so no crimson shows at the seam.
-              SliverFillRemaining(
-                hasScrollBody: false,
-                fillOverscroll: true,
-                child: CustomPaint(painter: _Band(p.paper, top: -1)),
-              ),
+              SliverFillRemaining(hasScrollBody: false, fillOverscroll: true, child: CustomPaint(painter: _Band(p.paper, top: -1))),
             ],
           ),
         ),
@@ -472,9 +449,7 @@ class _Providers extends StatelessWidget {
                             l.continueWithGoogle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: context.type.labelLarge?.copyWith(
-                              color: p.isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1F1F1F),
-                            ),
+                            style: context.type.labelLarge?.copyWith(color: p.isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1F1F1F)),
                           ),
                         ),
                       ],
