@@ -266,6 +266,11 @@ const reviewedClassifications = [
     rationale: "Customer confirmation of receipt, shared by the web portal route and the KCPL app route. Writes a customer_confirmations record and a Job File activity entry, both shipment-linked evidence, and records the status it observed for context. It never writes shipment status, a delivery attempt or POD evidence: canonical Delivered stays with the delivery authority and its verified proof, and a customer saying the cargo arrived is context for the operator closing the file rather than a substitute for it.",
   },
   {
+    file: "app/portal/portal-delivery-rating.server.ts",
+    category: "A",
+    rationale: "Customer delivery rating, shared by the web portal route and the KCPL app route. Writes one customer_feedback row under the shipment per login (created once, keyed by a hash of the login) and, for a low score, a notification to the desk. It reads the shipment's status only to refuse a rating before delivery; it never writes the shipment document, a delivery attempt or POD evidence, so a rating cannot assign or influence canonical status.",
+  },
+  {
     file: "app/shipment-free-time.server.ts",
     category: "F",
     rationale: "Read-only accessor for the free-time block on a shipment. One get, no mutation; writing free time goes through the namespaced admin route.",
