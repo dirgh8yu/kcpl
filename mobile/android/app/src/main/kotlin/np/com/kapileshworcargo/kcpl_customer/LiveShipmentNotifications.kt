@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -93,7 +94,10 @@ class LiveShipmentNotifications(private val context: Context) : MethodChannel.Me
                         .setProgress(progress),
                 )
                 .setShortCriticalText("$progress%")
-                .setRequestPromotedOngoing(true)
+                // The Live Update request. Set through its extra, as AndroidX's
+                // NotificationCompat does: the builder method is newer than
+                // the SDK this app compiles against.
+                .addExtras(Bundle().apply { putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true) })
         } else {
             builder.setProgress(100, progress, false)
         }
@@ -116,6 +120,7 @@ class LiveShipmentNotifications(private val context: Context) : MethodChannel.Me
         const val CHANNEL = "kcpl_live"
         const val NOTIFICATION_ID = 7100
         const val TAG_PREFIX = "kcpl-live:"
+        const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
         private val routes = mutableMapOf<String, String>()
     }
 }
