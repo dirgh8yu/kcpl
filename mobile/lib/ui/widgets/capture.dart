@@ -135,6 +135,10 @@ class AttachmentField extends StatelessWidget {
       duration: reduced ? const Duration(milliseconds: 150) : Motion.reveal,
       switchInCurve: Motion.easeOut,
       switchOutCurve: Motion.easeOut,
+      // Full width, as every card on the page is: the default layout would
+      // let the card shrink to its content while it fades.
+      layoutBuilder: (current, previous) =>
+          Stack(alignment: Alignment.topCenter, fit: StackFit.passthrough, children: [...previous, ?current]),
       transitionBuilder: (child, animation) => FadeTransition(
         opacity: animation,
         child: reduced ? child : ScaleTransition(scale: Tween(begin: 0.98, end: 1.0).animate(animation), child: child),

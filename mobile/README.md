@@ -1,7 +1,6 @@
 # KCPL customer app
 
-A native Flutter app for KCPL's customers: the customer portal's read side, on a phone.
-It covers:
+A native Flutter app for KCPL's customers: the customer portal, on a phone. It covers:
 
 - sign-in and password reset (the same email and password as the web portal)
 - the overview (KPIs, free time running out, paperwork KCPL is waiting on, balances)
@@ -10,6 +9,10 @@ It covers:
 - documents, with download to the phone's viewer
 - invoices and invoice detail, for logins with finance access
 - switching customer, for agents linked to several
+- requesting a quote, sending documents (a photo of the paperwork), payment receipts,
+  confirming receipt of a delivery, and managing the team's logins
+- working offline from the last answers, Face ID, sharing a shipment's status, and a
+  home and lock screen widget
 - English and Nepali
 
 It talks to KCPL's own site (`/api/mobile/v1`, see *Mobile app API* in
@@ -47,16 +50,26 @@ The staff app is the operations desk in a pocket. It talks to `/api/mobile/ops/v
 - **Jobs:** every active job in your branches. It starts on your own work, with the web's
   filters (Mine, All, Urgent, Overdue, Customs, Exceptions) and search.
 - **Job detail:** the journey, the owner with one-tap call and WhatsApp, tasks and
-  customs steps you can tick, what stands between the job and closeout, notes and
-  details. Profitability appears only for roles that manage costs.
+  customs steps you can tick, notes and photos from the field, what stands between the
+  job and closeout, notes and details. Profitability appears only for roles that manage
+  costs.
+- **Add to job:** a note, a photo, or both, from wherever you are. The photo is filed in
+  the job's Document Vault (as a photo, POD, customs document, packing list or delivery
+  order) and the note is Job File activity, so both show on the web with your name.
+  Saving goes straight back to the job.
+- **Scan** (Today and Jobs): point at a barcode or QR code, read a container number off
+  the door ("Read text" takes a photo and reads it on the phone; ISO 6346 numbers that
+  pass their check digit are offered first), or type it. One match opens the job; only
+  jobs in your branches can be found.
 - **Alerts:** the web notification centre's feed. Opening an alert marks it read and
   goes to its job; the tab badge counts unread.
 - **Me:** role, branches and sign-out.
 
 Access is the web admin's own: a Firebase login that `isAuthorizedAdminUser` accepts, with
-role, permissions and branch scope from `getStaffContext`. The app can change three things:
-tick a task, tick a customs step, and mark an alert read. Ticking goes through the same
-guarded function the web Job File uses. A tick shows at once and is saved behind it; if the
+role, permissions and branch scope from `getStaffContext`. The app can change four things:
+tick a task, tick a customs step, mark an alert read, and add a field note or photo.
+Ticking goes through the same guarded function the web Job File uses; a note checks the
+job's branch before it reads a byte. A tick shows at once and is saved behind it; if the
 server refuses, it comes back off and says why. Anything else (assigning, closing,
 costs) stays on the web for now.
 
@@ -149,6 +162,30 @@ checked the same way, and the enquiry lands with a *suggested* customer match an
 price, for the KCPL desk to take up in the workflow it already uses. Requests from the app
 are marked `source: "customer_app"`. Logins that may not raise requests do not see the
 bar.
+
+## Sending things to KCPL
+
+Each of these is the web portal's own write, reached through the same shared server
+function (see *Mobile app API* in `docs/customer-portal.md`), so the rules are one set.
+They appear only to logins that may send things to KCPL.
+
+- **A document:** from a checklist row KCPL is waiting on (its own **Send**), or "Send a
+  document" under a shipment's documents. The photo comes first, then what it is. Photos
+  are re-encoded as JPEG at up to 2400 px (an iPhone's HEIC is refused by the server) and
+  named for what they are; PDFs come from Files. Only the papers a customer originates can
+  be sent: a bill of lading, customs entry or POD is KCPL's to file. It arrives unreviewed.
+- **A payment receipt:** from an unpaid invoice, with the balance filled in and the date on
+  the iOS wheel. It is a claim for KCPL accounts to match, never a ledger entry; receipts
+  sent are listed on the invoice with their state.
+- **Confirm receipt:** a delivered shipment asks once, "Has it arrived?", with who took it,
+  a note and an optional photo (filed as "other"). It tells the operator; it is not a POD.
+- **Team** (account owners, in Account): invite a colleague as a member, and turn logins off
+  and on. When KCPL has no mail provider, the one-time link comes back to share.
+- **Share status** (a shipment's title bar): plain text for WhatsApp or anywhere. It
+  carries no link, since the portal needs a KCPL login.
+
+Uploads show real progress: the body is handed over in 32 KB pieces as the connection
+takes them, and the crimson button fills with them.
 
 ## Continue with Google and Apple
 
@@ -311,8 +348,7 @@ node mobile/tool/build_map_data.mjs <folder with the geojson files>
 ### Keeping current
 
 There is one copy of the data: the apps read and write the same database as the website,
-through the server, and store none of it on the phone. What can lag is a screen, so every
-screen refreshes itself:
+through the server. What can lag is a screen, so every screen refreshes itself:
 
 - every **60 seconds** while it is on show, the web register's own interval;
 - on **coming back** to it (switching back to its tab, returning from a detail page,
@@ -324,6 +360,40 @@ and no scroll jump. A failed background refresh keeps what is shown. Only the ne
 may land, so a slow reply can never overwrite a newer one, including across a customer
 switch. The Ops alert badge counts unread every minute on every tab. `test/refresh_test.dart`
 holds all of this on a fake clock.
+
+### Offline
+
+The customer app keeps the last answer to each read (`lib/api/offline_cache.dart`), in the
+app's private storage, keyed by customer and endpoint. When KCPL can't be reached, a screen
+shows that answer with **"Offline · as of 10:42"** instead of an error; a background
+refresh that fails does the same. A refusal (no access, not found) is never replaced by an
+old answer. Signing out deletes everything kept.
+
+### Face ID
+
+Off until the person turns it on in Account → Privacy, and proven before it is. Then KCPL
+asks for Face ID (Touch ID, a fingerprint, or the passcode as fallback) at launch and after
+a minute away, never for a glance, and shows the K on crimson in the app switcher. Unlocking
+returns exactly where the person was. Signing out ends it; the next person starts without.
+
+### Home and lock screen widget
+
+The shipment worth a glance (one in trouble first, then the next to arrive), in the
+reader's language, refreshed whenever the overview loads live and emptied at sign-out. A
+tap opens that shipment.
+
+- **Android:** built in (the customer app only). Long-press the home screen → Widgets →
+  KCPL.
+- **iPhone:** the widget's code is in `ios/KCPLWidget/KCPLWidget.swift`. It needs a
+  Widget Extension target, added once on a Mac, and an App Group, which needs a paid Apple
+  Developer account:
+  1. Xcode → File → New → Target → **Widget Extension**, named `KCPLWidget`, iOS 17 or
+     later. Untick "Include Configuration App Intent" and "Include Live Activity".
+  2. Delete the Swift files Xcode generates in the new folder and add
+     `ios/KCPLWidget/KCPLWidget.swift` to the `KCPLWidget` target.
+  3. On both the **Runner** and **KCPLWidget** targets: Signing & Capabilities → + →
+     **App Groups** → `group.np.com.kapileshworcargo.kcpl`.
+  Until then the app runs normally and simply has no widget.
 
 ### Push notifications
 
@@ -405,6 +475,8 @@ size. A layout overflow fails the test, so a long label can't clip on a real pho
 
 ## Not in this version
 
-- Uploads, payment receipts, delivery confirmation, freight requests and team
-  management. These stay on the web portal.
-- Offline cache. Each screen fetches live and says so plainly when it can't.
+- Live Activities (a shipment on the Dynamic Island). They need push tokens per activity
+  from the server and a paid Apple Developer account; the widget covers the lock screen.
+- A public tracking link. Shared status is plain text, since a page anyone could open
+  would be a new part of the public site.
+- Paying an invoice in the app. Payment happens at the bank; the app sends the receipt.

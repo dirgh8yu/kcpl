@@ -287,7 +287,7 @@ class _SendPill extends StatelessWidget {
 /// A shipment's status as a message: what it is, where it is, and when. For a
 /// consignee on WhatsApp, so it carries no link that needs a KCPL login.
 String shipmentStatusText(AppLocalizations l, Shipment shipment) => [
-  '${shipment.reference} · ${place(shipment.origin)} → ${place(shipment.destination)}',
+  '${shipment.reference} · ${route(place(shipment.origin), place(shipment.destination))}',
   [statusLabel(l, shipment.status), if (!shipment.delivered && shipment.currentLocation != null) shipment.currentLocation!].join(' · '),
   if (shipment.delivered)
     l.shareDeliveredOn(formatDate(shipment.updatedAt))

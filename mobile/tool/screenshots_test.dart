@@ -19,7 +19,10 @@ import 'package:kcpl_customer/main.dart';
 import 'package:kcpl_customer/ops/main.dart';
 import 'package:kcpl_customer/ops/ops_controller.dart';
 import 'package:kcpl_customer/ops/ops_demo.dart';
+import 'package:kcpl_customer/api/models.dart';
+import 'package:kcpl_customer/ops/screens/scan_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/widgets/capture.dart';
 import 'package:kcpl_customer/ui/widgets/large_title.dart';
 
 Future<void> _font(String family, List<String> paths) async {
@@ -63,8 +66,8 @@ Future<void> _wait(WidgetTester tester, [int frames = 12]) async {
   }
 }
 
-Future<void> _shot(WidgetTester tester, String name) async {
-  await _wait(tester);
+Future<void> _shot(WidgetTester tester, String name, {bool settle = true}) async {
+  if (settle) await _wait(tester);
   await expectLater(find.byWidgetPredicate((w) => w is MaterialApp).first, matchesGoldenFile('screenshots/$name.png'));
 }
 
@@ -79,6 +82,20 @@ Future<void> _tab(WidgetTester tester, String label) async {
   await tester.tap(find.text(label).last);
   await _wait(tester);
 }
+
+/// A photo of paperwork, as the camera would hand it back.
+class _Paper extends AttachmentSource {
+  const _Paper();
+  @override
+  Future<Attachment?> camera() async => Attachment(filename: 'IMG_4471.png', bytes: _paperPng(), contentType: 'image/png');
+  @override
+  Future<Attachment?> photos() => camera();
+  @override
+  Future<Attachment?> files() => camera();
+}
+
+/// A grey page with lines of "text", drawn once.
+List<int> _paperPng() => File('tool/paper.png').readAsBytesSync();
 
 void main() {
   setUpAll(() async {
@@ -140,6 +157,72 @@ void main() {
       await _shot(tester, 'customer-$mode-8-account');
     }, variant: iPhone);
 
+    testWidgets('customer features $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      AttachmentSource.current = const _Paper();
+      final controller = AppController(
+        auth: DemoAuth(),
+        api: DemoApi(),
+        prefs: MemoryTokenStore(),
+        configured: true,
+        social: const DemoSocial(),
+      );
+      await controller.start();
+      await tester.pumpWidget(KcplApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await tester.tap(find.text('Continue with Google'));
+      await _wait(tester, 30);
+      await _tab(tester, 'Shipments');
+      await tester.tap(find.textContaining('KCPL-S-24091', findRichText: true).first);
+      await _wait(tester);
+      await tester.scrollUntilVisible(find.text('Send'), 300, scrollable: find.byType(Scrollable).last);
+      await _shot(tester, 'customer-$mode-9a-checklist-send');
+      await tester.tap(find.text('Send'));
+      await _wait(tester);
+      await tester.tap(find.text('Take photo').first);
+      await _wait(tester, 4);
+      await tester.tap(find.text('Take photo').last);
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-9b-send-document');
+      await tester.tap(find.text('Send to KCPL'));
+      await tester.pump(const Duration(milliseconds: 250));
+      await _shot(tester, 'customer-$mode-9c-sending', settle: false);
+      await _wait(tester, 20);
+      await tester.tap(find.text('Done'));
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.textContaining('KCPL-S-24012', findRichText: true).first);
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-9d-arrived');
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm receipt'));
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-9e-confirm');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await _tab(tester, 'Invoices');
+      await tester.tap(find.textContaining('KCPL-I-20260821-004', findRichText: true).first);
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-9f-invoice');
+      await tester.tap(find.text('Send payment receipt'));
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-9g-receipt');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await _tab(tester, 'Account');
+      await tester.tap(find.text('Team'));
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-9h-team');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await controller.lock.setEnabled(false, '');
+      AttachmentSource.current = const DeviceAttachmentSource();
+    }, variant: iPhone);
+
     testWidgets('ops $mode', (tester) async {
       await _phone(tester, dark: dark);
       final controller = OpsController(auth: DemoAuth(), api: DemoOpsApi(), configured: true);
@@ -152,7 +235,26 @@ void main() {
       await _shot(tester, 'ops-$mode-2-jobs');
       await tester.tap(find.textContaining('KCPL-2609-0142').first);
       await _shot(tester, 'ops-$mode-3-job');
+      await tester.scrollUntilVisible(find.text('Add a note or photo'), 300, scrollable: find.byType(Scrollable).last);
+      await _shot(tester, 'ops-$mode-3a-job-field');
+      await tester.tap(find.text('Add a note or photo').last);
+      await _wait(tester);
+      await tester.enterText(find.byType(TextField).last, 'Seal intact. Corrected packing list handed to customs at 11:20.');
+      await _wait(tester, 3);
+      await _shot(tester, 'ops-$mode-3b-add-note');
       await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      ScanDevice.camera = (context, onCode, paused) => const ColoredBox(color: Color(0xFF2B2B2B));
+      ScanDevice.readText = () async => ['MAX GROSS 30480 KG', 'CSQU 305438 3', 'TARE 2200', 'Ref KCPL-2609-0142'];
+      await tester.tap(find.byTooltip('Scan').first);
+      await _wait(tester);
+      await _shot(tester, 'ops-$mode-3c-scan');
+      await tester.tap(find.text('Read text'));
+      await _wait(tester);
+      await _shot(tester, 'ops-$mode-3d-scan-read');
+      await tester.tap(find.byTooltip('Close').first);
       await _wait(tester);
       await _tab(tester, 'Alerts');
       await _shot(tester, 'ops-$mode-4-alerts');
