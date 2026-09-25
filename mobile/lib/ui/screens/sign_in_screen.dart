@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,7 +7,7 @@ import '../../api/kcpl_api.dart';
 import '../../session_host.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
-import '../map/route_map.dart';
+import '../widgets/brand_hero.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -166,7 +168,11 @@ class _SignInScreenState extends State<SignInScreen> {
               HapticFeedback.selectionClick();
               controller.setLocale(Locale(code));
             },
-      style: TextButton.styleFrom(disabledForegroundColor: p.ink, foregroundColor: p.tertiary, textStyle: context.type.labelLarge),
+      style: TextButton.styleFrom(
+        disabledForegroundColor: p.ink,
+        foregroundColor: p.tertiary,
+        textStyle: context.type.labelLarge,
+      ),
       child: Text(label),
     );
 
@@ -181,224 +187,226 @@ class _SignInScreenState extends State<SignInScreen> {
           ? const SizedBox(width: double.infinity)
           : Padding(
               padding: const EdgeInsets.only(top: 18),
-              child: Notice(card: false, title: message, emphasis: _error != null ? Emphasis.attention : Emphasis.normal),
+              child: Notice(
+                card: false,
+                title: message,
+                emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
+              ),
             ),
     );
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // KCPL's lanes into Nepal, moving behind the mark.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.sizeOf(context).height * 0.46,
-            child: IgnorePointer(
-              child: Reveal(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    AmbientRouteMap(style: RouteMapStyle.page(p)),
-                    // The map gives way to the page beneath it.
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [p.paper.withValues(alpha: 0), p.paper.withValues(alpha: 0), p.paper],
-                          stops: const [0, 0.55, 1],
-                        ),
-                      ),
+    // Light status bar icons on the crimson head.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        // Crimson shows in the bounce above the head, as if it went on.
+        backgroundColor: KcplColors.crimson,
+        body: LayoutBuilder(
+          // Scrolls when the form outgrows the screen (large text, the email
+          // form open, the keyboard up). Nothing here needs every child's
+          // natural height measured first.
+          builder: (context, constraints) => CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: BrandHero(height: math.max(300, constraints.maxHeight * 0.42))),
+              SliverToBoxAdapter(
+                // The form on a sheet that rises over the crimson, its
+                // corners showing the brand behind. Crimson only behind the
+                // corners: anywhere else it would bleed through at the
+                // sheet's anti-aliased bottom edge.
+                child: CustomPaint(
+                  painter: const _Band(KcplColors.crimson, top: 0, height: 24),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: p.paper,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            // Scrolls when the form outgrows the screen (large text, the
-            // email form open, the keyboard up). Nothing here needs every
-            // child's natural height measured first.
-            child: LayoutBuilder(
-              builder: (context, constraints) => CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 420),
-                          child: AutofillGroup(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const SizedBox(height: 28),
-                                // The screen assembles top to bottom on launch.
-                                Reveal(
-                                  index: 0,
-                                  child: Align(
-                                    alignment: AlignmentDirectional.centerStart,
-                                    child: Image.asset('assets/brand/k-mark.png', width: 34, height: 34, semanticLabel: 'KCPL'),
-                                  ),
-                                ),
-                                // On a tall screen the map has room to breathe.
-                                SizedBox(height: constraints.maxHeight > 700 ? MediaQuery.sizeOf(context).height * 0.46 - 120 : 56),
-                                Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.displaySmall)),
-                                const SizedBox(height: 6),
-                                Reveal(
-                                  index: 2,
-                                  child: Text(
-                                    widget.subtitle ?? l.signInSubtitle,
-                                    style: context.type.bodyLarge?.copyWith(color: p.secondary),
-                                  ),
-                                ),
-                                const SizedBox(height: 28),
-                                // Continue with Apple or Google leads; email follows,
-                                // quieter, for addresses neither provider holds.
-                                if (social.any) ...[
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: AutofillGroup(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const SizedBox(height: 28),
                                   Reveal(
-                                    index: 3,
-                                    child: _Providers(
-                                      social: social,
-                                      busy: _busy,
-                                      onApple: () => _withProvider(apple: true),
-                                      onGoogle: () => _withProvider(apple: false),
+                                    index: 1,
+                                    child: Text(widget.title ?? l.signInTitle, style: context.type.displaySmall),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Reveal(
+                                    index: 2,
+                                    child: Text(
+                                      widget.subtitle ?? l.signInSubtitle,
+                                      style: context.type.bodyLarge?.copyWith(color: p.secondary),
                                     ),
                                   ),
-                                  if (!emailOpen) ...[
+                                  const SizedBox(height: 28),
+                                  // Continue with Apple or Google leads; email follows,
+                                  // quieter, for addresses neither provider holds.
+                                  if (social.any) ...[
+                                    Reveal(
+                                      index: 3,
+                                      child: _Providers(
+                                        social: social,
+                                        busy: _busy,
+                                        onApple: () => _withProvider(apple: true),
+                                        onGoogle: () => _withProvider(apple: false),
+                                      ),
+                                    ),
+                                    if (!emailOpen) ...[
+                                      messageView,
+                                      const SizedBox(height: 8),
+                                      Center(
+                                        child: TextButton(
+                                          onPressed: _busy ? null : () => setState(() => _showEmail = true),
+                                          style: TextButton.styleFrom(foregroundColor: p.secondary),
+                                          child: Text(l.signInWithEmail),
+                                        ),
+                                      ),
+                                    ],
+                                    if (emailOpen) _OrLine(label: l.orWithEmail),
+                                  ],
+                                  if (emailOpen) ...[
+                                    Reveal(
+                                      index: 3,
+                                      child: Shake(
+                                        key: _shake,
+                                        // Both fields on one card, split by a hairline,
+                                        // as iOS lays out a sign-in form.
+                                        child: GroupCard(
+                                          margin: EdgeInsets.zero,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            children: [
+                                              TextField(
+                                                controller: _email,
+                                                enabled: !_busy,
+                                                keyboardType: TextInputType.emailAddress,
+                                                textInputAction: TextInputAction.next,
+                                                autocorrect: false,
+                                                enableSuggestions: false,
+                                                autofillHints: const [AutofillHints.email, AutofillHints.username],
+                                                style: context.type.bodyLarge,
+                                                decoration: _field(l.emailLabel),
+                                                onSubmitted: (_) => _passwordFocus.requestFocus(),
+                                              ),
+                                              const Divider(indent: kGutter),
+                                              TextField(
+                                                controller: _password,
+                                                focusNode: _passwordFocus,
+                                                enabled: !_busy,
+                                                obscureText: _obscure,
+                                                textInputAction: TextInputAction.go,
+                                                autofillHints: const [AutofillHints.password],
+                                                style: context.type.bodyLarge,
+                                                decoration: _field(l.passwordLabel).copyWith(
+                                                  suffixIcon: IconButton(
+                                                    tooltip: _obscure ? l.showPassword : l.hidePassword,
+                                                    icon: Icon(
+                                                      _obscure ? KIcons.show : KIcons.hide,
+                                                      size: 20,
+                                                      color: p.secondary,
+                                                    ),
+                                                    onPressed: () => setState(() => _obscure = !_obscure),
+                                                  ),
+                                                ),
+                                                onSubmitted: (_) => _signIn(),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                     messageView,
+                                    const SizedBox(height: 24),
+                                    Reveal(
+                                      index: 4,
+                                      child: Pressable(
+                                        child: FilledButton(
+                                          onPressed: _busy ? null : _signIn,
+                                          // The one crimson control in the app: the way in.
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: p.accent,
+                                            foregroundColor: Colors.white,
+                                            disabledBackgroundColor: p.accent.withValues(alpha: 0.8),
+                                            disabledForegroundColor: Colors.white,
+                                          ),
+                                          child: AnimatedSwitcher(
+                                            duration: Motion.swap,
+                                            switchInCurve: Motion.easeOut,
+                                            switchOutCurve: Motion.easeOut,
+                                            transitionBuilder: morphTransition,
+                                            child: _busy
+                                                ? Semantics(
+                                                    key: const ValueKey('busy'),
+                                                    label: l.signingIn,
+                                                    child: KcplLoader(
+                                                      size: 22,
+                                                      color: Colors.white,
+                                                      base: Colors.white.withValues(alpha: 0.35),
+                                                      assemble: false,
+                                                    ),
+                                                  )
+                                                : Text(l.signIn, key: const ValueKey('idle')),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     Center(
                                       child: TextButton(
-                                        onPressed: _busy ? null : () => setState(() => _showEmail = true),
+                                        onPressed: _busy ? null : _reset,
                                         style: TextButton.styleFrom(foregroundColor: p.secondary),
-                                        child: Text(l.signInWithEmail),
+                                        child: Text(l.forgotPassword),
                                       ),
                                     ),
                                   ],
-                                  if (emailOpen) _OrLine(label: l.orWithEmail),
-                                ],
-                                if (emailOpen) ...[
+                                  const SizedBox(height: 40),
                                   Reveal(
-                                    index: 3,
-                                    child: Shake(
-                                      key: _shake,
-                                      // Both fields on one card, split by a hairline,
-                                      // as iOS lays out a sign-in form.
-                                      child: GroupCard(
-                                        margin: EdgeInsets.zero,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          children: [
-                                            TextField(
-                                              controller: _email,
-                                              enabled: !_busy,
-                                              keyboardType: TextInputType.emailAddress,
-                                              textInputAction: TextInputAction.next,
-                                              autocorrect: false,
-                                              enableSuggestions: false,
-                                              autofillHints: const [AutofillHints.email, AutofillHints.username],
-                                              style: context.type.bodyLarge,
-                                              decoration: _field(l.emailLabel),
-                                              onSubmitted: (_) => _passwordFocus.requestFocus(),
-                                            ),
-                                            const Divider(indent: kGutter),
-                                            TextField(
-                                              controller: _password,
-                                              focusNode: _passwordFocus,
-                                              enabled: !_busy,
-                                              obscureText: _obscure,
-                                              textInputAction: TextInputAction.go,
-                                              autofillHints: const [AutofillHints.password],
-                                              style: context.type.bodyLarge,
-                                              decoration: _field(l.passwordLabel).copyWith(
-                                                suffixIcon: IconButton(
-                                                  tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                                  icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 20, color: p.secondary),
-                                                  onPressed: () => setState(() => _obscure = !_obscure),
-                                                ),
-                                              ),
-                                              onSubmitted: (_) => _signIn(),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                    index: 5,
+                                    child: Text(
+                                      l.helpContact,
+                                      textAlign: TextAlign.center,
+                                      style: context.type.bodySmall,
                                     ),
                                   ),
-                                  messageView,
-                                  const SizedBox(height: 24),
-                                  Reveal(
-                                    index: 4,
-                                    child: Pressable(
-                                      child: FilledButton(
-                                        onPressed: _busy ? null : _signIn,
-                                        // The one crimson control in the app: the way in.
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: p.accent,
-                                          foregroundColor: Colors.white,
-                                          disabledBackgroundColor: p.accent.withValues(alpha: 0.8),
-                                          disabledForegroundColor: Colors.white,
-                                        ),
-                                        child: AnimatedSwitcher(
-                                          duration: Motion.swap,
-                                          switchInCurve: Motion.easeOut,
-                                          switchOutCurve: Motion.easeOut,
-                                          transitionBuilder: morphTransition,
-                                          child: _busy
-                                              ? Semantics(
-                                                  key: const ValueKey('busy'),
-                                                  label: l.signingIn,
-                                                  child: KcplLoader(
-                                                    size: 22,
-                                                    color: Colors.white,
-                                                    base: Colors.white.withValues(alpha: 0.35),
-                                                    assemble: false,
-                                                  ),
-                                                )
-                                              : Text(l.signIn, key: const ValueKey('idle')),
-                                        ),
-                                      ),
+                                  const SizedBox(height: 6),
+                                  if (controller.multilingual)
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        languageButton('en', 'English'),
+                                        Text('·', style: TextStyle(color: p.tertiary)),
+                                        languageButton('ne', 'नेपाली'),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Center(
-                                    child: TextButton(
-                                      onPressed: _busy ? null : _reset,
-                                      style: TextButton.styleFrom(foregroundColor: p.secondary),
-                                      child: Text(l.forgotPassword),
-                                    ),
-                                  ),
+                                  const SizedBox(height: 12),
                                 ],
-                                const SizedBox(height: 40),
-                                Reveal(
-                                  index: 5,
-                                  child: Text(l.helpContact, textAlign: TextAlign.center, style: context.type.bodySmall),
-                                ),
-                                const SizedBox(height: 6),
-                                if (controller.multilingual)
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    crossAxisAlignment: WrapCrossAlignment.center,
-                                    children: [
-                                      languageButton('en', 'English'),
-                                      Text('·', style: TextStyle(color: p.tertiary)),
-                                      languageButton('ne', 'नेपाली'),
-                                    ],
-                                  ),
-                                const SizedBox(height: 12),
-                              ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              // The sheet runs to the bottom of the screen, and through the
+              // bounce past it, so its edge never shows. Painted a point up
+              // under the form so no crimson shows at the seam.
+              SliverFillRemaining(
+                hasScrollBody: false,
+                fillOverscroll: true,
+                child: CustomPaint(painter: _Band(p.paper, top: -1)),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -464,7 +472,9 @@ class _Providers extends StatelessWidget {
                             l.continueWithGoogle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: context.type.labelLarge?.copyWith(color: p.isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1F1F1F)),
+                            style: context.type.labelLarge?.copyWith(
+                              color: p.isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1F1F1F),
+                            ),
                           ),
                         ),
                       ],
@@ -525,4 +535,23 @@ class _OrLine extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// A band of [color] across the box, from [top] (negative reaches above it)
+/// down [height] points, or to the bottom when [height] is null.
+class _Band extends CustomPainter {
+  const _Band(this.color, {required this.top, this.height});
+
+  final Color color;
+  final double top;
+  final double? height;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bottom = height == null ? size.height : top + height!;
+    canvas.drawRect(Rect.fromLTRB(0, top, size.width, bottom), Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_Band old) => old.color != color || old.top != top || old.height != height;
 }

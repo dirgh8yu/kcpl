@@ -275,7 +275,7 @@ release 160ms, reveal 300ms, stagger 40ms).
 | Where | What it does | Why |
 |---|---|---|
 | Home sheet | Rests at three heights and follows the finger 1:1. On release it goes where the flick's momentum projects (Apple's projection, deceleration 0.998) and springs there from the finger's own speed: critically damped, with a little bounce only after a real flick. A touch catches it mid-flight. Below the lowest height it rubber-bands, and a long pull there refreshes. The content scrolls once the sheet is fully up, and the map dims as the sheet covers it. | Direct manipulation; interruptible |
-| Sign-in | KCPL's lanes into Nepal move on the map behind the form. The crimson button presses in and its label becomes the charging K. A wrong password shakes the fields (400ms) with a haptic. | Rare, so it may delight; feedback |
+| Sign-in | On KCPL crimson, the gateway K assembles in white stroke by stroke, lifts, and "Kapileshwor Cargo" rises out from under it, then "Pvt. Ltd." settles (1.7s, once). The crimson button presses in and its label becomes the charging K. A wrong password shakes the fields (400ms) with a haptic. | Rare, so it may delight; feedback |
 | Sign-in ↔ app | A 400ms fade with a slight scale. | Prevents a jarring swap |
 | Pages | Content fades up 8px over 300ms, 40ms apart; skeletons shimmer while loading. Refreshes update in place. | Prevents teleporting content |
 | Title bar | The large title slides under the bar; the small title fades in and the bar frosts over (150ms). | Wayfinding |
