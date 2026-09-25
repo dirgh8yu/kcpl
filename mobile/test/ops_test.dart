@@ -12,6 +12,7 @@ import 'package:kcpl_customer/ops/main.dart';
 import 'package:kcpl_customer/ops/ops_api.dart';
 import 'package:kcpl_customer/ops/ops_controller.dart';
 import 'package:kcpl_customer/ops/ops_demo.dart';
+import 'package:kcpl_customer/ops/route_order.dart';
 import 'package:kcpl_customer/ops/ops_models.dart';
 import 'package:kcpl_customer/ops/screens/job_detail_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
@@ -64,13 +65,13 @@ Future<void> settle(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<OpsController> pumpOps(WidgetTester tester, {OpsApi? api}) async {
+Future<OpsController> pumpOps(WidgetTester tester, {OpsApi? api, RouteOrderStore? routes}) async {
   tester.view.physicalSize = const Size(1170, 2532);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
   addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-  final controller = OpsController(auth: DemoAuth(), api: api ?? DemoOpsApi(), configured: true);
+  final controller = OpsController(auth: DemoAuth(), api: api ?? DemoOpsApi(), configured: true, routes: routes);
   await controller.start();
   await tester.pumpWidget(OpsApp(controller: controller, demo: true));
   await settle(tester);

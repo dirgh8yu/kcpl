@@ -4,7 +4,9 @@ import '../api/kcpl_api.dart' show ApiException;
 import '../auth/auth_repository.dart';
 import '../push/push_service.dart';
 import '../session_host.dart';
+import 'delivery_queue.dart';
 import 'note_queue.dart';
+import 'route_order.dart';
 import 'ops_api.dart';
 import 'ops_models.dart';
 
@@ -12,19 +14,37 @@ enum OpsStatus { starting, unconfigured, signedOut, signedIn }
 
 /// The staff app's state: who is signed in and their role and branches.
 class OpsController extends SessionHost {
-  OpsController({required this.auth, required this.api, required bool configured, PushService? push, NoteQueue? notes})
-    : push = push ?? NoPushService(),
-      notes = notes ?? NoteQueue(),
+  OpsController({
+    required this.auth,
+    required this.api,
+    required bool configured,
+    PushService? push,
+    NoteQueue? notes,
+    DeliveryQueue? deliveries,
+    RouteOrderStore? routes,
+  }) : push = push ?? NoPushService(),
+       routes = routes ?? MemoryRouteOrderStore(),
+       notes = notes ?? NoteQueue(),
+       deliveries = deliveries ?? DeliveryQueue(),
       _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
 
   /// Field notes written without signal, waiting to go.
   final NoteQueue notes;
 
+  /// Deliveries recorded without signal, waiting to go.
+  final DeliveryQueue deliveries;
+
+  /// The order the driver put today's stops in.
+  final RouteOrderStore routes;
+
   /// The outbox follows whoever is signed in; it needs their email to know
   /// which notes are theirs.
   void _attachNotes() {
     final email = _session?.email;
-    if (email != null && email.isNotEmpty) notes.attach(api, email).ignore();
+    if (email != null && email.isNotEmpty) {
+      notes.attach(api, email).ignore();
+      deliveries.attach(api, email).ignore();
+    }
   }
 
   @override
@@ -125,6 +145,9 @@ class OpsController extends SessionHost {
     } catch (_) {}
     await auth.signOut();
     notes.detach();
+    deliveries.detach();
+    // What was kept for offline reading belonged to that login.
+    await api.forget();
     _session = null;
     unread = 0;
     _set(OpsStatus.signedOut);

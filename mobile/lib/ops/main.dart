@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../platform/display.dart';
 
+import '../api/offline_cache.dart';
 import '../auth/firebase_rest_auth.dart';
 import '../auth/token_store.dart';
 import '../config.dart';
@@ -16,7 +17,9 @@ import '../ui/motion.dart';
 import '../ui/screens/sign_in_screen.dart';
 import '../ui/theme.dart';
 import '../ui/widgets/kcpl_loader.dart';
+import 'delivery_queue.dart';
 import 'note_queue.dart';
+import 'route_order.dart';
 import 'ops_api.dart';
 import 'ops_controller.dart';
 import 'ops_demo.dart';
@@ -50,10 +53,12 @@ Future<void> main() async {
     final auth = FirebaseRestAuth(apiKey: config.firebaseApiKey, store: store);
     controller = OpsController(
       auth: auth,
-      api: HttpOpsApi(base: config.apiBase, auth: auth),
+      api: HttpOpsApi(base: config.apiBase, auth: auth, cache: FileOfflineCache()),
       configured: config.configured,
       push: await FcmPushService.create(store),
       notes: NoteQueue(store: FileNoteQueueStore()),
+      deliveries: DeliveryQueue(store: FileDeliveryQueueStore()),
+      routes: FileRouteOrderStore(),
     );
   }
   controller.start();

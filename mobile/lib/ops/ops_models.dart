@@ -642,3 +642,62 @@ class DeliveryOutcome {
   final DeliveryAttempt attempt;
   final List<String> blockers;
 }
+
+/// One stop on the day's deliveries (driver-deliveries.server.ts).
+class DriverDelivery {
+  const DriverDelivery({
+    required this.reference,
+    required this.customerName,
+    required this.destination,
+    required this.address,
+    required this.status,
+    this.attemptId,
+    this.attemptStatus,
+    required this.attemptNumber,
+    this.scheduledFor,
+    this.driverName,
+    required this.mine,
+  });
+  final String reference;
+  final String customerName;
+  final String destination;
+
+  /// Where to go: the attempt's own address when given, else the destination.
+  final String address;
+  final String status;
+  final String? attemptId;
+  final String? attemptStatus;
+  final int attemptNumber;
+  final String? scheduledFor;
+  final String? driverName;
+
+  /// Taken, scheduled or owned by the person signed in.
+  final bool mine;
+
+  bool get underway => attemptId != null;
+
+  factory DriverDelivery.fromJson(Map<String, dynamic> j) => DriverDelivery(
+    reference: _s(j['reference']),
+    customerName: _s(j['customer_name']),
+    destination: _s(j['destination']),
+    address: _s(j['address'], _s(j['destination'])),
+    status: _s(j['status'], 'out_for_delivery'),
+    attemptId: _ns(j['attempt_id']),
+    attemptStatus: _ns(j['attempt_status']),
+    attemptNumber: _i(j['attempt_number']),
+    scheduledFor: _ns(j['scheduled_for']),
+    driverName: _ns(j['driver_name']),
+    mine: _b(j['mine']),
+  );
+}
+
+class DriverDay {
+  const DriverDay({required this.day, required this.deliveries});
+
+  /// Nepal's date, "2026-09-25": the route order is kept per day.
+  final String day;
+  final List<DriverDelivery> deliveries;
+
+  factory DriverDay.fromJson(Map<String, dynamic> j) =>
+      DriverDay(day: _s(j['day']), deliveries: _list(j['deliveries']).map(DriverDelivery.fromJson).toList());
+}

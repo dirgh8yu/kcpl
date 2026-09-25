@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart' show CupertinoSlidingSegmentedControl;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../api/kcpl_api.dart' show ApiException;
 import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/motion.dart';
@@ -10,7 +11,9 @@ import '../../ui/widgets/capture.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/compose.dart';
 import '../../ui/widgets/sheet_route.dart';
+import '../delivery_queue.dart';
 import '../field_location.dart';
+import '../ops_api.dart';
 import '../ops_controller.dart';
 import '../ops_models.dart';
 import 'signature_screen.dart';
@@ -59,9 +62,19 @@ class _StartDeliveryScreenState extends State<StartDeliveryScreen> {
   Future<void> _start() async {
     final api = OpsScope.read(context).api;
     setState(() => (_busy = true, _error = null));
+    final queue = OpsScope.read(context).deliveries;
     DeliveryAttempt? started;
+    var offline = false;
     final error = await attempt(context, () async {
-      started = await api.startDelivery(widget.reference, driverName: _driver.text.trim(), vehicle: _vehicle.text.trim());
+      try {
+        started = await api.startDelivery(widget.reference, driverName: _driver.text.trim(), vehicle: _vehicle.text.trim());
+      } on ApiException catch (failure) {
+        // No signal at the gate: the delivery is still recorded here and the
+        // attempt is started with it, once KCPL can be reached.
+        if (failure.code != 'network' || !queue.ready) rethrow;
+        offline = true;
+        started = const DeliveryAttempt(id: '', number: 0, status: 'out_for_delivery');
+      }
     });
     if (!mounted) return;
     if (error != null || started == null) {
@@ -71,9 +84,12 @@ class _StartDeliveryScreenState extends State<StartDeliveryScreen> {
     }
     HapticFeedback.mediumImpact();
     // Straight on to recording how it goes: the same sheet, the next step.
-    final recorded = await Navigator.of(
-      context,
-    ).pushReplacement<bool, bool>(SheetRoute<bool>(builder: (_) => DeliveryOutcomeScreen(reference: widget.reference, attempt: started!, justStarted: true)));
+    final recorded = await Navigator.of(context).pushReplacement<bool, bool>(
+      SheetRoute<bool>(
+        builder: (_) =>
+            DeliveryOutcomeScreen(reference: widget.reference, attempt: started!, justStarted: true, offlineDriver: offline ? _driver.text.trim() : null),
+      ),
+    );
     if (recorded != null && mounted) Navigator.of(context).pop(recorded);
   }
 
@@ -121,13 +137,20 @@ const _relations = ['Consignee', 'Their staff', 'Security', 'Family'];
 /// to the desk as received: nothing here marks POD verified or the shipment
 /// Delivered, which is decided at the desk once POD is checked.
 class DeliveryOutcomeScreen extends StatefulWidget {
-  const DeliveryOutcomeScreen({super.key, required this.reference, required this.attempt, this.podOnly = false, this.justStarted = false});
+  const DeliveryOutcomeScreen({super.key, required this.reference, required this.attempt, this.podOnly = false, this.justStarted = false, this.offlineDriver});
   final String reference;
   final DeliveryAttempt attempt;
 
   /// Delivered already; only proof is being added.
   final bool podOnly;
   final bool justStarted;
+
+  /// Set when the attempt could not be started for lack of signal: who is
+  /// taking it, for when it is started with the recorded outcome.
+  final String? offlineDriver;
+
+  /// Recorded on the phone only, so far.
+  bool get offline => attempt.id.isEmpty;
 
   @override
   State<DeliveryOutcomeScreen> createState() => _DeliveryOutcomeScreenState();
@@ -154,6 +177,9 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
   /// The outcome is on the server; only evidence is left to send.
   late bool _recorded = widget.podOnly;
   bool _done = false;
+
+  /// Kept on the phone to send when there is signal.
+  bool _kept = false;
 
   @override
   void initState() {
@@ -196,11 +222,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
   Future<void> _addPhoto() async {
     final l = AppLocalizations.of(context);
     try {
-      final photo = await pickAttachment(
-        context,
-        name: 'pod-photo-${widget.reference}-${DateTime.now().millisecondsSinceEpoch}',
-        files: false,
-      );
+      final photo = await pickAttachment(context, name: 'pod-photo-${widget.reference}-${DateTime.now().millisecondsSinceEpoch}', files: false);
       if (photo != null && mounted) {
         setState(() {
           _photos.add(photo);
@@ -235,41 +257,41 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
         ? [if (_signature != null) ('signature', _signature!), for (final photo in _photos) ('photo', photo)]
         : const <(String, Attachment)>[];
     setState(() => (_busy = true, _error = null, _progress = evidence.isEmpty ? null : 0));
+    final queue = OpsScope.read(context).deliveries;
+    final recordedAt = DateTime.now();
 
-    final error = await attempt(context, () async {
-      if (!_recorded) {
-        await api.recordDelivery(
-          widget.reference,
-          widget.attempt.id,
+    // Whatever has not reached KCPL is kept, from the step that failed on.
+    Future<void> keep() async {
+      final remaining = [if (_signature != null) ('signature', _signature!), for (final photo in _photos) ('photo', photo)];
+      await queue.add(
+        (id, owner) => QueuedDelivery(
+          id: id,
+          owner: owner,
+          reference: widget.reference,
+          recordedAt: recordedAt,
           status: _outcome.name,
+          attemptId: widget.offline ? null : widget.attempt.id,
+          driverName: widget.offlineDriver ?? '',
           recipientName: _recipient.text.trim(),
           recipientRelation: _relationChoice == 'Other' ? _relation.text.trim() : (_relationChoice ?? ''),
           recipientPhone: _phone.text.trim(),
           failureReason: _reason.text.trim(),
           latitude: _fix?.latitude,
           longitude: _fix?.longitude,
-        );
-        _recorded = true;
-      }
-      // Each piece of evidence that lands is removed, so a retry after a
-      // dropped signal sends only what is still missing.
-      final total = evidence.length;
-      for (var i = 0; i < total; i++) {
-        final (kind, file) = evidence[i];
-        await api.addPodEvidence(
-          widget.reference,
-          widget.attempt.id,
-          kind,
-          file,
-          onProgress: (fraction) {
-            if (mounted) setState(() => _progress = (i + fraction) / total);
-          },
-        );
-        if (kind == 'signature') {
-          _signature = null;
-        } else {
-          _photos.remove(file);
-        }
+          outcomeSent: _recorded,
+          evidence: _outcome == _Outcome.delivered ? remaining : const [],
+        ),
+      );
+      _kept = true;
+    }
+
+    final error = await attempt(context, () async {
+      if (widget.offline) return keep();
+      try {
+        await _send(api, evidence, recordedAt);
+      } on ApiException catch (failure) {
+        if (failure.code != 'network' || !queue.ready) rethrow;
+        await keep();
       }
     });
     if (!mounted) return;
@@ -282,8 +304,53 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
     setState(() => _done = true);
   }
 
+  Future<void> _send(OpsApi api, List<(String, Attachment)> evidence, DateTime recordedAt) async {
+    if (!_recorded) {
+      await api.recordDelivery(
+        widget.reference,
+        widget.attempt.id,
+        status: _outcome.name,
+        recipientName: _recipient.text.trim(),
+        recipientRelation: _relationChoice == 'Other' ? _relation.text.trim() : (_relationChoice ?? ''),
+        recipientPhone: _phone.text.trim(),
+        failureReason: _reason.text.trim(),
+        latitude: _fix?.latitude,
+        longitude: _fix?.longitude,
+        at: recordedAt,
+      );
+      _recorded = true;
+    }
+    // Each piece of evidence that lands is removed, so a retry after a
+    // dropped signal sends only what is still missing.
+    final total = evidence.length;
+    for (var i = 0; i < total; i++) {
+      final (kind, file) = evidence[i];
+      await api.addPodEvidence(
+        widget.reference,
+        widget.attempt.id,
+        kind,
+        file,
+        onProgress: (fraction) {
+          if (mounted) setState(() => _progress = (i + fraction) / total);
+        },
+      );
+      if (kind == 'signature') {
+        _signature = null;
+      } else {
+        _photos.remove(file);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_done && _kept) {
+      return DoneView(
+        title: 'Saved on this phone',
+        body: 'No signal. The delivery and its proof go to KCPL by themselves, with the time they happened, as soon as there is signal.',
+        reference: widget.reference,
+      );
+    }
     if (_done) {
       final delivered = _outcome == _Outcome.delivered;
       return DoneView(
@@ -303,7 +370,11 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
         ? 'Record delivery'
         : 'Record attempt';
     return ComposeScaffold(
-      title: widget.podOnly ? 'Proof of delivery' : 'Attempt ${widget.attempt.number}',
+      title: widget.podOnly
+          ? 'Proof of delivery'
+          : widget.offline
+          ? 'Delivery'
+          : 'Attempt ${widget.attempt.number}',
       error: _error,
       action: SendButton(label: action, onPressed: _submit, busy: _busy, progress: _progress),
       children: [
@@ -338,10 +409,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
           layoutBuilder: (current, previous) => Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
           child: KeyedSubtree(
             key: ValueKey(delivered),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: delivered ? _deliveredFields(context) : _failedFields(context),
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: delivered ? _deliveredFields(context) : _failedFields(context)),
           ),
         ),
         if (!widget.podOnly && !_recorded) ...[const SectionHeader('Where'), _LocationRow(fix: _fix, locating: _locating, located: _located, onRetry: _locate)],
@@ -472,9 +540,7 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
         maxLines: 6,
         textCapitalization: TextCapitalization.sentences,
         style: context.type.bodyLarge,
-        decoration: cardField(
-          _outcome == _Outcome.refused ? 'Damaged carton, wrong goods, not ordered…' : 'Nobody at the address, gate closed, road blocked…',
-        ),
+        decoration: cardField(_outcome == _Outcome.refused ? 'Damaged carton, wrong goods, not ordered…' : 'Nobody at the address, gate closed, road blocked…'),
       ),
     ),
   ];
@@ -507,7 +573,11 @@ class _Thumb extends StatelessWidget {
                 child: Container(
                   width: 24,
                   height: 24,
-                  decoration: BoxDecoration(color: p.ink, shape: BoxShape.circle, border: Border.all(color: p.paper, width: 2)),
+                  decoration: BoxDecoration(
+                    color: p.ink,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: p.paper, width: 2),
+                  ),
                   child: Icon(KIcons.close, size: 12, color: p.paper),
                 ),
               ),

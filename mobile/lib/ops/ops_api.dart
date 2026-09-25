@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart' show MediaType;
 
 import '../api/kcpl_api.dart' show ApiException;
 import '../api/models.dart' show Attachment, SendProgress;
+import '../api/offline_cache.dart';
 import '../api/upload.dart';
 import '../auth/auth_repository.dart';
 import 'ops_models.dart';
@@ -35,8 +36,8 @@ abstract class OpsApi {
   /// Delivery Control for a job: its attempts and where POD stands.
   Future<DeliveryControl> delivery(String reference);
 
-  /// Opens an attempt now and sets it out for delivery.
-  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = ''});
+  /// Opens an attempt and sets it out for delivery, [at] now unless said.
+  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = '', DateTime? at});
 
   /// How an attempt ended. [status] is delivered, failed or refused. A
   /// delivered outcome never makes the shipment Delivered by itself: POD is
@@ -52,6 +53,7 @@ abstract class OpsApi {
     double? latitude,
     double? longitude,
     String notes = '',
+    DateTime? at,
   });
 
   /// A signature, photo or document against a delivered attempt. [kind] is
@@ -77,16 +79,44 @@ abstract class OpsApi {
   Future<void> closeJob(String reference, {String overrideReason = ''});
   Future<void> registerPush(String token, String platform);
   Future<void> unregisterPush(String token);
+
+  /// Today's deliveries in the caller's branches, theirs first.
+  Future<DriverDay> deliveries();
+
+  /// Removes what was kept on the phone for offline use. At sign-out.
+  Future<void> forget() async {}
 }
 
 /// [OpsApi] over `/api/mobile/ops/v1`. Same retry rule as the customer app:
 /// a 401 is retried once with a forced token refresh, then signs out.
 class HttpOpsApi implements OpsApi {
-  HttpOpsApi({required this.base, required this.auth, http.Client? client}) : _client = client ?? http.Client();
+  HttpOpsApi({required this.base, required this.auth, http.Client? client, this.cache}) : _client = client ?? http.Client();
 
   final Uri base;
   final AuthRepository auth;
   final http.Client _client;
+
+  /// The last answer to each read, for when there is no signal. Kept for the
+  /// signed-in login only and deleted at sign-out.
+  final OfflineCache? cache;
+
+  /// A read. Only a failure to reach KCPL falls back to the kept answer, and
+  /// the screen is told how old it is; a refusal is never papered over.
+  Future<Map<String, dynamic>> _read(String path) async {
+    try {
+      final body = await _send(path);
+      unawaited(cache?.write(path, jsonEncode(body)));
+      return body;
+    } on ApiException catch (error) {
+      final kept = error.code == 'network' ? await cache?.read(path) : null;
+      if (kept == null) rethrow;
+      OfflineReport.served(kept.savedAt);
+      return (jsonDecode(kept.body) as Map).cast<String, dynamic>();
+    }
+  }
+
+  @override
+  Future<void> forget() async => cache?.clear();
 
   Uri _uri(String path) {
     final query = path.indexOf('?');
@@ -140,13 +170,13 @@ class HttpOpsApi implements OpsApi {
   String _ref(String value) => Uri.encodeComponent(value);
 
   @override
-  Future<OpsSession> session() async => OpsSession.fromJson(((await _send('session'))['session'] as Map).cast<String, dynamic>());
+  Future<OpsSession> session() async => OpsSession.fromJson(((await _read('session'))['session'] as Map).cast<String, dynamic>());
 
   @override
-  Future<TodayBundle> today() async => TodayBundle.fromJson(await _send('today'));
+  Future<TodayBundle> today() async => TodayBundle.fromJson(await _read('today'));
 
   @override
-  Future<JobFile> job(String reference) async => JobFile.fromJson(await _send('jobs/${_ref(reference)}'));
+  Future<JobFile> job(String reference) async => JobFile.fromJson(await _read('jobs/${_ref(reference)}'));
 
   @override
   Future<void> setTask(String reference, String taskId, bool completed) =>
@@ -158,7 +188,7 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<AlertsPage> alerts() async {
-    final body = await _send('alerts');
+    final body = await _read('alerts');
     final rows = body['notifications'] is List ? (body['notifications'] as List).whereType<Map>() : const <Map>[];
     return AlertsPage(
       alerts: rows.map((e) => OpsAlert.fromJson(e.cast<String, dynamic>())).toList(),
@@ -203,15 +233,16 @@ class HttpOpsApi implements OpsApi {
   Future<void> unregisterPush(String token) => _send('push', body: {'token': token}, method: 'DELETE');
 
   @override
-  Future<DeliveryControl> delivery(String reference) async => DeliveryControl.fromJson(await _send('jobs/${_ref(reference)}/delivery'));
+  Future<DeliveryControl> delivery(String reference) async => DeliveryControl.fromJson(await _read('jobs/${_ref(reference)}/delivery'));
 
   @override
-  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = ''}) async {
+  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = '', DateTime? at}) async {
+    final when = (at ?? DateTime.now()).toUtc().toIso8601String();
     final created = await _send(
       'jobs/${_ref(reference)}/delivery',
       body: {
         'action': 'schedule',
-        'scheduledFor': DateTime.now().toUtc().toIso8601String(),
+        'scheduledFor': when,
         'driverName': driverName,
         'vehicleReference': vehicle,
       },
@@ -219,7 +250,7 @@ class HttpOpsApi implements OpsApi {
     final attempt = DeliveryAttempt.fromJson((created['attempt'] as Map).cast<String, dynamic>());
     final moving = await _send(
       'jobs/${_ref(reference)}/delivery',
-      body: {'action': 'update_attempt', 'attemptId': attempt.id, 'status': 'out_for_delivery', 'eventTime': DateTime.now().toUtc().toIso8601String()},
+      body: {'action': 'update_attempt', 'attemptId': attempt.id, 'status': 'out_for_delivery', 'eventTime': when},
     );
     return DeliveryAttempt.fromJson((moving['attempt'] as Map).cast<String, dynamic>());
   }
@@ -236,6 +267,7 @@ class HttpOpsApi implements OpsApi {
     double? latitude,
     double? longitude,
     String notes = '',
+    DateTime? at,
   }) async {
     final body = await _send(
       'jobs/${_ref(reference)}/delivery',
@@ -243,7 +275,8 @@ class HttpOpsApi implements OpsApi {
         'action': 'update_attempt',
         'attemptId': attemptId,
         'status': status,
-        'eventTime': DateTime.now().toUtc().toIso8601String(),
+        // When it happened, which is not when it was sent if there was no signal.
+        'eventTime': (at ?? DateTime.now()).toUtc().toIso8601String(),
         'recipientName': recipientName,
         'recipientRelation': recipientRelation,
         'recipientPhone': recipientPhone,
@@ -282,7 +315,7 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<List<StaffOption>> staff() async {
-    final body = await _send('staff');
+    final body = await _read('staff');
     final rows = body['options'] is List ? (body['options'] as List).whereType<Map>() : const <Map>[];
     return rows.map((e) => StaffOption.fromJson(e.cast<String, dynamic>())).toList();
   }
@@ -313,4 +346,7 @@ class HttpOpsApi implements OpsApi {
   @override
   Future<void> closeJob(String reference, {String overrideReason = ''}) =>
       _send('jobs/${_ref(reference)}/actions', body: {'action': 'close_job', 'overrideReason': overrideReason});
+
+  @override
+  Future<DriverDay> deliveries() async => DriverDay.fromJson(await _read('deliveries'));
 }

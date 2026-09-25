@@ -6,6 +6,7 @@ import '../../ui/widgets/stats.dart' show Surface;
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/push_ui.dart';
 import '../ops_controller.dart';
+import 'driver_screen.dart';
 import 'scan_screen.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
@@ -80,6 +81,19 @@ class TodayScreen extends StatelessWidget {
         ),
       ),
       const PushPrimer(copy: opsPushCopy),
+      RowGroup(
+        margin: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
+        indent: RowGroup.iconIndent,
+        children: [
+          RowTile(
+            onTap: () => openDriver(context),
+            leading: Icon(KIcons.truck, size: 22, color: p.accent),
+            title: Text('Today’s deliveries', style: TextStyle(color: p.accent)),
+            subtitle: Text('${totals.deliveriesToday} due today · your route, directions and proof'),
+            chevron: true,
+          ),
+        ],
+      ),
       if (action.isNotEmpty) ...[
         SectionHeader('Needs action', count: action.length, attention: true, top: 20),
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in action.take(8)) JobRow(job, owner: true)]),

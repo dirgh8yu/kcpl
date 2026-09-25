@@ -357,6 +357,9 @@ class DemoOpsApi implements OpsApi {
   /// The last delivered outcome recorded, with where it was recorded.
   ({String status, String recipient, double? latitude, double? longitude})? lastOutcome;
 
+  /// When the last outcome said it happened.
+  DateTime? lastOutcomeAt;
+
   @override
   Future<DeliveryControl> delivery(String reference) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -373,7 +376,7 @@ class DemoOpsApi implements OpsApi {
   }
 
   @override
-  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = ''}) async {
+  Future<DeliveryAttempt> startDelivery(String reference, {String driverName = '', String vehicle = '', DateTime? at}) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     _reachable();
     final list = _attempts[reference] ??= [];
@@ -401,6 +404,7 @@ class DemoOpsApi implements OpsApi {
     double? latitude,
     double? longitude,
     String notes = '',
+    DateTime? at,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     _reachable();
@@ -427,6 +431,7 @@ class DemoOpsApi implements OpsApi {
     );
     list[index] = attempt;
     lastOutcome = (status: status, recipient: recipientName, latitude: latitude, longitude: longitude);
+    lastOutcomeAt = at;
     return DeliveryOutcome(attempt: attempt, blockers: status == 'delivered' ? const ['POD has not been verified.'] : const []);
   }
 
@@ -526,4 +531,41 @@ class DemoOpsApi implements OpsApi {
     }
     _closed.add(reference);
   }
+
+  // Driver mode.
+
+  @override
+  Future<DriverDay> deliveries() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    _reachable();
+    DriverDelivery stop(String reference, String customer, String address, {required bool mine, int hour = 11}) {
+      final attempt = (_attempts[reference] ?? const <DeliveryAttempt>[]).where((a) => a.open).lastOrNull;
+      final job = _jobs.firstWhere((j) => j.reference == reference, orElse: () => _jobs.first);
+      return DriverDelivery(
+        reference: reference,
+        customerName: customer,
+        destination: job.destination,
+        address: address,
+        status: job.status,
+        attemptId: attempt?.id,
+        attemptStatus: attempt?.status,
+        attemptNumber: attempt?.number ?? 0,
+        scheduledFor: DateTime(_now.year, _now.month, _now.day, hour).toUtc().toIso8601String(),
+        driverName: attempt?.driverName,
+        mine: mine,
+      );
+    }
+
+    return DriverDay(
+      day: _day(0),
+      deliveries: [
+        stop('KCPL-2609-0170', 'Everest Build Co.', 'Teku Road 14, Kathmandu', mine: true, hour: 10),
+        stop('KCPL-2609-0142', 'Annapurna Home Goods', 'Main Road, Biratnagar', mine: true, hour: 13),
+        stop('KCPL-2609-0151', 'Machhapuchhre Pharma', 'Birgunj ICD Gate 2', mine: false, hour: 15),
+      ],
+    );
+  }
+
+  @override
+  Future<void> forget() async {}
 }

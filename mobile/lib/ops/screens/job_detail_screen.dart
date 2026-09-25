@@ -15,6 +15,7 @@ import '../../ui/widgets/common.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
+import '../delivery_queue.dart';
 import '../note_queue.dart';
 import 'delivery_screen.dart';
 import 'field_note_screen.dart';
@@ -155,7 +156,7 @@ class JobDetailScreen extends StatelessWidget {
             child: Notice(title: blocker, emphasis: Emphasis.normal),
           ),
       ],
-      if (file.delivery != null) ..._delivery(context, file),
+      _DeliverySection(file: file),
       SectionHeader('From the field'),
       _FieldNotes(reference: job.reference, notes: file.fieldNotes),
       if (file.internalNotes != null) ...[
@@ -214,11 +215,83 @@ class JobDetailScreen extends StatelessWidget {
     ];
   }
 
-  List<Widget> _delivery(BuildContext context, JobFile file) {
-    final control = file.delivery!;
-    final latest = control.latest;
+}
+
+/// Delivery on the job: how the last attempt went, where proof stands, and
+/// the next step. A delivery recorded without signal shows here until it has
+/// gone, and then the page refreshes to show it as KCPL has it.
+class _DeliverySection extends StatefulWidget {
+  const _DeliverySection({required this.file});
+  final JobFile file;
+
+  @override
+  State<_DeliverySection> createState() => _DeliverySectionState();
+}
+
+class _DeliverySectionState extends State<_DeliverySection> {
+  late final DeliveryQueue _queue = OpsScope.read(context).deliveries;
+  late bool _waiting = _queue.waitingFor(widget.file.job.reference) != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _queue.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    _queue.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    final waiting = _queue.waitingFor(widget.file.job.reference) != null;
+    final sent = _waiting && !waiting;
+    _waiting = waiting;
+    if (!mounted) return;
+    setState(() {});
+    if (sent) AsyncPage.reload(context);
+  }
+
+  Future<void> _queued(QueuedDelivery delivery) async {
+    final discard = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 12),
+              child: Text(
+                delivery.refusal ?? 'This delivery is on your phone and goes to KCPL, with the time it happened, as soon as there is signal.',
+                style: sheet.type.bodyMedium?.copyWith(color: sheet.palette.secondary),
+              ),
+            ),
+            RowGroup(
+              children: [
+                RowTile(
+                  onTap: () => Navigator.of(sheet).pop(true),
+                  title: Center(child: Text('Delete this delivery', style: TextStyle(color: sheet.palette.accent))),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+    if (discard == true) await _queue.discard(delivery.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final file = widget.file;
+    final control = file.delivery;
+    final pending = _queue.waitingFor(file.job.reference);
     final p = context.palette;
-    final String? action = file.jobClosed
+    final latest = control?.latest;
+    final String? action = pending != null || control == null || file.jobClosed
         ? null
         : control.open != null
         ? 'Record how it went'
@@ -227,49 +300,67 @@ class JobDetailScreen extends StatelessWidget {
         : file.job.status == 'delivered'
         ? null
         : 'Start delivery';
-    if (latest == null && action == null) return const [];
-    return [
-      SectionHeader('Delivery'),
-      RowGroup(
-        indent: RowGroup.iconIndent,
-        children: [
-          if (latest != null)
-            RowTile(
-              leading: Icon(KIcons.truck, size: 20, color: latest.status == 'failed' || latest.status == 'refused' ? p.accent : p.secondary),
-              title: Text('Attempt ${latest.number} · ${attemptLabel(latest)}'),
-              subtitle: Text(
-                [
-                  if (latest.failureReason != null) latest.failureReason!,
-                  if (latest.status == 'delivered' && latest.recipientRelation != null) latest.recipientRelation!,
-                  formatDateTime(latest.eventTime ?? latest.scheduledFor),
-                ].join(' · '),
+    if (latest == null && action == null && pending == null) return const SizedBox.shrink();
+    final photos = control?.evidence.where((e) => e.kind == 'photo').length ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader('Delivery'),
+        RowGroup(
+          indent: RowGroup.iconIndent,
+          children: [
+            if (pending != null)
+              RowTile(
+                onTap: () => _queued(pending),
+                leading: Icon(KIcons.outbox, size: 20, color: pending.refusal == null ? p.secondary : p.accent),
+                title: Text(pending.delivered
+                    ? (pending.recipientName.isEmpty ? 'Delivered' : 'Received by ${pending.recipientName}')
+                    : pending.status == 'refused'
+                    ? 'Refused'
+                    : 'Not delivered'),
+                subtitle: Text(
+                  pending.refusal ?? ['Waiting for signal', formatDateTime(pending.recordedAt.toUtc().toIso8601String()), if (pending.evidence.isNotEmpty) '${pending.evidence.length} proof'].join(' · '),
+                  style: pending.refusal == null ? null : TextStyle(color: p.accent),
+                ),
               ),
-            ),
-          if (latest?.status == 'delivered' || control.evidence.isNotEmpty)
-            RowTile(
-              leading: Icon(KIcons.signature, size: 20, color: control.podStatus == 'rejected' ? p.accent : p.secondary),
-              title: Text(podLabel(control.podStatus)),
-              subtitle: control.evidence.isEmpty
-                  ? null
-                  : Text(
-                      [
-                        if (control.evidence.any((e) => e.kind == 'signature')) 'Signature',
-                        if (control.evidence.any((e) => e.kind == 'photo')) '${control.evidence.where((e) => e.kind == 'photo').length} photo${control.evidence.where((e) => e.kind == 'photo').length == 1 ? '' : 's'}',
-                        if (control.evidence.any((e) => e.kind == 'document')) 'Document',
-                      ].join(' · '),
-                    ),
-            ),
-          if (action != null)
-            _ActionRow(
-              icon: KIcons.delivery,
-              label: action,
-              onTap: () async {
-                if (await openDelivery(context, file.job.reference, control) && context.mounted) await AsyncPage.reload(context);
-              },
-            ),
-        ],
-      ),
-    ];
+            if (latest != null)
+              RowTile(
+                leading: Icon(KIcons.truck, size: 20, color: latest.status == 'failed' || latest.status == 'refused' ? p.accent : p.secondary),
+                title: Text('Attempt ${latest.number} · ${attemptLabel(latest)}'),
+                subtitle: Text(
+                  [
+                    if (latest.failureReason != null) latest.failureReason!,
+                    if (latest.status == 'delivered' && latest.recipientRelation != null) latest.recipientRelation!,
+                    formatDateTime(latest.eventTime ?? latest.scheduledFor),
+                  ].join(' · '),
+                ),
+              ),
+            if (control != null && (latest?.status == 'delivered' || control.evidence.isNotEmpty))
+              RowTile(
+                leading: Icon(KIcons.signature, size: 20, color: control.podStatus == 'rejected' ? p.accent : p.secondary),
+                title: Text(podLabel(control.podStatus)),
+                subtitle: control.evidence.isEmpty
+                    ? null
+                    : Text(
+                        [
+                          if (control.evidence.any((e) => e.kind == 'signature')) 'Signature',
+                          if (photos > 0) '$photos photo${photos == 1 ? '' : 's'}',
+                          if (control.evidence.any((e) => e.kind == 'document')) 'Document',
+                        ].join(' · '),
+                      ),
+              ),
+            if (action != null)
+              _ActionRow(
+                icon: KIcons.delivery,
+                label: action,
+                onTap: () async {
+                  if (await openDelivery(context, file.job.reference, control!) && context.mounted) await AsyncPage.reload(context);
+                },
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
