@@ -75,7 +75,7 @@ class OpsController extends SessionHost {
   }
 
   @override
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(String email, String password, {IdpCredential? link}) async {
     await auth.signIn(email, password);
     try {
       _session = await api.session();

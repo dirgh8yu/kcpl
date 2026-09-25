@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kcpl_customer/app_controller.dart';
+import 'package:kcpl_customer/auth/social_sign_in.dart';
 import 'package:kcpl_customer/auth/token_store.dart';
 import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/main.dart';
@@ -34,6 +35,7 @@ Future<void> _fonts() async {
   await _font('CupertinoSystemText', inter);
   await _font('CupertinoSystemDisplay', inter);
   await _font('Roboto', inter);
+  await _font('.SF Pro Text', inter);
   final config = File('.dart_tool/package_config.json').readAsStringSync();
   final root = RegExp(r'"name":\s*"cupertino_icons",\s*"rootUri":\s*"file://([^"]+)"').firstMatch(config)!.group(1)!;
   await _font('packages/cupertino_icons/CupertinoIcons', ['$root/assets/CupertinoIcons.ttf']);
@@ -90,12 +92,19 @@ void main() {
 
     testWidgets('customer $mode', (tester) async {
       await _phone(tester, dark: dark);
-      final controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+      final controller = AppController(
+        auth: DemoAuth(),
+        api: DemoApi(),
+        prefs: MemoryTokenStore(),
+        configured: true,
+        social: const DemoSocial(),
+      );
       await controller.start();
       await tester.pumpWidget(KcplApp(controller: controller, demo: true));
       await _wait(tester, 20);
       await _shot(tester, 'customer-$mode-1-sign-in');
-      await _signIn(tester, 'imports@annapurna.example');
+      await tester.tap(find.text('Continue with Google'));
+      await _wait(tester, 30);
       await _shot(tester, 'customer-$mode-2-home');
       await tester.drag(find.byKey(const ValueKey('home-sheet-grabber')), const Offset(0, -330));
       await _wait(tester, 20);

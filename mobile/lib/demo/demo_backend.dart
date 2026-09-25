@@ -20,6 +20,15 @@ class DemoAuth implements AuthRepository {
   }
 
   @override
+  Future<void> signInWithIdp(IdpCredential credential) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _signedIn = true;
+  }
+
+  @override
+  Future<void> link(IdpCredential credential) async {}
+
+  @override
   Future<void> sendPasswordReset(String email) async {}
 
   @override

@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     if (result.kind === "denied") {
       // The reason stays server-side; the caller gets the generic message.
       console.warn("KCPL portal sign-in refused", { reason: result.reason });
-      return json({ ok: false, error: portalDenialMessage(result.reason) }, 403);
+      return json({ ok: false, error: portalDenialMessage(result.reason, decoded.email) }, 403);
     }
 
     const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn: PORTAL_SESSION_TTL_MS });

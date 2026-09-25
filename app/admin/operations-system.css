@@ -1594,6 +1594,18 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .portal-login-eyebrow { margin: 0 0 2px; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 500; }
 .kcpl-admin-content .portal-login-intro { margin: var(--app-space-4) 0 0; color: var(--admin-muted); font-size: var(--app-text-md); line-height: 21px; }
 .kcpl-admin-content .portal-login-form { display: grid; gap: var(--app-space-4); margin-top: var(--app-space-5); }
+.kcpl-admin-content .portal-login-email { display: grid; gap: var(--app-space-4); }
+.kcpl-admin-content .portal-login-providers { display: grid; gap: 10px; }
+.kcpl-admin-content .portal-login-provider { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 16px; border: 1px solid var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-surface); color: var(--admin-ink); font-size: 15px; font-weight: 500; line-height: 20px; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), transform 100ms var(--app-ease-out); }
+.kcpl-admin-content .portal-login-provider[data-provider="apple"] { border-color: #000; background: #000; color: #fff; }
+.kcpl-admin-content .portal-login-provider:active:not(:disabled) { transform: scale(.98); }
+.kcpl-admin-content .portal-login-provider:disabled { opacity: .6; cursor: default; }
+.kcpl-admin-content .portal-login-divider { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--admin-faint); font-size: var(--app-text-sm); }
+.kcpl-admin-content .portal-login-divider::before,
+.kcpl-admin-content .portal-login-divider::after { content: ""; flex: 1; border-top: 1px solid var(--admin-line); }
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content .portal-login-provider:active:not(:disabled) { transform: none; }
+}
 .kcpl-admin-content .portal-login-messages { display: grid; gap: 6px; }
 .kcpl-admin-content .portal-login-error { margin: 0; border: 1px solid var(--admin-danger-line); border-radius: var(--app-radius); background: var(--admin-danger-bg); padding: 10px 12px; color: var(--admin-danger); font-size: var(--app-text-base); font-weight: 500; }
 .kcpl-admin-content .portal-login-notice { margin: var(--app-space-3) 0 0; border: 1px solid var(--admin-info-line); border-radius: var(--app-radius); background: var(--admin-info-bg); padding: 10px 12px; color: var(--admin-info); font-size: var(--app-text-base); font-weight: 500; }

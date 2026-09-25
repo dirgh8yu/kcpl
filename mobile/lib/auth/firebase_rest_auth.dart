@@ -49,6 +49,44 @@ class FirebaseRestAuth implements AuthRepository {
   }
 
   @override
+  Future<void> signInWithIdp(IdpCredential credential) async {
+    final body = await _post(_idpUri, _idpBody(credential), contentType: 'application/json');
+    // One account per email: an address that already signs in with a
+    // password is not taken over by a provider; the person proves the
+    // password once, and the provider is linked to that same login.
+    final token = body['idToken'];
+    if (body['needConfirmation'] == true || token is! String || token.isEmpty) {
+      throw NeedsLinking('${body['email'] ?? ''}', credential);
+    }
+    await _accept(idToken: token, refreshToken: body['refreshToken'] as String, expiresIn: body['expiresIn']);
+  }
+
+  @override
+  Future<void> link(IdpCredential credential) async {
+    final current = await idToken();
+    try {
+      final body = await _post(_idpUri, _idpBody(credential, linkTo: current), contentType: 'application/json');
+      final token = body['idToken'];
+      if (token is String && token.isNotEmpty) {
+        await _accept(idToken: token, refreshToken: body['refreshToken'] as String, expiresIn: body['expiresIn']);
+      }
+    } on AuthFailure {
+      // Already linked elsewhere, or refused: the password sign-in stands.
+    }
+  }
+
+  Uri get _idpUri => Uri.https('identitytoolkit.googleapis.com', '/v1/accounts:signInWithIdp', {'key': apiKey});
+
+  String _idpBody(IdpCredential credential, {String? linkTo}) => jsonEncode({
+    'postBody': Uri(queryParameters: {'id_token': credential.idToken, 'providerId': credential.providerId, 'nonce': ?credential.nonce})
+        .query,
+    'requestUri': 'http://localhost',
+    'returnSecureToken': true,
+    'returnIdpCredential': true,
+    'idToken': ?linkTo,
+  });
+
+  @override
   Future<void> sendPasswordReset(String email) async {
     try {
       await _post(
@@ -156,6 +194,8 @@ AuthFailureKind failureKind(String code) {
       return AuthFailureKind.tooManyAttempts;
     case 'USER_DISABLED':
       return AuthFailureKind.disabled;
+    case 'OPERATION_NOT_ALLOWED':
+      return AuthFailureKind.providerOff;
     default:
       return AuthFailureKind.unknown;
   }

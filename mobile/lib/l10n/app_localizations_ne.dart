@@ -716,6 +716,28 @@ class AppLocalizationsNe extends AppLocalizations {
       'साइन इन हुन सकेन। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।';
 
   @override
+  String get continueWithApple => 'Apple बाट जारी राख्नुहोस्';
+
+  @override
+  String get continueWithGoogle => 'Google बाट जारी राख्नुहोस्';
+
+  @override
+  String get signInWithEmail => 'इमेलबाट साइन इन गर्नुहोस्';
+
+  @override
+  String get orWithEmail => 'वा आफ्नो इमेलबाट';
+
+  @override
+  String linkProvider(String provider) {
+    return 'यो इमेलमा पहिले नै KCPL पासवर्ड छ। एक पटक त्यसबाट साइन इन गर्नुहोस्, अर्को पटकका लागि $provider जोडिनेछ।';
+  }
+
+  @override
+  String providerOff(String provider) {
+    return 'KCPL मा $provider साइन इन अझै सुरु गरिएको छैन। आफ्नो इमेल र पासवर्ड प्रयोग गर्नुहोस्।';
+  }
+
+  @override
   String get tooManyAttempts =>
       'धेरै पटक प्रयास भयो। केही मिनेट पर्खेर फेरि प्रयास गर्नुहोस्।';
 

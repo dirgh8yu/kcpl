@@ -4,6 +4,7 @@ import { adminSecurityConfigurationValid } from "../admin/admin-security-config"
 import { resolvePortalAccount } from "./portal-accounts.server";
 import { portalQaPreviewEnabled, portalQaPreviewSession } from "./portal-qa-preview";
 import { PORTAL_MOBILE_CUSTOMER_HEADER, portalBearerToken, portalRequestedCustomer } from "./portal-mobile-auth";
+import { portalDenialMessage } from "./portal-access-policy";
 import type { PortalCapabilities, PortalCustomerScope, PortalDenialReason, PortalIdentity, PortalRole } from "./portal-access-policy";
 import type { PortalLocale } from "./portal-i18n";
 
@@ -158,7 +159,7 @@ export async function getPortalAccessFromBearer(request: Request): Promise<Porta
   if (result.kind === "unavailable") return { kind: "unavailable" };
   if (result.kind === "denied") {
     console.warn("KCPL portal mobile access refused", { reason: result.reason });
-    return { kind: "denied", message: portalDenialMessage(result.reason) };
+    return { kind: "denied", message: portalDenialMessage(result.reason, decoded.email) };
   }
   return {
     kind: "authorized",
@@ -190,9 +191,5 @@ export function clearPortalCustomerCookie() {
 /** Customer-facing copy for a denial. Deliberately vague: the reason is logged
  * server-side, but telling an unauthenticated caller which check failed maps
  * out the provisioning state of other people's accounts. */
-export function portalDenialMessage(reason: PortalDenialReason) {
-  if (reason === "email_unverified") {
-    return "Verify your email address from the Firebase verification message, then sign in again.";
-  }
-  return "This account does not have KCPL portal access. Contact your KCPL account manager.";
-}
+
+export { isApplePrivateRelay, portalDenialMessage } from "./portal-access-policy";

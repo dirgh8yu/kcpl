@@ -7,6 +7,7 @@ import 'api/http_kcpl_api.dart';
 import 'app_controller.dart';
 import 'auth/firebase_rest_auth.dart';
 import 'auth/token_store.dart';
+import 'auth/social_sign_in.dart';
 import 'config.dart';
 import 'push/push_service.dart';
 import 'session_host.dart';
@@ -35,6 +36,7 @@ Future<void> main() async {
       api: DemoApi(),
       prefs: MemoryTokenStore(),
       configured: true,
+      social: const DemoSocial(),
       push: DemoPushService(
         const PushNotice(
           title: 'KCPL-S-24091 cleared customs',
@@ -51,6 +53,11 @@ Future<void> main() async {
       prefs: store,
       configured: config.configured,
       push: await FcmPushService.create(store),
+      social: PlatformSocial(
+        googleIosClientId: config.googleIosClientId,
+        googleServerClientId: config.googleServerClientId,
+        appleEnabled: config.appleSignIn,
+      ),
     );
   }
   controller.start();

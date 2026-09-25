@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'auth/auth_repository.dart';
+import 'auth/social_sign_in.dart';
 import 'push/push_service.dart';
 
 /// What the shared screens need from whichever app they are in: the customer
@@ -15,7 +16,16 @@ abstract class SessionHost extends ChangeNotifier {
   /// Set when the app was sent back to sign-in rather than signing out.
   bool get sessionEnded;
 
-  Future<void> signIn(String email, String password);
+  /// With [link], a Google or Apple identity is connected to this login
+  /// once the password is accepted (see [NeedsLinking]).
+  Future<void> signIn(String email, String password, {IdpCredential? link});
+
+  /// Continue with Google or Apple, where this app offers them.
+  SocialSignIn get social => SocialSignIn.none;
+
+  /// Signs in with a Google or Apple identity. Throws [NeedsLinking] when
+  /// the email already has a password login.
+  Future<void> signInWithProvider(IdpCredential credential) => throw UnsupportedError('No provider sign-in in this app');
 
   /// Called by a screen that found the credential no longer accepted.
   Future<void> expire();

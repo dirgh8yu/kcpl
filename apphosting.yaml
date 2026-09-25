@@ -18,6 +18,16 @@ env:
       - BUILD
       - RUNTIME
 
+  # One-tap providers on the customer portal's sign-in, in order: "google",
+  # "apple" or "google,apple". Each must also be enabled in Firebase
+  # Authentication (Apple needs an Apple Developer Services ID), or its button
+  # says it is not switched on yet. Not a secret; inlined at build time.
+  - variable: NEXT_PUBLIC_KCPL_SIGN_IN_PROVIDERS
+    value: google
+    availability:
+      - BUILD
+      - RUNTIME
+
   - variable: KCPL_GPT_ACTION_SECRET
     secret: KCPL_GPT_ACTION_SECRET
     availability:

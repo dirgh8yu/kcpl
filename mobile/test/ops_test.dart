@@ -27,6 +27,10 @@ class _Auth implements AuthRepository {
   @override
   Future<void> signIn(String email, String password) async {}
   @override
+  Future<void> signInWithIdp(IdpCredential credential) async {}
+  @override
+  Future<void> link(IdpCredential credential) async {}
+  @override
   Future<void> sendPasswordReset(String email) async {}
 }
 

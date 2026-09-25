@@ -725,6 +725,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in failed. Check your details and try again.';
 
   @override
+  String get continueWithApple => 'Continue with Apple';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInWithEmail => 'Sign in with email';
+
+  @override
+  String get orWithEmail => 'or with your email';
+
+  @override
+  String linkProvider(String provider) {
+    return 'This email already has a KCPL password. Sign in with it once and $provider will be connected for next time.';
+  }
+
+  @override
+  String providerOff(String provider) {
+    return '$provider sign-in is not switched on for KCPL yet. Use your email and password.';
+  }
+
+  @override
   String get tooManyAttempts =>
       'Too many attempts. Wait a few minutes and try again.';
 

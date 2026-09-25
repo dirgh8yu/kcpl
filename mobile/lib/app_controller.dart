@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'api/kcpl_api.dart';
 import 'api/models.dart';
 import 'auth/auth_repository.dart';
+import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
 import 'push/push_service.dart';
 import 'session_host.dart';
@@ -13,9 +14,18 @@ enum AppStatus { starting, unconfigured, signedOut, signedIn }
 /// which language. Screens load their own data; they listen here only to
 /// know when to reload (customer switched) or leave (signed out).
 class AppController extends SessionHost {
-  AppController({required this.auth, required this.api, required this.prefs, required bool configured, PushService? push})
-    : push = push ?? NoPushService(),
-      _status = configured ? AppStatus.starting : AppStatus.unconfigured;
+  AppController({
+    required this.auth,
+    required this.api,
+    required this.prefs,
+    required bool configured,
+    PushService? push,
+    this.social = SocialSignIn.none,
+  }) : push = push ?? NoPushService(),
+       _status = configured ? AppStatus.starting : AppStatus.unconfigured;
+
+  @override
+  final SocialSignIn social;
 
   @override
   final PushService push;
@@ -93,8 +103,20 @@ class AppController extends SessionHost {
   }
 
   @override
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(String email, String password, {IdpCredential? link}) async {
     await auth.signIn(email, password);
+    if (link != null) await auth.link(link);
+    await _enter();
+  }
+
+  @override
+  Future<void> signInWithProvider(IdpCredential credential) async {
+    await auth.signInWithIdp(credential);
+    await _enter();
+  }
+
+  /// Firebase has accepted the person; now KCPL must.
+  Future<void> _enter() async {
     try {
       await _loadSession();
     } catch (_) {

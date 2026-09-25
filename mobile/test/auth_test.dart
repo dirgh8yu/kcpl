@@ -133,4 +133,69 @@ void main() {
     expect(store.values, isEmpty);
     await expectLater(auth.idToken(), throwsA(isA<SignedOutException>()));
   });
+
+  group('Google and Apple', () {
+    const apple = IdpCredential(providerId: 'apple.com', idToken: 'apple-jwt', nonce: 'raw-nonce');
+
+    test('the provider token is exchanged at Firebase, with the raw nonce', () async {
+      final auth = build((request) async {
+        expect(request.url.path, '/v1/accounts:signInWithIdp');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(Uri.splitQueryString(body['postBody'] as String), {
+          'id_token': 'apple-jwt',
+          'providerId': 'apple.com',
+          'nonce': 'raw-nonce',
+        });
+        expect(body['returnSecureToken'], isTrue);
+        expect(body.containsKey('idToken'), isFalse, reason: 'a sign-in, not a link');
+        return _json({'idToken': 'id-1', 'refreshToken': 'refresh-1', 'expiresIn': '3600', 'email': 'a@b.example'});
+      });
+      await auth.signInWithIdp(apple);
+      expect(await auth.idToken(), 'id-1');
+      expect(store.values[FirebaseRestAuth.refreshKey], 'refresh-1');
+    });
+
+    test('an address that already has a password asks for it once, and stores nothing', () async {
+      final auth = build((request) async => _json({'needConfirmation': true, 'email': 'owner@customer.example'}));
+      await expectLater(auth.signInWithIdp(apple), throwsA(isA<NeedsLinking>().having((e) => e.email, 'email', 'owner@customer.example')));
+      expect(store.values, isEmpty);
+    });
+
+    test('after the password, the provider is linked to that same login', () async {
+      final auth = build((request) async {
+        if (request.url.path.endsWith('signInWithPassword')) {
+          return _json({'idToken': 'pw-id', 'refreshToken': 'pw-refresh', 'expiresIn': '3600'});
+        }
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['idToken'], 'pw-id', reason: 'linked to the signed-in login');
+        return _json({'idToken': 'linked-id', 'refreshToken': 'linked-refresh', 'expiresIn': '3600'});
+      });
+      await auth.signIn('owner@customer.example', 'pw');
+      await auth.link(apple);
+      expect(await auth.idToken(), 'linked-id');
+    });
+
+    test('a refused link leaves the password sign-in as it was', () async {
+      final auth = build((request) async {
+        if (request.url.path.endsWith('signInWithPassword')) {
+          return _json({'idToken': 'pw-id', 'refreshToken': 'pw-refresh', 'expiresIn': '3600'});
+        }
+        return _json({
+          'error': {'message': 'FEDERATED_USER_ID_ALREADY_LINKED'},
+        }, 400);
+      });
+      await auth.signIn('owner@customer.example', 'pw');
+      await auth.link(apple);
+      expect(await auth.idToken(), 'pw-id');
+    });
+
+    test('a provider not switched on in Firebase says so', () async {
+      final auth = build(
+        (request) async => _json({
+          'error': {'message': 'OPERATION_NOT_ALLOWED'},
+        }, 400),
+      );
+      await expectLater(auth.signInWithIdp(apple), throwsA(isA<AuthFailure>().having((e) => e.kind, 'kind', AuthFailureKind.providerOff)));
+    });
+  });
 }

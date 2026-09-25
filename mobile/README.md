@@ -134,6 +134,64 @@ flutter build appbundle --release --dart-define=KCPL_FIREBASE_API_KEY=<key>   # 
 flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # App Store
 ```
 
+## Continue with Google and Apple
+
+Customers sign in with Apple or Google, in the app and on the web portal, with email and
+password kept underneath as a quieter fallback. The provider only proves who the person
+is: access is still decided by KCPL's server against the portal account provisioned for
+that email, exactly as for a password. An address that already has a KCPL password is
+not taken over: the person signs in with the password once, and the provider is linked
+to that same login (the portal account's bound uid stays the same). An Apple user who
+hides their email reaches KCPL as a relay address no account matches, and is told to
+sign in again sharing it, or to use email.
+
+The app exchanges the provider's token with Firebase over REST (`accounts:signInWithIdp`,
+`lib/auth/firebase_rest_auth.dart`), like the password sign-in; the phone's own sheets
+come from `google_sign_in` and `sign_in_with_apple` (`lib/auth/social_sign_in.dart`).
+Each button appears only once its setup is done, so an unconfigured build shows the
+email form as before.
+
+**Firebase console → Authentication → Sign-in method**
+- Enable **Google** (it creates a "Web client" OAuth ID; copy it from the Google
+  provider's *Web SDK configuration*).
+- Enable **Apple** once there is a paid Apple Developer account (below).
+- Under **Settings → Authorized domains**, make sure the portal's domains are listed
+  (`kcpl--kcpl-82574.asia-southeast1.hosted.app`, and the public domain when it points
+  at App Hosting).
+
+**Web portal:** `NEXT_PUBLIC_KCPL_SIGN_IN_PROVIDERS` in `apphosting.yaml` lists the
+buttons (`google` now; `google,apple` once Apple is set up, which on the web also needs
+an Apple *Services ID* and key entered in Firebase's Apple provider).
+
+**Android (Google):**
+1. Make one upload keystore and keep it:
+   `keytool -genkeypair -v -keystore kcpl-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`
+2. Register its SHA-1 (`keytool -list -v -keystore kcpl-upload.jks -alias upload`) on the
+   KCPL Android app in Firebase → Project settings.
+3. GitHub → Settings → Secrets and variables → Actions: secrets
+   `ANDROID_KEYSTORE_BASE64` (`base64 -i kcpl-upload.jks`), `ANDROID_KEYSTORE_PASSWORD`,
+   `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; variable `KCPL_GOOGLE_SERVER_CLIENT_ID`
+   (the Web client ID). CI then signs every build with that key and shows the button.
+   Phones with an earlier, debug-signed build must uninstall it once first.
+
+**iPhone (Google):**
+1. Firebase → Project settings → Add app → iOS, bundle id
+   `np.com.kapileshworcargo.kcplCustomer`. Its GoogleService-Info.plist carries
+   `CLIENT_ID` and `REVERSED_CLIENT_ID` (public identifiers).
+2. Create `ios/Flutter/Google.xcconfig` containing
+   `GOOGLE_REVERSED_CLIENT_ID = <REVERSED_CLIENT_ID>`; it registers the URL scheme
+   Google returns through.
+3. Build with `--dart-define=KCPL_GOOGLE_IOS_CLIENT_ID=<CLIENT_ID>`.
+
+**iPhone (Apple):** needs the paid Apple Developer Program; a free Apple ID cannot have
+the capability, so it is off by default and free builds are unaffected. Once enrolled:
+choose the paid team in Xcode, add **Sign in with Apple** under Signing & Capabilities,
+enable Apple in Firebase, and build with `--dart-define=KCPL_APPLE_SIGN_IN=true`. Apple's
+guidelines require it wherever Google sign-in is offered on iPhone, so switch it on
+before an App Store release.
+
+The sample-data build (`KCPL_DEMO=true`) shows both buttons, each signing straight in.
+
 ## How it is put together
 
 | Path | What it holds |

@@ -4,6 +4,7 @@ import 'package:kcpl_customer/api/kcpl_api.dart';
 import 'package:kcpl_customer/api/models.dart';
 import 'package:kcpl_customer/app_controller.dart';
 import 'package:kcpl_customer/auth/auth_repository.dart';
+import 'package:kcpl_customer/auth/social_sign_in.dart';
 import 'package:kcpl_customer/auth/token_store.dart';
 import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/main.dart';
@@ -61,6 +62,25 @@ class DeniedApi extends DemoApi {
       throw const ApiException(403, 'denied', 'This account does not have KCPL portal access. Contact your KCPL account manager.');
 }
 
+/// Google is accepted by Firebase only once the address's password has
+/// been used to link it; records the link.
+class LinkingAuth extends DemoAuth {
+  IdpCredential? linked;
+  String? password;
+
+  @override
+  Future<void> signInWithIdp(IdpCredential credential) async => throw NeedsLinking('imports@annapurna.example', credential);
+
+  @override
+  Future<void> signIn(String email, String password) {
+    this.password = password;
+    return super.signIn(email, password);
+  }
+
+  @override
+  Future<void> link(IdpCredential credential) async => linked = credential;
+}
+
 class TrackingAuth extends DemoAuth {
   int signOuts = 0;
   @override
@@ -70,7 +90,13 @@ class TrackingAuth extends DemoAuth {
   }
 }
 
-Future<AppController> pumpApp(WidgetTester tester, {KcplApi? api, AuthRepository? auth, bool reduceMotion = true}) async {
+Future<AppController> pumpApp(
+  WidgetTester tester, {
+  KcplApi? api,
+  AuthRepository? auth,
+  bool reduceMotion = true,
+  SocialSignIn social = SocialSignIn.none,
+}) async {
   tester.view.physicalSize = const Size(1170, 2532);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -81,7 +107,13 @@ Future<AppController> pumpApp(WidgetTester tester, {KcplApi? api, AuthRepository
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
   }
-  final controller = AppController(auth: auth ?? DemoAuth(), api: api ?? DemoApi(), prefs: MemoryTokenStore(), configured: true);
+  final controller = AppController(
+    auth: auth ?? DemoAuth(),
+    api: api ?? DemoApi(),
+    prefs: MemoryTokenStore(),
+    configured: true,
+    social: social,
+  );
   await controller.start();
   await tester.pumpWidget(KcplApp(controller: controller, demo: true));
   if (reduceMotion) {
@@ -314,5 +346,35 @@ void main() {
     expect(shaking.transform.getTranslation().x, isNot(0));
     // The lanes behind the form never settle, by design: pump by time.
     await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('Continue with Google signs straight in, with email a quiet way underneath', (tester) async {
+    await pumpApp(tester, social: const DemoSocial());
+    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing, reason: 'the email form waits until asked for');
+
+    await tester.tap(find.text('Continue with Google'));
+    await settle(tester);
+    expect(find.text('4 shipments on the way'), findsOneWidget);
+  });
+
+  testWidgets('an address with a password links Google after one password sign-in', (tester) async {
+    final auth = LinkingAuth();
+    await pumpApp(tester, auth: auth, social: const DemoSocial());
+    await tester.tap(find.text('Continue with Google'));
+    await settle(tester);
+
+    expect(find.textContaining('already has a KCPL password'), findsOneWidget);
+    expect(find.text('imports@annapurna.example'), findsOneWidget, reason: 'the address is filled in');
+    await tester.enterText(find.byType(TextField).at(1), 'secret');
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Sign in'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await settle(tester);
+
+    expect(auth.password, 'secret');
+    expect(auth.linked?.providerId, 'google.com');
+    expect(find.text('4 shipments on the way'), findsOneWidget);
   });
 }

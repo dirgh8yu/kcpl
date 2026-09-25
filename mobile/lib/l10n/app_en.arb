@@ -384,6 +384,26 @@
   "resetNeedsEmail": "Enter your email address first, then choose Forgot password.",
   "resetSent": "If that address has KCPL portal access, a password reset link is on its way.",
   "signInFailed": "Sign-in failed. Check your details and try again.",
+  "continueWithApple": "Continue with Apple",
+  "continueWithGoogle": "Continue with Google",
+  "signInWithEmail": "Sign in with email",
+  "orWithEmail": "or with your email",
+  "linkProvider": "This email already has a KCPL password. Sign in with it once and {provider} will be connected for next time.",
+  "@linkProvider": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "providerOff": "{provider} sign-in is not switched on for KCPL yet. Use your email and password.",
+  "@providerOff": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
   "networkError": "KCPL could not be reached. Check your connection and try again.",
   "sessionEnded": "Your session has ended. Sign in again.",

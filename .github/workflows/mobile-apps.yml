@@ -12,6 +12,17 @@ name: KCPL apps (Android)
 #   GOOGLE_SERVICES_JSON   the full contents of google-services.json for
 #                          both Android apps. Without it the apps build and
 #                          work, but push notifications stay off.
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#   ANDROID_KEY_PASSWORD   one signing key kept for every build (base64 of the
+#                          .jks). Continue with Google on Android needs its
+#                          SHA-1 registered in Firebase, so the key must not
+#                          change between builds. Without them builds are
+#                          signed with a throwaway debug key.
+#
+# Repository variables (same page, Variables tab), public identifiers:
+#   KCPL_GOOGLE_SERVER_CLIENT_ID  the "Web client" OAuth ID Firebase created
+#                                 for Google sign-in. Without it the Google
+#                                 button is hidden on Android.
 
 on:
   push:
@@ -34,6 +45,11 @@ jobs:
     env:
       KCPL_FIREBASE_API_KEY: ${{ secrets.KCPL_FIREBASE_API_KEY }}
       GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KCPL_GOOGLE_SERVER_CLIENT_ID: ${{ vars.KCPL_GOOGLE_SERVER_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -61,15 +77,28 @@ jobs:
         if: env.GOOGLE_SERVICES_JSON != ''
         run: printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
 
+      # Written for the build only; both files are git-ignored.
+      - name: Signing key
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/kcpl-upload.jks
+          {
+            echo "storeFile=kcpl-upload.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > android/key.properties
+
       - name: Build
         run: |
           mkdir -p ../apks
-          build() { # flavor, entry point, output name, define
-            flutter build apk --release --flavor "$1" -t "$2" "$4"
-            cp "build/app/outputs/flutter-apk/app-$1-release.apk" "../apks/$3.apk"
+          build() { # flavor, entry point, output name, defines...
+            flavor="$1"; entry="$2"; name="$3"; shift 3
+            flutter build apk --release --flavor "$flavor" -t "$entry" "$@"
+            cp "build/app/outputs/flutter-apk/app-$flavor-release.apk" "../apks/$name.apk"
           }
           if [ -n "$KCPL_FIREBASE_API_KEY" ]; then
-            build customer lib/main.dart     KCPL     "--dart-define=KCPL_FIREBASE_API_KEY=$KCPL_FIREBASE_API_KEY"
+            build customer lib/main.dart     KCPL     "--dart-define=KCPL_FIREBASE_API_KEY=$KCPL_FIREBASE_API_KEY" "--dart-define=KCPL_GOOGLE_SERVER_CLIENT_ID=$KCPL_GOOGLE_SERVER_CLIENT_ID"
             build ops      lib/ops/main.dart KCPL-Ops "--dart-define=KCPL_FIREBASE_API_KEY=$KCPL_FIREBASE_API_KEY"
           else
             echo "::warning::KCPL_FIREBASE_API_KEY is not set: building the demo apps only."

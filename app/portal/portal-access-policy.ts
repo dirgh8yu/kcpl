@@ -773,3 +773,20 @@ export function portalQuoteView(data: Record<string, unknown>): PortalQuoteView 
     shipment_reference: nullableText(data.shipment_reference),
   };
 }
+
+/** Apple's "Hide My Email" relay: an address KCPL never provisioned. */
+export function isApplePrivateRelay(email: string | null | undefined) {
+  return /@privaterelay\.appleid\.com$/i.test((email ?? "").trim());
+}
+
+export function portalDenialMessage(reason: PortalDenialReason, email?: string | null) {
+  if (reason === "email_unverified") {
+    return "Verify your email address from the Firebase verification message, then sign in again.";
+  }
+  // Signing in with Apple while hiding the address gives KCPL a relay address
+  // no portal account is provisioned for; say how to get past it.
+  if (reason === "no_account" && isApplePrivateRelay(email)) {
+    return "Apple hid your email address from KCPL, so we could not match your account. Sign in with Apple again and choose Share My Email, or use your email and password.";
+  }
+  return "This account does not have KCPL portal access. Contact your KCPL account manager.";
+}

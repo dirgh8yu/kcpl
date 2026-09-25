@@ -119,12 +119,14 @@ test("the probe covers every variable the application reads", async () => {
   // Covered indirectly: alternative spellings of a project id the Firebase
   // runtime check already accepts, cosmetic email fields carried by the
   // transactional-email check, QA switches that cannot engage in production,
-  // and analytics, which is build-inlined and not a runtime capability.
+  // and analytics and the portal's one-tap sign-in providers, which are
+  // build-inlined choices rather than runtime capabilities (email and
+  // password sign-in works without them).
   const indirect = new Set([
     "FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "FIREBASE_STORAGE_BUCKET",
     "KCPL_EMAIL_FROM_NAME", "KCPL_EMAIL_REPLY_TO",
     "KCPL_QA_AUTH_BYPASS", "KCPL_QA_MOCK_DATA", "KCPL_QA_EMAIL",
-    "NEXT_PUBLIC_GA_MEASUREMENT_ID", "KCPL_UI_BASE",
+    "NEXT_PUBLIC_GA_MEASUREMENT_ID", "KCPL_UI_BASE", "NEXT_PUBLIC_KCPL_SIGN_IN_PROVIDERS",
   ]);
 
   const probeSource = readFileSync(new URL("../app/production-readiness.ts", import.meta.url), "utf8")

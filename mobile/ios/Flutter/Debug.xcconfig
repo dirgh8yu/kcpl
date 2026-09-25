@@ -1,1 +1,10 @@
 #include "Generated.xcconfig"
+
+// Continue with Google: the reversed iOS client ID, registered below as a URL
+// scheme in Runner/Info.plist so Google can hand the sign-in back to the
+// app. Put
+//   GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.<...>
+// (REVERSED_CLIENT_ID in the iOS app's GoogleService-Info.plist) in
+// Google.xcconfig beside this file. Until then a placeholder stands in.
+GOOGLE_REVERSED_CLIENT_ID = np.com.kapileshworcargo.google-not-configured
+#include? "Google.xcconfig"

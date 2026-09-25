@@ -1346,6 +1346,42 @@ abstract class AppLocalizations {
   /// **'Sign-in failed. Check your details and try again.'**
   String get signInFailed;
 
+  /// No description provided for @continueWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get continueWithApple;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @signInWithEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email'**
+  String get signInWithEmail;
+
+  /// No description provided for @orWithEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'or with your email'**
+  String get orWithEmail;
+
+  /// No description provided for @linkProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'This email already has a KCPL password. Sign in with it once and {provider} will be connected for next time.'**
+  String linkProvider(String provider);
+
+  /// No description provided for @providerOff.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in is not switched on for KCPL yet. Use your email and password.'**
+  String providerOff(String provider);
+
   /// No description provided for @tooManyAttempts.
   ///
   /// In en, this message translates to:
