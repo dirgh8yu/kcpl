@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'api/kcpl_api.dart';
 import 'api/models.dart';
 import 'app_lock.dart';
+import 'ui/format.dart' show DateCalendar, dateCalendar;
 import 'auth/auth_repository.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
@@ -62,6 +63,7 @@ class AppController extends SessionHost {
 
   static const _customerKey = 'kcpl.customer';
   static const _localeKey = 'kcpl.locale';
+  static const _calendarKey = 'kcpl.calendar';
 
   AppStatus _status;
   AppStatus get status => _status;
@@ -87,6 +89,7 @@ class AppController extends SessionHost {
     if (_status == AppStatus.unconfigured) return;
     final saved = await prefs.read(_localeKey);
     if (saved == 'en' || saved == 'ne') _locale = Locale(saved!);
+    dateCalendar = await prefs.read(_calendarKey) == 'bs' ? DateCalendar.bikramSambat : DateCalendar.gregorian;
     api.customerId = await prefs.read(_customerKey);
     if (!await auth.restore()) {
       _set(AppStatus.signedOut);
@@ -174,6 +177,18 @@ class AppController extends SessionHost {
       rethrow;
     }
     await prefs.write(_customerKey, _session!.customerId);
+    _generation++;
+    notifyListeners();
+  }
+
+  DateCalendar get calendar => dateCalendar;
+
+  /// A preference of this phone, kept across sign-ins like the language.
+  Future<void> setCalendar(DateCalendar calendar) async {
+    if (calendar == dateCalendar) return;
+    dateCalendar = calendar;
+    await prefs.write(_calendarKey, calendar == DateCalendar.bikramSambat ? 'bs' : 'ad');
+    // Every open screen redraws its dates.
     _generation++;
     notifyListeners();
   }

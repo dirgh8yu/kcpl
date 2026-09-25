@@ -1,3 +1,6 @@
+import 'dart:io' show File;
+
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActionSheet, CupertinoActionSheetAction, showCupertinoModalPopup;
 import 'package:flutter/material.dart';
@@ -20,6 +23,10 @@ abstract class AttachmentSource {
   Future<Attachment?> camera();
   Future<Attachment?> photos();
   Future<Attachment?> files();
+
+  /// The phone's own document scanner: edges found, pages flattened, all
+  /// of them in one PDF. Where there is none, the camera.
+  Future<Attachment?> scan() => camera();
 
   static AttachmentSource current = const DeviceAttachmentSource();
 }
@@ -60,6 +67,26 @@ class DeviceAttachmentSource extends AttachmentSource {
   @override
   Future<Attachment?> photos() => _image(ImageSource.gallery);
 
+  /// Apple's VisionKit camera on iPhone, Google's ML Kit scanner on Android.
+  @override
+  Future<Attachment?> scan() async {
+    final List<String>? paths;
+    try {
+      paths = await CunningDocumentScanner.getPictures(noOfPages: 20, asPdf: true);
+    } on CunningDocumentScannerException catch (error) {
+      if (error.code == 'permission_denied') throw const AttachmentRefused('camera');
+      rethrow;
+    }
+    if (paths == null || paths.isEmpty) return null;
+    final bytes = await File(paths.first).readAsBytes();
+    try {
+      await CunningDocumentScanner.cleanCache();
+    } catch (_) {
+      // Only a tidy-up of the scanner's own copies.
+    }
+    return Attachment(filename: 'scan.pdf', bytes: bytes, contentType: 'application/pdf');
+  }
+
   @override
   Future<Attachment?> files() async {
     final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: _types.keys.toList());
@@ -84,13 +111,14 @@ const attachmentMaxBytes = 10 * 1024 * 1024;
 /// returns the chosen file named for what it is: "packing-list-KCPL-S-24091.jpg"
 /// reads better in KCPL's vault than "IMG_4471.jpg". Refusals are shown by
 /// the caller.
-Future<Attachment?> pickAttachment(BuildContext context, {required String name, bool files = true}) async {
+Future<Attachment?> pickAttachment(BuildContext context, {required String name, bool files = true, bool scan = false}) async {
   final l = AppLocalizations.of(context);
   final source = AttachmentSource.current;
   final choice = await showCupertinoModalPopup<Future<Attachment?> Function()>(
     context: context,
     builder: (sheet) => CupertinoActionSheet(
       actions: [
+        if (scan) CupertinoActionSheetAction(onPressed: () => Navigator.pop(sheet, source.scan), child: Text(l.captureScan)),
         CupertinoActionSheetAction(onPressed: () => Navigator.pop(sheet, source.camera), child: Text(l.captureTakePhoto)),
         CupertinoActionSheetAction(onPressed: () => Navigator.pop(sheet, source.photos), child: Text(l.captureChoosePhoto)),
         if (files) CupertinoActionSheetAction(onPressed: () => Navigator.pop(sheet, source.files), child: Text(l.captureChooseFile)),

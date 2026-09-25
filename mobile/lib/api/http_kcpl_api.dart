@@ -192,6 +192,59 @@ class HttpKcplApi extends KcplApi {
   Future<void> setMemberActive(String email, bool active) =>
       _send('POST', 'team', body: {'action': active ? 'enable' : 'disable', 'email': email});
 
+  String _enc(String value) => Uri.encodeComponent(value);
+
+  @override
+  Future<QuotesPage> quotes() async => QuotesPage.fromJson(await _json('quotes'));
+
+  @override
+  Future<void> acceptQuote(String reference, {String note = ''}) =>
+      _send('POST', 'requests', body: {'kind': 'booking', 'quoteReference': reference, 'note': note});
+
+  @override
+  Future<NotificationPreferences> notificationPreferences() async =>
+      NotificationPreferences.fromJson(((await _json('notifications'))['preferences'] as Map?)?.cast<String, dynamic>() ?? const {});
+
+  @override
+  Future<NotificationPreferences> setNotificationPreferences(NotificationPreferences preferences) async {
+    final body = _decode(await _send('POST', 'notifications', body: preferences.toJson()));
+    return NotificationPreferences.fromJson((body['preferences'] as Map?)?.cast<String, dynamic>() ?? const {});
+  }
+
+  @override
+  Future<List<String>> paymentOptions(String invoice) async {
+    // Never from the offline copy: whether an invoice can be paid is now or never.
+    final body = _decode(await _get('invoices/${_enc(invoice)}/pay'));
+    return body['gateways'] is List ? (body['gateways'] as List).whereType<String>().toList() : const [];
+  }
+
+  @override
+  Future<PaymentStart> startPayment(String invoice, String gateway) async {
+    final body = _decode(await _send('POST', 'invoices/${_enc(invoice)}/pay', body: {'gateway': gateway}));
+    return PaymentStart(intent: '${body['intent']}', url: Uri.parse('${body['url']}'));
+  }
+
+  @override
+  Future<PaymentStatus> payment(String intent) async =>
+      PaymentStatus.fromJson(((_decode(await _get('payments/${_enc(intent)}')))['payment'] as Map).cast<String, dynamic>());
+
+  @override
+  Future<TrackingLink> createTrackingLink(String reference) async {
+    final body = _decode(await _send('POST', 'shipments/${_enc(reference)}/tracking-link'));
+    return TrackingLink(url: Uri.parse('${body['url']}'), expiresAt: '${body['expires_at'] ?? ''}');
+  }
+
+  @override
+  Future<int> revokeTrackingLinks(String reference) async =>
+      ((_decode(await _send('DELETE', 'shipments/${_enc(reference)}/tracking-link')))['revoked'] as num?)?.toInt() ?? 0;
+
+  @override
+  Future<void> followLive(String reference, {required String activityToken, required String pushToken}) =>
+      _send('POST', 'live-activities', body: {'shipment': reference, 'activityToken': activityToken, 'fcmToken': pushToken});
+
+  @override
+  Future<void> unfollowLive(String activityToken) => _send('DELETE', 'live-activities', body: {'activityToken': activityToken});
+
   @override
   Future<void> registerPush(String token, String platform) => _send('POST', 'push', body: {'token': token, 'platform': platform});
 

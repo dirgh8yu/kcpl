@@ -617,6 +617,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shipsColCarrier => 'Carrier';
 
   @override
+  String get topicShipmentUpdates => 'Shipment milestones';
+
+  @override
+  String get topicDocuments => 'Document requests and releases';
+
+  @override
+  String get topicFreeTime => 'Free time running out';
+
+  @override
+  String get topicShipmentUpdatesHint =>
+      'When a shipment is booked, moves, clears customs, is out for delivery or is delivered.';
+
+  @override
+  String get topicDocumentsHint =>
+      'When KCPL needs paperwork from you, or releases a document to your account.';
+
+  @override
+  String get topicFreeTimeHint =>
+      'Before storage or demurrage charges start on cargo at a port or depot.';
+
+  @override
+  String get settingsEmailTitle => 'What we send you';
+
+  @override
+  String get settingsEmailDescription =>
+      'Milestones are sent as they happen, not as a digest.';
+
+  @override
+  String get settingsSaveFailed => 'The change could not be saved.';
+
+  @override
+  String get reqQuotesTitle => 'Quotes issued to you';
+
+  @override
+  String get reqQuotesDescription =>
+      'Prices KCPL has confirmed. Ask to proceed and your account manager will convert the quote into a booking.';
+
+  @override
+  String get reqColValid => 'Valid until';
+
+  @override
+  String get reqAskToProceed => 'Ask to proceed';
+
+  @override
+  String get reqNoQuotesTitle => 'No quotes yet';
+
+  @override
+  String get reqNoQuotesDescription =>
+      'Quotes KCPL issues to your account appear here with their price and validity.';
+
+  @override
+  String get reqProgressTitle => 'Requests KCPL is working on';
+
+  @override
+  String get reqProgressDescription =>
+      'Requests that have not been priced yet.';
+
+  @override
+  String reqBookingSent(String reference) {
+    return 'KCPL has been notified that you want to proceed with $reference.';
+  }
+
+  @override
+  String get reqBookingFailed => 'The booking request could not be sent.';
+
+  @override
+  String reqRaisedOn(String date) {
+    return 'Raised $date';
+  }
+
+  @override
+  String get reqNothingWaitingTitle => 'Nothing waiting';
+
+  @override
+  String get reqNothingWaitingDescription =>
+      'Every request you have raised has been priced.';
+
+  @override
   String get xchgTitle => 'What KCPL needs from you';
 
   @override
@@ -1223,4 +1301,157 @@ class AppLocalizationsEn extends AppLocalizations {
   String shareCarrierRef(String reference) {
     return 'Carrier reference $reference';
   }
+
+  @override
+  String get quotesTitle => 'Quotes';
+
+  @override
+  String get quotesNew => 'New request';
+
+  @override
+  String quoteValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String quoteExpired(String date) {
+    return 'Expired $date';
+  }
+
+  @override
+  String get quoteAsked => 'You asked to proceed';
+
+  @override
+  String quoteBooked(String reference) {
+    return 'Booked as $reference';
+  }
+
+  @override
+  String quotePriceFor(String cargo) {
+    return '$cargo';
+  }
+
+  @override
+  String get quoteProceedNote => 'Anything for your account manager (optional)';
+
+  @override
+  String get quoteProceedFootnote =>
+      'Your account manager confirms the booking with you. Nothing is booked or charged until they do.';
+
+  @override
+  String get quoteProceedDone => 'Request sent';
+
+  @override
+  String get quoteCargo => 'Cargo';
+
+  @override
+  String get quoteWeight => 'Weight';
+
+  @override
+  String get quoteExpiredBody =>
+      'This price has expired. Ask KCPL for a fresh quote.';
+
+  @override
+  String get payOnline => 'Pay online';
+
+  @override
+  String payChoose(String amount) {
+    return 'Pay $amount with';
+  }
+
+  @override
+  String get payFootnote =>
+      'You pay on the gateway\'s own page. KCPL checks the payment with the gateway before applying it to this invoice.';
+
+  @override
+  String get payWaiting => 'Finish paying in the browser';
+
+  @override
+  String get payWaitingBody =>
+      'Come back here when you\'re done. This page checks with KCPL on its own.';
+
+  @override
+  String get payOpenAgain => 'Open the payment page again';
+
+  @override
+  String get payPaid => 'Payment received';
+
+  @override
+  String payPaidBody(String amount, String invoice) {
+    return '$amount was applied to $invoice.';
+  }
+
+  @override
+  String get payReview => 'Payment received';
+
+  @override
+  String payReviewBody(String invoice) {
+    return 'KCPL accounts will apply it to $invoice and confirm.';
+  }
+
+  @override
+  String get payFailed => 'Payment not completed';
+
+  @override
+  String get payFailedBody =>
+      'Nothing was charged by KCPL. You can try again or pay another way.';
+
+  @override
+  String get payCouldNotOpen =>
+      'The payment page could not be opened on this phone.';
+
+  @override
+  String get emailSection => 'Email me about';
+
+  @override
+  String get calendarSection => 'Dates';
+
+  @override
+  String get calendarGregorian => 'Gregorian (AD)';
+
+  @override
+  String get calendarBikramSambat => 'Bikram Sambat (BS)';
+
+  @override
+  String get calendarFootnote =>
+      'How dates show in the app. Carrier and customs papers keep their own dates.';
+
+  @override
+  String get trackShareLink => 'Share a tracking link';
+
+  @override
+  String get trackShareLinkHint =>
+      'Anyone with the link can follow this shipment for 30 days, without a login.';
+
+  @override
+  String trackShareMessage(String reference, String url) {
+    return 'Follow $reference with Kapileshwor Cargo: $url';
+  }
+
+  @override
+  String get trackStopSharing => 'Stop sharing links';
+
+  @override
+  String trackStopped(String reference) {
+    return 'Links for $reference no longer work.';
+  }
+
+  @override
+  String get trackStoppedNone => 'There were no links to stop.';
+
+  @override
+  String get liveFollow => 'Follow on Lock Screen';
+
+  @override
+  String get liveFollowing => 'On your Lock Screen';
+
+  @override
+  String get liveStop => 'Stop following';
+
+  @override
+  String get liveUnavailable =>
+      'Live Activities are turned off for KCPL in Settings.';
+
+  @override
+  String get captureScan => 'Scan document';
 }

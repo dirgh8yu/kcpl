@@ -189,7 +189,6 @@ void main() {
       await tester.tap(find.byType(TabBarItem).last);
       await settle(tester);
       await scrollTo(tester, find.text('Require Face ID'));
-      await tester.drag(find.byType(Scrollable).hitTestable().first, const Offset(0, -200));
       await settle(tester);
       await tester.tap(find.descendant(of: find.widgetWithText(RowTile, 'Require Face ID'), matching: find.byType(Switch)));
       await settle(tester);

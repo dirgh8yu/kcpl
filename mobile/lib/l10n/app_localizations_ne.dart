@@ -615,6 +615,83 @@ class AppLocalizationsNe extends AppLocalizations {
   String get shipsColCarrier => 'क्यारियर';
 
   @override
+  String get topicShipmentUpdates => 'ढुवानीका मुख्य चरण';
+
+  @override
+  String get topicDocuments => 'कागजातको माग र जारी';
+
+  @override
+  String get topicFreeTime => 'फ्री टाइम सकिँदै';
+
+  @override
+  String get topicShipmentUpdatesHint =>
+      'ढुवानी बुक हुँदा, हिँड्दा, भन्सार पास हुँदा, डेलिभरीका लागि निस्कँदा वा डेलिभर हुँदा।';
+
+  @override
+  String get topicDocumentsHint =>
+      'KCPL लाई तपाईंबाट कागजात चाहिँदा, वा तपाईंको खातामा कागजात जारी हुँदा।';
+
+  @override
+  String get topicFreeTimeHint =>
+      'बन्दरगाह वा डिपोमा रहेको सामानमा भण्डारण वा डेमरेज शुल्क सुरु हुनुअघि।';
+
+  @override
+  String get settingsEmailTitle => 'हामी तपाईंलाई के पठाउँछौँ';
+
+  @override
+  String get settingsEmailDescription =>
+      'मुख्य चरणहरू घटेकै बेला पठाइन्छ, एकमुष्ट सारांशका रूपमा होइन।';
+
+  @override
+  String get settingsSaveFailed => 'परिवर्तन सुरक्षित गर्न सकिएन।';
+
+  @override
+  String get reqQuotesTitle => 'तपाईंलाई जारी भएका कोटेशन';
+
+  @override
+  String get reqQuotesDescription =>
+      'KCPL ले पुष्टि गरेका मूल्य। अघि बढ्न भन्नुहोस्, खाता प्रबन्धकले कोटेशनलाई बुकिङमा बदल्नेछन्।';
+
+  @override
+  String get reqColValid => 'मान्य रहने मिति';
+
+  @override
+  String get reqAskToProceed => 'अघि बढ्न भन्नुहोस्';
+
+  @override
+  String get reqNoQuotesTitle => 'अहिलेसम्म कुनै कोटेशन छैन';
+
+  @override
+  String get reqNoQuotesDescription =>
+      'KCPL ले तपाईंको खातामा जारी गरेका कोटेशन मूल्य र मान्य अवधिसहित यहाँ देखिनेछन्।';
+
+  @override
+  String get reqProgressTitle => 'KCPL ले काम गरिरहेका अनुरोध';
+
+  @override
+  String get reqProgressDescription => 'अहिलेसम्म मूल्य नतोकिएका अनुरोध।';
+
+  @override
+  String reqBookingSent(String reference) {
+    return '$reference अघि बढाउन चाहनुभएको जानकारी KCPL लाई दिइयो।';
+  }
+
+  @override
+  String get reqBookingFailed => 'बुकिङ अनुरोध पठाउन सकिएन।';
+
+  @override
+  String reqRaisedOn(String date) {
+    return '$date मा राखिएको';
+  }
+
+  @override
+  String get reqNothingWaitingTitle => 'केही पर्खाइमा छैन';
+
+  @override
+  String get reqNothingWaitingDescription =>
+      'तपाईंले राख्नुभएका सबै अनुरोधको मूल्य तोकिएको छ।';
+
+  @override
   String get xchgTitle => 'KCPL लाई तपाईंबाट के चाहिन्छ';
 
   @override
@@ -1214,4 +1291,156 @@ class AppLocalizationsNe extends AppLocalizations {
   String shareCarrierRef(String reference) {
     return 'ढुवानी कम्पनीको सन्दर्भ $reference';
   }
+
+  @override
+  String get quotesTitle => 'कोटेशन';
+
+  @override
+  String get quotesNew => 'नयाँ अनुरोध';
+
+  @override
+  String quoteValidUntil(String date) {
+    return '$date सम्म मान्य';
+  }
+
+  @override
+  String quoteExpired(String date) {
+    return '$date मा म्याद सकियो';
+  }
+
+  @override
+  String get quoteAsked => 'तपाईंले अघि बढ्न भन्नुभयो';
+
+  @override
+  String quoteBooked(String reference) {
+    return '$reference को रूपमा बुक भयो';
+  }
+
+  @override
+  String quotePriceFor(String cargo) {
+    return '$cargo';
+  }
+
+  @override
+  String get quoteProceedNote => 'खाता प्रबन्धकलाई केही भन्नु छ भने (ऐच्छिक)';
+
+  @override
+  String get quoteProceedFootnote =>
+      'खाता प्रबन्धकले तपाईंसँग बुकिङ पक्का गर्नुहुन्छ। त्यसअघि केही बुक वा शुल्क लाग्दैन।';
+
+  @override
+  String get quoteProceedDone => 'अनुरोध पठाइयो';
+
+  @override
+  String get quoteCargo => 'माल';
+
+  @override
+  String get quoteWeight => 'तौल';
+
+  @override
+  String get quoteExpiredBody =>
+      'यो मूल्यको म्याद सकियो। KCPL सँग नयाँ कोटेशन माग्नुहोस्।';
+
+  @override
+  String get payOnline => 'अनलाइन भुक्तानी';
+
+  @override
+  String payChoose(String amount) {
+    return '$amount यसबाट तिर्नुहोस्';
+  }
+
+  @override
+  String get payFootnote =>
+      'भुक्तानी गेटवेकै पेजमा हुन्छ। यो बिलमा लगाउनुअघि KCPL ले गेटवेसँग भुक्तानी जाँच गर्छ।';
+
+  @override
+  String get payWaiting => 'ब्राउजरमा भुक्तानी पूरा गर्नुहोस्';
+
+  @override
+  String get payWaitingBody =>
+      'सकिएपछि यहाँ फर्कनुहोस्। यो पेजले आफैँ KCPL सँग जाँच्छ।';
+
+  @override
+  String get payOpenAgain => 'भुक्तानी पेज फेरि खोल्नुहोस्';
+
+  @override
+  String get payPaid => 'भुक्तानी प्राप्त भयो';
+
+  @override
+  String payPaidBody(String amount, String invoice) {
+    return '$amount $invoice मा लगाइयो।';
+  }
+
+  @override
+  String get payReview => 'भुक्तानी प्राप्त भयो';
+
+  @override
+  String payReviewBody(String invoice) {
+    return 'KCPL लेखाले यसलाई $invoice मा लगाएर पुष्टि गर्नेछ।';
+  }
+
+  @override
+  String get payFailed => 'भुक्तानी पूरा भएन';
+
+  @override
+  String get payFailedBody =>
+      'KCPL ले कुनै शुल्क लिएको छैन। फेरि प्रयास गर्नुहोस् वा अर्को तरिकाले तिर्नुहोस्।';
+
+  @override
+  String get payCouldNotOpen => 'यो फोनमा भुक्तानी पेज खुल्न सकेन।';
+
+  @override
+  String get emailSection => 'यसबारे इमेल गर्नुहोस्';
+
+  @override
+  String get calendarSection => 'मिति';
+
+  @override
+  String get calendarGregorian => 'ईस्वी संवत् (AD)';
+
+  @override
+  String get calendarBikramSambat => 'विक्रम संवत् (BS)';
+
+  @override
+  String get calendarFootnote =>
+      'एपमा मिति कसरी देखिने। ढुवानी र भन्सारका कागजातमा आफ्नै मिति रहन्छ।';
+
+  @override
+  String get trackShareLink => 'ट्र्याकिङ लिङ्क सेयर गर्नुहोस्';
+
+  @override
+  String get trackShareLinkHint =>
+      'लिङ्क भएका जोकोहीले लगइनबिना ३० दिनसम्म यो ढुवानी हेर्न सक्छन्।';
+
+  @override
+  String trackShareMessage(String reference, String url) {
+    return 'कपिलेश्वर कार्गोमा $reference हेर्नुहोस्: $url';
+  }
+
+  @override
+  String get trackStopSharing => 'लिङ्क सेयर गर्न बन्द गर्नुहोस्';
+
+  @override
+  String trackStopped(String reference) {
+    return '$reference का लिङ्क अब चल्दैनन्।';
+  }
+
+  @override
+  String get trackStoppedNone => 'बन्द गर्नुपर्ने कुनै लिङ्क थिएन।';
+
+  @override
+  String get liveFollow => 'लक स्क्रिनमा हेर्नुहोस्';
+
+  @override
+  String get liveFollowing => 'लक स्क्रिनमा छ';
+
+  @override
+  String get liveStop => 'हेर्न बन्द गर्नुहोस्';
+
+  @override
+  String get liveUnavailable =>
+      'सेटिङमा KCPL का लागि Live Activities बन्द छन्।';
+
+  @override
+  String get captureScan => 'कागजात स्क्यान गर्नुहोस्';
 }

@@ -1178,6 +1178,138 @@ abstract class AppLocalizations {
   /// **'Carrier'**
   String get shipsColCarrier;
 
+  /// No description provided for @topicShipmentUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipment milestones'**
+  String get topicShipmentUpdates;
+
+  /// No description provided for @topicDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Document requests and releases'**
+  String get topicDocuments;
+
+  /// No description provided for @topicFreeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Free time running out'**
+  String get topicFreeTime;
+
+  /// No description provided for @topicShipmentUpdatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When a shipment is booked, moves, clears customs, is out for delivery or is delivered.'**
+  String get topicShipmentUpdatesHint;
+
+  /// No description provided for @topicDocumentsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When KCPL needs paperwork from you, or releases a document to your account.'**
+  String get topicDocumentsHint;
+
+  /// No description provided for @topicFreeTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Before storage or demurrage charges start on cargo at a port or depot.'**
+  String get topicFreeTimeHint;
+
+  /// No description provided for @settingsEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What we send you'**
+  String get settingsEmailTitle;
+
+  /// No description provided for @settingsEmailDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestones are sent as they happen, not as a digest.'**
+  String get settingsEmailDescription;
+
+  /// No description provided for @settingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The change could not be saved.'**
+  String get settingsSaveFailed;
+
+  /// No description provided for @reqQuotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes issued to you'**
+  String get reqQuotesTitle;
+
+  /// No description provided for @reqQuotesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices KCPL has confirmed. Ask to proceed and your account manager will convert the quote into a booking.'**
+  String get reqQuotesDescription;
+
+  /// No description provided for @reqColValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until'**
+  String get reqColValid;
+
+  /// No description provided for @reqAskToProceed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to proceed'**
+  String get reqAskToProceed;
+
+  /// No description provided for @reqNoQuotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No quotes yet'**
+  String get reqNoQuotesTitle;
+
+  /// No description provided for @reqNoQuotesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes KCPL issues to your account appear here with their price and validity.'**
+  String get reqNoQuotesDescription;
+
+  /// No description provided for @reqProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests KCPL is working on'**
+  String get reqProgressTitle;
+
+  /// No description provided for @reqProgressDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests that have not been priced yet.'**
+  String get reqProgressDescription;
+
+  /// No description provided for @reqBookingSent.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL has been notified that you want to proceed with {reference}.'**
+  String reqBookingSent(String reference);
+
+  /// No description provided for @reqBookingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The booking request could not be sent.'**
+  String get reqBookingFailed;
+
+  /// No description provided for @reqRaisedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Raised {date}'**
+  String reqRaisedOn(String date);
+
+  /// No description provided for @reqNothingWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waiting'**
+  String get reqNothingWaitingTitle;
+
+  /// No description provided for @reqNothingWaitingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Every request you have raised has been priced.'**
+  String get reqNothingWaitingDescription;
+
   /// No description provided for @xchgTitle.
   ///
   /// In en, this message translates to:
@@ -2227,6 +2359,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Carrier reference {reference}'**
   String shareCarrierRef(String reference);
+
+  /// No description provided for @quotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes'**
+  String get quotesTitle;
+
+  /// No description provided for @quotesNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New request'**
+  String get quotesNew;
+
+  /// No description provided for @quoteValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String quoteValidUntil(String date);
+
+  /// No description provided for @quoteExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired {date}'**
+  String quoteExpired(String date);
+
+  /// No description provided for @quoteAsked.
+  ///
+  /// In en, this message translates to:
+  /// **'You asked to proceed'**
+  String get quoteAsked;
+
+  /// No description provided for @quoteBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked as {reference}'**
+  String quoteBooked(String reference);
+
+  /// No description provided for @quotePriceFor.
+  ///
+  /// In en, this message translates to:
+  /// **'{cargo}'**
+  String quotePriceFor(String cargo);
+
+  /// No description provided for @quoteProceedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything for your account manager (optional)'**
+  String get quoteProceedNote;
+
+  /// No description provided for @quoteProceedFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account manager confirms the booking with you. Nothing is booked or charged until they do.'**
+  String get quoteProceedFootnote;
+
+  /// No description provided for @quoteProceedDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent'**
+  String get quoteProceedDone;
+
+  /// No description provided for @quoteCargo.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo'**
+  String get quoteCargo;
+
+  /// No description provided for @quoteWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get quoteWeight;
+
+  /// No description provided for @quoteExpiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This price has expired. Ask KCPL for a fresh quote.'**
+  String get quoteExpiredBody;
+
+  /// No description provided for @payOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay online'**
+  String get payOnline;
+
+  /// No description provided for @payChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay {amount} with'**
+  String payChoose(String amount);
+
+  /// No description provided for @payFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'You pay on the gateway\'s own page. KCPL checks the payment with the gateway before applying it to this invoice.'**
+  String get payFootnote;
+
+  /// No description provided for @payWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish paying in the browser'**
+  String get payWaiting;
+
+  /// No description provided for @payWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Come back here when you\'re done. This page checks with KCPL on its own.'**
+  String get payWaitingBody;
+
+  /// No description provided for @payOpenAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the payment page again'**
+  String get payOpenAgain;
+
+  /// No description provided for @payPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received'**
+  String get payPaid;
+
+  /// No description provided for @payPaidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} was applied to {invoice}.'**
+  String payPaidBody(String amount, String invoice);
+
+  /// No description provided for @payReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received'**
+  String get payReview;
+
+  /// No description provided for @payReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL accounts will apply it to {invoice} and confirm.'**
+  String payReviewBody(String invoice);
+
+  /// No description provided for @payFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment not completed'**
+  String get payFailed;
+
+  /// No description provided for @payFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was charged by KCPL. You can try again or pay another way.'**
+  String get payFailedBody;
+
+  /// No description provided for @payCouldNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'The payment page could not be opened on this phone.'**
+  String get payCouldNotOpen;
+
+  /// No description provided for @emailSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Email me about'**
+  String get emailSection;
+
+  /// No description provided for @calendarSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates'**
+  String get calendarSection;
+
+  /// No description provided for @calendarGregorian.
+  ///
+  /// In en, this message translates to:
+  /// **'Gregorian (AD)'**
+  String get calendarGregorian;
+
+  /// No description provided for @calendarBikramSambat.
+  ///
+  /// In en, this message translates to:
+  /// **'Bikram Sambat (BS)'**
+  String get calendarBikramSambat;
+
+  /// No description provided for @calendarFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'How dates show in the app. Carrier and customs papers keep their own dates.'**
+  String get calendarFootnote;
+
+  /// No description provided for @trackShareLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a tracking link'**
+  String get trackShareLink;
+
+  /// No description provided for @trackShareLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can follow this shipment for 30 days, without a login.'**
+  String get trackShareLinkHint;
+
+  /// No description provided for @trackShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow {reference} with Kapileshwor Cargo: {url}'**
+  String trackShareMessage(String reference, String url);
+
+  /// No description provided for @trackStopSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing links'**
+  String get trackStopSharing;
+
+  /// No description provided for @trackStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Links for {reference} no longer work.'**
+  String trackStopped(String reference);
+
+  /// No description provided for @trackStoppedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'There were no links to stop.'**
+  String get trackStoppedNone;
+
+  /// No description provided for @liveFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow on Lock Screen'**
+  String get liveFollow;
+
+  /// No description provided for @liveFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'On your Lock Screen'**
+  String get liveFollowing;
+
+  /// No description provided for @liveStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following'**
+  String get liveStop;
+
+  /// No description provided for @liveUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Activities are turned off for KCPL in Settings.'**
+  String get liveUnavailable;
+
+  /// No description provided for @captureScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan document'**
+  String get captureScan;
 }
 
 class _AppLocalizationsDelegate

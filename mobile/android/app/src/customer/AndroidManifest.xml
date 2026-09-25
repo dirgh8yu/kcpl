@@ -1,5 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- A payment's return page links back as kcpl://payment/<id>. -->
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kcpl" android:host="payment" />
+            </intent-filter>
+        </activity>
         <!-- The home screen widget: the shipment worth a glance. KCPL only;
              KCPL Ops has no widget. -->
         <receiver

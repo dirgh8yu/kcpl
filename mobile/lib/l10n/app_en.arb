@@ -335,6 +335,42 @@
   "shipNoDocumentsTitle": "No documents yet",
   "shipNoDocumentsDescription": "Documents KCPL releases to you, and anything you send, will be listed here.",
   "shipsColCarrier": "Carrier",
+  "topicShipmentUpdates": "Shipment milestones",
+  "topicDocuments": "Document requests and releases",
+  "topicFreeTime": "Free time running out",
+  "topicShipmentUpdatesHint": "When a shipment is booked, moves, clears customs, is out for delivery or is delivered.",
+  "topicDocumentsHint": "When KCPL needs paperwork from you, or releases a document to your account.",
+  "topicFreeTimeHint": "Before storage or demurrage charges start on cargo at a port or depot.",
+  "settingsEmailTitle": "What we send you",
+  "settingsEmailDescription": "Milestones are sent as they happen, not as a digest.",
+  "settingsSaveFailed": "The change could not be saved.",
+  "reqQuotesTitle": "Quotes issued to you",
+  "reqQuotesDescription": "Prices KCPL has confirmed. Ask to proceed and your account manager will convert the quote into a booking.",
+  "reqColValid": "Valid until",
+  "reqAskToProceed": "Ask to proceed",
+  "reqNoQuotesTitle": "No quotes yet",
+  "reqNoQuotesDescription": "Quotes KCPL issues to your account appear here with their price and validity.",
+  "reqProgressTitle": "Requests KCPL is working on",
+  "reqProgressDescription": "Requests that have not been priced yet.",
+  "reqBookingSent": "KCPL has been notified that you want to proceed with {reference}.",
+  "@reqBookingSent": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "reqBookingFailed": "The booking request could not be sent.",
+  "reqRaisedOn": "Raised {date}",
+  "@reqRaisedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reqNothingWaitingTitle": "Nothing waiting",
+  "reqNothingWaitingDescription": "Every request you have raised has been priced.",
   "xchgTitle": "What KCPL needs from you",
   "xchgStateNeeded": "Needed",
   "xchgStateResend": "Send again",
@@ -677,5 +713,116 @@
         "type": "String"
       }
     }
-  }
+  },
+  "quotesTitle": "Quotes",
+  "quotesNew": "New request",
+  "quoteValidUntil": "Valid until {date}",
+  "@quoteValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteExpired": "Expired {date}",
+  "@quoteExpired": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteAsked": "You asked to proceed",
+  "quoteBooked": "Booked as {reference}",
+  "@quoteBooked": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "quotePriceFor": "{cargo}",
+  "@quotePriceFor": {
+    "placeholders": {
+      "cargo": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteProceedNote": "Anything for your account manager (optional)",
+  "quoteProceedFootnote": "Your account manager confirms the booking with you. Nothing is booked or charged until they do.",
+  "quoteProceedDone": "Request sent",
+  "quoteCargo": "Cargo",
+  "quoteWeight": "Weight",
+  "quoteExpiredBody": "This price has expired. Ask KCPL for a fresh quote.",
+  "payOnline": "Pay online",
+  "payChoose": "Pay {amount} with",
+  "@payChoose": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payFootnote": "You pay on the gateway's own page. KCPL checks the payment with the gateway before applying it to this invoice.",
+  "payWaiting": "Finish paying in the browser",
+  "payWaitingBody": "Come back here when you're done. This page checks with KCPL on its own.",
+  "payOpenAgain": "Open the payment page again",
+  "payPaid": "Payment received",
+  "payPaidBody": "{amount} was applied to {invoice}.",
+  "@payPaidBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "payReview": "Payment received",
+  "payReviewBody": "KCPL accounts will apply it to {invoice} and confirm.",
+  "@payReviewBody": {
+    "placeholders": {
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "payFailed": "Payment not completed",
+  "payFailedBody": "Nothing was charged by KCPL. You can try again or pay another way.",
+  "payCouldNotOpen": "The payment page could not be opened on this phone.",
+  "emailSection": "Email me about",
+  "calendarSection": "Dates",
+  "calendarGregorian": "Gregorian (AD)",
+  "calendarBikramSambat": "Bikram Sambat (BS)",
+  "calendarFootnote": "How dates show in the app. Carrier and customs papers keep their own dates.",
+  "trackShareLink": "Share a tracking link",
+  "trackShareLinkHint": "Anyone with the link can follow this shipment for 30 days, without a login.",
+  "trackShareMessage": "Follow {reference} with Kapileshwor Cargo: {url}",
+  "@trackShareMessage": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "trackStopSharing": "Stop sharing links",
+  "trackStopped": "Links for {reference} no longer work.",
+  "@trackStopped": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "trackStoppedNone": "There were no links to stop.",
+  "liveFollow": "Follow on Lock Screen",
+  "liveFollowing": "On your Lock Screen",
+  "liveStop": "Stop following",
+  "liveUnavailable": "Live Activities are turned off for KCPL in Settings.",
+  "captureScan": "Scan document"
 }

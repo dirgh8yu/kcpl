@@ -58,6 +58,12 @@ ship.free_time_footnote ship.movement_title ship.mode ship.current_location ship
 ship.carrier_reference ship.to_be_confirmed ship.milestones_title ship.no_milestones_title
 ship.no_milestones_description ship.documents_description ship.no_documents_title ship.no_documents_description
 ships.col_carrier
+topic.shipment_updates topic.documents topic.free_time
+topic.shipment_updates_hint topic.documents_hint topic.free_time_hint
+settings.email_title settings.email_description settings.save_failed
+req.quotes_title req.quotes_description req.col_valid req.ask_to_proceed req.no_quotes_title req.no_quotes_description
+req.progress_title req.progress_description req.booking_sent req.booking_failed req.raised_on
+req.nothing_waiting_title req.nothing_waiting_description
 xchg.title xchg.state_needed xchg.state_resend xchg.state_with_kcpl xchg.state_confirmed
 settings.language settings.signed_in_as settings.account settings.access_level settings.provisioning_note
 `.trim().split(/\s+/);
@@ -229,6 +235,55 @@ const appStrings = [
   ["shareDeliveredOn", "Delivered {date}", "{date} मा डेलिभर भयो"],
   ["shareFooter", "Kapileshwor Cargo · shared from the KCPL app", "कपिलेश्वर कार्गो · KCPL एपबाट सेयर गरिएको"],
   ["shareCarrierRef", "Carrier reference {reference}", "ढुवानी कम्पनीको सन्दर्भ {reference}"],
+  // Quotes
+  ["quotesTitle", "Quotes", "कोटेशन"],
+  ["quotesNew", "New request", "नयाँ अनुरोध"],
+  ["quoteValidUntil", "Valid until {date}", "{date} सम्म मान्य"],
+  ["quoteExpired", "Expired {date}", "{date} मा म्याद सकियो"],
+  ["quoteAsked", "You asked to proceed", "तपाईंले अघि बढ्न भन्नुभयो"],
+  ["quoteBooked", "Booked as {reference}", "{reference} को रूपमा बुक भयो"],
+  ["quotePriceFor", "{cargo}", "{cargo}"],
+  ["quoteProceedNote", "Anything for your account manager (optional)", "खाता प्रबन्धकलाई केही भन्नु छ भने (ऐच्छिक)"],
+  ["quoteProceedFootnote", "Your account manager confirms the booking with you. Nothing is booked or charged until they do.", "खाता प्रबन्धकले तपाईंसँग बुकिङ पक्का गर्नुहुन्छ। त्यसअघि केही बुक वा शुल्क लाग्दैन।"],
+  ["quoteProceedDone", "Request sent", "अनुरोध पठाइयो"],
+  ["quoteCargo", "Cargo", "माल"],
+  ["quoteWeight", "Weight", "तौल"],
+  ["quoteExpiredBody", "This price has expired. Ask KCPL for a fresh quote.", "यो मूल्यको म्याद सकियो। KCPL सँग नयाँ कोटेशन माग्नुहोस्।"],
+  // Paying online
+  ["payOnline", "Pay online", "अनलाइन भुक्तानी"],
+  ["payChoose", "Pay {amount} with", "{amount} यसबाट तिर्नुहोस्"],
+  ["payFootnote", "You pay on the gateway's own page. KCPL checks the payment with the gateway before applying it to this invoice.", "भुक्तानी गेटवेकै पेजमा हुन्छ। यो बिलमा लगाउनुअघि KCPL ले गेटवेसँग भुक्तानी जाँच गर्छ।"],
+  ["payWaiting", "Finish paying in the browser", "ब्राउजरमा भुक्तानी पूरा गर्नुहोस्"],
+  ["payWaitingBody", "Come back here when you're done. This page checks with KCPL on its own.", "सकिएपछि यहाँ फर्कनुहोस्। यो पेजले आफैँ KCPL सँग जाँच्छ।"],
+  ["payOpenAgain", "Open the payment page again", "भुक्तानी पेज फेरि खोल्नुहोस्"],
+  ["payPaid", "Payment received", "भुक्तानी प्राप्त भयो"],
+  ["payPaidBody", "{amount} was applied to {invoice}.", "{amount} {invoice} मा लगाइयो।"],
+  ["payReview", "Payment received", "भुक्तानी प्राप्त भयो"],
+  ["payReviewBody", "KCPL accounts will apply it to {invoice} and confirm.", "KCPL लेखाले यसलाई {invoice} मा लगाएर पुष्टि गर्नेछ।"],
+  ["payFailed", "Payment not completed", "भुक्तानी पूरा भएन"],
+  ["payFailedBody", "Nothing was charged by KCPL. You can try again or pay another way.", "KCPL ले कुनै शुल्क लिएको छैन। फेरि प्रयास गर्नुहोस् वा अर्को तरिकाले तिर्नुहोस्।"],
+  ["payCouldNotOpen", "The payment page could not be opened on this phone.", "यो फोनमा भुक्तानी पेज खुल्न सकेन।"],
+  // Notifications by email
+  ["emailSection", "Email me about", "यसबारे इमेल गर्नुहोस्"],
+  // Calendar
+  ["calendarSection", "Dates", "मिति"],
+  ["calendarGregorian", "Gregorian (AD)", "ईस्वी संवत् (AD)"],
+  ["calendarBikramSambat", "Bikram Sambat (BS)", "विक्रम संवत् (BS)"],
+  ["calendarFootnote", "How dates show in the app. Carrier and customs papers keep their own dates.", "एपमा मिति कसरी देखिने। ढुवानी र भन्सारका कागजातमा आफ्नै मिति रहन्छ।"],
+  // Tracking links
+  ["trackShareLink", "Share a tracking link", "ट्र्याकिङ लिङ्क सेयर गर्नुहोस्"],
+  ["trackShareLinkHint", "Anyone with the link can follow this shipment for 30 days, without a login.", "लिङ्क भएका जोकोहीले लगइनबिना ३० दिनसम्म यो ढुवानी हेर्न सक्छन्।"],
+  ["trackShareMessage", "Follow {reference} with Kapileshwor Cargo: {url}", "कपिलेश्वर कार्गोमा {reference} हेर्नुहोस्: {url}"],
+  ["trackStopSharing", "Stop sharing links", "लिङ्क सेयर गर्न बन्द गर्नुहोस्"],
+  ["trackStopped", "Links for {reference} no longer work.", "{reference} का लिङ्क अब चल्दैनन्।"],
+  ["trackStoppedNone", "There were no links to stop.", "बन्द गर्नुपर्ने कुनै लिङ्क थिएन।"],
+  // Live Activity
+  ["liveFollow", "Follow on Lock Screen", "लक स्क्रिनमा हेर्नुहोस्"],
+  ["liveFollowing", "On your Lock Screen", "लक स्क्रिनमा छ"],
+  ["liveStop", "Stop following", "हेर्न बन्द गर्नुहोस्"],
+  ["liveUnavailable", "Live Activities are turned off for KCPL in Settings.", "सेटिङमा KCPL का लागि Live Activities बन्द छन्।"],
+  // Scanning documents
+  ["captureScan", "Scan document", "कागजात स्क्यान गर्नुहोस्"],
 ];
 
 const camel = (key) => key.replace(/[._](\w)/g, (_, c) => c.toUpperCase());

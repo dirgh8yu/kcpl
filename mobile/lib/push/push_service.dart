@@ -63,6 +63,10 @@ abstract class PushService extends ChangeNotifier {
   /// "Turn on": asks the OS, then registers this phone for the signed-in login.
   Future<PushState> enable(RegisterDevice register);
 
+  /// This phone's push address while push is on, for a Live Activity to
+  /// be reached through; null otherwise.
+  String? get deviceToken => null;
+
   /// Whether the person already answered the in-app invitation ("Not now"
   /// or "Turn on"); it is never shown twice.
   bool get primerDismissed;
@@ -135,6 +139,9 @@ class FcmPushService extends PushService {
   bool _primerDismissed = false;
   String? _token;
   RegisterDevice? _register;
+
+  @override
+  String? get deviceToken => state == PushState.on ? _token : null;
 
   /// The OS permission and the person's in-app choice are separate: turning
   /// push off in the app leaves the OS permission alone.

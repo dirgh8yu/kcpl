@@ -66,7 +66,7 @@ class _SendDocumentScreenState extends State<SendDocumentScreen> {
     final l = AppLocalizations.of(context);
     final name = '${(_type ?? 'document').replaceAll('_', '-')}-${widget.shipment.reference}';
     try {
-      final file = await pickAttachment(context, name: name);
+      final file = await pickAttachment(context, name: name, scan: true);
       if (file != null && mounted) setState(() => (_file = file, _error = null));
     } on AttachmentRefused catch (refused) {
       if (mounted) setState(() => _error = attachmentRefusal(l, refused));

@@ -10,7 +10,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/rows.dart';
-import '../widgets/share.dart';
+import '../widgets/shipment_actions.dart';
 import 'confirm_delivery_screen.dart';
 import 'overview_screen.dart' show JourneyGraphic;
 import 'send_document_screen.dart';
@@ -31,7 +31,12 @@ class ShipmentDetailScreen extends StatelessWidget {
     return Scaffold(
       body: AsyncPage<ShipmentDetail>(
         title: reference,
-        load: () => api.shipment(reference),
+        load: () async {
+          final detail = await api.shipment(reference);
+          // A Lock Screen activity for this shipment follows what was just read.
+          refreshLiveActivity(l, detail.shipment).ignore();
+          return detail;
+        },
         leading: preview == null ? 0 : 2,
         placeholder: preview == null ? null : (context) => _lead(context, preview),
         onMissing: (context, _) => EmptyState(icon: KIcons.noResults, title: l.shipNotFoundTitle, description: l.shipNotFoundDescription),
@@ -41,7 +46,7 @@ class ShipmentDetailScreen extends StatelessWidget {
             builder: (button) => IconButton(
               tooltip: l.shareStatus,
               icon: const Icon(KIcons.share, size: 22),
-              onPressed: () => shareText(button, shipmentStatusText(l, detail.shipment), subject: detail.shipment.reference),
+              onPressed: () => showShipmentActions(context, button, detail),
             ),
           ),
         ],
@@ -283,20 +288,6 @@ class _SendPill extends StatelessWidget {
     );
   }
 }
-
-/// A shipment's status as a message: what it is, where it is, and when. For a
-/// consignee on WhatsApp, so it carries no link that needs a KCPL login.
-String shipmentStatusText(AppLocalizations l, Shipment shipment) => [
-  '${shipment.reference} · ${route(place(shipment.origin), place(shipment.destination))}',
-  [statusLabel(l, shipment.status), if (!shipment.delivered && shipment.currentLocation != null) shipment.currentLocation!].join(' · '),
-  if (shipment.delivered)
-    l.shareDeliveredOn(formatDate(shipment.updatedAt))
-  else if (shipment.eta != null)
-    l.shareExpected(formatDate(shipment.eta)),
-  if (shipment.carrierReference != null) l.shareCarrierRef(shipment.carrierReference!),
-  '',
-  l.shareFooter,
-].join('\n');
 
 /// One step of the timeline. The newest is marked in crimson; older steps
 /// step back in grey, the way a tracker shows what has already happened.

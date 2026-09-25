@@ -49,7 +49,7 @@ class _SendReceiptScreenState extends State<SendReceiptScreen> {
   Future<void> _pick() async {
     final l = AppLocalizations.of(context);
     try {
-      final file = await pickAttachment(context, name: 'receipt-${widget.invoice.reference}');
+      final file = await pickAttachment(context, name: 'receipt-${widget.invoice.reference}', scan: true);
       if (file != null && mounted) setState(() => (_file = file, _error = null));
     } on AttachmentRefused catch (refused) {
       if (mounted) setState(() => _error = attachmentRefusal(l, refused));

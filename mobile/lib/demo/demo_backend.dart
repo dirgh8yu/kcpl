@@ -491,6 +491,149 @@ class DemoApi extends KcplApi {
     return 'KCPL-Q-${_now.year}${_now.month.toString().padLeft(2, '0')}${_now.day.toString().padLeft(2, '0')}-DEMO${quoteRequests.length.toString().padLeft(2, '0')}';
   }
 
+  // Quotes.
+
+  /// Quotes the customer asked to proceed with, by reference.
+  final Map<String, String> bookingRequests = {};
+
+  @override
+  Future<QuotesPage> quotes() => _later(
+    QuotesPage(
+      quotes: [
+        PortalQuote(
+          reference: 'KCPL-Q-20260921-014',
+          status: 'quoted',
+          createdAt: _at(90),
+          origin: 'Kolkata, India',
+          destination: 'Birgunj ICD, Nepal',
+          mode: 'sea',
+          cargoType: 'Household goods, 1 x 20ft',
+          weight: '11800 kg',
+          amount: 168500,
+          currency: 'NPR',
+          validUntil: _day(9),
+          note: 'Includes customs clearance at Birgunj and ICD handling. Detention beyond 7 free days is extra.',
+          bookingRequestedAt: bookingRequests.containsKey('KCPL-Q-20260921-014') ? _at(0) : null,
+        ),
+        PortalQuote(
+          reference: 'KCPL-Q-20260902-006',
+          status: 'quoted',
+          createdAt: _at(560),
+          origin: 'Shenzhen, China',
+          destination: 'Kathmandu (TIA), Nepal',
+          mode: 'air',
+          cargoType: 'Spare parts',
+          weight: '240 kg',
+          amount: 1320,
+          currency: 'USD',
+          validUntil: _day(-3),
+        ),
+      ],
+      requests: [
+        PortalQuote(
+          reference: 'KCPL-Q-20260924-002',
+          status: 'new',
+          createdAt: _at(20),
+          origin: 'Haldia, India',
+          destination: 'Biratnagar, Nepal',
+          mode: 'road',
+          cargoType: 'Ceramic tiles',
+          currency: 'NPR',
+        ),
+      ],
+    ),
+  );
+
+  @override
+  Future<void> acceptQuote(String reference, {String note = ''}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    bookingRequests[reference] = note;
+  }
+
+  // Notification settings.
+
+  NotificationPreferences preferences = const NotificationPreferences(shipmentUpdates: true, documents: true, freeTime: true);
+
+  @override
+  Future<NotificationPreferences> notificationPreferences() => _later(preferences);
+
+  @override
+  Future<NotificationPreferences> setNotificationPreferences(NotificationPreferences preferences) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return this.preferences = preferences;
+  }
+
+  // Paying online.
+
+  final Map<String, PaymentStatus> payments = {};
+
+  /// What the next payment will come back as, once "the gateway" is done.
+  String nextPaymentOutcome = 'paid';
+
+  @override
+  Future<List<String>> paymentOptions(String invoice) async {
+    final found = _invoices.where((i) => i.reference == invoice).firstOrNull;
+    final payable = found != null && found.currency == 'NPR' && found.balanceDue > 0 && !payments.values.any((p) => p.invoice == invoice && p.paid);
+    return _later(payable ? const ['khalti', 'esewa', 'connectips'] : const []);
+  }
+
+  @override
+  Future<PaymentStart> startPayment(String invoice, String gateway) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final found = _invoices.firstWhere((i) => i.reference == invoice);
+    final id = (payments.length + 1).toRadixString(16).padLeft(20, '0');
+    payments[id] = PaymentStatus(id: id, invoice: invoice, gateway: gateway, amount: found.balanceDue, status: 'started');
+    return PaymentStart(intent: id, url: Uri.parse('https://kcpl.example/pay/$id'));
+  }
+
+  /// Settles a started payment as [nextPaymentOutcome], as the gateway's
+  /// return would.
+  void completePayment(String id) {
+    final started = payments[id]!;
+    payments[id] = PaymentStatus(
+      id: id,
+      invoice: started.invoice,
+      gateway: started.gateway,
+      amount: started.amount,
+      status: nextPaymentOutcome,
+      message: nextPaymentOutcome == 'failed' ? 'The payment was cancelled.' : null,
+    );
+  }
+
+  @override
+  Future<PaymentStatus> payment(String intent) async {
+    final found = payments[intent];
+    if (found == null) throw const ApiException(404, 'missing', 'Payment not found.');
+    return _later(found);
+  }
+
+  // Tracking links.
+
+  final Map<String, int> trackingLinks = {};
+
+  @override
+  Future<TrackingLink> createTrackingLink(String reference) async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    trackingLinks[reference] = (trackingLinks[reference] ?? 0) + 1;
+    return TrackingLink(url: Uri.parse('https://kcpl.example/t/demo${reference.hashCode.abs()}'), expiresAt: _now.add(const Duration(days: 30)).toUtc().toIso8601String());
+  }
+
+  @override
+  Future<int> revokeTrackingLinks(String reference) async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    return trackingLinks.remove(reference) ?? 0;
+  }
+
+  // Live Activities.
+
+  final Map<String, String> liveActivities = {};
+
+  @override
+  Future<void> followLive(String reference, {required String activityToken, required String pushToken}) async => liveActivities[activityToken] = reference;
+
+  @override
+  Future<void> unfollowLive(String activityToken) async => liveActivities.remove(activityToken);
+
   @override
   Future<void> registerPush(String token, String platform) async {}
 

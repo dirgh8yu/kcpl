@@ -103,6 +103,13 @@
 		<string>KCPL uses the camera to photograph documents and receipts you send to KCPL, and to scan container numbers and barcodes.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>KCPL opens your photos when you choose one to send to KCPL.</string>
+		<!-- kcpl:// links bring the app forward (the widget, a payment's return
+		     page); the app decides what to show, not Flutter's router. -->
+		<!-- A shipment followed on the Lock Screen (ios/KCPLWidget). -->
+		<key>NSSupportsLiveActivities</key>
+		<true/>
+		<key>FlutterDeepLinkingEnabled</key>
+		<false/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>KCPL Ops records where a delivery was made, as part of its proof of delivery. Location is read only while you record one.</string>
 		<key>NSFaceIDUsageDescription</key>

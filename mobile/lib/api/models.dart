@@ -619,3 +619,162 @@ class TeamInvite {
   factory TeamInvite.fromJson(Map<String, dynamic> json) =>
       TeamInvite(email: _s(json['email']), delivered: _b(json['delivered']), link: _ns(json['link']), warning: _ns(json['warning']));
 }
+
+/// A quote KCPL priced, or a request still with KCPL, as the portal's
+/// Requests page lists them.
+class PortalQuote {
+  const PortalQuote({
+    required this.reference,
+    required this.status,
+    required this.createdAt,
+    required this.origin,
+    required this.destination,
+    required this.mode,
+    this.cargoType,
+    this.weight,
+    this.amount,
+    required this.currency,
+    this.validUntil,
+    this.note,
+    this.shipmentReference,
+    this.bookingRequestedAt,
+  });
+
+  final String reference;
+  final String status;
+  final String createdAt;
+  final String origin;
+  final String destination;
+  final String mode;
+  final String? cargoType;
+
+  /// "1200 kg", as entered.
+  final String? weight;
+
+  /// Null until KCPL has priced it.
+  final double? amount;
+  final String currency;
+  final String? validUntil;
+
+  /// What KCPL wrote to the customer with the price.
+  final String? note;
+  final String? shipmentReference;
+
+  /// When the customer asked to proceed, if they have.
+  final String? bookingRequestedAt;
+
+  bool get priced => amount != null;
+  bool get booked => shipmentReference != null;
+
+  /// Past its validity date.
+  bool expired([DateTime? now]) {
+    final until = validUntil == null ? null : DateTime.tryParse(validUntil!.length <= 10 ? '${validUntil}T23:59:59+05:45' : validUntil!);
+    return until != null && until.isBefore(now ?? DateTime.now());
+  }
+
+  /// Priced, current, not booked, not yet asked for.
+  bool canProceed([DateTime? now]) => priced && !booked && bookingRequestedAt == null && !expired(now);
+
+  factory PortalQuote.fromJson(Map<String, dynamic> json) {
+    final weight = _ns(json['weight']);
+    return PortalQuote(
+      reference: _s(json['reference']),
+      status: _s(json['status'], 'new'),
+      createdAt: _s(json['created_at']),
+      origin: _s(json['origin']),
+      destination: _s(json['destination']),
+      mode: _s(json['mode'], 'unsure'),
+      cargoType: _ns(json['cargo_type']),
+      weight: weight == null ? null : [weight, ?_ns(json['weight_unit'])].join(' '),
+      amount: json['quoted_amount'] is num ? (json['quoted_amount'] as num).toDouble() : null,
+      currency: _s(json['quote_currency'], 'NPR'),
+      validUntil: _ns(json['valid_until']),
+      note: _ns(json['customer_quote_note']),
+      shipmentReference: _ns(json['shipment_reference']),
+      bookingRequestedAt: _ns(json['booking_requested_at']),
+    );
+  }
+}
+
+class QuotesPage {
+  const QuotesPage({required this.quotes, required this.requests});
+
+  /// Priced by KCPL.
+  final List<PortalQuote> quotes;
+
+  /// Still being priced.
+  final List<PortalQuote> requests;
+
+  factory QuotesPage.fromJson(Map<String, dynamic> json) => QuotesPage(
+    quotes: _list(json['quotes']).map(PortalQuote.fromJson).toList(),
+    requests: _list(json['requests']).map(PortalQuote.fromJson).toList(),
+  );
+}
+
+/// Which emails the login receives, as the portal's settings page has them.
+class NotificationPreferences {
+  const NotificationPreferences({required this.shipmentUpdates, required this.documents, required this.freeTime});
+  final bool shipmentUpdates;
+  final bool documents;
+  final bool freeTime;
+
+  NotificationPreferences copyWith({bool? shipmentUpdates, bool? documents, bool? freeTime}) => NotificationPreferences(
+    shipmentUpdates: shipmentUpdates ?? this.shipmentUpdates,
+    documents: documents ?? this.documents,
+    freeTime: freeTime ?? this.freeTime,
+  );
+
+  Map<String, bool> toJson() => {'shipment_updates': shipmentUpdates, 'documents': documents, 'free_time': freeTime};
+
+  factory NotificationPreferences.fromJson(Map<String, dynamic> json) => NotificationPreferences(
+    // Absent means subscribed, as on the web.
+    shipmentUpdates: json['shipment_updates'] != false,
+    documents: json['documents'] != false,
+    freeTime: json['free_time'] != false,
+  );
+}
+
+/// Nepal's payment gateways, as the server names them.
+const paymentGatewayNames = {'khalti': 'Khalti', 'esewa': 'eSewa', 'connectips': 'connectIPS'};
+
+/// A payment begun: where to send the browser, and how to ask after it.
+class PaymentStart {
+  const PaymentStart({required this.intent, required this.url});
+  final String intent;
+  final Uri url;
+}
+
+/// A payment as KCPL knows it. Only [paid] means the invoice took it;
+/// [review] means the money arrived and accounts will apply it by hand.
+class PaymentStatus {
+  const PaymentStatus({required this.id, required this.invoice, required this.gateway, required this.amount, required this.status, this.message});
+  final String id;
+  final String invoice;
+  final String gateway;
+  final double amount;
+
+  /// created, started, paid, failed or needs_review.
+  final String status;
+  final String? message;
+
+  bool get paid => status == 'paid';
+  bool get review => status == 'needs_review';
+  bool get failed => status == 'failed';
+  bool get settled => paid || review || failed;
+
+  factory PaymentStatus.fromJson(Map<String, dynamic> json) => PaymentStatus(
+    id: _s(json['id']),
+    invoice: _s(json['invoice']),
+    gateway: _s(json['gateway']),
+    amount: _n(json['amount']),
+    status: _s(json['status'], 'created'),
+    message: _ns(json['message']),
+  );
+}
+
+/// A link anyone can open to follow a shipment without a login.
+class TrackingLink {
+  const TrackingLink({required this.url, required this.expiresAt});
+  final Uri url;
+  final String expiresAt;
+}

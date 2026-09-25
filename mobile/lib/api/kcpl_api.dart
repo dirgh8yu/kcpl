@@ -54,6 +54,34 @@ abstract class KcplApi {
   /// [active] false disables a member's login; true restores it.
   Future<void> setMemberActive(String email, bool active);
 
+  /// Priced quotes and requests still with KCPL.
+  Future<QuotesPage> quotes();
+
+  /// "Proceed" on a priced quote: the portal's own booking request. KCPL
+  /// confirms the booking; nothing is booked by this alone.
+  Future<void> acceptQuote(String reference, {String note = ''});
+
+  Future<NotificationPreferences> notificationPreferences();
+  Future<NotificationPreferences> setNotificationPreferences(NotificationPreferences preferences);
+
+  /// The gateways this invoice can be paid through; empty when it can't be
+  /// paid online (not rupees, nothing owed, or payments not switched on).
+  Future<List<String>> paymentOptions(String invoice);
+
+  /// Starts paying the whole balance through [gateway].
+  Future<PaymentStart> startPayment(String invoice, String gateway);
+  Future<PaymentStatus> payment(String intent);
+
+  /// A new link to the shipment's public tracking page.
+  Future<TrackingLink> createTrackingLink(String reference);
+
+  /// Withdraws every link this customer made for the shipment; how many.
+  Future<int> revokeTrackingLinks(String reference);
+
+  /// A lock-screen Live Activity to keep up to date (iOS).
+  Future<void> followLive(String reference, {required String activityToken, required String pushToken});
+  Future<void> unfollowLive(String activityToken);
+
   /// Removes everything kept on the phone for the signed-in login. Called at
   /// sign-out, before the next person can use the phone.
   Future<void> forget() async {}

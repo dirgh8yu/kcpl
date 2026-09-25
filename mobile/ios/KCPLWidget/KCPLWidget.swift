@@ -6,6 +6,7 @@
 // (lib/platform/home_widget_bridge.dart) into the shared App Group, already
 // in the reader's language; this only draws them.
 
+import ActivityKit
 import SwiftUI
 import WidgetKit
 
@@ -101,6 +102,13 @@ struct ShipmentView: View {
 }
 
 @main
+struct KCPLWidgets: WidgetBundle {
+  var body: some Widget {
+    KCPLWidget()
+    ShipmentLiveActivity()
+  }
+}
+
 struct KCPLWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: "KCPLWidget", provider: Provider()) { entry in
@@ -109,5 +117,93 @@ struct KCPLWidget: Widget {
     .configurationDisplayName("KCPL shipment")
     .description("Your shipment that needs a glance: where it is and when it arrives.")
     .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
+  }
+}
+
+// MARK: - Live Activity
+
+/// Declared identically in ios/Runner/AppDelegate.swift, which starts the
+/// activity: ActivityKit matches the two by name and Codable shape, so keep
+/// the fields the same in both files.
+struct ShipmentActivityAttributes: ActivityAttributes {
+  public struct ContentState: Codable, Hashable {
+    var status: String
+    var detail: String
+    var progress: Double
+    var attention: Bool
+  }
+
+  var reference: String
+  var route: String
+}
+
+/// A followed shipment on the Lock Screen and in the Dynamic Island. KCPL
+/// moves it with a push when the shipment moves, and ends it on delivery.
+struct ShipmentLiveActivity: Widget {
+  var body: some WidgetConfiguration {
+    ActivityConfiguration(for: ShipmentActivityAttributes.self) { context in
+      LockScreenShipment(attributes: context.attributes, state: context.state)
+        .widgetURL(URL(string: "kcpl://shipment/\(context.attributes.reference)"))
+        .activityBackgroundTint(Color(.systemBackground))
+    } dynamicIsland: { context in
+      DynamicIsland {
+        DynamicIslandExpandedRegion(.leading) {
+          Text("KCPL").font(.caption.bold()).foregroundStyle(crimson)
+        }
+        DynamicIslandExpandedRegion(.trailing) {
+          Text(context.attributes.reference).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        }
+        DynamicIslandExpandedRegion(.bottom) {
+          VStack(alignment: .leading, spacing: 4) {
+            Text(context.attributes.route).font(.headline).lineLimit(1)
+            HStack {
+              Text(context.state.status).foregroundStyle(context.state.attention ? crimson : .primary)
+              if !context.state.detail.isEmpty {
+                Text("· \(context.state.detail)").foregroundStyle(.secondary)
+              }
+            }
+            .font(.subheadline)
+            .lineLimit(1)
+            ProgressView(value: context.state.progress).tint(crimson)
+          }
+        }
+      } compactLeading: {
+        Text("K").font(.caption.bold()).foregroundStyle(crimson)
+      } compactTrailing: {
+        Text(context.state.status).font(.caption2).lineLimit(1).frame(maxWidth: 88)
+      } minimal: {
+        ProgressView(value: context.state.progress)
+          .progressViewStyle(.circular)
+          .tint(crimson)
+      }
+      .widgetURL(URL(string: "kcpl://shipment/\(context.attributes.reference)"))
+      .keylineTint(crimson)
+    }
+  }
+}
+
+struct LockScreenShipment: View {
+  let attributes: ShipmentActivityAttributes
+  let state: ShipmentActivityAttributes.ContentState
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack {
+        Text(attributes.reference).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        Spacer()
+        Text("KCPL").font(.caption.bold()).foregroundStyle(crimson)
+      }
+      Text(attributes.route).font(.headline).lineLimit(1)
+      HStack(spacing: 4) {
+        Text(state.status).foregroundStyle(state.attention ? crimson : .primary)
+        if !state.detail.isEmpty {
+          Text("· \(state.detail)").foregroundStyle(.secondary)
+        }
+      }
+      .font(.subheadline)
+      .lineLimit(1)
+      ProgressView(value: state.progress).tint(crimson)
+    }
+    .padding(16)
   }
 }

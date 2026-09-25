@@ -8,6 +8,7 @@ import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/main.dart';
 import 'package:kcpl_customer/push/push_service.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/widgets/common.dart' show RowTile;
 import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
 import 'package:kcpl_customer/ui/theme.dart';
 import 'package:kcpl_customer/ui/widgets/kcpl_loader.dart';
@@ -137,7 +138,7 @@ void main() {
     await tester.tap(find.text('Account').last);
     await settle(tester);
     await tester.scrollUntilVisible(find.text('Push notifications'), 200, scrollable: find.byType(Scrollable).hitTestable().first);
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.descendant(of: find.widgetWithText(RowTile, 'Push notifications'), matching: find.byType(Switch)));
     await settle(tester);
     expect(api.unregistered, ['token-1']);
     expect(push.optedOut, isTrue);
