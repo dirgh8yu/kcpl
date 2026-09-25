@@ -653,6 +653,9 @@ class AppLocalizationsNe extends AppLocalizations {
       'KCPL ले पुष्टि गरेका मूल्य। अघि बढ्न भन्नुहोस्, खाता प्रबन्धकले कोटेशनलाई बुकिङमा बदल्नेछन्।';
 
   @override
+  String get reqColQuote => 'कोटेशन';
+
+  @override
   String get reqColValid => 'मान्य रहने मिति';
 
   @override

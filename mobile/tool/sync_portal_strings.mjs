@@ -61,7 +61,7 @@ ships.col_carrier
 topic.shipment_updates topic.documents topic.free_time
 topic.shipment_updates_hint topic.documents_hint topic.free_time_hint
 settings.email_title settings.email_description settings.save_failed
-req.quotes_title req.quotes_description req.col_valid req.ask_to_proceed req.no_quotes_title req.no_quotes_description
+req.quotes_title req.quotes_description req.col_quote req.col_valid req.ask_to_proceed req.no_quotes_title req.no_quotes_description
 req.progress_title req.progress_description req.booking_sent req.booking_failed req.raised_on
 req.nothing_waiting_title req.nothing_waiting_description
 xchg.title xchg.state_needed xchg.state_resend xchg.state_with_kcpl xchg.state_confirmed

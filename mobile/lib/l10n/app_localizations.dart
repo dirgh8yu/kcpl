@@ -1244,6 +1244,12 @@ abstract class AppLocalizations {
   /// **'Prices KCPL has confirmed. Ask to proceed and your account manager will convert the quote into a booking.'**
   String get reqQuotesDescription;
 
+  /// No description provided for @reqColQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get reqColQuote;
+
   /// No description provided for @reqColValid.
   ///
   /// In en, this message translates to:

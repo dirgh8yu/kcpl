@@ -112,13 +112,19 @@ class _QuoteRow extends StatelessWidget {
       },
       leading: Icon(modeIcon(quote.mode), size: 20, color: p.secondary),
       title: Text(route(place(quote.origin), place(quote.destination))),
-      accessory: quote.amount == null
-          ? null
-          : Text(
-              formatMoney(quote.amount!, quote.currency),
-              style: TextStyle(color: expired ? p.tertiary : p.ink, fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-      subtitle: Text(state, style: TextStyle(color: quote.bookingRequestedAt != null || quote.booked ? p.ink : null)),
+      // The price leads the second line, so the route keeps the first.
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            if (quote.amount != null)
+              TextSpan(
+                text: '${formatMoney(quote.amount!, quote.currency)} · ',
+                style: TextStyle(color: expired ? p.tertiary : p.ink, fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+            TextSpan(text: state, style: TextStyle(color: quote.bookingRequestedAt != null || quote.booked ? p.ink : null)),
+          ],
+        ),
+      ),
       chevron: true,
     );
   }
@@ -170,11 +176,9 @@ class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
     }
     final open = widget.canProceed && quote.canProceed();
     return ComposeScaffold(
-      title: quote.reference,
+      title: l.reqColQuote,
       error: _error,
-      action: open
-          ? SendButton(label: l.reqAskToProceed, onPressed: _proceed, busy: _busy)
-          : FilledButton(onPressed: () => Navigator.of(context).maybePop(), child: Text(l.quoteDone)),
+      action: open ? SendButton(label: l.reqAskToProceed, onPressed: _proceed, busy: _busy) : null,
       children: [
         if (quote.amount != null)
           Padding(
@@ -187,14 +191,22 @@ class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
               ),
             ),
           ),
-        if (quote.validUntil != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(kGutter + 4, 2, kGutter, 0),
-            child: Text(
-              quote.expired() ? l.quoteExpired(formatDate(quote.validUntil)) : l.quoteValidUntil(formatDate(quote.validUntil)),
-              style: context.type.bodyMedium?.copyWith(color: quote.expired() ? p.accent : p.secondary),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kGutter + 4, 2, kGutter, 0),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: quote.reference),
+                if (quote.validUntil != null)
+                  TextSpan(
+                    text: ' · ${quote.expired() ? l.quoteExpired(formatDate(quote.validUntil)) : l.quoteValidUntil(formatDate(quote.validUntil))}',
+                    style: TextStyle(color: quote.expired() ? p.accent : null),
+                  ),
+              ],
             ),
+            style: context.type.bodyMedium?.copyWith(color: p.secondary),
           ),
+        ),
         const SizedBox(height: 20),
         RowGroup(
           children: [

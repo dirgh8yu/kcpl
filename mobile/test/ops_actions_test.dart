@@ -270,9 +270,7 @@ void main() {
     await settle(tester);
     expect(find.text('Proof of delivery has not been recorded.'), findsOneWidget);
     expect(find.text('Clear these first, or ask Management to close it with a reason.'), findsOneWidget);
-    await tester.tap(find.text('Close anyway'));
-    await settle(tester);
-    expect(find.text('Job closed'), findsNothing, reason: 'not Management: the action is not offered');
+    expect(find.text('Close anyway'), findsNothing, reason: 'not Management: the action is not offered');
   });
 
   testWidgets('Management closes over blockers only with a reason', (tester) async {

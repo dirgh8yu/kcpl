@@ -389,7 +389,9 @@ class _DeliveryOutcomeScreenState extends State<DeliveryOutcomeScreen> {
             children: [
               for (final relation in [..._relations, 'Other'])
                 ChoiceChip(
-                  label: Text(relation),
+                  // Set here: chips don't resolve a per-state label colour
+                  // from the theme on every platform.
+                  label: Text(relation, style: TextStyle(color: _relationChoice == relation ? p.surface : p.ink)),
                   selected: _relationChoice == relation,
                   onSelected: _busy
                       ? null

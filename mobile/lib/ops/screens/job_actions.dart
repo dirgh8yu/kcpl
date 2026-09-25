@@ -55,7 +55,6 @@ class _StaffPickerScreenState extends State<StaffPickerScreen> {
     final p = context.palette;
     return ComposeScaffold(
       title: widget.title,
-      action: TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
       children: [
         GroupCard(
           margin: const EdgeInsets.fromLTRB(kGutter, 4, kGutter, 0),
@@ -274,7 +273,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   Widget build(BuildContext context) {
     final p = context.palette;
     ChoiceChip chip(_Due value, String label) => ChoiceChip(
-      label: Text(label),
+      label: Text(label, style: TextStyle(color: _due == value ? p.surface : p.ink)),
       selected: _due == value,
       onSelected: _busy
           ? null
@@ -453,11 +452,8 @@ class _CloseJobScreenState extends State<CloseJobScreen> {
     return ComposeScaffold(
       title: 'Close job',
       error: _error,
-      action: SendButton(
-        label: blocked ? 'Close anyway' : 'Close $reference',
-        onPressed: blocked && !_canOverride ? null : _close,
-        busy: _busy,
-      ),
+      // Without the authority to close over blockers there is nothing to press.
+      action: blocked && !_canOverride ? null : SendButton(label: blocked ? 'Close anyway' : 'Close $reference', onPressed: _close, busy: _busy),
       children: [
         if (!blocked) ...[
           const SizedBox(height: 4),

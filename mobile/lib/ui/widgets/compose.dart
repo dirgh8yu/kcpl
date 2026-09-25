@@ -14,12 +14,13 @@ import 'large_title.dart';
 /// A form in a sheet: a large title, the fields, and one action kept at the
 /// foot of the screen where a thumb already is, as the quote request does.
 class ComposeScaffold extends StatelessWidget {
-  const ComposeScaffold({super.key, required this.title, required this.children, required this.action, this.error});
+  const ComposeScaffold({super.key, required this.title, required this.children, this.action, this.error});
   final String title;
   final List<Widget> children;
 
-  /// Usually a [SendButton].
-  final Widget action;
+  /// Usually a [SendButton]. None for a sheet whose rows are the actions:
+  /// the sheet's own close button is the way out.
+  final Widget? action;
 
   /// Shown over the action, where the eye already is when it fails.
   final String? error;
@@ -39,6 +40,9 @@ class ComposeScaffold extends StatelessWidget {
               ],
             ),
           ),
+          if (action == null)
+            SafeArea(top: false, child: Padding(padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 10), child: ErrorLine(error)))
+          else
           DecoratedBox(
             decoration: BoxDecoration(
               color: p.paper,
@@ -51,7 +55,7 @@ class ComposeScaffold extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [ErrorLine(error), action],
+                  children: [ErrorLine(error), action!],
                 ),
               ),
             ),

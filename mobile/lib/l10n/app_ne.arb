@@ -191,6 +191,7 @@
   "settingsSaveFailed": "परिवर्तन सुरक्षित गर्न सकिएन।",
   "reqQuotesTitle": "तपाईंलाई जारी भएका कोटेशन",
   "reqQuotesDescription": "KCPL ले पुष्टि गरेका मूल्य। अघि बढ्न भन्नुहोस्, खाता प्रबन्धकले कोटेशनलाई बुकिङमा बदल्नेछन्।",
+  "reqColQuote": "कोटेशन",
   "reqColValid": "मान्य रहने मिति",
   "reqAskToProceed": "अघि बढ्न भन्नुहोस्",
   "reqNoQuotesTitle": "अहिलेसम्म कुनै कोटेशन छैन",

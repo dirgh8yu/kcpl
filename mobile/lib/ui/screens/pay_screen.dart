@@ -160,9 +160,8 @@ class _PayScreenState extends State<PayScreen> {
     return ComposeScaffold(
       title: l.payOnline,
       error: _error,
-      action: _started != null && !(status?.failed ?? false)
-          ? TextButton(onPressed: _again, child: Text(l.cancel))
-          : FilledButton(onPressed: () => Navigator.of(context).maybePop(), child: Text(l.cancel)),
+      // Choosing needs no footer: each gateway row is the action.
+      action: _started != null && !(status?.failed ?? false) ? TextButton(onPressed: _again, child: Text(l.cancel)) : null,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter + 4, 0, kGutter, 16),

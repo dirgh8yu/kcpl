@@ -9,10 +9,13 @@ A native Flutter app for KCPL's customers: the customer portal, on a phone. It c
 - documents, with download to the phone's viewer
 - invoices and invoice detail, for logins with finance access
 - switching customer, for agents linked to several
-- requesting a quote, sending documents (a photo of the paperwork), payment receipts,
-  confirming receipt of a delivery, and managing the team's logins
-- working offline from the last answers, Face ID, sharing a shipment's status, and a
-  home and lock screen widget
+- requesting a quote, seeing the prices KCPL gives and asking to proceed with one
+- paying an invoice online with Khalti, eSewa or connectIPS
+- sending documents (scanned to PDF, or a photo), payment receipts, confirming receipt of
+  a delivery, and managing the team's logins
+- working offline from the last answers, Face ID, sharing a shipment's status or a
+  tracking link anyone can open, a home and lock screen widget, and a Live Activity
+- choosing which emails KCPL sends, and showing dates in Bikram Sambat
 - English and Nepali
 
 It talks to KCPL's own site (`/api/mobile/v1`, see *Mobile app API* in
@@ -61,17 +64,28 @@ The staff app is the operations desk in a pocket. It talks to `/api/mobile/ops/v
   the door ("Read text" takes a photo and reads it on the phone; ISO 6346 numbers that
   pass their check digit are offered first), or type it. One match opens the job; only
   jobs in your branches can be found.
+- **Delivery** (job detail): start an attempt ("Out for delivery", with who is taking it),
+  then record how it went. Delivered takes who received it and their relation, a
+  signature signed on a page of its own, photos, and the phone's location; not delivered
+  or refused takes the reason and opens an exception for the desk. Proof goes to the desk
+  as *received*: the app never verifies POD or marks the shipment Delivered.
+- **Job actions:** add a task (title, due time, assignee, branch), give the job to a
+  colleague from the web picker's own list, and close it, seeing what still stands in
+  the way. Only Management may close over those, and only with a reason.
+- **No signal:** a note written where KCPL can't be reached waits on the phone, marked
+  "Waiting for signal", and sends itself when the signal returns (on coming back to the
+  app, and every 45 seconds while anything waits). Only the login that wrote it sees or
+  sends it; a note KCPL refuses is kept with the reason, to delete.
 - **Alerts:** the web notification centre's feed. Opening an alert marks it read and
   goes to its job; the tab badge counts unread.
 - **Me:** role, branches and sign-out.
 
 Access is the web admin's own: a Firebase login that `isAuthorizedAdminUser` accepts, with
-role, permissions and branch scope from `getStaffContext`. The app can change four things:
-tick a task, tick a customs step, mark an alert read, and add a field note or photo.
-Ticking goes through the same guarded function the web Job File uses; a note checks the
-job's branch before it reads a byte. A tick shows at once and is saved behind it; if the
-server refuses, it comes back off and says why. Anything else (assigning, closing,
-costs) stays on the web for now.
+role, permissions and branch scope from `getStaffContext`. Every change the app makes (a
+tick, a note or photo, an alert read, a task, a new owner, a closeout, a delivery attempt
+and its proof) goes through the same server function the web Job File or Delivery
+Control uses, after the same branch check. A tick shows at once and is saved behind it;
+if the server refuses, it comes back off and says why. Costs stay on the web.
 
 ## Running it
 
@@ -170,7 +184,9 @@ function (see *Mobile app API* in `docs/customer-portal.md`), so the rules are o
 They appear only to logins that may send things to KCPL.
 
 - **A document:** from a checklist row KCPL is waiting on (its own **Send**), or "Send a
-  document" under a shipment's documents. The photo comes first, then what it is. Photos
+  document" under a shipment's documents. The file comes first, then what it is. **Scan
+  document** opens the phone's own scanner (VisionKit on iPhone, Google's ML Kit on
+  Android), which finds the page edges and flattens them; every page goes in one PDF. Photos
   are re-encoded as JPEG at up to 2400 px (an iPhone's HEIC is refused by the server) and
   named for what they are; PDFs come from Files. Only the papers a customer originates can
   be sent: a bill of lading, customs entry or POD is KCPL's to file. It arrives unreviewed.
@@ -181,8 +197,30 @@ They appear only to logins that may send things to KCPL.
   a note and an optional photo (filed as "other"). It tells the operator; it is not a POD.
 - **Team** (account owners, in Account): invite a colleague as a member, and turn logins off
   and on. When KCPL has no mail provider, the one-time link comes back to share.
-- **Share status** (a shipment's title bar): plain text for WhatsApp or anywhere. It
-  carries no link, since the portal needs a KCPL login.
+- **Share** (a shipment's title bar): its status as plain text for WhatsApp, or **a
+  tracking link** anyone can open without a login for 30 days (a consignee, a driver).
+  The page shows places and milestones, never the customer's name, prices or papers.
+  **Stop sharing links** withdraws every link made for that shipment.
+
+## Quotes and paying online
+
+- **Quotes** (Account): the prices KCPL has given, with how long each holds, and the
+  requests still being priced. **Ask to proceed** is the web's own booking request: the
+  account manager confirms the booking; nothing is booked or charged by the tap.
+- **Pay online** (an invoice): offered only for a rupee invoice with a balance, and only
+  when KCPL has switched payments on (see *Paying online* in `docs/customer-portal.md`).
+  Choose Khalti, eSewa or connectIPS; the gateway's own page opens in the browser, where
+  the wallet login already is. The phone holds no merchant key and signs nothing. KCPL
+  confirms the payment with the gateway before applying it, and the app waits for KCPL's
+  answer (the return page's **Back to KCPL** opens the app). A paid amount that differs,
+  or an invoice that changed meanwhile, is received and matched by accounts by hand.
+
+## Settings
+
+- **Email me about** (Account): the portal's three topics (milestones, documents, free
+  time), switched here or on the web; they are the same setting.
+- **Dates:** Gregorian or Bikram Sambat ("9 Ashwin 2083 BS"). Kept on the phone. The
+  instant is the same either way; BS times are Nepal time.
 
 Uploads show real progress: the body is handed over in 32 KB pieces as the connection
 takes them, and the crimson button fills with them.
@@ -393,7 +431,17 @@ tap opens that shipment.
      `ios/KCPLWidget/KCPLWidget.swift` to the `KCPLWidget` target.
   3. On both the **Runner** and **KCPLWidget** targets: Signing & Capabilities → + →
      **App Groups** → `group.np.com.kapileshworcargo.kcpl`.
-  Until then the app runs normally and simply has no widget.
+  4. For the **Live Activity** (a followed shipment on the Lock Screen and in the Dynamic
+     Island, iOS 16.2+): on **Runner**, Signing & Capabilities → + → **Push
+     Notifications**. `NSSupportsLiveActivities` is already in `Info.plist`, and the
+     activity's view is in the same `KCPLWidget.swift`.
+  Until then the app runs normally and simply has no widget or Live Activity.
+
+  **Follow on Lock Screen** is in a shipment's share button. The app starts the activity
+  and moves it whenever it shows that shipment. With push on, KCPL also moves it from the
+  server (FCM, `apns.liveActivityToken`) as the shipment moves, and ends it on delivery.
+  `ShipmentActivityAttributes` is declared in both `AppDelegate.swift` and
+  `KCPLWidget.swift`; ActivityKit matches them by name and shape, so keep them identical.
 
 ### Push notifications
 
@@ -475,8 +523,9 @@ size. A layout overflow fails the test, so a long label can't clip on a real pho
 
 ## Not in this version
 
-- Live Activities (a shipment on the Dynamic Island). They need push tokens per activity
-  from the server and a paid Apple Developer account; the widget covers the lock screen.
-- A public tracking link. Shared status is plain text, since a page anyone could open
-  would be a new part of the public site.
-- Paying an invoice in the app. Payment happens at the bank; the app sends the receipt.
+- Paying part of an invoice, or a foreign-currency invoice, online. Those stay with KCPL
+  accounts; the app sends the receipt.
+- The Swift code (the widget, the Live Activity, text recognition) is compiled only on a
+  Mac. CI builds Android; the iOS side has not been built since this change.
+- Online payment has been tested against the gateways' published signature formats, not
+  a live gateway: the first payment in `KCPL_PAYMENTS_ENV=test` is the first round trip.

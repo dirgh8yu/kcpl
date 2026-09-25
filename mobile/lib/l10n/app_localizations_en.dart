@@ -655,6 +655,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Prices KCPL has confirmed. Ask to proceed and your account manager will convert the quote into a booking.';
 
   @override
+  String get reqColQuote => 'Quote';
+
+  @override
   String get reqColValid => 'Valid until';
 
   @override

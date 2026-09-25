@@ -16,6 +16,7 @@ import 'package:kcpl_customer/push/push_service.dart';
 import 'package:kcpl_customer/ui/format.dart';
 import 'package:kcpl_customer/ui/screens/pay_screen.dart';
 import 'package:kcpl_customer/ui/widgets/common.dart' show RowTile;
+import 'package:kcpl_customer/ui/widgets/large_title.dart' show SheetCloseButton;
 
 import 'app_flow_test.dart' show scrollTo, settle, signIn;
 import 'push_ui_test.dart' show FakePush;
@@ -194,7 +195,7 @@ void main() {
     await settle(tester);
     expect(find.text('This price has expired. Ask KCPL for a fresh quote.'), findsOneWidget);
     expect(find.text('Ask to proceed'), findsNothing);
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.byType(SheetCloseButton).last);
     await settle(tester);
 
     await tester.tap(find.text('Kolkata – Birgunj ICD'));
@@ -207,7 +208,7 @@ void main() {
     expect(api.bookingRequests, {'KCPL-Q-20260921-014': 'Ready from 1 October'});
     await tester.tap(find.text('Done'));
     await settle(tester);
-    expect(find.text('You asked to proceed'), findsOneWidget, reason: 'the list shows it asked for');
+    expect(find.textContaining('You asked to proceed', findRichText: true), findsOneWidget, reason: 'the list shows it asked for');
   });
 
   testWidgets('an invoice is paid through a gateway, and KCPL’s word decides it', (tester) async {
