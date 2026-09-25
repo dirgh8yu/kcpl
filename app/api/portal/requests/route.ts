@@ -2,32 +2,9 @@ import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../../../firebase-admin.server";
 import { getPortalAccess, type PortalSession } from "../../../portal/portal-auth";
 import { isTrustedSameOriginRequest } from "../../../request-security";
-import { checkQuoteRateLimit, quoteRateLimitPolicies } from "../../quotes/quote-rate-limit-policy";
-import { firestoreQuoteRateLimitStore } from "../../quotes/quote-rate-limit.server";
+import { checkPortalRequestRateLimit, createPortalEnquiry, validatePortalEnquiry } from "../../../portal/portal-requests.server";
 
-/*
- * Customer-raised requests.
- *
- * What this route deliberately does NOT do: it never writes `customer_id`,
- * pricing, status transitions or any commercial field on a quote. A portal
- * submission lands as an ordinary enquiry with a *suggested* CRM match, and a
- * staff member confirms the link in the workflow they already use. The portal's
- * own scoping uses `portal_customer_id`, a field only the portal writes and only
- * the portal reads, so customer-supplied intent can never be mistaken for
- * KCPL-confirmed commercial authority.
- */
-
-const allowedModes = new Set(["air", "sea", "road", "unsure"]);
-const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
-
-const fieldLimits = {
-  origin: 120,
-  destination: 120,
-  cargoType: 160,
-  weight: 40,
-  timing: 120,
-  requirements: 3000,
-} as const;
+/* Customer-raised requests from the web portal: see portal-requests.server.ts. */
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return Response.json(body, { status, headers: { "cache-control": "no-store", ...headers } });
@@ -35,12 +12,6 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function createReference() {
-  const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase();
-  return `KCPL-Q-${date}-${suffix}`;
 }
 
 export async function POST(request: Request) {
@@ -59,12 +30,7 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "The request could not be read." }, 400);
   }
 
-  // One shared budget for both request kinds: a compromised portal account
-  // should not be able to flood the enquiry pipeline either way.
-  const limit = await checkQuoteRateLimit({
-    subjects: [{ policy: quoteRateLimitPolicies.contact, value: access.session.email }],
-    store: firestoreQuoteRateLimitStore(),
-  });
+  const limit = await checkPortalRequestRateLimit(access.session);
   if (!limit.allowed) {
     return json(
       { ok: false, error: "Too many requests from this account. Please try again shortly, or contact your KCPL account manager." },
@@ -77,76 +43,14 @@ export async function POST(request: Request) {
   if (kind === "booking") return submitBookingRequest(payload, access.session);
   if (kind !== "enquiry") return json({ ok: false, error: "Unknown request type." }, 400);
 
-  const values = {
-    origin: text(payload.origin),
-    destination: text(payload.destination),
-    mode: text(payload.mode) || "unsure",
-    cargoType: text(payload.cargoType),
-    weight: text(payload.weight),
-    weightUnit: text(payload.weightUnit) || "kg",
-    timing: text(payload.timing),
-    requirements: text(payload.requirements),
-  };
-
-  const errors: Record<string, string> = {};
-  for (const [field, max] of Object.entries(fieldLimits)) {
-    if (values[field as keyof typeof values].length > max) errors[field] = `Must be ${max} characters or fewer.`;
-  }
-  if (!values.origin) errors.origin = "Origin is required.";
-  if (!values.destination) errors.destination = "Destination is required.";
-  if (!allowedModes.has(values.mode)) errors.mode = "Choose a valid freight mode.";
-  if (!allowedWeightUnits.has(values.weightUnit)) errors.weightUnit = "Choose a valid weight unit.";
-  if (Object.keys(errors).length) {
-    return json({ ok: false, error: "Please check the highlighted details.", fields: errors }, 400);
+  const checked = validatePortalEnquiry(payload);
+  if (!checked.ok) {
+    return json({ ok: false, error: "Please check the highlighted details.", fields: checked.fields }, 400);
   }
 
-  const reference = createReference();
-  const now = new Date().toISOString();
-  const session = access.session;
-
+  let reference: string;
   try {
-    await firebaseAdminDb().collection("quotes").doc(reference).create({
-      reference,
-      created_at: now,
-      updated_at: now,
-      status: "new",
-      assigned_to: null,
-      note_count: 0,
-      origin: values.origin,
-      destination: values.destination,
-      mode: values.mode,
-      cargo_type: values.cargoType || null,
-      weight: values.weight || null,
-      weight_unit: values.weightUnit,
-      length: null,
-      width: null,
-      height: null,
-      dimension_unit: "cm",
-      timing: values.timing || null,
-      requirements: values.requirements || null,
-      contact_name: session.displayName,
-      contact_email: session.email,
-      company_name: session.customerName,
-      phone: null,
-      quote_currency: "USD",
-      quoted_amount: null,
-      internal_cost: null,
-      valid_until: null,
-      customer_quote_note: null,
-      shipment_reference: null,
-      // Staff-owned CRM linkage stays unset; the portal only suggests.
-      customer_id: null,
-      crm_match_state: "suggested",
-      crm_match_ids: [session.customerId],
-      crm_matches: [{ id: session.customerId, display_name: session.customerName, reason: "Raised from the customer portal" }],
-      crm_linked_at: null,
-      crm_linked_by_name: null,
-      crm_linked_by_email: null,
-      source: "customer_portal",
-      portal_customer_id: session.customerId,
-      portal_submitted_by_email: session.email,
-      portal_submitted_at: now,
-    });
+    reference = await createPortalEnquiry(access.session, checked.values, "customer_portal");
   } catch (error) {
     console.error("KCPL portal request could not be saved", error);
     return json({ ok: false, error: "The request could not be submitted. Please try again." }, 500);

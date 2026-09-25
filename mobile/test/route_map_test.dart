@@ -20,6 +20,21 @@ Future<void> pumpStill(WidgetTester tester, Widget child) async {
 
 void main() {
   group('places', () {
+    test('every suggested place is one the map knows, once', () {
+      for (final name in placeNames) {
+        expect(locate(name), isNotNull, reason: name);
+      }
+      expect(placeNames.toSet(), hasLength(placeNames.length));
+    });
+
+    test('suggestions lead with names that start with what was typed', () {
+      expect(suggestPlaces('bir'), ['Birgunj', 'Birgunj ICD', 'Biratnagar']);
+      expect(suggestPlaces('kat').first, 'Kathmandu');
+      expect(suggestPlaces('ali'), contains('Jebel Ali'));
+      expect(suggestPlaces('  '), isEmpty);
+      expect(suggestPlaces('a', limit: 3), hasLength(3));
+    });
+
     test('desk spellings of the same place land on the same point', () {
       final icd = locate('Birgunj ICD, Nepal');
       expect(icd, isNotNull);

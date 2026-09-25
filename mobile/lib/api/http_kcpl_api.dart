@@ -111,6 +111,13 @@ class HttpKcplApi extends KcplApi {
       Invoice.fromJson((await _json('invoices/${Uri.encodeComponent(reference)}'))['invoice'] as Map<String, dynamic>);
 
   @override
+  Future<String> requestQuote(QuoteRequest request) async {
+    final response = await _send('POST', 'requests', body: request.toJson());
+    final body = (jsonDecode(utf8.decode(response.bodyBytes)) as Map).cast<String, dynamic>();
+    return '${body['reference'] ?? ''}';
+  }
+
+  @override
   Future<void> registerPush(String token, String platform) => _send('POST', 'push', body: {'token': token, 'platform': platform});
 
   @override

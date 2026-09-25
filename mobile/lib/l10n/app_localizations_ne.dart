@@ -373,6 +373,106 @@ class AppLocalizationsNe extends AppLocalizations {
   String get homeNeedsYou => 'तपाईंको काम';
 
   @override
+  String get quoteWhereTo => 'तपाईंको कार्गो कहाँ जाँदैछ?';
+
+  @override
+  String get quoteTitle => 'कोटेसन माग्नुहोस्';
+
+  @override
+  String get quoteFrom => 'कहाँबाट';
+
+  @override
+  String get quoteFromHint => 'उठाउने सहर, बन्दरगाह वा नाका';
+
+  @override
+  String get quoteTo => 'कहाँसम्म';
+
+  @override
+  String get quoteToHint => 'कहाँ पुग्नुपर्छ';
+
+  @override
+  String get quoteYourRoutes => 'तपाईंका रुटहरू';
+
+  @override
+  String get quoteModeTitle => 'कसरी ढुवानी गर्ने?';
+
+  @override
+  String get quoteModeRoad => 'सडक';
+
+  @override
+  String get quoteModeRoadDetail => 'भारत र चीन नाका हुँदै स्थलमार्ग';
+
+  @override
+  String get quoteModeSea => 'समुद्री';
+
+  @override
+  String get quoteModeSeaDetail =>
+      'कोलकाता, हल्दिया वा विशाखापत्तनम हुँदै, ठूला मालका लागि';
+
+  @override
+  String get quoteModeAir => 'हवाई';
+
+  @override
+  String get quoteModeAirDetail => 'सबैभन्दा छिटो, काठमाडौं (TIA) सम्म';
+
+  @override
+  String get quoteModeUnsure => 'KCPL लाई सल्लाह दिन दिनुहोस्';
+
+  @override
+  String get quoteModeUnsureDetail =>
+      'तपाईंको कार्गोका लागि उत्तम उपाय हामी सुझाउनेछौं';
+
+  @override
+  String get quoteCargoTitle => 'कार्गो';
+
+  @override
+  String get quoteCargoHint => 'के हो? कपडा, मेसिनरी…';
+
+  @override
+  String get quoteWeightHint => 'तौल (ऐच्छिक)';
+
+  @override
+  String get quoteWhenTitle => 'कहिले';
+
+  @override
+  String get quoteWhenSoon => 'सकेसम्म छिटो';
+
+  @override
+  String get quoteWhenWeeks => '२ हप्ताभित्र';
+
+  @override
+  String get quoteWhenMonth => 'यो महिना';
+
+  @override
+  String get quoteWhenFlexible => 'लचिलो';
+
+  @override
+  String get quoteNotesTitle => 'अरू केही';
+
+  @override
+  String get quoteNotesHint => 'नाप, प्याकेजिङ, इन्कोटर्म्स, विशेष ह्यान्डलिङ';
+
+  @override
+  String get quoteSubmit => 'कोटेसन माग्नुहोस्';
+
+  @override
+  String get quoteSending => 'पठाउँदै…';
+
+  @override
+  String get quoteNeedsRoute => 'कहाँबाट र कहाँसम्म भन्ने थप्नुहोस्।';
+
+  @override
+  String get quoteSentTitle => 'कोटेसन माग गरियो';
+
+  @override
+  String quoteSentBody(String route) {
+    return 'KCPL ले $route को मूल्य पठाउनेछ।';
+  }
+
+  @override
+  String get quoteDone => 'सकियो';
+
+  @override
   String get shipsFocusAll => 'सबै';
 
   @override

@@ -32,6 +32,10 @@ abstract class KcplApi {
   Future<Invoice> invoice(String reference);
   Future<DownloadedFile> download(DocumentRow document);
 
+  /// Raises a quote request; returns its reference (KCPL-Q-…). KCPL replies
+  /// with a price through its usual channels.
+  Future<String> requestQuote(QuoteRequest request);
+
   /// This phone, for push to the signed-in login.
   Future<void> registerPush(String token, String platform);
   Future<void> unregisterPush(String token);

@@ -734,6 +734,198 @@ abstract class AppLocalizations {
   /// **'Needs you'**
   String get homeNeedsYou;
 
+  /// No description provided for @quoteWhereTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is your cargo going?'**
+  String get quoteWhereTo;
+
+  /// No description provided for @quoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a quote'**
+  String get quoteTitle;
+
+  /// No description provided for @quoteFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get quoteFrom;
+
+  /// No description provided for @quoteFromHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup city, port or border'**
+  String get quoteFromHint;
+
+  /// No description provided for @quoteTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get quoteTo;
+
+  /// No description provided for @quoteToHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it should arrive'**
+  String get quoteToHint;
+
+  /// No description provided for @quoteYourRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Your routes'**
+  String get quoteYourRoutes;
+
+  /// No description provided for @quoteModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How should it travel?'**
+  String get quoteModeTitle;
+
+  /// No description provided for @quoteModeRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Road'**
+  String get quoteModeRoad;
+
+  /// No description provided for @quoteModeRoadDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Overland, through the India and China borders'**
+  String get quoteModeRoadDetail;
+
+  /// No description provided for @quoteModeSea.
+  ///
+  /// In en, this message translates to:
+  /// **'Sea'**
+  String get quoteModeSea;
+
+  /// No description provided for @quoteModeSeaDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Via Kolkata, Haldia or Vizag, for the largest loads'**
+  String get quoteModeSeaDetail;
+
+  /// No description provided for @quoteModeAir.
+  ///
+  /// In en, this message translates to:
+  /// **'Air'**
+  String get quoteModeAir;
+
+  /// No description provided for @quoteModeAirDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest, into Kathmandu (TIA)'**
+  String get quoteModeAirDetail;
+
+  /// No description provided for @quoteModeUnsure.
+  ///
+  /// In en, this message translates to:
+  /// **'Let KCPL advise'**
+  String get quoteModeUnsure;
+
+  /// No description provided for @quoteModeUnsureDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'We will suggest the best way for your cargo'**
+  String get quoteModeUnsureDetail;
+
+  /// No description provided for @quoteCargoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo'**
+  String get quoteCargoTitle;
+
+  /// No description provided for @quoteCargoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What is it? Garments, machinery…'**
+  String get quoteCargoHint;
+
+  /// No description provided for @quoteWeightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (optional)'**
+  String get quoteWeightHint;
+
+  /// No description provided for @quoteWhenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get quoteWhenTitle;
+
+  /// No description provided for @quoteWhenSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'As soon as possible'**
+  String get quoteWhenSoon;
+
+  /// No description provided for @quoteWhenWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Within 2 weeks'**
+  String get quoteWhenWeeks;
+
+  /// No description provided for @quoteWhenMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get quoteWhenMonth;
+
+  /// No description provided for @quoteWhenFlexible.
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible'**
+  String get quoteWhenFlexible;
+
+  /// No description provided for @quoteNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything else'**
+  String get quoteNotesTitle;
+
+  /// No description provided for @quoteNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions, packaging, Incoterms, special handling'**
+  String get quoteNotesHint;
+
+  /// No description provided for @quoteSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Request quote'**
+  String get quoteSubmit;
+
+  /// No description provided for @quoteSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get quoteSending;
+
+  /// No description provided for @quoteNeedsRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Add where it is coming from and going to.'**
+  String get quoteNeedsRoute;
+
+  /// No description provided for @quoteSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote requested'**
+  String get quoteSentTitle;
+
+  /// No description provided for @quoteSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL will reply with a price for {route}.'**
+  String quoteSentBody(String route);
+
+  /// No description provided for @quoteDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get quoteDone;
+
   /// No description provided for @shipsFocusAll.
   ///
   /// In en, this message translates to:

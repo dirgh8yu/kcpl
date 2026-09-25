@@ -132,6 +132,44 @@ void main() {
     );
   });
 
+  test('a quote request posts the enquiry and returns its reference', () async {
+    late http.Request seen;
+    final api = HttpKcplApi(
+      base: Uri.parse('https://kcpl.example'),
+      auth: FakeAuth(),
+      client: MockClient((request) async {
+        seen = request;
+        return _json({'ok': true, 'reference': 'KCPL-Q-20260925-AB12CD34'}, 201);
+      }),
+    );
+    final reference = await api.requestQuote(
+      const QuoteRequest(origin: ' Kolkata ', destination: 'Birgunj ICD', mode: 'sea', weight: '1200'),
+    );
+    expect(reference, 'KCPL-Q-20260925-AB12CD34');
+    expect(seen.method, 'POST');
+    expect(seen.url.path, '/api/mobile/v1/requests');
+    final body = jsonDecode(seen.body) as Map<String, dynamic>;
+    expect(body, containsPair('kind', 'enquiry'));
+    expect(body, containsPair('origin', 'Kolkata'));
+    expect(body, containsPair('mode', 'sea'));
+    expect(body, containsPair('weightUnit', 'kg'));
+  });
+
+  test('a refused quote request keeps the server wording', () async {
+    final api = HttpKcplApi(
+      base: Uri.parse('https://kcpl.example'),
+      auth: FakeAuth(),
+      client: MockClient(
+        (request) async =>
+            _json({'ok': false, 'code': 'forbidden', 'error': 'This account can view shipments but cannot raise new requests.'}, 403),
+      ),
+    );
+    await expectLater(
+      api.requestQuote(const QuoteRequest(origin: 'A', destination: 'B')),
+      throwsA(isA<ApiException>().having((e) => e.message, 'message', contains('cannot raise new requests'))),
+    );
+  });
+
   test('references are path-encoded', () async {
     late Uri seen;
     final api = HttpKcplApi(

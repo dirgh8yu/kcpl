@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'quote_screen.dart';
+
 import '../../api/models.dart';
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
@@ -232,6 +234,8 @@ class _Sheet extends StatelessWidget {
 
     return [
       _Headline(session: session, overview: overview, active: active.length, refreshing: refreshing),
+      // A new shipment starts the way a ride does: where is it going?
+      if (session.canSubmitRequests) _WhereTo(onTap: () => openQuote(context, recent: recentPlaces(overview.shipments))),
       PushPrimer(copy: customerPushCopy(l)),
       if (needsYou) ...[
         SectionHeader(l.homeNeedsYou, top: 20),
@@ -289,6 +293,51 @@ class _Sheet extends StatelessWidget {
       else
         RowGroup(indent: RowGroup.iconIndent, children: [for (final document in overview.documents.take(3)) DocumentRowTile(document)]),
     ];
+  }
+}
+
+/// "Where is your cargo going?": the way into a quote request, as a
+/// ride-hailing app leads with "Where to?".
+class _WhereTo extends StatelessWidget {
+  const _WhereTo({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(kGutter, 14, kGutter, 0),
+      child: Pressable(
+        child: Semantics(
+          button: true,
+          child: Material(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(kCardRadius),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    const SizedBox(width: kGutter),
+                    Icon(KIcons.search, size: 20, color: p.ink),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(l.quoteWhereTo, style: context.type.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(KIcons.chevron, size: 15, color: p.tertiary),
+                    const SizedBox(width: kGutter),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

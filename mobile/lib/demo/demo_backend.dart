@@ -68,6 +68,7 @@ class DemoApi extends KcplApi {
       role: 'owner',
       canViewFinance: true,
       locale: 'en',
+      canSubmitRequests: true,
     ),
   );
 
@@ -341,6 +342,17 @@ class DemoApi extends KcplApi {
     return _later(invoice);
   }
 
+  /// The requests raised, newest last.
+  final quoteRequests = <QuoteRequest>[];
+
+  @override
+  Future<String> requestQuote(QuoteRequest request) async {
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    quoteRequests.add(request);
+    return 'KCPL-Q-${_now.year}${_now.month.toString().padLeft(2, '0')}${_now.day.toString().padLeft(2, '0')}-DEMO${quoteRequests.length.toString().padLeft(2, '0')}';
+  }
+
+  @override
   @override
   Future<void> registerPush(String token, String platform) async {}
 

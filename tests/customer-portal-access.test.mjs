@@ -227,7 +227,9 @@ test("the customer document download checks ownership and release before reading
 });
 
 test("a customer request never writes staff-owned commercial authority", async () => {
-  const source = await readFile(repo("app/api/portal/requests/route.ts"), "utf8");
+  // The enquiry itself is written by the module the web and the app share.
+  const source = await readFile(repo("app/api/portal/requests/route.ts"), "utf8")
+    + await readFile(repo("app/portal/portal-requests.server.ts"), "utf8");
   assert.match(source, /customer_id: null/, "CRM linkage stays a staff decision");
   assert.match(source, /portal_customer_id: session\.customerId/);
   assert.doesNotMatch(source, /quoted_amount: [^n]/, "the portal cannot price its own request");

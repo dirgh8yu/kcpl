@@ -381,6 +381,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeNeedsYou => 'Needs you';
 
   @override
+  String get quoteWhereTo => 'Where is your cargo going?';
+
+  @override
+  String get quoteTitle => 'Get a quote';
+
+  @override
+  String get quoteFrom => 'From';
+
+  @override
+  String get quoteFromHint => 'Pickup city, port or border';
+
+  @override
+  String get quoteTo => 'To';
+
+  @override
+  String get quoteToHint => 'Where it should arrive';
+
+  @override
+  String get quoteYourRoutes => 'Your routes';
+
+  @override
+  String get quoteModeTitle => 'How should it travel?';
+
+  @override
+  String get quoteModeRoad => 'Road';
+
+  @override
+  String get quoteModeRoadDetail =>
+      'Overland, through the India and China borders';
+
+  @override
+  String get quoteModeSea => 'Sea';
+
+  @override
+  String get quoteModeSeaDetail =>
+      'Via Kolkata, Haldia or Vizag, for the largest loads';
+
+  @override
+  String get quoteModeAir => 'Air';
+
+  @override
+  String get quoteModeAirDetail => 'Fastest, into Kathmandu (TIA)';
+
+  @override
+  String get quoteModeUnsure => 'Let KCPL advise';
+
+  @override
+  String get quoteModeUnsureDetail =>
+      'We will suggest the best way for your cargo';
+
+  @override
+  String get quoteCargoTitle => 'Cargo';
+
+  @override
+  String get quoteCargoHint => 'What is it? Garments, machinery…';
+
+  @override
+  String get quoteWeightHint => 'Weight (optional)';
+
+  @override
+  String get quoteWhenTitle => 'When';
+
+  @override
+  String get quoteWhenSoon => 'As soon as possible';
+
+  @override
+  String get quoteWhenWeeks => 'Within 2 weeks';
+
+  @override
+  String get quoteWhenMonth => 'This month';
+
+  @override
+  String get quoteWhenFlexible => 'Flexible';
+
+  @override
+  String get quoteNotesTitle => 'Anything else';
+
+  @override
+  String get quoteNotesHint =>
+      'Dimensions, packaging, Incoterms, special handling';
+
+  @override
+  String get quoteSubmit => 'Request quote';
+
+  @override
+  String get quoteSending => 'Sending…';
+
+  @override
+  String get quoteNeedsRoute => 'Add where it is coming from and going to.';
+
+  @override
+  String get quoteSentTitle => 'Quote requested';
+
+  @override
+  String quoteSentBody(String route) {
+    return 'KCPL will reply with a price for $route.';
+  }
+
+  @override
+  String get quoteDone => 'Done';
+
+  @override
   String get shipsFocusAll => 'All';
 
   @override

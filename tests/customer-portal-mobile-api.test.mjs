@@ -92,15 +92,38 @@ test("every mobile route resolves the session through the one wrapper", async ()
   for (const path of routes) {
     const source = code(await readFile(repo(path), "utf8"));
     assert.match(source, /withMobileSession\(request, async \(session\)/, `${path} must go through withMobileSession`);
-    // Only reads, except registering this phone for push: nothing here may
-    // act on the customer's shipments, documents or invoices.
-    if (path !== "app/api/mobile/v1/push/route.ts") {
+    // Only reads, except registering this phone for push and raising a quote
+    // request (an enquiry, checked below): nothing here may act on the
+    // customer's shipments, documents or invoices.
+    if (path !== "app/api/mobile/v1/push/route.ts" && path !== "app/api/mobile/v1/requests/route.ts") {
       assert.doesNotMatch(source, /export async function (POST|PUT|PATCH|DELETE)/, `${path} must be read-only`);
     }
     // Data comes from the redacting portal readers, never from Firestore directly.
     assert.doesNotMatch(source, /firebaseAdminDb|collection\(/, `${path} must not query Firestore itself`);
     assert.doesNotMatch(source, /getPortalAccess\(\)/, `${path} must not fall back to the cookie`);
   }
+});
+
+test("a quote request from the app keeps the portal's rules: capability, rate limit, checks, suggestion only", async () => {
+  const route = code(await readFile(repo("app/api/mobile/v1/requests/route.ts"), "utf8"));
+  const order = ["canSubmitRequests", "request.json()", "checkPortalRequestRateLimit(session)", "validatePortalEnquiry(payload)", "createPortalEnquiry(session"];
+  let at = -1;
+  for (const step of order) {
+    const next = route.indexOf(step);
+    assert.ok(next > at, `${step} must come after the step before it`);
+    at = next;
+  }
+  // The web route shares the same rules rather than a copy of them.
+  const web = code(await readFile(repo("app/api/portal/requests/route.ts"), "utf8"));
+  for (const shared of ["checkPortalRequestRateLimit(access.session)", "validatePortalEnquiry(payload)", "createPortalEnquiry(access.session"]) {
+    assert.ok(web.includes(shared), `the web route must use ${shared}`);
+  }
+  // The enquiry never claims commercial authority: no customer link, no price.
+  const shared = code(await readFile(repo("app/portal/portal-requests.server.ts"), "utf8"));
+  assert.match(shared, /customer_id: null/);
+  assert.match(shared, /crm_match_state: "suggested"/);
+  assert.match(shared, /quoted_amount: null/);
+  assert.match(shared, /status: "new"/);
 });
 
 test("the mobile wrapper never runs a handler without an authorised session", async () => {

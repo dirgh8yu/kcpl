@@ -134,6 +134,22 @@ flutter build appbundle --release --dart-define=KCPL_FIREBASE_API_KEY=<key>   # 
 flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # App Store
 ```
 
+## Requesting a quote
+
+Customers ask for a quote from home the way they would ask for a ride: "Where is your
+cargo going?" opens a sheet with From and To on one card (places suggested as they type,
+their own routes offered first, and the route drawn once both are known), then how it
+should travel, the cargo and its weight, when, and one Request quote button. The
+confirmation carries the KCPL-Q reference.
+
+It is the web portal's enquiry, not a new kind of record: `POST /api/mobile/v1/requests`
+and the portal's own route share `app/portal/portal-requests.server.ts`, so the rules are
+one set: only an account owner may raise one, one rate limit covers both, the fields are
+checked the same way, and the enquiry lands with a *suggested* customer match and no
+price, for the KCPL desk to take up in the workflow it already uses. Requests from the app
+are marked `source: "customer_app"`. Logins that may not raise requests do not see the
+bar.
+
 ## Continue with Google and Apple
 
 Customers sign in with Apple or Google, in the app and on the web portal, with email and

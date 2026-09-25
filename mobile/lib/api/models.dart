@@ -30,6 +30,7 @@ class SessionView {
     required this.role,
     required this.canViewFinance,
     required this.locale,
+    this.canSubmitRequests = false,
   });
 
   final String email;
@@ -41,6 +42,9 @@ class SessionView {
   final bool canViewFinance;
   final String locale;
 
+  /// May raise quote requests (the portal's owner capability).
+  final bool canSubmitRequests;
+
   factory SessionView.fromJson(Map<String, dynamic> json) => SessionView(
     email: _s(json['email']),
     displayName: _s(json['displayName']),
@@ -50,7 +54,44 @@ class SessionView {
     role: _s(json['role'], 'member'),
     canViewFinance: _b(_map(json['capabilities'])['canViewFinance']),
     locale: _s(json['locale'], 'en'),
+    canSubmitRequests: _b(_map(json['capabilities'])['canSubmitRequests']),
   );
+}
+
+/// A quote request, as the portal's enquiry form takes one. [mode] is
+/// `air`, `sea`, `road` or `unsure`; [weightUnit] `kg`, `tonnes` or `lb`.
+class QuoteRequest {
+  const QuoteRequest({
+    required this.origin,
+    required this.destination,
+    this.mode = 'unsure',
+    this.cargoType = '',
+    this.weight = '',
+    this.weightUnit = 'kg',
+    this.timing = '',
+    this.requirements = '',
+  });
+
+  final String origin;
+  final String destination;
+  final String mode;
+  final String cargoType;
+  final String weight;
+  final String weightUnit;
+  final String timing;
+  final String requirements;
+
+  Map<String, String> toJson() => {
+    'kind': 'enquiry',
+    'origin': origin.trim(),
+    'destination': destination.trim(),
+    'mode': mode,
+    'cargoType': cargoType.trim(),
+    'weight': weight.trim(),
+    'weightUnit': weightUnit,
+    'timing': timing.trim(),
+    'requirements': requirements.trim(),
+  };
 }
 
 class Shipment {

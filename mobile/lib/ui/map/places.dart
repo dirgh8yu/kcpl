@@ -145,3 +145,34 @@ GeoPoint? locate(String? text) {
     return null;
   });
 }
+
+/// Places to suggest as someone types a route, by the names people use,
+/// Nepal's gateways first. Each is one [locate] knows, so a chosen place is
+/// always drawn on the map.
+const placeNames = [
+  // Nepal.
+  'Kathmandu', 'Kathmandu (TIA)', 'Birgunj', 'Birgunj ICD', 'Biratnagar', 'Bhairahawa', 'Nepalgunj', 'Kakarvitta',
+  'Pokhara', 'Janakpur', 'Hetauda', 'Butwal', 'Dhangadhi', 'Lalitpur', 'Bhaktapur', 'Tatopani', 'Rasuwagadhi',
+  // India: ports, borders, cities.
+  'Kolkata', 'Haldia', 'Visakhapatnam', 'Nhava Sheva', 'Mumbai', 'Mundra', 'Chennai', 'Kochi', 'New Delhi',
+  'Bengaluru', 'Ahmedabad', 'Hyderabad', 'Raxaul', 'Jogbani', 'Sunauli', 'Panitanki', 'Siliguri',
+  // Bangladesh, Sri Lanka, China.
+  'Chittagong', 'Dhaka', 'Mongla', 'Colombo', 'Shanghai', 'Ningbo', 'Shenzhen', 'Guangzhou', 'Hong Kong', 'Xiamen',
+  'Qingdao', 'Tianjin', 'Yiwu', 'Kunming', 'Chengdu', 'Lhasa', 'Kerung',
+  // East and South-East Asia.
+  'Busan', 'Seoul', 'Tokyo', 'Osaka', 'Singapore', 'Port Klang', 'Kuala Lumpur', 'Bangkok', 'Laem Chabang',
+  'Ho Chi Minh', 'Haiphong', 'Hanoi', 'Jakarta',
+  // The Gulf and beyond.
+  'Jebel Ali', 'Dubai', 'Abu Dhabi', 'Doha', 'Karachi', 'Istanbul', 'Rotterdam', 'Antwerp', 'Hamburg', 'Frankfurt',
+  'London', 'Paris', 'Milan', 'New York', 'Los Angeles', 'Sao Paulo', 'Sydney', 'Melbourne',
+];
+
+/// Up to [limit] of [placeNames] for what has been typed: names starting
+/// with it first, then any containing it.
+List<String> suggestPlaces(String query, {int limit = 5}) {
+  final needle = query.trim().toLowerCase();
+  if (needle.isEmpty) return const [];
+  final starts = placeNames.where((name) => name.toLowerCase().startsWith(needle));
+  final contains = placeNames.where((name) => !name.toLowerCase().startsWith(needle) && name.toLowerCase().contains(needle));
+  return [...starts, ...contains].take(limit).toList();
+}

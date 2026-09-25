@@ -13,6 +13,7 @@ import 'package:kcpl_customer/ui/map/route_map.dart';
 import 'package:kcpl_customer/ui/motion.dart';
 import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
 import 'package:kcpl_customer/ui/theme.dart';
+import 'package:kcpl_customer/ui/screens/home_shell.dart';
 import 'package:kcpl_customer/ui/widgets/large_title.dart';
 import 'package:kcpl_customer/ui/widgets/tab_bar.dart';
 
@@ -376,5 +377,68 @@ void main() {
     expect(auth.password, 'secret');
     expect(auth.linked?.providerId, 'google.com');
     expect(find.text('4 shipments on the way'), findsOneWidget);
+  });
+
+  testWidgets('a quote is requested the way a ride is: where from, where to, how, and one button', (tester) async {
+    final api = DemoApi();
+    await pumpApp(tester, api: api);
+    await signIn(tester);
+
+    await tester.tap(find.text('Where is your cargo going?'));
+    await settle(tester);
+    expect(find.text('Get a quote'), findsWidgets);
+
+    // Places are suggested as they are typed, and one tap takes them.
+    await tester.enterText(find.byType(TextField).at(0), 'kol');
+    await tester.pump();
+    await tester.tap(find.text('Kolkata').last);
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).at(1), 'birgunj i');
+    await tester.pump();
+    await tester.tap(find.text('Birgunj ICD').last);
+    await settle(tester);
+    expect(find.byType(RouteMap), findsOneWidget, reason: 'the route is drawn once both ends are known');
+
+    await tester.tap(find.text('Sea'));
+    final cargo = find.widgetWithText(TextField, 'What is it? Garments, machinery…');
+    final page = find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).last;
+    await tester.scrollUntilVisible(cargo, 200, scrollable: page);
+    await tester.enterText(cargo, 'Garments');
+    await tester.enterText(find.widgetWithText(TextField, 'Weight (optional)'), '1200');
+    await tester.tap(find.text('Request quote'));
+    await settle(tester);
+
+    expect(find.text('Quote requested'), findsOneWidget);
+    expect(find.textContaining('KCPL-Q-'), findsOneWidget);
+    final sent = api.quoteRequests.single.toJson();
+    expect(sent['origin'], 'Kolkata');
+    expect(sent['destination'], 'Birgunj ICD');
+    expect(sent['mode'], 'sea');
+    expect(sent['cargoType'], 'Garments');
+    expect(sent['weight'], '1200');
+    expect(sent['kind'], 'enquiry');
+
+    await tester.tap(find.text('Done'));
+    await settle(tester);
+    expect(find.text('Quote requested'), findsNothing);
+  });
+
+  testWidgets('a quote needs where from and where to, and a login that may not raise one sees no way in', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.text('Where is your cargo going?'));
+    await settle(tester);
+    await tester.tap(find.text('Request quote'));
+    await settle(tester);
+    expect(find.text('Add where it is coming from and going to.'), findsOneWidget);
+    await tester.tap(find.byType(SheetCloseButton));
+    await settle(tester);
+    final controller = AppScope.read(tester.element(find.byType(HomeShell)));
+    await controller.signOut();
+    await settle(tester);
+
+    await pumpApp(tester, api: MemberApi());
+    await signIn(tester);
+    expect(find.text('Where is your cargo going?'), findsNothing);
   });
 }
