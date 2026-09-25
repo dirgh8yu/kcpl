@@ -56,7 +56,7 @@ class HttpKcplApi extends KcplApi {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       return ApiException(response.statusCode, '${body['code'] ?? 'error'}', '${body['error'] ?? ''}');
     } on FormatException {
-      return ApiException(response.statusCode, 'error', 'Unexpected response from KCPL.');
+      return ApiException(response.statusCode, 'error', 'Unexpected response from KCPL (HTTP ${response.statusCode}).');
     }
   }
 

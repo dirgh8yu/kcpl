@@ -66,9 +66,10 @@ costs) stays on the web for now.
 cd mobile
 flutter pub get
 
-# Against production (or a preview deployment via KCPL_API_BASE):
-flutter run --dart-define=KCPL_FIREBASE_API_KEY=<web API key> \
-            --dart-define=KCPL_API_BASE=https://kapileshworcargo.com.np
+# Against production, on its App Hosting address
+# (https://kcpl--kcpl-82574.asia-southeast1.hosted.app; point KCPL_API_BASE
+# elsewhere for a preview deployment):
+flutter run --dart-define=KCPL_FIREBASE_API_KEY=<web API key>
 
 # With built-in sample data and no network, for screenshots and design review:
 flutter run --dart-define=KCPL_DEMO=true

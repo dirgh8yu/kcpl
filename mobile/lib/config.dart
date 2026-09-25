@@ -6,7 +6,9 @@
 class AppConfig {
   const AppConfig({required this.apiBase, required this.firebaseApiKey, required this.demo});
 
-  /// The KCPL site serving `/api/mobile/v1`.
+  /// The KCPL site serving `/api/mobile/v1`. Defaults to the App Hosting
+  /// address rather than the public domain, whose DNS still sends some
+  /// resolvers to the old WordPress host.
   final Uri apiBase;
   final String firebaseApiKey;
 
@@ -16,8 +18,10 @@ class AppConfig {
 
   bool get configured => demo || firebaseApiKey.isNotEmpty;
 
+  static const appHostingBase = 'https://kcpl--kcpl-82574.asia-southeast1.hosted.app';
+
   factory AppConfig.fromEnvironment() {
-    const base = String.fromEnvironment('KCPL_API_BASE', defaultValue: 'https://kapileshworcargo.com.np');
+    const base = String.fromEnvironment('KCPL_API_BASE', defaultValue: appHostingBase);
     const key = String.fromEnvironment('KCPL_FIREBASE_API_KEY');
     const demo = bool.fromEnvironment('KCPL_DEMO');
     return AppConfig(apiBase: Uri.parse(base), firebaseApiKey: key, demo: demo);
