@@ -6,6 +6,7 @@ import '../../ui/widgets/stats.dart' show Surface;
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/push_ui.dart';
 import '../ops_controller.dart';
+import 'scan_screen.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
 
@@ -42,6 +43,7 @@ class TodayScreen extends StatelessWidget {
     final controller = OpsScope.of(context);
     return AsyncPage<TodayBundle>(
       title: 'Today',
+      actions: [IconButton(tooltip: 'Scan', icon: const Icon(KIcons.scan, size: 22), onPressed: () => openScan(context))],
       load: () async {
         final bundle = await controller.api.today();
         controller.updateSession(bundle.session);

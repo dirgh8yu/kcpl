@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../api/kcpl_api.dart' show ApiException;
+import '../api/models.dart' show Attachment, SendProgress;
+import '../api/upload.dart';
 import '../auth/auth_repository.dart';
 import 'ops_models.dart';
 
@@ -15,6 +17,19 @@ abstract class OpsApi {
   Future<void> setCustomsStep(String reference, String stepId, bool completed);
   Future<AlertsPage> alerts();
   Future<void> markRead(String alertId);
+
+  /// A note, a photo, or both, on a job. [documentType] files the photo in
+  /// the job's vault; "other" unless said.
+  Future<FieldNote> addNote(
+    String reference, {
+    String text = '',
+    Attachment? photo,
+    String documentType = 'other',
+    SendProgress? onProgress,
+  });
+
+  /// Jobs in the caller's branches that a scanned or typed identifier means.
+  Future<List<ScanMatch>> lookup(String query);
   Future<void> registerPush(String token, String platform);
   Future<void> unregisterPush(String token);
 }
@@ -28,21 +43,30 @@ class HttpOpsApi implements OpsApi {
   final AuthRepository auth;
   final http.Client _client;
 
-  Uri _uri(String path) => base.replace(path: '/api/mobile/ops/v1/$path');
+  Uri _uri(String path) {
+    final query = path.indexOf('?');
+    return query < 0
+        ? base.replace(path: '/api/mobile/ops/v1/$path')
+        : base.replace(path: '/api/mobile/ops/v1/${path.substring(0, query)}', query: path.substring(query + 1));
+  }
 
-  Future<Map<String, dynamic>> _send(String path, {Object? body, String? method}) async {
+  Future<Map<String, dynamic>> _send(String path, {Object? body, String? method}) => _dispatch(() {
+    final request = http.Request(method ?? (body == null ? 'GET' : 'POST'), _uri(path));
+    if (body != null) {
+      request.headers['content-type'] = 'application/json';
+      request.body = jsonEncode(body);
+    }
+    return request;
+  });
+
+  /// One authenticated call, built afresh for the retry (a body is read once).
+  Future<Map<String, dynamic>> _dispatch(http.BaseRequest Function() build, {Duration timeout = const Duration(seconds: 30)}) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await auth.idToken(forceRefresh: attempt > 0);
       final http.Response response;
       try {
-        final request = http.Request(method ?? (body == null ? 'GET' : 'POST'), _uri(path))
-          ..headers.addAll({
-            'authorization': 'Bearer $token',
-            'accept': 'application/json',
-            if (body != null) 'content-type': 'application/json',
-          });
-        if (body != null) request.body = jsonEncode(body);
-        response = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 30));
+        final request = build()..headers.addAll({'authorization': 'Bearer $token', 'accept': 'application/json'});
+        response = await _client.send(request).then(http.Response.fromStream).timeout(timeout);
       } on TimeoutException {
         throw const ApiException(0, 'network', 'KCPL could not be reached.');
       } on http.ClientException {
@@ -93,6 +117,33 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<void> markRead(String alertId) => _send('alerts/${_ref(alertId)}', body: const {});
+
+  @override
+  Future<FieldNote> addNote(
+    String reference, {
+    String text = '',
+    Attachment? photo,
+    String documentType = 'other',
+    SendProgress? onProgress,
+  }) async {
+    final body = await _dispatch(() {
+      final multipart = http.MultipartRequest('POST', _uri('jobs/${_ref(reference)}/notes'))..fields['note'] = text;
+      if (photo != null) {
+        multipart
+          ..fields['documentType'] = documentType
+          ..files.add(http.MultipartFile.fromBytes('photo', photo.bytes, filename: photo.filename));
+      }
+      return ProgressingRequest.wrap(multipart, onProgress);
+    }, timeout: const Duration(minutes: 2));
+    return FieldNote.fromJson((body['note'] as Map?)?.cast<String, dynamic>() ?? const {});
+  }
+
+  @override
+  Future<List<ScanMatch>> lookup(String query) async {
+    final body = await _send('lookup?q=${Uri.encodeQueryComponent(query)}');
+    final rows = body['matches'] is List ? (body['matches'] as List).whereType<Map>() : const <Map>[];
+    return rows.map((e) => ScanMatch.fromJson(e.cast<String, dynamic>())).toList();
+  }
 
   @override
   Future<void> registerPush(String token, String platform) => _send('push', body: {'token': token, 'platform': platform});

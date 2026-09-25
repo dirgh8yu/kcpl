@@ -7,6 +7,7 @@ import '../../ui/widgets/filter_bar.dart';
 import '../ops_controller.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
+import 'scan_screen.dart';
 import '../../ui/icons.dart';
 
 enum JobFilter { mine, all, urgent, overdue, customs, exceptions }
@@ -58,6 +59,7 @@ class _JobsScreenState extends State<JobsScreen> {
     final controller = OpsScope.of(context);
     return AsyncPage<TodayBundle>(
       title: 'Jobs',
+      actions: [IconButton(tooltip: 'Scan', icon: const Icon(KIcons.scan, size: 22), onPressed: () => openScan(context))],
       load: controller.api.today,
       builder: (context, bundle) {
         final email = bundle.session.email;

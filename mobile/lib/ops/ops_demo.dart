@@ -1,3 +1,5 @@
+import '../api/kcpl_api.dart' show ApiException;
+import '../api/models.dart' show Attachment, SendProgress;
 import 'ops_api.dart';
 import 'ops_models.dart';
 
@@ -195,8 +197,68 @@ class DemoOpsApi implements OpsApi {
         profitTotals: const {},
         marginPercent: const {},
         blockers: const ['Required customs steps are still open.', 'Proof of delivery has not been recorded.'],
+        fieldNotes: [
+          ...?notes[reference],
+          if (job.exception)
+            FieldNote(
+              id: 'n1',
+              text: 'Truck parked at the Jogbani yard. Seal intact, driver waiting for the corrected list.',
+              author: 'Suresh Yadav',
+              createdAt: _at(5),
+              photoFilename: 'jogbani-yard.jpg',
+            ),
+        ],
       ),
     );
+  }
+
+  /// Notes added in this session, newest first.
+  final notes = <String, List<FieldNote>>{};
+
+  /// How the last photo was filed.
+  String? lastDocumentType;
+
+  @override
+  Future<FieldNote> addNote(
+    String reference, {
+    String text = '',
+    Attachment? photo,
+    String documentType = 'other',
+    SendProgress? onProgress,
+  }) async {
+    for (var step = 0; step <= 10; step++) {
+      onProgress?.call(step / 10);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+    }
+    final note = FieldNote(
+      id: 'note-${DateTime.now().microsecondsSinceEpoch}',
+      text: text.trim(),
+      author: _session.displayName,
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+      photoFilename: photo?.filename,
+    );
+    (notes[reference] ??= []).insert(0, note);
+    if (photo != null) lastDocumentType = documentType;
+    return note;
+  }
+
+  @override
+  Future<List<ScanMatch>> lookup(String query) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    String key(String? value) => (value ?? '').toUpperCase().replaceAll(RegExp('[^A-Z0-9]'), '');
+    final wanted = key(query);
+    if (wanted.length < 4) throw const ApiException(400, 'invalid', 'That is too short to look up.');
+    return [
+      for (final job in _jobs)
+        if (key(job.reference).contains(wanted) || key(job.mode == 'air' ? '784-55120934' : 'CMDU 7719230') == wanted)
+          ScanMatch(
+            reference: job.reference,
+            origin: job.origin,
+            destination: job.destination,
+            status: job.status,
+            carrierReference: job.mode == 'air' ? '784-55120934' : 'CMDU 7719230',
+          ),
+    ];
   }
 
   @override

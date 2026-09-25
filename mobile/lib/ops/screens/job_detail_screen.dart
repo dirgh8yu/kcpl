@@ -15,6 +15,7 @@ import '../../ui/widgets/common.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
+import 'field_note_screen.dart';
 
 class JobDetailScreen extends StatelessWidget {
   const JobDetailScreen({super.key, required this.reference, this.preview});
@@ -118,6 +119,27 @@ class JobDetailScreen extends StatelessWidget {
             child: Notice(title: blocker, emphasis: Emphasis.normal),
           ),
       ],
+      SectionHeader('From the field'),
+      RowGroup(
+        indent: RowGroup.iconIndent,
+        children: [
+          RowTile(
+            onTap: () async {
+              if (await openFieldNote(context, job.reference) && context.mounted) await AsyncPage.reload(context);
+            },
+            leading: Icon(KIcons.camera, size: 22, color: context.palette.accent),
+            title: Text('Add a note or photo', style: TextStyle(color: context.palette.accent)),
+          ),
+          for (final note in file.fieldNotes)
+            RowTile(
+              leading: Icon(note.photoFilename == null ? KIcons.note : KIcons.image, size: 20, color: context.palette.secondary),
+              title: Text(note.text.isEmpty ? (note.photoFilename ?? 'Photo') : note.text),
+              subtitle: Text(
+                [?note.author, formatDateTime(note.createdAt), if (note.photoFilename != null && note.text.isNotEmpty) 'Photo'].join(' · '),
+              ),
+            ),
+        ],
+      ),
       if (file.internalNotes != null) ...[
         SectionHeader('Notes'),
         GroupCard(

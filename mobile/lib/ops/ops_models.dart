@@ -288,7 +288,11 @@ class JobFile {
     required this.profitTotals,
     required this.marginPercent,
     required this.blockers,
+    this.fieldNotes = const [],
   });
+
+  /// Notes and photos added from the field, newest first.
+  final List<FieldNote> fieldNotes;
 
   /// The list-row fields, so the header renders from either source.
   final OpsJob job;
@@ -347,8 +351,50 @@ class JobFile {
       profitTotals: _money(j['profit_totals']),
       marginPercent: _money(j['margin_percent']),
       blockers: workflow == null ? const [] : _strings(workflow['blockers']),
+      fieldNotes: _list(body['fieldNotes']).map(FieldNote.fromJson).toList(),
     );
   }
+}
+
+/// A note left on a job from the field, with or without a photo. On the web
+/// it is Job File activity; a photo is in the job's Document Vault.
+class FieldNote {
+  const FieldNote({required this.id, required this.text, this.author, required this.createdAt, this.photoFilename});
+  final String id;
+  final String text;
+  final String? author;
+  final String createdAt;
+  final String? photoFilename;
+
+  factory FieldNote.fromJson(Map<String, dynamic> j) {
+    final photo = (j['photo'] as Map?)?.cast<String, dynamic>();
+    return FieldNote(
+      id: _s(j['id']),
+      text: _s(j['text']),
+      author: _ns(j['author']),
+      createdAt: _s(j['created_at']),
+      photoFilename: photo == null ? null : _ns(photo['filename']),
+    );
+  }
+}
+
+/// A job a scanned or typed identifier could mean, within the caller's
+/// branches.
+class ScanMatch {
+  const ScanMatch({required this.reference, required this.origin, required this.destination, required this.status, this.carrierReference});
+  final String reference;
+  final String origin;
+  final String destination;
+  final String status;
+  final String? carrierReference;
+
+  factory ScanMatch.fromJson(Map<String, dynamic> j) => ScanMatch(
+    reference: _s(j['reference']),
+    origin: _s(j['origin']),
+    destination: _s(j['destination']),
+    status: _s(j['status'], 'booking_confirmed'),
+    carrierReference: _ns(j['carrier_reference']),
+  );
 }
 
 class OpsAlert {
