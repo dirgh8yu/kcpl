@@ -1,18 +1,22 @@
+import 'dart:math' as math;
+
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../api/models.dart';
 import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../format.dart';
 import '../labels.dart';
+import '../map/route_map.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
-import '../widgets/stats.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/common.dart';
-import '../widgets/journey.dart' show IconTile;
-import '../widgets/shipment_card.dart';
+import '../widgets/detent_sheet.dart';
+import '../widgets/journey.dart';
 import '../widgets/push_ui.dart';
 import '../widgets/rows.dart';
 
@@ -31,22 +35,191 @@ Shipment? heroShipment(List<Shipment> shipments) {
   return dated.isNotEmpty ? dated.first : active.first;
 }
 
-class OverviewScreen extends StatelessWidget {
+/// Active shipments, the lead one first.
+List<Shipment> activeShipments(List<Shipment> shipments) {
+  final hero = heroShipment(shipments);
+  return [?hero, ...shipments.where((s) => !s.delivered && s != hero)];
+}
+
+/// Home, as a ride-hailing app opens: the map fills the screen with every
+/// shipment on its way, and a sheet over it says how things stand and lists
+/// them. Pull the sheet up for the rest of the account.
+class OverviewScreen extends StatefulWidget {
   const OverviewScreen({super.key, required this.onNavigate});
   final ValueChanged<HomeTab> onNavigate;
 
   @override
+  State<OverviewScreen> createState() => _OverviewScreenState();
+}
+
+class _OverviewScreenState extends State<OverviewScreen> {
+  final _extent = ValueNotifier<double>(0);
+  bool _refreshing = false;
+
+  Future<void> _pullToRefresh(Future<void> Function() refresh) async {
+    if (_refreshing) return;
+    setState(() => _refreshing = true);
+    try {
+      await refresh();
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _extent.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
     final controller = AppScope.of(context);
-    return AsyncPage<OverviewBundle>(
-      title: l.chromeOverview,
+    return AsyncPage<OverviewBundle>.custom(
       load: () async {
         final bundle = await controller.api.overview();
         controller.updateSession(bundle.session);
         return bundle;
       },
-      builder: (context, bundle) => _body(context, bundle),
+      layout: _layout,
+    );
+  }
+
+  Widget _layout(BuildContext context, OverviewBundle? bundle, Widget? failure, Future<void> Function() refresh) {
+    final p = context.palette;
+    final media = MediaQuery.of(context);
+    // The tab bar's height, which the scaffold reports as bottom padding.
+    final chrome = media.padding.bottom;
+    final active = bundle == null ? const <Shipment>[] : activeShipments(bundle.overview.shipments);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: p.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = constraints.maxHeight;
+          final top = media.padding.top;
+          final peek = chrome + 150;
+          final half = math.max(peek + 140, height * 0.5);
+          final full = height - top - 8;
+          final detents = [peek, half, full];
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: FleetMap(
+                  style: RouteMapStyle.page(p),
+                  focus: active.firstOrNull?.reference,
+                  padding: EdgeInsets.fromLTRB(28, top + 36, 28, half + 16),
+                  routes: [
+                    for (final s in active)
+                      FleetRoute(
+                        id: s.reference,
+                        origin: s.origin,
+                        destination: s.destination,
+                        current: s.currentLocation,
+                        progress: journeyFraction(s.status),
+                        vehicle: modeSolidIcon(s.mode),
+                        attention: s.status == 'exception',
+                      ),
+                  ],
+                ),
+              ),
+              // The map dims as the sheet comes up over it, as iOS dims what
+              // a sheet covers.
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _extent,
+                    builder: (context, extent, _) {
+                      final t = ((extent - half) / (full - half)).clamp(0.0, 1.0);
+                      return t == 0 ? const SizedBox.shrink() : ColoredBox(color: Colors.black.withValues(alpha: 0.22 * t));
+                    },
+                  ),
+                ),
+              ),
+              DetentSheet(
+                detents: (_) => detents,
+                initial: 1,
+                extent: _extent,
+                onRefresh: () => _pullToRefresh(refresh),
+                builder: (context, sheet) => _Sheet(
+                  controller: sheet,
+                  refreshing: _refreshing,
+                  bundle: bundle,
+                  active: active,
+                  failure: failure,
+                  bottom: chrome,
+                  onNavigate: widget.onNavigate,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The sheet over the map: a grabber, how things stand, then the account
+/// in grouped cards.
+class _Sheet extends StatelessWidget {
+  const _Sheet({
+    required this.controller,
+    required this.refreshing,
+    required this.bundle,
+    required this.active,
+    required this.failure,
+    required this.bottom,
+    required this.onNavigate,
+  });
+  final DetentSheetController controller;
+  final bool refreshing;
+  final OverviewBundle? bundle;
+  final List<Shipment> active;
+  final Widget? failure;
+  final double bottom;
+  final ValueChanged<HomeTab> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = raisedTheme(Theme.of(context));
+    final p = theme.extension<Palette>()!;
+    final bundle = this.bundle;
+    return Theme(
+      data: theme,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: p.paper,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: p.isDark ? 0.5 : 0.1),
+              blurRadius: 24,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: CustomScrollView(
+              controller: controller,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(child: _Grabber(onTap: controller.cycle)),
+                if (bundle != null)
+                  SliverList(delegate: SliverChildListDelegate(_body(context, bundle)))
+                else if (failure != null)
+                  SliverToBoxAdapter(child: failure)
+                else
+                  const SliverToBoxAdapter(child: Skeleton(rows: 4)),
+                SliverToBoxAdapter(child: SizedBox(height: bottom + 28)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -54,23 +227,16 @@ class OverviewScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final overview = bundle.overview;
     final session = bundle.session;
-    final hero = heroShipment(overview.shipments);
-    final rest = overview.shipments.where((s) => s != hero).take(5).toList();
     final finance = session.canViewFinance ? overview.finance : null;
+    final needsYou = overview.freeTime.isNotEmpty || overview.outstanding.isNotEmpty;
 
     return [
-      _AccountLine(session: session),
+      _Headline(session: session, overview: overview, active: active.length, refreshing: refreshing),
       PushPrimer(copy: customerPushCopy(l)),
-      if (hero != null)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
-          child: HeroShipment(shipment: hero),
-        ),
-      const SizedBox(height: 12),
-      _Figures(overview: overview, onNavigate: onNavigate),
-      if (overview.freeTime.isNotEmpty) ...[
-        SectionHeader(l.overviewFreeTimeTitle),
+      if (needsYou) ...[
+        SectionHeader(l.homeNeedsYou, top: 20),
         RowGroup(
+          indent: RowGroup.iconIndent,
           children: [
             for (final row in overview.freeTime)
               RowTile(
@@ -80,13 +246,6 @@ class OverviewScreen extends StatelessWidget {
                 subtitle: Text('${row.reference} · ${l.freeTimeDeadline} ${formatShortDate(row.status.deadline)}'),
                 chevron: true,
               ),
-          ],
-        ),
-      ],
-      if (overview.outstanding.isNotEmpty) ...[
-        SectionHeader(l.overviewOutstandingTitle),
-        RowGroup(
-          children: [
             for (final item in overview.outstanding)
               RowTile(
                 onTap: () => openShipment(context, item.reference),
@@ -102,103 +261,127 @@ class OverviewScreen extends StatelessWidget {
           ],
         ),
       ],
+      SectionHeader(
+        l.overviewMovementsTitle,
+        top: needsYou ? 28 : 20,
+        actionLabel: l.overviewAllShipments,
+        onAction: () => onNavigate(HomeTab.shipments),
+      ),
+      if (active.isEmpty)
+        GroupCard(
+          child: EmptyState(
+            icon: KIcons.shipments,
+            title: overview.deliveredCount > 0 ? l.overviewEmptyDeliveredTitle : l.overviewEmptyNoneTitle,
+            description: overview.deliveredCount > 0 ? l.overviewEmptyDeliveredDescription : l.overviewEmptyNoneDescription,
+          ),
+        )
+      else
+        RowGroup(indent: RowGroup.iconIndent, children: [for (final shipment in active.take(8)) ShipmentRow(shipment)]),
       if (finance != null && finance.balances.isNotEmpty) ...[
         SectionHeader(l.overviewAccountTitle, actionLabel: l.overviewViewInvoices, onAction: () => onNavigate(HomeTab.invoices)),
-        for (final balance in finance.balances) BalanceFigure(balance: balance),
+        RowGroup(children: [for (final balance in finance.balances) BalanceFigure(balance: balance)]),
       ],
-      // The hero already leads; the list carries the others.
-      if (hero == null || rest.isNotEmpty)
-        SectionHeader(l.overviewMovementsTitle, actionLabel: l.overviewAllShipments, onAction: () => onNavigate(HomeTab.shipments)),
-      if (hero == null)
-        EmptyState(
-          icon: KIcons.shipments,
-          title: overview.deliveredCount > 0 ? l.overviewEmptyDeliveredTitle : l.overviewEmptyNoneTitle,
-          description: overview.deliveredCount > 0 ? l.overviewEmptyDeliveredDescription : l.overviewEmptyNoneDescription,
-        )
-      else if (rest.isNotEmpty)
-        RowGroup(children: [for (final shipment in rest) ShipmentRow(shipment)]),
       SectionHeader(l.overviewPaperworkTitle, actionLabel: l.overviewAllDocuments, onAction: () => onNavigate(HomeTab.documents)),
       if (overview.documents.isEmpty)
-        EmptyState(icon: KIcons.document, title: l.overviewNoDocumentsTitle, description: l.overviewNoDocumentsDescription)
+        GroupCard(
+          child: EmptyState(icon: KIcons.document, title: l.overviewNoDocumentsTitle, description: l.overviewNoDocumentsDescription),
+        )
       else
-        RowGroup(children: [for (final document in overview.documents.take(3)) DocumentRowTile(document)]),
+        RowGroup(indent: RowGroup.iconIndent, children: [for (final document in overview.documents.take(3)) DocumentRowTile(document)]),
     ];
   }
 }
 
-/// The four figures that matter, in one quiet row.
-class _Figures extends StatelessWidget {
-  const _Figures({required this.overview, required this.onNavigate});
+/// The sheet's handle. A tap moves it to the next height.
+class _Grabber extends StatelessWidget {
+  const _Grabber({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    key: const ValueKey('home-sheet-grabber'),
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: SizedBox(
+      height: 22,
+      child: Align(
+        alignment: const Alignment(0, -0.2),
+        child: Container(
+          width: 36,
+          height: 5,
+          decoration: BoxDecoration(color: context.palette.tertiary, borderRadius: BorderRadius.circular(3)),
+        ),
+      ),
+    ),
+  );
+}
+
+/// How things stand, in a sentence and a line: which account, how many
+/// shipments are on their way, and whether any needs the customer.
+class _Headline extends StatelessWidget {
+  const _Headline({required this.session, required this.overview, required this.active, required this.refreshing});
+  final SessionView session;
   final Overview overview;
-  final ValueChanged<HomeTab> onNavigate;
+  final int active;
+
+  /// A pull to refresh is under way: a small spinner beside the account.
+  final bool refreshing;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    void shipments() => onNavigate(HomeTab.shipments);
-    return StatRow(
-      stats: [
-        Stat(l.overviewKpiActive, overview.activeCount, onTap: shipments),
-        Stat(l.overviewKpiInTransit, overview.inTransitCount, onTap: shipments),
-        Stat(l.overviewKpiArriving, overview.arrivingCount, onTap: shipments),
-        Stat(l.overviewKpiAttention, overview.attentionCount, attention: true, onTap: shipments),
-      ],
-    );
-  }
-}
-
-/// Which customer this is, under the title. An agent taps it to switch.
-class _AccountLine extends StatelessWidget {
-  const _AccountLine({required this.session});
-  final SessionView session;
-
-  @override
-  Widget build(BuildContext context) {
     final p = context.palette;
     final many = session.customers.length > 1;
-    final label = Row(
+    final attention = overview.attentionCount;
+    final arriving = overview.arrivingCount;
+    final account = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
           child: Text(
             session.customerName,
-            style: context.type.bodyLarge?.copyWith(color: p.secondary),
+            style: context.type.bodyMedium?.copyWith(color: p.secondary),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (many) Icon(KIcons.expand, size: 14, color: p.secondary),
+        if (many) ...[const SizedBox(width: 3), Icon(KIcons.expand, size: 13, color: p.secondary)],
+        if (refreshing) ...[const SizedBox(width: 8), CupertinoActivityIndicator(radius: 7, color: p.secondary)],
       ],
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kGutter - 4),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: many
-            ? InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => showCustomerSheet(context),
-                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), child: label),
-              )
-            : Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: label),
+      padding: const EdgeInsets.fromLTRB(kGutter + 4, 2, kGutter + 4, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // An agent switches customer from here.
+          if (many) GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => showCustomerSheet(context), child: account) else account,
+          const SizedBox(height: 2),
+          Text(l.homeOnTheWay(active), style: context.type.headlineMedium),
+          const SizedBox(height: 3),
+          Text.rich(
+            TextSpan(
+              children: [
+                if (attention > 0)
+                  TextSpan(
+                    text: l.homeNeedsAttention(attention),
+                    style: TextStyle(color: p.accent),
+                  ),
+                if (attention > 0 && arriving > 0) const TextSpan(text: '  ·  '),
+                if (arriving > 0) TextSpan(text: l.homeArriving(arriving)),
+                if (attention == 0 && arriving == 0 && active > 0) TextSpan(text: l.homeAllClear),
+              ],
+            ),
+            style: context.type.bodyMedium?.copyWith(color: p.secondary),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// The lead shipment, as the dark pass.
-class HeroShipment extends StatelessWidget {
-  const HeroShipment({super.key, required this.shipment});
-  final Shipment shipment;
-
-  @override
-  Widget build(BuildContext context) => JourneyGraphic(
-    shipment: shipment,
-    onTap: () => openShipment(context, shipment.reference, preview: shipment),
-  );
-}
-
-/// One currency's balance, in the large figure a balance deserves.
+/// One currency's balance as a row: the amount outstanding, and whether
+/// any of it is overdue.
 class BalanceFigure extends StatelessWidget {
   const BalanceFigure({super.key, required this.balance, this.detail = false});
   final CurrencyBalance balance;
@@ -208,28 +391,28 @@ class BalanceFigure extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(kGutter, 8, kGutter, 12),
+      padding: const EdgeInsets.fromLTRB(kGutter, 12, kGutter, 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(l.overviewCurrencyOutstanding(balance.currency), style: context.type.bodySmall),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
             child: FigureText(
               value: balance.outstanding,
               format: (v) => formatMoney(v, balance.currency),
-              style: context.type.headlineMedium,
+              style: context.type.headlineMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           if (balance.overdue > 0)
             StatusText(l.overviewAmountOverdue(formatMoney(balance.overdue, balance.currency)), Emphasis.attention)
           else
             StatusText(l.overviewNothingOverdue, Emphasis.muted),
           if (detail) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               l.invInvoicedReceipted(formatMoney(balance.invoiced, balance.currency), formatMoney(balance.paid, balance.currency)),
               style: context.type.bodySmall,

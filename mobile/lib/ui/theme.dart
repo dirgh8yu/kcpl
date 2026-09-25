@@ -8,10 +8,10 @@ class KcplColors {
   static const crimson = Color(0xFFDC143C);
 }
 
-/// Black and white, with greys only for hierarchy. Crimson is kept for the
-/// few things that deserve it: the brand mark, journey progress, whatever
-/// needs the customer to act or is costing them money, and the glow of the
-/// one dark pass that leads each home screen.
+/// Apple's grouped look: a soft grey page with white cells on it (black and
+/// graphite in dark mode), label greys for hierarchy, and hairline
+/// separators. Everything is black, white or grey; crimson is kept for the
+/// brand, the one primary action, and whatever needs the customer to act.
 @immutable
 class Palette extends ThemeExtension<Palette> {
   const Palette({
@@ -23,52 +23,75 @@ class Palette extends ThemeExtension<Palette> {
     required this.fill,
     required this.accent,
     required this.surface,
+    required this.pressed,
     required this.shadow,
-    required this.glow,
   });
 
+  /// Primary text and icons (label).
   final Color ink;
+
+  /// The page behind grouped cells (systemGroupedBackground).
   final Color paper;
+
+  /// Supporting text (secondaryLabel).
   final Color secondary;
+
+  /// Placeholder text, chevrons, disabled (tertiaryLabel).
   final Color tertiary;
+
+  /// Separators between rows and around chrome.
   final Color hairline;
+
+  /// Search fields, tracks, skeleton bars (a system fill).
   final Color fill;
   final Color accent;
 
-  /// A raised card: white on white is lifted by [shadow]; on black it is a
-  /// step up in tone, since shadows vanish there.
+  /// A grouped cell or card (secondarySystemGroupedBackground).
   final Color surface;
-  final Color shadow;
 
-  /// The crimson that light gives off: behind the pass, under the route.
-  final Color glow;
+  /// A cell under the finger: the instant grey wash of a native list.
+  final Color pressed;
+
+  /// Under floating chrome in light mode; nothing in dark, where shadows vanish.
+  final Color shadow;
 
   static const light = Palette(
     ink: Color(0xFF000000),
-    paper: Color(0xFFFFFFFF),
-    secondary: Color(0xFF737373),
-    tertiary: Color(0xFFA3A3A3),
-    hairline: Color(0xFFEBEBEB),
-    fill: Color(0xFFF5F5F5),
+    paper: Color(0xFFF2F2F7),
+    secondary: Color(0xFF8A8A8E),
+    tertiary: Color(0xFFC4C4C7),
+    hairline: Color(0xFFC6C6C8),
+    fill: Color(0xFFE9E9EE),
     accent: KcplColors.crimson,
     surface: Color(0xFFFFFFFF),
-    shadow: Color(0x0A000000),
-    glow: Color(0xFFFF2D55),
+    pressed: Color(0xFFD1D1D6),
+    shadow: Color(0x14000000),
   );
 
   // Crimson lifted a step on black, or it reads as maroon.
   static const dark = Palette(
     ink: Color(0xFFFFFFFF),
     paper: Color(0xFF000000),
-    secondary: Color(0xFF9A9AA0),
-    tertiary: Color(0xFF5C5C62),
-    hairline: Color(0xFF232326),
-    fill: Color(0xFF141416),
+    secondary: Color(0xFF8E8E93),
+    tertiary: Color(0xFF5A5A5F),
+    hairline: Color(0xFF38383A),
+    fill: Color(0xFF1C1C1E),
     accent: Color(0xFFFF3358),
-    surface: Color(0xFF0F0F11),
+    surface: Color(0xFF1C1C1E),
+    pressed: Color(0xFF3A3A3C),
     shadow: Color(0x00000000),
-    glow: Color(0xFFFF2D55),
   );
+
+  /// The same palette one layer up, for sheets: in dark mode a sheet is
+  /// graphite and its cells a step lighter, as iOS lifts modal surfaces.
+  Palette get raised => isDark
+      ? copyWith(
+          paper: const Color(0xFF1C1C1E),
+          surface: const Color(0xFF2C2C2E),
+          fill: const Color(0xFF2C2C2E),
+          hairline: const Color(0xFF3D3D40),
+        )
+      : this;
 
   @override
   Palette copyWith({
@@ -80,8 +103,8 @@ class Palette extends ThemeExtension<Palette> {
     Color? fill,
     Color? accent,
     Color? surface,
+    Color? pressed,
     Color? shadow,
-    Color? glow,
   }) => Palette(
     ink: ink ?? this.ink,
     paper: paper ?? this.paper,
@@ -91,8 +114,8 @@ class Palette extends ThemeExtension<Palette> {
     fill: fill ?? this.fill,
     accent: accent ?? this.accent,
     surface: surface ?? this.surface,
+    pressed: pressed ?? this.pressed,
     shadow: shadow ?? this.shadow,
-    glow: glow ?? this.glow,
   );
 
   @override
@@ -107,23 +130,12 @@ class Palette extends ThemeExtension<Palette> {
       fill: Color.lerp(fill, other.fill, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
+      pressed: Color.lerp(pressed, other.pressed, t)!,
       shadow: Color.lerp(shadow, other.shadow, t)!,
-      glow: Color.lerp(glow, other.glow, t)!,
     );
   }
 
-  bool get isDark => paper.computeLuminance() < 0.5;
-
-  /// A raised card's shadow: a wide soft one for depth and a tight one for
-  /// contact, as real objects cast.
-  List<BoxShadow> get lift => [
-    BoxShadow(color: shadow, blurRadius: 24, offset: const Offset(0, 8)),
-    BoxShadow(
-      color: shadow.withValues(alpha: shadow.a * 0.6),
-      blurRadius: 3,
-      offset: const Offset(0, 1),
-    ),
-  ];
+  bool get isDark => ink.computeLuminance() > 0.5;
 }
 
 extension PaletteOf on BuildContext {
@@ -142,92 +154,106 @@ extension EmphasisColor on Palette {
   };
 }
 
-/// Horizontal page margin. Every row, header and hero aligns to it.
-const kGutter = 20.0;
+/// The inset of grouped cards from the screen edge, and of text inside them.
+const kGutter = 16.0;
 
-const _tabular = [FontFeature.tabularFigures()];
+/// Corner radius of a grouped card.
+const kCardRadius = 12.0;
 
-ThemeData kcplTheme(Brightness brightness) {
+/// Theme for a subtree one layer up (a sheet): see [Palette.raised].
+ThemeData raisedTheme(ThemeData theme) {
+  final p = theme.extension<Palette>()!;
+  if (!p.isDark) return theme;
+  final raised = p.raised;
+  return theme.copyWith(
+    scaffoldBackgroundColor: raised.paper,
+    canvasColor: raised.paper,
+    inputDecorationTheme: theme.inputDecorationTheme.copyWith(fillColor: raised.fill),
+    extensions: [raised],
+  );
+}
+
+ThemeData kcplTheme(Brightness brightness, {TargetPlatform? platform}) {
   final dark = brightness == Brightness.dark;
   final p = dark ? Palette.dark : Palette.light;
 
   final scheme = ColorScheme(
     brightness: brightness,
     primary: p.ink,
-    onPrimary: p.paper,
+    onPrimary: p.surface,
     primaryContainer: p.fill,
     onPrimaryContainer: p.ink,
     secondary: p.ink,
-    onSecondary: p.paper,
+    onSecondary: p.surface,
     secondaryContainer: p.fill,
     onSecondaryContainer: p.ink,
     tertiary: p.accent,
     onTertiary: Colors.white,
     error: p.accent,
     onError: Colors.white,
-    surface: p.paper,
+    surface: p.surface,
     onSurface: p.ink,
     onSurfaceVariant: p.secondary,
-    surfaceContainerLowest: p.paper,
-    surfaceContainerLow: p.fill,
-    surfaceContainer: p.fill,
-    surfaceContainerHigh: p.fill,
+    surfaceContainerLowest: p.surface,
+    surfaceContainerLow: p.surface,
+    surfaceContainer: p.surface,
+    surfaceContainerHigh: p.surface,
     surfaceContainerHighest: p.fill,
     outline: p.hairline,
     outlineVariant: p.hairline,
     surfaceTint: Colors.transparent,
     inverseSurface: p.ink,
-    onInverseSurface: p.paper,
+    onInverseSurface: p.surface,
   );
 
+  // No font family: SF Pro on iPhone, Roboto on Android, each with the
+  // platform's own metrics.
   final base = ThemeData(
     colorScheme: scheme,
     useMaterial3: true,
     brightness: brightness,
+    platform: platform,
     scaffoldBackgroundColor: p.paper,
     canvasColor: p.paper,
-    fontFamily: 'Inter',
     fontFamilyFallback: const ['NotoSansDevanagari'],
     // Press feedback is an instant grey wash, like a native list, rather
     // than an ink ripple spreading from the finger.
     splashFactory: NoSplash.splashFactory,
-    highlightColor: p.fill,
-    hoverColor: p.fill,
+    highlightColor: p.pressed,
+    hoverColor: Colors.transparent,
+    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     extensions: [p],
   );
 
-  // Display sizes are set in Inter Tight, reading sizes in Inter. Tracking
-  // tightens as size grows; body stays near zero.
+  // Apple's text styles, with Apple's tracking for each size: open at
+  // display sizes and 11pt, tighter through the reading sizes. Hierarchy
+  // comes from weight and grey before size.
   final t = base.textTheme.apply(bodyColor: p.ink, displayColor: p.ink);
-  TextStyle? display(TextStyle? style, double size, FontWeight weight, double tracking, double height) => style?.copyWith(
-    fontFamily: 'InterTight',
-    fontSize: size,
-    fontWeight: weight,
-    letterSpacing: tracking,
-    height: height,
-    fontFeatures: _tabular,
-  );
-  // Tracking follows size: tighter as type grows, a touch open below 13pt.
-  // A quiet scale, as the best phone apps keep it: one 28pt title per
-  // page, 17pt section titles, 15pt reading text and 13pt for the rest.
-  // Figures stay small; hierarchy comes from weight and grey, not size.
+  TextStyle? style(TextStyle? from, double size, FontWeight weight, double tracking, double height) =>
+      from?.copyWith(fontSize: size, fontWeight: weight, letterSpacing: tracking, height: height);
   final text = t.copyWith(
-    displaySmall: display(t.displaySmall, 28, FontWeight.w700, -0.7, 1.12),
-    headlineLarge: display(t.headlineLarge, 26, FontWeight.w700, -0.6, 1.15),
-    headlineMedium: display(t.headlineMedium, 22, FontWeight.w700, -0.5, 1.18),
-    headlineSmall: display(t.headlineSmall, 20, FontWeight.w600, -0.4, 1.2),
-    titleLarge: t.titleLarge?.copyWith(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.3, height: 1.25),
-    titleMedium: t.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, height: 1.3),
-    titleSmall: t.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.15, height: 1.3),
-    bodyLarge: t.bodyLarge?.copyWith(fontSize: 15, letterSpacing: -0.15, height: 1.4),
-    bodyMedium: t.bodyMedium?.copyWith(fontSize: 14, letterSpacing: -0.1, height: 1.4),
-    bodySmall: t.bodySmall?.copyWith(fontSize: 13, letterSpacing: 0, height: 1.35, color: p.secondary),
-    labelLarge: t.labelLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.15),
-    labelMedium: t.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.1),
-    labelSmall: t.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+    // Large title.
+    displaySmall: style(t.displaySmall, 32, FontWeight.w700, 0.37, 1.2),
+    // Title 1, 2, 3.
+    headlineLarge: style(t.headlineLarge, 28, FontWeight.w700, 0.36, 1.2),
+    headlineMedium: style(t.headlineMedium, 22, FontWeight.w700, -0.26, 1.27),
+    headlineSmall: style(t.headlineSmall, 20, FontWeight.w600, -0.45, 1.25),
+    // Headline.
+    titleLarge: style(t.titleLarge, 17, FontWeight.w600, -0.43, 1.29),
+    // Callout and subheadline, emphasised.
+    titleMedium: style(t.titleMedium, 16, FontWeight.w600, -0.31, 1.31),
+    titleSmall: style(t.titleSmall, 15, FontWeight.w600, -0.23, 1.33),
+    // Body, subheadline, footnote.
+    bodyLarge: style(t.bodyLarge, 17, FontWeight.w400, -0.43, 1.29),
+    bodyMedium: style(t.bodyMedium, 15, FontWeight.w400, -0.23, 1.33),
+    bodySmall: style(t.bodySmall, 13, FontWeight.w400, -0.08, 1.38)?.copyWith(color: p.secondary),
+    // Buttons, caption 1, caption 2.
+    labelLarge: style(t.labelLarge, 17, FontWeight.w600, -0.43, 1.29),
+    labelMedium: style(t.labelMedium, 12, FontWeight.w400, 0, 1.33),
+    labelSmall: style(t.labelSmall, 11, FontWeight.w500, 0.06, 1.18),
   );
 
-  final radius = BorderRadius.circular(12);
+  final radius = BorderRadius.circular(kCardRadius);
 
   return base.copyWith(
     textTheme: text,
@@ -237,53 +263,46 @@ ThemeData kcplTheme(Brightness brightness) {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: false,
+      centerTitle: true,
       systemOverlayStyle: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: p.paper,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      height: 62,
-      indicatorColor: Colors.transparent,
-      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(size: 24, color: states.contains(WidgetState.selected) ? p.ink : p.tertiary),
-      ),
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => text.labelSmall?.copyWith(
-          color: states.contains(WidgetState.selected) ? p.ink : p.tertiary,
-          fontWeight: states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
-        ),
-      ),
-    ),
-    dividerTheme: DividerThemeData(color: p.hairline, space: 0.5, thickness: 0.5),
+    dividerTheme: DividerThemeData(color: p.hairline, space: 0.33, thickness: 0.33),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: p.ink,
-        foregroundColor: p.paper,
+        foregroundColor: p.surface,
         disabledBackgroundColor: p.fill,
         disabledForegroundColor: p.tertiary,
-        minimumSize: const Size.fromHeight(48),
+        minimumSize: const Size.fromHeight(50),
         shape: RoundedRectangleBorder(borderRadius: radius),
-        textStyle: text.titleMedium,
+        textStyle: text.labelLarge,
         splashFactory: NoSplash.splashFactory,
+        elevation: 0,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: p.ink,
-        side: BorderSide(color: p.hairline),
+        backgroundColor: p.surface,
+        side: BorderSide.none,
         minimumSize: const Size(0, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         shape: RoundedRectangleBorder(borderRadius: radius),
-        textStyle: text.labelLarge,
+        textStyle: text.titleSmall,
+        splashFactory: NoSplash.splashFactory,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: p.ink, textStyle: text.labelLarge, splashFactory: NoSplash.splashFactory),
+      style: TextButton.styleFrom(
+        foregroundColor: p.ink,
+        textStyle: text.bodyLarge,
+        splashFactory: NoSplash.splashFactory,
+        overlayColor: Colors.transparent,
+      ),
     ),
-    iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: p.ink)),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: p.ink, splashFactory: NoSplash.splashFactory),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: p.fill,
@@ -296,47 +315,45 @@ ThemeData kcplTheme(Brightness brightness) {
       border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
       disabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: BorderSide(color: p.ink, width: 1.5),
-      ),
+      focusedBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
     ),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: p.ink,
       selectionHandleColor: p.ink,
       selectionColor: p.ink.withValues(alpha: 0.15),
     ),
+    switchTheme: SwitchThemeData(
+      // The iOS switch is green; this one is ink, like the rest.
+      trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? p.ink : null),
+    ),
+    // Filter chips as iOS draws a set of choices: white capsules on the
+    // grouped page, the chosen one in ink.
     chipTheme: ChipThemeData(
-      backgroundColor: p.fill,
+      backgroundColor: p.surface,
       selectedColor: p.ink,
       disabledColor: p.fill,
       side: BorderSide.none,
       shape: const StadiumBorder(),
       showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-      labelStyle: WidgetStateTextStyle.resolveWith(
-        (states) => (text.labelLarge ?? const TextStyle()).copyWith(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: states.contains(WidgetState.selected) ? p.paper : p.ink,
-        ),
-      ),
+      labelStyle: text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
     ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(color: p.ink, circularTrackColor: Colors.transparent),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: p.secondary, circularTrackColor: Colors.transparent),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: p.ink,
-      contentTextStyle: text.bodyMedium?.copyWith(color: p.paper),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: dark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
+      contentTextStyle: text.bodyMedium?.copyWith(color: Colors.white),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 0,
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: p.paper,
+      backgroundColor: p.raised.paper,
       surfaceTintColor: Colors.transparent,
       showDragHandle: true,
       dragHandleColor: p.tertiary,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      dragHandleSize: const Size(36, 5),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(14))),
     ),
     listTileTheme: ListTileThemeData(iconColor: p.ink, textColor: p.ink),
     pageTransitionsTheme: const PageTransitionsTheme(

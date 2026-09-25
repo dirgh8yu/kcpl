@@ -97,36 +97,45 @@ class PushPrimer extends StatelessWidget {
             : Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: Surface(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 6, 6),
-                  child: Column(
+                  padding: const EdgeInsets.fromLTRB(kGutter, 14, 8, 6),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Text(copy.primerTitle, style: context.type.titleSmall),
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Icon(KIcons.alertsOn, size: 20, color: p.ink),
                       ),
-                      const SizedBox(height: 2),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Text(copy.primerBody, style: context.type.bodySmall),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => push.dismissPrimer(),
-                            style: TextButton.styleFrom(
-                              foregroundColor: p.secondary,
-                              textStyle: context.type.labelLarge?.copyWith(fontSize: 14),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Text(copy.primerTitle, style: context.type.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
                             ),
-                            child: Text(copy.notNow),
-                          ),
-                          TextButton(
-                            onPressed: () => _turnOn(context),
-                            style: TextButton.styleFrom(foregroundColor: p.ink, textStyle: context.type.labelLarge?.copyWith(fontSize: 14)),
-                            child: Text(copy.turnOn),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Text(copy.primerBody, style: context.type.bodyMedium?.copyWith(color: p.secondary)),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () => push.dismissPrimer(),
+                                  style: TextButton.styleFrom(foregroundColor: p.secondary, textStyle: context.type.bodyMedium),
+                                  child: Text(copy.notNow),
+                                ),
+                                TextButton(
+                                  onPressed: () => _turnOn(context),
+                                  style: TextButton.styleFrom(foregroundColor: p.ink, textStyle: context.type.titleSmall),
+                                  child: Text(copy.turnOn),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

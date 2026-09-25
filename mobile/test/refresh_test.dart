@@ -158,7 +158,8 @@ void main() {
     await tester.pump(const Duration(minutes: 1));
     await tester.pump(const Duration(seconds: 1));
     expect(api.calls, 2);
-    await tester.fling(find.byType(Scrollable).first, const Offset(0, 400), 1000);
+    // Home's sheet refreshes when pulled down past its lowest height.
+    await tester.fling(find.byKey(const ValueKey('home-sheet-grabber')), const Offset(0, 400), 1000);
     await settle(tester);
     expect(api.calls, 3);
     expect(find.textContaining('FRESH', findRichText: true), findsWidgets);

@@ -23,7 +23,7 @@ class SheetRoute<T> extends PageRoute<T> {
   bool get maintainState => true;
 
   @override
-  Color? get barrierColor => Colors.black.withValues(alpha: 0.38);
+  Color? get barrierColor => Colors.black.withValues(alpha: 0.25);
 
   @override
   String? get barrierLabel => null;
@@ -184,54 +184,60 @@ class _SheetFrameState extends State<_SheetFrame> {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
+    // A sheet is one layer up: in dark mode it lifts to graphite.
+    final theme = raisedTheme(Theme.of(context));
+    final p = theme.extension<Palette>()!;
     final media = MediaQuery.of(context);
     final top = media.padding.top + 10;
+    const radius = BorderRadius.vertical(top: Radius.circular(16));
     return Padding(
       padding: EdgeInsets.only(top: top),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 30, offset: const Offset(0, -4))],
+          borderRadius: radius,
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 24, offset: const Offset(0, -2))],
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-          child: ColoredBox(
-            color: p.paper,
-            child: Listener(
-              onPointerMove: _move,
-              onPointerUp: _up,
-              onPointerCancel: _up,
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification.depth == 0) _pixels = notification.metrics.pixels;
-                  return false;
-                },
-                // Content stops at the top rather than bouncing, so the pull
-                // moves the sheet instead.
-                child: ScrollConfiguration(
-                  behavior: const _SheetScroll(),
-                  child: MediaQuery(
-                    data: media.removePadding(removeTop: true),
-                    child: Stack(
-                      children: [
-                        widget.child,
-                        // The grabber, so the sheet says it can be pulled.
-                        Positioned(
-                          top: 6,
-                          left: 0,
-                          right: 0,
-                          child: IgnorePointer(
-                            child: Center(
-                              child: Container(
-                                width: 36,
-                                height: 5,
-                                decoration: BoxDecoration(color: p.tertiary.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(3)),
+          borderRadius: radius,
+          child: Theme(
+            data: theme,
+            child: ColoredBox(
+              color: p.paper,
+              child: Listener(
+                onPointerMove: _move,
+                onPointerUp: _up,
+                onPointerCancel: _up,
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.depth == 0) _pixels = notification.metrics.pixels;
+                    return false;
+                  },
+                  // Content stops at the top rather than bouncing, so the pull
+                  // moves the sheet instead.
+                  child: ScrollConfiguration(
+                    behavior: const _SheetScroll(),
+                    child: MediaQuery(
+                      data: media.removePadding(removeTop: true),
+                      child: Stack(
+                        children: [
+                          widget.child,
+                          // The grabber, so the sheet says it can be pulled.
+                          Positioned(
+                            top: 5,
+                            left: 0,
+                            right: 0,
+                            child: IgnorePointer(
+                              child: Center(
+                                child: Container(
+                                  width: 36,
+                                  height: 5,
+                                  decoration: BoxDecoration(color: p.tertiary, borderRadius: BorderRadius.circular(3)),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

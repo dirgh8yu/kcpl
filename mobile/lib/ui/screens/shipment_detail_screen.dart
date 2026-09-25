@@ -42,15 +42,15 @@ class ShipmentDetailScreen extends StatelessWidget {
     final p = context.palette;
     return [
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
           [modeLabel(l, shipment.mode), if (shipment.carrier != null) shipment.carrier!].join(' · '),
-          style: context.type.bodyLarge?.copyWith(color: p.secondary),
+          style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
-      // The pass: where from, where to, how far along, and when.
+      // The trip: where from, where to, how far along, and when.
       Padding(
-        padding: const EdgeInsets.fromLTRB(kGutter, 22, kGutter, 0),
+        padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
         child: JourneyGraphic(shipment: shipment),
       ),
     ];
@@ -65,13 +65,13 @@ class ShipmentDetailScreen extends StatelessWidget {
     return [
       ..._lead(context, shipment),
       if (shipment.customerNote != null) ...[
-        const SizedBox(height: 28),
+        const SizedBox(height: 16),
         Notice(title: shipment.customerNote!, emphasis: emphasis == Emphasis.attention ? Emphasis.attention : Emphasis.normal),
       ],
       if (freeTime != null) ...[
         SectionHeader(l.freeTimeLabel),
         Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 8),
+          padding: const EdgeInsets.only(bottom: 12),
           child: Notice(
             emphasis: freeTimeEmphasis(freeTime.status),
             title: freeTimeSummary(l, freeTime.location, freeTime.status),
@@ -106,10 +106,7 @@ class ShipmentDetailScreen extends StatelessWidget {
               Builder(
                 builder: (context) {
                   final (label, state) = requirementState(l, row.state);
-                  return RowTile(
-                    title: Text(documentTypeLabel(l, row.documentType), style: context.type.bodyLarge),
-                    trailing: StatusText(label, state),
-                  );
+                  return RowTile(title: Text(documentTypeLabel(l, row.documentType)), trailing: StatusText(label, state));
                 },
               ),
           ],
@@ -117,10 +114,12 @@ class ShipmentDetailScreen extends StatelessWidget {
       ],
       SectionHeader(l.shipMilestonesTitle),
       if (detail.events.isEmpty)
-        EmptyState(icon: KIcons.history, title: l.shipNoMilestonesTitle, description: l.shipNoMilestonesDescription)
+        GroupCard(
+          child: EmptyState(icon: KIcons.history, title: l.shipNoMilestonesTitle, description: l.shipNoMilestonesDescription),
+        )
       else
-        Padding(
-          padding: const EdgeInsets.fromLTRB(kGutter, 10, kGutter, 0),
+        GroupCard(
+          padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 16),
           child: Column(
             children: [
               for (var i = 0; i < detail.events.length; i++)
@@ -142,9 +141,14 @@ class ShipmentDetailScreen extends StatelessWidget {
       ),
       SectionHeader(l.commonDocuments),
       if (detail.documents.isEmpty)
-        EmptyState(icon: KIcons.document, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription)
+        GroupCard(
+          child: EmptyState(icon: KIcons.document, title: l.shipNoDocumentsTitle, description: l.shipNoDocumentsDescription),
+        )
       else
-        RowGroup(children: [for (final document in detail.documents) DocumentRowTile(document, showShipment: false)]),
+        RowGroup(
+          indent: RowGroup.iconIndent,
+          children: [for (final document in detail.documents) DocumentRowTile(document, showShipment: false)],
+        ),
     ];
   }
 }
@@ -170,13 +174,13 @@ class _Milestone extends StatelessWidget {
               children: [
                 const SizedBox(height: 5),
                 Container(
-                  width: latest ? 12 : 8,
-                  height: latest ? 12 : 8,
-                  decoration: BoxDecoration(color: latest ? p.accent : p.tertiary, shape: BoxShape.circle),
+                  width: latest ? 10 : 8,
+                  height: latest ? 10 : 8,
+                  decoration: BoxDecoration(color: latest ? p.ink : p.tertiary, shape: BoxShape.circle),
                 ),
                 if (!last)
                   Expanded(
-                    child: Container(width: 1, margin: const EdgeInsets.symmetric(vertical: 4), color: p.hairline),
+                    child: Container(width: 1.5, margin: const EdgeInsets.symmetric(vertical: 4), color: p.fill),
                   ),
               ],
             ),
@@ -188,7 +192,13 @@ class _Milestone extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.title, style: latest ? context.type.titleMedium : context.type.bodyLarge?.copyWith(color: p.secondary)),
+                  Text(
+                    event.title,
+                    style: context.type.bodyLarge?.copyWith(
+                      fontWeight: latest ? FontWeight.w600 : FontWeight.w400,
+                      color: latest ? p.ink : p.secondary,
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     [formatDateTime(event.eventTime), if (event.location != null) event.location!].join(' · '),

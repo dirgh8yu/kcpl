@@ -61,6 +61,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         final p = context.palette;
         return [
           RowGroup(
+            indent: RowGroup.iconIndent,
             children: [
               for (final alert in page.alerts)
                 Builder(

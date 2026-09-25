@@ -106,6 +106,17 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  /// A field on the form's card: no fill or border of its own.
+  InputDecoration _field(String hint) => InputDecoration(
+    hintText: hint,
+    filled: false,
+    border: InputBorder.none,
+    enabledBorder: InputBorder.none,
+    focusedBorder: InputBorder.none,
+    disabledBorder: InputBorder.none,
+    contentPadding: const EdgeInsets.symmetric(horizontal: kGutter, vertical: 14),
+  );
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -183,7 +194,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               // On a tall screen the map has room to breathe.
                               SizedBox(height: constraints.maxHeight > 700 ? MediaQuery.sizeOf(context).height * 0.46 - 120 : 56),
                               Reveal(index: 1, child: Text(widget.title ?? l.signInTitle, style: context.type.displaySmall)),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 6),
                               Reveal(
                                 index: 2,
                                 child: Text(
@@ -191,46 +202,50 @@ class _SignInScreenState extends State<SignInScreen> {
                                   style: context.type.bodyLarge?.copyWith(color: p.secondary),
                                 ),
                               ),
-                              const SizedBox(height: 36),
+                              const SizedBox(height: 28),
                               Reveal(
                                 index: 3,
                                 child: Shake(
                                   key: _shake,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      TextField(
-                                        controller: _email,
-                                        enabled: !_busy,
-                                        keyboardType: TextInputType.emailAddress,
-                                        textInputAction: TextInputAction.next,
-                                        autocorrect: false,
-                                        enableSuggestions: false,
-                                        autofillHints: const [AutofillHints.email, AutofillHints.username],
-                                        style: context.type.bodyLarge,
-                                        decoration: InputDecoration(hintText: l.emailLabel),
-                                        onSubmitted: (_) => _passwordFocus.requestFocus(),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      TextField(
-                                        controller: _password,
-                                        focusNode: _passwordFocus,
-                                        enabled: !_busy,
-                                        obscureText: _obscure,
-                                        textInputAction: TextInputAction.go,
-                                        autofillHints: const [AutofillHints.password],
-                                        style: context.type.bodyLarge,
-                                        decoration: InputDecoration(
-                                          hintText: l.passwordLabel,
-                                          suffixIcon: IconButton(
-                                            tooltip: _obscure ? l.showPassword : l.hidePassword,
-                                            icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 19),
-                                            onPressed: () => setState(() => _obscure = !_obscure),
-                                          ),
+                                  // Both fields on one card, split by a hairline,
+                                  // as iOS lays out a sign-in form.
+                                  child: GroupCard(
+                                    margin: EdgeInsets.zero,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        TextField(
+                                          controller: _email,
+                                          enabled: !_busy,
+                                          keyboardType: TextInputType.emailAddress,
+                                          textInputAction: TextInputAction.next,
+                                          autocorrect: false,
+                                          enableSuggestions: false,
+                                          autofillHints: const [AutofillHints.email, AutofillHints.username],
+                                          style: context.type.bodyLarge,
+                                          decoration: _field(l.emailLabel),
+                                          onSubmitted: (_) => _passwordFocus.requestFocus(),
                                         ),
-                                        onSubmitted: (_) => _signIn(),
-                                      ),
-                                    ],
+                                        const Divider(indent: kGutter),
+                                        TextField(
+                                          controller: _password,
+                                          focusNode: _passwordFocus,
+                                          enabled: !_busy,
+                                          obscureText: _obscure,
+                                          textInputAction: TextInputAction.go,
+                                          autofillHints: const [AutofillHints.password],
+                                          style: context.type.bodyLarge,
+                                          decoration: _field(l.passwordLabel).copyWith(
+                                            suffixIcon: IconButton(
+                                              tooltip: _obscure ? l.showPassword : l.hidePassword,
+                                              icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 20, color: p.secondary),
+                                              onPressed: () => setState(() => _obscure = !_obscure),
+                                            ),
+                                          ),
+                                          onSubmitted: (_) => _signIn(),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -243,7 +258,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                     : Padding(
                                         padding: const EdgeInsets.only(top: 18),
                                         child: Notice(
-                                          padding: EdgeInsets.zero,
+                                          card: false,
                                           title: message,
                                           emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
                                         ),

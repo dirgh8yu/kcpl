@@ -94,6 +94,12 @@ Future<AppController> signedIn(WidgetTester tester, {required PushService push, 
   return controller;
 }
 
+/// Pulls the home sheet all the way up, as a person would to read it.
+Future<void> openSheet(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('home-sheet-grabber')));
+  await settle(tester);
+}
+
 void main() {
   setUpAll(initFormatting);
 
@@ -103,6 +109,7 @@ void main() {
     await signedIn(tester, push: push, api: api);
     expect(find.text('Know the moment your cargo moves'), findsOneWidget);
 
+    await openSheet(tester);
     await tester.tap(find.text('Turn on'));
     await settle(tester);
     expect(api.registered, ['token-1/android']);
@@ -113,6 +120,7 @@ void main() {
     final push = FakePush();
     final api = RecordingApi();
     await signedIn(tester, push: push, api: api);
+    await openSheet(tester);
     await tester.tap(find.text('Not now'));
     await settle(tester);
     expect(find.text('Know the moment your cargo moves'), findsNothing);

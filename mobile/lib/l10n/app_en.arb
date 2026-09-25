@@ -191,6 +191,32 @@
   "overviewOrigin": "Origin",
   "overviewDestination": "Destination",
   "overviewColEta": "ETA",
+  "homeOnTheWay": "{count, plural, =0{Nothing on the way} =1{1 shipment on the way} other{{count} shipments on the way}}",
+  "@homeOnTheWay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNeedsAttention": "{count, plural, =1{1 needs attention} other{{count} need attention}}",
+  "@homeNeedsAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeArriving": "{count} arriving this week",
+  "@homeArriving": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeAllClear": "Everything is moving as planned",
+  "homeNeedsYou": "Needs you",
   "shipsFocusAll": "All",
   "shipsFocusActive": "Active",
   "shipsFocusInTransit": "In transit",

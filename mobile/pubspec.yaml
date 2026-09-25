@@ -33,6 +33,9 @@ dependencies:
   # Display: 90/120Hz on Android screens that offer it
   flutter_displaymode: ^0.7.0
 
+  # SF Symbols-style icons
+  cupertino_icons: ^1.0.9
+
   intl: ^0.20.3
   web: ^1.1.1
 
@@ -52,36 +55,18 @@ flutter:
     # The basemap (Natural Earth, public domain): tool/build_map_data.mjs.
     - assets/map/
 
-  # Inter for reading and Inter Tight for display: one face on every phone,
-  # rather than whichever system font a handset carries. Nepali renders in
-  # Noto Sans Devanagari. SIL Open Font License, see assets/fonts/OFL-Inter.txt
-  # and assets/fonts/OFL.txt.
+  # Text is set in the platform's own face (SF Pro on iPhone, Roboto on
+  # Android), so the apps read as part of the phone. Icons are Cupertino's
+  # (SF Symbols style), plus two Phosphor glyphs Cupertino lacks: a boat and
+  # a truck (MIT, assets/fonts/MIT-Phosphor.txt; see lib/ui/icons.dart).
+  # Nepali falls back to Noto Sans Devanagari (SIL OFL, assets/fonts/OFL.txt).
   fonts:
-    - family: Inter
-      fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
-        - asset: assets/fonts/Inter-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Inter-SemiBold.ttf
-          weight: 600
-    - family: InterTight
-      fonts:
-        - asset: assets/fonts/InterTight-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/InterTight-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/InterTight-ExtraBold.ttf
-          weight: 800
-    # Phosphor icons (MIT, assets/fonts/MIT-Phosphor.txt): see lib/ui/icons.dart.
     - family: PhosphorRegular
       fonts:
         - asset: assets/fonts/Phosphor-Regular.ttf
     - family: PhosphorFill
       fonts:
         - asset: assets/fonts/Phosphor-Fill.ttf
-    - family: PhosphorBold
-      fonts:
-        - asset: assets/fonts/Phosphor-Bold.ttf
     - family: NotoSansDevanagari
       fonts:
         - asset: assets/fonts/NotoSansDevanagari-Regular.ttf

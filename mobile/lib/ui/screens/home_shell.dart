@@ -92,7 +92,7 @@ class _HomeShellState extends State<HomeShell> {
                 TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
             ],
           ),
-          bottomNavigationBar: FloatingTabBar(
+          bottomNavigationBar: KTabBar(
             note: widget.demo ? l.demoBanner : null,
             selected: tabs.indexOf(tab),
             onSelected: (index) => _select(tabs[index]),

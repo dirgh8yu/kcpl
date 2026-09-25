@@ -49,14 +49,14 @@ class JobDetailScreen extends StatelessWidget {
     final p = context.palette;
     return [
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
           [if (job.customerName.isNotEmpty) job.customerName, modeLabel(l, job.mode), if (job.carrier != null) job.carrier!].join(' · '),
-          style: context.type.bodyLarge?.copyWith(color: p.secondary),
+          style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
       Padding(
-        padding: const EdgeInsets.fromLTRB(kGutter, 22, kGutter, 0),
+        padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
         child: JourneyGraphic(
           shipment: job.asShipment,
           trailing: job.urgent ? 'Urgent' : null,
@@ -73,15 +73,16 @@ class JobDetailScreen extends StatelessWidget {
     return [
       SectionHeader('Owner'),
       if (job.ownerName == null)
-        const Padding(
-          padding: EdgeInsets.only(top: 6),
-          child: Notice(title: 'Unassigned', body: 'Nobody owns this job yet. Assign it from the Job File on the web.'),
-        )
+        const Notice(title: 'Unassigned', body: 'Nobody owns this job yet. Assign it from the Job File on the web.')
       else
-        _OwnerRow(name: job.ownerName!, title: file.ownerTitle, phone: job.ownerPhone, branch: job.primaryBranch),
+        RowGroup(
+          children: [_OwnerRow(name: job.ownerName!, title: file.ownerTitle, phone: job.ownerPhone, branch: job.primaryBranch)],
+        ),
       if (file.tasks.isEmpty) ...[
         SectionHeader('Tasks'),
-        const EmptyState(icon: KIcons.tasks, title: 'No tasks', description: 'Tasks added in the Job File appear here.'),
+        const GroupCard(
+          child: EmptyState(icon: KIcons.tasks, title: 'No tasks', description: 'Tasks added in the Job File appear here.'),
+        ),
       ] else
         _Checklist(
           label: 'Tasks',
@@ -113,14 +114,14 @@ class JobDetailScreen extends StatelessWidget {
         SectionHeader('Before closeout'),
         for (final blocker in file.blockers)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 8),
             child: Notice(title: blocker, emphasis: Emphasis.normal),
           ),
       ],
       if (file.internalNotes != null) ...[
         SectionHeader('Notes'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        GroupCard(
+          padding: const EdgeInsets.fromLTRB(kGutter, 12, kGutter, 12),
           child: Text(file.internalNotes!, style: context.type.bodyLarge),
         ),
       ],
@@ -190,9 +191,9 @@ class _OwnerRow extends StatelessWidget {
     );
     return RowTile(
       leading: CircleAvatar(
-        radius: 20,
-        backgroundColor: p.ink,
-        child: Text(initials(name), style: context.type.labelLarge?.copyWith(color: p.paper)),
+        radius: 18,
+        backgroundColor: p.fill,
+        child: Text(initials(name), style: context.type.titleSmall?.copyWith(color: p.secondary)),
       ),
       title: Text(name),
       subtitle: Text([?title, branch].join(' · ')),
@@ -269,6 +270,7 @@ class _ChecklistState extends State<_Checklist> {
       children: [
         SectionHeader('${widget.label} · $done of ${widget.items.length} done'),
         RowGroup(
+          indent: RowGroup.iconIndent,
           children: [
             for (final item in widget.items)
               _CheckRow(item: item, completed: _pending[item.id] ?? item.completed, onTap: () => _toggle(item)),
@@ -310,7 +312,7 @@ class _CheckRow extends StatelessWidget {
             switchInCurve: Motion.easeOut,
             transitionBuilder: morphTransition,
             child: completed
-                ? Icon(KIcons.check, key: const ValueKey('on'), size: 13, color: p.paper)
+                ? Icon(KIcons.check, key: const ValueKey('on'), size: 13, color: p.surface)
                 : const SizedBox(key: ValueKey('off')),
           ),
         ),

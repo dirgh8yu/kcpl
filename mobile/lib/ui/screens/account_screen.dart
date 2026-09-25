@@ -7,6 +7,7 @@ import '../widgets/choice_rows.dart';
 import '../widgets/common.dart';
 import '../widgets/large_title.dart';
 import '../widgets/push_ui.dart';
+import '../widgets/tab_bar.dart' show KTabBar;
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key, required this.version});
@@ -28,23 +29,29 @@ class AccountScreen extends StatelessWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             if (session != null) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(kGutter, 4, kGutter, 0),
+              // Who is signed in, as Settings heads itself with the Apple ID.
+              GroupCard(
+                padding: const EdgeInsets.fromLTRB(kGutter, 12, kGutter, 12),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: p.ink,
-                      child: Text(initial, style: context.type.titleLarge?.copyWith(color: p.paper)),
+                      backgroundColor: p.fill,
+                      child: Text(initial, style: context.type.headlineSmall?.copyWith(color: p.secondary)),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: context.type.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 2),
-                          Text(session.email, style: context.type.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(name, style: context.type.headlineSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 1),
+                          Text(
+                            session.email,
+                            style: context.type.bodyMedium?.copyWith(color: p.secondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
@@ -73,7 +80,7 @@ class AccountScreen extends StatelessWidget {
               ],
             ],
             SectionHeader(l.pushSection),
-            PushSettingRow(copy: customerPushCopy(l)),
+            RowGroup(children: [PushSettingRow(copy: customerPushCopy(l))]),
             SectionHeader(l.settingsLanguage),
             RowGroup(
               children: [
@@ -83,15 +90,19 @@ class AccountScreen extends StatelessWidget {
             ),
             Footnote(l.settingsProvisioningNote),
             const SizedBox(height: 28),
-            const Divider(indent: kGutter, endIndent: kGutter),
-            RowTile(
-              onTap: controller.signOut,
-              title: Text(l.signOut, style: TextStyle(color: p.accent)),
+            RowGroup(
+              children: [
+                RowTile(
+                  onTap: controller.signOut,
+                  title: Center(
+                    child: Text(l.signOut, style: TextStyle(color: p.accent)),
+                  ),
+                ),
+              ],
             ),
-            const Divider(indent: kGutter, endIndent: kGutter),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Center(child: Text(l.appVersion(version), style: context.type.bodySmall)),
-            SizedBox(height: 40 + MediaQuery.paddingOf(context).bottom),
+            SizedBox(height: KTabBar.height + 28 + MediaQuery.paddingOf(context).bottom),
           ]),
         ),
       ],

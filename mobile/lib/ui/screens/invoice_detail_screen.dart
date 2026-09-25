@@ -38,61 +38,69 @@ class InvoiceDetailScreen extends StatelessWidget {
 
     return [
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
           [
             l.invdIssuedOn(formatDate(invoice.issueDate)),
             if (invoice.dueDate.isNotEmpty) l.invdDueOn(formatDate(invoice.dueDate)),
           ].join(' · '),
-          style: context.type.bodyLarge?.copyWith(color: p.secondary),
+          style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(kGutter, 28, kGutter, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l.invdBalanceDue, style: context.type.bodySmall),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: AlignmentDirectional.centerStart,
-              child: FigureText(value: invoice.balanceDue, format: money, style: context.type.headlineMedium),
+      const SizedBox(height: 16),
+      RowGroup(
+        indent: RowGroup.iconIndent,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(kGutter, 12, kGutter, 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.invdBalanceDue, style: context.type.bodySmall),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FigureText(
+                    value: invoice.balanceDue,
+                    format: money,
+                    style: context.type.headlineMedium?.copyWith(fontFeatures: tabular),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice)),
+              ],
             ),
-            const SizedBox(height: 6),
-            StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice)),
-          ],
-        ),
+          ),
+          if (invoice.shipmentReference != null)
+            RowTile(
+              onTap: () => openShipment(context, invoice.shipmentReference!),
+              leading: const IconTile(icon: KIcons.shipments),
+              title: Text(invoice.shipmentReference!),
+              subtitle: Text(l.commonShipment),
+              chevron: true,
+            ),
+        ],
       ),
-      if (invoice.shipmentReference != null) ...[
-        const SizedBox(height: 20),
-        const Divider(indent: kGutter, endIndent: kGutter),
-        RowTile(
-          onTap: () => openShipment(context, invoice.shipmentReference!),
-          leading: const IconTile(icon: KIcons.shipments),
-          title: Text(invoice.shipmentReference!),
-          subtitle: Text(l.commonShipment),
-          chevron: true,
-        ),
-        const Divider(indent: kGutter, endIndent: kGutter),
-      ],
       SectionHeader(invoice.recordType == 'statement' ? l.invdStatement : l.invdColCharge),
       if (invoice.lines.isEmpty)
-        EmptyState(icon: KIcons.invoices, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription)
+        GroupCard(
+          child: EmptyState(icon: KIcons.invoices, title: l.invdNoLinesTitle, description: l.invdNoLinesDescription),
+        )
       else
         RowGroup(
           children: [
             for (final line in invoice.lines)
               RowTile(
-                title: Text(line.description, style: context.type.bodyLarge),
+                title: Text(line.description),
                 subtitle: line.quantity != 1
                     ? Text('${line.quantity.toStringAsFixed(line.quantity % 1 == 0 ? 0 : 2)} × ${money(line.unitPrice)}')
                     : null,
-                trailing: Text(money(line.total), style: context.type.titleSmall?.copyWith(fontFeatures: tabular)),
+                trailing: Text(money(line.total), style: context.type.bodyLarge?.copyWith(fontFeatures: tabular)),
               ),
           ],
         ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       RowGroup(
         children: [
           DetailRow(l.invdSubtotal, money(invoice.subtotal)),

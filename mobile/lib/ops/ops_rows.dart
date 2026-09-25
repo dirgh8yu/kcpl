@@ -6,6 +6,7 @@ import '../ui/labels.dart';
 import '../ui/theme.dart';
 import '../ui/widgets/common.dart';
 import '../ui/widgets/journey.dart';
+import 'ops_controller.dart';
 import 'ops_models.dart';
 import 'screens/job_detail_screen.dart';
 import '../ui/widgets/sheet_route.dart';
@@ -26,37 +27,43 @@ void openJob(BuildContext context, String reference, {OpsJob? preview}) => Navig
   return (statusLabel(l, job.status), Emphasis.muted);
 }
 
+/// A job as a row: the route with its ETA, then what matters about it
+/// (in crimson when it has gone wrong), its reference, and whose it is or
+/// whose cargo, beneath.
 class JobRow extends StatelessWidget {
-  const JobRow(this.job, {super.key});
+  const JobRow(this.job, {super.key, this.owner = false});
   final OpsJob job;
+
+  /// Say whose job it is ("Yours") rather than whose cargo.
+  final bool owner;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final p = context.palette;
     final (flag, emphasis) = jobFlag(l, job);
+    final email = OpsScope.of(context).session?.email ?? '';
+    final who = owner ? (job.ownedBy(email) ? 'Yours' : (job.ownerName ?? 'Unassigned')) : job.customerName;
     return RowTile(
       onTap: () => openJob(context, job.reference, preview: job),
       leading: ModeBadge(mode: job.mode, status: job.status),
       title: RouteText(place(job.origin), place(job.destination)),
-      subtitle: Text(
-        [job.reference, if (job.customerName.isNotEmpty) job.customerName].join(' · '),
+      accessory: Text(job.eta == null ? '—' : formatShortDate(job.eta)),
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: flag,
+              style: TextStyle(color: emphasis == Emphasis.attention ? p.accent : null),
+            ),
+            TextSpan(text: ' · ${job.reference}'),
+            if (who.isNotEmpty) TextSpan(text: ' · $who'),
+          ],
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(job.eta == null ? '—' : formatShortDate(job.eta), style: context.type.titleSmall),
-          const SizedBox(height: 3),
-          StatusText(flag, emphasis, style: context.type.bodySmall),
-        ],
-      ),
-      below: job.status == 'delivered'
-          ? null
-          : Padding(
-              padding: const EdgeInsetsDirectional.only(start: 34),
-              child: JourneyBar(status: job.status),
-            ),
+      below: job.status == 'delivered' ? null : JourneyBar(status: job.status),
     );
   }
 }

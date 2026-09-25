@@ -704,6 +704,36 @@ abstract class AppLocalizations {
   /// **'ETA'**
   String get overviewColEta;
 
+  /// No description provided for @homeOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing on the way} =1{1 shipment on the way} other{{count} shipments on the way}}'**
+  String homeOnTheWay(int count);
+
+  /// No description provided for @homeNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 needs attention} other{{count} need attention}}'**
+  String homeNeedsAttention(int count);
+
+  /// No description provided for @homeArriving.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} arriving this week'**
+  String homeArriving(int count);
+
+  /// No description provided for @homeAllClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is moving as planned'**
+  String get homeAllClear;
+
+  /// No description provided for @homeNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get homeNeedsYou;
+
   /// No description provided for @shipsFocusAll.
   ///
   /// In en, this message translates to:

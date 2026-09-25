@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../motion.dart';
 import '../theme.dart';
+import 'common.dart';
 
 /// One figure in a [StatRow].
 class Stat {
@@ -14,8 +15,8 @@ class Stat {
   final VoidCallback? onTap;
 }
 
-/// A handful of figures in one quiet card, split by hairlines: a small
-/// number over a short grey label, as a banking app shows balances.
+/// A handful of figures on one grouped card, split by hairlines: a
+/// semibold number over a short grey label.
 class StatRow extends StatelessWidget {
   const StatRow({super.key, required this.stats});
   final List<Stat> stats;
@@ -23,19 +24,13 @@ class StatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: kGutter),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.hairline, width: p.isDark ? 1 : 0.8),
-      ),
+    return GroupCard(
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < stats.length; i++) ...[
-              if (i > 0) VerticalDivider(width: 1, thickness: 0.8, indent: 14, endIndent: 14, color: p.hairline),
+              if (i > 0) VerticalDivider(width: 0.33, thickness: 0.33, indent: 12, endIndent: 12, color: p.hairline),
               Expanded(child: _Cell(stats[i])),
             ],
           ],
@@ -56,16 +51,19 @@ class _Cell extends StatelessWidget {
     return InkWell(
       onTap: stat.onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+        padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FigureText(
               value: stat.value.toDouble(),
               format: (v) => '${v.round()}',
-              style: context.type.headlineSmall?.copyWith(color: hot ? p.accent : p.ink),
+              style: context.type.headlineSmall?.copyWith(
+                color: hot ? p.accent : p.ink,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 1),
             Text(
               stat.label,
               style: context.type.labelMedium?.copyWith(color: p.secondary),
@@ -79,13 +77,12 @@ class _Cell extends StatelessWidget {
   }
 }
 
-/// The card every grouped block sits on: white (a step up from black in
-/// dark mode) with a hairline edge and no shadow.
+/// A grouped card with padding: any block that is not a list of rows.
 class Surface extends StatelessWidget {
   const Surface({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(kGutter),
     this.margin = const EdgeInsets.symmetric(horizontal: kGutter),
   });
   final Widget child;
@@ -93,17 +90,5 @@ class Surface extends StatelessWidget {
   final EdgeInsetsGeometry margin;
 
   @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Container(
-      margin: margin,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.hairline, width: p.isDark ? 1 : 0.8),
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => GroupCard(margin: margin, padding: padding, child: child);
 }

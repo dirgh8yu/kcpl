@@ -28,7 +28,7 @@ class JourneyGraphic extends StatelessWidget {
   final String? subtitle;
   final VoidCallback? onTap;
 
-  static const mapHeight = 172.0;
+  static const mapHeight = 168.0;
 
   @override
   Widget build(BuildContext context) {
@@ -42,98 +42,90 @@ class JourneyGraphic extends StatelessWidget {
         (s.currentLocation != null && !s.delivered ? l.overviewNowAt(s.currentLocation!) : l.shipLastUpdate(formatDateTime(s.updatedAt)));
     final mapped = RouteMap.canDraw(s.origin, s.destination);
 
-    Widget card = DecoratedBox(
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.hairline, width: p.isDark ? 1 : 0.8),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (mapped)
-                  SizedBox(
-                    height: mapHeight,
-                    child: RouteMap(
-                      origin: s.origin,
-                      destination: s.destination,
-                      current: s.currentLocation,
-                      progress: journeyFraction(s.status),
-                      vehicle: modeIcon(s.mode),
-                      delivered: s.delivered,
-                      attention: s.status == 'exception',
-                      style: RouteMapStyle.page(p),
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 2),
-                    child: JourneyBar(status: s.status),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+    Widget card = Material(
+      color: p.surface,
+      borderRadius: BorderRadius.circular(kCardRadius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (mapped)
+              SizedBox(
+                height: mapHeight,
+                child: RouteMap(
+                  origin: s.origin,
+                  destination: s.destination,
+                  current: s.currentLocation,
+                  progress: journeyFraction(s.status),
+                  vehicle: modeSolidIcon(s.mode),
+                  delivered: s.delivered,
+                  attention: s.status == 'exception',
+                  style: RouteMapStyle.page(p),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(kGutter, 18, kGutter, 2),
+                child: JourneyBar(status: s.status),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kGutter, 12, kGutter, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Expanded(child: RouteText(place(s.origin), place(s.destination), style: context.type.titleMedium)),
-                          const SizedBox(width: 12),
-                          Text(
-                            s.eta == null ? '—' : formatShortDate(s.eta),
-                            style: context.type.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              [s.reference, trailing ?? modeLabel(l, s.mode)].join(' · '),
-                              style: context.type.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(l.overviewColEta, style: context.type.bodySmall),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          // The status keeps its words; the location gives way.
-                          Flexible(
-                            flex: 0,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: StatusText(status, emphasis, style: context.type.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '  ·  $subtitle',
-                              style: context.type.bodyMedium?.copyWith(color: p.secondary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      Expanded(child: RouteText(place(s.origin), place(s.destination), style: context.type.titleLarge)),
+                      const SizedBox(width: 12),
+                      Text(
+                        s.eta == null ? '—' : formatShortDate(s.eta),
+                        style: context.type.titleLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          [s.reference, trailing ?? modeLabel(l, s.mode)].join(' · '),
+                          style: context.type.bodyMedium?.copyWith(color: p.secondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(l.overviewColEta, style: context.type.bodyMedium?.copyWith(color: p.secondary)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // The status keeps its words; the location gives way.
+                      Flexible(
+                        flex: 0,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 200),
+                          child: StatusText(status, emphasis, style: context.type.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          '  ·  $subtitle',
+                          style: context.type.bodyMedium?.copyWith(color: p.secondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

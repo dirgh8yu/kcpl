@@ -1,17 +1,16 @@
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../motion.dart';
 import '../theme.dart';
-import 'glass.dart';
-import 'kcpl_loader.dart' show KPainter;
 
-/// Pull to refresh, drawn as the K: pulling assembles the mark stroke by
-/// stroke, a tick says it will refresh on release, and while the page
-/// reloads a crimson charge runs through it. Works with both clamping
-/// (Android) and bouncing (iOS) scrolling.
+/// Pull to refresh, as iOS does it: the spinner's ticks appear as the page
+/// is pulled, a click says it will refresh on release, and it spins while
+/// the page reloads. Works with both clamping (Android) and bouncing (iOS)
+/// scrolling.
 class KRefresh extends StatefulWidget {
   const KRefresh({super.key, required this.onRefresh, required this.child, this.edgeOffset = 0});
   final Future<void> Function() onRefresh;
@@ -27,7 +26,6 @@ class KRefresh extends StatefulWidget {
 class _KRefreshState extends State<KRefresh> with TickerProviderStateMixin {
   static const _trigger = 90.0;
 
-  late final AnimationController _wave = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
   late final AnimationController _hide = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
   double _pull = 0;
   bool _dragging = false;
@@ -36,7 +34,6 @@ class _KRefreshState extends State<KRefresh> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _wave.dispose();
     _hide.dispose();
     super.dispose();
   }
@@ -90,12 +87,10 @@ class _KRefreshState extends State<KRefresh> with TickerProviderStateMixin {
       _refreshing = true;
       _armed = false;
     });
-    if (!Motion.reduced(context)) _wave.repeat();
     try {
       await widget.onRefresh();
     } finally {
       if (mounted) {
-        _wave.stop();
         await _hide.forward();
         if (mounted) {
           setState(() {
@@ -117,39 +112,28 @@ class _KRefreshState extends State<KRefresh> with TickerProviderStateMixin {
         NotificationListener<ScrollNotification>(onNotification: _onScroll, child: widget.child),
         if (visible)
           Positioned(
-            top: widget.edgeOffset + 4 + 18 * progress,
+            top: widget.edgeOffset + 6 + 14 * progress,
             left: 0,
             right: 0,
             child: IgnorePointer(
               child: Center(
                 child: AnimatedBuilder(
-                  animation: Listenable.merge([_wave, _hide]),
+                  animation: _hide,
                   builder: (context, _) {
                     final out = Motion.easeOut.transform(_hide.value);
+                    // The system spinner: its ticks appear one by one as the
+                    // page is pulled, then it spins while the page reloads.
                     return Opacity(
-                      opacity: (progress * 1.6).clamp(0.0, 1.0) * (1 - out),
+                      opacity: 1 - out,
                       child: Transform.scale(
-                        scale: (0.7 + 0.3 * progress) * (1 - 0.4 * out),
-                        child: SizedBox.square(
-                          dimension: 44,
-                          child: Glass(
-                            borderRadius: BorderRadius.circular(22),
-                            border: true,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Semantics(
-                                label: MaterialLocalizations.of(context).refreshIndicatorSemanticLabel,
-                                child: CustomPaint(
-                                  painter: KPainter(
-                                    intro: Motion.easeOut.transform(progress),
-                                    wave: _wave.isAnimating ? _wave.value : null,
-                                    charge: p.accent,
-                                    // Armed, the K is the brand colour: let go now.
-                                    base: _armed || _refreshing ? Color.lerp(p.tertiary, p.accent, 0.6)! : p.tertiary,
-                                  ),
-                                ),
-                              ),
-                            ),
+                        scale: 1 - 0.3 * out,
+                        child: Semantics(
+                          label: MaterialLocalizations.of(context).refreshIndicatorSemanticLabel,
+                          child: SizedBox.square(
+                            dimension: 28,
+                            child: _refreshing && !Motion.reduced(context)
+                                ? CupertinoActivityIndicator(radius: 11, color: p.secondary)
+                                : CupertinoActivityIndicator.partiallyRevealed(radius: 11, progress: progress, color: p.secondary),
                           ),
                         ),
                       ),

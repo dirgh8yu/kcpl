@@ -1,68 +1,82 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/widgets.dart';
 
-// Phosphor's fonts (MIT, assets/fonts/MIT-Phosphor.txt), bundled directly.
-// Code points are from Phosphor 2.1; icon tree shaking keeps only these.
+// Phosphor (MIT, assets/fonts/MIT-Phosphor.txt) only for the two vehicles
+// Cupertino's set does not draw: a boat and a truck.
 const _r = 'PhosphorRegular';
 const _f = 'PhosphorFill';
-const _b = 'PhosphorBold';
 
-/// One icon family for both apps (Phosphor): an even stroke, drawn as a
-/// set. Outline by default; the filled form marks the chosen tab.
+/// One icon family for both apps: Cupertino's, drawn after SF Symbols, so
+/// the apps look like the phone they run on. Outline by default; the filled
+/// form marks the chosen tab.
 abstract final class KIcons {
   // Tabs, outline and chosen.
-  static const IconData home = IconData(0xe2c2, fontFamily: _r);
-  static const IconData homeOn = IconData(0xe2c2, fontFamily: _f);
-  static const IconData today = IconData(0xe472, fontFamily: _r);
-  static const IconData todayOn = IconData(0xe472, fontFamily: _f);
-  static const IconData shipments = IconData(0xe390, fontFamily: _r);
-  static const IconData shipmentsOn = IconData(0xe390, fontFamily: _f);
-  static const IconData documents = IconData(0xe23a, fontFamily: _r);
-  static const IconData documentsOn = IconData(0xe23a, fontFamily: _f);
-  static const IconData invoices = IconData(0xe3ec, fontFamily: _r);
-  static const IconData invoicesOn = IconData(0xe3ec, fontFamily: _f);
-  static const IconData alerts = IconData(0xe0ce, fontFamily: _r);
-  static const IconData alertsOn = IconData(0xe0ce, fontFamily: _f);
-  static const IconData account = IconData(0xe4c2, fontFamily: _r);
-  static const IconData accountOn = IconData(0xe4c2, fontFamily: _f);
+  static const IconData home = CupertinoIcons.map;
+  static const IconData homeOn = CupertinoIcons.map_fill;
+  static const IconData today = CupertinoIcons.checkmark_circle;
+  static const IconData todayOn = CupertinoIcons.checkmark_circle_fill;
+  static const IconData shipments = CupertinoIcons.cube_box;
+  static const IconData shipmentsOn = CupertinoIcons.cube_box_fill;
+  static const IconData documents = CupertinoIcons.doc_text;
+  static const IconData documentsOn = CupertinoIcons.doc_text_fill;
+  static const IconData invoices = CupertinoIcons.creditcard;
+  static const IconData invoicesOn = CupertinoIcons.creditcard_fill;
+  static const IconData alerts = CupertinoIcons.bell;
+  static const IconData alertsOn = CupertinoIcons.bell_fill;
+  static const IconData account = CupertinoIcons.person_crop_circle;
+  static const IconData accountOn = CupertinoIcons.person_crop_circle_fill;
 
-  // Modes of transport.
-  static const IconData air = IconData(0xe5d6, fontFamily: _f);
-  static const IconData sea = IconData(0xe786, fontFamily: _f);
-  static const IconData road = IconData(0xe4b4, fontFamily: _f);
-  static const IconData rail = IconData(0xe496, fontFamily: _f);
-  static const IconData courier = IconData(0xe390, fontFamily: _f);
-  static const IconData route = IconData(0xe39c, fontFamily: _r);
+  // Modes of transport, outline for rows.
+  static const IconData air = CupertinoIcons.airplane;
+  static const IconData sea = IconData(0xe786, fontFamily: _r);
+  static const IconData road = IconData(0xe4b4, fontFamily: _r);
+  static const IconData rail = CupertinoIcons.train_style_one;
+  static const IconData courier = CupertinoIcons.cube_box;
+  static const IconData route = CupertinoIcons.arrow_right_arrow_left;
   static const IconData truck = IconData(0xe4b4, fontFamily: _r);
 
+  // Modes of transport, solid, for the cargo marker on a map.
+  static const IconData airSolid = CupertinoIcons.airplane;
+  static const IconData seaSolid = IconData(0xe786, fontFamily: _f);
+  static const IconData roadSolid = IconData(0xe4b4, fontFamily: _f);
+  static const IconData railSolid = CupertinoIcons.tram_fill;
+  static const IconData courierSolid = CupertinoIcons.cube_box_fill;
+
   // Things.
-  static const IconData document = IconData(0xe23a, fontFamily: _r);
-  static const IconData upload = IconData(0xe61e, fontFamily: _r);
-  static const IconData image = IconData(0xe2ca, fontFamily: _r);
-  static const IconData invoice = IconData(0xee42, fontFamily: _r);
-  static const IconData wallet = IconData(0xe68a, fontFamily: _r);
-  static const IconData timer = IconData(0xe492, fontFamily: _r);
-  static const IconData tasks = IconData(0xeadc, fontFamily: _r);
-  static const IconData customs = IconData(0xe40c, fontFamily: _r);
-  static const IconData history = IconData(0xe1a0, fontFamily: _r);
-  static const IconData bellRinging = IconData(0xe5e8, fontFamily: _r);
-  static const IconData userPlus = IconData(0xe4d0, fontFamily: _r);
-  static const IconData phone = IconData(0xe3b8, fontFamily: _r);
-  static const IconData whatsapp = IconData(0xe5d0, fontFamily: _r);
-  static const IconData pin = IconData(0xe316, fontFamily: _f);
+  static const IconData document = CupertinoIcons.doc_text;
+  static const IconData upload = CupertinoIcons.arrow_up_doc;
+  static const IconData image = CupertinoIcons.photo;
+  static const IconData invoice = CupertinoIcons.doc_plaintext;
+  static const IconData wallet = CupertinoIcons.creditcard;
+  static const IconData timer = CupertinoIcons.timer;
+  static const IconData tasks = CupertinoIcons.checkmark_square;
+  static const IconData customs = CupertinoIcons.checkmark_shield;
+  static const IconData history = CupertinoIcons.clock;
+  static const IconData bellRinging = CupertinoIcons.bell;
+  static const IconData userPlus = CupertinoIcons.person_badge_plus;
+  static const IconData phone = CupertinoIcons.phone;
+  static const IconData whatsapp = CupertinoIcons.chat_bubble;
+  static const IconData pin = CupertinoIcons.location_solid;
+  static const IconData branch = CupertinoIcons.building_2_fill;
 
   // Controls.
-  static const IconData search = IconData(0xe30c, fontFamily: _r);
-  static const IconData noResults = IconData(0xe30c, fontFamily: _r);
-  static const IconData check = IconData(0xe182, fontFamily: _b);
-  static const IconData chevron = IconData(0xe13a, fontFamily: _b);
-  static const IconData expand = IconData(0xe136, fontFamily: _b);
-  static const IconData arrowRight = IconData(0xe06c, fontFamily: _r);
-  static const IconData download = IconData(0xe03e, fontFamily: _b);
-  static const IconData show = IconData(0xe220, fontFamily: _r);
-  static const IconData hide = IconData(0xe224, fontFamily: _r);
+  static const IconData search = CupertinoIcons.search;
+  static const IconData noResults = CupertinoIcons.search;
+  static const IconData check = CupertinoIcons.checkmark_alt;
+  static const IconData chevron = CupertinoIcons.chevron_forward;
+  static const IconData expand = CupertinoIcons.chevron_down;
+  static const IconData arrowRight = CupertinoIcons.arrow_right;
+  static const IconData download = CupertinoIcons.arrow_down_circle;
+  static const IconData show = CupertinoIcons.eye;
+  static const IconData hide = CupertinoIcons.eye_slash;
+  static const IconData close = CupertinoIcons.xmark;
+  static const IconData back = CupertinoIcons.chevron_back;
+  static const IconData clear = CupertinoIcons.xmark_circle_fill;
 
   // States.
-  static const IconData warning = IconData(0xe4e0, fontFamily: _r);
-  static const IconData offline = IconData(0xe4f2, fontFamily: _r);
-  static const IconData unreachable = IconData(0xe1b6, fontFamily: _r);
+  static const IconData warning = CupertinoIcons.exclamationmark_circle_fill;
+  static const IconData info = CupertinoIcons.info_circle_fill;
+  static const IconData done = CupertinoIcons.checkmark_circle_fill;
+  static const IconData offline = CupertinoIcons.wifi_slash;
+  static const IconData unreachable = CupertinoIcons.exclamationmark_circle;
 }

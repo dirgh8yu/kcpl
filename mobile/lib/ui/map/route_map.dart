@@ -44,12 +44,12 @@ class RouteMapStyle {
   final Color onRoute;
 
   static const light = RouteMapStyle(
-    water: Color(0xFFD4DCE3),
-    land: Color(0xFFF2F2F0),
+    water: Color(0xFFD3DDE6),
+    land: Color(0xFFF8F7F4),
     road: Color(0xFFFFFFFF),
     roadCasing: Color(0xFFDDDDDB),
     border: Color(0xFFBDBDBD),
-    river: Color(0xFFD4DCE3),
+    river: Color(0xFFD3DDE6),
     label: Color(0xFF8A8A8A),
     route: Color(0xFF000000),
     behind: Color(0xFFB4B4B4),
@@ -116,6 +116,13 @@ class _Frame {
       east += grow;
     }
     return _Frame(size, west, north, size.width / (east - west));
+  }
+
+  /// Fits [points] inside [area] of a canvas of [size]: the map still fills
+  /// the canvas, but the points sit where [area] is.
+  static _Frame fitIn(Size size, Rect area, List<GeoPoint> points, {required double minSpan}) {
+    final inner = fit(area.size, points, minSpan: minSpan);
+    return _Frame(size, inner.left - area.left / inner.scale, inner.top - area.top / inner.scale, inner.scale);
   }
 }
 
@@ -227,6 +234,32 @@ class _RouteMapState extends State<RouteMap> {
   }
 }
 
+/// A route's ends and the cargo, resolved to places on the map.
+class _Ends {
+  _Ends(this.a, this.b, this.c, this.progress);
+  final GeoPoint a;
+  final GeoPoint b;
+
+  /// Where the cargo is, when that is a known place clear of both ends.
+  final GeoPoint? c;
+  final double progress;
+
+  /// The points a frame must show.
+  List<GeoPoint> get points => [a, b, ?c].where((p) => p.onMap).toList();
+
+  static _Ends? of(String origin, String destination, String? current, double progress, bool delivered) {
+    final a = locate(origin);
+    final b = locate(destination);
+    if (a == null || b == null || (!a.onMap && !b.onMap)) return null;
+    var c = delivered ? null : locate(current);
+    // At a border post beside either end, the cargo is shown just off it.
+    if (c != null && _Geometry._near(c, b)) progress = 0.9;
+    if (c != null && _Geometry._near(c, a)) progress = 0.06;
+    if (c != null && (!c.onMap || _Geometry._near(c, a) || _Geometry._near(c, b))) c = null;
+    return _Ends(a, b, c, progress);
+  }
+}
+
 /// Where the route sits on screen for one frame.
 class _Geometry {
   _Geometry({
@@ -263,21 +296,30 @@ class _Geometry {
     required bool delivered,
   }) {
     if (!size.isFinite || size.width < 40 || size.height < 40) return null;
-    final a = locate(origin);
-    final b = locate(destination);
-    if (a == null || b == null || (!a.onMap && !b.onMap)) return null;
-    var c = delivered ? null : locate(current);
-    // At a border post beside either end, the cargo is shown just off it.
-    if (c != null && _near(c, b)) progress = 0.9;
-    if (c != null && _near(c, a)) progress = 0.06;
-    if (c != null && (!c.onMap || _near(c, a) || _near(c, b))) c = null;
+    final ends = _Ends.of(origin, destination, current, progress, delivered);
+    if (ends == null) return null;
+    final frame = _Frame.fit(size, ends.points, minSpan: 9);
+    return build(frame, (Offset.zero & size).deflate(18), ends, origin: origin, destination: destination, delivered: delivered);
+  }
 
-    final frame = _Frame.fit(size, [a, b, ?c].where((p) => p.onMap).toList(), minSpan: 9);
-    final inset = (Offset.zero & size).deflate(18);
+  /// The route for [ends], drawn in an existing [frame]; an end outside
+  /// [area] is pulled to its edge.
+  static _Geometry? build(
+    _Frame frame,
+    Rect area,
+    _Ends ends, {
+    required String origin,
+    required String destination,
+    required bool delivered,
+  }) {
+    final a = ends.a;
+    final b = ends.b;
+    final c = ends.c;
+    final progress = ends.progress;
     var from = frame.toScreen(a.lat, a.lon);
     var to = frame.toScreen(b.lat, b.lon);
-    if (!a.onMap || !inset.contains(from)) from = _toEdge(to, from, inset);
-    if (!b.onMap || !inset.contains(to)) to = _toEdge(from, to, inset);
+    if (!a.onMap || !area.contains(from)) from = _toEdge(to, from, area);
+    if (!b.onMap || !area.contains(to)) to = _toEdge(from, to, area);
     final now = c == null ? null : frame.toScreen(c.lat, c.lon);
 
     final path = Path()..moveTo(from.dx, from.dy);
@@ -545,6 +587,190 @@ class _RoutePainter extends CustomPainter {
       old.vehicle != vehicle ||
       old.delivered != delivered ||
       old.attention != attention;
+}
+
+/// One shipment on a [FleetMap].
+@immutable
+class FleetRoute {
+  const FleetRoute({
+    required this.id,
+    required this.origin,
+    required this.destination,
+    this.current,
+    required this.progress,
+    required this.vehicle,
+    this.delivered = false,
+    this.attention = false,
+  });
+
+  final String id;
+  final String origin;
+  final String destination;
+  final String? current;
+  final double progress;
+  final IconData vehicle;
+  final bool delivered;
+  final bool attention;
+}
+
+/// Every moving shipment on one map, as a ride-hailing app shows the cars
+/// around you: each route a fine line with its cargo on it, and the one in
+/// focus drawn in full, in ink, with its ends named.
+class FleetMap extends StatefulWidget {
+  const FleetMap({super.key, required this.routes, this.focus, required this.style, this.padding = EdgeInsets.zero});
+
+  final List<FleetRoute> routes;
+
+  /// The [FleetRoute.id] drawn in full; the first route when null.
+  final String? focus;
+  final RouteMapStyle style;
+
+  /// Space the routes keep clear of, such as a top bar and a sheet. The map
+  /// itself still runs beneath.
+  final EdgeInsets padding;
+
+  @override
+  State<FleetMap> createState() => _FleetMapState();
+}
+
+class _FleetMapState extends State<FleetMap> {
+  MapData? _map = MapData.ready;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_map == null) {
+      MapData.load().then((map) {
+        if (mounted) setState(() => _map = map);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        if (!size.isFinite || size.width < 40 || size.height < 40) return const SizedBox.shrink();
+        var area = widget.padding.deflateRect(Offset.zero & size);
+        if (area.width < 80 || area.height < 80) area = Offset.zero & size;
+
+        final resolved = <(FleetRoute, _Ends)>[
+          for (final route in widget.routes)
+            if (_Ends.of(route.origin, route.destination, route.current, route.progress, route.delivered) case final ends?) (route, ends),
+        ];
+        // Framed on the route in focus and where every route ends (Nepal):
+        // a far-off origin is pulled to the map's edge, pointing the right
+        // way, rather than zooming the map out to a continent. With nothing
+        // to draw, the map rests on Nepal.
+        final focus = resolved.where((r) => r.$1.id == widget.focus).firstOrNull ?? resolved.firstOrNull;
+        final points = [
+          ...?focus?.$2.points,
+          for (final (_, ends) in resolved)
+            if (ends.b.onMap) ends.b,
+        ];
+        final frame = _Frame.fitIn(size, area, points.isEmpty ? const [GeoPoint(27.7, 85.3)] : points, minSpan: points.isEmpty ? 8 : 7);
+
+        final routes = <(FleetRoute, _Geometry)>[
+          for (final (route, ends) in resolved)
+            if (_Geometry.build(
+                  frame,
+                  area.deflate(6),
+                  ends,
+                  origin: route.origin,
+                  destination: route.destination,
+                  delivered: route.delivered,
+                )
+                case final geometry?)
+              (route, geometry),
+        ];
+        final focused = routes.where((r) => r.$1.id == widget.focus).firstOrNull ?? routes.firstOrNull;
+        final text = Theme.of(context).textTheme.labelSmall ?? const TextStyle();
+        final accent = Theme.of(context).extension<Palette>()!.accent;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: widget.style.land),
+            AnimatedOpacity(
+              opacity: _map == null ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              curve: Motion.easeOut,
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: _MapPainter(
+                    _map,
+                    frame,
+                    widget.style,
+                    text,
+                    avoid: [
+                      ...?focused?.$2.clearOf,
+                      for (final (_, geometry) in routes) ...[geometry.from, geometry.to],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            RepaintBoundary(
+              child: CustomPaint(
+                painter: _FleetPainter(routes: routes, focused: focused, style: widget.style, accent: accent, text: text),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FleetPainter extends CustomPainter {
+  _FleetPainter({required this.routes, required this.focused, required this.style, required this.accent, required this.text});
+
+  final List<(FleetRoute, _Geometry)> routes;
+  final (FleetRoute, _Geometry)? focused;
+  final RouteMapStyle style;
+  final Color accent;
+  final TextStyle text;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // The others first, quietly: a fine line, a small square where each is
+    // bound, and its cargo as a dot.
+    final line = Paint()
+      ..color = style.route.withValues(alpha: 0.28)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    for (final (route, geometry) in routes) {
+      if (identical(route, focused?.$1)) continue;
+      canvas.drawPath(geometry.path, line);
+      canvas.drawRect(Rect.fromCenter(center: geometry.to, width: 6, height: 6), Paint()..color = style.route.withValues(alpha: 0.5));
+      if (!route.delivered) {
+        final at = geometry.metric.getTangentForOffset(math.max(geometry.travelled, 0.01))!.position;
+        canvas.drawCircle(at, 6, Paint()..color = style.onRoute);
+        canvas.drawCircle(at, 4.5, Paint()..color = route.attention ? accent : style.route.withValues(alpha: 0.7));
+      }
+    }
+    // Then the one in focus, in full.
+    final focus = focused;
+    if (focus == null) return;
+    _RoutePainter(
+      geometry: focus.$2,
+      style: style,
+      vehicle: focus.$1.vehicle,
+      delivered: focus.$1.delivered,
+      attention: focus.$1.attention ? accent : null,
+      text: text,
+    ).paint(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(_FleetPainter old) =>
+      old.style != style ||
+      old.focused?.$1.id != focused?.$1.id ||
+      old.routes.length != routes.length ||
+      (routes.isNotEmpty && old.routes.first.$2.frame.key != routes.first.$2.frame.key) ||
+      [for (final r in routes) '${r.$1.id}:${r.$2.travelled}'].join() !=
+          [for (final r in old.routes) '${r.$1.id}:${r.$2.travelled}'].join();
 }
 
 /// KCPL's lanes into Nepal on the map: the sign-in screen's backdrop. Each

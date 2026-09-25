@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../l10n/app_localizations.dart';
-import '../../ui/labels.dart';
-import '../../ui/screens/overview_screen.dart' show JourneyGraphic;
 import '../../ui/theme.dart';
 import '../../ui/widgets/async_view.dart';
-import '../../ui/widgets/stats.dart';
+import '../../ui/widgets/stats.dart' show Surface;
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/push_ui.dart';
 import '../ops_controller.dart';
@@ -58,86 +55,58 @@ class TodayScreen extends StatelessWidget {
     final p = context.palette;
     final session = bundle.session;
     final totals = bundle.totals;
-    final lead = leadJob(bundle.jobs, session.email);
-    final mine = bundle.jobs.where((j) => j.ownedBy(session.email) && j != lead).toList();
-    final trouble = bundle.jobs.where((j) => !j.ownedBy(session.email) && j != lead && (j.exception || j.overdueTasks > 0)).toList();
+    final email = session.email;
+    bool needsAction(OpsJob j) => j.status != 'delivered' && (j.exception || j.overdueTasks > 0 || j.urgent);
+    int byOwnerThenEta(OpsJob a, OpsJob b) {
+      final mine = (b.ownedBy(email) ? 1 : 0) - (a.ownedBy(email) ? 1 : 0);
+      return mine != 0 ? mine : (a.eta ?? '9999').compareTo(b.eta ?? '9999');
+    }
+
+    // Like Reminders' Today: what needs doing, what is under way, what is
+    // done. Your own work leads each group.
+    final lead = leadJob(bundle.jobs, email);
+    final action = bundle.jobs.where(needsAction).toList()..sort((a, b) => a == lead ? -1 : (b == lead ? 1 : byOwnerThenEta(a, b)));
+    final moving = bundle.jobs.where((j) => j.status != 'delivered' && !needsAction(j)).toList()..sort(byOwnerThenEta);
+    final done = bundle.jobs.where((j) => j.status == 'delivered').toList();
 
     return [
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kGutter),
+        padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
           [session.displayName, session.roleLabel, session.canAccessAllBranches ? 'All branches' : session.branches.join(', ')].join(' · '),
-          style: context.type.bodyLarge?.copyWith(color: p.secondary),
+          style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
       const PushPrimer(copy: opsPushCopy),
-      if (lead != null)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
-          child: _LeadCard(job: lead, mine: lead.ownedBy(session.email)),
-        ),
-      // Crimson only where something has gone wrong: late work and exceptions.
-      const SizedBox(height: 12),
-      StatRow(
-        stats: [
-          Stat('Active jobs', totals.active, onTap: () => onNavigate(OpsTab.jobs)),
-          Stat('Urgent', totals.urgent, onTap: () => onNavigate(OpsTab.jobs)),
-          Stat('Overdue tasks', totals.overdueTasks, attention: true, onTap: () => onNavigate(OpsTab.jobs)),
-          Stat('Customs blocks', totals.customsBlockers, onTap: () => onNavigate(OpsTab.jobs)),
-        ],
-      ),
-      // The rest in a line of words: worth knowing, not worth a figure each.
-      Padding(
-        padding: const EdgeInsets.fromLTRB(kGutter + 2, 10, kGutter, 0),
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: '${totals.exceptions} ${totals.exceptions == 1 ? 'exception' : 'exceptions'}',
-                style: TextStyle(color: totals.exceptions > 0 ? p.accent : null),
-              ),
-              TextSpan(text: '  ·  ${totals.deliveriesToday} delivering today  ·  ${totals.unassigned} unassigned'),
-            ],
-          ),
-          style: context.type.bodySmall,
-        ),
-      ),
-      if (mine.isNotEmpty) ...[
-        SectionHeader('Your jobs', actionLabel: 'All jobs', onAction: () => onNavigate(OpsTab.jobs)),
-        RowGroup(children: [for (final job in mine.take(6)) JobRow(job)]),
+      if (action.isNotEmpty) ...[
+        SectionHeader('Needs action', count: action.length, attention: true, top: 20),
+        RowGroup(indent: RowGroup.iconIndent, children: [for (final job in action.take(8)) JobRow(job, owner: true)]),
       ],
-      if (trouble.isNotEmpty) ...[
-        SectionHeader('Needs attention'),
-        RowGroup(children: [for (final job in trouble.take(6)) JobRow(job)]),
+      if (moving.isNotEmpty) ...[
+        SectionHeader('Moving', count: moving.length, actionLabel: 'All jobs', onAction: () => onNavigate(OpsTab.jobs)),
+        RowGroup(indent: RowGroup.iconIndent, children: [for (final job in moving.take(8)) JobRow(job, owner: true)]),
       ],
-      if (bundle.branches.length > 1) ...[SectionHeader('Branches'), _BranchLoad(branches: bundle.branches)],
-      if (lead == null && mine.isEmpty && trouble.isEmpty)
+      if (done.isNotEmpty) ...[
+        SectionHeader('Delivered', count: done.length),
+        RowGroup(indent: RowGroup.iconIndent, children: [for (final job in done.take(5)) JobRow(job, owner: true)]),
+      ],
+      // The rest of the day in a line of words.
+      Footnote(
+        [
+          '${totals.overdueTasks} overdue ${totals.overdueTasks == 1 ? 'task' : 'tasks'}',
+          '${totals.customsBlockers} customs ${totals.customsBlockers == 1 ? 'block' : 'blocks'}',
+          '${totals.deliveriesToday} delivering today',
+          '${totals.unassigned} unassigned',
+        ].join(' · '),
+      ),
+      if (bundle.branches.length > 1) ...[const SectionHeader('Branches'), _BranchLoad(branches: bundle.branches)],
+      if (action.isEmpty && moving.isEmpty && done.isEmpty)
         const EmptyState(
           icon: KIcons.today,
           title: 'Nothing waiting on you',
           description: 'No active jobs in your branches need attention right now.',
         ),
     ];
-  }
-}
-
-class _LeadCard extends StatelessWidget {
-  const _LeadCard({required this.job, required this.mine});
-  final OpsJob job;
-  final bool mine;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final (flag, emphasis) = jobFlag(l, job);
-    return JourneyGraphic(
-      shipment: job.asShipment,
-      trailing: mine ? 'Yours' : (job.ownerName ?? 'Unassigned'),
-      status: flag,
-      emphasis: emphasis,
-      subtitle: job.customerName.isEmpty ? modeLabel(l, job.mode) : job.customerName,
-      onTap: () => openJob(context, job.reference, preview: job),
-    );
   }
 }
 

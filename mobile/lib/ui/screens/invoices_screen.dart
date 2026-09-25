@@ -19,7 +19,8 @@ class InvoicesScreen extends StatelessWidget {
       title: l.chromeInvoices,
       load: AppScope.of(context).api.invoices,
       builder: (context, page) => [
-        for (final balance in page.summary.balances) BalanceFigure(balance: balance, detail: true),
+        if (page.summary.balances.isNotEmpty)
+          RowGroup(children: [for (final balance in page.summary.balances) BalanceFigure(balance: balance, detail: true)]),
         if (page.summary.balances.length > 1) Footnote(l.invPositionDescription),
         SectionHeader(l.invBillingTitle),
         if (page.invoices.isEmpty)

@@ -80,7 +80,7 @@ class _JobsScreenState extends State<JobsScreen> {
                     title: bundle.jobs.isEmpty ? 'No active jobs' : 'Nothing matches',
                     description: bundle.jobs.isEmpty ? 'Jobs in your branches appear here.' : 'Try another filter or clear the search.',
                   )
-                : RowGroup(children: [for (final job in visible) JobRow(job)]),
+                : RowGroup(indent: RowGroup.iconIndent, children: [for (final job in visible) JobRow(job)]),
           ),
         ];
       },

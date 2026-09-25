@@ -346,6 +346,33 @@ class AppLocalizationsNe extends AppLocalizations {
   String get overviewColEta => 'अनुमानित आगमन';
 
   @override
+  String homeOnTheWay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ढुवानी बाटोमा',
+      zero: 'बाटोमा केही छैन',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeNeedsAttention(int count) {
+    return '$count मा ध्यान चाहिन्छ';
+  }
+
+  @override
+  String homeArriving(int count) {
+    return '$count यो हप्ता आइपुग्दै';
+  }
+
+  @override
+  String get homeAllClear => 'सबै योजनाअनुसार चलिरहेको छ';
+
+  @override
+  String get homeNeedsYou => 'तपाईंको काम';
+
+  @override
   String get shipsFocusAll => 'सबै';
 
   @override

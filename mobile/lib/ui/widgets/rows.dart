@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -55,24 +56,9 @@ class ShipmentRow extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            date == null ? '—' : formatShortDate(date),
-            style: context.type.titleSmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-          const SizedBox(height: 3),
-          Text(shipment.delivered ? l.statusDelivered : l.overviewColEta, style: context.type.bodySmall),
-        ],
-      ),
+      accessory: Text(date == null ? '—' : formatShortDate(date)),
       // Under the text, clear of the icon.
-      below: shipment.delivered
-          ? null
-          : Padding(
-              padding: const EdgeInsetsDirectional.only(start: 34),
-              child: JourneyBar(status: shipment.status),
-            ),
+      below: shipment.delivered ? null : JourneyBar(status: shipment.status),
     );
   }
 }
@@ -147,14 +133,10 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
                 switchOutCurve: Motion.easeOut,
                 transitionBuilder: morphTransition,
                 child: _busy
-                    ? Padding(
-                        key: const ValueKey('busy'),
-                        padding: const EdgeInsets.all(2),
-                        child: CircularProgressIndicator(strokeWidth: 2, color: p.ink),
-                      )
+                    ? CupertinoActivityIndicator(key: const ValueKey('busy'), radius: 9, color: p.secondary)
                     : _done
-                    ? Icon(KIcons.check, key: const ValueKey('done'), size: 18, color: p.ink)
-                    : Icon(KIcons.download, key: const ValueKey('ready'), size: 17, color: p.ink, semanticLabel: l.commonDownload),
+                    ? Icon(KIcons.done, key: const ValueKey('done'), size: 22, color: p.ink)
+                    : Icon(KIcons.download, key: const ValueKey('ready'), size: 22, color: p.secondary, semanticLabel: l.commonDownload),
               ),
             ),
     );
@@ -182,10 +164,10 @@ class InvoiceRow extends StatelessWidget {
         children: [
           Text(
             formatMoney(open ? invoice.balanceDue : invoice.total, invoice.currency),
-            style: context.type.titleSmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            style: context.type.bodyLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
-          const SizedBox(height: 3),
-          StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice), style: context.type.bodySmall),
+          const SizedBox(height: 2),
+          StatusText(invoiceStatusLabel(l, invoice), invoiceEmphasis(invoice), style: context.type.bodyMedium),
         ],
       ),
     );

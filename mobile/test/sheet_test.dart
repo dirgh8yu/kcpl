@@ -19,6 +19,8 @@ void main() {
       await tester.enterText(find.byType(TextField).at(1), 'secret');
       await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
       await run(tester, const Duration(seconds: 3));
+      await tester.tap(find.text('Shipments').last);
+      await run(tester);
       await tester.tap(ref('KCPL-S-24077').first);
       await run(tester);
       expect(find.byType(ShipmentDetailScreen), findsOneWidget);

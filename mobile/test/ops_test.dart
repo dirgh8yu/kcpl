@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kcpl_customer/ui/screens/overview_screen.dart' show JourneyGraphic;
+import 'package:kcpl_customer/ui/widgets/large_title.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kcpl_customer/api/kcpl_api.dart' show ApiException;
@@ -194,13 +194,14 @@ void main() {
     await signIn(tester);
 
     expect(find.text('Today'), findsWidgets);
-    expect(find.text('Overdue tasks'), findsOneWidget);
-    expect(
-      find.descendant(of: find.byType(JourneyGraphic), matching: find.textContaining('KCPL-2609-0142')),
-      findsOneWidget,
-      reason: 'your exception leads',
-    );
-    expect(find.textContaining('Yours'), findsOneWidget);
+    expect(find.textContaining('Needs action'), findsOneWidget);
+    expect(find.textContaining('1 overdue task'), findsOneWidget);
+    // Your exception leads: the first row under Needs action.
+    final needsAction = tester.getTopLeft(find.textContaining('Needs action')).dy;
+    final lead = tester.getTopLeft(find.textContaining('KCPL-2609-0142', findRichText: true).first).dy;
+    final moving = tester.getTopLeft(find.textContaining('Moving')).dy;
+    expect(lead, inExclusiveRange(needsAction, moving), reason: 'your exception leads');
+    expect(find.textContaining('Yours', findRichText: true), findsWidgets);
     // The unread badge is right before Alerts is opened.
     expect(find.text('3'), findsWidgets);
   });
@@ -275,7 +276,7 @@ void main() {
     await tapInView(tester, find.text('Call customer with revised ETA'));
     await settle(tester);
     await tester.pump(const Duration(seconds: 6));
-    await tester.tap(find.byType(CloseButton));
+    await tester.tap(find.byType(SheetCloseButton));
     await settle(tester);
     expect(api.todays, 2);
   });

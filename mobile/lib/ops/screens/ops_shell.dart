@@ -115,7 +115,7 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
                 TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
             ],
           ),
-          bottomNavigationBar: FloatingTabBar(
+          bottomNavigationBar: KTabBar(
             note: widget.demo ? 'Demo data, not real operations' : null,
             selected: _tab.index,
             onSelected: (index) => _select(OpsTab.values[index]),

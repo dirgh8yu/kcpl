@@ -27,11 +27,20 @@ IconData modeIcon(String mode) => switch (mode) {
   'sea' || 'ocean' => KIcons.sea,
   'road' => KIcons.road,
   'rail' => KIcons.rail,
-  'courier' => KIcons.shipmentsOn,
+  'courier' => KIcons.courier,
   _ => KIcons.route,
 };
 
-/// The journey as a thin line, filled in ink up to where the cargo is
+/// The same, solid, for the cargo's marker on a map.
+IconData modeSolidIcon(String mode) => switch (mode) {
+  'air' => KIcons.airSolid,
+  'sea' || 'ocean' => KIcons.seaSolid,
+  'road' => KIcons.roadSolid,
+  'rail' => KIcons.railSolid,
+  _ => KIcons.courierSolid,
+};
+
+/// The journey as a slim capsule, filled in ink up to where the cargo is
 /// (crimson when the journey has gone wrong). It is drawn where it stands:
 /// progress is data, and data does not animate for style.
 class JourneyBar extends StatelessWidget {
@@ -45,10 +54,11 @@ class JourneyBar extends StatelessWidget {
     return Semantics(
       value: '${journeyStage(status) + 1} / $journeyStageCount',
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(1),
+        borderRadius: BorderRadius.circular(2),
         child: SizedBox(
-          height: 2,
+          height: 3,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 flex: (journeyFraction(status) * 1000).round(),
@@ -56,7 +66,7 @@ class JourneyBar extends StatelessWidget {
               ),
               Expanded(
                 flex: ((1 - journeyFraction(status)) * 1000).round(),
-                child: ColoredBox(color: p.hairline),
+                child: ColoredBox(color: p.fill),
               ),
             ],
           ),
@@ -66,7 +76,7 @@ class JourneyBar extends StatelessWidget {
   }
 }
 
-/// A small icon at the start of a row: crimson for trouble, grey for
+/// A symbol at the start of a row: grey, crimson for trouble, fainter for
 /// anything already dealt with.
 class IconTile extends StatelessWidget {
   const IconTile({super.key, required this.icon, this.attention = false, this.muted = false});
@@ -77,7 +87,7 @@ class IconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return SizedBox(width: 20, child: Icon(icon, size: 18, color: attention ? p.accent : (muted ? p.tertiary : p.secondary)));
+    return Icon(icon, size: 21, color: attention ? p.accent : (muted ? p.tertiary : p.secondary));
   }
 }
 
@@ -91,6 +101,6 @@ class ModeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final delivered = status == 'delivered';
-    return IconTile(icon: delivered ? KIcons.check : modeIcon(mode), attention: status == 'exception', muted: delivered);
+    return IconTile(icon: delivered ? KIcons.done : modeIcon(mode), attention: status == 'exception', muted: delivered);
   }
 }

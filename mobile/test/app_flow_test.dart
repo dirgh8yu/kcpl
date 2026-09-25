@@ -10,9 +10,9 @@ import 'package:kcpl_customer/main.dart';
 import 'package:kcpl_customer/ui/format.dart';
 import 'package:kcpl_customer/ui/map/route_map.dart';
 import 'package:kcpl_customer/ui/motion.dart';
-import 'package:kcpl_customer/ui/screens/overview_screen.dart';
 import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
 import 'package:kcpl_customer/ui/theme.dart';
+import 'package:kcpl_customer/ui/widgets/large_title.dart';
 import 'package:kcpl_customer/ui/widgets/tab_bar.dart';
 
 /// Demo data, but the login has no finance access.
@@ -138,9 +138,11 @@ void main() {
     await signIn(tester);
 
     expect(find.text('Annapurna Home Goods (demo)'), findsOneWidget);
-    expect(find.text('Active shipments'), findsWidgets);
-    await scrollTo(tester, find.text('Free time running out'));
-    expect(find.text('Free time running out'), findsWidgets);
+    expect(find.text('4 shipments on the way'), findsOneWidget);
+    expect(find.byType(FleetMap), findsOneWidget, reason: 'every shipment on its way is on the map');
+    await tester.tap(find.byKey(const ValueKey('home-sheet-grabber')));
+    await settle(tester);
+    expect(find.text('3 free days left at Birgunj ICD.'), findsWidgets);
     await scrollTo(tester, ref('KCPL-S-24103'));
     expect(ref('KCPL-S-24103'), findsWidgets);
   });
@@ -252,7 +254,7 @@ void main() {
       await settle(tester);
       await tester.tap(ref('KCPL-S-24091').first);
       await settle(tester);
-      await tester.tap(find.byType(CloseButton));
+      await tester.tap(find.byType(SheetCloseButton));
       await settle(tester);
       await controller.signOut();
       await settle(tester);
@@ -268,7 +270,7 @@ void main() {
     expect(auth.signOuts, 1);
   });
 
-  testWidgets('with full motion, the journey card flies into its shipment', (tester) async {
+  testWidgets('with full motion, a shipment opens from the home sheet onto its journey', (tester) async {
     await pumpApp(tester, reduceMotion: false);
     // Pumped by time, not settled: the live pulse never settles, by design.
     Future<void> run(Duration total) async {
@@ -282,17 +284,16 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await run(const Duration(seconds: 3));
 
-    expect(find.byType(RouteMap), findsOneWidget, reason: 'the lead shipment is drawn on its map');
-    expect(find.byType(Hero), findsOneWidget);
+    expect(find.byType(FleetMap), findsOneWidget, reason: 'the shipments are drawn on the map');
 
-    await tester.tap(find.byType(JourneyGraphic));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 120));
-    // Mid-flight, the card is in the overlay between the two pages.
-    expect(find.byType(JourneyGraphic), findsWidgets);
+    // A flick up carries the sheet to its top.
+    await tester.fling(find.byKey(const ValueKey('home-sheet-grabber')), const Offset(0, -300), 1500);
+    await run(const Duration(seconds: 1));
+    await tester.tap(ref('KCPL-S-24091').last);
     await run(const Duration(seconds: 2));
 
     expect(find.byType(ShipmentDetailScreen), findsOneWidget);
+    expect(find.byType(RouteMap), findsOneWidget, reason: 'the shipment is drawn on its own map');
     await scrollTo(tester, find.text('Customs declaration lodged'), pushed: true);
     expect(find.text('Customs declaration lodged'), findsOneWidget);
     expect(tester.takeException(), isNull);

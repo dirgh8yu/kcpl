@@ -147,67 +147,83 @@ flutter build ipa --release --dart-define=KCPL_FIREBASE_API_KEY=<key>         # 
 
 ### Design
 
-Quiet, in the manner of the best ride-hailing and banking apps: white (true black in dark
-mode), grey for hierarchy, and crimson only where something has gone wrong, on the sign-in
-button and in the K. Status is written as words, never shown as a coloured pill.
+Apple-native, so the apps feel part of the phone: iOS's grouped look (a soft grey page with
+white cards, black and graphite in dark mode), label greys for hierarchy, hairline
+separators, and crimson only for the brand, the one primary button (sign in) and whatever
+needs the customer to act. Status is written as words, never shown as a coloured pill. The
+apps follow the phone's light or dark setting.
 
-- **Type:** Inter, bundled, on one small scale. Page titles are 28pt (17pt once collapsed),
-  section titles 17pt, reading text 15pt and secondary text 13pt. Figures are 20pt.
-  Hierarchy comes from weight and grey, not size.
-- **The shipment card** (`lib/ui/widgets/shipment_card.dart`): the shipment or job that matters
-  most leads each home screen as one white card. Its route is on the map at the top, and
-  three lines sit below: from and to with the date, the reference, and the status. The
-  same card heads the detail page and moves there as a shared element.
-- **The map** (`lib/ui/map/`): drawn the way ride-hailing apps draw theirs. It shows pale
-  land, soft water, white roads, rivers, borders and small grey town names. The route is
-  in ink from origin (a dot) to destination (a square), grey behind the cargo, and the
-  cargo is a small disc with its mode. Both ends carry an ink label. It is drawn from
-  bundled data (about 480 KB), so it needs no map service, API key or network. Places are
-  matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)"). When either end is
-  unknown, the card shows a plain progress line instead of guessing.
-- **Figures** (`lib/ui/widgets/stats.dart`): four small figures in one card, split by
-  hairlines.
-- **Chrome:** a plain frosted tab bar with grey outline icons and the chosen tab in ink.
-  Detail pages open as sheets that you pull down from the top to close. Icons are 18pt
-  in rows and 22pt in the tab bar, with nothing behind them. Cards have a hairline edge and
-  no shadow.
+- **Type:** the platform's own face (SF Pro on iPhone, Roboto on Android), on Apple's text
+  styles with Apple's tracking for each size: 32pt large titles (17pt once collapsed into the
+  bar), 17pt rows and headlines, 15pt supporting text, 13pt footnotes. Nothing is bundled.
+- **Icons:** Cupertino's set (`cupertino_icons`, drawn after SF Symbols), outline by default
+  and filled for the chosen tab, plus two Phosphor glyphs Cupertino lacks (a boat and a
+  truck). All live in `lib/ui/icons.dart`.
+- **Lists:** inset grouped cards (`RowGroup`, `RowTile`, `DetailRow` in
+  `lib/ui/widgets/common.dart`): 44pt minimum rows, separators that start where the text
+  does, the press highlight on touch-down, and prominent section headers with a quiet action.
+- **Chrome:** the standard tab bar (49pt, frosted, with a hairline) and a large title that
+  slides under a 44pt bar, which frosts over only once content scrolls beneath it
+  (`lib/ui/widgets/large_title.dart`). Detail pages open as sheets with a grabber and a round
+  close button; in dark mode sheets lift to graphite, as iOS does.
+- **Customer home** (`lib/ui/screens/overview_screen.dart`): the map fills the screen with
+  every shipment on its way (`FleetMap`): the one that matters most is drawn in ink with
+  its ends named, and the others are fine lines with their cargo on them. A sheet over the
+  map (`lib/ui/widgets/detent_sheet.dart`) says how things stand ("4 shipments on the way ·
+  1 needs attention") and lists what needs the customer, the active shipments, the balance
+  and recent documents. Pull the sheet up for more.
+- **KCPL Ops Today:** a list in the manner of Reminders, grouped into Needs action, Moving
+  and Delivered, each with its count, and your own jobs first.
+- **The map** (`lib/ui/map/`): pale land, soft water, white roads, rivers, borders and small
+  grey town names, from bundled data (about 480 KB), so it needs no map service, API key or
+  network. Places are matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)").
+  When either end is unknown, a plain progress line stands in.
 
-Tabs keep their state and scroll position, and selection changes give a light haptic
-tick.
+Tabs keep their state and scroll position.
+
+To see every screen as an iPhone shows it, light and dark, on demo data:
+
+```sh
+flutter test tool/screenshots_test.dart --update-goldens   # PNGs in tool/screenshots/
+```
+
+(SF Pro exists only on Apple hardware, so Inter stands in for it there.)
 
 ### Motion
 
-Motion follows Emil Kowalski's rules: every animation has a purpose, anything seen tens
-of times a day barely moves, UI stays under 300ms, entrances and exits ease out, and data
-people read never moves for style. Curves and durations live in `lib/ui/motion.dart`
-(`easeOut` 0.23, 1, 0.32, 1; `drawer` 0.32, 0.72, 0, 1; press 100ms, release 160ms,
-reveal 300ms, stagger 40ms).
+Motion follows Emil Kowalski's rules and Apple's fluid-interface ones: every animation has
+a purpose, anything seen tens of times a day barely moves, UI stays under 300ms, entrances
+and exits ease out, gestures track the finger 1:1 and hand their velocity to a spring, and
+data people read never moves for style. Curves and durations live in
+`lib/ui/motion.dart` (`easeOut` 0.23, 1, 0.32, 1; `drawer` 0.32, 0.72, 0, 1; press 100ms,
+release 160ms, reveal 300ms, stagger 40ms).
 
 | Where | What it does | Why |
 |---|---|---|
-| Launch | The K's strokes assemble, then a crimson charge cycles (1s) until the app is ready. | Status; rare |
+| Home sheet | Rests at three heights and follows the finger 1:1. On release it goes where the flick's momentum projects (Apple's projection, deceleration 0.998) and springs there from the finger's own speed: critically damped, with a little bounce only after a real flick. A touch catches it mid-flight. Below the lowest height it rubber-bands, and a long pull there refreshes. The content scrolls once the sheet is fully up, and the map dims as the sheet covers it. | Direct manipulation; interruptible |
 | Sign-in | KCPL's lanes into Nepal move on the map behind the form. The crimson button presses in and its label becomes the charging K. A wrong password shakes the fields (400ms) with a haptic. | Rare, so it may delight; feedback |
 | Sign-in ↔ app | A 400ms fade with a slight scale. | Prevents a jarring swap |
 | Pages | Content fades up 8px over 300ms, 40ms apart; skeletons shimmer while loading. Refreshes update in place. | Prevents teleporting content |
-| Pull to refresh | The K assembles with the pull, a tick says release will refresh, and it charges while loading, then leaves in 200ms. | Feedback during the gesture |
-| Detail sheets | Rise in 420ms (drawer curve), leave in 300ms. The page behind scales back and rounds, as iOS does. Pull down to close: after 10px the sheet follows the finger 1:1. A flick (over 0.11 px/ms) decides by its direction. A slow release decides by distance. It springs back from the finger's own velocity. | Spatial consistency; direct manipulation |
+| Title bar | The large title slides under the bar; the small title fades in and the bar frosts over (150ms). | Wayfinding |
+| Pull to refresh | The system spinner's ticks appear with the pull, a click says release will refresh, and it spins while loading. | Feedback during the gesture |
+| Detail sheets | Rise in 420ms (drawer curve), leave in 300ms. The page behind scales back and rounds. Pull down to close: after 10px the sheet follows the finger 1:1. A flick (over 0.11 px/ms) decides by its direction, a slow release by distance, and it springs back from the finger's own velocity. | Spatial consistency; direct manipulation |
 | Push banner | Drops in from the top, leaves the same way (200ms), and flicks up to dismiss. It rubber-bands if pulled down, and settles back if let go part-way. | Spatial consistency |
-| Presses | Buttons and cards scale to 0.97 (cards 0.985) on touch-down. | Feedback |
+| Presses | Rows highlight on touch-down; buttons and cards scale to 0.97 (cards 0.985). | Feedback |
 | Checks and downloads | Icons crossfade from 0.9 scale in 180ms. | State change |
 
 **Deliberately not animated:**
-- Figures (no count-up), progress lines, the route on the map, and branch load bars: these are data.
+- Figures (no count-up), progress lines, the routes on the map, and branch load bars: these are data.
 - Tab switches: no pop and no haptic.
-- The ticked-task burst: tens a day.
-- The loops behind live items.
+- The home sheet reaching a height: no haptic, since it happens tens of times a day.
 
 Haptics mark only meaningful moments: a tick, a success, an error, arming a refresh, and
 closing a sheet.
 
-With the system's Reduce Motion setting on, nothing moves or loops, and short fades
+With the system's Reduce Motion setting on, nothing loops and nothing bounces; short fades
 remain. The flow tests run under that setting, so a looping animation that ignored it
-would hang them. Two further tests run with full motion: the shared-element flight, and
-the crimson button with its shake.
+would hang them. Further tests run with full motion: the home sheet's gestures
+(`test/detent_sheet_test.dart`), a detail sheet's flick, and the crimson button with its
+shake.
 
 The map data is Natural Earth 1:10m (public domain): land, lakes, rivers, roads,
 borders and towns, clipped to South, East and South-East Asia and the Gulf. To rebuild
@@ -299,8 +315,8 @@ Strings only the app needs live in that script with both languages side by side.
 
 Dates and amounts are records and read the same in either language, as on the web. Nepali
 renders in the bundled Noto Sans Devanagari (SIL OFL), so it looks the same on every
-handset. Inter and Inter Tight are also SIL OFL, and Phosphor is MIT; the licences are in
-`assets/fonts/`.
+handset. Phosphor's two glyphs are MIT; the licences are in `assets/fonts/`. Inter (SIL OFL,
+`test/fonts/`) is used only by the screenshot tool.
 
 ## Checks
 

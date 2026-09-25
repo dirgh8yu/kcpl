@@ -13,6 +13,7 @@ import 'common.dart';
 import 'k_refresh.dart';
 import 'large_title.dart';
 import 'sheet_route.dart';
+import 'tab_bar.dart' show KTabBar;
 
 /// A screen with a large title that collapses into the bar as it scrolls,
 /// which loads one thing and renders it. Every screen gets the same
@@ -27,7 +28,23 @@ class AsyncPage<T> extends StatefulWidget {
     this.onMissing,
     this.placeholder,
     this.leading = 0,
-  });
+    this.actions = const [],
+  }) : layout = null;
+
+  /// A page with a layout of its own (the map home), sharing the loading,
+  /// refreshing and failure behaviour. [layout] gets what has loaded (null
+  /// until then), the failure view when loading failed, and a refresh.
+  const AsyncPage.custom({super.key, required this.load, required this.layout})
+    : title = '',
+      builder = _noBody,
+      onMissing = null,
+      placeholder = null,
+      leading = 0,
+      actions = const [];
+
+  static List<Widget> _noBody(BuildContext context, Object? data) => const [];
+
+  final Widget Function(BuildContext context, T? data, Widget? failure, Future<void> Function() refresh)? layout;
 
   final String title;
   final Future<T> Function() load;
@@ -46,6 +63,9 @@ class AsyncPage<T> extends StatefulWidget {
   /// How many leading widgets the placeholder and the loaded page share.
   /// They stay put when the data lands; everything after them fades up.
   final int leading;
+
+  /// Small buttons at the trailing end of the title bar.
+  final List<Widget> actions;
 
   @override
   State<AsyncPage<T>> createState() => _AsyncPageState<T>();
@@ -223,6 +243,10 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     final data = _data;
     final error = _error;
+    final layout = widget.layout;
+    if (layout != null) {
+      return layout(context, data, data == null && error != null && !_loading ? _failure(context, error) : null, _refresh);
+    }
 
     final placeholder = widget.placeholder;
     final body = <Widget>[
@@ -235,18 +259,18 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       else if (error != null)
         SliverFillRemaining(hasScrollBody: false, child: Center(child: _failure(context, error))),
       // Clear of the frosted tab bar, which the page scrolls beneath.
-      SliverToBoxAdapter(child: SizedBox(height: 48 + MediaQuery.paddingOf(context).bottom)),
+      SliverToBoxAdapter(child: SizedBox(height: KTabBar.height + 28 + MediaQuery.paddingOf(context).bottom)),
     ];
 
     final scroll = CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        LargeTitleBar(title: widget.title),
+        LargeTitleBar(title: widget.title, actions: widget.actions),
         ...body,
       ],
     );
     // In a sheet, pulling down closes it; the page still refreshes itself.
     if (SheetRoute.of(context)) return scroll;
-    return KRefresh(onRefresh: _refresh, edgeOffset: MediaQuery.paddingOf(context).top + 98, child: scroll);
+    return KRefresh(onRefresh: _refresh, edgeOffset: MediaQuery.paddingOf(context).top + LargeTitleBar.toolbar, child: scroll);
   }
 }

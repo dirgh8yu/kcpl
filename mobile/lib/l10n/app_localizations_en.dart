@@ -347,6 +347,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewColEta => 'ETA';
 
   @override
+  String homeOnTheWay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count shipments on the way',
+      one: '1 shipment on the way',
+      zero: 'Nothing on the way',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeNeedsAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count need attention',
+      one: '1 needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeArriving(int count) {
+    return '$count arriving this week';
+  }
+
+  @override
+  String get homeAllClear => 'Everything is moving as planned';
+
+  @override
+  String get homeNeedsYou => 'Needs you';
+
+  @override
   String get shipsFocusAll => 'All';
 
   @override
