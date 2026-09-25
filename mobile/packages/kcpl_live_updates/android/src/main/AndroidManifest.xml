@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 16: lets a followed shipment show as a Live Update (a chip in
+         the status bar and the top of the lock screen). -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
+</manifest>

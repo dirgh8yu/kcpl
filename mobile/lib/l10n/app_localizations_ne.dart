@@ -1397,6 +1397,47 @@ class AppLocalizationsNe extends AppLocalizations {
       'KCPL ले कुनै शुल्क लिएको छैन। फेरि प्रयास गर्नुहोस् वा अर्को तरिकाले तिर्नुहोस्।';
 
   @override
+  String payOwed(String amount) {
+    return '$amount बाँकी';
+  }
+
+  @override
+  String get payWhole => 'पूरा बाँकी';
+
+  @override
+  String get payPart => 'केही भाग';
+
+  @override
+  String payAmount(String currency) {
+    return 'तिर्ने रकम ($currency)';
+  }
+
+  @override
+  String get payTooMuch => 'यो बाँकीभन्दा बढी हो।';
+
+  @override
+  String payTooLittle(int minimum) {
+    return 'अनलाइन सबैभन्दा सानो भुक्तानी रु. $minimum हो।';
+  }
+
+  @override
+  String get payEnterAmount => 'रकम लेख्नुहोस्।';
+
+  @override
+  String payInRupees(String amount) {
+    return 'तपाईं रुपैयाँमा $amount तिर्नुहुन्छ';
+  }
+
+  @override
+  String payRate(String currency, String rate, String date) {
+    return '१ $currency = रु. $rate, $date को नेपाल राष्ट्र बैंकको बिक्री दर। भुक्तानी सुरु गर्दा दर तय हुन्छ; KCPL लेखाले भुक्तानी बिलमा लगाउँछ।';
+  }
+
+  @override
+  String get payPartFootnote =>
+      'बाँकी रकम बिलमै रहन्छ, पछि वा बैंक ट्रान्सफरबाट तिर्न सकिन्छ।';
+
+  @override
   String get payCouldNotOpen => 'यो फोनमा भुक्तानी पेज खुल्न सकेन।';
 
   @override
@@ -1638,6 +1679,47 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get opsSplitJobBody => 'यसका काम, डेलिभरी र सन्देश यहाँ खुल्छन्।';
+
+  @override
+  String get splitDocument => 'कागजात छान्नुहोस्';
+
+  @override
+  String get splitDocumentBody => 'यो यहाँ खुल्छ, यसको ढुवानीसँगै।';
+
+  @override
+  String get splitAccount => 'कोटेशन र तपाईंको टोली';
+
+  @override
+  String get splitAccountBody => 'यी यहाँ, तपाईंको सेटिङसँगै खुल्छन्।';
+
+  @override
+  String get opsSplitAlert => 'सूचना छान्नुहोस्';
+
+  @override
+  String get opsSplitAlertBody => 'यो जुन जबबारे हो, त्यो यहाँ खुल्छ।';
+
+  @override
+  String get docOpen => 'खोल्नुहोस्';
+
+  @override
+  String get docFile => 'फाइल';
+
+  @override
+  String get docAdded => 'थपिएको';
+
+  @override
+  String get docSize => 'आकार';
+
+  @override
+  String get docState => 'जाँच';
+
+  @override
+  String docShipment(String reference) {
+    return 'ढुवानी $reference खोल्नुहोस्';
+  }
+
+  @override
+  String get docPreviewFailed => 'पूर्वावलोकन खुल्न सकेन। बरु फाइल खोल्नुहोस्।';
 
   @override
   String get qaTrack => 'ढुवानी हेर्नुहोस्';

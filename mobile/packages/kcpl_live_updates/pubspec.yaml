@@ -1,0 +1,19 @@
+name: kcpl_live_updates
+description: A followed shipment as an ongoing Android notification (a Live Update on Android 16), moved by the app and by KCPL's push, even in the background.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.35.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: np.com.kapileshworcargo.kcpl_live_updates
+        pluginClass: KcplLiveUpdatesPlugin

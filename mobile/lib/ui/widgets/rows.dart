@@ -123,36 +123,46 @@ class _DocumentRowTileState extends State<DocumentRowTile> {
     // upload is listed for its review state.
     final downloadable = !document.fromCustomer;
 
-    return RowTile(
-      onTap: downloadable && !_busy ? _open : null,
-      leading: IconTile(icon: document.contentType.startsWith('image/') ? KIcons.image : KIcons.document),
-      title: Text(documentTypeLabel(l, document.documentType)),
-      subtitle: Text(
-        [
-          if (widget.showShipment) document.shipmentReference,
-          formatShortDate(document.uploadedAt),
-          if (document.fromCustomer) l.docsSentByYou else formatBytes(document.sizeBytes),
-        ].join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: !downloadable
-          ? (state == null ? null : StatusText(state.$1, state.$2))
-          : SizedBox(
-              width: 24,
-              height: 24,
-              child: AnimatedSwitcher(
-                duration: Motion.swap,
-                switchInCurve: Motion.easeOut,
-                switchOutCurve: Motion.easeOut,
-                transitionBuilder: morphTransition,
-                child: _busy
-                    ? CupertinoActivityIndicator(key: const ValueKey('busy'), radius: 9, color: p.secondary)
-                    : _done
-                    ? Icon(KIcons.done, key: const ValueKey('done'), size: 22, color: p.ink)
-                    : Icon(KIcons.download, key: const ValueKey('ready'), size: 22, color: p.secondary, semanticLabel: l.commonDownload),
+    // On a tablet the document opens beside the list, whoever sent it.
+    final key = '${document.shipmentReference}/${document.id}';
+    final beside = SplitView.beside(context);
+    return SplitSelected(
+      id: key,
+      child: RowTile(
+        onTap: beside
+            ? () => SplitView.select(context, key, item: document)
+            : downloadable && !_busy
+            ? _open
+            : null,
+        leading: IconTile(icon: document.contentType.startsWith('image/') ? KIcons.image : KIcons.document),
+        title: Text(documentTypeLabel(l, document.documentType)),
+        subtitle: Text(
+          [
+            if (widget.showShipment) document.shipmentReference,
+            formatShortDate(document.uploadedAt),
+            if (document.fromCustomer) l.docsSentByYou else formatBytes(document.sizeBytes),
+          ].join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: !downloadable
+            ? (state == null ? null : StatusText(state.$1, state.$2))
+            : SizedBox(
+                width: 24,
+                height: 24,
+                child: AnimatedSwitcher(
+                  duration: Motion.swap,
+                  switchInCurve: Motion.easeOut,
+                  switchOutCurve: Motion.easeOut,
+                  transitionBuilder: morphTransition,
+                  child: _busy
+                      ? CupertinoActivityIndicator(key: const ValueKey('busy'), radius: 9, color: p.secondary)
+                      : _done
+                      ? Icon(KIcons.done, key: const ValueKey('done'), size: 22, color: p.ink)
+                      : Icon(KIcons.download, key: const ValueKey('ready'), size: 22, color: p.secondary, semanticLabel: l.commonDownload),
+                ),
               ),
-            ),
+      ),
     );
   }
 }

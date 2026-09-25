@@ -794,6 +794,57 @@
   },
   "payFailed": "Payment not completed",
   "payFailedBody": "Nothing was charged by KCPL. You can try again or pay another way.",
+  "payOwed": "{amount} owed",
+  "@payOwed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payWhole": "Whole balance",
+  "payPart": "Part of it",
+  "payAmount": "Amount to pay ({currency})",
+  "@payAmount": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "payTooMuch": "That is more than is owed.",
+  "payTooLittle": "The smallest online payment is NPR {minimum}.",
+  "@payTooLittle": {
+    "placeholders": {
+      "minimum": {
+        "type": "int"
+      }
+    }
+  },
+  "payEnterAmount": "Enter an amount.",
+  "payInRupees": "You pay {amount} in rupees",
+  "@payInRupees": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payRate": "1 {currency} = NPR {rate}, Nepal Rastra Bank's selling rate for {date}. The rate is fixed when you start paying; KCPL accounts apply the payment to the invoice.",
+  "@payRate": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "payPartFootnote": "The rest stays on the invoice, to pay later or by bank transfer.",
   "payCouldNotOpen": "The payment page could not be opened on this phone.",
   "emailSection": "Email me about",
   "calendarSection": "Dates",
@@ -915,6 +966,26 @@
   "splitInvoiceBody": "Its balance, receipts and paying online open here.",
   "opsSplitJob": "Choose a job",
   "opsSplitJobBody": "Its tasks, delivery and messages open here.",
+  "splitDocument": "Choose a document",
+  "splitDocumentBody": "It opens here, with the shipment it belongs to.",
+  "splitAccount": "Quotes and your team",
+  "splitAccountBody": "They open here, beside your settings.",
+  "opsSplitAlert": "Choose an alert",
+  "opsSplitAlertBody": "The job it is about opens here.",
+  "docOpen": "Open",
+  "docFile": "File",
+  "docAdded": "Added",
+  "docSize": "Size",
+  "docState": "Review",
+  "docShipment": "Open shipment {reference}",
+  "@docShipment": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "docPreviewFailed": "The preview could not be loaded. Open the file instead.",
   "qaTrack": "Track a shipment",
   "qaQuote": "Request a quote",
   "qaPay": "Pay an invoice",

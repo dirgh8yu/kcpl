@@ -12,6 +12,10 @@ import '../../platform/app_shortcuts.dart';
 import 'quote_screen.dart' show openQuote;
 import 'account_screen.dart';
 import 'invoice_detail_screen.dart';
+import 'document_pane.dart';
+import 'quotes_screen.dart' show QuotesScreen;
+import 'team_screen.dart' show TeamScreen;
+import '../../api/models.dart' show DocumentRow;
 import 'shipment_detail_screen.dart';
 import '../widgets/common.dart' show EmptyState;
 import '../widgets/split_view.dart';
@@ -133,16 +137,27 @@ class _HomeShellState extends State<HomeShell> {
       // On a tablet, the list with the chosen one beside it.
       HomeTab.shipments => SplitView(
         list: const ShipmentsScreen(),
-        detail: (context, reference) => ShipmentDetailScreen(reference: reference),
+        detail: (context, reference, _) => ShipmentDetailScreen(reference: reference),
         placeholder: EmptyState(icon: KIcons.shipments, title: l.splitShipment, description: l.splitShipmentBody),
       ),
-      HomeTab.documents => const DocumentsScreen(),
+      HomeTab.documents => SplitView(
+        list: const DocumentsScreen(),
+        detail: (context, _, item) => item is DocumentRow
+            ? DocumentPane(document: item)
+            : EmptyState(icon: KIcons.document, title: l.splitDocument, description: l.splitDocumentBody),
+        placeholder: EmptyState(icon: KIcons.document, title: l.splitDocument, description: l.splitDocumentBody),
+      ),
       HomeTab.invoices => SplitView(
         list: const InvoicesScreen(),
-        detail: (context, reference) => InvoiceDetailScreen(reference: reference),
+        detail: (context, reference, _) => InvoiceDetailScreen(reference: reference),
         placeholder: EmptyState(icon: KIcons.invoices, title: l.splitInvoice, description: l.splitInvoiceBody),
       ),
-      HomeTab.account => AccountScreen(version: widget.version),
+      // Settings on the left, quotes or the team beside them.
+      HomeTab.account => SplitView(
+        list: AccountScreen(version: widget.version),
+        detail: (context, id, _) => id == 'team' ? const TeamScreen() : const QuotesScreen(),
+        placeholder: EmptyState(icon: KIcons.account, title: l.splitAccount, description: l.splitAccountBody),
+      ),
     };
 
     // A tapped notification opens what it is about: a shipment, or an

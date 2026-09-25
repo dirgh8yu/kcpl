@@ -114,3 +114,17 @@ export function liveActivityState(
 export function liveActivityEnds(shipment: Record<string, unknown>) {
   return shipment.status === "delivered";
 }
+
+/** The Android follow's update, as FCM data (strings only). The app handles
+ * it in lib/push, moving or ending its ongoing notification. */
+export function androidLiveData(reference: string, state: LiveActivityState, ends: boolean): Record<string, string> {
+  return {
+    kind: "live",
+    reference,
+    event: ends ? "end" : "update",
+    status: state.status,
+    detail: state.detail,
+    progress: String(Math.round(Math.min(1, Math.max(0, state.progress)) * 100) / 100),
+    attention: state.attention ? "1" : "0",
+  };
+}

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseAdminMessaging, firebaseRuntimeConfigured } from "./firebase-admin.server";
 import {
   mobileDeviceId,
+  androidLiveData,
   liveActivityEnds,
   mobilePushTokenDead,
   type LiveActivityState,
@@ -113,13 +114,24 @@ export async function sendMobilePush(devices: MobileDevice[], message: MobilePus
 
 const LIVE = "mobile_live_activities";
 
+export type LivePlatform = "ios" | "android";
+
 function liveId(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-/** Registers a Live Activity the app started for one of the customer's own
- * shipments, with the tokens FCM needs to update it. */
-export async function saveLiveActivity(input: { email: string; customerId: string; shipmentReference: string; activityToken: string; fcmToken: string }) {
+/** Registers a shipment the customer follows on their lock screen, with what
+ * FCM needs to move it: on iOS a Live Activity and its APNs push token, on
+ * Android the app's own ongoing notification, identified by an id the app
+ * chose, moved by a data message the app handles itself. */
+export async function saveLiveActivity(input: {
+  email: string;
+  customerId: string;
+  shipmentReference: string;
+  activityToken: string;
+  fcmToken: string;
+  platform: LivePlatform;
+}) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   await firebaseAdminDb().collection(LIVE).doc(liveId(input.activityToken)).set({
     email: input.email.trim().toLowerCase(),
@@ -127,6 +139,7 @@ export async function saveLiveActivity(input: { email: string; customerId: strin
     shipment_reference: input.shipmentReference,
     activity_token: input.activityToken,
     fcm_token: input.fcmToken,
+    platform: input.platform,
     updated_at: new Date().toISOString(),
   });
   return { kind: "saved" as const };
@@ -170,8 +183,16 @@ export async function refreshLiveActivities(
         continue;
       }
       try {
+        const token = String(activity.get("fcm_token"));
+        if (activity.get("platform") === "android") {
+          // Data only, at high priority: the app moves its own notification,
+          // even when it isn't running, and nothing is shown twice.
+          await firebaseAdminMessaging().send({ token, data: androidLiveData(shipmentReference, state(data), ends), android: { priority: "high", ttl: 6 * 60 * 60 * 1000 } });
+          if (ends) await activity.ref.delete();
+          continue;
+        }
         await firebaseAdminMessaging().send({
-          token: String(activity.get("fcm_token")),
+          token,
           apns: {
             liveActivityToken: String(activity.get("activity_token")),
             headers: { "apns-priority": "10" },

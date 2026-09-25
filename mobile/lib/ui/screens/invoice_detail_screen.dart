@@ -24,7 +24,7 @@ class InvoiceDetailScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final api = AppScope.of(context).api;
     return Scaffold(
-      body: AsyncPage<(Invoice, List<Remittance>, List<String>)>(
+      body: AsyncPage<(Invoice, List<Remittance>, PaymentOptions)>(
         title: reference,
         load: () async {
           final invoice = api.invoice(reference);
@@ -32,8 +32,8 @@ class InvoiceDetailScreen extends StatelessWidget {
           // the invoice still shows.
           final receipts = api.remittances(reference).catchError((Object _) => <Remittance>[], test: (e) => e is ApiException);
           // So is paying online: offered only when KCPL says it can be, now.
-          final gateways = api.paymentOptions(reference).catchError((Object _) => <String>[], test: (e) => e is ApiException);
-          return (await invoice, await receipts, await gateways);
+          final options = api.paymentOptions(reference).catchError((Object _) => PaymentOptions.none, test: (e) => e is ApiException);
+          return (await invoice, await receipts, await options);
         },
         onMissing: (context, _) => EmptyState(icon: KIcons.noResults, title: l.invdNotFoundTitle, description: l.invdNotFoundDescription),
         builder: (context, loaded) => _body(context, loaded.$1, loaded.$2, loaded.$3),
@@ -41,7 +41,7 @@ class InvoiceDetailScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _body(BuildContext context, Invoice invoice, List<Remittance> receipts, List<String> gateways) {
+  List<Widget> _body(BuildContext context, Invoice invoice, List<Remittance> receipts, PaymentOptions options) {
     final l = AppLocalizations.of(context);
     final p = context.palette;
     String money(double value) => formatMoney(value, invoice.currency);
@@ -83,14 +83,14 @@ class InvoiceDetailScreen extends StatelessWidget {
               ],
             ),
           ),
-          if (gateways.isNotEmpty && invoice.balanceDue > 0)
+          if (options.available && invoice.balanceDue > 0)
             RowTile(
               onTap: () async {
-                if (await openPay(context, invoice, gateways) && context.mounted) await AsyncPage.reload(context);
+                if (await openPay(context, invoice, options) && context.mounted) await AsyncPage.reload(context);
               },
               leading: const IconTile(icon: KIcons.wallet, attention: true),
               title: Text(l.payOnline, style: TextStyle(color: p.accent)),
-              subtitle: Text(gateways.map((g) => paymentGatewayNames[g] ?? g).join(' · ')),
+              subtitle: Text(options.gateways.map((g) => paymentGatewayNames[g] ?? g).join(' · ')),
             ),
           // Paid at the bank instead: what the app can do is tell KCPL.
           if (invoice.balanceDue > 0 && invoice.recordType == 'invoice')

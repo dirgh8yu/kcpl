@@ -52,6 +52,9 @@ dependencies:
   cunning_document_scanner: ^3.0.3
   http_parser: ^4.1.2
   quick_actions: ^1.1.1
+  # A followed shipment on the Android lock screen (packages/kcpl_live_updates).
+  kcpl_live_updates:
+    path: packages/kcpl_live_updates
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -4,8 +4,11 @@ import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/ops/ops_demo.dart';
 import 'package:kcpl_customer/ops/screens/job_detail_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/screens/document_pane.dart';
 import 'package:kcpl_customer/ui/screens/invoice_detail_screen.dart';
+import 'package:kcpl_customer/ui/screens/quotes_screen.dart';
 import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
+import 'package:kcpl_customer/ui/widgets/rows.dart' show DocumentRowTile;
 import 'package:kcpl_customer/ui/widgets/sheet_route.dart';
 
 import 'app_flow_test.dart' show pumpApp, ref, settle, signIn;
@@ -82,6 +85,48 @@ void main() {
     expect(find.byType(JobDetailScreen), findsOneWidget);
     expect(sheetOpen(tester), isFalse);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('on an iPad, a document opens beside the list, with its shipment a tap away', (tester) async {
+    await pumpApp(tester, api: DemoApi());
+    ipad(tester);
+    await signIn(tester);
+    await tester.tap(find.text('Documents').last);
+    await settle(tester);
+    expect(find.text('Choose a document'), findsOneWidget);
+    await tester.tap(find.byType(DocumentRowTile).first);
+    await settle(tester);
+    expect(find.byType(DocumentPane), findsOneWidget);
+    expect(find.text('BL-MAEU241877301.pdf'), findsOneWidget);
+    expect(sheetOpen(tester), isFalse, reason: 'the file waits for Open; the pane shows what it is');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('on an iPad, Quotes and Team open beside the settings', (tester) async {
+    await pumpApp(tester, api: DemoApi());
+    ipad(tester);
+    await signIn(tester);
+    await tester.tap(find.text('Account').last);
+    await settle(tester);
+    expect(find.text('Quotes and your team'), findsOneWidget);
+    await tester.tap(find.text('Quotes').first);
+    await settle(tester);
+    expect(find.byType(QuotesScreen), findsOneWidget);
+    expect(sheetOpen(tester), isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('KCPL Ops on an iPad: an alert opens its job beside the list', (tester) async {
+    await ops.pumpOps(tester, api: DemoOpsApi());
+    ipad(tester);
+    await ops.signIn(tester);
+    await tester.tap(find.text('Alerts').last);
+    await ops.settle(tester);
+    expect(find.text('Choose an alert'), findsOneWidget);
+    await tester.tap(find.text('KCPL-2609-0142 held at Jogbani border'));
+    await ops.settle(tester);
+    expect(find.byType(JobDetailScreen), findsOneWidget);
+    expect(sheetOpen(tester), isFalse);
   });
 
   // The sheet route is what a phone gets; keep it referenced for the check above.

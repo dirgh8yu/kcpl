@@ -42,7 +42,12 @@ class _FakeLive implements LiveActivities {
   @override
   Future<List<LiveActivityHandle>> running() async => [...running_];
   @override
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel}) async {
+  Future<LiveActivityHandle?> start({
+    required String reference,
+    required String route,
+    required LiveShipmentState state,
+    String? channel,
+  }) async {
     last = state;
     final handle = LiveActivityHandle(id: 'a1', reference: reference, pushToken: 'apns-1');
     running_.add(handle);
@@ -108,14 +113,26 @@ void main() {
     });
 
     test('quotes read the portal’s fields, and a price past its date cannot be accepted', () async {
-      final page = await api([], (_) => {
-        'quotes': [
-          {'reference': 'Q1', 'quoted_amount': 1000, 'quote_currency': 'NPR', 'valid_until': '2026-09-20', 'weight': '12', 'weight_unit': 'kg'},
-          {'reference': 'Q2', 'quoted_amount': 50, 'quote_currency': 'USD', 'valid_until': '2026-10-20'},
-          {'reference': 'Q3', 'quoted_amount': 70, 'booking_requested_at': '2026-09-24T10:00:00Z'},
-        ],
-        'requests': [{'reference': 'Q4'}],
-      }).quotes();
+      final page = await api(
+        [],
+        (_) => {
+          'quotes': [
+            {
+              'reference': 'Q1',
+              'quoted_amount': 1000,
+              'quote_currency': 'NPR',
+              'valid_until': '2026-09-20',
+              'weight': '12',
+              'weight_unit': 'kg',
+            },
+            {'reference': 'Q2', 'quoted_amount': 50, 'quote_currency': 'USD', 'valid_until': '2026-10-20'},
+            {'reference': 'Q3', 'quoted_amount': 70, 'booking_requested_at': '2026-09-24T10:00:00Z'},
+          ],
+          'requests': [
+            {'reference': 'Q4'},
+          ],
+        },
+      ).quotes();
       final now = DateTime.utc(2026, 9, 25);
       expect(page.quotes[0].weight, '12 kg');
       expect(page.quotes.map((q) => q.canProceed(now)), [false, true, false]);
@@ -124,30 +141,49 @@ void main() {
 
     test('notification switches go as the portal’s four topics', () async {
       final seen = <http.Request>[];
-      final saved = await api(seen, (request) => {'ok': true, 'preferences': jsonDecode(request.body) as Object})
-          .setNotificationPreferences(const NotificationPreferences(shipmentUpdates: true, documents: false, freeTime: true));
+      final saved = await api(
+        seen,
+        (request) => {'ok': true, 'preferences': jsonDecode(request.body) as Object},
+      ).setNotificationPreferences(const NotificationPreferences(shipmentUpdates: true, documents: false, freeTime: true));
       expect(jsonDecode(seen.single.body), {'shipment_updates': true, 'documents': false, 'free_time': true, 'invoices': true});
       expect(saved.documents, isFalse);
     });
 
     test('a payment is started and asked after; the phone never signs anything', () async {
       final seen = <http.Request>[];
-      final client = api(seen, (request) => switch (request.url.path) {
-        '/api/mobile/v1/invoices/INV-1/pay' when request.method == 'GET' => {'ok': true, 'gateways': ['khalti', 'esewa']},
-        '/api/mobile/v1/invoices/INV-1/pay' => {'ok': true, 'intent': 'abc', 'url': 'https://kcpl.example/pay/abc'},
-        _ => {'ok': true, 'payment': {'id': 'abc', 'invoice': 'INV-1', 'gateway': 'khalti', 'amount': 1040.5, 'status': 'needs_review'}},
-      });
-      expect(await client.paymentOptions('INV-1'), ['khalti', 'esewa']);
+      final client = api(
+        seen,
+        (request) => switch (request.url.path) {
+          '/api/mobile/v1/invoices/INV-1/pay' when request.method == 'GET' => {
+            'ok': true,
+            'gateways': ['khalti', 'esewa'],
+          },
+          '/api/mobile/v1/invoices/INV-1/pay' => {'ok': true, 'intent': 'abc', 'url': 'https://kcpl.example/pay/abc'},
+          _ => {
+            'ok': true,
+            'payment': {'id': 'abc', 'invoice': 'INV-1', 'gateway': 'khalti', 'amount': 1040.5, 'status': 'needs_review'},
+          },
+        },
+      );
+      expect((await client.paymentOptions('INV-1')).gateways, ['khalti', 'esewa']);
       final started = await client.startPayment('INV-1', 'khalti');
-      expect(jsonDecode(seen[1].body), {'gateway': 'khalti'}, reason: 'only which gateway; the amount is the server’s');
+      expect(jsonDecode(seen[1].body), {
+        'gateway': 'khalti',
+      }, reason: 'the whole balance: no amount, and never a rupee sum or rate from the phone');
+      await client.startPayment('INV-1', 'khalti', amount: 500);
+      expect(jsonDecode(seen[2].body), {'gateway': 'khalti', 'amount': 500}, reason: 'part of it, in the invoice’s own currency');
       expect(started.url.toString(), 'https://kcpl.example/pay/abc');
       final status = await client.payment('abc');
+      seen.clear();
       expect((status.review, status.settled, status.paid), (true, true, false));
     });
 
     test('tracking links and Live Activities go to their own routes', () async {
       final seen = <http.Request>[];
-      final client = api(seen, (request) => {'ok': true, 'url': 'https://kcpl.example/t/x', 'expires_at': '2026-10-25T00:00:00Z', 'revoked': 2});
+      final client = api(
+        seen,
+        (request) => {'ok': true, 'url': 'https://kcpl.example/t/x', 'expires_at': '2026-10-25T00:00:00Z', 'revoked': 2},
+      );
       expect((await client.createTrackingLink('KCPL-S-1')).url.path, '/t/x');
       expect(await client.revokeTrackingLinks('KCPL-S-1'), 2);
       await client.followLive('KCPL-S-1', activityToken: 'apns', pushToken: 'fcm');
@@ -156,7 +192,7 @@ void main() {
         'DELETE /api/mobile/v1/shipments/KCPL-S-1/tracking-link',
         'POST /api/mobile/v1/live-activities',
       ]);
-      expect(jsonDecode(seen.last.body), {'shipment': 'KCPL-S-1', 'activityToken': 'apns', 'fcmToken': 'fcm'});
+      expect(jsonDecode(seen.last.body), {'shipment': 'KCPL-S-1', 'activityToken': 'apns', 'fcmToken': 'fcm', 'platform': 'ios'});
     });
   });
 
@@ -250,11 +286,53 @@ void main() {
     expect(find.text('connectIPS'), findsOneWidget);
   });
 
-  testWidgets('a dollar invoice is not offered online payment', (tester) async {
-    await _pump(tester, DemoApi());
+  testWidgets('part of a balance can be paid; more than is owed cannot', (tester) async {
+    final api = DemoApi();
+    await _pump(tester, api);
+    await _invoice(tester, 'KCPL-I-20260918-011');
+    await tester.tap(find.text('Pay online'));
+    await settle(tester);
+    await tester.tap(find.text('Part of it'));
+    await settle(tester);
+    await tester.enterText(find.byType(TextField).last, '300000');
+    await tester.pump();
+    expect(find.text('That is more than is owed.'), findsOneWidget);
+    await tester.tap(find.text('Khalti'));
+    await settle(tester);
+    expect(api.payments, isEmpty, reason: 'no gateway while the amount is wrong');
+
+    await tester.enterText(find.byType(TextField).last, '50000');
+    await tester.pump();
+    expect(find.text('Pay ${formatMoney(50000, 'NPR')} with'), findsOneWidget);
+    await tester.tap(find.text('Khalti'));
+    await settle(tester);
+    expect(api.payments.values.single.amount, 50000);
+  });
+
+  testWidgets('a dollar invoice is paid in rupees at the NRB rate, and applied by accounts', (tester) async {
+    PaymentBrowser.open = (_) async => true;
+    final api = DemoApi();
+    await _pump(tester, api);
     await _invoice(tester, 'KCPL-I-20260821-004');
-    expect(find.text('Pay online'), findsNothing);
-    expect(find.text('Send payment receipt'), findsOneWidget);
+    expect(find.text('Send payment receipt'), findsOneWidget, reason: 'a bank transfer is still offered');
+    await tester.tap(find.text('Pay online'));
+    await settle(tester);
+    final rupees = formatMoney(1040 * 133.25, 'NPR');
+    expect(find.text('You pay $rupees in rupees'), findsOneWidget);
+    expect(find.textContaining('1 USD = NPR 133.25'), findsOneWidget);
+    await tester.tap(find.text('eSewa'));
+    await settle(tester);
+    expect(api.payments.values.single.amount, 1040 * 133.25);
+
+    api.completePayment(api.payments.keys.single);
+    await tester.pump(const Duration(seconds: 3));
+    await settle(tester);
+    expect(find.text('Payment received'), findsOneWidget);
+    expect(
+      find.textContaining('KCPL accounts will apply it'),
+      findsOneWidget,
+      reason: 'rupees are never converted into the ledger by the app or the gateway',
+    );
   });
 
   testWidgets('email switches save as they move', (tester) async {
@@ -276,7 +354,9 @@ void main() {
       shared.add('${(call.arguments as Map)['text']}');
       return 'dev.fluttercommunity.plus/share/success';
     });
-    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('dev.fluttercommunity.plus/share'), null));
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('dev.fluttercommunity.plus/share'), null),
+    );
     final live = _FakeLive();
     LiveActivities.current = live;
     final api = DemoApi();

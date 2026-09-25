@@ -669,6 +669,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.12.0"
+  kcpl_live_updates:
+    dependency: "direct main"
+    description:
+      path: "packages/kcpl_live_updates"
+      relative: true
+    source: path
+    version: "1.0.0"
   leak_tracker:
     dependency: transitive
     description:

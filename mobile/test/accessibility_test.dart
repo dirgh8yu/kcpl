@@ -97,6 +97,53 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('every customer screen passes the accessibility guidelines', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpApp(tester, api: DemoApi());
+    await audit(tester, 'sign-in');
+    await signIn(tester);
+    await audit(tester, 'overview');
+    for (final tab in ['Shipments', 'Documents', 'Invoices', 'Account']) {
+      await tester.tap(find.text(tab).last);
+      await settle(tester);
+      await audit(tester, tab);
+      // Further down, at rest (not mid-way under the bar).
+      await tester.drag(find.byType(Scrollable).hitTestable().first, const Offset(0, -700));
+      await settle(tester);
+      await audit(tester, '$tab, further down');
+    }
+    await openShipment(tester, 'KCPL-S-24077');
+    await audit(tester, 'shipment waiting on documents');
+    await close(tester);
+    await tester.tap(find.text('Invoices').last);
+    await settle(tester);
+    await tester.tap(ref('KCPL-I-20260918-011').first);
+    await settle(tester);
+    await audit(tester, 'invoice');
+    await tester.tap(find.text('Pay online'));
+    await settle(tester);
+    await audit(tester, 'pay');
+    semantics.dispose();
+  });
+
+  testWidgets('every KCPL Ops tab and the job file pass the accessibility guidelines', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await ops.pumpOps(tester, api: DemoOpsApi());
+    await audit(tester, 'ops sign-in');
+    await ops.signIn(tester);
+    for (final tab in ['Jobs', 'Alerts', 'Me']) {
+      await tester.tap(find.text(tab).last);
+      await ops.settle(tester);
+      await audit(tester, 'ops $tab');
+    }
+    await tester.tap(find.text('Jobs').last);
+    await ops.settle(tester);
+    await tester.tap(find.textContaining('KCPL-2609-0142').first);
+    await ops.settle(tester);
+    await audit(tester, 'ops job file');
+    semantics.dispose();
+  });
+
   testWidgets('large system text in Nepali never clips the newest customer screens', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 1.6;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);

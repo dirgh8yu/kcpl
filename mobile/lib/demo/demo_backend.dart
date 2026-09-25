@@ -572,19 +572,36 @@ class DemoApi extends KcplApi {
   /// What the next payment will come back as, once "the gateway" is done.
   String nextPaymentOutcome = 'paid';
 
+  /// Rupees per unit, as NRB published them for the demo.
+  static const demoRates = {'NPR': 1.0, 'USD': 133.25, 'INR': 1.6};
+
   @override
-  Future<List<String>> paymentOptions(String invoice) async {
+  Future<PaymentOptions> paymentOptions(String invoice) async {
     final found = _invoices.where((i) => i.reference == invoice).firstOrNull;
-    final payable = found != null && found.currency == 'NPR' && found.balanceDue > 0 && !payments.values.any((p) => p.invoice == invoice && p.paid);
-    return _later(payable ? const ['khalti', 'esewa', 'connectips'] : const []);
+    final rate = demoRates[found?.currency];
+    final payable = found != null && rate != null && found.balanceDue > 0 && !payments.values.any((p) => p.invoice == invoice && p.paid);
+    return _later(
+      payable
+          ? PaymentOptions(
+              gateways: const ['khalti', 'esewa', 'connectips'],
+              currency: found.currency,
+              balance: found.balanceDue,
+              rate: rate,
+              rateDate: found.currency == 'NPR' ? null : _day(0),
+            )
+          : PaymentOptions.none,
+    );
   }
 
   @override
-  Future<PaymentStart> startPayment(String invoice, String gateway) async {
+  Future<PaymentStart> startPayment(String invoice, String gateway, {double? amount}) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final found = _invoices.firstWhere((i) => i.reference == invoice);
+    final paying = amount ?? found.balanceDue;
+    if (paying <= 0 || paying > found.balanceDue) throw const ApiException(400, 'invalid', 'That is more than is owed on this invoice.');
     final id = (payments.length + 1).toRadixString(16).padLeft(20, '0');
-    payments[id] = PaymentStatus(id: id, invoice: invoice, gateway: gateway, amount: found.balanceDue, status: 'started');
+    final npr = (paying * (demoRates[found.currency] ?? 1) * 100).roundToDouble() / 100;
+    payments[id] = PaymentStatus(id: id, invoice: invoice, gateway: gateway, amount: npr, status: 'started');
     return PaymentStart(intent: id, url: Uri.parse('https://kcpl.example/pay/$id'));
   }
 
@@ -592,13 +609,20 @@ class DemoApi extends KcplApi {
   /// return would.
   void completePayment(String id) {
     final started = payments[id]!;
+    // Rupees against another currency are applied by accounts, as on KCPL.
+    final foreign = _invoices.firstWhere((i) => i.reference == started.invoice).currency != 'NPR';
+    final outcome = foreign && nextPaymentOutcome == 'paid' ? 'needs_review' : nextPaymentOutcome;
     payments[id] = PaymentStatus(
       id: id,
       invoice: started.invoice,
       gateway: started.gateway,
       amount: started.amount,
-      status: nextPaymentOutcome,
-      message: nextPaymentOutcome == 'failed' ? 'The payment was cancelled.' : null,
+      status: outcome,
+      message: outcome == 'failed'
+          ? 'The payment was cancelled.'
+          : outcome == 'needs_review' && foreign
+          ? 'Payment received. KCPL accounts will apply it to the invoice at the rate shown.'
+          : null,
     );
   }
 
@@ -613,7 +637,13 @@ class DemoApi extends KcplApi {
 
   late final Map<String, List<ShipmentMessage>> threads = {
     'KCPL-S-24091': [
-      ShipmentMessage(id: 'm1', fromKcpl: false, author: 'You', body: 'Is the declaration in? We need the goods by Friday.', createdAt: _at(5)),
+      ShipmentMessage(
+        id: 'm1',
+        fromKcpl: false,
+        author: 'You',
+        body: 'Is the declaration in? We need the goods by Friday.',
+        createdAt: _at(5),
+      ),
       ShipmentMessage(
         id: 'm2',
         fromKcpl: true,
@@ -664,7 +694,10 @@ class DemoApi extends KcplApi {
   Future<TrackingLink> createTrackingLink(String reference) async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
     trackingLinks[reference] = (trackingLinks[reference] ?? 0) + 1;
-    return TrackingLink(url: Uri.parse('https://kcpl.example/t/demo${reference.hashCode.abs()}'), expiresAt: _now.add(const Duration(days: 30)).toUtc().toIso8601String());
+    return TrackingLink(
+      url: Uri.parse('https://kcpl.example/t/demo${reference.hashCode.abs()}'),
+      expiresAt: _now.add(const Duration(days: 30)).toUtc().toIso8601String(),
+    );
   }
 
   @override
@@ -678,7 +711,8 @@ class DemoApi extends KcplApi {
   final Map<String, String> liveActivities = {};
 
   @override
-  Future<void> followLive(String reference, {required String activityToken, required String pushToken}) async => liveActivities[activityToken] = reference;
+  Future<void> followLive(String reference, {required String activityToken, required String pushToken}) async =>
+      liveActivities[activityToken] = reference;
 
   @override
   Future<void> unfollowLive(String activityToken) async => liveActivities.remove(activityToken);

@@ -251,12 +251,20 @@ double submit rather than a second payment, and the invoice's creator is notifie
 
 ### Paying online (Khalti, eSewa, connectIPS)
 
-From the app, an account owner can pay an invoice's whole balance through Nepal's
-gateways. The rules live in `app/payments/payment-gateways.ts` (pure, tested) and
+From the app, an account owner can pay an invoice's balance, or part of it, through
+Nepal's gateways. The rules live in `app/payments/payment-gateways.ts` (pure, tested) and
 `app/payments/payments.server.ts`:
 
-- **Only what can be paid.** An NPR invoice, `issued`, `partially_paid` or `overdue`,
-  with a balance. The amount is the balance at the moment the payment starts, in paisa.
+- **Only what can be paid.** An invoice `issued`, `partially_paid` or `overdue`, with a
+  balance. The phone sends an amount in the invoice's currency (none means the whole
+  balance); the server checks it is no more than is owed and at least NPR 10, works out
+  the rupees and fixes them on the intent, in paisa.
+- **Another currency is paid in rupees, and applied by accounts.** A USD or INR invoice
+  is priced at Nepal Rastra Bank's latest selling rate (`getNrbForexSnapshot`), fixed on
+  the intent with its date. When NRB can't be reached, or has no rate for the currency,
+  the invoice isn't offered online that day. Once the gateway has verified such a
+  payment it is `needs_review`, never settled automatically: the ledger is strict about
+  currency, and accounts apply the rupees, and book any exchange difference, by hand.
 - **Nothing the browser brings back is believed.** Each return is confirmed with the
   gateway, server to server — Khalti's `epayment/lookup`, eSewa's signed reply plus its
   status API, connectIPS's `validatetxn` signed with KCPL's creditor key — before a rupee

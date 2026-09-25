@@ -13,8 +13,11 @@ import {
   esewaResponse,
   esewaSignature,
   gatewayEndpoints,
+  invoiceOwes,
   invoicePayableOnline,
+  MIN_ONLINE_PAYMENT_NPR,
   newPaymentIntentId,
+  onlinePaymentAmount,
   paymentIdempotencyKey,
   paymentIntentIdValid,
   toPaisa,
@@ -26,7 +29,7 @@ import {
   trackingTokenHash,
   trackingTokenShapeValid,
 } from "../app/tracking/public-tracking.ts";
-import { liveActivityEnds, liveActivityState } from "../app/mobile-push-policy.ts";
+import { androidLiveData, liveActivityEnds, liveActivityState } from "../app/mobile-push-policy.ts";
 import { portalPreferencesFromBody } from "../app/portal/portal-notifications.ts";
 
 const repo = (path) => new URL(`../${path}`, import.meta.url);
@@ -118,6 +121,43 @@ test("only an NPR invoice with a balance, issued and unpaid, can be paid online"
   assert.equal(invoicePayableOnline({ ...invoice, status: "draft" }), false);
   assert.equal(invoicePayableOnline({ ...invoice, status: "void" }), false);
   assert.equal(invoicePayableOnline({ ...invoice, record_type: "credit_note" }), false);
+});
+
+test("part of a balance can be paid, never more than is owed or less than the gateways take", () => {
+  const invoice = { currency: "NPR", balance_due: 1040.5, status: "issued" };
+  assert.deepEqual(onlinePaymentAmount(invoice, undefined, 1), { ok: true, invoiceAmount: 1040.5, nprPaisa: 104050, whole: true });
+  assert.deepEqual(onlinePaymentAmount(invoice, 500, 1), { ok: true, invoiceAmount: 500, nprPaisa: 50000, whole: false });
+  assert.deepEqual(onlinePaymentAmount(invoice, "250.456", 1), { ok: true, invoiceAmount: 250.46, nprPaisa: 25046, whole: false });
+  assert.equal(onlinePaymentAmount(invoice, 1040.51, 1).ok, false, "never more than the balance");
+  assert.equal(onlinePaymentAmount(invoice, 0, 1).ok, false);
+  assert.equal(onlinePaymentAmount(invoice, -5, 1).ok, false);
+  assert.equal(onlinePaymentAmount(invoice, "abc", 1).ok, false);
+  assert.equal(onlinePaymentAmount(invoice, MIN_ONLINE_PAYMENT_NPR - 1, 1).ok, false, "Khalti's floor");
+  assert.equal(onlinePaymentAmount({ ...invoice, status: "paid" }, 100, 1).ok, false);
+});
+
+test("a foreign-currency invoice is paid in rupees at the NRB selling rate", () => {
+  const invoice = { currency: "USD", balance_due: 1200, status: "overdue" };
+  assert.equal(invoicePayableOnline(invoice), false, "not applied at once");
+  assert.equal(invoiceOwes(invoice), true, "but money is owed on it");
+  assert.deepEqual(onlinePaymentAmount(invoice, 100, 133.25), { ok: true, invoiceAmount: 100, nprPaisa: 1332500, whole: false });
+  assert.equal(onlinePaymentAmount(invoice, undefined, 133.25).nprPaisa, 15990000);
+  assert.equal(onlinePaymentAmount(invoice, 100, 0).ok, false, "no rate, no payment");
+  assert.equal(onlinePaymentAmount(invoice, 100, Number.NaN).ok, false);
+});
+
+test("the amount and rate are worked out on the server, and a foreign payment goes to accounts", async () => {
+  const server = code(await readFile(repo("app/payments/payments.server.ts"), "utf8"));
+  // The phone sends an amount in the invoice's currency; the rupees, and the
+  // rate, are computed and fixed here.
+  assert.match(server, /onlinePaymentAmount\(data, amount, rate\.rate\)/);
+  assert.match(server, /amount_paisa: priced\.nprPaisa/);
+  assert.match(server, /getNrbForexSnapshot\(\)/);
+  assert.match(server, /sell_per_unit/);
+  // Rupees against another currency are never settled automatically.
+  assert.match(server, /if \(foreign\(intent\)\)[\s\S]{0,400}needs_review[\s\S]{0,300}return;/);
+  const route = code(await readFile(repo("app/api/mobile/v1/invoices/[reference]/pay/route.ts"), "utf8"));
+  assert.match(route, /createPaymentIntent\(session, reference, String\(body\?\.gateway \?\? ""\), new URL\(request\.url\)\.origin, body\?\.amount\)/);
 });
 
 test("a verified payment settles through accounts' own function, once per gateway transaction", async () => {
@@ -223,6 +263,11 @@ test("a Live Activity shows the portal's label, where the cargo is, and ends at 
   assert.equal(liveActivityState({ status: "preparing", eta: "2026-10-02" }, label, expected).detail, "Expected 2026-10-02");
   assert.deepEqual(liveActivityState({ status: "delivered", current_location: "Gate" }, label, expected), { status: "label:delivered", detail: "", progress: 1, attention: false });
   assert.equal(liveActivityState({ status: "exception" }, label, expected).attention, true);
+  // Android is moved by a data message the app handles itself: strings only.
+  const data = androidLiveData("KCPL-S-1", { status: "In transit", detail: "Birgunj ICD", progress: 0.6000001, attention: false }, false);
+  assert.deepEqual(data, { kind: "live", reference: "KCPL-S-1", event: "update", status: "In transit", detail: "Birgunj ICD", progress: "0.6", attention: "0" });
+  assert.equal(androidLiveData("KCPL-S-1", { status: "Delivered", detail: "", progress: 1, attention: false }, true).event, "end");
+  for (const value of Object.values(data)) assert.equal(typeof value, "string");
   assert.equal(liveActivityEnds({ status: "delivered" }), true);
   assert.equal(liveActivityEnds({ status: "out_for_delivery" }), false);
 });
@@ -235,4 +280,16 @@ test("accepting a quote is the portal's own booking request from either door", a
   // The app's booking still passes the capability and the shared rate limit first.
   assert.ok(app.indexOf("canSubmitRequests") < app.indexOf("requestPortalBooking("));
   assert.ok(app.indexOf("checkPortalRequestRateLimit(session)") < app.indexOf("requestPortalBooking("));
+});
+
+test("an Android follow is moved by a data message; an iPhone one by its Live Activity token", async () => {
+  const server = code(await readFile(repo("app/mobile-push.server.ts"), "utf8"));
+  assert.match(server, /activity\.get\("platform"\) === "android"[\s\S]{0,400}data: androidLiveData\(shipmentReference, state\(data\), ends\)/);
+  assert.match(server, /priority: "high"/);
+  assert.match(server, /liveActivityToken: String\(activity\.get\("activity_token"\)\)/);
+  const route = code(await readFile(repo("app/api/mobile/v1/live-activities/route.ts"), "utf8"));
+  // Android names its follow itself; the id is checked before it is stored,
+  // and the shipment is still checked as the customer's own.
+  assert.match(route, /\^android:\[A-Za-z0-9_-\]\{8,64\}\$/);
+  assert.match(route, /portalOwnsShipment\(session, reference\)/);
 });

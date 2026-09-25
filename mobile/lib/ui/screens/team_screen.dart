@@ -12,8 +12,13 @@ import '../widgets/common.dart';
 import '../widgets/compose.dart';
 import '../widgets/share.dart';
 import '../widgets/sheet_route.dart';
+import '../widgets/split_view.dart';
 
-void openTeam(BuildContext context) => Navigator.of(context).push(SheetRoute<void>(builder: (_) => const TeamScreen()));
+/// Beside the settings on a tablet; as a sheet otherwise.
+void openTeam(BuildContext context) {
+  if (SplitView.select(context, 'team')) return;
+  Navigator.of(context).push(SheetRoute<void>(builder: (_) => const TeamScreen()));
+}
 
 /// The account owner's colleagues: who can sign in, who hasn't yet, and
 /// whose login is off. Adding one is the phone call to KCPL it replaces.

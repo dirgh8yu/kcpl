@@ -115,7 +115,11 @@ void main() {
                     {'id': 'm1', 'from': 'kcpl', 'author': 'KCPL · Sita', 'body': 'Cleared', 'created_at': '2026-09-25T09:00:00Z'},
                   ],
                 };
-          return http.Response.bytes(utf8.encode(jsonEncode(body)), request.method == 'POST' ? 201 : 200, headers: {'content-type': 'application/json; charset=utf-8'});
+          return http.Response.bytes(
+            utf8.encode(jsonEncode(body)),
+            request.method == 'POST' ? 201 : 200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
         }),
       );
       final thread = await api.messages('KCPL-S-1');
@@ -283,16 +287,74 @@ void main() {
   });
 
   group('lock screen on Android', () {
+    test('KCPL’s push moves the follow, or ends it on delivery; other pushes are left alone', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final calls = <MethodCall>[];
+      const channel = MethodChannel('kcpl/live_activity');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        return null;
+      });
+      addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+
+      expect(await applyLivePush({'kind': 'shipment', 'reference': 'KCPL-S-1'}), isFalse);
+      expect(calls, isEmpty);
+      expect(
+        await applyLivePush({
+          'kind': 'live',
+          'reference': 'KCPL-S-1',
+          'event': 'update',
+          'status': 'Customs clearance',
+          'detail': 'Birgunj ICD',
+          'progress': '0.6',
+          'attention': '0',
+        }),
+        isTrue,
+      );
+      expect(calls.single.method, 'push');
+      expect(calls.single.arguments, {
+        'reference': 'KCPL-S-1',
+        'end': false,
+        'status': 'Customs clearance',
+        'detail': 'Birgunj ICD',
+        'progress': 0.6,
+        'attention': false,
+      });
+      await applyLivePush({'kind': 'live', 'reference': 'KCPL-S-1', 'event': 'end', 'progress': '1', 'attention': '0'});
+      expect((calls.last.arguments as Map)['end'], isTrue);
+    });
+
+    test('an Android follow is registered with KCPL as Android', () async {
+      final seen = <http.Request>[];
+      final api = HttpKcplApi(
+        base: Uri.parse('https://kcpl.example'),
+        auth: _Auth(),
+        client: MockClient((request) async {
+          seen.add(request);
+          return http.Response('{"ok":true}', 200);
+        }),
+      );
+      await api.followLive('KCPL-S-1', activityToken: 'android:0f3a9c2b7d1e4a5b', pushToken: 'fcm-1');
+      await api.followLive('KCPL-S-1', activityToken: 'apns-activity-token', pushToken: 'fcm-1');
+      expect(seen.map((r) => (jsonDecode(r.body) as Map)['platform']), ['android', 'ios']);
+    });
+
     test('starts a progress notification with its channel named in the reader’s language', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       final calls = <MethodCall>[];
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('kcpl/live_activity'), (
-        call,
-      ) async {
-        calls.add(call);
-        return {'id': 'KCPL-S-1', 'reference': 'KCPL-S-1'};
-      });
-      addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('kcpl/live_activity'), null));
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('kcpl/live_activity'),
+        (call) async {
+          calls.add(call);
+          return {'id': 'KCPL-S-1', 'reference': 'KCPL-S-1'};
+        },
+      );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('kcpl/live_activity'),
+          null,
+        ),
+      );
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
 

@@ -8,6 +8,7 @@ import '../theme.dart';
 import '../widgets/choice_rows.dart';
 import '../widgets/journey.dart' show IconTile;
 import '../widgets/common.dart';
+import '../widgets/split_view.dart' show SplitSelected;
 import '../widgets/large_title.dart';
 import '../widgets/lock_gate.dart' show unlockMethodName;
 import '../widgets/push_ui.dart';
@@ -72,19 +73,25 @@ class AccountScreen extends StatelessWidget {
                 children: [
                   DetailRow(l.settingsAccount, session.customerName),
                   DetailRow(l.settingsAccessLevel, session.role == 'owner' ? l.roleOwner : l.roleMember),
-                  RowTile(
-                    onTap: () => openQuotes(context),
-                    leading: const IconTile(icon: KIcons.invoice),
-                    title: Text(l.quotesTitle),
-                    chevron: true,
+                  SplitSelected(
+                    id: 'quotes',
+                    child: RowTile(
+                      onTap: () => openQuotes(context),
+                      leading: const IconTile(icon: KIcons.invoice),
+                      title: Text(l.quotesTitle),
+                      chevron: true,
+                    ),
                   ),
                   // The server lists a team for owners only.
                   if (session.role == 'owner')
-                    RowTile(
-                      onTap: () => openTeam(context),
-                      leading: const IconTile(icon: KIcons.people),
-                      title: Text(l.teamTitle),
-                      chevron: true,
+                    SplitSelected(
+                      id: 'team',
+                      child: RowTile(
+                        onTap: () => openTeam(context),
+                        leading: const IconTile(icon: KIcons.people),
+                        title: Text(l.teamTitle),
+                        chevron: true,
+                      ),
                     ),
                 ],
               ),
@@ -255,7 +262,12 @@ class _EmailSettingsState extends State<_EmailSettings> {
       children: [
         RowGroup(
           children: [
-            row(l.topicShipmentUpdates, l.topicShipmentUpdatesHint, preferences.shipmentUpdates, (on) => preferences.copyWith(shipmentUpdates: on)),
+            row(
+              l.topicShipmentUpdates,
+              l.topicShipmentUpdatesHint,
+              preferences.shipmentUpdates,
+              (on) => preferences.copyWith(shipmentUpdates: on),
+            ),
             row(l.topicDocuments, l.topicDocumentsHint, preferences.documents, (on) => preferences.copyWith(documents: on)),
             row(l.topicFreeTime, l.topicFreeTimeHint, preferences.freeTime, (on) => preferences.copyWith(freeTime: on)),
             if (AppScope.of(context).session?.canViewFinance ?? false)

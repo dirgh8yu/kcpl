@@ -41,6 +41,7 @@ abstract class LiveActivities {
 
   /// The activities running now, by shipment.
   Future<List<LiveActivityHandle>> running();
+
   /// [channel] names Android's notification channel, in the reader's language.
   Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel});
   Future<void> update(String id, LiveShipmentState state);
@@ -54,8 +55,12 @@ class NoLiveActivities implements LiveActivities {
   @override
   Future<List<LiveActivityHandle>> running() async => const [];
   @override
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel}) async =>
-      null;
+  Future<LiveActivityHandle?> start({
+    required String reference,
+    required String route,
+    required LiveShipmentState state,
+    String? channel,
+  }) async => null;
   @override
   Future<void> update(String id, LiveShipmentState state) async {}
   @override
@@ -92,8 +97,18 @@ class ChannelLiveActivities implements LiveActivities {
   }
 
   @override
-  Future<LiveActivityHandle?> start({required String reference, required String route, required LiveShipmentState state, String? channel}) async {
-    final row = await _channel.invokeMapMethod<Object?, Object?>('start', {'reference': reference, 'route': route, 'channel': ?channel, ...state.toMap()});
+  Future<LiveActivityHandle?> start({
+    required String reference,
+    required String route,
+    required LiveShipmentState state,
+    String? channel,
+  }) async {
+    final row = await _channel.invokeMapMethod<Object?, Object?>('start', {
+      'reference': reference,
+      'route': route,
+      'channel': ?channel,
+      ...state.toMap(),
+    });
     return row == null ? null : _handle(row);
   }
 
@@ -102,4 +117,29 @@ class ChannelLiveActivities implements LiveActivities {
 
   @override
   Future<void> end(String id) => _channel.invokeMethod('end', {'id': id});
+}
+
+/// A "live" data message from KCPL's server (androidLiveData in
+/// app/mobile-push-policy.ts): moves the Android follow, or ends it on
+/// delivery, whether or not the app is open. Only a follow still showing is
+/// moved; one the person swiped away stays gone. True when [data] was one.
+Future<bool> applyLivePush(Map<String, dynamic> data) async {
+  if (data['kind'] != 'live') return false;
+  final reference = data['reference'];
+  if (reference is! String || reference.isEmpty) return true;
+  try {
+    await const MethodChannel('kcpl/live_activity').invokeMethod<void>('push', {
+      'reference': reference,
+      'end': data['event'] == 'end',
+      'status': '${data['status'] ?? ''}',
+      'detail': '${data['detail'] ?? ''}',
+      'progress': double.tryParse('${data['progress']}') ?? 0,
+      'attention': data['attention'] == '1',
+    });
+  } on MissingPluginException {
+    // Not on this platform or build.
+  } on PlatformException {
+    // Notifications off: the lock screen is a courtesy.
+  }
+  return true;
 }

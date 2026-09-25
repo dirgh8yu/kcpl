@@ -801,6 +801,44 @@ class NotificationPreferences {
 /// Nepal's payment gateways, as the server names them.
 const paymentGatewayNames = {'khalti': 'Khalti', 'esewa': 'eSewa', 'connectips': 'connectIPS'};
 
+/// How an invoice can be paid online: the gateways, and what a payment costs
+/// in rupees. A rupee invoice's rate is 1; another currency's is Nepal
+/// Rastra Bank's selling rate on [rateDate], and such a payment is applied by
+/// KCPL accounts rather than at once.
+class PaymentOptions {
+  const PaymentOptions({
+    this.gateways = const [],
+    this.currency = 'NPR',
+    this.balance = 0,
+    this.rate = 1,
+    this.rateDate,
+    this.minimumNpr = 10,
+  });
+  final List<String> gateways;
+  final String currency;
+  final double balance;
+  final double rate;
+  final String? rateDate;
+  final int minimumNpr;
+
+  static const none = PaymentOptions();
+
+  bool get available => gateways.isNotEmpty;
+  bool get foreign => currency != 'NPR';
+
+  /// Rupees for [amount] of the invoice's currency, to the paisa.
+  double npr(double amount) => (amount * rate * 100).roundToDouble() / 100;
+
+  factory PaymentOptions.fromJson(Map<String, dynamic> json) => PaymentOptions(
+    gateways: json['gateways'] is List ? (json['gateways'] as List).whereType<String>().toList() : const [],
+    currency: _s(json['currency'], 'NPR'),
+    balance: _n(json['balance']),
+    rate: json['rate'] is num && (json['rate'] as num) > 0 ? _n(json['rate']) : 1,
+    rateDate: _ns(json['rateDate']),
+    minimumNpr: json['minimumNpr'] is num ? _i(json['minimumNpr']) : 10,
+  );
+}
+
 /// A payment begun: where to send the browser, and how to ask after it.
 class PaymentStart {
   const PaymentStart({required this.intent, required this.url});
@@ -811,7 +849,14 @@ class PaymentStart {
 /// A payment as KCPL knows it. Only [paid] means the invoice took it;
 /// [review] means the money arrived and accounts will apply it by hand.
 class PaymentStatus {
-  const PaymentStatus({required this.id, required this.invoice, required this.gateway, required this.amount, required this.status, this.message});
+  const PaymentStatus({
+    required this.id,
+    required this.invoice,
+    required this.gateway,
+    required this.amount,
+    required this.status,
+    this.message,
+  });
   final String id;
   final String invoice;
   final String gateway;

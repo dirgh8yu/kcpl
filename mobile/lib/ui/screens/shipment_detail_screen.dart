@@ -319,9 +319,12 @@ class _SendPill extends StatelessWidget {
     return Pressable(
       child: FilledButton(
         onPressed: onPressed,
+        // White on crimson (5:1): crimson on the grey fill read at 4.1:1.
+        // The pill stays small; its touch area is the full 48 points.
         style: FilledButton.styleFrom(
-          backgroundColor: p.fill,
-          foregroundColor: p.accent,
+          backgroundColor: p.accent,
+          foregroundColor: Colors.white,
+          tapTargetSize: MaterialTapTargetSize.padded,
           minimumSize: const Size(0, 30),
           padding: const EdgeInsets.symmetric(horizontal: 14),
           shape: const StadiumBorder(),

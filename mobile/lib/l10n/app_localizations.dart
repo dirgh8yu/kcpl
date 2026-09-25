@@ -2528,6 +2528,66 @@ abstract class AppLocalizations {
   /// **'Nothing was charged by KCPL. You can try again or pay another way.'**
   String get payFailedBody;
 
+  /// No description provided for @payOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} owed'**
+  String payOwed(String amount);
+
+  /// No description provided for @payWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole balance'**
+  String get payWhole;
+
+  /// No description provided for @payPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of it'**
+  String get payPart;
+
+  /// No description provided for @payAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount to pay ({currency})'**
+  String payAmount(String currency);
+
+  /// No description provided for @payTooMuch.
+  ///
+  /// In en, this message translates to:
+  /// **'That is more than is owed.'**
+  String get payTooMuch;
+
+  /// No description provided for @payTooLittle.
+  ///
+  /// In en, this message translates to:
+  /// **'The smallest online payment is NPR {minimum}.'**
+  String payTooLittle(int minimum);
+
+  /// No description provided for @payEnterAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount.'**
+  String get payEnterAmount;
+
+  /// No description provided for @payInRupees.
+  ///
+  /// In en, this message translates to:
+  /// **'You pay {amount} in rupees'**
+  String payInRupees(String amount);
+
+  /// No description provided for @payRate.
+  ///
+  /// In en, this message translates to:
+  /// **'1 {currency} = NPR {rate}, Nepal Rastra Bank\'s selling rate for {date}. The rate is fixed when you start paying; KCPL accounts apply the payment to the invoice.'**
+  String payRate(String currency, String rate, String date);
+
+  /// No description provided for @payPartFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'The rest stays on the invoice, to pay later or by bank transfer.'**
+  String get payPartFootnote;
+
   /// No description provided for @payCouldNotOpen.
   ///
   /// In en, this message translates to:
@@ -2941,6 +3001,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Its tasks, delivery and messages open here.'**
   String get opsSplitJobBody;
+
+  /// No description provided for @splitDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a document'**
+  String get splitDocument;
+
+  /// No description provided for @splitDocumentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It opens here, with the shipment it belongs to.'**
+  String get splitDocumentBody;
+
+  /// No description provided for @splitAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes and your team'**
+  String get splitAccount;
+
+  /// No description provided for @splitAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They open here, beside your settings.'**
+  String get splitAccountBody;
+
+  /// No description provided for @opsSplitAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an alert'**
+  String get opsSplitAlert;
+
+  /// No description provided for @opsSplitAlertBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The job it is about opens here.'**
+  String get opsSplitAlertBody;
+
+  /// No description provided for @docOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get docOpen;
+
+  /// No description provided for @docFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get docFile;
+
+  /// No description provided for @docAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get docAdded;
+
+  /// No description provided for @docSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get docSize;
+
+  /// No description provided for @docState.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get docState;
+
+  /// No description provided for @docShipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Open shipment {reference}'**
+  String docShipment(String reference);
+
+  /// No description provided for @docPreviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The preview could not be loaded. Open the file instead.'**
+  String get docPreviewFailed;
 
   /// No description provided for @qaTrack.
   ///

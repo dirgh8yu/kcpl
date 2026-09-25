@@ -4,6 +4,7 @@ import { recordReceivablePaymentWithSettlementIntegrity } from "../admin/financi
 import type { KcplStaffContext } from "../admin/staff-directory.server";
 import { staffCapabilitiesForRole } from "../admin/staff-permissions";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { getNrbForexSnapshot } from "../integrations/nrb-forex.server";
 import type { PortalSession } from "../portal/portal-auth";
 import { portalOwnsInvoice } from "../portal/portal-data.server";
 import {
@@ -16,8 +17,10 @@ import {
   esewaResponse,
   esewaSignature,
   gatewayEndpoints,
-  invoicePayableOnline,
+  invoiceOwes,
+  MIN_ONLINE_PAYMENT_NPR,
   newPaymentIntentId,
+  onlinePaymentAmount,
   paymentGatewayLabels,
   paymentIdempotencyKey,
   paymentIntentIdValid,
@@ -42,7 +45,19 @@ export type PaymentIntent = {
   created_at: string;
   updated_at: string;
   message: string | null;
+  /** What it pays off, in the invoice's own currency. Absent on intents
+   * made before part payments: those paid the whole NPR balance. */
+  invoice_currency?: string;
+  invoice_amount?: number;
+  /** Rupees per unit of the invoice's currency (NRB selling rate), and its date. */
+  npr_per_unit?: number;
+  rate_date?: string | null;
 };
+
+/** A payment in another currency is paid in rupees and applied by accounts. */
+function foreign(intent: PaymentIntent) {
+  return Boolean(intent.invoice_currency && intent.invoice_currency !== "NPR");
+}
 
 function env(name: string) {
   return process.env[name]?.trim() ?? "";
@@ -58,22 +73,54 @@ async function markIntent(id: string, update: Partial<PaymentIntent>) {
   await firebaseAdminDb().collection(INTENTS).doc(id).update({ ...update, updated_at: new Date().toISOString() });
 }
 
-/** The gateways offered for an invoice the customer can see, or none. */
-export async function paymentOptionsFor(session: PortalSession, invoiceReference: string) {
+/** Rupees per unit of [currency]: 1 for rupees, otherwise Nepal Rastra
+ * Bank's latest selling rate. Null when NRB can't be reached or doesn't
+ * publish that currency: then the invoice can't be paid online today. */
+async function nprRate(currency: string): Promise<{ rate: number; date: string | null } | null> {
+  if (currency === "NPR") return { rate: 1, date: null };
+  try {
+    const snapshot = await getNrbForexSnapshot();
+    const rate = snapshot.rates.find((row) => row.currency === currency);
+    return rate && rate.sell_per_unit > 0 ? { rate: rate.sell_per_unit, date: snapshot.date } : null;
+  } catch (error) {
+    console.error("KCPL payment rate lookup failed", error);
+    return null;
+  }
+}
+
+export type PaymentOptions = {
+  gateways: PaymentGateway[];
+  currency: string;
+  balance: number;
+  /** Rupees per unit; 1 for a rupee invoice. */
+  rate: number;
+  rateDate: string | null;
+  minimumNpr: number;
+};
+
+/** How an invoice the customer can see can be paid online, if at all. */
+export async function paymentOptionsFor(session: PortalSession, invoiceReference: string): Promise<PaymentOptions | null> {
   const gateways = configuredGateways();
-  if (!gateways.length || !firebaseRuntimeConfigured()) return [];
+  if (!gateways.length || !firebaseRuntimeConfigured()) return null;
   const normalized = invoiceReference.trim().toUpperCase();
-  if (!await portalOwnsInvoice(session, normalized)) return [];
+  if (!await portalOwnsInvoice(session, normalized)) return null;
   const invoice = await firebaseAdminDb().collection("invoices").doc(normalized).get();
-  return invoice.exists && invoicePayableOnline(invoice.data() as Record<string, unknown>) ? gateways : [];
+  const data = invoice.data() as Record<string, unknown> | undefined;
+  if (!data || !invoiceOwes(data)) return null;
+  const currency = String(data.currency ?? "").toUpperCase();
+  const rate = await nprRate(currency);
+  if (!rate) return null;
+  return { gateways, currency, balance: Math.round(Number(data.balance_due) * 100) / 100, rate: rate.rate, rateDate: rate.date, minimumNpr: MIN_ONLINE_PAYMENT_NPR };
 }
 
 /**
- * Starts paying the invoice's whole balance through [gateway]. Returns a URL
- * on KCPL's own site that hands over to the gateway, so the phone never
- * holds a merchant secret or builds a signature.
+ * Starts paying [amount] of the invoice (in its own currency; the whole
+ * balance when absent) through [gateway]. The rupee sum and any exchange
+ * rate are worked out here and fixed on the intent, never taken from the
+ * phone. Returns a URL on KCPL's own site that hands over to the gateway, so
+ * the phone never holds a merchant secret or builds a signature.
  */
-export async function createPaymentIntent(session: PortalSession, invoiceReference: string, gateway: string, origin: string): Promise<Result> {
+export async function createPaymentIntent(session: PortalSession, invoiceReference: string, gateway: string, origin: string, amount?: unknown): Promise<Result> {
   const gateways = configuredGateways();
   if (!gateways.includes(gateway as PaymentGateway)) {
     return { status: 400, body: { ok: false, code: "invalid", error: "That way of paying is not available." } };
@@ -83,9 +130,14 @@ export async function createPaymentIntent(session: PortalSession, invoiceReferen
   if (!await portalOwnsInvoice(session, normalized)) return { status: 404, body: { ok: false, code: "missing", error: "Invoice not found." } };
   const invoice = await firebaseAdminDb().collection("invoices").doc(normalized).get();
   const data = invoice.data() as Record<string, unknown> | undefined;
-  if (!data || !invoicePayableOnline(data)) {
-    return { status: 409, body: { ok: false, code: "conflict", error: "This invoice can't be paid online. Only rupee invoices with a balance can." } };
+  if (!data || !invoiceOwes(data)) {
+    return { status: 409, body: { ok: false, code: "conflict", error: "This invoice can't be paid online: nothing is owed on it." } };
   }
+  const currency = String(data.currency ?? "").toUpperCase();
+  const rate = await nprRate(currency);
+  if (!rate) return { status: 409, body: { ok: false, code: "conflict", error: `There is no Nepal Rastra Bank rate for ${currency} just now. Try again later, or pay by bank transfer.` } };
+  const priced = onlinePaymentAmount(data, amount, rate.rate);
+  if (!priced.ok) return { status: 400, body: { ok: false, code: "invalid", error: priced.error } };
   const id = newPaymentIntentId();
   const now = new Date().toISOString();
   await firebaseAdminDb().collection(INTENTS).doc(id).create({
@@ -93,7 +145,11 @@ export async function createPaymentIntent(session: PortalSession, invoiceReferen
     customer_id: session.customerId,
     email: session.email,
     gateway,
-    amount_paisa: toPaisa(Number(data.balance_due)),
+    amount_paisa: priced.nprPaisa,
+    invoice_currency: currency,
+    invoice_amount: priced.invoiceAmount,
+    npr_per_unit: rate.rate,
+    rate_date: rate.date,
     status: "created",
     gateway_reference: null,
     created_at: now,
@@ -108,7 +164,19 @@ export async function paymentIntentStatus(session: PortalSession, id: string): P
   if (!intent || intent.customer_id !== session.customerId) return { status: 404, body: { ok: false, code: "missing", error: "Payment not found." } };
   return {
     status: 200,
-    body: { ok: true, payment: { id: intent.id, invoice: intent.invoice_reference, gateway: intent.gateway, amount: intent.amount_paisa / 100, status: intent.status, message: intent.message } },
+    body: {
+      ok: true,
+      payment: {
+        id: intent.id,
+        invoice: intent.invoice_reference,
+        gateway: intent.gateway,
+        amount: intent.amount_paisa / 100,
+        status: intent.status,
+        message: intent.message,
+        invoiceCurrency: intent.invoice_currency ?? "NPR",
+        invoiceAmount: intent.invoice_amount ?? intent.amount_paisa / 100,
+      },
+    },
   };
 }
 
@@ -211,8 +279,16 @@ export async function startPayment(id: string, origin: string): Promise<Response
  */
 async function settle(intent: PaymentIntent, transactionId: string, paidPaisa: number) {
   if (paidPaisa !== intent.amount_paisa) {
-    await markIntent(intent.id, { status: "needs_review", gateway_reference: transactionId, message: "The amount paid differs from the balance. KCPL accounts will match it." });
-    await tellAccounts(intent, transactionId, paidPaisa, "The amount paid differs from the invoice balance at the time of payment.");
+    await markIntent(intent.id, { status: "needs_review", gateway_reference: transactionId, message: "The amount paid differs from the one started. KCPL accounts will match it." });
+    await tellAccounts(intent, transactionId, paidPaisa, "The amount paid differs from the amount the payment was started for.");
+    return;
+  }
+  // Rupees against a foreign-currency invoice: verified, never converted
+  // into the ledger automatically. Accounts apply it, and book any exchange
+  // difference, with the rate the customer was shown.
+  if (foreign(intent)) {
+    await markIntent(intent.id, { status: "needs_review", gateway_reference: transactionId, message: "Payment received. KCPL accounts will apply it to the invoice at the rate shown." });
+    await tellAccounts(intent, transactionId, paidPaisa, "Paid in rupees against a foreign-currency invoice; apply it by hand.");
     return;
   }
   const label = paymentGatewayLabels[intent.gateway];
@@ -275,7 +351,9 @@ async function tellAccounts(intent: PaymentIntent, transactionId: string, paidPa
       category: "finance",
       severity: "warning",
       title: `Online payment to match: ${intent.invoice_reference}`,
-      detail: `NPR ${(paidPaisa / 100).toFixed(2)} paid through ${paymentGatewayLabels[intent.gateway]} (${transactionId}). ${why}`,
+      detail: `NPR ${(paidPaisa / 100).toFixed(2)} paid through ${paymentGatewayLabels[intent.gateway]} (${transactionId})${
+        foreign(intent) ? ` for ${intent.invoice_currency} ${intent.invoice_amount?.toFixed(2)} at NPR ${intent.npr_per_unit} (NRB selling rate${intent.rate_date ? `, ${intent.rate_date}` : ""})` : ""
+      }. ${why}`,
       actionPath: `/admin/finance/invoices/${encodeURIComponent(intent.invoice_reference)}`,
       parentReference: intent.invoice_reference,
       sourceType: "operational",

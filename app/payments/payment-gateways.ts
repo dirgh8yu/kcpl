@@ -143,15 +143,49 @@ export function connectipsSign(message: string, privateKeyPem: string) {
 
 /** Only an NPR invoice with something owed can be paid online: the gateways
  * move rupees, and the whole balance is what is paid. */
-export function invoicePayableOnline(invoice: Record<string, unknown>) {
+/** An issued invoice with money still owed on it, in any currency. */
+export function invoiceOwes(invoice: Record<string, unknown>) {
   const balance = typeof invoice.balance_due === "number" ? invoice.balance_due : Number(invoice.balance_due);
   return (
-    invoice.currency === "NPR"
-    && Number.isFinite(balance)
+    Number.isFinite(balance)
     && balance > 0
     && ["issued", "partially_paid", "overdue"].includes(String(invoice.status))
     && (invoice.record_type === undefined || invoice.record_type === "invoice")
   );
+}
+
+/** A rupee invoice with a balance: paid online and applied at once. */
+export function invoicePayableOnline(invoice: Record<string, unknown>) {
+  return invoice.currency === "NPR" && invoiceOwes(invoice);
+}
+
+/** The gateways' smallest payment (Khalti's floor), in rupees. */
+export const MIN_ONLINE_PAYMENT_NPR = 10;
+
+export type OnlinePaymentAmount =
+  | { ok: true; invoiceAmount: number; nprPaisa: number; whole: boolean }
+  | { ok: false; error: string };
+
+/**
+ * What the customer pays, in rupees, for [requested] of the invoice's
+ * balance (the whole balance when not given). [nprPerUnit] is 1 for a rupee
+ * invoice, otherwise the NRB selling rate for its currency. Never more than
+ * is owed; never less than the gateways take.
+ */
+export function onlinePaymentAmount(invoice: Record<string, unknown>, requested: unknown, nprPerUnit: number): OnlinePaymentAmount {
+  const balance = Math.round(Number(invoice.balance_due) * 100) / 100;
+  if (!invoiceOwes(invoice) || !Number.isFinite(balance)) return { ok: false, error: "Nothing is owed on this invoice." };
+  if (!Number.isFinite(nprPerUnit) || nprPerUnit <= 0) return { ok: false, error: "There is no rate to pay this invoice in rupees today." };
+  let amount = balance;
+  if (requested !== undefined && requested !== null && requested !== "") {
+    const value = typeof requested === "number" ? requested : Number(requested);
+    if (!Number.isFinite(value) || value <= 0) return { ok: false, error: "Enter an amount to pay." };
+    amount = Math.round(value * 100) / 100;
+    if (amount > balance) return { ok: false, error: "That is more than is owed on this invoice." };
+  }
+  const nprPaisa = Math.round(amount * nprPerUnit * 100);
+  if (nprPaisa < MIN_ONLINE_PAYMENT_NPR * 100) return { ok: false, error: `The smallest online payment is NPR ${MIN_ONLINE_PAYMENT_NPR}.` };
+  return { ok: true, invoiceAmount: amount, nprPaisa, whole: amount === balance };
 }
 
 /** One settlement per gateway transaction, however often it is reported. */

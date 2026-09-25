@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../auth/token_store.dart';
+import '../platform/live_activity.dart' show applyLivePush;
 
 /// Where push stands on this phone.
 enum PushState {
@@ -98,6 +99,13 @@ class NoPushService extends PushService {
   Future<void> dismissPrimer() async {}
 }
 
+/// A push that arrives with the app closed. Runs in a background engine of its
+/// own, where the kcpl_live_updates plugin is registered too.
+@pragma('vm:entry-point')
+Future<void> kcplBackgroundMessage(RemoteMessage message) async {
+  await applyLivePush(message.data);
+}
+
 /// Firebase Cloud Messaging. Firebase is configured natively, from
 /// google-services.json (Android) and GoogleService-Info.plist (iOS); a
 /// build without them reports [PushState.unavailable] instead of failing.
@@ -118,6 +126,9 @@ class FcmPushService extends PushService {
     if (platform == null) return NoPushService();
     try {
       if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+      // KCPL's server moves a followed shipment on the Android lock screen
+      // with a data message, which must be handled with the app closed too.
+      if (platform == 'android') FirebaseMessaging.onBackgroundMessage(kcplBackgroundMessage);
       final service = FcmPushService._(FirebaseMessaging.instance, platform, prefs);
       await service._listen();
       return service;
@@ -176,6 +187,11 @@ class FcmPushService extends PushService {
       if (target != null) _taps.add(target);
     });
     FirebaseMessaging.onMessage.listen((message) {
+      // A lock screen update, not news: moved quietly, never a banner.
+      if (message.data['kind'] == 'live') {
+        applyLivePush(message.data).ignore();
+        return;
+      }
       final notification = message.notification;
       if (notification == null) return;
       _notices.add(

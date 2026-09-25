@@ -11,9 +11,14 @@ import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/compose.dart';
 import '../widgets/sheet_route.dart';
+import '../widgets/split_view.dart';
 import 'quote_screen.dart';
 
-void openQuotes(BuildContext context) => Navigator.of(context).push(SheetRoute<void>(builder: (_) => const QuotesScreen()));
+/// Beside the settings on a tablet; as a sheet otherwise.
+void openQuotes(BuildContext context) {
+  if (SplitView.select(context, 'quotes')) return;
+  Navigator.of(context).push(SheetRoute<void>(builder: (_) => const QuotesScreen()));
+}
 
 /// Prices KCPL has given, and requests it is still pricing. A price can be
 /// accepted from here: that asks the account manager to book it, exactly as
@@ -48,7 +53,9 @@ class QuotesScreen extends StatelessWidget {
         ),
       SectionHeader(l.reqQuotesTitle, top: canRequest ? 28 : 8),
       if (page.quotes.isEmpty)
-        GroupCard(child: EmptyState(icon: KIcons.invoice, title: l.reqNoQuotesTitle, description: l.reqNoQuotesDescription))
+        GroupCard(
+          child: EmptyState(icon: KIcons.invoice, title: l.reqNoQuotesTitle, description: l.reqNoQuotesDescription),
+        )
       else ...[
         RowGroup(
           indent: RowGroup.iconIndent,
@@ -105,7 +112,12 @@ class _QuoteRow extends StatelessWidget {
     }
     return RowTile(
       onTap: () async {
-        if (await Navigator.of(context).push<bool>(SheetRoute<bool>(builder: (_) => QuoteDetailScreen(quote: quote, canProceed: canProceed))) == true &&
+        if (await Navigator.of(context).push<bool>(
+                  SheetRoute<bool>(
+                    builder: (_) => QuoteDetailScreen(quote: quote, canProceed: canProceed),
+                  ),
+                ) ==
+                true &&
             context.mounted) {
           await AsyncPage.reload(context);
         }
@@ -121,7 +133,10 @@ class _QuoteRow extends StatelessWidget {
                 text: '${formatMoney(quote.amount!, quote.currency)} · ',
                 style: TextStyle(color: expired ? p.tertiary : p.ink, fontFeatures: const [FontFeature.tabularFigures()]),
               ),
-            TextSpan(text: state, style: TextStyle(color: quote.bookingRequestedAt != null || quote.booked ? p.ink : null)),
+            TextSpan(
+              text: state,
+              style: TextStyle(color: quote.bookingRequestedAt != null || quote.booked ? p.ink : null),
+            ),
           ],
         ),
       ),
@@ -199,7 +214,8 @@ class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
                 TextSpan(text: quote.reference),
                 if (quote.validUntil != null)
                   TextSpan(
-                    text: ' · ${quote.expired() ? l.quoteExpired(formatDate(quote.validUntil)) : l.quoteValidUntil(formatDate(quote.validUntil))}',
+                    text:
+                        ' · ${quote.expired() ? l.quoteExpired(formatDate(quote.validUntil)) : l.quoteValidUntil(formatDate(quote.validUntil))}',
                     style: TextStyle(color: quote.expired() ? p.accent : null),
                   ),
               ],
@@ -225,11 +241,20 @@ class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
           ),
         ],
         if (quote.booked)
-          Padding(padding: const EdgeInsets.only(top: 20), child: Notice(title: l.quoteBooked(quote.shipmentReference!), emphasis: Emphasis.normal))
+          Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: Notice(title: l.quoteBooked(quote.shipmentReference!), emphasis: Emphasis.normal),
+          )
         else if (quote.bookingRequestedAt != null)
-          Padding(padding: const EdgeInsets.only(top: 20), child: Notice(title: l.quoteAsked, body: formatDateTime(quote.bookingRequestedAt), emphasis: Emphasis.normal))
+          Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: Notice(title: l.quoteAsked, body: formatDateTime(quote.bookingRequestedAt), emphasis: Emphasis.normal),
+          )
         else if (quote.expired())
-          Padding(padding: const EdgeInsets.only(top: 20), child: Notice(title: l.quoteExpiredBody))
+          Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: Notice(title: l.quoteExpiredBody),
+          )
         else if (open) ...[
           const SizedBox(height: 20),
           GroupCard(

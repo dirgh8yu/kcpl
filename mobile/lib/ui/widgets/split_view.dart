@@ -10,7 +10,10 @@ class SplitView extends StatefulWidget {
   const SplitView({super.key, required this.list, required this.detail, required this.placeholder});
 
   final Widget list;
-  final Widget Function(BuildContext context, String id) detail;
+
+  /// The pane for [id]; [item] is whatever the row handed over with it
+  /// (a document the list already has, say), or null.
+  final Widget Function(BuildContext context, String id, Object? item) detail;
 
   /// The pane before anything is chosen.
   final Widget placeholder;
@@ -23,12 +26,15 @@ class SplitView extends StatefulWidget {
 
   /// Opens [id] in the pane beside the list [context] is in; false when
   /// there is none (a phone, or a list outside a split).
-  static bool select(BuildContext context, String id) {
+  static bool select(BuildContext context, String id, {Object? item}) {
     final scope = context.getInheritedWidgetOfExactType<_SplitScope>();
     if (scope == null) return false;
-    scope.onSelect(id);
+    scope.onSelect(id, item);
     return true;
   }
+
+  /// Whether [context] is in a list with a pane beside it.
+  static bool beside(BuildContext context) => context.getInheritedWidgetOfExactType<_SplitScope>() != null;
 
   /// The item showing beside the list, for the row to mark as chosen.
   static String? selectedOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_SplitScope>()?.selected;
@@ -39,6 +45,7 @@ class SplitView extends StatefulWidget {
 
 class _SplitViewState extends State<SplitView> {
   String? _selected;
+  Object? _item;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +66,10 @@ class _SplitViewState extends State<SplitView> {
       children: [
         SizedBox(
           width: listWidth,
-          child: column(listWidth, _SplitScope(selected: selected, onSelect: (id) => setState(() => _selected = id), child: widget.list)),
+          child: column(
+            listWidth,
+            _SplitScope(selected: selected, onSelect: (id, item) => setState(() => (_selected = id, _item = item)), child: widget.list),
+          ),
         ),
         VerticalDivider(width: 0.5, thickness: 0.5, color: p.hairline),
         Expanded(
@@ -67,7 +77,9 @@ class _SplitViewState extends State<SplitView> {
             width - listWidth - 0.5,
             ColoredBox(
               color: p.paper,
-              child: selected == null ? widget.placeholder : KeyedSubtree(key: ValueKey(selected), child: widget.detail(context, selected)),
+              child: selected == null
+                  ? widget.placeholder
+                  : KeyedSubtree(key: ValueKey(selected), child: widget.detail(context, selected, _item)),
             ),
           ),
         ),
@@ -79,7 +91,7 @@ class _SplitViewState extends State<SplitView> {
 class _SplitScope extends InheritedWidget {
   const _SplitScope({required this.selected, required this.onSelect, required super.child});
   final String? selected;
-  final ValueChanged<String> onSelect;
+  final void Function(String id, Object? item) onSelect;
 
   @override
   bool updateShouldNotify(_SplitScope old) => old.selected != selected;

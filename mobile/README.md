@@ -220,8 +220,15 @@ They appear only to logins that may send things to KCPL.
 - **Quotes** (Account): the prices KCPL has given, with how long each holds, and the
   requests still being priced. **Ask to proceed** is the web's own booking request: the
   account manager confirms the booking; nothing is booked or charged by the tap.
-- **Pay online** (an invoice): offered only for a rupee invoice with a balance, and only
-  when KCPL has switched payments on (see *Paying online* in `docs/customer-portal.md`).
+- **Pay online** (an invoice with a balance, when KCPL has switched payments on; see
+  *Paying online* in `docs/customer-portal.md`): the whole balance or part of it. KCPL
+  works out the rupees; the phone sends only the amount, in the invoice's currency. The
+  smallest payment is NPR 10, the gateways' floor, and never more than is owed.
+- **An invoice in another currency** (USD, INR…) is paid in rupees at Nepal Rastra
+  Bank's selling rate, shown before paying and fixed when the payment starts. The
+  gateway's payment is verified as usual, but it is never converted into the ledger
+  automatically: it arrives as *received* and KCPL accounts apply it, and any exchange
+  difference, with the rate on record.
   Choose Khalti, eSewa or connectIPS; the gateway's own page opens in the browser, where
   the wallet login already is. The phone holds no merchant key and signs nothing. KCPL
   confirms the payment with the gateway before applying it, and the app waits for KCPL's
@@ -256,14 +263,18 @@ They appear only to logins that may send things to KCPL.
   nothing to set up. They are App Shortcuts in `AppDelegate.swift`.
 - **Follow a shipment on Android:** the share button's **Follow in notifications** keeps
   the shipment as an ongoing progress notification. On Android 16 it is a Live Update: it
-  can sit at the top of the lock screen and as a chip in the status bar. The app moves it
-  whenever it reads the shipment and ends it on delivery; a tap opens the shipment.
+  can sit at the top of the lock screen and as a chip in the status bar. With push on,
+  KCPL moves it as the shipment moves, as it moves the iPhone's Live Activity, even when
+  the app is closed (a data message handled by the `kcpl_live_updates` plugin in
+  `packages/`), and ends it on delivery. The app also moves it whenever it reads the
+  shipment. A follow the person swipes away stays gone; a tap opens the shipment.
 
 ## Tablets
 
-On an iPad (or any screen 740 points wide or more) Shipments and Invoices in KCPL, and
-Today and Jobs in KCPL Ops, show the list and the chosen item side by side, as Mail does.
-On a phone a row opens its sheet as before.
+On an iPad (or any screen 740 points wide or more) every list shows the chosen item
+beside it, as Mail does: Shipments, Documents (the document, with Open and its shipment)
+and Invoices in KCPL, with Quotes and the team beside Account's settings; Today, Jobs
+and Alerts (the job it is about) in KCPL Ops. On a phone a row opens its sheet as before.
 
 ## Settings
 
@@ -572,19 +583,15 @@ dart format -l 140 $(git ls-files "lib/*.dart" "test/*.dart" | grep -v /l10n/)  
 The widget tests sign in and walk every screen in English and Nepali at 1.6× system text
 size. A layout overflow fails the test, so a long label can't clip on a real phone.
 
-`test/accessibility_test.dart` holds the newest screens of both apps to Flutter's
+`test/accessibility_test.dart` holds every screen of both apps to Flutter's
 accessibility guidelines: every control named for VoiceOver and TalkBack, 44-point targets,
 and text at WCAG AA contrast (4.5:1). The secondary grey is a shade darker than Apple's to
 pass on every surface it sits on. `test/tablet_test.dart` covers the two-column layout.
 
 ## Not in this version
 
-- Paying part of an invoice, or a foreign-currency invoice, online. Those stay with KCPL
-  accounts; the app sends the receipt.
 - The Swift code (the widget, the Live Activity, text recognition, the App Shortcuts) is
   compiled only on a Mac. CI builds Android; the iOS side has not been built since this
   change.
-- An Android followed shipment is moved by the app, not by KCPL's push as the iPhone's
-  Live Activity is.
 - Online payment has been tested against the gateways' published signature formats, not
   a live gateway: the first payment in `KCPL_PAYMENTS_ENV=test` is the first round trip.

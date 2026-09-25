@@ -402,6 +402,37 @@ void main() {
       await _wait(tester);
     }, variant: iPhone);
 
+    testWidgets('customer payments $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      final controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(KcplApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'imports@annapurna.example');
+      await _tab(tester, 'Invoices');
+      await tester.tap(find.textContaining('KCPL-I-20260918-011', findRichText: true).first);
+      await _wait(tester);
+      await tester.tap(find.text('Pay online'));
+      await _wait(tester);
+      await tester.tap(find.text('Part of it'));
+      await _wait(tester);
+      await tester.enterText(find.byType(TextField).last, '50000');
+      await _wait(tester, 3);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await _shot(tester, 'customer-$mode-12a-pay-part');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.textContaining('KCPL-I-20260821-004', findRichText: true).first);
+      await _wait(tester);
+      await tester.tap(find.text('Pay online'));
+      await _wait(tester);
+      await _shot(tester, 'customer-$mode-12b-pay-dollars');
+      await tester.pumpWidget(const SizedBox());
+      await _wait(tester);
+    }, variant: iPhone);
+
     testWidgets('ops extras $mode', (tester) async {
       await _phone(tester, dark: dark);
       final controller = OpsController(auth: DemoAuth(), api: DemoOpsApi(), configured: true);
@@ -450,6 +481,14 @@ void main() {
       await tester.tap(find.textContaining('KCPL-I-20260918-011', findRichText: true).first);
       await _wait(tester);
       await _shot(tester, 'ipad-$mode-2-invoices');
+      await _tab(tester, 'Documents');
+      await tester.tap(find.text('Commercial invoice').first);
+      await _wait(tester);
+      await _shot(tester, 'ipad-$mode-4-documents');
+      await _tab(tester, 'Account');
+      await tester.tap(find.text('Quotes').first);
+      await _wait(tester);
+      await _shot(tester, 'ipad-$mode-5-account');
       await tester.pumpWidget(const SizedBox());
       await _wait(tester);
 
@@ -461,6 +500,10 @@ void main() {
       await tester.tap(find.textContaining('KCPL-2609-0142').first);
       await _wait(tester);
       await _shot(tester, 'ipad-$mode-3-ops-today');
+      await _tab(tester, 'Alerts');
+      await tester.tap(find.text('KCPL-2609-0142 held at Jogbani border'));
+      await _wait(tester);
+      await _shot(tester, 'ipad-$mode-6-ops-alerts');
     }, variant: iPhone);
   }
 }

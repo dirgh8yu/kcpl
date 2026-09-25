@@ -299,6 +299,8 @@ ThemeData kcplTheme(Brightness brightness, {TargetPlatform? platform}) {
       style: TextButton.styleFrom(
         foregroundColor: p.ink,
         textStyle: text.bodyLarge,
+        // 44 points tall, as every other control.
+        minimumSize: const Size(0, 44),
         splashFactory: NoSplash.splashFactory,
         overlayColor: Colors.transparent,
       ),

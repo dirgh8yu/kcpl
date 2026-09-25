@@ -212,15 +212,14 @@ class HttpKcplApi extends KcplApi {
   }
 
   @override
-  Future<List<String>> paymentOptions(String invoice) async {
-    // Never from the offline copy: whether an invoice can be paid is now or never.
-    final body = _decode(await _get('invoices/${_enc(invoice)}/pay'));
-    return body['gateways'] is List ? (body['gateways'] as List).whereType<String>().toList() : const [];
-  }
+  Future<PaymentOptions> paymentOptions(String invoice) async =>
+      // Never from the offline copy: whether an invoice can be paid, and at
+      // what rate, is now or never.
+      PaymentOptions.fromJson(_decode(await _get('invoices/${_enc(invoice)}/pay')));
 
   @override
-  Future<PaymentStart> startPayment(String invoice, String gateway) async {
-    final body = _decode(await _send('POST', 'invoices/${_enc(invoice)}/pay', body: {'gateway': gateway}));
+  Future<PaymentStart> startPayment(String invoice, String gateway, {double? amount}) async {
+    final body = _decode(await _send('POST', 'invoices/${_enc(invoice)}/pay', body: {'gateway': gateway, 'amount': ?amount}));
     return PaymentStart(intent: '${body['intent']}', url: Uri.parse('${body['url']}'));
   }
 
@@ -234,12 +233,14 @@ class HttpKcplApi extends KcplApi {
 
   @override
   Future<ShipmentMessage> sendMessage(String reference, String body) async => ShipmentMessage.fromJson(
-    ((_decode(await _send('POST', 'shipments/${_enc(reference)}/messages', body: {'body': body})))['message'] as Map).cast<String, dynamic>(),
+    ((_decode(await _send('POST', 'shipments/${_enc(reference)}/messages', body: {'body': body})))['message'] as Map)
+        .cast<String, dynamic>(),
   );
 
   @override
-  Future<RatingReceipt> rateDelivery(String reference, int score, {String comment = ''}) async =>
-      RatingReceipt.fromJson(_decode(await _send('POST', 'shipments/${_enc(reference)}/rating', body: {'score': score, 'comment': comment})));
+  Future<RatingReceipt> rateDelivery(String reference, int score, {String comment = ''}) async => RatingReceipt.fromJson(
+    _decode(await _send('POST', 'shipments/${_enc(reference)}/rating', body: {'score': score, 'comment': comment})),
+  );
 
   @override
   Future<TrackingLink> createTrackingLink(String reference) async {
@@ -252,8 +253,17 @@ class HttpKcplApi extends KcplApi {
       ((_decode(await _send('DELETE', 'shipments/${_enc(reference)}/tracking-link')))['revoked'] as num?)?.toInt() ?? 0;
 
   @override
-  Future<void> followLive(String reference, {required String activityToken, required String pushToken}) =>
-      _send('POST', 'live-activities', body: {'shipment': reference, 'activityToken': activityToken, 'fcmToken': pushToken});
+  Future<void> followLive(String reference, {required String activityToken, required String pushToken}) => _send(
+    'POST',
+    'live-activities',
+    body: {
+      'shipment': reference,
+      'activityToken': activityToken,
+      'fcmToken': pushToken,
+      // Android names its follows itself (kcpl_live_updates).
+      'platform': activityToken.startsWith('android:') ? 'android' : 'ios',
+    },
+  );
 
   @override
   Future<void> unfollowLive(String activityToken) => _send('DELETE', 'live-activities', body: {'activityToken': activityToken});

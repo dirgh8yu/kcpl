@@ -64,12 +64,14 @@ abstract class KcplApi {
   Future<NotificationPreferences> notificationPreferences();
   Future<NotificationPreferences> setNotificationPreferences(NotificationPreferences preferences);
 
-  /// The gateways this invoice can be paid through; empty when it can't be
-  /// paid online (not rupees, nothing owed, or payments not switched on).
-  Future<List<String>> paymentOptions(String invoice);
+  /// How this invoice can be paid online; [PaymentOptions.available] is
+  /// false when it can't be (nothing owed, no rate for its currency today,
+  /// or payments not switched on).
+  Future<PaymentOptions> paymentOptions(String invoice);
 
-  /// Starts paying the whole balance through [gateway].
-  Future<PaymentStart> startPayment(String invoice, String gateway);
+  /// Starts paying through [gateway]: [amount] of the balance, in the
+  /// invoice's currency, or all of it. KCPL works out the rupees.
+  Future<PaymentStart> startPayment(String invoice, String gateway, {double? amount});
   Future<PaymentStatus> payment(String intent);
 
   /// The shipment's conversation with the person at KCPL handling it.
@@ -85,7 +87,8 @@ abstract class KcplApi {
   /// Withdraws every link this customer made for the shipment; how many.
   Future<int> revokeTrackingLinks(String reference);
 
-  /// A lock-screen Live Activity to keep up to date (iOS).
+  /// A followed shipment for KCPL to keep moving: an iOS Live Activity, or
+  /// the Android ongoing notification (an "android:" id).
   Future<void> followLive(String reference, {required String activityToken, required String pushToken});
   Future<void> unfollowLive(String activityToken);
 

@@ -97,15 +97,19 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
       // On a tablet, the list with the chosen job beside it.
       OpsTab.today => SplitView(
         list: TodayScreen(onNavigate: _select),
-        detail: (context, reference) => JobDetailScreen(reference: reference),
+        detail: (context, reference, _) => JobDetailScreen(reference: reference),
         placeholder: EmptyState(icon: KIcons.shipments, title: context.l.opsSplitJob, description: context.l.opsSplitJobBody),
       ),
       OpsTab.jobs => SplitView(
         list: const JobsScreen(),
-        detail: (context, reference) => JobDetailScreen(reference: reference),
+        detail: (context, reference, _) => JobDetailScreen(reference: reference),
         placeholder: EmptyState(icon: KIcons.shipments, title: context.l.opsSplitJob, description: context.l.opsSplitJobBody),
       ),
-      OpsTab.alerts => const AlertsScreen(),
+      OpsTab.alerts => SplitView(
+        list: const AlertsScreen(),
+        detail: (context, reference, _) => JobDetailScreen(reference: reference),
+        placeholder: EmptyState(icon: KIcons.alerts, title: context.l.opsSplitAlert, description: context.l.opsSplitAlertBody),
+      ),
       OpsTab.me => MeScreen(version: widget.version),
     };
 

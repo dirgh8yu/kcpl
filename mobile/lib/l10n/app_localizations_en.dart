@@ -1407,6 +1407,47 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing was charged by KCPL. You can try again or pay another way.';
 
   @override
+  String payOwed(String amount) {
+    return '$amount owed';
+  }
+
+  @override
+  String get payWhole => 'Whole balance';
+
+  @override
+  String get payPart => 'Part of it';
+
+  @override
+  String payAmount(String currency) {
+    return 'Amount to pay ($currency)';
+  }
+
+  @override
+  String get payTooMuch => 'That is more than is owed.';
+
+  @override
+  String payTooLittle(int minimum) {
+    return 'The smallest online payment is NPR $minimum.';
+  }
+
+  @override
+  String get payEnterAmount => 'Enter an amount.';
+
+  @override
+  String payInRupees(String amount) {
+    return 'You pay $amount in rupees';
+  }
+
+  @override
+  String payRate(String currency, String rate, String date) {
+    return '1 $currency = NPR $rate, Nepal Rastra Bank\'s selling rate for $date. The rate is fixed when you start paying; KCPL accounts apply the payment to the invoice.';
+  }
+
+  @override
+  String get payPartFootnote =>
+      'The rest stays on the invoice, to pay later or by bank transfer.';
+
+  @override
   String get payCouldNotOpen =>
       'The payment page could not be opened on this phone.';
 
@@ -1652,6 +1693,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opsSplitJobBody => 'Its tasks, delivery and messages open here.';
+
+  @override
+  String get splitDocument => 'Choose a document';
+
+  @override
+  String get splitDocumentBody =>
+      'It opens here, with the shipment it belongs to.';
+
+  @override
+  String get splitAccount => 'Quotes and your team';
+
+  @override
+  String get splitAccountBody => 'They open here, beside your settings.';
+
+  @override
+  String get opsSplitAlert => 'Choose an alert';
+
+  @override
+  String get opsSplitAlertBody => 'The job it is about opens here.';
+
+  @override
+  String get docOpen => 'Open';
+
+  @override
+  String get docFile => 'File';
+
+  @override
+  String get docAdded => 'Added';
+
+  @override
+  String get docSize => 'Size';
+
+  @override
+  String get docState => 'Review';
+
+  @override
+  String docShipment(String reference) {
+    return 'Open shipment $reference';
+  }
+
+  @override
+  String get docPreviewFailed =>
+      'The preview could not be loaded. Open the file instead.';
 
   @override
   String get qaTrack => 'Track a shipment';

@@ -19,9 +19,15 @@ export async function POST(request: Request) {
     const reference = text(body.shipment, 80).toUpperCase();
     const activityToken = text(body.activityToken, 512);
     const fcmToken = text(body.fcmToken, 4096);
+    // Android follows with an id of its own ("android:…"); iOS with its APNs
+    // Live Activity token.
+    const platform = body.platform === "android" ? "android" : "ios";
+    if (platform === "android" && !/^android:[A-Za-z0-9_-]{8,64}$/.test(activityToken)) {
+      return mobileJson({ ok: false, code: "invalid", error: "Shipment and tokens are required." }, 400);
+    }
     if (!reference || !activityToken || !fcmToken) return mobileJson({ ok: false, code: "invalid", error: "Shipment and tokens are required." }, 400);
     if (!await portalOwnsShipment(session, reference)) return mobileJson({ ok: false, code: "missing", error: "Shipment not found." }, 404);
-    const result = await saveLiveActivity({ email: session.email, customerId: session.customerId, shipmentReference: reference, activityToken, fcmToken });
+    const result = await saveLiveActivity({ email: session.email, customerId: session.customerId, shipmentReference: reference, activityToken, fcmToken, platform });
     if (result.kind !== "saved") return mobileJson({ ok: false, code: "unavailable", error: "Not available just now." }, 503);
     return mobileJson({ ok: true });
   });
