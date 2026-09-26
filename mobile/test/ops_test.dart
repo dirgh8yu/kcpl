@@ -15,6 +15,7 @@ import 'package:kcpl_customer/ops/ops_demo.dart';
 import 'package:kcpl_customer/ops/ops_models.dart';
 import 'package:kcpl_customer/ops/screens/job_detail_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/widgets/tab_bar.dart';
 
 class _Auth implements AuthRepository {
   bool signedOut = false;
@@ -205,6 +206,27 @@ void main() {
     expect(find.text('3'), findsWidgets);
   });
 
+  testWidgets('large system text keeps Ops navigation usable', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpOps(tester);
+    tester.view.physicalSize = const Size(960, 1704);
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).at(0), 'anil@kcpl.example');
+    await tester.enterText(find.byType(TextField).at(1), 'secret');
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await settle(tester);
+    for (final tab in [1, 2, 3, 0]) {
+      await tester.tap(find.byType(TabBarItem).at(tab));
+      await settle(tester);
+    }
+    final label = tester.widget<Text>(find.descendant(of: find.byType(TabBarItem).first, matching: find.text('Today')));
+    expect(label.maxLines, 2);
+    expect(MediaQuery.textScalerOf(tester.element(find.byType(TabBarItem).first)).scale(14), 28);
+  });
+
   testWidgets('ticking a task shows at once and sticks', (tester) async {
     await pumpOps(tester);
     await signIn(tester);
@@ -240,6 +262,13 @@ void main() {
     await settle(tester);
     expect(find.textContaining('KCPL-2609-0151'), findsOneWidget);
     expect(find.textContaining('KCPL-2609-0163'), findsNothing, reason: 'Mine by default');
+
+    await tester.enterText(find.byType(TextField).last, 'KCPL-2609-0142');
+    await settle(tester);
+    expect(find.textContaining('KCPL-2609-0151'), findsNothing);
+    await tester.tap(find.byTooltip('Clear search'));
+    await settle(tester);
+    expect(find.textContaining('KCPL-2609-0151'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'All'));
     await settle(tester);

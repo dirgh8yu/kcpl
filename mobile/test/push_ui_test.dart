@@ -94,6 +94,16 @@ Future<AppController> signedIn(WidgetTester tester, {required PushService push, 
   return controller;
 }
 
+Future<void> showPrimer(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.text('Know the moment your cargo moves'),
+    250,
+    scrollable: find.byType(Scrollable).hitTestable().first,
+  );
+  await tester.ensureVisible(find.text('Know the moment your cargo moves'));
+  await settle(tester);
+}
+
 void main() {
   setUpAll(initFormatting);
 
@@ -101,6 +111,7 @@ void main() {
     final push = FakePush();
     final api = RecordingApi();
     await signedIn(tester, push: push, api: api);
+    await showPrimer(tester);
     expect(find.text('Know the moment your cargo moves'), findsOneWidget);
 
     await tester.tap(find.text('Turn on'));
@@ -113,6 +124,7 @@ void main() {
     final push = FakePush();
     final api = RecordingApi();
     await signedIn(tester, push: push, api: api);
+    await showPrimer(tester);
     await tester.tap(find.text('Not now'));
     await settle(tester);
     expect(find.text('Know the moment your cargo moves'), findsNothing);

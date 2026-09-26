@@ -19,6 +19,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chromeDocuments => 'Documents';
 
   @override
+  String get chromeDocs => 'Docs';
+
+  @override
   String get chromeInvoices => 'Invoices';
 
   @override
@@ -363,6 +366,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shipsSearchPlaceholder => 'Search reference, route or carrier…';
+
+  @override
+  String get searchClear => 'Clear search';
 
   @override
   String get shipsEmptyFilteredTitle => 'No shipments match this view';

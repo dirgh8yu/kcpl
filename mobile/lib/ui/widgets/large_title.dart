@@ -30,8 +30,8 @@ class LargeTitleBar extends StatelessWidget {
                 style: IconButton.styleFrom(
                   backgroundColor: p.fill,
                   foregroundColor: p.secondary,
-                  fixedSize: const Size(34, 34),
-                  minimumSize: const Size(34, 34),
+                  fixedSize: const Size(48, 48),
+                  minimumSize: const Size(48, 48),
                   padding: EdgeInsets.zero,
                   iconSize: 18,
                 ),

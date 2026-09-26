@@ -116,6 +116,12 @@ abstract class AppLocalizations {
   /// **'Documents'**
   String get chromeDocuments;
 
+  /// No description provided for @chromeDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Docs'**
+  String get chromeDocs;
+
   /// No description provided for @chromeInvoices.
   ///
   /// In en, this message translates to:
@@ -739,6 +745,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search reference, route or carrier…'**
   String get shipsSearchPlaceholder;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
 
   /// No description provided for @shipsEmptyFilteredTitle.
   ///

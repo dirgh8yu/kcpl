@@ -70,7 +70,6 @@ class TodayScreen extends StatelessWidget {
           style: context.type.bodyLarge?.copyWith(color: p.secondary),
         ),
       ),
-      const PushPrimer(copy: opsPushCopy),
       if (lead != null)
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
@@ -117,6 +116,7 @@ class TodayScreen extends StatelessWidget {
           title: 'Nothing waiting on you',
           description: 'No active jobs in your branches need attention right now.',
         ),
+      const PushPrimer(copy: opsPushCopy),
     ];
   }
 }

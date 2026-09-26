@@ -43,6 +43,17 @@ class ShipmentsScreen extends StatefulWidget {
 class _ShipmentsScreenState extends State<ShipmentsScreen> {
   ShipmentFocus _focus = ShipmentFocus.all;
   String _query = '';
+  int? _generation;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final generation = AppScope.of(context).generation;
+    if (_generation == generation) return;
+    _generation = generation;
+    _focus = ShipmentFocus.all;
+    _query = '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +66,8 @@ class _ShipmentsScreenState extends State<ShipmentsScreen> {
         return [
           FilterBar<ShipmentFocus>(
             hint: l.shipsSearchPlaceholder,
+            clearLabel: l.searchClear,
+            query: _query,
             onQuery: (value) => setState(() => _query = value),
             options: {
               ShipmentFocus.all: l.shipsFocusAll,

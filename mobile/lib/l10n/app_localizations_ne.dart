@@ -19,6 +19,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get chromeDocuments => 'कागजात';
 
   @override
+  String get chromeDocs => 'कागजात';
+
+  @override
   String get chromeInvoices => 'बिल';
 
   @override
@@ -362,6 +365,9 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get shipsSearchPlaceholder => 'सन्दर्भ, मार्ग वा क्यारियर खोज्नुहोस्…';
+
+  @override
+  String get searchClear => 'खोजी हटाउनुहोस्';
 
   @override
   String get shipsEmptyFilteredTitle => 'यो दृश्यमा कुनै ढुवानी मिलेन';

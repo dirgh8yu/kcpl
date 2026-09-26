@@ -41,6 +41,7 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _signIn() async {
+    if (_busy) return;
     final l = AppLocalizations.of(context);
     FocusScope.of(context).unfocus();
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
@@ -55,6 +56,7 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await SessionScope.read(context).signIn(_email.text, _password.text);
     } on AuthFailure catch (failure) {
+      if (!mounted) return;
       setState(
         () => _error = switch (failure.kind) {
           AuthFailureKind.tooManyAttempts => l.tooManyAttempts,
@@ -63,6 +65,7 @@ class _SignInScreenState extends State<SignInScreen> {
         },
       );
     } on ApiException catch (failure) {
+      if (!mounted) return;
       // KCPL's own refusal (no portal access, unverified email) is worded by
       // the server, identically to the web sign-in.
       setState(
@@ -73,17 +76,19 @@ class _SignInScreenState extends State<SignInScreen> {
             : l.commonUnavailableDetail,
       );
     } on SignedOutException {
+      if (!mounted) return;
       setState(() => _error = l.signInFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-    if (_error != null) {
+    if (mounted && _error != null) {
       HapticFeedback.heavyImpact();
       _shake.currentState?.shake();
     }
   }
 
   Future<void> _reset() async {
+    if (_busy) return;
     final l = AppLocalizations.of(context);
     if (_email.text.trim().isEmpty) {
       setState(() {
@@ -98,8 +103,10 @@ class _SignInScreenState extends State<SignInScreen> {
     });
     try {
       await SessionScope.read(context).auth.sendPasswordReset(_email.text);
+      if (!mounted) return;
       setState(() => _notice = l.resetSent);
     } on AuthFailure catch (failure) {
+      if (!mounted) return;
       setState(() => _error = failure.kind == AuthFailureKind.network ? l.networkError : l.tooManyAttempts);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -208,7 +215,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                         enableSuggestions: false,
                                         autofillHints: const [AutofillHints.email, AutofillHints.username],
                                         style: context.type.bodyLarge,
-                                        decoration: InputDecoration(hintText: l.emailLabel),
+                                        decoration: InputDecoration(labelText: l.emailLabel),
                                         onSubmitted: (_) => _passwordFocus.requestFocus(),
                                       ),
                                       const SizedBox(height: 12),
@@ -221,7 +228,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                         autofillHints: const [AutofillHints.password],
                                         style: context.type.bodyLarge,
                                         decoration: InputDecoration(
-                                          hintText: l.passwordLabel,
+                                          labelText: l.passwordLabel,
                                           suffixIcon: IconButton(
                                             tooltip: _obscure ? l.showPassword : l.hidePassword,
                                             icon: Icon(_obscure ? KIcons.show : KIcons.hide, size: 19),
@@ -242,10 +249,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                     ? const SizedBox(width: double.infinity)
                                     : Padding(
                                         padding: const EdgeInsets.only(top: 18),
-                                        child: Notice(
-                                          padding: EdgeInsets.zero,
-                                          title: message,
-                                          emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
+                                        child: Semantics(
+                                          liveRegion: true,
+                                          child: Notice(
+                                            padding: EdgeInsets.zero,
+                                            title: message,
+                                            emphasis: _error != null ? Emphasis.attention : Emphasis.normal,
+                                          ),
                                         ),
                                       ),
                               ),

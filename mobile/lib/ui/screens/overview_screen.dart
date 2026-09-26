@@ -60,7 +60,6 @@ class OverviewScreen extends StatelessWidget {
 
     return [
       _AccountLine(session: session),
-      PushPrimer(copy: customerPushCopy(l)),
       if (hero != null)
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
@@ -102,6 +101,7 @@ class OverviewScreen extends StatelessWidget {
           ],
         ),
       ],
+      PushPrimer(copy: customerPushCopy(l)),
       if (finance != null && finance.balances.isNotEmpty) ...[
         SectionHeader(l.overviewAccountTitle, actionLabel: l.overviewViewInvoices, onAction: () => onNavigate(HomeTab.invoices)),
         for (final balance in finance.balances) BalanceFigure(balance: balance),
@@ -178,7 +178,13 @@ class _AccountLine extends StatelessWidget {
             ? InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => showCustomerSheet(context),
-                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), child: label),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Align(alignment: AlignmentDirectional.centerStart, child: label),
+                  ),
+                ),
               )
             : Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: label),
       ),

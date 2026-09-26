@@ -67,6 +67,8 @@ class _JobsScreenState extends State<JobsScreen> {
         return [
           FilterBar<JobFilter>(
             hint: 'Search reference, customer, route or owner…',
+            clearLabel: 'Clear search',
+            query: _query,
             onQuery: (value) => setState(() => _query = value),
             options: jobFilterLabels,
             selected: filter,

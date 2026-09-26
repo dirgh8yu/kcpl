@@ -275,7 +275,7 @@ ThemeData kcplTheme(Brightness brightness) {
       style: OutlinedButton.styleFrom(
         foregroundColor: p.ink,
         side: BorderSide(color: p.hairline),
-        minimumSize: const Size(0, 44),
+        minimumSize: const Size(0, 48),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: text.labelLarge,
       ),

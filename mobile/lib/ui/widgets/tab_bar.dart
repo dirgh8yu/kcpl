@@ -28,35 +28,31 @@ class FloatingTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    // A tab bar keeps its size at large text settings, as the system's does.
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.15,
-      child: Glass(
-        opacity: 0.92,
-        // No rule above it: the frost is the edge, as iOS draws it.
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (note != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text(note!, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
-                ),
-              SizedBox(
-                height: 54,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++)
-                      Expanded(
-                        child: TabBarItem(item: items[i], selected: i == selected, onTap: () => onSelected(i)),
-                      ),
-                  ],
-                ),
+    return Glass(
+      opacity: 0.92,
+      // No rule above it: the frost is the edge, as iOS draws it.
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (note != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Text(note!, style: context.type.labelSmall?.copyWith(color: p.tertiary)),
               ),
-            ],
-          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: TabBarItem(item: items[i], selected: i == selected, onTap: () => onSelected(i)),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -89,27 +85,28 @@ class TabBarItem extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(height: 3),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(height: 3),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Text(
                   item.label,
-                  maxLines: 1,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
                   style: (context.type.labelSmall ?? const TextStyle()).copyWith(
                     color: colour,
-                    fontSize: 10,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -165,6 +165,13 @@ void main() {
     await settle(tester);
     expect(ref('KCPL-S-24012'), findsWidgets);
 
+    await tester.enterText(find.byType(TextField).last, 'KCPL-S-24077');
+    await settle(tester);
+    expect(ref('KCPL-S-24012'), findsNothing);
+    await tester.tap(find.byTooltip('Clear search'));
+    await settle(tester);
+    expect(ref('KCPL-S-24012'), findsWidgets);
+
     // The chips scroll sideways on a phone, as a thumb would move them.
     await tester.scrollUntilVisible(
       find.widgetWithText(ChoiceChip, 'Needs attention'),
@@ -201,12 +208,23 @@ void main() {
   testWidgets('an agent can switch customer', (tester) async {
     final controller = await pumpApp(tester);
     await signIn(tester);
+    await tester.tap(find.text('Shipments').last);
+    await settle(tester);
+    await tester.enterText(find.byType(TextField).last, '24077');
+    await settle(tester);
     await tester.tap(find.text('Account').last);
     await settle(tester);
     await tester.tap(find.text('Machhapuchhre Pharma (demo)'));
     await settle(tester);
     expect(controller.api.customerId, 'DEMO-MACHHAPUCHHRE');
     expect(find.text('Machhapuchhre Pharma (demo)'), findsWidgets);
+    await tester.tap(find.text('Shipments').last);
+    await settle(tester);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
+      reason: 'old-customer filters do not hide the new account',
+    );
   });
 
   testWidgets('a password Firebase accepts but KCPL refuses leaves the phone signed out', (tester) async {
@@ -232,16 +250,18 @@ void main() {
   testWidgets('large system text and Nepali never clip a screen', (tester) async {
     // A layout overflow is reported as a test failure, so visiting each
     // screen is the assertion.
-    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     for (final locale in ['en', 'ne']) {
       final controller = await pumpApp(tester);
+      tester.view.physicalSize = const Size(960, 1704);
+      await tester.pump();
       await controller.setLocale(Locale(locale));
       await settle(tester);
       await tester.enterText(find.byType(TextField).at(0), 'a@b.example');
       await tester.enterText(find.byType(TextField).at(1), 'x');
-      await tester.ensureVisible(find.byType(FilledButton));
-      await tester.pump();
+      await tester.scrollUntilVisible(find.byType(FilledButton), 180, scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(FilledButton));
       await settle(tester);
       for (final tab in [1, 2, 3, 4, 0]) {
@@ -250,7 +270,7 @@ void main() {
       }
       await tester.tap(find.byType(TabBarItem).at(1));
       await settle(tester);
-      await tester.tap(ref('KCPL-S-24091').first);
+      await tester.tap(find.ancestor(of: ref('KCPL-S-24091').first, matching: find.byType(InkWell)).first);
       await settle(tester);
       await tester.tap(find.byType(CloseButton));
       await settle(tester);
