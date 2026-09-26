@@ -15,6 +15,8 @@ import 'package:kcpl_customer/ops/ops_demo.dart';
 import 'package:kcpl_customer/ops/route_order.dart';
 import 'package:kcpl_customer/ops/ops_models.dart';
 import 'package:kcpl_customer/ops/screens/job_detail_screen.dart';
+import 'package:kcpl_customer/ops/screens/jobs_screen.dart';
+import 'package:kcpl_customer/ui/widgets/filter_bar.dart';
 import 'package:kcpl_customer/ui/format.dart';
 
 class _Auth implements AuthRepository {
@@ -209,6 +211,14 @@ void main() {
     expect(find.textContaining('Yours', findRichText: true), findsWidgets);
     // The unread badge is right before Alerts is opened.
     expect(find.text('3'), findsWidgets);
+  });
+
+  testWidgets('Today overdue shortcut opens Jobs with the matching filter', (tester) async {
+    await pumpOps(tester);
+    await signIn(tester);
+    await tapInView(tester, find.textContaining('1 overdue task'));
+    await settle(tester);
+    expect(tester.widget<FilterBar<JobFilter>>(find.byType(FilterBar<JobFilter>)).selected, JobFilter.overdue);
   });
 
   testWidgets('ticking a task shows at once and sticks', (tester) async {

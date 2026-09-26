@@ -399,7 +399,8 @@ apps follow the phone's light or dark setting.
   1 needs attention") and lists what needs the customer, the active shipments, the balance
   and recent documents. Pull the sheet up for more.
 - **KCPL Ops Today:** a list in the manner of Reminders, grouped into Needs action, Moving
-  and Delivered, each with its count, and your own jobs first.
+  and Delivered, each with its count, and your own jobs first. Overdue-task and customs
+  counts open Jobs with the matching filter already selected.
 - **The map** (`lib/ui/map/`): pale land, soft water, white roads, rivers, borders and small
   grey town names, from bundled data (about 480 KB), so it needs no map service, API key or
   network. Places are matched by the names desks write ("Birgunj ICD", "Kathmandu (TIA)").

@@ -30,6 +30,8 @@ class OpsShell extends StatefulWidget {
 class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
   OpsTab _tab = OpsTab.today;
   final Set<OpsTab> _visited = {OpsTab.today};
+  JobFilter? _jobsFilter;
+  int _jobsOpenRequest = 0;
 
   Timer? _badgeTimer;
 
@@ -77,6 +79,15 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
     });
   }
 
+  void _openJobs(JobFilter filter) {
+    setState(() {
+      _jobsFilter = filter;
+      _jobsOpenRequest++;
+      _tab = OpsTab.jobs;
+      _visited.add(OpsTab.jobs);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final unread = OpsScope.of(context).unread;
@@ -96,12 +107,12 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
     Widget screen(OpsTab tab) => switch (tab) {
       // On a tablet, the list with the chosen job beside it.
       OpsTab.today => SplitView(
-        list: TodayScreen(onNavigate: _select),
+        list: TodayScreen(onOpenJobs: _openJobs),
         detail: (context, reference, _) => JobDetailScreen(reference: reference),
         placeholder: EmptyState(icon: KIcons.shipments, title: context.l.opsSplitJob, description: context.l.opsSplitJobBody),
       ),
       OpsTab.jobs => SplitView(
-        list: const JobsScreen(),
+        list: JobsScreen(key: ValueKey(_jobsOpenRequest), initialFilter: _jobsFilter),
         detail: (context, reference, _) => JobDetailScreen(reference: reference),
         placeholder: EmptyState(icon: KIcons.shipments, title: context.l.opsSplitJob, description: context.l.opsSplitJobBody),
       ),

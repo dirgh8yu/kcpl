@@ -46,7 +46,9 @@ bool matchesJobQuery(OpsJob job, String query) {
 }
 
 class JobsScreen extends StatefulWidget {
-  const JobsScreen({super.key});
+  const JobsScreen({super.key, this.initialFilter});
+
+  final JobFilter? initialFilter;
 
   @override
   State<JobsScreen> createState() => _JobsScreenState();
@@ -55,6 +57,12 @@ class JobsScreen extends StatefulWidget {
 class _JobsScreenState extends State<JobsScreen> {
   JobFilter? _filter;
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _filter = widget.initialFilter;
+  }
 
   @override
   Widget build(BuildContext context) {

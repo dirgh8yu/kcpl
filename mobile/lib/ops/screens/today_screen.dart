@@ -11,6 +11,7 @@ import 'scan_screen.dart';
 import '../ops_models.dart';
 import '../ops_rows.dart';
 import '../ops_l10n.dart';
+import 'jobs_screen.dart' show JobFilter;
 
 enum OpsTab { today, jobs, alerts, me }
 
@@ -37,8 +38,8 @@ OpsJob? leadJob(List<OpsJob> jobs, String email) {
 }
 
 class TodayScreen extends StatelessWidget {
-  const TodayScreen({super.key, required this.onNavigate});
-  final ValueChanged<OpsTab> onNavigate;
+  const TodayScreen({super.key, required this.onOpenJobs});
+  final ValueChanged<JobFilter> onOpenJobs;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +78,11 @@ class TodayScreen extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
-          [session.displayName, session.roleLabel, session.canAccessAllBranches ? context.l.opsAllBranches : session.branches.join(', ')].join(' · '),
+          [
+            session.displayName,
+            session.roleLabel,
+            session.canAccessAllBranches ? context.l.opsAllBranches : session.branches.join(', '),
+          ].join(' · '),
           style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
@@ -100,29 +105,42 @@ class TodayScreen extends StatelessWidget {
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in action.take(8)) JobRow(job, owner: true)]),
       ],
       if (moving.isNotEmpty) ...[
-        SectionHeader(context.l.opsMoving, count: moving.length, actionLabel: context.l.opsAllJobs, onAction: () => onNavigate(OpsTab.jobs)),
+        SectionHeader(
+          context.l.opsMoving,
+          count: moving.length,
+          actionLabel: context.l.opsAllJobs,
+          onAction: () => onOpenJobs(JobFilter.all),
+        ),
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in moving.take(8)) JobRow(job, owner: true)]),
       ],
       if (done.isNotEmpty) ...[
         SectionHeader(context.l.opsDelivered, count: done.length),
         RowGroup(indent: RowGroup.iconIndent, children: [for (final job in done.take(5)) JobRow(job, owner: true)]),
       ],
-      // The rest of the day in a line of words.
-      Footnote(
-        [
-          context.l.opsOverdueTasks(totals.overdueTasks),
-          context.l.opsCustomsBlocks(totals.customsBlockers),
-          context.l.opsDeliveringToday(totals.deliveriesToday),
-          context.l.opsUnassignedCount(totals.unassigned),
-        ].join(' · '),
-      ),
+      if (totals.overdueTasks > 0 || totals.customsBlockers > 0)
+        RowGroup(
+          indent: RowGroup.iconIndent,
+          children: [
+            if (totals.overdueTasks > 0)
+              RowTile(
+                onTap: () => onOpenJobs(JobFilter.overdue),
+                leading: const Icon(KIcons.timer, size: 22),
+                title: Text(context.l.opsOverdueTasks(totals.overdueTasks)),
+                chevron: true,
+              ),
+            if (totals.customsBlockers > 0)
+              RowTile(
+                onTap: () => onOpenJobs(JobFilter.customs),
+                leading: const Icon(KIcons.document, size: 22),
+                title: Text(context.l.opsCustomsBlocks(totals.customsBlockers)),
+                chevron: true,
+              ),
+          ],
+        ),
+      Footnote([context.l.opsDeliveringToday(totals.deliveriesToday), context.l.opsUnassignedCount(totals.unassigned)].join(' · ')),
       if (bundle.branches.length > 1) ...[SectionHeader(context.l.opsBranches), _BranchLoad(branches: bundle.branches)],
       if (action.isEmpty && moving.isEmpty && done.isEmpty)
-        EmptyState(
-          icon: KIcons.today,
-          title: context.l.opsNothingWaiting,
-          description: context.l.opsNothingWaitingBody,
-        ),
+        EmptyState(icon: KIcons.today, title: context.l.opsNothingWaiting, description: context.l.opsNothingWaitingBody),
     ];
   }
 }
