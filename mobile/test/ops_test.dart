@@ -18,6 +18,7 @@ import 'package:kcpl_customer/ops/screens/job_detail_screen.dart';
 import 'package:kcpl_customer/ops/screens/jobs_screen.dart';
 import 'package:kcpl_customer/ui/widgets/filter_bar.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/widgets/tab_bar.dart';
 
 class _Auth implements AuthRepository {
   bool signedOut = false;
@@ -221,6 +222,22 @@ void main() {
     expect(tester.widget<FilterBar<JobFilter>>(find.byType(FilterBar<JobFilter>)).selected, JobFilter.overdue);
   });
 
+  testWidgets('large system text keeps Ops navigation usable', (tester) async {
+    await pumpOps(tester);
+    await signIn(tester);
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    tester.view.physicalSize = const Size(960, 1704);
+    await tester.pump();
+    for (final tab in [1, 2, 3, 0]) {
+      await tester.tap(find.byType(TabBarItem).at(tab));
+      await settle(tester);
+    }
+    final label = tester.widget<Text>(find.descendant(of: find.byType(TabBarItem).first, matching: find.text('Today')));
+    expect(label.maxLines, 2);
+    expect(MediaQuery.textScalerOf(tester.element(find.byType(TabBarItem).first)).scale(14), 28);
+  });
+
   testWidgets('ticking a task shows at once and sticks', (tester) async {
     await pumpOps(tester);
     await signIn(tester);
@@ -256,6 +273,13 @@ void main() {
     await settle(tester);
     expect(find.textContaining('KCPL-2609-0151'), findsOneWidget);
     expect(find.textContaining('KCPL-2609-0163'), findsNothing, reason: 'Mine by default');
+
+    await tester.enterText(find.byType(TextField).last, 'KCPL-2609-0142');
+    await settle(tester);
+    expect(find.textContaining('KCPL-2609-0151'), findsNothing);
+    await tester.tap(find.byTooltip('Clear search'));
+    await settle(tester);
+    expect(find.textContaining('KCPL-2609-0151'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'All'));
     await settle(tester);

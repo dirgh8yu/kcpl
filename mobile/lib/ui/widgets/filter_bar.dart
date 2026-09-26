@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Search above a row of filter pills: black when chosen, grey when not.
-class FilterBar<T> extends StatelessWidget {
+class FilterBar<T> extends StatefulWidget {
   const FilterBar({
     super.key,
     required this.hint,
+    required this.clearLabel,
+    required this.query,
     required this.onQuery,
     required this.options,
     required this.selected,
@@ -14,10 +16,48 @@ class FilterBar<T> extends StatelessWidget {
   });
 
   final String hint;
+  final String clearLabel;
+  final String query;
   final ValueChanged<String> onQuery;
   final Map<T, String> options;
   final T selected;
   final ValueChanged<T> onSelected;
+
+  @override
+  State<FilterBar<T>> createState() => _FilterBarState<T>();
+}
+
+class _FilterBarState<T> extends State<FilterBar<T>> {
+  late final TextEditingController _query;
+
+  @override
+  void initState() {
+    super.initState();
+    _query = TextEditingController(text: widget.query);
+  }
+
+  @override
+  void didUpdateWidget(FilterBar<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_query.text != widget.query) {
+      _query.value = TextEditingValue(
+        text: widget.query,
+        selection: TextSelection.collapsed(offset: widget.query.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _query.clear();
+    setState(() {});
+    widget.onQuery('');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,20 +67,28 @@ class FilterBar<T> extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter, 0, kGutter, 12),
           child: SizedBox(
-            height: 36,
+            height: 48,
             child: TextField(
-              onChanged: onQuery,
+              controller: _query,
+              onChanged: (value) {
+                setState(() {});
+                widget.onQuery(value);
+              },
               textInputAction: TextInputAction.search,
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
               style: context.type.bodyLarge,
               decoration: InputDecoration(
-                hintText: hint,
+                hintText: widget.hint,
                 prefixIcon: Padding(
                   padding: const EdgeInsetsDirectional.only(start: 8, end: 4),
                   child: Icon(KIcons.search, size: 18, color: context.palette.secondary),
                 ),
-                prefixIconConstraints: const BoxConstraints(minWidth: 30, minHeight: 36),
+                prefixIconConstraints: const BoxConstraints(minWidth: 30, minHeight: 48),
+                suffixIcon: _query.text.isEmpty
+                    ? null
+                    : IconButton(tooltip: widget.clearLabel, onPressed: _clear, icon: const Icon(KIcons.clear, size: 18)),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -49,12 +97,12 @@ class FilterBar<T> extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 34,
+          height: 48,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: kGutter),
             children: [
-              for (final entry in options.entries)
+              for (final entry in widget.options.entries)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
@@ -62,12 +110,12 @@ class FilterBar<T> extends StatelessWidget {
                     // from the theme on every platform.
                     label: Text(
                       entry.value,
-                      style: TextStyle(color: entry.key == selected ? context.palette.surface : context.palette.ink),
+                      style: TextStyle(color: entry.key == widget.selected ? context.palette.surface : context.palette.ink),
                     ),
-                    selected: entry.key == selected,
+                    selected: entry.key == widget.selected,
                     onSelected: (_) {
-                      if (entry.key == selected) return;
-                      onSelected(entry.key);
+                      if (entry.key == widget.selected) return;
+                      widget.onSelected(entry.key);
                     },
                   ),
                 ),

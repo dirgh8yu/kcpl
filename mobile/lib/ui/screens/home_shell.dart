@@ -120,7 +120,7 @@ class _HomeShellState extends State<HomeShell> {
     final labels = {
       HomeTab.overview: l.chromeOverview,
       HomeTab.shipments: l.chromeShipments,
-      HomeTab.documents: l.chromeDocuments,
+      HomeTab.documents: l.chromeDocs,
       HomeTab.invoices: l.chromeInvoices,
       HomeTab.account: l.chromeAccount,
     };

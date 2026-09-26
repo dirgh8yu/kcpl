@@ -101,6 +101,17 @@ Future<void> openSheet(WidgetTester tester) async {
   await settle(tester);
 }
 
+Future<void> showPrimer(WidgetTester tester) async {
+  await openSheet(tester);
+  await tester.scrollUntilVisible(
+    find.text('Know the moment your cargo moves'),
+    250,
+    scrollable: find.byType(Scrollable).hitTestable().first,
+  );
+  await tester.ensureVisible(find.text('Know the moment your cargo moves'));
+  await settle(tester);
+}
+
 void main() {
   setUpAll(initFormatting);
 
@@ -110,7 +121,7 @@ void main() {
     await signedIn(tester, push: push, api: api);
     expect(find.text('Know the moment your cargo moves'), findsOneWidget);
 
-    await openSheet(tester);
+    await showPrimer(tester);
     await tester.tap(find.text('Turn on'));
     await settle(tester);
     expect(api.registered, ['token-1/android']);
@@ -121,7 +132,7 @@ void main() {
     final push = FakePush();
     final api = RecordingApi();
     await signedIn(tester, push: push, api: api);
-    await openSheet(tester);
+    await showPrimer(tester);
     await tester.tap(find.text('Not now'));
     await settle(tester);
     expect(find.text('Know the moment your cargo moves'), findsNothing);

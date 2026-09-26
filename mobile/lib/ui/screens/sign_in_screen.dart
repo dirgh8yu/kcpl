@@ -67,6 +67,7 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await SessionScope.read(context).signIn(_email.text, _password.text, link: _link);
     } catch (error) {
+      if (!mounted) return;
       setState(() => _error = _failure(l, error));
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -80,6 +81,7 @@ class _SignInScreenState extends State<SignInScreen> {
   /// Continue with Apple or Google: the phone's own sheet proves who the
   /// person is, then KCPL decides, exactly as for a password.
   Future<void> _withProvider({required bool apple}) async {
+    if (_busy) return;
     final l = AppLocalizations.of(context);
     final host = SessionScope.read(context);
     setState(() {
@@ -91,6 +93,7 @@ class _SignInScreenState extends State<SignInScreen> {
       final credential = apple ? await host.social.withApple() : await host.social.withGoogle();
       if (credential != null) await host.signInWithProvider(credential);
     } on NeedsLinking catch (needs) {
+      if (!mounted) return;
       // The address already has a password: one sign-in with it connects
       // the provider for next time.
       setState(() {
@@ -101,6 +104,7 @@ class _SignInScreenState extends State<SignInScreen> {
       });
       _passwordFocus.requestFocus();
     } catch (error) {
+      if (!mounted) return;
       setState(() => _error = _failure(l, error, provider: apple ? 'Apple' : 'Google'));
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -183,7 +187,10 @@ class _SignInScreenState extends State<SignInScreen> {
           ? const SizedBox(width: double.infinity)
           : Padding(
               padding: const EdgeInsets.only(top: 18),
-              child: Notice(card: false, title: message, emphasis: _error != null ? Emphasis.attention : Emphasis.normal),
+              child: Semantics(
+                liveRegion: true,
+                child: Notice(card: false, title: message, emphasis: _error != null ? Emphasis.attention : Emphasis.normal),
+              ),
             ),
     );
 
@@ -199,7 +206,14 @@ class _SignInScreenState extends State<SignInScreen> {
           // natural height measured first.
           builder: (context, constraints) => CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: BrandHero(height: math.max(300, constraints.maxHeight * 0.42))),
+              SliverToBoxAdapter(
+                child: BrandHero(
+                  height: math.max(
+                    300 + (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, double.infinity) * 8,
+                    constraints.maxHeight * 0.42,
+                  ),
+                ),
+              ),
               SliverToBoxAdapter(
                 // The form on a sheet that rises over the crimson, its
                 // corners showing the brand behind. Crimson only behind the

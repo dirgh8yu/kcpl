@@ -288,7 +288,7 @@ ThemeData kcplTheme(Brightness brightness, {TargetPlatform? platform}) {
         foregroundColor: p.ink,
         backgroundColor: p.surface,
         side: BorderSide.none,
-        minimumSize: const Size(0, 44),
+        minimumSize: const Size(0, 48),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: text.titleSmall,

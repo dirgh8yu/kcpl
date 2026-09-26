@@ -178,12 +178,14 @@ class RowTile extends StatelessWidget {
                                   child: DefaultTextStyle.merge(style: context.type.bodyLarge, child: title),
                                 ),
                                 const SizedBox(width: 10),
-                                DefaultTextStyle.merge(
-                                  style: context.type.bodyMedium?.copyWith(
-                                    color: p.secondary,
-                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                Flexible(
+                                  child: DefaultTextStyle.merge(
+                                    style: context.type.bodyMedium?.copyWith(
+                                      color: p.secondary,
+                                      fontFeatures: const [FontFeature.tabularFigures()],
+                                    ),
+                                    child: accessory!,
                                   ),
-                                  child: accessory!,
                                 ),
                               ],
                             ),

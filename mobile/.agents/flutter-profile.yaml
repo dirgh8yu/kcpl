@@ -1,0 +1,10 @@
+# KCPL mobile profile for Flutter Craft Skills. Paths below are relative to mobile/.
+state: setstate          # StatefulWidget.setState plus custom ChangeNotifier controllers; no state-management package
+models: manual           # hand-written fromJson factories in lib/api/models.dart and lib/ops/ops_models.dart
+structure: layer_first   # UNCERTAIN: lib/api, lib/auth, lib/ui are layers; lib/ops is a staff feature island
+di: none                 # constructors and app roots pass dependencies directly; no DI package
+routing: navigator       # Navigator.of(context).push with custom SheetRoute; no router package
+tokens: theme_extension  # Palette extends ThemeExtension in lib/ui/theme.dart
+l10n: arb                # flutter generate: true, l10n.yaml and lib/l10n/app_*.arb
+locales: [en, ne]        # app_en.arb and app_ne.arb
+strictness: warn         # existing app adopting these skills; review findings before making conventions blocking

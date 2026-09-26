@@ -739,6 +739,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'KCPL';
 
   @override
+  String get chromeDocs => 'Docs';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
   String get signInTitle => 'Sign in to KCPL';
 
   @override

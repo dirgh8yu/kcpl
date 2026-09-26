@@ -244,7 +244,6 @@ class _Sheet extends StatelessWidget {
       _Headline(session: session, overview: overview, active: active.length, refreshing: refreshing),
       // A new shipment starts the way a ride does: where is it going?
       if (session.canSubmitRequests) _WhereTo(onTap: () => openQuote(context, recent: recentPlaces(overview.shipments))),
-      PushPrimer(copy: customerPushCopy(l)),
       if (needsYou) ...[
         SectionHeader(l.homeNeedsYou, top: 20),
         RowGroup(
@@ -273,6 +272,7 @@ class _Sheet extends StatelessWidget {
           ],
         ),
       ],
+      PushPrimer(copy: customerPushCopy(l)),
       SectionHeader(
         l.overviewMovementsTitle,
         top: needsYou ? 28 : 20,
@@ -418,7 +418,20 @@ class _Headline extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // An agent switches customer from here.
-          if (many) GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => showCustomerSheet(context), child: account) else account,
+          if (many)
+            Semantics(
+              button: true,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => showCustomerSheet(context),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Align(alignment: AlignmentDirectional.centerStart, child: account),
+                ),
+              ),
+            )
+          else
+            account,
           const SizedBox(height: 2),
           Text(l.homeOnTheWay(active), style: context.type.headlineMedium),
           const SizedBox(height: 3),

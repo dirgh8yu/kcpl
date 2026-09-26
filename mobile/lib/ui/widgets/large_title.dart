@@ -129,7 +129,7 @@ class SheetCloseButton extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: () => Navigator.of(context).maybePop(),
         child: SizedBox.square(
-          dimension: 44,
+          dimension: 48,
           child: Center(
             child: Container(
               width: 30,

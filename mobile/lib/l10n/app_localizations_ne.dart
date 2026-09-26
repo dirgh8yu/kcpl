@@ -736,6 +736,12 @@ class AppLocalizationsNe extends AppLocalizations {
   String get appTitle => 'KCPL';
 
   @override
+  String get chromeDocs => 'कागजात';
+
+  @override
+  String get searchClear => 'खोजी हटाउनुहोस्';
+
+  @override
   String get signInTitle => 'KCPL मा साइन इन गर्नुहोस्';
 
   @override

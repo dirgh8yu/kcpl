@@ -88,18 +88,29 @@ class JourneyGraphic extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          [s.reference, trailing ?? modeLabel(l, s.mode)].join(' · '),
-                          style: context.type.bodyMedium?.copyWith(color: p.secondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  LayoutBuilder(
+                    builder: (context, constraints) => Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            [s.reference, trailing ?? modeLabel(l, s.mode)].join(' · '),
+                            style: context.type.bodyMedium?.copyWith(color: p.secondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      Text(l.overviewColEta, style: context.type.bodyMedium?.copyWith(color: p.secondary)),
-                    ],
+                        const SizedBox(width: 8),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.4),
+                          child: Text(
+                            l.overviewColEta,
+                            style: context.type.bodyMedium?.copyWith(color: p.secondary),
+                            textAlign: TextAlign.end,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(

@@ -23,6 +23,17 @@ class DocumentsScreen extends StatefulWidget {
 class _DocumentsScreenState extends State<DocumentsScreen> {
   DocumentDirection _direction = DocumentDirection.all;
   String _query = '';
+  int? _generation;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final generation = AppScope.of(context).generation;
+    if (_generation == generation) return;
+    _generation = generation;
+    _direction = DocumentDirection.all;
+    _query = '';
+  }
 
   bool _matches(AppLocalizations l, DocumentRow document) {
     if (_direction == DocumentDirection.fromKcpl && document.fromCustomer) return false;
@@ -47,6 +58,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         return [
           FilterBar<DocumentDirection>(
             hint: l.docsSearchPlaceholder,
+            clearLabel: l.searchClear,
+            query: _query,
             onQuery: (value) => setState(() => _query = value),
             options: {
               DocumentDirection.all: l.docsAll,

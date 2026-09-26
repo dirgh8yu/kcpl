@@ -79,6 +79,8 @@ class _JobsScreenState extends State<JobsScreen> {
         return [
           FilterBar<JobFilter>(
             hint: context.l.opsSearchJobs,
+            clearLabel: context.l.searchClear,
+            query: _query,
             onQuery: (value) => setState(() => _query = value),
             options: jobFilterLabels(context.l),
             selected: filter,

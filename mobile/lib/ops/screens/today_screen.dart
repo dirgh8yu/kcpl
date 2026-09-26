@@ -86,7 +86,6 @@ class TodayScreen extends StatelessWidget {
           style: context.type.bodyMedium?.copyWith(color: p.secondary),
         ),
       ),
-      PushPrimer(copy: opsPushCopy(context.l)),
       RowGroup(
         margin: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
         indent: RowGroup.iconIndent,
@@ -141,6 +140,7 @@ class TodayScreen extends StatelessWidget {
       if (bundle.branches.length > 1) ...[SectionHeader(context.l.opsBranches), _BranchLoad(branches: bundle.branches)],
       if (action.isEmpty && moving.isEmpty && done.isEmpty)
         EmptyState(icon: KIcons.today, title: context.l.opsNothingWaiting, description: context.l.opsNothingWaitingBody),
+      PushPrimer(copy: opsPushCopy(context.l)),
     ];
   }
 }

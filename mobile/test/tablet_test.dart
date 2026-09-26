@@ -92,7 +92,7 @@ void main() {
     await pumpApp(tester, api: DemoApi());
     ipad(tester);
     await signIn(tester);
-    await tester.tap(find.text('Documents').last);
+    await tester.tap(find.text('Docs').last);
     await settle(tester);
     expect(find.text('Choose a document'), findsOneWidget);
     await tester.tap(find.byType(DocumentRowTile).first);

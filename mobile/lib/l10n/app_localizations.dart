@@ -1394,6 +1394,18 @@ abstract class AppLocalizations {
   /// **'KCPL'**
   String get appTitle;
 
+  /// No description provided for @chromeDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Docs'**
+  String get chromeDocs;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
+
   /// No description provided for @signInTitle.
   ///
   /// In en, this message translates to:

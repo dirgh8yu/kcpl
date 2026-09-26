@@ -596,8 +596,8 @@ flutter test
 dart format -l 140 $(git ls-files "lib/*.dart" "test/*.dart" | grep -v /l10n/)   # house line length; l10n is generated
 ```
 
-The widget tests sign in and walk every screen in English and Nepali at 1.6× system text
-size. A layout overflow fails the test, so a long label can't clip on a real phone.
+The widget tests sign in and walk every screen in English and Nepali at 2× system text
+size, including a compact 320-point phone. A layout overflow fails the test.
 
 `test/accessibility_test.dart` holds every screen of both apps to Flutter's
 accessibility guidelines: every control named for VoiceOver and TalkBack, 44-point targets,

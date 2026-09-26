@@ -145,7 +145,7 @@ void main() {
     await audit(tester, 'sign-in');
     await signIn(tester);
     await audit(tester, 'overview');
-    for (final tab in ['Shipments', 'Documents', 'Invoices', 'Account']) {
+    for (final tab in ['Shipments', 'Docs', 'Invoices', 'Account']) {
       await tester.tap(find.text(tab).last);
       await settle(tester);
       await audit(tester, tab);
