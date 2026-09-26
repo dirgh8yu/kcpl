@@ -23,6 +23,46 @@ class DocumentsScreen extends StatefulWidget {
 class _DocumentsScreenState extends State<DocumentsScreen> {
   DocumentDirection _direction = DocumentDirection.all;
   String _query = '';
+  List<DocumentRow> _older = const [];
+  int _scanned = 0;
+  bool _loadingOlder = false;
+  bool _olderFailed = false;
+  int? _generation;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final generation = AppScope.of(context).generation;
+    if (_generation == generation) return;
+    _generation = generation;
+    _older = const [];
+    _scanned = 0;
+    _loadingOlder = false;
+    _olderFailed = false;
+    _query = '';
+    _direction = DocumentDirection.all;
+  }
+
+  Future<void> _loadOlder(int offset) async {
+    if (_loadingOlder) return;
+    final generation = _generation;
+    setState(() {
+      _loadingOlder = true;
+      _olderFailed = false;
+    });
+    try {
+      final page = await AppScope.of(context).api.documents(offset: offset);
+      if (!mounted || _generation != generation) return;
+      setState(() {
+        _older = [..._older, ...page.documents];
+        _scanned = page.scanned;
+      });
+    } catch (_) {
+      if (mounted && _generation == generation) setState(() => _olderFailed = true);
+    } finally {
+      if (mounted && _generation == generation) setState(() => _loadingOlder = false);
+    }
+  }
 
   bool _matches(AppLocalizations l, DocumentRow document) {
     if (_direction == DocumentDirection.fromKcpl && document.fromCustomer) return false;
@@ -41,9 +81,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     final l = AppLocalizations.of(context);
     return AsyncPage<DocumentsPage>(
       title: l.chromeDocuments,
-      load: AppScope.of(context).api.documents,
+      load: () => AppScope.of(context).api.documents(),
       builder: (context, page) {
-        final visible = page.documents.where((d) => _matches(l, d)).toList();
+        final documents = <String, DocumentRow>{
+          for (final document in [..._older, ...page.documents]) '${document.shipmentReference}/${document.id}': document,
+        }.values.toList()..sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+        final visible = documents.where((d) => _matches(l, d)).toList();
+        final scanned = _scanned > page.scanned ? _scanned : page.scanned;
         return [
           FilterBar<DocumentDirection>(
             hint: l.docsSearchPlaceholder,
@@ -58,13 +102,22 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           ),
           FilterSwap(
             filter: _direction,
-            child: page.documents.isEmpty
+            child: documents.isEmpty
                 ? EmptyState(icon: KIcons.document, title: l.docsEmptyTitle, description: l.docsEmptyDescription)
                 : visible.isEmpty
                 ? EmptyState(icon: KIcons.noResults, title: l.docsEmptyFilteredTitle, description: l.shipsEmptyFilteredDescription)
                 : RowGroup(children: [for (final document in visible) DocumentRowTile(document)]),
           ),
-          if (page.total > page.scanned) Footnote(l.docsCoverage('${page.scanned}', '${page.total}')),
+          if (page.total > scanned) ...[
+            Footnote(l.docsCoverage('$scanned', '${page.total}')),
+            Center(
+              child: TextButton(
+                onPressed: _loadingOlder ? null : () => _loadOlder(scanned),
+                child: Text(_loadingOlder ? l.commonLoading : l.docsLoadOlder),
+              ),
+            ),
+            if (_olderFailed) Footnote(l.commonUnavailableDetail),
+          ],
         ];
       },
     );

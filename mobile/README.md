@@ -6,7 +6,7 @@ A native Flutter app for KCPL's customers: the customer portal, on a phone. It c
 - the overview (KPIs, free time running out, paperwork KCPL is waiting on, balances)
 - shipments with search and filters, and each shipment's milestones, free time, checklist
   and documents
-- documents, with download to the phone's viewer
+- documents, with download to the phone's viewer and older history loaded in pages
 - invoices and invoice detail, for logins with finance access
 - switching customer, for agents linked to several
 - requesting a quote, seeing the prices KCPL gives and asking to proceed with one

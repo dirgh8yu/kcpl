@@ -1388,6 +1388,12 @@ abstract class AppLocalizations {
   /// **'Your KCPL account manager provisions and removes portal logins. Contact them to add a colleague or change what this login can see.'**
   String get settingsProvisioningNote;
 
+  /// No description provided for @docsLoadOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Load older documents'**
+  String get docsLoadOlder;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:

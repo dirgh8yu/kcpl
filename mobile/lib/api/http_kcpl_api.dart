@@ -22,7 +22,11 @@ class HttpKcplApi extends KcplApi {
 
   static const _timeout = Duration(seconds: 30);
 
-  Uri _uri(String path) => base.replace(path: '/api/mobile/v1/$path');
+  Uri _uri(String path) {
+    final separator = path.indexOf('?');
+    if (separator < 0) return base.replace(path: '/api/mobile/v1/$path');
+    return base.replace(path: '/api/mobile/v1/${path.substring(0, separator)}', query: path.substring(separator + 1));
+  }
 
   /// One authenticated GET. A 401 is retried once with a freshly minted
   /// token, since the cached one may have been revoked or expired early. A
@@ -125,8 +129,8 @@ class HttpKcplApi extends KcplApi {
       ShipmentDetail.fromJson((await _json('shipments/${Uri.encodeComponent(reference)}'))['detail'] as Map<String, dynamic>);
 
   @override
-  Future<DocumentsPage> documents() async {
-    final body = await _json('documents');
+  Future<DocumentsPage> documents({int offset = 0}) async {
+    final body = await _json(offset == 0 ? 'documents' : 'documents?offset=$offset');
     return DocumentsPage(
       documents: _rows(body['documents']).map(DocumentRow.fromJson).toList(),
       scanned: (body['scanned'] as num?)?.toInt() ?? 0,

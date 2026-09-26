@@ -736,6 +736,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your KCPL account manager provisions and removes portal logins. Contact them to add a colleague or change what this login can see.';
 
   @override
+  String get docsLoadOlder => 'Load older documents';
+
+  @override
   String get appTitle => 'KCPL';
 
   @override

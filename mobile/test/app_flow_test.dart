@@ -56,6 +56,32 @@ class MemberApi extends DemoApi {
   }
 }
 
+class PagedDocumentsApi extends DemoApi {
+  final requestedOffsets = <int>[];
+
+  @override
+  Future<DocumentsPage> documents({int offset = 0}) async {
+    requestedOffsets.add(offset);
+    return DocumentsPage(
+      documents: [
+        DocumentRow(
+          id: 'doc-$offset',
+          shipmentReference: 'KCPL-S-$offset',
+          filename: offset == 0 ? 'recent.pdf' : 'older.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 100,
+          documentType: 'commercial_invoice',
+          uploadedAt: offset == 0 ? '2026-09-20T00:00:00Z' : '2026-01-20T00:00:00Z',
+          fromCustomer: false,
+          reviewState: 'released',
+        ),
+      ],
+      scanned: offset + 40,
+      total: 80,
+    );
+  }
+}
+
 /// Firebase accepts the password; KCPL does not grant portal access.
 class DeniedApi extends DemoApi {
   @override
@@ -212,6 +238,22 @@ void main() {
     await settle(tester);
     expect(ref('KCPL-S-24077'), findsWidgets);
     expect(ref('KCPL-S-24012'), findsNothing);
+  });
+
+  testWidgets('documents load older shipment pages without losing the recent ones', (tester) async {
+    final api = PagedDocumentsApi();
+    await pumpApp(tester, api: api);
+    await signIn(tester);
+    await tester.tap(find.text('Documents').last);
+    await settle(tester);
+    expect(find.textContaining('KCPL-S-0'), findsOneWidget);
+    await scrollTo(tester, find.text('Load older documents'));
+    await tester.tap(find.text('Load older documents'));
+    await settle(tester);
+    expect(api.requestedOffsets, [0, 40]);
+    expect(find.textContaining('KCPL-S-0'), findsOneWidget);
+    expect(find.textContaining('KCPL-S-40'), findsOneWidget);
+    expect(find.text('Load older documents'), findsNothing);
   });
 
   testWidgets('switching to Nepali relabels the app', (tester) async {

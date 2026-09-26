@@ -21,6 +21,7 @@ import {
   type PortalShipmentView,
 } from "./portal-access-policy";
 import type { PortalSession } from "./portal-auth";
+import { DOCUMENT_SHIPMENT_PAGE_SIZE } from "./portal-document-pagination";
 import {
   freeTimeNeedsAttention,
   freeTimeStatus,
@@ -42,11 +43,6 @@ import {
 const SHIPMENT_SCAN_LIMIT = 500;
 const INVOICE_SCAN_LIMIT = 500;
 const QUOTE_SCAN_LIMIT = 250;
-/** Documents live in a subcollection per shipment, so a cross-shipment view
- * costs one read per shipment. The document workspace therefore covers the
- * most recently updated shipments rather than the entire history. */
-const DOCUMENT_SHIPMENT_LIMIT = 40;
-
 type Unavailable = { kind: "unavailable" };
 
 function byUpdatedDescending(a: { updated_at: string }, b: { updated_at: string }) {
@@ -207,13 +203,15 @@ export type PortalDocumentRow = PortalDocumentView & {
   review_state: string;
 };
 
-export async function listPortalDocuments(session: PortalSession): Promise<
+/** Each page scans at most 40 shipment subcollections. The portal starts with
+ * the newest page; mobile can ask for older pages in the bounded scan. */
+export async function listPortalDocuments(session: PortalSession, offset = 0): Promise<
   Unavailable | { kind: "ready"; documents: PortalDocumentRow[]; scanned: number; total: number }
 > {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
   try {
     const { shipments } = await loadCustomerShipments(session.customerId);
-    const scanned = shipments.slice(0, DOCUMENT_SHIPMENT_LIMIT);
+    const scanned = shipments.slice(offset, offset + DOCUMENT_SHIPMENT_PAGE_SIZE);
     const results = await Promise.all(scanned.map(async (shipment) => {
       const listing = await listShipmentDocuments(shipment.reference);
       if (listing.kind !== "ready") return [] as PortalDocumentRow[];
@@ -223,7 +221,7 @@ export async function listPortalDocuments(session: PortalSession): Promise<
         .map((document) => portalDocumentRow(document, shipment));
     }));
     const documents = results.flat().sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at));
-    return { kind: "ready", documents, scanned: scanned.length, total: shipments.length };
+    return { kind: "ready", documents, scanned: Math.min(offset + scanned.length, shipments.length), total: shipments.length };
   } catch (error) {
     console.error("KCPL portal document listing failed", error);
     return { kind: "unavailable" };

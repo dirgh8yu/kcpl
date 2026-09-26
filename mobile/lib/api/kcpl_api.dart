@@ -27,7 +27,7 @@ abstract class KcplApi {
   Future<OverviewBundle> overview();
   Future<List<Shipment>> shipments();
   Future<ShipmentDetail> shipment(String reference);
-  Future<DocumentsPage> documents();
+  Future<DocumentsPage> documents({int offset = 0});
   Future<InvoicesPage> invoices();
   Future<Invoice> invoice(String reference);
   Future<DownloadedFile> download(DocumentRow document);

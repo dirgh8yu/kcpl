@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { documentPageOffset, DOCUMENT_SHIPMENT_PAGE_SIZE } from "../app/portal/portal-document-pagination.ts";
 
 import {
   customerUploadableDocumentTypes,
@@ -11,6 +12,15 @@ import {
 } from "../app/portal/portal-access-policy.ts";
 
 const repo = (path) => new URL(`../${path}`, import.meta.url);
+
+test("document pages start at a bounded shipment offset", () => {
+  assert.equal(DOCUMENT_SHIPMENT_PAGE_SIZE, 40);
+  assert.equal(documentPageOffset(null), 0);
+  assert.equal(documentPageOffset("40"), 40);
+  for (const invalid of ["", "-1", "1.5", "1e3", "501", "99999999999999999999"]) {
+    assert.equal(documentPageOffset(invalid), null, invalid);
+  }
+});
 
 /** Assertions about what a module *does* must not be satisfied or broken by what
  * it explains, so comments are stripped before matching. */

@@ -733,6 +733,9 @@ class AppLocalizationsNe extends AppLocalizations {
       'तपाईंको KCPL खाता प्रबन्धकले पोर्टल लगइन थप्ने र हटाउने गर्छन्। सहकर्मी थप्न वा यो लगइनले के हेर्न पाउने भन्ने बदल्न उहाँलाई सम्पर्क गर्नुहोस्।';
 
   @override
+  String get docsLoadOlder => 'पुराना कागजात लोड गर्नुहोस्';
+
+  @override
   String get appTitle => 'KCPL';
 
   @override

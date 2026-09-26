@@ -484,7 +484,8 @@ class DemoApi extends KcplApi {
   }
 
   @override
-  Future<DocumentsPage> documents() => _later(DocumentsPage(documents: [...sentDocuments, ..._documents], scanned: 5, total: 5));
+  Future<DocumentsPage> documents({int offset = 0}) =>
+      _later(DocumentsPage(documents: offset == 0 ? [...sentDocuments, ..._documents] : [], scanned: 5, total: 5));
 
   @override
   Future<InvoicesPage> invoices() => _later(InvoicesPage(invoices: _invoices, summary: _summary));
@@ -581,7 +582,11 @@ class DemoApi extends KcplApi {
 
   @override
   Future<DownloadedFile> statement() => _later(
-    DownloadedFile(filename: 'KCPL-statement-demo.pdf', contentType: 'application/pdf', bytes: _demoPdf('KCPL demo build: statement of account')),
+    DownloadedFile(
+      filename: 'KCPL-statement-demo.pdf',
+      contentType: 'application/pdf',
+      bytes: _demoPdf('KCPL demo build: statement of account'),
+    ),
   );
 
   TextNotices text = const TextNotices(offered: ['sms', 'whatsapp']);

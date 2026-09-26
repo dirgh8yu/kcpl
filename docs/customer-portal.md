@@ -713,6 +713,8 @@ excluded from public analytics and from the public site's mobile quote CTA.
 - **Document coverage is bounded.** `/portal/documents` scans the 40 most recently
   updated shipments (documents live in a per-shipment subcollection, so a full history
   scan costs one read per shipment). The workspace states the coverage when it is capped.
+  The mobile app can load older pages of 40 shipments at a time, up to the reader's
+  500-shipment scan ceiling.
 - **Online payment is whole-balance, NPR, and untested against live gateways.** The
   signatures are tested against the gateways' published formats, but the first real
   payment in `test` mode is the first real round trip. Partial payments and foreign

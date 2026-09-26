@@ -71,6 +71,24 @@ void main() {
     expect(session.locale, 'ne');
   });
 
+  test('older documents request a separate customer-scoped page', () async {
+    late http.Request seen;
+    final api = HttpKcplApi(
+      base: Uri.parse('https://kcpl.example'),
+      auth: FakeAuth(),
+      client: MockClient((request) async {
+        seen = request;
+        return _json({'ok': true, 'documents': [], 'scanned': 80, 'total': 120});
+      }),
+    )..customerId = 'CUST-2';
+    final page = await api.documents(offset: 40);
+    expect(seen.url.path, '/api/mobile/v1/documents');
+    expect(seen.url.queryParameters['offset'], '40');
+    expect(seen.headers['x-kcpl-customer'], 'CUST-2');
+    expect(page.scanned, 80);
+    expect(page.total, 120);
+  });
+
   test('no customer header is sent before one is chosen', () async {
     late http.Request seen;
     final api = HttpKcplApi(

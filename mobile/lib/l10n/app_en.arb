@@ -384,6 +384,7 @@
   "settingsAccount": "Account",
   "settingsAccessLevel": "Access level",
   "settingsProvisioningNote": "Your KCPL account manager provisions and removes portal logins. Contact them to add a colleague or change what this login can see.",
+  "docsLoadOlder": "Load older documents",
   "appTitle": "KCPL",
   "signInTitle": "Sign in to KCPL",
   "signInSubtitle": "Your shipments, documents and invoices with Kapileshwor Cargo.",

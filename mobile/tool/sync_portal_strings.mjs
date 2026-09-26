@@ -70,6 +70,7 @@ settings.language settings.signed_in_as settings.account settings.access_level s
 
 /** App-only strings: [key, English, Nepali, placeholder types if not String]. */
 const appStrings = [
+  ["docsLoadOlder", "Load older documents", "पुराना कागजात लोड गर्नुहोस्"],
   ["appTitle", "KCPL", "KCPL"],
   ["signInTitle", "Sign in to KCPL", "KCPL मा साइन इन गर्नुहोस्"],
   ["signInSubtitle", "Your shipments, documents and invoices with Kapileshwor Cargo.", "कपिलेश्वर कार्गोसँगका तपाईंका ढुवानी, कागजात र बिल।"],
