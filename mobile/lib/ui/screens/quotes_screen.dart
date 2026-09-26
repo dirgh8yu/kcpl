@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoSlidingSegmentedControl, showCupertinoModalPopup;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -6,6 +7,7 @@ import '../../app_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../format.dart';
 import '../labels.dart';
+import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
@@ -145,6 +147,18 @@ class _QuoteRow extends StatelessWidget {
   }
 }
 
+/// Grows to fit what it holds, from the top, without a jump; at once when
+/// motion is reduced.
+class _Expand extends StatelessWidget {
+  const _Expand({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Motion.reduced(context)
+      ? child
+      : AnimatedSize(duration: Motion.reveal, curve: Motion.easeOut, alignment: Alignment.topCenter, child: child);
+}
+
 /// One price in full, and the way to accept it.
 class QuoteDetailScreen extends StatefulWidget {
   const QuoteDetailScreen({super.key, required this.quote, required this.canProceed});
@@ -157,20 +171,79 @@ class QuoteDetailScreen extends StatefulWidget {
 
 class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
   final _note = TextEditingController();
+  final _address = TextEditingController();
+  final _contactName = TextEditingController();
+  final _contactPhone = TextEditingController();
   bool _busy = false;
   bool _done = false;
   String? _error;
 
+  /// KCPL collects the cargo: when and where. A request the pickup desk
+  /// schedules once the booking is confirmed (docs/pickup-scheduling.md).
+  bool _pickup = false;
+  late DateTime _date = _today.add(const Duration(days: 1));
+  String _window = 'any';
+
+  /// The server refuses a date in the past or more than 90 days out.
+  static const _maxDays = 90;
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  String get _day => _date.toIso8601String().substring(0, 10);
+
   @override
   void dispose() {
     _note.dispose();
+    _address.dispose();
+    _contactName.dispose();
+    _contactPhone.dispose();
     super.dispose();
   }
 
+  void _togglePickup(bool on) {
+    HapticFeedback.selectionClick();
+    setState(() => (_pickup = on, _error = null));
+  }
+
+  Future<void> _pickDate() async {
+    final p = context.palette;
+    var chosen = _date;
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheet) => Container(
+        height: 280,
+        color: p.raised.surface,
+        child: SafeArea(
+          top: false,
+          child: CupertinoDatePicker(
+            mode: CupertinoDatePickerMode.date,
+            initialDateTime: _date,
+            minimumDate: _today,
+            maximumDate: _today.add(const Duration(days: _maxDays)),
+            onDateTimeChanged: (value) => chosen = DateTime(value.year, value.month, value.day),
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() => _date = chosen);
+  }
+
   Future<void> _proceed() async {
+    final l = AppLocalizations.of(context);
     final api = AppScope.read(context).api;
+    FocusScope.of(context).unfocus();
+    if (_pickup && _address.text.trim().length < 5) {
+      HapticFeedback.heavyImpact();
+      setState(() => _error = l.pickupNeedAddress);
+      return;
+    }
+    final pickup = _pickup
+        ? PickupRequest(date: _day, window: _window, address: _address.text, contactName: _contactName.text, contactPhone: _contactPhone.text)
+        : null;
     setState(() => (_busy = true, _error = null));
-    final error = await attempt(context, () => api.acceptQuote(widget.quote.reference, note: _note.text.trim()));
+    final error = await attempt(context, () => api.acceptQuote(widget.quote.reference, note: _note.text.trim(), pickup: pickup));
     if (!mounted) return;
     if (error != null) {
       HapticFeedback.heavyImpact();
@@ -181,13 +254,76 @@ class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
     setState(() => _done = true);
   }
 
+  Widget _pickupForm(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = context.palette;
+    final windows = {'morning': l.pickupMorning, 'afternoon': l.pickupAfternoon, 'any': l.pickupAnyTime};
+    TextField field(TextEditingController controller, String hint, {TextInputType? type, int lines = 1}) => TextField(
+      controller: controller,
+      enabled: !_busy,
+      minLines: lines,
+      maxLines: lines == 1 ? 1 : 4,
+      keyboardType: type,
+      textCapitalization: type == null ? TextCapitalization.words : TextCapitalization.none,
+      style: context.type.bodyLarge,
+      decoration: cardField(hint),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        RowGroup(
+          children: [
+            RowTile(
+              onTap: _busy ? null : _pickDate,
+              title: Text(l.pickupDate),
+              trailing: Text(formatDate(_day), style: context.type.bodyLarge?.copyWith(color: p.accent)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kGutter, 10, kGutter, 10),
+              child: Semantics(
+                label: l.pickupWindow,
+                child: CupertinoSlidingSegmentedControl<String>(
+                  groupValue: _window,
+                  onValueChanged: _busy
+                      ? (_) {}
+                      : (value) {
+                          if (value == null) return;
+                          HapticFeedback.selectionClick();
+                          setState(() => _window = value);
+                        },
+                  children: {
+                    for (final entry in windows.entries)
+                      entry.key: Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text(entry.value)),
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        RowGroup(
+          children: [
+            field(_address, l.pickupAddress, type: TextInputType.streetAddress, lines: 2),
+            field(_contactName, l.pickupContactName),
+            field(_contactPhone, l.pickupContactPhone, type: TextInputType.phone),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final p = context.palette;
     final quote = widget.quote;
     if (_done) {
-      return DoneView(title: l.quoteProceedDone, body: l.reqBookingSent(quote.reference), reference: quote.reference);
+      return DoneView(
+        title: l.quoteProceedDone,
+        body: [l.reqBookingSent(quote.reference), if (_pickup) l.pickupAsked(formatDate(_day))].join('\n\n'),
+        reference: quote.reference,
+      );
     }
     final open = widget.canProceed && quote.canProceed();
     return ComposeScaffold(
@@ -268,7 +404,22 @@ class _QuoteDetailScreenState extends State<QuoteDetailScreen> {
               decoration: cardField(l.quoteProceedNote),
             ),
           ),
-          Footnote(l.quoteProceedFootnote),
+          SectionHeader(l.pickupTitle),
+          RowGroup(
+            children: [
+              // The whole row is the switch, as in Settings.
+              MergeSemantics(
+                child: RowTile(
+                  onTap: _busy ? null : () => _togglePickup(!_pickup),
+                  title: Text(l.pickupAsk),
+                  subtitle: Text(l.pickupAskBody),
+                  trailing: Switch.adaptive(value: _pickup, activeTrackColor: p.ink, onChanged: _busy ? null : _togglePickup),
+                ),
+              ),
+            ],
+          ),
+          _Expand(child: _pickup ? _pickupForm(context) : const SizedBox(width: double.infinity)),
+          Footnote(_pickup ? l.pickupFootnote : l.quoteProceedFootnote),
         ],
       ],
     );

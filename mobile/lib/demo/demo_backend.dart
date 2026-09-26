@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../api/kcpl_api.dart';
 import '../api/models.dart';
 import '../auth/auth_repository.dart';
+import 'demo_images.dart';
 
 /// Invented sample data for `--dart-define=KCPL_DEMO=true` builds: store
 /// screenshots and design review with no KCPL account and no network. The
@@ -333,6 +334,18 @@ class DemoApi extends KcplApi {
         canConfirmDelivery: shipment.status == 'delivered' || shipment.status == 'out_for_delivery',
         canRate: shipment.status == 'delivered' && !ratings.containsKey(reference),
         rating: ratings[reference],
+        proofOfDelivery: shipment.status == 'delivered'
+            ? ProofOfDelivery(
+                deliveredAt: _at(24 * 12 - 2),
+                recipientName: 'Bikash Tamang',
+                recipientRelation: 'Warehouse supervisor',
+                verifiedAt: _at(24 * 11),
+                items: [
+                  ProofItem(id: 'sig', kind: 'signature', contentType: 'image/png', capturedAt: _at(24 * 12 - 2)),
+                  ProofItem(id: 'photo-1', kind: 'photo', contentType: 'image/png', capturedAt: _at(24 * 12 - 2)),
+                ],
+              )
+            : null,
       ),
     );
   }
@@ -547,9 +560,49 @@ class DemoApi extends KcplApi {
   );
 
   @override
-  Future<void> acceptQuote(String reference, {String note = ''}) async {
+  Future<void> acceptQuote(String reference, {String note = '', PickupRequest? pickup}) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     bookingRequests[reference] = note;
+    if (pickup != null) pickups[reference] = pickup;
+  }
+
+  final Map<String, PickupRequest> pickups = {};
+
+  // Proof of delivery, the statement, and text notices.
+
+  @override
+  Future<DownloadedFile> proofFile(String shipment, ProofItem item) => _later(
+    DownloadedFile(
+      filename: '$shipment-${item.kind}.png',
+      contentType: 'image/png',
+      bytes: item.kind == 'signature' ? DemoImages.signature : DemoImages.parcel,
+    ),
+  );
+
+  @override
+  Future<DownloadedFile> statement() => _later(
+    DownloadedFile(filename: 'KCPL-statement-demo.pdf', contentType: 'application/pdf', bytes: _demoPdf('KCPL demo build: statement of account')),
+  );
+
+  TextNotices text = const TextNotices(offered: ['sms', 'whatsapp']);
+
+  @override
+  Future<TextNotices> textNotices() => _later(text);
+
+  @override
+  Future<TextNotices> setTextNotices(String channel, {String phone = '', bool consent = false}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (channel != 'none' && !consent) throw const ApiException(400, 'invalid', 'Tick the box to agree to receive these messages.');
+    final digits = phone.replaceAll(RegExp(r'[\s().-]'), '');
+    final local = RegExp(r'^(?:\+?977)?(9[678]\d{8})$').firstMatch(digits);
+    if (channel != 'none' && local == null && !(channel == 'whatsapp' && RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(digits))) {
+      throw const ApiException(400, 'invalid', 'Enter a mobile number such as 98XXXXXXXX.');
+    }
+    return text = TextNotices(
+      channel: channel,
+      phone: channel == 'none' ? null : (local == null ? digits : '+977${local.group(1)}'),
+      offered: text.offered,
+    );
   }
 
   // Notification settings.
@@ -731,4 +784,29 @@ class DemoApi extends KcplApi {
       bytes: utf8.encode('KCPL demo build: sample in place of ${document.filename}.\n'),
     ),
   );
+}
+
+/// A one-page PDF saying what it stands in for.
+List<int> _demoPdf(String line) {
+  final content = 'BT /F1 14 Tf 60 780 Td ($line) Tj ET';
+  final objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Length ${content.length} >>\nstream\n$content\nendstream',
+  ];
+  final pdf = StringBuffer('%PDF-1.4\n');
+  final offsets = <int>[];
+  for (var i = 0; i < objects.length; i++) {
+    offsets.add(pdf.length);
+    pdf.write('${i + 1} 0 obj\n${objects[i]}\nendobj\n');
+  }
+  final xref = pdf.length;
+  pdf.write('xref\n0 ${objects.length + 1}\n0000000000 65535 f \n');
+  for (final offset in offsets) {
+    pdf.write('${offset.toString().padLeft(10, '0')} 00000 n \n');
+  }
+  pdf.write('trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n');
+  return latin1.encode(pdf.toString());
 }

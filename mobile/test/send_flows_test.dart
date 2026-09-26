@@ -117,6 +117,8 @@ void main() {
     await openShipment(tester, 'KCPL-S-24012');
 
     expect(find.text('Has it arrived?'), findsOneWidget);
+    // Below the proof of delivery KCPL has checked.
+    await sheetScrollTo(tester, find.widgetWithText(FilledButton, 'Confirm receipt'));
     await tester.tap(find.widgetWithText(FilledButton, 'Confirm receipt'));
     await settle(tester);
     expect(find.text('Sunita Shrestha'), findsOneWidget, reason: 'the person confirming most often took delivery');

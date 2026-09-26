@@ -12,6 +12,16 @@ Pickup Scheduling closes the execution gap between a confirmed TMS booking and t
 6. `Cargo picked up` writes the same `picked_up` milestone into Live Visibility.
 7. A missed pickup writes a carrier exception into Live Visibility/Job File exception handling and remains visible for rescheduling.
 
+## Pickups the customer asks for
+
+A customer accepting a quote on the portal or in the KCPL app can ask for the cargo to be
+collected: a date, a window (morning, afternoon or any time, Nepal time), the address and a
+contact. That request is stored on the quote's `portal_booking_request.pickup`. It creates
+no appointment. When the booked shipment appears here unscheduled, its row is pre-filled
+from the request (`requested_window_start`/`end`, `pickup_location`, contact name and phone,
+and a `Customer: …` note), so operations start from what the customer said and still
+request, confirm and assign the pickup themselves.
+
 ## Firebase data
 
 - `pickup_appointments/{PU-<shipment-reference>}` stores the current appointment snapshot.

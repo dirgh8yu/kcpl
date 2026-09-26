@@ -11,7 +11,7 @@ import 'package:kcpl_customer/ui/screens/shipment_detail_screen.dart';
 import 'package:kcpl_customer/ui/widgets/rows.dart' show DocumentRowTile;
 import 'package:kcpl_customer/ui/widgets/sheet_route.dart';
 
-import 'app_flow_test.dart' show pumpApp, ref, settle, signIn;
+import 'app_flow_test.dart' show pumpApp, ref, scrollTo, settle, signIn;
 import 'ops_test.dart' as ops show pumpOps, settle, signIn;
 
 /// An iPad: 1024 × 768 points on its side, 768 × 1024 upright (iPad mini
@@ -58,6 +58,7 @@ void main() {
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
     expect(find.text('Choose an invoice'), findsOneWidget);
+    await scrollTo(tester, ref('KCPL-I-20260918-011'));
     await tester.tap(ref('KCPL-I-20260918-011').first);
     await settle(tester);
     expect(find.byType(InvoiceDetailScreen), findsOneWidget);

@@ -1376,6 +1376,116 @@
       }
     }
   },
+  "podTitle": "Proof of delivery",
+  "podReceivedBy": "Received by {name}",
+  "@podReceivedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "podReceivedByAs": "Received by {name}, {relation}",
+  "@podReceivedByAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "relation": {
+        "type": "String"
+      }
+    }
+  },
+  "podDelivered": "Delivered {date}",
+  "@podDelivered": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "podChecked": "Checked by KCPL",
+  "podSignature": "Signature",
+  "podPhoto": "Delivery photo {number}",
+  "@podPhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "podDocument": "Delivery document",
+  "podNothingShared": "KCPL checked this delivery. No signature or photos were shared.",
+  "podLoadFailed": "Couldn't load",
+  "pickupTitle": "Pickup",
+  "pickupAsk": "KCPL picks up the cargo",
+  "pickupAskBody": "Say when and where. The pickup desk confirms the time with you.",
+  "pickupDate": "Date",
+  "pickupWindow": "Time",
+  "pickupMorning": "Morning",
+  "pickupAfternoon": "Afternoon",
+  "pickupAnyTime": "Any time",
+  "pickupAddress": "Pickup address",
+  "pickupContactName": "Contact person (optional)",
+  "pickupContactPhone": "Contact phone (optional)",
+  "pickupNeedAddress": "Enter where the cargo is to be picked up.",
+  "pickupFootnote": "A request: the pickup desk schedules it once your booking is confirmed.",
+  "pickupAsked": "Pickup asked for {date}",
+  "@pickupAsked": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "statementTitle": "Account statement",
+  "statementSubtitle": "PDF · owed, overdue and payments, last 12 months",
+  "statementFailed": "The statement couldn't be downloaded.",
+  "textTitle": "SMS and WhatsApp",
+  "textOff": "Off",
+  "textSms": "SMS",
+  "textWhatsapp": "WhatsApp",
+  "textPhone": "Mobile number",
+  "textPhoneHintSms": "98XXXXXXXX",
+  "textPhoneHintWhatsapp": "+977 98XXXXXXXX",
+  "textConsent": "I agree to receive KCPL shipment and invoice messages on this number.",
+  "textNeedConsent": "Tick the box to agree to these messages.",
+  "textFootnote": "The same updates as your notifications, shortened to one message, for when the app isn't to hand. Turn off any time.",
+  "textSave": "Save",
+  "textSaved": "Saved",
+  "docreqNeeded": "KCPL needs your {document}",
+  "@docreqNeeded": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
+  "docreqResend": "KCPL needs your {document} again",
+  "@docreqResend": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
+  "docreqBody": "Scan it now: it goes straight to the team handling {reference}.",
+  "@docreqBody": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "docreqScan": "Scan {document}",
+  "@docreqScan": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
+  "docreqOther": "Choose a photo or file instead",
   "opsAddTo": "Add to {reference}",
   "@opsAddTo": {
     "placeholders": {

@@ -1649,6 +1649,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
  * requirement KCPL seeded on the shipment, in customer language. Rows carry
  * data-state so the marker colour tracks the state without a second class. */
 .kcpl-admin-content .portal-exchange { display: grid; gap: var(--app-space-4); }
+.kcpl-admin-content .portal-checklist li[data-requested] { box-shadow: inset 3px 0 0 var(--admin-crimson); background: color-mix(in srgb, var(--admin-crimson) 6%, transparent); }
 .kcpl-admin-content .portal-checklist { display: grid; gap: var(--app-space-2); margin: 0; padding: 0; list-style: none; }
 .kcpl-admin-content .portal-checklist li {
   display: flex;

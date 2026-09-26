@@ -167,6 +167,9 @@ class _HomeShellState extends State<HomeShell> {
         final reference = target.reference;
         if (reference == null) return;
         if (target.kind == 'shipment') openShipment(context, reference);
+        // "KCPL needs your packing list": the shipment, with the scanner
+        // for it already open on top.
+        if (target.kind == 'document_request') openShipment(context, reference, sendType: target.documentType);
         if (target.kind == 'invoice') openInvoice(context, reference);
       },
       // Recedes while a detail sheet is up over it.

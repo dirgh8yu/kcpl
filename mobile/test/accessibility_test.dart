@@ -7,11 +7,12 @@ import 'package:kcpl_customer/ui/format.dart';
 import 'package:kcpl_customer/ui/screens/estimate_screens.dart';
 import 'package:kcpl_customer/ui/screens/home_shell.dart';
 import 'package:kcpl_customer/ui/icons.dart';
-import 'package:kcpl_customer/ui/widgets/common.dart' show Footnote;
+import 'package:kcpl_customer/ui/widgets/common.dart' show Footnote, RowTile;
 import 'package:kcpl_customer/ui/widgets/large_title.dart' show SheetCloseButton;
 import 'package:kcpl_customer/ui/widgets/tab_bar.dart' show TabBarItem;
 import 'package:kcpl_customer/ui/widgets/message_thread.dart';
 import 'package:kcpl_customer/ui/widgets/rate_delivery.dart';
+import 'package:kcpl_customer/ui/widgets/rows.dart' as rows show openShipment;
 
 import 'app_flow_test.dart' show pumpApp, ref, scrollTo, settle, signIn;
 import 'ops_test.dart' as ops show pumpOps, settle, signIn, tapInView;
@@ -61,6 +62,47 @@ void main() {
     await settle(tester);
     await audit(tester, 'duty estimate');
     await close(tester);
+    semantics.dispose();
+  });
+
+  testWidgets('proof of delivery, pickup, statement, text notices and a document request pass too', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpApp(tester, api: DemoApi());
+    await signIn(tester);
+
+    await openShipment(tester, 'KCPL-S-24012');
+    await audit(tester, 'proof of delivery');
+    await close(tester);
+
+    await tester.tap(find.text('Invoices').last);
+    await settle(tester);
+    await audit(tester, 'invoices with the statement');
+
+    await tester.tap(find.text('Account').last);
+    await settle(tester);
+    await tester.tap(find.text('Quotes'));
+    await settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w.runtimeType.toString() == '_QuoteRow').first);
+    await settle(tester);
+    await sheetScrollTo(tester, find.text('KCPL picks up the cargo'));
+    await tester.tap(find.byType(Switch).last);
+    await settle(tester);
+    await sheetScrollTo(tester, find.text('Pickup address'));
+    await audit(tester, 'pickup');
+    await close(tester);
+    await close(tester);
+
+    await scrollTo(tester, find.widgetWithText(RowTile, 'SMS and WhatsApp'));
+    await tester.tap(find.widgetWithText(RowTile, 'SMS and WhatsApp'));
+    await settle(tester);
+    await tester.tap(find.text('SMS'));
+    await settle(tester);
+    await audit(tester, 'text notices');
+    await close(tester);
+
+    rows.openShipment(tester.element(find.byType(HomeShell)), 'KCPL-S-24077', sendType: 'packing_list');
+    await settle(tester);
+    await audit(tester, 'document request');
     semantics.dispose();
   });
 

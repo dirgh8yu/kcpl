@@ -198,8 +198,39 @@ class HttpKcplApi extends KcplApi {
   Future<QuotesPage> quotes() async => QuotesPage.fromJson(await _json('quotes'));
 
   @override
-  Future<void> acceptQuote(String reference, {String note = ''}) =>
-      _send('POST', 'requests', body: {'kind': 'booking', 'quoteReference': reference, 'note': note});
+  Future<void> acceptQuote(String reference, {String note = '', PickupRequest? pickup}) => _send(
+    'POST',
+    'requests',
+    body: {'kind': 'booking', 'quoteReference': reference, 'note': note, if (pickup != null) 'pickup': pickup.toJson()},
+  );
+
+  @override
+  Future<DownloadedFile> proofFile(String shipment, ProofItem item) async {
+    final response = await _get('shipments/${_enc(shipment)}/pod/${_enc(item.id)}');
+    return DownloadedFile(
+      filename: '$shipment-${item.kind}',
+      contentType: response.headers['content-type'] ?? item.contentType,
+      bytes: response.bodyBytes,
+    );
+  }
+
+  @override
+  Future<DownloadedFile> statement() async {
+    // Never from the offline copy: a statement is as of now.
+    final response = await _get('statement');
+    final disposition = response.headers['content-disposition'] ?? '';
+    final name = RegExp(r'filename="([^"]+)"').firstMatch(disposition)?.group(1);
+    return DownloadedFile(filename: name ?? 'KCPL-statement.pdf', contentType: 'application/pdf', bytes: response.bodyBytes);
+  }
+
+  @override
+  Future<TextNotices> textNotices() async => TextNotices.fromJson(_decode(await _get('text-notices')));
+
+  @override
+  Future<TextNotices> setTextNotices(String channel, {String phone = '', bool consent = false}) async {
+    await _send('POST', 'text-notices', body: {'channel': channel, 'phone': phone, 'consent': consent});
+    return textNotices();
+  }
 
   @override
   Future<NotificationPreferences> notificationPreferences() async =>

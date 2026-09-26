@@ -18,6 +18,7 @@ import '../../auth/auth_repository.dart';
 import '../format.dart' show DateCalendar;
 import 'quotes_screen.dart';
 import 'team_screen.dart';
+import 'text_notices_screen.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key, required this.version});
@@ -117,7 +118,7 @@ class AccountScreen extends StatelessWidget {
               RowGroup(children: [_LockRow(method: method)]),
               Footnote(l.lockFootnote(unlockMethodName(l, method))),
             ],
-            if (session != null) ...[SectionHeader(l.emailSection), const _EmailSettings()],
+            if (session != null) ...[SectionHeader(l.emailSection), const _EmailSettings(), const TextNoticesSection()],
             SectionHeader(l.settingsLanguage),
             RowGroup(
               children: [

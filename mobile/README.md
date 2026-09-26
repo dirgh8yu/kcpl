@@ -254,6 +254,21 @@ They appear only to logins that may send things to KCPL.
   by email and push to account owners who can see invoices. The push opens the invoice,
   where Pay online is.
 
+## Proof, pickups, statements and text notices
+
+- **Proof of delivery** (a delivered shipment KCPL has checked): who received it and
+  when, and the signature and photos the desk chose to share. A tap opens a picture full
+  screen to zoom. Never the recipient's phone, the driver or the location.
+- **Pickup** (accepting a quote): switch on "KCPL picks up the cargo" and give the date
+  (up to 90 days out), morning, afternoon or any time, the address and a contact. The
+  pickup desk schedules it once the booking is confirmed.
+- **Account statement** (Invoices): a PDF of what is owed, how overdue, and payments
+  received over the last 12 months, opened in the phone's viewer.
+- **SMS and WhatsApp** (Account, when KCPL has a channel switched on): the same updates as
+  one short message, to a number the customer gives, with their agreement ticked.
+- **"KCPL needs your packing list"**: the push opens the shipment with the send sheet on
+  top; one tap on **Scan packing list** opens the document scanner.
+
 ## Shortcuts and the lock screen
 
 - **Home screen:** long-press the KCPL icon for Track a shipment, Request a quote and Pay

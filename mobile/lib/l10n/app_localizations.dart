@@ -4478,6 +4478,270 @@ abstract class AppLocalizations {
   /// **'{reference} is now with {name}.'**
   String opsNowWith(String reference, String name);
 
+  /// No description provided for @podTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery'**
+  String get podTitle;
+
+  /// No description provided for @podReceivedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Received by {name}'**
+  String podReceivedBy(String name);
+
+  /// No description provided for @podReceivedByAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Received by {name}, {relation}'**
+  String podReceivedByAs(String name, String relation);
+
+  /// No description provided for @podDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered {date}'**
+  String podDelivered(String date);
+
+  /// No description provided for @podChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked by KCPL'**
+  String get podChecked;
+
+  /// No description provided for @podSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature'**
+  String get podSignature;
+
+  /// No description provided for @podPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery photo {number}'**
+  String podPhoto(int number);
+
+  /// No description provided for @podDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery document'**
+  String get podDocument;
+
+  /// No description provided for @podNothingShared.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL checked this delivery. No signature or photos were shared.'**
+  String get podNothingShared;
+
+  /// No description provided for @podLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load'**
+  String get podLoadFailed;
+
+  /// No description provided for @pickupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get pickupTitle;
+
+  /// No description provided for @pickupAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL picks up the cargo'**
+  String get pickupAsk;
+
+  /// No description provided for @pickupAskBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Say when and where. The pickup desk confirms the time with you.'**
+  String get pickupAskBody;
+
+  /// No description provided for @pickupDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get pickupDate;
+
+  /// No description provided for @pickupWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get pickupWindow;
+
+  /// No description provided for @pickupMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get pickupMorning;
+
+  /// No description provided for @pickupAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get pickupAfternoon;
+
+  /// No description provided for @pickupAnyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Any time'**
+  String get pickupAnyTime;
+
+  /// No description provided for @pickupAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup address'**
+  String get pickupAddress;
+
+  /// No description provided for @pickupContactName.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact person (optional)'**
+  String get pickupContactName;
+
+  /// No description provided for @pickupContactPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact phone (optional)'**
+  String get pickupContactPhone;
+
+  /// No description provided for @pickupNeedAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter where the cargo is to be picked up.'**
+  String get pickupNeedAddress;
+
+  /// No description provided for @pickupFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'A request: the pickup desk schedules it once your booking is confirmed.'**
+  String get pickupFootnote;
+
+  /// No description provided for @pickupAsked.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup asked for {date}'**
+  String pickupAsked(String date);
+
+  /// No description provided for @statementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account statement'**
+  String get statementTitle;
+
+  /// No description provided for @statementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF · owed, overdue and payments, last 12 months'**
+  String get statementSubtitle;
+
+  /// No description provided for @statementFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The statement couldn\'t be downloaded.'**
+  String get statementFailed;
+
+  /// No description provided for @textTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS and WhatsApp'**
+  String get textTitle;
+
+  /// No description provided for @textOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get textOff;
+
+  /// No description provided for @textSms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get textSms;
+
+  /// No description provided for @textWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get textWhatsapp;
+
+  /// No description provided for @textPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get textPhone;
+
+  /// No description provided for @textPhoneHintSms.
+  ///
+  /// In en, this message translates to:
+  /// **'98XXXXXXXX'**
+  String get textPhoneHintSms;
+
+  /// No description provided for @textPhoneHintWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'+977 98XXXXXXXX'**
+  String get textPhoneHintWhatsapp;
+
+  /// No description provided for @textConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to receive KCPL shipment and invoice messages on this number.'**
+  String get textConsent;
+
+  /// No description provided for @textNeedConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick the box to agree to these messages.'**
+  String get textNeedConsent;
+
+  /// No description provided for @textFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'The same updates as your notifications, shortened to one message, for when the app isn\'t to hand. Turn off any time.'**
+  String get textFootnote;
+
+  /// No description provided for @textSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get textSave;
+
+  /// No description provided for @textSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get textSaved;
+
+  /// No description provided for @docreqNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL needs your {document}'**
+  String docreqNeeded(String document);
+
+  /// No description provided for @docreqResend.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL needs your {document} again'**
+  String docreqResend(String document);
+
+  /// No description provided for @docreqBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan it now: it goes straight to the team handling {reference}.'**
+  String docreqBody(String reference);
+
+  /// No description provided for @docreqScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan {document}'**
+  String docreqScan(String document);
+
+  /// No description provided for @docreqOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo or file instead'**
+  String get docreqOther;
+
   /// No description provided for @opsAddTo.
   ///
   /// In en, this message translates to:

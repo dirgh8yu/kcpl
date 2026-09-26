@@ -22,15 +22,24 @@ enum PushState {
 
 /// What a notification is about, so a tap can open it.
 class PushTarget {
-  const PushTarget(this.kind, this.reference);
+  const PushTarget(this.kind, this.reference, {this.documentType});
   final String kind;
   final String? reference;
+
+  /// For `document_request`: the document KCPL asked for, such as
+  /// `packing_list`. The tap opens the scanner for it.
+  final String? documentType;
 
   static PushTarget? fromData(Map<String, dynamic> data) {
     final kind = data['kind'];
     if (kind is! String || kind.isEmpty) return null;
     final reference = data['reference'];
-    return PushTarget(kind, reference is String && reference.isNotEmpty ? reference : null);
+    final type = data['document_type'];
+    return PushTarget(
+      kind,
+      reference is String && reference.isNotEmpty ? reference : null,
+      documentType: type is String && RegExp(r'^[a-z_]{2,40}$').hasMatch(type) ? type : null,
+    );
   }
 }
 

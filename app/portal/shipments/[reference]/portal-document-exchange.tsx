@@ -45,11 +45,15 @@ export function PortalDocumentExchange({
   checklist,
   canSend,
   locale,
+  requested,
 }: {
   reference: string;
   checklist: PortalRequirementRow[];
   canSend: boolean;
   locale: PortalLocale;
+  /** The document a "KCPL needs…" notice links to: marked, so the one
+   * asked for stands out where the link lands (#documents). */
+  requested?: string | null;
 }) {
   const t = portalTranslator(locale);
   const router = useRouter();
@@ -103,7 +107,7 @@ export function PortalDocumentExchange({
         {checklist.length ? (
           <ul className="portal-checklist">
             {checklist.map((row) => (
-              <li key={row.document_type} data-state={row.state}>
+              <li key={row.document_type} data-state={row.state} data-requested={row.document_type === requested ? "" : undefined}>
                 <span className="portal-checklist-mark" aria-hidden="true"><StateIcon state={row.state}/></span>
                 <span className="portal-checklist-main">
                   <strong>{portalDocumentLabel(row.document_type, locale)}</strong>

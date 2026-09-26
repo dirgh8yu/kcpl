@@ -25,7 +25,10 @@ import 'package:kcpl_customer/ops/screens/scan_screen.dart';
 import 'package:kcpl_customer/ui/format.dart';
 import 'package:kcpl_customer/ui/screens/pay_screen.dart';
 import 'package:kcpl_customer/ui/widgets/capture.dart';
+import 'package:kcpl_customer/ui/widgets/common.dart' show RowTile;
 import 'package:kcpl_customer/ui/widgets/large_title.dart';
+import 'package:kcpl_customer/ui/widgets/rows.dart' show openShipment;
+import 'package:kcpl_customer/ui/widgets/tab_bar.dart' show KTabBar;
 
 Future<void> _font(String family, List<String> paths) async {
   final loader = FontLoader(family);
@@ -429,6 +432,81 @@ void main() {
       await tester.tap(find.text('Pay online'));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-12b-pay-dollars');
+      await tester.pumpWidget(const SizedBox());
+      await _wait(tester);
+    }, variant: iPhone);
+
+    testWidgets('customer proof, pickup, statement, notices $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      AttachmentSource.current = const _Paper();
+      addTearDown(() => AttachmentSource.current = const DeviceAttachmentSource());
+      final controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(KcplApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'imports@annapurna.example');
+      await _tab(tester, 'Shipments');
+      await tester.tap(find.textContaining('KCPL-S-24012', findRichText: true).first);
+      await _wait(tester, 20);
+      // Pictures decode on real time, not the test's clock.
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 400)));
+      await _wait(tester, 4);
+      await _shot(tester, 'customer-$mode-13a-proof-of-delivery');
+      await tester.tap(find.bySemanticsLabel('Delivery photo 1'));
+      await _wait(tester);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 400)));
+      await _wait(tester, 4);
+      await _shot(tester, 'customer-$mode-13b-proof-photo');
+      await tester.tap(find.byTooltip('Close'));
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+
+      await _tab(tester, 'Invoices');
+      await _shot(tester, 'customer-$mode-13c-statement');
+
+      await _tab(tester, 'Account');
+      await tester.tap(find.text('Quotes'));
+      await _wait(tester);
+      await tester.tap(find.byWidgetPredicate((w) => w.runtimeType.toString() == '_QuoteRow').first);
+      await _wait(tester);
+      await tester.scrollUntilVisible(find.text('KCPL picks up the cargo'), 300, scrollable: find.byType(Scrollable).last);
+      await Scrollable.ensureVisible(tester.element(find.text('KCPL picks up the cargo')), alignment: 0.3);
+      await _wait(tester, 4);
+      await tester.tap(find.text('KCPL picks up the cargo'));
+      await _wait(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Pickup address'), 'Balaju Industrial Area, Kathmandu');
+      await tester.enterText(find.widgetWithText(TextField, 'Contact person (optional)'), 'Hari Thapa');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await _wait(tester, 4);
+      await Scrollable.ensureVisible(tester.element(find.text('Morning')), alignment: 0.4);
+      await _wait(tester, 4);
+      await _shot(tester, 'customer-$mode-13d-pickup');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+
+      await tester.drag(find.text('Access level'), const Offset(0, -900));
+      await _wait(tester);
+      await Scrollable.ensureVisible(tester.element(find.widgetWithText(RowTile, 'SMS and WhatsApp')), alignment: 0.5);
+      await _wait(tester, 4);
+      await tester.tap(find.widgetWithText(RowTile, 'SMS and WhatsApp'));
+      await _wait(tester);
+      await tester.tap(find.text('WhatsApp'));
+      await _wait(tester, 4);
+      await tester.enterText(find.byType(TextField).last, '+977 9812345678');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.tap(find.textContaining('I agree to receive'));
+      await _wait(tester, 4);
+      await _shot(tester, 'customer-$mode-13e-text-notices');
+      await tester.tap(find.byType(SheetCloseButton).last);
+      await _wait(tester);
+
+      // What a "KCPL needs your packing list" push opens.
+      openShipment(tester.element(find.byType(KTabBar)), 'KCPL-S-24077', sendType: 'packing_list');
+      await _wait(tester, 30);
+      await _shot(tester, 'customer-$mode-13f-document-request');
       await tester.pumpWidget(const SizedBox());
       await _wait(tester);
     }, variant: iPhone);

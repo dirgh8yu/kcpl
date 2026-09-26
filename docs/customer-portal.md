@@ -480,6 +480,78 @@ new state (`liveActivityState`: the portal's status label, where the cargo is, p
 through FCM, and ends it at delivery. Tokens live in `mobile_live_activities/{sha256}`
 with their owner's email; a dead token is dropped like a dead device.
 
+## Proof of delivery
+
+Once KCPL has checked a delivery (`delivery_pod_status: "verified"`), the portal's
+shipment page and the app show who received it and when, and the signature and photos the
+desk marked **safe to share** when verifying (`customer_safe: true` on the
+`pod_evidence` record). Nothing else is shown: evidence still awaiting review or rejected,
+the recipient's phone number, the driver and the GPS position all stay with KCPL
+(`portal-proof-of-delivery.ts`, tested).
+
+Files are served by `GET /api/portal/shipments/[reference]/pod/[id]` and its app twin,
+after the same gates: the customer owns the shipment, the delivery is verified, the item is
+visible. Only images and PDFs are served inline; any other stored type is sent as a
+download, with a sandboxing content security policy on the portal route.
+
+## Booking with a pickup
+
+"Ask to proceed" on a priced quote can carry a pickup: a date (today to 90 days out, Nepal
+time), a window (morning 9–12, afternoon 12–5, or any time), the address, and an optional
+contact (`portal-booking-pickup.ts`). It is a **request**, not an appointment. It is kept
+on the quote's booking request and written into the quote's note; once the booking is
+confirmed, the shipment's row on `/admin/pickups` opens with the window, address and
+contact filled in (see `docs/pickup-scheduling.md`). Operations still schedule, confirm
+and assign as before.
+
+## Statement of account
+
+A PDF of what is owed, how overdue, and what has been paid, per currency and never
+converted (`portal-statement.ts`, `portal-statement-pdf.ts`):
+
+- Owed now and the part past due, aged from each due date: not yet due, 1–30, 31–60,
+  61–90 and over 90 days.
+- Invoiced and received in the last 12 months, each open invoice with its balance, and
+  each payment KCPL has applied (`invoices/{ref}/payments`).
+- Only issued invoices count; drafts, voids and credit notes never age.
+
+Customers with finance access download it from **Invoices** (`GET /api/portal/statement`,
+`GET /api/mobile/v1/statement`). Accounts staff with `canManageFinance` open it from the
+customer's CRM page and can email it to the customer's active portal owners
+(`POST /api/admin/crm/customers/[id]/statement`); each send is logged in
+`customers/{id}/statement_sends`. The statement only reads the ledger.
+
+## SMS and WhatsApp notices
+
+For customers who never install the app, each notification fact can also go out as one
+SMS (Sparrow SMS, Nepali mobiles) or one WhatsApp message (Meta's Cloud API, any mobile).
+The customer chooses the channel and number in **Settings** (web) or **Account** (app) and
+must tick an explicit consent box; the server refuses a channel without it
+(`portal-text-notices.ts`). A channel is offered only when its secrets are set.
+
+- The same facts as email and push, keyed by the same notification key plus the channel,
+  claimed in `portal_text_deliveries` so each is sent once. `status` records whether the
+  provider accepted it or why it failed.
+- An SMS is one plain-ASCII message of at most 160 characters. WhatsApp uses the approved
+  template `WHATSAPP_TEMPLATE` (default `kcpl_update`) with two body variables: {{1}} the
+  headline and {{2}} the detail line. Create and approve that template in WhatsApp
+  Manager, in English and Nepali, before setting the secrets.
+- Secrets (App Hosting / GitHub, never the repository): `SPARROW_SMS_TOKEN`,
+  `SPARROW_SMS_FROM`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and optionally
+  `WHATSAPP_TEMPLATE`. The readiness probe reports each channel.
+
+## Document requests
+
+When KCPL asks for a document on a shipment, or sends one back for correction, the sweep
+tells the customer once, by email, push and (if chosen) text: "KCPL needs your packing
+list". The fact is keyed by the document and, for a resend, the time it was sent back, so
+each request is news exactly once (`portalDocumentRequestFact`). Requests that predate the
+account's notifications are not news. The sweep re-reads a shipment's checklist when the
+shipment changes or at most every six hours.
+
+The link is `/portal/shipments/{ref}?send={type}#documents`. In the app the tap opens the
+shipment with the send sheet for that document on top, where the scanner is one tap away.
+
 ## Mobile app API
 
 The Flutter customer app (`mobile/`, see `mobile/README.md`) cannot hold the portal's
@@ -611,6 +683,11 @@ in server routes only, exactly like the staff product.
 | `GET /api/mobile/v1/quotes` | Mobile app: issued quotes and whether proceeding was asked |
 | `GET`/`POST /api/mobile/v1/invoices/[reference]/pay`, `GET /api/mobile/v1/payments/[intent]` | Mobile app: online payment options, start, outcome |
 | `/pay/[intent]`, `/pay/[intent]/done`, `/api/payments/{khalti,esewa,connectips}/return` | Gateway hand-off and confirmation |
+| `GET /api/portal/shipments/[reference]/pod/[id]` | A verified, shared proof-of-delivery file |
+| `GET /api/portal/statement` | Statement of account PDF (finance access) |
+| `POST /api/portal/text-notices` | Saves the signed-in account's SMS / WhatsApp choice, with consent |
+| `GET`/`POST /api/admin/crm/customers/[id]/statement` | Accounts view or email a customer's statement |
+| `GET /api/mobile/v1/shipments/[reference]/pod/[id]`, `/statement`, `GET`/`POST /text-notices` | Mobile app: the same |
 | `/t/[token]` | Public tracking page (no login) |
 | `GET`/`PUT /api/admin/jobs/[reference]/free-time` | Staff free-time record (Job File) |
 | `/admin/portal-access`, `/api/admin/portal-access` | Staff provisioning (Management) |

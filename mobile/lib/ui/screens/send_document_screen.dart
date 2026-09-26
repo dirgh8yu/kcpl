@@ -25,13 +25,23 @@ const customerDocumentTypes = [
   'other',
 ];
 
+/// KCPL asked for the document: for the first time, or again after the one
+/// sent was sent back.
+enum SendRequest { needed, resend }
+
 /// Opens "Send a document" for [shipment]. [waiting] are the types KCPL is
 /// waiting on, offered first; [type] is chosen already when the person came
 /// from one of them. True when something was sent.
-Future<bool> openSendDocument(BuildContext context, Shipment shipment, {String? type, List<String> waiting = const []}) async =>
+Future<bool> openSendDocument(
+  BuildContext context,
+  Shipment shipment, {
+  String? type,
+  List<String> waiting = const [],
+  SendRequest? request,
+}) async =>
     await Navigator.of(context).push<bool>(
       SheetRoute<bool>(
-        builder: (_) => SendDocumentScreen(shipment: shipment, type: type, waiting: waiting),
+        builder: (_) => SendDocumentScreen(shipment: shipment, type: type, waiting: waiting, request: request),
       ),
     ) ??
     false;
@@ -40,10 +50,13 @@ Future<bool> openSendDocument(BuildContext context, Shipment shipment, {String? 
 /// first, as the big target, then what it is, then one button. The file is
 /// checked by KCPL before it counts.
 class SendDocumentScreen extends StatefulWidget {
-  const SendDocumentScreen({super.key, required this.shipment, this.type, this.waiting = const []});
+  const SendDocumentScreen({super.key, required this.shipment, this.type, this.waiting = const [], this.request});
   final Shipment shipment;
   final String? type;
   final List<String> waiting;
+
+  /// Opened from KCPL's request for [type]: the scanner is the one tap.
+  final SendRequest? request;
 
   @override
   State<SendDocumentScreen> createState() => _SendDocumentScreenState();
@@ -62,11 +75,11 @@ class _SendDocumentScreenState extends State<SendDocumentScreen> {
     ...customerDocumentTypes.where((t) => !widget.waiting.contains(t)),
   ];
 
-  Future<void> _pick() async {
+  Future<void> _pick({bool direct = false}) async {
     final l = AppLocalizations.of(context);
     final name = '${(_type ?? 'document').replaceAll('_', '-')}-${widget.shipment.reference}';
     try {
-      final file = await pickAttachment(context, name: name, scan: true);
+      final file = await pickAttachment(context, name: name, scan: true, direct: direct);
       if (file != null && mounted) setState(() => (_file = file, _error = null));
     } on AttachmentRefused catch (refused) {
       if (mounted) setState(() => _error = attachmentRefusal(l, refused));
@@ -109,6 +122,11 @@ class _SendDocumentScreenState extends State<SendDocumentScreen> {
       return DoneView(title: l.sentTitle, body: sent.message.isEmpty ? l.sentTitle : sent.message, reference: widget.shipment.reference);
     }
     final shipment = widget.shipment;
+    final request = widget.request;
+    // The document asked for, in the words the checklist uses; lower case
+    // mid-sentence in English.
+    final label = widget.type == null ? null : documentTypeLabel(l, widget.type!);
+    final asked = label != null && Localizations.localeOf(context).languageCode == 'en' ? label.toLowerCase() : label;
     return ComposeScaffold(
       title: l.sendDocTitle,
       error: _error,
@@ -118,8 +136,28 @@ class _SendDocumentScreenState extends State<SendDocumentScreen> {
           padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
           child: ShipmentLine(shipment),
         ),
-        SectionHeader(l.sendDocFile),
-        AttachmentField(file: _file, onPick: _pick, enabled: !_busy, hint: l.captureHint),
+        if (request != null && asked != null) ...[
+          const SizedBox(height: 16),
+          Notice(
+            title: request == SendRequest.resend ? l.docreqResend(asked) : l.docreqNeeded(asked),
+            body: l.docreqBody(shipment.reference),
+          ),
+          const SizedBox(height: 16),
+          // The scanner, straight away: no choice to make first.
+          AttachmentField(
+            file: _file,
+            onPick: () => _pick(direct: _file == null),
+            enabled: !_busy,
+            label: l.docreqScan(asked),
+          ),
+          if (_file == null)
+            Center(
+              child: TextButton(onPressed: _busy ? null : _pick, child: Text(l.docreqOther)),
+            ),
+        ] else ...[
+          SectionHeader(l.sendDocFile),
+          AttachmentField(file: _file, onPick: _pick, enabled: !_busy, hint: l.captureHint),
+        ],
         SectionHeader(l.sendDocKind),
         RowGroup(
           children: [

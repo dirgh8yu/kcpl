@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/common.dart';
 import '../widgets/message_thread.dart';
+import '../widgets/proof_of_delivery.dart';
 import '../widgets/rate_delivery.dart';
 import '../widgets/rows.dart';
 import '../widgets/shipment_actions.dart';
@@ -18,19 +19,33 @@ import 'estimate_screens.dart';
 import 'overview_screen.dart' show JourneyGraphic;
 import 'send_document_screen.dart';
 
-class ShipmentDetailScreen extends StatelessWidget {
-  const ShipmentDetailScreen({super.key, required this.reference, this.preview});
+class ShipmentDetailScreen extends StatefulWidget {
+  const ShipmentDetailScreen({super.key, required this.reference, this.preview, this.sendType});
   final String reference;
 
   /// The row or card this was opened from. Its journey is drawn at once,
   /// and is where the overview card's shared element lands.
   final Shipment? preview;
 
+  /// A document KCPL asked for: its send sheet opens over the shipment once
+  /// it has loaded, with the scanner a tap away.
+  final String? sendType;
+
+  @override
+  State<ShipmentDetailScreen> createState() => _ShipmentDetailScreenState();
+}
+
+class _ShipmentDetailScreenState extends State<ShipmentDetailScreen> {
+  /// The asked-for sheet opens once, not on every refresh.
+  bool _asked = false;
+
+  String get reference => widget.reference;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final api = AppScope.of(context).api;
-    final preview = this.preview;
+    final preview = widget.preview;
     return Scaffold(
       body: AsyncPage<ShipmentDetail>(
         title: reference,
@@ -89,12 +104,37 @@ class ShipmentDetailScreen extends StatelessWidget {
         if (row.canSend) row.documentType,
     ];
 
-    Future<void> send({String? type}) async {
-      if (await openSendDocument(context, shipment, type: type, waiting: waiting) && context.mounted) await AsyncPage.reload(context);
+    Future<void> send({String? type, bool requested = false}) async {
+      final resend = requested && detail.checklist.any((row) => row.documentType == type && row.state == 'resend');
+      final sent = await openSendDocument(
+        context,
+        shipment,
+        type: type,
+        waiting: waiting,
+        request: requested ? (resend ? SendRequest.resend : SendRequest.needed) : null,
+      );
+      if (sent && context.mounted) await AsyncPage.reload(context);
+    }
+
+    if (widget.sendType case final type? when !_asked) {
+      _asked = true;
+      // Only for a document the customer can send; anything else just shows
+      // the shipment, whose checklist says what KCPL has.
+      if (canSend && customerDocumentTypes.contains(type)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) send(type: type, requested: true);
+        });
+      }
     }
 
     return [
       ..._lead(context, shipment),
+      // The signature and photos first: on a delivered shipment they are
+      // what people open it for.
+      if (detail.proofOfDelivery case final proof?) ...[
+        SectionHeader(l.podTitle, top: 20),
+        ProofOfDeliveryCard(key: ValueKey('pod-${shipment.reference}'), reference: shipment.reference, proof: proof),
+      ],
       if (detail.confirmation case final confirmation?) ...[
         const SizedBox(height: 16),
         Notice(

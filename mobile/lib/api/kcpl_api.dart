@@ -59,7 +59,19 @@ abstract class KcplApi {
 
   /// "Proceed" on a priced quote: the portal's own booking request. KCPL
   /// confirms the booking; nothing is booked by this alone.
-  Future<void> acceptQuote(String reference, {String note = ''});
+  Future<void> acceptQuote(String reference, {String note = '', PickupRequest? pickup});
+
+  /// A signature or photo from a verified delivery.
+  Future<DownloadedFile> proofFile(String shipment, ProofItem item);
+
+  /// The statement of account as a PDF: owed, how overdue, payments received.
+  /// Finance logins only; others are refused by the server.
+  Future<DownloadedFile> statement();
+
+  /// SMS / WhatsApp notices. Saving a channel needs [consent], given by the
+  /// customer on the screen that asked.
+  Future<TextNotices> textNotices();
+  Future<TextNotices> setTextNotices(String channel, {String phone = '', bool consent = false});
 
   Future<NotificationPreferences> notificationPreferences();
   Future<NotificationPreferences> setNotificationPreferences(NotificationPreferences preferences);

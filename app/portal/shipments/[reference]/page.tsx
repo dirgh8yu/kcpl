@@ -43,13 +43,22 @@ import {
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Shipment · KCPL Customer Portal", robots: { index: false, follow: false } };
 
-export default async function PortalShipmentPage({ params }: { params: Promise<{ reference: string }> }) {
+export default async function PortalShipmentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ reference: string }>;
+  searchParams: Promise<{ send?: string | string[] }>;
+}) {
   const access = await getPortalAccess();
   if (access.kind === "unconfigured") return <PortalUnavailable/>;
   if (access.kind === "signed-out") return <PortalLoginPage/>;
 
   const t = portalTranslator(access.session.locale);
   const { reference } = await params;
+  // "KCPL needs your packing list" links here with ?send=packing_list.
+  const send = (await searchParams).send;
+  const requested = typeof send === "string" && /^[a-z_]{2,40}$/.test(send) ? send : null;
   const result = await getPortalShipment(access.session, decodeURIComponent(reference));
   const delivered = result.kind === "ready" && deliveryRatable(result.detail.shipment.status);
   const [rating, proof] = delivered && result.kind === "ready"
@@ -65,7 +74,7 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
       session={access.session}
     >
       {result.kind === "ready"
-        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests} canRate={!rated} proof={proof} locale={access.session.locale}/>
+        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests} canRate={!rated} proof={proof} locale={access.session.locale} requested={requested}/>
         : null}
       {result.kind === "missing" ? (
         <OpsPage>
@@ -88,7 +97,7 @@ export default async function PortalShipmentPage({ params }: { params: Promise<{
   );
 }
 
-function ShipmentDetail({ detail, canSend, canRate, proof, locale }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; locale: PortalLocale }) {
+function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; locale: PortalLocale; requested: string | null }) {
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
 
@@ -218,7 +227,7 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale }: { detail: P
             }}
           />
 
-          <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend} locale={locale}/>
+          <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend} locale={locale} requested={requested}/>
 
           <OpsSurface
             eyebrow={t("overview.paperwork_eyebrow")}

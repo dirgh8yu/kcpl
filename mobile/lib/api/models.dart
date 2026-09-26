@@ -279,6 +279,7 @@ class ShipmentDetail {
     this.canConfirmDelivery = false,
     this.canRate = false,
     this.rating,
+    this.proofOfDelivery,
   });
 
   final Shipment shipment;
@@ -298,6 +299,10 @@ class ShipmentDetail {
   /// This login's own rating, once given.
   final DeliveryRating? rating;
 
+  /// Who received it, and the signature and photos KCPL verified and shared.
+  /// Null until KCPL has checked the driver's proof.
+  final ProofOfDelivery? proofOfDelivery;
+
   factory ShipmentDetail.fromJson(Map<String, dynamic> json) => ShipmentDetail(
     shipment: Shipment.fromJson(_map(json['shipment'])),
     freeTime: json['freeTime'] is Map ? FreeTime.fromJson(_map(json['freeTime'])) : null,
@@ -308,6 +313,45 @@ class ShipmentDetail {
     canConfirmDelivery: _b(json['canConfirmDelivery']),
     canRate: _b(json['canRate']),
     rating: json['rating'] is Map ? DeliveryRating.fromJson(_map(json['rating'])) : null,
+    proofOfDelivery: json['proofOfDelivery'] is Map ? ProofOfDelivery.fromJson(_map(json['proofOfDelivery'])) : null,
+  );
+}
+
+/// A delivery's proof as KCPL shares it (portal-proof-of-delivery.ts): never
+/// the recipient's phone, the driver, or the place.
+class ProofOfDelivery {
+  const ProofOfDelivery({this.deliveredAt, this.recipientName, this.recipientRelation, this.verifiedAt, this.items = const []});
+  final String? deliveredAt;
+  final String? recipientName;
+  final String? recipientRelation;
+  final String? verifiedAt;
+  final List<ProofItem> items;
+
+  factory ProofOfDelivery.fromJson(Map<String, dynamic> json) => ProofOfDelivery(
+    deliveredAt: _ns(json['delivered_at']),
+    recipientName: _ns(json['recipient_name']),
+    recipientRelation: _ns(json['recipient_relation']),
+    verifiedAt: _ns(json['verified_at']),
+    items: _list(json['items']).map(ProofItem.fromJson).toList(),
+  );
+}
+
+class ProofItem {
+  const ProofItem({required this.id, required this.kind, required this.contentType, this.capturedAt});
+  final String id;
+
+  /// `signature`, `photo` or `document`.
+  final String kind;
+  final String contentType;
+  final String? capturedAt;
+
+  bool get isImage => contentType.startsWith('image/');
+
+  factory ProofItem.fromJson(Map<String, dynamic> json) => ProofItem(
+    id: _s(json['id']),
+    kind: _s(json['kind'], 'document'),
+    contentType: _s(json['content_type'], 'application/octet-stream'),
+    capturedAt: _ns(json['captured_at']),
   );
 }
 
@@ -886,4 +930,48 @@ class TrackingLink {
   const TrackingLink({required this.url, required this.expiresAt});
   final Uri url;
   final String expiresAt;
+}
+
+/// When KCPL should collect the cargo for a booking: a request the pickup
+/// desk schedules, never an appointment (portal-booking-pickup.ts).
+class PickupRequest {
+  const PickupRequest({required this.date, this.window = 'any', required this.address, this.contactName = '', this.contactPhone = ''});
+
+  /// YYYY-MM-DD, Nepal's calendar.
+  final String date;
+
+  /// `morning` (9–12), `afternoon` (12–5) or `any`.
+  final String window;
+  final String address;
+  final String contactName;
+  final String contactPhone;
+
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'window': window,
+    'address': address.trim(),
+    if (contactName.trim().isNotEmpty) 'contact_name': contactName.trim(),
+    if (contactPhone.trim().isNotEmpty) 'contact_phone': contactPhone.trim(),
+  };
+}
+
+/// SMS or WhatsApp notices for this login: [channel] is `none`, `sms` or
+/// `whatsapp`; [offered] are the channels KCPL has switched on.
+class TextNotices {
+  const TextNotices({this.channel = 'none', this.phone, this.offered = const []});
+  final String channel;
+  final String? phone;
+  final List<String> offered;
+
+  bool get on => channel != 'none';
+
+  factory TextNotices.fromJson(Map<String, dynamic> json) {
+    final settings = _map(json['settings']);
+    final channels = _map(json['channels']);
+    return TextNotices(
+      channel: _s(settings['channel'], 'none'),
+      phone: _ns(settings['phone']),
+      offered: [for (final channel in const ['sms', 'whatsapp']) if (_b(channels[channel])) channel],
+    );
+  }
 }

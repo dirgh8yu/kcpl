@@ -110,11 +110,12 @@ const attachmentMaxBytes = 10 * 1024 * 1024;
 /// Offers camera, photos and files, as iOS does from an attach button, and
 /// returns the chosen file named for what it is: "packing-list-KCPL-S-24091.jpg"
 /// reads better in KCPL's vault than "IMG_4471.jpg". Refusals are shown by
-/// the caller.
-Future<Attachment?> pickAttachment(BuildContext context, {required String name, bool files = true, bool scan = false}) async {
+/// the caller. [direct] skips the choice and opens the scanner at once, for
+/// a document KCPL has asked for.
+Future<Attachment?> pickAttachment(BuildContext context, {required String name, bool files = true, bool scan = false, bool direct = false}) async {
   final l = AppLocalizations.of(context);
   final source = AttachmentSource.current;
-  final choice = await showCupertinoModalPopup<Future<Attachment?> Function()>(
+  final choice = direct ? source.scan : await showCupertinoModalPopup<Future<Attachment?> Function()>(
     context: context,
     builder: (sheet) => CupertinoActionSheet(
       actions: [
@@ -145,10 +146,13 @@ String attachmentRefusal(AppLocalizations l, AttachmentRefused refused) => switc
 /// The file slot of a form: an invitation to add one, then the file itself,
 /// large enough to check it is the right page before it goes.
 class AttachmentField extends StatelessWidget {
-  const AttachmentField({super.key, required this.file, required this.onPick, this.enabled = true, this.hint});
+  const AttachmentField({super.key, required this.file, required this.onPick, this.enabled = true, this.hint, this.label});
   final Attachment? file;
   final VoidCallback onPick;
   final bool enabled;
+
+  /// The invitation, when it is more than "Take photo".
+  final String? label;
 
   /// A line of advice under the empty slot.
   final String? hint;
@@ -183,7 +187,7 @@ class AttachmentField extends StatelessWidget {
                       children: [
                         Icon(KIcons.camera, size: 28, color: p.accent),
                         const SizedBox(height: 10),
-                        Text(l.captureTakePhoto, style: context.type.titleMedium?.copyWith(color: p.accent)),
+                        Text(label ?? l.captureTakePhoto, textAlign: TextAlign.center, style: context.type.titleMedium?.copyWith(color: p.accent)),
                         if (hint != null) ...[
                           const SizedBox(height: 4),
                           Text(hint!, textAlign: TextAlign.center, style: context.type.bodySmall),

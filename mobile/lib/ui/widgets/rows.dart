@@ -27,11 +27,15 @@ void openInvoice(BuildContext context, String reference) {
 }
 
 /// Beside the list on a tablet; as a sheet otherwise.
-void openShipment(BuildContext context, String reference, {Shipment? preview}) {
-  if (SplitView.select(context, reference)) return;
+///
+/// [sendType] opens the send sheet for that document over the shipment, as
+/// a "KCPL needs a document from you" notification does; always as a sheet,
+/// so the camera is one tap away on a tablet too.
+void openShipment(BuildContext context, String reference, {Shipment? preview, String? sendType}) {
+  if (sendType == null && SplitView.select(context, reference)) return;
   Navigator.of(context).push(
     SheetRoute<void>(
-      builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview),
+      builder: (_) => ShipmentDetailScreen(reference: reference, preview: preview, sendType: sendType),
     ),
   );
 }

@@ -2509,6 +2509,162 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get podTitle => 'Proof of delivery';
+
+  @override
+  String podReceivedBy(String name) {
+    return 'Received by $name';
+  }
+
+  @override
+  String podReceivedByAs(String name, String relation) {
+    return 'Received by $name, $relation';
+  }
+
+  @override
+  String podDelivered(String date) {
+    return 'Delivered $date';
+  }
+
+  @override
+  String get podChecked => 'Checked by KCPL';
+
+  @override
+  String get podSignature => 'Signature';
+
+  @override
+  String podPhoto(int number) {
+    return 'Delivery photo $number';
+  }
+
+  @override
+  String get podDocument => 'Delivery document';
+
+  @override
+  String get podNothingShared =>
+      'KCPL checked this delivery. No signature or photos were shared.';
+
+  @override
+  String get podLoadFailed => 'Couldn\'t load';
+
+  @override
+  String get pickupTitle => 'Pickup';
+
+  @override
+  String get pickupAsk => 'KCPL picks up the cargo';
+
+  @override
+  String get pickupAskBody =>
+      'Say when and where. The pickup desk confirms the time with you.';
+
+  @override
+  String get pickupDate => 'Date';
+
+  @override
+  String get pickupWindow => 'Time';
+
+  @override
+  String get pickupMorning => 'Morning';
+
+  @override
+  String get pickupAfternoon => 'Afternoon';
+
+  @override
+  String get pickupAnyTime => 'Any time';
+
+  @override
+  String get pickupAddress => 'Pickup address';
+
+  @override
+  String get pickupContactName => 'Contact person (optional)';
+
+  @override
+  String get pickupContactPhone => 'Contact phone (optional)';
+
+  @override
+  String get pickupNeedAddress => 'Enter where the cargo is to be picked up.';
+
+  @override
+  String get pickupFootnote =>
+      'A request: the pickup desk schedules it once your booking is confirmed.';
+
+  @override
+  String pickupAsked(String date) {
+    return 'Pickup asked for $date';
+  }
+
+  @override
+  String get statementTitle => 'Account statement';
+
+  @override
+  String get statementSubtitle =>
+      'PDF · owed, overdue and payments, last 12 months';
+
+  @override
+  String get statementFailed => 'The statement couldn\'t be downloaded.';
+
+  @override
+  String get textTitle => 'SMS and WhatsApp';
+
+  @override
+  String get textOff => 'Off';
+
+  @override
+  String get textSms => 'SMS';
+
+  @override
+  String get textWhatsapp => 'WhatsApp';
+
+  @override
+  String get textPhone => 'Mobile number';
+
+  @override
+  String get textPhoneHintSms => '98XXXXXXXX';
+
+  @override
+  String get textPhoneHintWhatsapp => '+977 98XXXXXXXX';
+
+  @override
+  String get textConsent =>
+      'I agree to receive KCPL shipment and invoice messages on this number.';
+
+  @override
+  String get textNeedConsent => 'Tick the box to agree to these messages.';
+
+  @override
+  String get textFootnote =>
+      'The same updates as your notifications, shortened to one message, for when the app isn\'t to hand. Turn off any time.';
+
+  @override
+  String get textSave => 'Save';
+
+  @override
+  String get textSaved => 'Saved';
+
+  @override
+  String docreqNeeded(String document) {
+    return 'KCPL needs your $document';
+  }
+
+  @override
+  String docreqResend(String document) {
+    return 'KCPL needs your $document again';
+  }
+
+  @override
+  String docreqBody(String reference) {
+    return 'Scan it now: it goes straight to the team handling $reference.';
+  }
+
+  @override
+  String docreqScan(String document) {
+    return 'Scan $document';
+  }
+
+  @override
+  String get docreqOther => 'Choose a photo or file instead';
+
+  @override
   String opsAddTo(String reference) {
     return 'Add to $reference';
   }

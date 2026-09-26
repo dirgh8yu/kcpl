@@ -2496,6 +2496,163 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
+  String get podTitle => 'डेलिभरीको प्रमाण';
+
+  @override
+  String podReceivedBy(String name) {
+    return '$name ले बुझ्नुभयो';
+  }
+
+  @override
+  String podReceivedByAs(String name, String relation) {
+    return '$name ($relation) ले बुझ्नुभयो';
+  }
+
+  @override
+  String podDelivered(String date) {
+    return '$date मा डेलिभर भयो';
+  }
+
+  @override
+  String get podChecked => 'KCPL ले जाँचेको';
+
+  @override
+  String get podSignature => 'हस्ताक्षर';
+
+  @override
+  String podPhoto(int number) {
+    return 'डेलिभरी फोटो $number';
+  }
+
+  @override
+  String get podDocument => 'डेलिभरी कागजात';
+
+  @override
+  String get podNothingShared =>
+      'KCPL ले यो डेलिभरी जाँच्यो। हस्ताक्षर वा फोटो साझा गरिएको छैन।';
+
+  @override
+  String get podLoadFailed => 'लोड भएन';
+
+  @override
+  String get pickupTitle => 'पिकअप';
+
+  @override
+  String get pickupAsk => 'KCPL ले माल उठाओस्';
+
+  @override
+  String get pickupAskBody =>
+      'कहिले र कहाँ भन्नुहोस्। पिकअप डेस्कले तपाईंसँग समय पक्का गर्छ।';
+
+  @override
+  String get pickupDate => 'मिति';
+
+  @override
+  String get pickupWindow => 'समय';
+
+  @override
+  String get pickupMorning => 'बिहान';
+
+  @override
+  String get pickupAfternoon => 'दिउँसो';
+
+  @override
+  String get pickupAnyTime => 'जुनसुकै बेला';
+
+  @override
+  String get pickupAddress => 'पिकअप ठेगाना';
+
+  @override
+  String get pickupContactName => 'सम्पर्क व्यक्ति (ऐच्छिक)';
+
+  @override
+  String get pickupContactPhone => 'सम्पर्क फोन (ऐच्छिक)';
+
+  @override
+  String get pickupNeedAddress => 'माल कहाँबाट उठाउने हो लेख्नुहोस्।';
+
+  @override
+  String get pickupFootnote =>
+      'यो अनुरोध हो: बुकिङ पक्का भएपछि पिकअप डेस्कले समय तोक्छ।';
+
+  @override
+  String pickupAsked(String date) {
+    return '$date मा पिकअप माग गरियो';
+  }
+
+  @override
+  String get statementTitle => 'खाता विवरण';
+
+  @override
+  String get statementSubtitle =>
+      'PDF · बाँकी, म्याद नाघेको र भुक्तानी, पछिल्ला १२ महिना';
+
+  @override
+  String get statementFailed => 'विवरण डाउनलोड हुन सकेन।';
+
+  @override
+  String get textTitle => 'SMS र WhatsApp';
+
+  @override
+  String get textOff => 'बन्द';
+
+  @override
+  String get textSms => 'SMS';
+
+  @override
+  String get textWhatsapp => 'WhatsApp';
+
+  @override
+  String get textPhone => 'मोबाइल नम्बर';
+
+  @override
+  String get textPhoneHintSms => '98XXXXXXXX';
+
+  @override
+  String get textPhoneHintWhatsapp => '+977 98XXXXXXXX';
+
+  @override
+  String get textConsent =>
+      'यो नम्बरमा KCPL को ढुवानी र बिलसम्बन्धी सन्देश पाउन म सहमत छु।';
+
+  @override
+  String get textNeedConsent =>
+      'यी सन्देश पाउन सहमति जनाउन बाकसमा टिक लगाउनुहोस्।';
+
+  @override
+  String get textFootnote =>
+      'तपाईंका सूचनाकै अपडेट, छोटो सन्देशमा, एप नहुँदा पनि। जुनसुकै बेला बन्द गर्न सकिन्छ।';
+
+  @override
+  String get textSave => 'सुरक्षित गर्नुहोस्';
+
+  @override
+  String get textSaved => 'सुरक्षित भयो';
+
+  @override
+  String docreqNeeded(String document) {
+    return 'KCPL लाई तपाईंको $document चाहियो';
+  }
+
+  @override
+  String docreqResend(String document) {
+    return 'KCPL लाई तपाईंको $document फेरि चाहियो';
+  }
+
+  @override
+  String docreqBody(String reference) {
+    return 'अहिले स्क्यान गर्नुहोस्: यो सिधै $reference हेर्ने टोलीमा पुग्छ।';
+  }
+
+  @override
+  String docreqScan(String document) {
+    return '$document स्क्यान गर्नुहोस्';
+  }
+
+  @override
+  String get docreqOther => 'बरु फोटो वा फाइल छान्नुहोस्';
+
+  @override
   String opsAddTo(String reference) {
     return '$reference मा थप्नुहोस्';
   }
