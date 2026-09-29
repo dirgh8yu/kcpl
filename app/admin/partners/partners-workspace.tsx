@@ -202,8 +202,8 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
 
   return <OpsPage>
     <OpsPageHeader
-      title="Partners & vendors"
-      description={`Carriers, agents, transporters and suppliers · ${total} records · ${dashboard.country_count} countries`}
+      title="Partners"
+      description="Carriers, agents, transporters and suppliers we work with."
       meta={financialVisible ? undefined : <span>Supplier exposure is shown only to Accounts and Management roles.</span>}
       actions={<>
         {canCreate ? <OpsButton variant="primary" onClick={startCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New partner</OpsButton> : <OpsBadge>Read-only access</OpsBadge>}
@@ -325,7 +325,7 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
                         {p.primary_email || p.primary_phone ? <span className="ops-cell-secondary ops-cell-clamp">{p.primary_email ?? p.primary_phone}</span> : null}
                       </td>}
                       {compact ? null : <td>
-                        {p.owner_branch ? <span className="ops-cell-primary">{p.owner_branch}</span> : <OpsBadge tone="warning">Needs owner repair</OpsBadge>}
+                        {p.owner_branch ? <span className="ops-cell-primary">{p.owner_branch}</span> : <OpsBadge tone="warning">No branch set</OpsBadge>}
                         <span className="ops-cell-secondary">{commercialVisible ? `Terms ${p.payment_terms_days}d · ${p.preferred_currency}` : "Terms restricted"}</span>
                       </td>}
                       {financialVisible ? <td className="partners-col-money">

@@ -167,5 +167,5 @@ export function generatedDocumentDisclaimer(kind: GeneratedFreightDocumentKind) 
   if (kind === "house_bill_of_lading") return "KCPL-issued house/working carriage document. It is not a shipping-line master bill of lading unless separately validated and issued by the carrier.";
   if (kind === "house_air_waybill") return "KCPL house/working air carriage document. It is not an airline master air waybill unless separately validated and issued by the airline or authorised agent.";
   if (kind === "road_consignment_note") return "KCPL working road consignment record. Carrier acknowledgement and applicable legal requirements must be verified before external reliance.";
-  return "KCPL operational document generated from the Digital Job File. Staff must verify source data before external use.";
+  return "KCPL operational document generated from the shipment record. Staff must verify source data before external use.";
 }

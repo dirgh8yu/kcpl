@@ -20,17 +20,17 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
     canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Delivery access restricted" detail="Digital Job File access is required for Delivery & POD Control."/></OperationsShell>;
+  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Delivery access restricted" detail="Your role doesn’t include shipments. Ask Management if you need it."/></OperationsShell>;
 
   let workspace: Awaited<ReturnType<typeof listDeliveryWorkspace>>;
   try {
     workspace = await listDeliveryWorkspace(staff);
   } catch (error) {
     console.error("Failed to load KCPL Delivery & POD Control", error);
-    return <OperationsShell {...shellProps}><Gate embedded title="Delivery Control could not be loaded" detail="KCPL operational data is temporarily unavailable. No delivery records have been changed."/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate embedded title="Deliveries didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/></OperationsShell>;
   }
 
-  if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Delivery backend unavailable" detail="Firebase delivery data is not available for this deployment."/></OperationsShell>;
+  if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Deliveries didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   const { shipment } = await searchParams;
   const initialQuery = shipment?.trim().toUpperCase() ?? "";
   return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary} initialQuery={initialQuery}/></OperationsShell>;

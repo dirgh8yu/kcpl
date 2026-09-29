@@ -289,7 +289,7 @@ export async function updateDigitalJobFile(
   await ref.update(update);
   await ref.collection("job_activity").doc(childId("activity")).create({
     type: "job_updated",
-    title: "Digital Job File updated",
+    title: "Shipment record updated",
     detail: `Updated by ${actor.name}.`,
     created_at: now,
     actor_name: actor.name,

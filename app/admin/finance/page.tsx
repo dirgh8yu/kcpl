@@ -30,13 +30,13 @@ export default async function FinancePage() {
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Finance could not be loaded" detail="KCPL finance data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Finance didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
   const staff = staffResult.staff;
   const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, canViewCommercial: staff.permissions.canViewCommercial, canManageJobFile: staff.permissions.canManageJobFile, isManagement: staff.permissions.role === "management" };
   if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate title="Finance access is restricted" detail="Accounts Receivable is available to Management and Accounts roles only." embedded/></OperationsShell>;
   const result = await loadDashboard(staff);
-  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate title={result.kind === "error" ? "Finance could not be loaded" : "Finance is unavailable"} detail="The Firestore finance backend is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate title={result.kind === "error" ? "Finance could not be loaded" : "Finance is unavailable"} detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   return <OperationsShell {...shellProps}><FinanceWorkspace dashboard={result.dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/><div className="ops-content pb-6"><ForexReferencePanel/></div></OperationsShell>;
 }
 

@@ -9,7 +9,7 @@ function numberOrNull(value: unknown) { if (value === null || value === undefine
 export async function GET(request: Request) {
   const authError = requireGptAction(request);
   if (authError) return authError;
-  if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "Firebase is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "The records service isn’t responding. Try again in a minute." }, 503);
 
   try {
     const query = new URL(request.url).searchParams.get("q")?.trim().toLowerCase().slice(0, 180) ?? "";

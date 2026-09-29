@@ -88,9 +88,8 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
 
   return <OpsPage>
     <OpsPageHeader
-      eyebrow="Finance control"
-      title="Supplier reconciliation"
-      description="Replace legacy name-only, Customer-ID and broken supplier references with confirmed KCPL Partner identities. Suggestions are advisory only; every accounting relink requires explicit confirmation."
+      title="Supplier records"
+      description="Link old bills to the right partner. Suggestions are only suggestions; nothing changes until you confirm."
       meta={<><span>{roleLabel}</span><span>{snapshot.unresolved_count} unresolved</span></>}
       actions={<><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Accounts Payable</Link></>}
     />

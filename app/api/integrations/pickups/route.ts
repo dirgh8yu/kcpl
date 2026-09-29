@@ -90,7 +90,7 @@ async function recordPickupObservation(input: {
 export async function POST(request: Request) {
   const auth = pickupIntegrationAuthorized(request);
   if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
-  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Firebase pickup storage is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Pickup records aren’t responding. Try again in a minute." }, 503);
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; }
   catch { return json({ ok: false, error: "The pickup integration payload could not be read." }, 400); }
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
   if (!shipmentSnapshot.exists) return json({ ok: false, error: "Shipment not found." }, 404);
   const shipment = shipmentSnapshot.data() as Record<string, unknown>;
   const branch = branchValue(shipment.primary_branch);
-  if (!branch) return json({ ok: false, error: "Shipment does not have a canonical KCPL primary branch." }, 409);
+  if (!branch) return json({ ok: false, error: "This shipment has no main branch set. Set one on the shipment first." }, 409);
 
   const id = appointmentId(reference);
   const eventKey = eventDocId(provider, providerEventId);
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     const storedAction = clean(duplicateSnapshot.get("action"), 40);
     if (storedAction && storedAction !== action) return json({ ok: false, error: "providerEventId was already used for a different pickup action." }, 409);
     const trackingResult = await recordPickupObservation(observationInput);
-    if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment no longer has a canonical KCPL primary branch." }, 409);
+    if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "This shipment has no main branch set. Set one on the shipment first." }, 409);
     return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
   }
 
@@ -271,14 +271,14 @@ export async function POST(request: Request) {
   });
 
   if (domainResult.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
-  if (domainResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment does not have a canonical KCPL primary branch." }, 409);
+  if (domainResult.kind === "invalid_branch") return json({ ok: false, error: "This shipment has no main branch set. Set one on the shipment first." }, 409);
   if (domainResult.kind === "state_conflict" || domainResult.kind === "invalid_transition") {
     await recordPickupObservation(observationInput);
     return json({ ok: false, error: "Pickup workflow changed concurrently; provider observation was retained for reconciliation.", reconciliationRequired: true, observationStored: true }, 409);
   }
 
   const trackingResult = await recordPickupObservation(observationInput);
-  if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "Shipment lost its canonical KCPL primary branch before observation reconciliation." }, 409);
+  if (trackingResult.kind === "invalid_branch") return json({ ok: false, error: "This shipment has no main branch set. Set one on the shipment first." }, 409);
 
   if (domainResult.kind === "duplicate") return json({ ok: true, duplicate: true, reference, pickupAppointmentId: id, trackingReconciled: true });
   return json({ ok: true, reference, pickupAppointmentId: id, status: nextStatus, providerEventId, trackingReconciled: true }, appointmentSnapshot.exists ? 200 : 201);

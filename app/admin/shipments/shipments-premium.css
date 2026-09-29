@@ -557,6 +557,10 @@
   font-weight: 500;
 }
 
+/* Priority is text, and only when raised: standard rows leave the cell empty. */
+.kcpl-admin-content .shipments-register .shipments-priority { color: var(--admin-warning); font-size: 13px; font-weight: 600; }
+.kcpl-admin-content .shipments-register .shipments-priority[data-priority="urgent"] { color: var(--admin-danger); }
+
 .kcpl-admin-content .shipment-sheet-header { border-bottom-color: var(--ship-line); }
 .kcpl-admin-content .shipment-sheet-footer {
   gap: 8px;

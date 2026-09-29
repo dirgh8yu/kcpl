@@ -3,7 +3,7 @@ import { nepalOperationalDate } from "../../invoice-effective-status";
 
 import Link from "next/link";
 import { FormEvent, useCallback, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FilePlus2, GripVertical, Landmark } from "lucide-react";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
 import { financeInvoiceStatusLabels, type FinanceDashboard, type FinanceInvoiceStatus } from "./finance-data";
@@ -42,7 +42,9 @@ const STATUS_TABS: Array<{ value: "all" | FinanceInvoiceStatus; label: string }>
 
 export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceDashboard; roleLabel: string }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  // A Job File links here filtered to its shipment (?q=REF).
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [status, setStatus] = useState<"all" | FinanceInvoiceStatus>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -112,7 +114,7 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
   );
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Commercial" title="Receivables" description="Customer invoices, collections, imported opening balances and aging in the same operating ledger. Opening balances stay visibly separate from invoiced revenue so migration does not manufacture historical sales." meta={<><span>{roleLabel}</span><span>{dashboard.invoices.length} receivable records</span>{dashboard.opening_balance_count ? <span>{dashboard.opening_balance_count} opening balances</span> : null}</>} actions={<><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New invoice"}</OpsButton></>}/>
+    <OpsPageHeader title="Customer invoices" description="What customers owe and when it’s due. Old balances brought in from paper are listed separately." meta={<><span>{roleLabel}</span><span>{dashboard.invoices.length} receivable records</span>{dashboard.opening_balance_count ? <span>{dashboard.opening_balance_count} opening balances</span> : null}</>} actions={<><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New invoice"}</OpsButton></>}/>
     <div className="px-4 pt-3 md:px-6">
       <CustomiseRow customisable={customisable}
         arranging={arranging}

@@ -1,6 +1,7 @@
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import type { ArrangementState, SavedLayout, WorkspaceKey } from "@/app/admin/operations-arrangeable";
-import { normalizeArrangementFor, normalizeSavedLayouts } from "@/app/admin/operations-arrangeable";
+import { normalizeArrangementFor, normalizeSavedLayouts, roleOverviewArrangement } from "@/app/admin/operations-arrangeable";
+import type { KcplStaffRole } from "@/app/admin/staff-permissions";
 import { firebaseAdminDb } from "@/app/firebase-admin.server";
 
 const COLLECTION = "staff_layouts";
@@ -18,7 +19,9 @@ export type StaffArrangementDocument = {
   saved: SavedLayout[];
 };
 
-export async function readStaffArrangement(staffId: string, workspace: WorkspaceKey): Promise<StaffArrangementDocument> {
+export async function readStaffArrangement(staffId: string, workspace: WorkspaceKey, role?: KcplStaffRole): Promise<StaffArrangementDocument> {
+  // Nothing saved yet: the Overview starts from the person's role.
+  const fresh = () => workspace === "overview" && role ? roleOverviewArrangement(role) : normalizeArrangementFor(workspace, null);
   try {
     const db = (firebaseAdminDb() as Firestore) ?? getFirestore();
     let snapshot = await docFor(staffId, workspace).get();
@@ -28,7 +31,7 @@ export async function readStaffArrangement(staffId: string, workspace: Workspace
       snapshot = await db.collection(COLLECTION).doc(`${staffId}${LEGACY_DOC_SUFFIX}`).get();
     }
     if (!snapshot.exists) {
-      return { arrangement: normalizeArrangementFor(workspace, null), saved: [] };
+      return { arrangement: fresh(), saved: [] };
     }
     const data = snapshot.data() ?? {};
     return {
@@ -37,7 +40,7 @@ export async function readStaffArrangement(staffId: string, workspace: Workspace
     };
   } catch (error) {
     console.error("Failed to read staff arrangement", error);
-    return { arrangement: normalizeArrangementFor(workspace, null), saved: [] };
+    return { arrangement: fresh(), saved: [] };
   }
 }
 

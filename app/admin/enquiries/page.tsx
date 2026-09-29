@@ -40,10 +40,10 @@ export default async function EnquiriesPage({ searchParams }: { searchParams: Pr
   const { enquiry } = await searchParams;
   const result = await loadQuotes(staff);
   if (result.kind === "unavailable") {
-    return <OperationsShell {...shellProps}><EnquiryGate title="Firestore is not available yet" detail="KCPL Operations is connected to Firebase Authentication, but the Firestore backend is not available for this deployment. Navigation and search remain available."/></OperationsShell>;
+    return <OperationsShell {...shellProps}><EnquiryGate title="Enquiries can’t be shown right now" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   }
   if (result.kind === "error") {
-    return <OperationsShell {...shellProps}><EnquiryGate title="The enquiry desk could not be loaded" detail="KCPL's Firebase data is temporarily unavailable. Navigation and search remain available and no enquiry data was exposed."/></OperationsShell>;
+    return <OperationsShell {...shellProps}><EnquiryGate title="Enquiries didn’t load" detail="Something went wrong fetching them. Reload the page to try again."/></OperationsShell>;
   }
 
   const requestedReference = enquiry?.trim().toUpperCase();

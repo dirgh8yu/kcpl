@@ -19,7 +19,7 @@ async function authorize() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Digital Job File access is required." }, 403) };
+  if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Shipment record access is required." }, 403) };
   return { user: access.user, staff };
 }
 
@@ -72,7 +72,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
 
   if (action === "reconcile_delivery") {
     const completion = await reconcileCanonicalDelivery(reference, { source: "manual_reconciliation", actor, context: auth.staff });
-    if (completion.kind === "unavailable") return json({ ok: false, error: "Canonical delivery reconciliation is unavailable." }, 503);
+    if (completion.kind === "unavailable") return json({ ok: false, error: "Delivery records aren’t responding. Try again in a minute." }, 503);
     if (completion.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
     if (completion.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
     return json({ ok: true, ...completionPayload(completion) });

@@ -10,11 +10,11 @@ import { listConsolidationLoads } from "./tms-consolidation.server";
 import { TmsConsolidationWorkspace } from "./tms-consolidation-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Load Planner | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Load planning | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function ConsolidationPage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Load Planner is available only to authorised staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Load planning is available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
@@ -31,11 +31,11 @@ export default async function ConsolidationPage() {
   try {
     [loads, orders] = await Promise.all([listConsolidationLoads(staff), listTmsOrders(staff)]);
   } catch (error) {
-    console.error("Failed to load KCPL Load Planner", error);
-    return <OperationsShell {...shellProps}><Gate title="Load Planner could not be loaded" detail="KCPL consolidation data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    console.error("Failed to load KCPL Load planning", error);
+    return <OperationsShell {...shellProps}><Gate title="Load planning didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
-  if (loads.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Load Planner unavailable" detail="KCPL consolidation or transport-order storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (loads.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Load planning didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   let allocations: Awaited<ReturnType<typeof listCurrentConsolidationAllocationViews>>;
   try { allocations = await listCurrentConsolidationAllocationViews(loads.loads.map((load) => load.id), staff); }
@@ -60,7 +60,7 @@ export default async function ConsolidationPage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Load Planner"
+    eyebrow="KCPL Load planning"
     title={title}
     detail={detail}
     embedded={embedded}

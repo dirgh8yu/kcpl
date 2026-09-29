@@ -5,6 +5,7 @@ import {
   writeStaffArrangement,
 } from "../../../admin/staff-arrangement-store.server";
 import { normalizeArrangementFor } from "../../../admin/operations-arrangeable";
+import { getStaffContext } from "../../../admin/staff-directory.server";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,10 @@ export async function GET(request: Request) {
   if (!workspace) {
     return Response.json({ error: "unknown workspace" }, { status: 400 });
   }
-  const document = await readStaffArrangement(access.user.uid, workspace);
+  const role = workspace === "overview"
+    ? await getStaffContext(access.user).then((staff) => staff.permissions.role).catch(() => undefined)
+    : undefined;
+  const document = await readStaffArrangement(access.user.uid, workspace, role);
   return Response.json({
     order: document.arrangement.order,
     hidden: document.arrangement.hidden,

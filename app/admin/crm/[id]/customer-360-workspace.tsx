@@ -136,7 +136,7 @@ export function Customer360Workspace({ initialCustomer, initialFinanceSnapshot, 
       <OpsPageHeader
         eyebrow="Customer 360"
         title={customer.display_name}
-        description={customer.internal_summary || "Relationship, contacts, operational history and commercial context in one account record."}
+        description={customer.internal_summary || "Contacts, shipments, quotes and invoices for this customer."}
         meta={<><OpsMono>{customer.id}</OpsMono><OpsBadge tone={customer.account_status === "active" ? "success" : customer.account_status === "on_hold" ? "warning" : customer.account_status === "blacklisted" ? "danger" : customer.account_status === "prospect" ? "info" : "neutral"} dot>{crmAccountStatusLabels[customer.account_status]}</OpsBadge>{customer.relationship_types.map((type) => <OpsBadge key={type}>{crmRelationshipLabels[type]}</OpsBadge>)}</>}
         actions={<><Link href="/admin/crm" className="ops-button" data-variant="secondary" data-size="md">Back to customers</Link><OpsButton variant="primary" onClick={() => refresh().catch((error) => setNotice(error instanceof Error ? error.message : "Refresh failed."))}><RefreshCw size={13}/>Refresh</OpsButton></>}
       />

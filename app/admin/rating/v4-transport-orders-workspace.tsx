@@ -167,8 +167,8 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
 
   return <OpsPage>
     <OpsPageHeader
-      title="Transport Orders"
-      description={`${active} active · ${ready} rate selected · ${tendering} tendering · ${booked} booked`}
+      title="Buy rates"
+      description="What carriers charge us for each order, and which one we chose."
       actions={(
         <>
           <Link href="/admin/rating?view=rate-desk" className="ops-button" data-variant="secondary" data-size="md">Rate Desk</Link>

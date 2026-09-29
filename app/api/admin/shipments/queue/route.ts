@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   if (!staff.permissions.canManageJobFile) return json({ ok: false, error: "You do not have access to the shipment register." }, 403);
   try {
     const data = await loadCommandCentre(staff, { includeDelivered: true });
-    if (!data) return json({ ok: false, error: "Firestore is not available for this deployment." }, 503);
+    if (!data) return json({ ok: false, error: "The records service isn’t responding. Try again in a minute." }, 503);
 
     // Transition persistence: the client reports what it last rendered; the
     // authoritative statuses come from this fresh server snapshot. Only

@@ -8,7 +8,7 @@ import { listCarrierIntegrationDashboard } from "./carrier-integrations.server";
 import { CarrierIntegrationsWorkspace } from "./carrier-integrations-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Carrier Integrations | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Carrier connections | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function CarrierIntegrationsPage() {
   const access = await getAdminAccess();
@@ -28,11 +28,11 @@ export default async function CarrierIntegrationsPage() {
   try { result = await listCarrierIntegrationDashboard(staff); }
   catch (error) { console.error("Failed to load carrier integration workspace", error); }
 
-  if (!result) return <OperationsShell {...shell}><Gate title="Carrier integrations temporarily unavailable" detail="Provider status could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
-  if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Carrier integrations unavailable" detail="Firebase carrier integration storage is not available for this deployment." embedded/></OperationsShell>;
+  if (!result) return <OperationsShell {...shell}><Gate title="Carrier connections didn’t load" detail="Provider status could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Carrier connections didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   return <OperationsShell {...shell}><OpsPage><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} initialSummary={result.summary} canViewCommercial={staff.permissions.canViewCommercial}/></OpsPage></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · Carrier Integrations" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/carrier-integrations", label: "Carrier Integrations", primary: true }, { href: "/admin/visibility", label: "Live Visibility" }, { href: "/admin/partners", label: "Partners" }, { href: "/admin/edi", label: "EDI Gateway" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Network · Carrier connections" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/carrier-integrations", label: "Carrier connections", primary: true }, { href: "/admin/visibility", label: "Tracking" }, { href: "/admin/partners", label: "Partners" }, { href: "/admin/edi", label: "EDI messages" }]}/>;
 }

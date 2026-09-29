@@ -35,7 +35,7 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate embedded title="Management analytics could not be loaded" detail="KCPL reporting data is temporarily unavailable. Navigation and search remain available while the data service recovers."/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate embedded title="Reports didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -52,11 +52,11 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
   const params = await searchParams;
   const range = resolveManagementRange(param(params.range), param(params.from), param(params.to));
   const result = await loadAnalytics(range);
-  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title={result.kind === "error" ? "Management analytics could not be loaded" : "Analytics are unavailable"} detail="The Firebase reporting backend is temporarily unavailable. Navigation and search remain available."/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title={result.kind === "error" ? "Management analytics could not be loaded" : "Analytics are unavailable"} detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
 
   return <OperationsShell {...shellProps}><ManagementWorkspace analytics={result.analytics} readiness={<RuntimeReadinessPanel key="readiness"/>}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Management" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/management", label: "Management", primary: true }, { href: "/admin/migration", label: "Migration Hub" }, { href: "/admin/staff", label: "People & Branches" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Organisation · Management" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/management", label: "Management", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/staff", label: "People & Branches" }]}/>;
 }

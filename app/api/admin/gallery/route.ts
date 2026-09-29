@@ -5,7 +5,7 @@ import { authorizeGallery, galleryJson, galleryText } from "./gallery-api";
 export async function GET() {
   const auth = await authorizeGallery();
   if ("response" in auth) return auth.response;
-  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "Firebase Storage is not configured." }, 503);
+  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "File uploads aren’t set up on this site yet. Ask Management." }, 503);
   try {
     return galleryJson({ ok: true, items: await listGalleryEntries() });
   } catch (error) {
@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await authorizeGallery(request);
   if ("response" in auth) return auth.response;
-  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "Firebase Storage is not configured." }, 503);
+  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "File uploads aren’t set up on this site yet. Ask Management." }, 503);
   if (Number(request.headers.get("content-length") || 0) > 11 * 1024 * 1024) return galleryJson({ ok: false, error: "Images must be smaller than 10 MB." }, 413);
   let form: FormData;
   try { form = await request.formData(); } catch { return galleryJson({ ok: false, error: "The upload could not be read." }, 400); }

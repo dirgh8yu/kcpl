@@ -107,7 +107,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: staff.permissions.role === "management" };
   const shellGate = (title: string, detail: string) => <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>;
   if (!staff.permissions.canManageJobFile) return shellGate("Operations access required", "Your current role does not include operational Job File access.");
-  if (!firebaseRuntimeConfigured()) return shellGate("Workload data unavailable", "Firebase operational data is unavailable for this deployment.");
+  if (!firebaseRuntimeConfigured()) return shellGate("Workload can’t be shown right now", "The records service isn’t responding. Try again in a minute.");
 
   const { key: rawKey } = await params;
   const key = decodeURIComponent(rawKey).trim().toLowerCase();

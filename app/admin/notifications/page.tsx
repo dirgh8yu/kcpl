@@ -24,5 +24,5 @@ export default async function NotificationsPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Notifications" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/notifications", label: "Notifications", primary: true }, { href: "/admin/alerts", label: "Tasks & Alerts" }, { href: "/admin/command-centre", label: "Operations Home" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Organisation · Notifications" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/notifications", label: "Notifications", primary: true }, { href: "/admin/alerts", label: "Tasks & alerts" }, { href: "/admin/command-centre", label: "Overview" }]}/>;
 }

@@ -212,7 +212,7 @@ export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", 
   );
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Finance" title="Accounts Payable" description="Supplier bills, opening payables, payment aging and job-linked costs. Real supplier bills can feed shipment cost; migration opening balances stay ledger-only so historical debt does not become fictional job spend." meta={<><span>{roleLabel}</span><span>{dashboard.bills.length} payable records</span></>} actions={<><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New supplier bill"}</OpsButton></>}/>
+    <OpsPageHeader title="Supplier bills" description="What we owe suppliers and when. Old balances brought in from paper are listed separately and don’t count as shipment costs." meta={<><span>{roleLabel}</span><span>{dashboard.bills.length} payable records</span></>} actions={<><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New supplier bill"}</OpsButton></>}/>
     <div className="px-4 pt-3 md:px-6">
       <CustomiseRow customisable={customisable}
         arranging={arranging}

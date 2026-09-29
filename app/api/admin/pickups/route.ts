@@ -12,7 +12,7 @@ async function authorize() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Pickup Scheduling requires Digital Job File access." }, 403) };
+  if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Pickups requires shipment record access." }, 403) };
   return { user: access.user, staff };
 }
 
@@ -21,7 +21,7 @@ export async function GET() {
   if ("response" in auth) return auth.response;
   const result = await listPickupWorkspace(auth.staff);
   if (result.kind === "ready") return json({ ok: true, rows: result.rows, summary: result.summary, generated_at: result.generated_at });
-  return json({ ok: false, error: "Pickup Scheduling storage is unavailable." }, 503);
+  return json({ ok: false, error: "Pickups storage is unavailable." }, 503);
 }
 
 export async function POST(request: Request) {
@@ -86,5 +86,5 @@ export async function POST(request: Request) {
   if (result.kind === "already_picked_up") return json({ ok: false, error: "This shipment has already been picked up." }, 409);
   if (result.kind === "cancelled") return json({ ok: false, error: "This pickup appointment was cancelled." }, 409);
   if (result.kind === "invalid_transition") return json({ ok: false, error: "That pickup action is not valid for the current appointment state." }, 409);
-  return json({ ok: false, error: "Pickup Scheduling storage is unavailable." }, 503);
+  return json({ ok: false, error: "Pickups storage is unavailable." }, 503);
 }

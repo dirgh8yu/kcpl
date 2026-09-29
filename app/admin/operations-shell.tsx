@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { KcplBranch } from "./crm/crm-data";
 import { OperationsCommandPalette } from "./operations-command-palette";
@@ -18,6 +18,7 @@ import {
 } from "./workflow-navigation";
 import { WorkspaceIcon } from "./workflow-icon";
 import { announceWorkspaceRefresh } from "./use-workspace-refresh";
+import { rememberShell } from "./remembered-shell";
 
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
@@ -32,6 +33,7 @@ export function OperationsShell({
   isManagement = false, canViewCommercial = false, canManageJobFile = false,
   branches, selectedBranch, canAccessAllBranches = false,
   signOutPath = "/api/admin/session?logout=1",
+  placeholder = false,
 }: {
   children: React.ReactNode;
   userName: string;
@@ -44,6 +46,9 @@ export function OperationsShell({
   selectedBranch?: "all" | KcplBranch;
   canAccessAllBranches?: boolean;
   signOutPath?: string;
+  /** The loading state's copy of the shell: it reuses the remembered
+   * capabilities and must not refetch them or overwrite what it read. */
+  placeholder?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -60,14 +65,21 @@ export function OperationsShell({
   const hubTabsRef = useRef<HTMLElement>(null);
   const capabilities = useMemo(() => resolvedCapabilities ?? ({ canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement }), [resolvedCapabilities, canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement]);
 
+  // Remember who is signed in and what they can open, so the next page's
+  // loading state draws this same sidebar instead of grey placeholders.
   useEffect(() => {
+    if (!placeholder) rememberShell({ userName, ...capabilities });
+  }, [placeholder, userName, capabilities]);
+
+  useEffect(() => {
+    if (placeholder) return;
     const controller = new AbortController();
     fetch("/api/admin/navigation", { cache: "no-store", signal: controller.signal })
       .then(async (response) => response.ok ? response.json() as Promise<{ capabilities?: NavigationCapabilities }> : null)
       .then((data) => { if (!controller.signal.aborted && data?.capabilities) setResolvedCapabilities(data.capabilities); })
       .catch(() => undefined);
     return () => controller.abort();
-  }, []);
+  }, [placeholder]);
 
   const workspaces = useMemo(() => visibleWorkspaces(capabilities), [capabilities]);
   const hubs = useMemo(() => visibleHubs(capabilities), [capabilities]);
@@ -187,7 +199,7 @@ export function OperationsShell({
           </label>
         ) : null}
         <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => { announceWorkspaceRefresh(); startRefresh(() => router.refresh()); }} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : undefined}/></button>
-        <OperationsNotificationCentre/>
+        {placeholder ? <span className="app-icon-button" aria-hidden="true"><Bell size={16} strokeWidth={1.75}/></span> : <OperationsNotificationCentre/>}
       </header>
       <div id="workspace-content" tabIndex={-1} className="kcpl-admin-content">
         {hubTabs.length ? <nav ref={hubTabsRef} className="app-hub-tabs" aria-label={`${currentHub?.hub.label} sections`}>

@@ -489,8 +489,8 @@ export function TrackingVisibilityWorkspace({
   return (
     <OpsPage className="visibility-v2">
       <OpsPageHeader
-        title="Live Visibility"
-        description="Monitor shipment feeds, ETA movement and the latest carrier or counterpart events from one operational register."
+        title="Tracking"
+        description="Where each shipment is, its latest update, and which have gone quiet."
         meta={<span className="visibility-last-updated">Last updated <strong>{lastUpdated ? dateTime(lastUpdated) : "No tracking signal"}</strong></span>}
         actions={(
           <>

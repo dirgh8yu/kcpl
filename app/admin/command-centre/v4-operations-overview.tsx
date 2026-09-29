@@ -40,6 +40,7 @@ import {
   OVERVIEW_SECTION_ORDER,
   isDefaultArrangement,
   presetForState,
+  roleOverviewArrangement,
   type OverviewSectionId,
 } from "../operations-arrangeable";
 import { useStaffArrangement } from "../use-staff-arrangement";
@@ -48,6 +49,7 @@ import type { CommandCentreData, CommandCentreJob } from "./command-centre-data"
 import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
 import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./workflow-overview.server";
+import type { KcplStaffRole } from "../staff-permissions";
 import styles from "./overview-dashboard.module.css";
 import extras from "./overview-dashboard-extras.module.css";
 
@@ -72,6 +74,8 @@ type DashboardProps = {
   branches: string[];
   canViewCommercial: boolean;
   canPostNotes: boolean;
+  /** Picks the Overview this person starts on until they arrange their own. */
+  role: KcplStaffRole;
 };
 
 type CreateOrderResponse = {
@@ -87,7 +91,7 @@ const overviewSectionLabels: Record<OverviewSectionId, string> = {
   today: "Today",
   activity: "Recent activity",
   movement: "Live movement",
-  pulse: "Shipments pulse",
+  pulse: "Shipment counts",
   workload: "Shipment workload",
   finance: "Finance snapshot",
   notes: "Operational notes",
@@ -703,7 +707,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
         ) : (
           <div className={styles.launcherBody}>
             <Link href="/admin/enquiries" className={styles.launcherChoice}><span><strong>Open enquiries</strong><span>Your Operations role cannot originate a commercial transport order. Continue from an authorised enquiry or commercial handoff.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
-            <Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its Digital Job File.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
+            <Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its shipment record.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
           </div>
         )}
       </section>
@@ -711,7 +715,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
   );
 }
 
-export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
+export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes, role }: DashboardProps) {
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherClosing, setLauncherClosing] = useState(false);
   // The unmount is deferred until the exit has played, so the timer has to be
@@ -761,7 +765,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
     toggleHidden,
     moveSectionToward,
     resetArrangement,
-  } = useStaffArrangement();
+  } = useStaffArrangement("overview", roleOverviewArrangement(role));
   const [arranging, setArranging] = useState(false);
   const [arrangeMenu, setArrangeMenu] = useState(false);
   // Which preset's layout the current arrangement exactly equals. null means
@@ -816,7 +820,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
         </div>
       </header>
 
-      {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={15} strokeWidth={1.8} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the Digital Job File before acting.</span></div> : null}
+      {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={15} strokeWidth={1.8} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the shipment record before acting.</span></div> : null}
 
       <div className={styles.customizeRow}>
         <button

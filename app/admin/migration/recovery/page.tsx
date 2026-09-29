@@ -9,7 +9,7 @@ import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { listMigrationBatches } from "../migration-batches.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Migration Recovery | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Undo an import | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function RecoveryPage() {
   const access = await getAdminAccess();
@@ -30,12 +30,12 @@ export default async function RecoveryPage() {
   return <OperationsShell {...shellProps}>
     <OpsPage>
       <OpsPageHeader
-        title="Controlled rollback & recovery"
-        description="Batch-scoped and dry-run first. KCPL refuses rollback once imported records gain post-migration history."
+        title="Undo an import"
+        description="Preview first, then undo one batch. A batch can’t be undone once its records have been worked on."
         meta={<span>Management + finance authority · no force-delete mode · Paper Archive preserved</span>}
         actions={<>
           <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link>
-          <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link>
+          <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Import old records</Link>
         </>}
       />
 
@@ -77,5 +77,5 @@ function Rule({ icon, step, title, detail }: { icon: React.ReactNode; step: stri
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Migration Recovery" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/recovery", label: "Recovery", primary: true }, { href: "/admin/migration", label: "Migration Hub" }, { href: "/admin/migration/archive", label: "Paper Archive" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Organisation · Undo an import" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/recovery", label: "Recovery", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/archive", label: "Paper Archive" }]}/>;
 }

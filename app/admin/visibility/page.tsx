@@ -7,7 +7,7 @@ import { listTrackingVisibility } from "./tracking-visibility.server";
 import { TrackingVisibilityWorkspace } from "./tracking-visibility-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Live Visibility | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Tracking | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function VisibilityPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();
@@ -21,15 +21,15 @@ export default async function VisibilityPage({ searchParams }: { searchParams: P
     canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shell}><Gate title="Visibility access restricted" detail="Your role does not include Digital Job File access." embedded/></OperationsShell>;
+  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shell}><Gate title="Visibility access restricted" detail="Your role does not include shipment record access." embedded/></OperationsShell>;
   let result;
   try {
     result = await listTrackingVisibility(staff);
   } catch (error) {
     console.error("Failed to load KCPL tracking visibility", error);
-    return <OperationsShell {...shell}><Gate title="Visibility temporarily unavailable" detail="KCPL tracking data could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
+    return <OperationsShell {...shell}><Gate title="Tracking didn’t load" detail="KCPL tracking data could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
   }
-  if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Visibility backend unavailable" detail="Tracking storage is not available for this deployment." embedded/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Tracking didn’t load" detail="Tracking storage is not available for this deployment." embedded/></OperationsShell>;
   const { shipment } = await searchParams;
   const initialShipment = shipment?.trim().toUpperCase() ?? "";
   return <OperationsShell {...shell}><TrackingVisibilityWorkspace initialRows={result.rows} initialSummary={result.summary} canSweep={staff.permissions.role === "management"} initialShipment={initialShipment}/></OperationsShell>;
@@ -37,7 +37,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams: P
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Live Visibility"
+    eyebrow="KCPL Tracking"
     title={title}
     detail={detail}
     embedded={embedded}

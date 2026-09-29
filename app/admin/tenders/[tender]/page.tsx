@@ -49,7 +49,7 @@ export default async function BookingConfirmationPage({ params }: { params: Prom
   const { tender: rawTender } = await params;
   const tenderKey = decodeURIComponent(rawTender).trim().toUpperCase();
   const [tenders, orders] = await Promise.all([listTmsTenders(staff), listTmsOrders(staff)]);
-  if (tenders.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Booking unavailable" detail="KCPL booking or transport-order storage is temporarily unavailable." embedded/></OperationsShell>;
+  if (tenders.kind !== "ready" || orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Booking didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   const tender = tenders.tenders.find((item) => item.id.toUpperCase() === tenderKey || item.tender_reference.toUpperCase() === tenderKey);
   if (!tender) return <OperationsShell {...shellProps}><Gate title="Tender not found" detail="This tender reference does not exist within your current branch access." embedded/></OperationsShell>;
@@ -81,7 +81,7 @@ function BookingConfirmation({ tender, order }: { tender: TmsTender; order: TmsO
             <div className="border-y border-[var(--admin-line)] bg-[var(--admin-surface)]">
               <ConnectedRow label="Booking confirmed" value={tender.booking_reference || "Confirmed"} meta={dateTime(tender.booked_at)} state="complete"/>
               <ConnectedRow label="Shipment created" value={tender.shipment_reference || "Not linked"} meta={tender.shipment_reference ? "Execution record created by the booking workflow" : "No shipment reference is exposed on this booking"} state={tender.shipment_reference ? "complete" : "pending"}/>
-              <ConnectedRow label="Digital Job File" value={tender.shipment_reference || "Not linked"} meta={tender.shipment_reference ? "Opened with the shipment execution record" : "No Job File reference is exposed"} state={tender.shipment_reference ? "complete" : "pending"}/>
+              <ConnectedRow label="Shipment record" value={tender.shipment_reference || "Not linked"} meta={tender.shipment_reference ? "Opened with the shipment execution record" : "No Job File reference is exposed"} state={tender.shipment_reference ? "complete" : "pending"}/>
             </div>
           </Section>
 

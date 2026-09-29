@@ -9,7 +9,7 @@ import { WallboardView } from "./wallboard-view";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Ops Wallboard | KCPL Operations",
+  title: "Office wall screen | KCPL Operations",
   robots: { index: false, follow: false },
 };
 
@@ -28,8 +28,8 @@ export default async function WallboardPage() {
   if (!staff.permissions.canManageJobFile) return <WallboardGate title="Wallboard is restricted" detail="Your current staff role does not include operational Job File access." />;
 
   const state = await loadWallboardState(staff, access.user.email);
-  if (state.kind === "unavailable") return <WallboardGate title="Wallboard data is unavailable" detail="The Firebase operational data service is not available for this deployment." />;
-  if (state.kind === "error") return <WallboardGate title="Wallboard could not be loaded" detail="KCPL operational data is temporarily unavailable." />;
+  if (state.kind === "unavailable") return <WallboardGate title="Wall screen didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." />;
+  if (state.kind === "error") return <WallboardGate title="Wall screen didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." />;
   return <WallboardView initial={state.wallboard} initialGeneratedAt={state.generatedAt} />;
 }
 

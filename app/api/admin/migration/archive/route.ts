@@ -37,7 +37,7 @@ export async function GET() {
   if ("response" in auth) return auth.response;
   try {
     const dashboard = await listPaperArchive();
-    if (!dashboard) return json({ ok: false, error: "Firebase archive metadata storage is unavailable." }, 503);
+    if (!dashboard) return json({ ok: false, error: "The paper archive isn’t responding. Try again in a minute." }, 503);
     return json({ ok: true, dashboard });
   } catch (error) {
     console.error("Failed to load KCPL paper archive", error);
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       sizeBytes: file.size,
       data: await file.arrayBuffer(),
     }, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase Storage is not configured for the paper archive." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "File uploads aren’t set up for the paper archive yet. Ask Management." }, 503);
     if (result.kind === "invalid") return json({ ok: false, error: result.error }, 400);
     return json({ ok: true, record: result.record }, 201);
   } catch (error) {

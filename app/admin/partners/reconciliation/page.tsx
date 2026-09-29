@@ -7,7 +7,7 @@ import { SupplierReconciliationWorkspace } from "./supplier-reconciliation-works
 import { listSupplierReconciliation } from "./supplier-reconciliation.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Supplier Reconciliation | KCPL Finance", robots: { index: false, follow: false } };
+export const metadata = { title: "Supplier records | KCPL Finance", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }
@@ -15,12 +15,12 @@ type StaffResult =
 
 async function resolveStaff(user: { uid: string; email: string; displayName: string }): Promise<StaffResult> {
   try { return { kind: "ready", staff: await getStaffContext(user) }; }
-  catch (error) { console.error("Failed to resolve KCPL staff context for Supplier Reconciliation", error); return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) }; }
+  catch (error) { console.error("Failed to resolve KCPL staff context for Supplier records", error); return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) }; }
 }
 
 async function loadReconciliation(staff: Awaited<ReturnType<typeof getStaffContext>>) {
   try { return await listSupplierReconciliation(staff); }
-  catch (error) { console.error("Failed to load KCPL Supplier Reconciliation", error); return { kind: "error" as const }; }
+  catch (error) { console.error("Failed to load KCPL Supplier records", error); return { kind: "error" as const }; }
 }
 
 export default async function SupplierReconciliationPage() {
@@ -30,7 +30,7 @@ export default async function SupplierReconciliationPage() {
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Supplier reconciliation could not be loaded" detail="KCPL payable and partner data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Supplier records didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -46,11 +46,11 @@ export default async function SupplierReconciliationPage() {
 
   const loaded = await loadReconciliation(staff);
   if (loaded.kind === "forbidden") return <OperationsShell {...shellProps}><Gate title="Supplier reconciliation is restricted" detail="Your role does not have Accounts Payable authority." embedded/></OperationsShell>;
-  if (loaded.kind === "unavailable" || loaded.kind === "error") return <OperationsShell {...shellProps}><Gate title={loaded.kind === "error" ? "Supplier reconciliation could not be loaded" : "Supplier reconciliation is unavailable"} detail="The Partner and Accounts Payable stores are temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (loaded.kind === "unavailable" || loaded.kind === "error") return <OperationsShell {...shellProps}><Gate title={loaded.kind === "error" ? "Supplier reconciliation could not be loaded" : "Supplier reconciliation is unavailable"} detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   return <OperationsShell {...shellProps}><SupplierReconciliationWorkspace snapshot={loaded.snapshot} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Finance · Supplier Reconciliation" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners/reconciliation", label: "Reconciliation", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/partners", label: "Partners" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Finance · Supplier records" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners/reconciliation", label: "Reconciliation", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/partners", label: "Partners" }]}/>;
 }

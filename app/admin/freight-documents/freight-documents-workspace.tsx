@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Eye, FilePlus2, FileText, GripVertical, History, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Eye, FilePlus2, FileText, GripVertical, History, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
@@ -11,7 +11,6 @@ import {
   OpsFact,
   OpsFacts,
   OpsField,
-  OpsInlineAlert,
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsKpiRail,
@@ -317,8 +316,8 @@ export function FreightDocumentsWorkspace({
   return (
     <OpsPage className="freight-documents-register">
       <OpsPageHeader
-        title="Freight Documents"
-        description="Produce, review and open controlled carriage documents without losing the shipment context."
+        title="Freight documents"
+        description="Create BLs, AWBs, manifests and delivery orders from a shipment’s details."
       />
 
       <div className="px-4 pt-3 md:px-6">
@@ -363,11 +362,10 @@ export function FreightDocumentsWorkspace({
                 {/* One rail instead of five cards. Segments that already mapped to a
                     queue scope keep that behaviour; the rest are plain statistics. */}
                 <OpsKpiRail label="Document production summary">
-                  <OpsRailMetric label="Primary draft" value={summary.missing_primary} detail="missing" tone="warning" active={focus === "missing"} onClick={() => setFocus(focus === "missing" ? "all" : "missing")} title="Job Files without the mode-specific KCPL carriage draft"/>
-                  <OpsRailMetric label="Awaiting review" value={summary.review_pending} detail="revisions" tone="warning" active={focus === "review"} onClick={() => setFocus(focus === "review" ? "all" : "review")} title="Generated revisions waiting for staff review"/>
-                  <OpsRailMetric label="Current drafts" value={documentStats.current} detail={`${documentStats.customerSafe} customer-safe`} active={focus === "generated"} onClick={() => setFocus(focus === "generated" ? "all" : "generated")}/>
-                  <OpsRailMetric label="Revisions" value={documentStats.revisions} detail="incl. superseded" title="Current and superseded PDFs"/>
-                  <OpsRailMetric label="Job files" value={summary.eligible} detail="eligible" active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }} title="Accessible, non-cancelled shipments in this snapshot"/>
+                  <OpsRailMetric label="No BL / AWB yet" value={summary.missing_primary} tone="warning" active={focus === "missing"} onClick={() => setFocus(focus === "missing" ? "all" : "missing")} title="Shipments without their main carriage document"/>
+                  <OpsRailMetric label="Needs checking" value={summary.review_pending} tone="warning" active={focus === "review"} onClick={() => setFocus(focus === "review" ? "all" : "review")} title="Created documents waiting for someone to check them"/>
+                  <OpsRailMetric label="Created" value={documentStats.current} detail={`${documentStats.customerSafe} visible to customer`} active={focus === "generated"} onClick={() => setFocus(focus === "generated" ? "all" : "generated")}/>
+                  <OpsRailMetric label="All shipments" value={summary.eligible} active={focus === "all"} onClick={() => { setAllowInitialSelection(false); update({ view: null, selected: null, shipment: null }); }}/>
                 </OpsKpiRail>
               </div>
             );
@@ -376,23 +374,6 @@ export function FreightDocumentsWorkspace({
       <div className="px-4 pb-8 pt-4 md:px-6">
         {handle}
         {message ? <div className="mb-3"><OpsNotice tone={messageTone} onDismiss={() => setMessage("")}>{message}</OpsNotice></div> : null}
-        {summary.missing_primary > 0 || summary.review_pending > 0 ? (
-          <div className="mb-3">
-            <OpsInlineAlert
-              icon={<AlertCircle size={14} strokeWidth={1.75} aria-hidden="true"/>}
-              actions={(
-                <>
-                  {summary.missing_primary > 0 ? <button type="button" className="ops-inline-alert-action" aria-pressed={focus === "missing"} onClick={() => setFocus("missing")}>Show missing</button> : null}
-                  {summary.review_pending > 0 ? <button type="button" className="ops-inline-alert-action" aria-pressed={focus === "review"} onClick={() => setFocus("review")}>Show review queue</button> : null}
-                </>
-              )}
-            >
-              {summary.missing_primary > 0 ? <><strong>{summary.missing_primary}</strong> Job File{summary.missing_primary === 1 ? "" : "s"} missing the primary KCPL carriage draft</> : null}
-              {summary.missing_primary > 0 && summary.review_pending > 0 ? " · " : null}
-              {summary.review_pending > 0 ? <><strong>{summary.review_pending}</strong> generated revision{summary.review_pending === 1 ? "" : "s"} awaiting review</> : null}
-            </OpsInlineAlert>
-          </div>
-        ) : null}
 
         <OpsRegisterToolbar
           search={(
@@ -420,7 +401,7 @@ export function FreightDocumentsWorkspace({
                 <RefreshCw size={14} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>{refreshing ? "Refreshing…" : "Refresh"}
               </OpsButton>
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} Job Files` : `${filtered.length} of ${rows.length}`} · {documentStats.revisions} revisions</span>
+              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} shipments` : `${filtered.length} of ${rows.length}`}</span>
             </>
           )}
           tabs={<OpsScopeTabs label="Freight document filters" items={FOCUS_OPTIONS.map((option) => ({ ...option, count: focusCounts[option.value] }))} value={focus} onChange={setFocus}/>}
@@ -582,7 +563,7 @@ function FreightDocumentPanel({
       const data = await response.json() as { ok?: boolean; error?: string; document?: { filename: string } };
       if (!response.ok || !data.ok) throw new Error(data.error || "Document generation failed.");
       await onRefresh();
-      onMessage("success", `${data.document?.filename ?? "Freight document"} generated and placed in Document Vault for review.`);
+      onMessage("success", `${data.document?.filename ?? "Freight document"} created. Check it on the Documents page.`);
     } catch (error) {
       onMessage("danger", error instanceof Error ? error.message : "Document generation failed.");
     } finally {
@@ -658,7 +639,7 @@ function FreightDocumentPanel({
                   title="Current controlled draft"
                   action={latest ? (
                     <>
-                      {hasPendingReview(row) ? <Link href={`/admin/documents?q=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">Review in Document Vault</Link> : null}
+                      {hasPendingReview(row) ? <Link href={`/admin/documents?q=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">Check it</Link> : null}
                       <OpsButton size="xs" variant="secondary" onClick={() => void onOpenDocument(row.reference, latest.document_id)}><ExternalLink size={13} strokeWidth={1.75} aria-hidden="true"/>Open PDF</OpsButton>
                     </>
                   ) : undefined}
@@ -672,11 +653,11 @@ function FreightDocumentPanel({
                   </OpsFacts>
                   <div className="ops-inspector-actions mt-3">
                     <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-button" data-variant="secondary" data-size="xs">Open Job File</Link>
-                    <Link href={`/admin/documents?q=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">Document Vault</Link>
+                    <Link href={`/admin/documents?q=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">All documents</Link>
                   </div>
                 </PanelSection>
 
-                <PanelSection title="Source context" description="Operational context inherited from the Digital Job File.">
+                <PanelSection title="Source context" description="Operational context inherited from the shipment record.">
                   <OpsFacts>
                     <OpsFact label="Carrier" warning={!row.carrier_name}>{row.carrier_name || "Not assigned"}</OpsFact>
                     <OpsFact label="Booking reference">{row.booking_reference || "Not recorded"}</OpsFact>

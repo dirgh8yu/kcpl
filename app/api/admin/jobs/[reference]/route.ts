@@ -47,7 +47,7 @@ function resultError(kind: string) {
 
 async function shipmentGuard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
   const access = await checkShipmentBranchAccess(reference, staff);
-  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   if (access.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (access.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
   return null;

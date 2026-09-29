@@ -68,7 +68,7 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
   async function refresh() {
     const response = await fetch("/api/admin/edi", { cache: "no-store" });
     const data = await response.json() as ApiResponse;
-    if (!response.ok || !data.ok || !data.rows || !data.summary || !data.eligibleTenders) throw new Error(data.error || "EDI Gateway could not be refreshed.");
+    if (!response.ok || !data.ok || !data.rows || !data.summary || !data.eligibleTenders) throw new Error(data.error || "EDI messages could not be refreshed.");
     setRows(data.rows); setSummary(data.summary); setConfigured(Boolean(data.configured)); setEligibleTenders(data.eligibleTenders);
   }
   // The top bar's refresh reloads this desk; the page no longer has its own button.
@@ -90,8 +90,8 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
 
   return <>
     <OpsPageHeader
-      title="EDI Gateway"
-      description="X12 204 load tenders, 990 carrier responses and 214 shipment status messages."
+      title="EDI messages"
+      description="Electronic booking requests, carrier replies and status updates exchanged with carriers."
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">

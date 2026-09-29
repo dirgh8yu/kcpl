@@ -300,8 +300,8 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
   return (
     <OpsPage>
       <OpsPageHeader
-        title="Tender & Booking"
-        description={`${awaiting} awaiting response · ${accepted} accepted / countered · ${expired} expired · ${booked} booked`}
+        title="Carrier booking"
+        description="Offer loads to carriers, compare their replies and confirm the booking."
         actions={<>
           {canManage ? <OpsButton variant="primary" onClick={() => setShowCreate((value) => !value)} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Create tender</OpsButton> : null}
         </>}

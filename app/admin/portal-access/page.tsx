@@ -9,14 +9,14 @@ import { listPortalAccounts } from "../../portal/portal-accounts.server";
 import { PortalAccessWorkspace } from "./portal-access-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Customer Portal Access · KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Customer portal logins · KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function PortalAccessPage() {
   const access = await getAdminAccess();
   if (access.kind === "unconfigured") {
     return <V4WorkspaceGate
       title="Firebase admin access needs configuration"
-      detail="Customer portal access management needs the Firebase runtime configured for this deployment."
+      detail="Customer portal access isn’t set up on this site yet. Ask Management."
     />;
   }
   if (access.kind === "signed-out") return <AdminLoginPage/>;
@@ -35,7 +35,7 @@ export default async function PortalAccessPage() {
     return <OperationsShell {...shellProps}>
       <V4WorkspaceGate
         embedded
-        title="Customer Portal Access is Management-only"
+        title="Customer portal logins is Management-only"
         detail="Granting a customer a login to their own shipment and billing data is an access-control decision, so it sits with the same authority that manages staff accounts."
       />
     </OperationsShell>;

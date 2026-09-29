@@ -58,7 +58,7 @@ export default async function TransportOrderDetailPage({ params }: { params: Pro
   const { order: rawOrder } = await params;
   const orderId = decodeURIComponent(rawOrder).trim().toUpperCase();
   const [orders, tenders] = await Promise.all([listTmsOrders(staff), listTmsTenders(staff)]);
-  if (orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Transport Order unavailable" detail="KCPL order storage is temporarily unavailable." embedded/></OperationsShell>;
+  if (orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Order didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   const order = orders.orders.find((item) => item.id === orderId);
   if (!order) return <OperationsShell {...shellProps}><Gate title="Transport Order not found" detail="This order reference does not exist within your current branch access." embedded/></OperationsShell>;
 

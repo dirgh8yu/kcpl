@@ -30,7 +30,6 @@ import {
   ShipRoute,
   exportShipmentsCsv,
   ownerLabel as owner,
-  priorityTone,
   relativeAge,
   routeText as route,
   shortDate,
@@ -278,14 +277,14 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
       ) : null}
       <OpsPageHeader
         title="Shipments"
-        description={`Active movements and Digital Job Files · ${data.jobs.length} total record${data.jobs.length === 1 ? "" : "s"}`}
+        description="Every shipment, most urgent first. Open one to see its checklist."
         actions={(
           <div className="shipments-actions">
             <OpsButton variant="secondary" onClick={handleExport} disabled={!filtered.length} title="Download the current view as CSV">
               <Download size={16} strokeWidth={1.75} aria-hidden="true"/> Export
             </OpsButton>
             {canStartShipment ? (
-              <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Tender & Booking">
+              <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Carrier booking">
                 <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
               </Link>
             ) : null}
@@ -515,7 +514,8 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                         <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-1 block"><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
                         <td><span className="inline-flex items-center gap-1.5 text-sm text-[var(--admin-muted)]"><ModeIcon mode={job.mode} size={14}/>{job.mode || "—"}</span></td>
                         <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></td>
-                        <td><OpsBadge tone={priorityTone(job.priority)}>{job.priority}</OpsBadge></td>
+                        {/* Only a raised priority is worth a mark; "standard" on every row was noise. */}
+                        <td>{job.priority === "standard" ? null : <span className="shipments-priority" data-priority={job.priority}>{job.priority === "urgent" ? "Urgent" : "High"}</span>}</td>
                         <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
                         <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
                         <td><span className="text-sm text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>

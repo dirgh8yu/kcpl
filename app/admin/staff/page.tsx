@@ -24,7 +24,7 @@ export default async function StaffPage() {
   if (!context.permissions.canManageStaff) return <OperationsShell {...shellProps}><Gate embedded title="Management access required" detail="Only KCPL Management can change staff roles and branch access."/></OperationsShell>;
 
   const profiles = await listStaffProfiles();
-  if (profiles === null) return <OperationsShell {...shellProps}><Gate embedded title="Staff directory unavailable" detail="Firestore could not load the KCPL staff directory."/></OperationsShell>;
+  if (profiles === null) return <OperationsShell {...shellProps}><Gate embedded title="People didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
 
   return <OperationsShell {...shellProps}><StaffManager initialProfiles={profiles}/></OperationsShell>;
 }

@@ -99,11 +99,11 @@ function Inspector({ row, onClose, inspectorRef }: { row: DeliveryQueueRow; onCl
           <OpsBadge tone={podTone(row)} dot>{podLabel(row)}</OpsBadge>
         </div>
 
-        {row.delivery_state === "delivered_pod_pending" ? <OpsInlineAlert tone="warning" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Delivered ≠ POD verified.</strong> Delivery is recorded, but verified proof of delivery is still required before canonical closeout is satisfied.</OpsInlineAlert> : null}
-        {row.delivery_state === "delivery_failed" ? <OpsInlineAlert tone="danger" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Delivery exception.</strong> Review the failed or refused attempt before scheduling the next final-mile action.</OpsInlineAlert> : null}
-        {row.delivery_state === "pod_verified" ? <OpsInlineAlert tone="info" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>POD verified.</strong> Final-mile evidence is verified, subject to remaining Digital Job File closeout policy checks.</OpsInlineAlert> : null}
+        {row.delivery_state === "delivered_pod_pending" ? <OpsInlineAlert tone="warning" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Proof still needs checking.</strong> The delivery is recorded; someone needs to check the proof of delivery before the job can close.</OpsInlineAlert> : null}
+        {row.delivery_state === "delivery_failed" ? <OpsInlineAlert tone="danger" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Delivery failed.</strong> See what went wrong before booking the next attempt.</OpsInlineAlert> : null}
+        {row.delivery_state === "pod_verified" ? <OpsInlineAlert tone="info" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Proof checked.</strong> The job can close once its other steps are done.</OpsInlineAlert> : null}
 
-        <OpsInspectorSection title="Final-mile record">
+        <OpsInspectorSection title="Delivery">
           <OpsFacts>
             <OpsFact label="Branch">{row.primary_branch}</OpsFact>
             <OpsFact label="Current location">{row.current_location || "Not recorded"}</OpsFact>
@@ -212,9 +212,8 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   return <OpsPage>
     <div className="delivery-control-page">
       <OpsPageHeader
-        eyebrow="Shipment execution"
         title="Delivery & POD"
-        description={`Last-mile execution queue · ${initialRows.length} deliveries · POD evidence received ≠ POD verified`}
+        description="Deliveries to make and proof of delivery to check. A photo or signature counts once someone has checked it."
       />
 
       <div className="px-4 pt-3 md:px-6">
@@ -278,7 +277,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
           return (
       <div className="px-4 pb-8 md:px-6">
         {handle}
-        {initialSummary.delivered_pod_pending > 0 ? <div className="mb-3"><OpsInlineAlert tone="warning" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} actions={<button type="button" className="ops-inline-alert-action" aria-pressed={focus === "pod_pending"} onClick={() => setFocus("pod_pending")}>Show POD pending</button>}><strong>{initialSummary.delivered_pod_pending} delivered movement{initialSummary.delivered_pod_pending === 1 ? "" : "s"} awaiting verified POD.</strong></OpsInlineAlert></div> : null}
         <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, branch…" aria-label="Search delivery and POD queue"/>}
           actions={(

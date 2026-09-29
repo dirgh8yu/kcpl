@@ -424,11 +424,11 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   async function refresh(keepNotice = false) {
     const response = await fetch("/api/admin/pickups", { cache: "no-store" });
     const data = await response.json() as ApiResponse;
-    if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Pickup Scheduling could not be refreshed.");
+    if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Pickups could not be refreshed.");
     setRows(data.rows);
     setSummary(data.summary);
     if (selectedReference && !data.rows.some((row) => row.shipment_reference === selectedReference)) closeInspector();
-    if (!keepNotice) setNotice({ tone: "success", text: "Pickup Scheduling refreshed." });
+    if (!keepNotice) setNotice({ tone: "success", text: "Pickups refreshed." });
   }
 
   async function act(action: string, extra: Record<string, unknown> = {}) {
@@ -441,7 +441,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
       const data = await response.json() as ApiResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || "Pickup action failed.");
       await refresh(true);
-      const label = action === "schedule" ? "Pickup request saved." : action === "confirm" ? "Pickup appointment confirmed." : action === "assign_driver" ? "Driver assignment saved." : action === "picked_up" ? "Pickup completed and Live Visibility updated." : action === "missed" ? "Missed pickup recorded and an operational exception was raised." : "Pickup appointment cancelled.";
+      const label = action === "schedule" ? "Pickup request saved." : action === "confirm" ? "Pickup appointment confirmed." : action === "assign_driver" ? "Driver assignment saved." : action === "picked_up" ? "Pickup completed and Tracking updated." : action === "missed" ? "Missed pickup recorded and an operational exception was raised." : "Pickup appointment cancelled.";
       setNotice({ tone: action === "missed" ? "warning" : "success", text: label });
       setEditor("details");
       if (action === "missed") setMissedReason("");
@@ -519,8 +519,8 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   return (
     <OpsPage className="pickups-workspace">
       <OpsPageHeader
-        title="Pickup scheduling"
-        description="Plan and manage cargo pickups from origin to keep shipments moving."
+        title="Pickups"
+        description="Book pickups, confirm times and assign drivers."
         actions={(
           <div className="pickups-actions">
             <OpsButton
@@ -751,7 +751,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
                   {selected.status === "picked_up" || selected.status === "cancelled" ? (
                     <OpsInspectorNote tone={selected.status === "picked_up" ? "success" : "neutral"} icon={selected.status === "picked_up" ? <Check size={14} strokeWidth={1.75} aria-hidden="true"/> : undefined} title={selected.status === "picked_up" ? "Pickup completed" : "Pickup cancelled"}>
-                      {selected.status === "picked_up" ? `${dateTime(selected.picked_up_at)}. Live Visibility now owns the movement timeline.` : "This pickup appointment is cancelled."}
+                      {selected.status === "picked_up" ? `${dateTime(selected.picked_up_at)}. Tracking now owns the movement timeline.` : "This pickup appointment is cancelled."}
                     </OpsInspectorNote>
                   ) : null}
 
@@ -828,7 +828,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                       <PickupStep state={selected.status === "unscheduled" ? "current" : "done"} title="Appointment" detail={selectedWindowStart ? `${shortDateTime(selectedWindowStart)} NPT` : "Awaiting pickup window"}/>
                       <PickupStep state={selected.status === "confirmed" || selected.status === "requested" ? "current" : selected.driver_name || selected.status === "driver_assigned" || selected.status === "picked_up" ? "done" : "future"} title="Driver assigned" detail={selected.driver_name ? [selected.driver_name, selected.vehicle_reference].filter(Boolean).join(" · ") : "—"}/>
                       <PickupStep state={selected.status === "picked_up" ? "done" : selected.status === "missed" ? "danger" : selected.status === "driver_assigned" ? "current" : "future"} title="Cargo picked up" detail={selected.picked_up_at ? dateTime(selected.picked_up_at) : selected.status === "missed" ? selected.missed_reason || "Pickup missed" : "—"}/>
-                      <PickupStep state={selected.status === "picked_up" ? "done" : "future"} title="Handoff to Live Visibility" detail={selected.status === "picked_up" ? "Movement milestone recorded" : "Begins after pickup completion"}/>
+                      <PickupStep state={selected.status === "picked_up" ? "done" : "future"} title="Handoff to Tracking" detail={selected.status === "picked_up" ? "Movement milestone recorded" : "Begins after pickup completion"}/>
                     </ol>
                   </OpsInspectorSection>
                 </div>

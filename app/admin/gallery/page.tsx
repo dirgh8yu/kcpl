@@ -13,7 +13,7 @@ export const metadata = { title: "Website Gallery · KCPL Operations", robots: {
 
 export default async function AdminGalleryPage() {
   const access = await getAdminAccess();
-  if (access.kind === "unconfigured") return <V4WorkspaceGate title="KCPL admin access needs configuration" detail="Gallery management requires the Firebase admin runtime." />;
+  if (access.kind === "unconfigured") return <V4WorkspaceGate title="KCPL admin access needs configuration" detail="Gallery editing isn’t set up on this site yet. Ask Management." />;
   if (access.kind === "signed-out") return <AdminLoginPage />;
 
   const staff = await getStaffContext(access.user);

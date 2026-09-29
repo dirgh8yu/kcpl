@@ -12,7 +12,7 @@ async function auth() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Digital Job File access is required." }, 403) };
+  if (!staff.permissions.canManageJobFile) return { response: json({ ok: false, error: "Shipment record access is required." }, 403) };
   return { user: access.user, staff };
 }
 

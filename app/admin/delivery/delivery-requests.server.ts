@@ -47,7 +47,7 @@ export function deliveryError(kind: string): DeliveryRequestResult {
   if (kind === "review_note_required") return refused(400, "Record a rejection reason of at least 8 characters.");
   if (kind === "invalid_kind") return refused(400, "Choose photo, signature or document evidence.");
   if (kind === "invalid_file") return refused(400, "POD files must be JPEG, PNG, WebP or PDF and no larger than 12 MB.");
-  if (kind === "already_verified") return refused(409, "Verified POD is immutable. Use Document Vault supersession controls if a replacement is required.");
+  if (kind === "already_verified") return refused(409, "Verified POD is immutable. Upload a replacement on the Documents page if a replacement is required.");
   return refused(400, "The delivery action could not be completed.");
 }
 

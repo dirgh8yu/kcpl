@@ -98,7 +98,7 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
   return <OpsPage>
     <OpsPageHeader
       title="People & branches"
-      description="Who can operate KCPL and where. Firebase Authentication owns credentials; this directory sets role and branch scope after sign-in."
+      description="Who can use KCPL Operations, their role and their branches."
       meta={<span>{profiles.length} staff profiles · {activeCount} active</span>}
       actions={<OpsButton variant="primary" onClick={startNew}><UserPlus size={16} strokeWidth={1.75} aria-hidden="true"/>Add staff</OpsButton>}
     />

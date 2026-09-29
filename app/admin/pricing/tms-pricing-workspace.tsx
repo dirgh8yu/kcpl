@@ -150,10 +150,10 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
     try {
       const response = await fetch("/api/admin/pricing", { cache: "no-store" });
       const data = await response.json() as ApiResponse;
-      if (!response.ok || !data.ok || !data.orders || !data.customers || !data.rules) throw new Error(data.error || "Pricing Desk could not be refreshed.");
+      if (!response.ok || !data.ok || !data.orders || !data.customers || !data.rules) throw new Error(data.error || "Pricing could not be refreshed.");
       setOrders(data.orders); setCustomers(data.customers); setRules(data.rules);
       setNotice({ tone: "success", text: "Pricing rules, customers and transport orders refreshed." });
-    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Pricing Desk could not be refreshed." }); }
+    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Pricing could not be refreshed." }); }
     finally { setBusy(false); }
   }
   // The top bar's refresh reloads this desk; the page no longer has its own button.
@@ -204,7 +204,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
     if (!selectedOrder || !preview) return;
     setBusy(true); setNotice(null);
     try {
-      const data = await post({ action: "approve", orderId: selectedOrder.id, note: "Approved in Pricing Desk" });
+      const data = await post({ action: "approve", orderId: selectedOrder.id, note: "Approved in Pricing" });
       if (data.preview) setPreview(data.preview);
       await refresh();
       setNotice({ tone: "success", text: "Management approved this pricing snapshot. It can now be released as a customer quote." });
@@ -238,15 +238,15 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
 
   return <OpsPage>
     <OpsPageHeader
-      title="Pricing Desk"
-      description="Governed customer sell prices from selected partner buy costs, margin floors and NRB FX."
+      title="Pricing"
+      description="What we charge customers: the carrier’s price plus our margin, with the minimum margin checked."
       actions={<>
         {canManageRules ? <OpsButton variant="secondary" onClick={() => setShowRuleForm((value) => !value)} aria-expanded={showRuleForm}><SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/>Pricing rules</OpsButton> : null}
       </>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
-      <OpsKpiRail label="Pricing Desk summary">
+      <OpsKpiRail label="Pricing summary">
         <OpsRailMetric label="Priceable orders" value={orders.length}/>
         <OpsRailMetric label="Priced" value={pricedCount}/>
         <OpsRailMetric label="Approval queue" value={approvalCount} tone={approvalCount ? "warning" : "neutral"} active={scope === "approval_required"} onClick={() => setScope(scope === "approval_required" ? "all" : "approval_required")} title="Show orders awaiting Management approval"/>

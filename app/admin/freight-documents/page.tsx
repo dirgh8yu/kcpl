@@ -18,9 +18,9 @@ export default async function FreightDocumentsPage({ searchParams }: { searchPar
   try { result = await listFreightDocumentWorkspace(staff); }
   catch (error) {
     console.error("Failed to load KCPL Freight Documents", error);
-    return <OperationsShell {...shellProps}><Gate title="Freight Documents could not be loaded" detail="Navigation remains available while Firebase recovers." embedded/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate title="Freight documents didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
-  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Freight Documents unavailable" detail="Firebase document storage is unavailable." embedded/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Freight documents didn’t load" detail="File storage isn’t responding. Try again in a minute." embedded/></OperationsShell>;
   const { shipment } = await searchParams;
   const focus = shipment?.trim().toUpperCase() ?? "";
   const rows = focus ? [...result.rows].sort((a, b) => Number(b.reference === focus) - Number(a.reference === focus)) : result.rows;
@@ -35,7 +35,7 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
     embedded={embedded}
     actions={[
       { href: "/admin/shipments", label: "Shipments", primary: true },
-      { href: "/admin/documents", label: "Document Vault" },
+      { href: "/admin/documents", label: "All documents" },
     ]}
   />;
 }

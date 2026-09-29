@@ -23,7 +23,7 @@ async function loadMap(collection: string, ids: string[]) {
 export async function GET(request: Request) {
   const authError = requireGptAction(request);
   if (authError) return authError;
-  if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "Firebase is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "The records service isn’t responding. Try again in a minute." }, 503);
   try {
     const db = firebaseAdminDb();
     const [shipmentsSnapshot, appointmentsSnapshot] = await Promise.all([

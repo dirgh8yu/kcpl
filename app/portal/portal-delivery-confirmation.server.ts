@@ -34,7 +34,7 @@ export async function confirmPortalDelivery(
   const note = typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
   const receivedBy = typeof body.receivedBy === "string" ? body.receivedBy.trim().slice(0, 120) : "";
 
-  if (!firebaseRuntimeConfigured()) return portalWriteRefused(503, "unavailable", "Shipment storage is unavailable.");
+  if (!firebaseRuntimeConfigured()) return portalWriteRefused(503, "unavailable", "Shipment records aren’t responding. Try again in a minute.");
 
   try {
     const db = firebaseAdminDb();

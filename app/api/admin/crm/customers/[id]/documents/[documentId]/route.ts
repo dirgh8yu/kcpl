@@ -23,7 +23,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (parsedId === null) return crmJson({ ok: false, error: "Document not found." }, 404);
   try {
     const result = await getCrmCustomerDocumentFile(id, parsedId);
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Firebase document storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "File storage isn’t responding. Try again in a minute." }, 503);
     if (result.kind === "missing" || result.kind === "object-missing") return crmJson({ ok: false, error: "Document not found." }, 404);
     return new Response(new Uint8Array(result.bytes), {
       headers: {
@@ -55,7 +55,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   if (parsedId === null) return crmJson({ ok: false, error: "Document not found." }, 404);
   try {
     const result = await deleteCrmCustomerDocument(id, parsedId, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Firebase document storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "File storage isn’t responding. Try again in a minute." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Document not found." }, 404);
     return crmJson({ ok: true });
   } catch (error) {

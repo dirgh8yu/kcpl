@@ -30,7 +30,7 @@ function timeLabel(value: string | null) {
   }).format(date) + " NPT";
 }
 
-export function CustomsClearanceEditor({ row, agents }: { row: CustomsDeskRow; agents: CustomsAgentOption[] }) {
+export function CustomsClearanceEditor({ row, agents, onSaved }: { row: Pick<CustomsDeskRow, "reference" | "clearance" | "release_required">; agents: CustomsAgentOption[]; onSaved?: () => void }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -57,6 +57,7 @@ export function CustomsClearanceEditor({ row, agents }: { row: CustomsDeskRow; a
       if (!response.ok) throw new Error(data.error || "Customs clearance could not be updated.");
       setNotice({ tone: "success", text: form.status === "released" ? "Customs release recorded and added to the Job File audit trail." : "Customs clearance record updated." });
       setOpen(false);
+      onSaved?.();
       router.refresh();
     } catch (error) {
       setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Customs clearance could not be updated." });
@@ -69,7 +70,8 @@ export function CustomsClearanceEditor({ row, agents }: { row: CustomsDeskRow; a
     {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><span className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">Customs clearance record</span><OpsBadge tone={clearanceTone(row.clearance.status)} dot>{customsClearanceStatusLabels[row.clearance.status]}</OpsBadge>{row.release_required ? <OpsBadge tone="info">Release required</OpsBadge> : <OpsBadge>Release not required by lane rule</OpsBadge>}</div>
+        <div className="flex flex-wrap items-center gap-2"><span className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">Customs status</span><OpsBadge tone={clearanceTone(row.clearance.status)} dot>{customsClearanceStatusLabels[row.clearance.status]}</OpsBadge></div>
+        <p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{row.release_required ? "This route needs a recorded release before final delivery." : "This route doesn’t need a recorded release."}</p>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]"><span>Point: <strong className="text-[var(--admin-ink)]">{row.clearance.entry_point || "Not recorded"}</strong></span><span>Declaration/ref: <strong className="text-[var(--admin-ink)]">{row.clearance.declaration_reference || "Not recorded"}</strong></span><span>Agent: <strong className="text-[var(--admin-ink)]">{row.clearance.agent_name || "Not assigned"}</strong></span>{row.clearance.released_at ? <span>Last release: <strong className="text-[var(--admin-success)]">{timeLabel(row.clearance.released_at)}</strong></span> : null}</div>
         {row.clearance.status === "held" && row.clearance.hold_reason ? <p className="mt-2 flex items-start gap-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-danger)]"><ShieldAlert size={12} className="mt-1 shrink-0"/>{row.clearance.hold_reason}</p> : null}
         {row.clearance.release_evidence ? <p className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Release evidence: {row.clearance.release_evidence}</p> : null}

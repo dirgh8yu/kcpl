@@ -58,7 +58,7 @@ export function RegisterPulseStrip({ initialData, rows, className, urlParam }: {
   }, [available, urlParam]);
 
   return (
-    <section className={`register-pulse-strip ${className ?? ""}`} aria-label="Live shipment pulse">
+    <section className={`register-pulse-strip ${className ?? ""}`} aria-label="Shipment counts">
       <div className="register-pulse-strip-cells">
         {configured.map((row) => (
           <Link key={row.key} href={row.href} className="register-pulse-cell" data-tone={row.tone} data-zero={row.value === 0 || undefined}>

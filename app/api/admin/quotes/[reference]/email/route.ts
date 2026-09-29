@@ -191,7 +191,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   } catch (error) {
     if (error instanceof EmailConfigurationError) {
       console.error("KCPL transactional email is not configured", error);
-      return json({ ok: false, error: "Transactional email is not configured yet. Add the SendGrid API key and verified KCPL sender in Firebase." }, 503);
+      return json({ ok: false, error: "Email sending isn’t set up yet. Ask Management to add the email service key." }, 503);
     }
     if (error instanceof EmailDeliveryError) {
       console.error("SendGrid quote delivery failed", quote.reference, error);

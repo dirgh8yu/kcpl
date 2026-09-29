@@ -20,7 +20,7 @@ export async function GET() {
   const access = await auth();
   if ("response" in access) return access.response;
   const [dashboard, tenders] = await Promise.all([listEdiGatewayDashboard(access.staff), listTmsTenders(access.staff)]);
-  if (dashboard.kind !== "ready" || tenders.kind !== "ready") return json({ ok: false, error: "EDI Gateway storage is unavailable." }, 503);
+  if (dashboard.kind !== "ready" || tenders.kind !== "ready") return json({ ok: false, error: "EDI messages storage is unavailable." }, 503);
   const eligibleTenders = tenders.tenders
     .filter((tender) => tender.status === "sent" && (tender.channel === "manual" || tender.channel === "edi_204"))
     .slice(0, 100);

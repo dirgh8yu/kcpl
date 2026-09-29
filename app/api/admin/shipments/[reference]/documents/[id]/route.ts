@@ -27,7 +27,7 @@ async function authorize() {
 
 async function guard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
   const access = await checkShipmentBranchAccess(reference, staff);
-  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   if (access.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (access.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
   return null;
@@ -58,7 +58,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
 
   try {
     const result = await getShipmentDocumentFile(reference, parsedId);
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "File storage isn’t responding. Try again in a minute." }, 503);
     if (result.kind === "missing" || result.kind === "object-missing") return json({ ok: false, error: "Document not found." }, 404);
 
     return new Response(new Uint8Array(result.bytes), {
@@ -97,7 +97,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
 
   try {
     const metadata = await getShipmentDocumentMetadata(reference, parsedId);
-    if (metadata.kind === "unavailable") return json({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
+    if (metadata.kind === "unavailable") return json({ ok: false, error: "Documents aren’t responding right now. Try again in a minute." }, 503);
     if (metadata.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
     const error = shipmentDocumentTransitionError({
       from: metadata.document.review_status,
@@ -137,7 +137,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
 
   try {
     const metadata = await getShipmentDocumentMetadata(reference, parsedId);
-    if (metadata.kind === "unavailable") return json({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
+    if (metadata.kind === "unavailable") return json({ ok: false, error: "Documents aren’t responding right now. Try again in a minute." }, 503);
     if (metadata.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
     const allowed = canDeleteShipmentDocument({
       role: auth.staff.permissions.role,
@@ -148,7 +148,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
     if (!allowed) return json({ ok: false, error: "Only Management can delete reviewed documents. Operations may delete only their own still-unreviewed upload." }, 403);
 
     const result = await deleteShipmentDocument(reference, parsedId, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "File storage isn’t responding. Try again in a minute." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Document not found." }, 404);
     return json({ ok: true, storageDeleted: result.storageDeleted, warning: result.storageDeleted ? null : "The document is tombstoned and inaccessible, but Storage cleanup is pending." });
   } catch (error) {

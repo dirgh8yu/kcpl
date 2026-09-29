@@ -9,11 +9,11 @@ import { listEdiGatewayDashboard } from "./edi-gateway.server";
 import { EdiWorkspace } from "./edi-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "EDI Gateway | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "EDI messages | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function EdiGatewayPage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL EDI Gateway is available only to authorised staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL EDI messages is available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
   const shell = {
     userName: access.user.displayName,
@@ -30,14 +30,14 @@ export default async function EdiGatewayPage() {
   try {
     [dashboard, tenders] = await Promise.all([listEdiGatewayDashboard(staff), listTmsTenders(staff)]);
   } catch (error) {
-    console.error("Failed to load KCPL EDI Gateway", error);
-    return <OperationsShell {...shell}><Gate title="EDI Gateway temporarily unavailable" detail="EDI transaction data could not be loaded. No tender or shipment records have been changed." embedded/></OperationsShell>;
+    console.error("Failed to load KCPL EDI messages", error);
+    return <OperationsShell {...shell}><Gate title="EDI messages didn’t load" detail="EDI transaction data could not be loaded. No tender or shipment records have been changed." embedded/></OperationsShell>;
   }
-  if (dashboard.kind !== "ready" || tenders.kind !== "ready") return <OperationsShell {...shell}><Gate title="EDI Gateway unavailable" detail="Firebase EDI storage is unavailable for this deployment." embedded/></OperationsShell>;
+  if (dashboard.kind !== "ready" || tenders.kind !== "ready") return <OperationsShell {...shell}><Gate title="EDI messages didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   const eligible = tenders.tenders.filter((tender) => tender.status === "sent" && (tender.channel === "manual" || tender.channel === "edi_204"));
   return <OperationsShell {...shell}><OpsPage><EdiWorkspace initialRows={dashboard.rows} initialSummary={dashboard.summary} initialConfigured={dashboard.configured} initialEligibleTenders={eligible} canQueue204={staff.permissions.canEditCommercial}/></OpsPage></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · EDI Gateway" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/edi", label: "EDI Gateway", primary: true }, { href: "/admin/tenders", label: "Tender Desk" }, { href: "/admin/visibility", label: "Live Visibility" }, { href: "/admin/carrier-integrations", label: "Carrier Integrations" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Network · EDI messages" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/edi", label: "EDI messages", primary: true }, { href: "/admin/tenders", label: "Tender Desk" }, { href: "/admin/visibility", label: "Tracking" }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
 }

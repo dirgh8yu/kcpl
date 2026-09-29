@@ -37,7 +37,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Accounts Payable could not be loaded" detail="KCPL payable data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Supplier bills didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -52,7 +52,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate title="Accounts Payable is restricted" detail="Supplier bills and payments are available to Management and Accounts roles only." embedded/></OperationsShell>;
 
   const loaded = await loadWorkspace(staff);
-  if (loaded.kind !== "ready") return <OperationsShell {...shellProps}><Gate title={loaded.kind === "error" ? "Accounts Payable could not be loaded" : "Accounts Payable is unavailable"} detail="The payable ledger or Partner registry is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (loaded.kind !== "ready") return <OperationsShell {...shellProps}><Gate title={loaded.kind === "error" ? "Accounts Payable could not be loaded" : "Accounts Payable is unavailable"} detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   const params = await searchParams;
   const initialShipment = typeof params.shipment === "string" ? params.shipment.trim().toUpperCase() : "";

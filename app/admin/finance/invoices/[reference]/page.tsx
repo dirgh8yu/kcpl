@@ -29,8 +29,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
   const result = await getFinanceInvoice(reference, staff);
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Invoice not found" detail="This invoice reference does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Outside your finance access" detail="This invoice belongs to a branch outside your staff scope."/></OperationsShell>;
-  if (result.kind === "relationship_mismatch") return <OperationsShell {...shellProps}><Gate embedded title="Invoice relationship requires repair" detail="This invoice is linked to customer or shipment records with incompatible canonical scope and cannot be opened until the relationship is repaired."/></OperationsShell>;
-  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Finance unavailable" detail="The Firestore finance backend is unavailable for this deployment."/></OperationsShell>;
+  if (result.kind === "relationship_mismatch") return <OperationsShell {...shellProps}><Gate embedded title="This invoice needs fixing" detail="Its customer and shipment belong to different branches. Management needs to fix the link before it can be opened."/></OperationsShell>;
+  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Finance didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
 
   // What the customer sent from the portal or app against this invoice.
   const remittances = await listInvoiceRemittancesForStaff(result.invoice.reference).catch((error) => {

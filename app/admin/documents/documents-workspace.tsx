@@ -149,7 +149,7 @@ function Inspector({
 
         {row.review_status === "deleted" ? <OpsInspectorNote tone="neutral" title="Tombstoned · audit record only">Removed {dateTime(row.deleted_at)} by {row.deleted_by || row.deleted_by_email || "recorded operator"}. It no longer counts toward readiness.</OpsInspectorNote> : null}
         {row.review_status === "superseded" ? <OpsInspectorNote tone="warning" title="Superseded evidence">This revision is retained for history but no longer counts as the current readiness evidence.</OpsInspectorNote> : null}
-        {row.review_status === "received" || row.review_status === "under_review" ? <OpsInspectorNote tone="warning" icon={<AlertCircle size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Upload ≠ verification">This file remains under evidence review until an authorised reviewer verifies or rejects it.</OpsInspectorNote> : null}
+        {row.review_status === "received" || row.review_status === "under_review" ? <OpsInspectorNote tone="warning" icon={<AlertCircle size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Needs checking">This file doesn’t count until someone other than the uploader checks it.</OpsInspectorNote> : null}
 
         <OpsInspectorSection title="Evidence">
           <OpsFacts>
@@ -212,8 +212,6 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const [busyId, setBusyId] = useState<number | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
 
-  const pendingReview = dashboard.rows.filter((row) => row.review_status === "received" || row.review_status === "under_review").length;
-  const customerInbound = dashboard.rows.filter((row) => row.uploaded_by_source === "customer_portal" && (row.review_status === "received" || row.review_status === "under_review")).length;
   const setStatusFilter = (nextStatus: StatusFilter) => {
     update({ status: nextStatus === "all" ? null : nextStatus, selected: null });
   };
@@ -296,27 +294,12 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
 
   return <OpsPage className="document-vault-register">
     <OpsPageHeader
-      title="Document Vault"
-      description={`Evidence control · upload ≠ verification · ${dashboard.rows.length} documents · snapshot ${dateTime(dashboard.generated_at)}`}
+      title="All documents"
+      description="Every uploaded document. A new upload counts once someone else has checked it."
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
-      {pendingReview > 0 ? (
-        <div className="mb-3">
-          <OpsInlineAlert
-            icon={<AlertCircle size={14} strokeWidth={1.75} aria-hidden="true"/>}
-            actions={(
-              <>
-                <button type="button" className="ops-inline-alert-action" aria-pressed={status === "pending"} onClick={() => setStatusFilter("pending")}>Show pending</button>
-                {customerInbound ? <button type="button" className="ops-inline-alert-action" aria-pressed={origin === "customer"} onClick={() => update({ origin: origin === "customer" ? null : "customer", selected: null })}>From customers · {customerInbound}</button> : null}
-              </>
-            )}
-          >
-            <strong>{pendingReview}</strong> document{pendingReview === 1 ? "" : "s"} awaiting review. Upload alone does not constitute verification.
-          </OpsInlineAlert>
-        </div>
-      ) : null}
-      {dashboard.cleanup_pending_count ? <div className="mb-3"><OpsInlineAlert tone="info">{dashboard.cleanup_pending_count} tombstoned file{dashboard.cleanup_pending_count === 1 ? " has" : "s have"} storage cleanup pending. They are inaccessible and do not count toward readiness.</OpsInlineAlert></div> : null}
+      {dashboard.cleanup_pending_count ? <div className="mb-3"><OpsInlineAlert tone="info">{dashboard.cleanup_pending_count} deleted file{dashboard.cleanup_pending_count === 1 ? " is" : "s are"} still being cleared from storage. {dashboard.cleanup_pending_count === 1 ? "It" : "They"} can’t be opened and {dashboard.cleanup_pending_count === 1 ? "doesn’t" : "don’t"} count.</OpsInlineAlert></div> : null}
       {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
       <OpsRegisterToolbar
@@ -340,7 +323,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
         <section className="ops-surface document-vault-surface" aria-label="Document evidence queue">
           {visible.length ? (
             <OpsTableWrap>
-              <table className="ops-table ops-register-table document-vault-table" data-compact={compact || undefined} aria-label="Document Vault">
+              <table className="ops-table ops-register-table document-vault-table" data-compact={compact || undefined} aria-label="All documents">
                 <thead>
                   <tr>
                     <th>Document</th>

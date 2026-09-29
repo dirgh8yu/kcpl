@@ -55,8 +55,10 @@ function writeLocalCache(workspace: WorkspaceKey, state: ArrangementState) {
   }
 }
 
-export function useStaffArrangement(workspace: WorkspaceKey = "overview"): StaffArrangementHook {
-  const [state, setState] = useState<ArrangementState>(() => initialFor(workspace));
+export function useStaffArrangement(workspace: WorkspaceKey = "overview", starting?: ArrangementState): StaffArrangementHook {
+  // `starting` is the server's answer before the first load (the Overview's
+  // role layout), so the page does not flash the generic order first.
+  const [state, setState] = useState<ArrangementState>(() => starting ?? initialFor(workspace));
   const [status, setStatus] = useState<StaffArrangementStatus>("idle");
   const [loadError, setLoadError] = useState(false);
   const [saved, setSaved] = useState<SavedLayout[]>(() => []);
@@ -65,7 +67,7 @@ export function useStaffArrangement(workspace: WorkspaceKey = "overview"): Staff
   // What the server was last told (or the out-of-the-box default before the
   // first load). Every save decision compares against this, so "returning to a
   // previously-saved state" never fires a redundant PUT.
-  const serverStateRef = useRef<string>(serializeArrangement(initialFor(workspace)));
+  const serverStateRef = useRef<string>(serializeArrangement(starting ?? initialFor(workspace)));
   // The server copy is authoritative; the localStorage cache is only consulted
   // when the load fails (offline / API down) so a staff member keeps their
   // arrangement rather than snapping back to default.

@@ -40,10 +40,10 @@ export default async function TenderDeskPage({ searchParams }: { searchParams: P
     ]);
   } catch (error) {
     console.error("Failed to load KCPL Tender Workspace", error);
-    return <OperationsShell {...shellProps}><Gate title="Tender Workspace could not be loaded" detail="KCPL tender data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate title="Carrier booking didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
-  if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Tender Workspace unavailable" detail="KCPL order, tender or customer storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (orders.kind !== "ready" || tenders.kind !== "ready" || !customers) return <OperationsShell {...shellProps}><Gate title="Carrier booking didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   const { tender, state } = await searchParams;
   if (state === "booked") {

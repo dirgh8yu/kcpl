@@ -29,7 +29,7 @@ export async function GET() {
       }),
       getNotificationPreferences(staff.profile.uid),
     ]);
-    if (!data) return json({ ok: false, error: "Firestore is not available for this deployment." }, 503);
+    if (!data) return json({ ok: false, error: "The records service isn’t responding. Try again in a minute." }, 503);
     const notifications = notificationsResult?.notifications.filter((item) => preferences.categories[item.category]) ?? [];
     return json({ ok: true, wallboard: buildWallboard(data, notifications, new Date()), generated_at: data.generated_at });
   } catch (error) {

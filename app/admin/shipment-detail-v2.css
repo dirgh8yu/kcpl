@@ -26,23 +26,11 @@
 .shipment-detail-v2 *::before,
 .shipment-detail-v2 *::after { box-sizing: border-box; }
 
-/* Anchored sections never slide under the sticky tab bar unshown: the bar and
- * scroll-margin move together. */
-.kcpl-admin-content .shipment-detail-anchor {
-  scroll-margin-top: calc(var(--app-toolbar-height) + 54px);
-}
-
-.shipment-detail-anchor { scroll-margin-top: 172px; }
-
 .shipment-detail-v2 .ops-grid-main { align-items: start; }
 
 .shipment-detail-v2 .ops-surface { border-radius: 0; box-shadow: none; }
 .shipment-detail-v2 .ops-surface-header { background: transparent; }
 .shipment-detail-v2 .ops-surface-description { max-width: 760px; }
-
-@media (max-width: 760px) {
-  .shipment-detail-anchor { scroll-margin-top: 168px; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .shipment-detail-v2 *,
@@ -55,115 +43,23 @@
   }
 }
 
-/* Record tabs.
- * The section bar used to be anchor links into one 7,000px page. It is a real
- * tablist now. Each rule hides the panels that do NOT belong to the active tab
- * rather than showing the one that does, so the visible panel keeps whatever
- * display value its own layout rule gives it (#shipment-overview is a grid).
- * Generated from one mapping; keep it in step with RecordSection. */
-.shipment-detail-v2[data-section="summary"] #shipment-movement,
-.shipment-detail-v2[data-section="summary"] #shipment-tasks,
-.shipment-detail-v2[data-section="summary"] #shipment-customs,
-.shipment-detail-v2[data-section="summary"] #shipment-documents,
-.shipment-detail-v2[data-section="summary"] #shipment-exceptions,
-.shipment-detail-v2[data-section="summary"] #shipment-delivery,
-.shipment-detail-v2[data-section="summary"] #shipment-commercial,
-.shipment-detail-v2[data-section="summary"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="movement"] #shipment-overview,
-.shipment-detail-v2[data-section="movement"] #shipment-closeout,
-.shipment-detail-v2[data-section="movement"] #shipment-tasks,
-.shipment-detail-v2[data-section="movement"] #shipment-customs,
-.shipment-detail-v2[data-section="movement"] #shipment-documents,
-.shipment-detail-v2[data-section="movement"] #shipment-exceptions,
-.shipment-detail-v2[data-section="movement"] #shipment-delivery,
-.shipment-detail-v2[data-section="movement"] #shipment-commercial,
-.shipment-detail-v2[data-section="movement"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="tasks"] #shipment-overview,
-.shipment-detail-v2[data-section="tasks"] #shipment-closeout,
-.shipment-detail-v2[data-section="tasks"] #shipment-movement,
-.shipment-detail-v2[data-section="tasks"] #shipment-customs,
-.shipment-detail-v2[data-section="tasks"] #shipment-documents,
-.shipment-detail-v2[data-section="tasks"] #shipment-exceptions,
-.shipment-detail-v2[data-section="tasks"] #shipment-delivery,
-.shipment-detail-v2[data-section="tasks"] #shipment-commercial,
-.shipment-detail-v2[data-section="tasks"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="customs"] #shipment-overview,
-.shipment-detail-v2[data-section="customs"] #shipment-closeout,
-.shipment-detail-v2[data-section="customs"] #shipment-movement,
-.shipment-detail-v2[data-section="customs"] #shipment-tasks,
-.shipment-detail-v2[data-section="customs"] #shipment-documents,
-.shipment-detail-v2[data-section="customs"] #shipment-exceptions,
-.shipment-detail-v2[data-section="customs"] #shipment-delivery,
-.shipment-detail-v2[data-section="customs"] #shipment-commercial,
-.shipment-detail-v2[data-section="customs"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="documents"] #shipment-overview,
-.shipment-detail-v2[data-section="documents"] #shipment-closeout,
-.shipment-detail-v2[data-section="documents"] #shipment-movement,
-.shipment-detail-v2[data-section="documents"] #shipment-tasks,
-.shipment-detail-v2[data-section="documents"] #shipment-customs,
-.shipment-detail-v2[data-section="documents"] #shipment-exceptions,
-.shipment-detail-v2[data-section="documents"] #shipment-delivery,
-.shipment-detail-v2[data-section="documents"] #shipment-commercial,
-.shipment-detail-v2[data-section="documents"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="exceptions"] #shipment-overview,
-.shipment-detail-v2[data-section="exceptions"] #shipment-closeout,
-.shipment-detail-v2[data-section="exceptions"] #shipment-movement,
-.shipment-detail-v2[data-section="exceptions"] #shipment-tasks,
-.shipment-detail-v2[data-section="exceptions"] #shipment-customs,
-.shipment-detail-v2[data-section="exceptions"] #shipment-documents,
-.shipment-detail-v2[data-section="exceptions"] #shipment-delivery,
-.shipment-detail-v2[data-section="exceptions"] #shipment-commercial,
-.shipment-detail-v2[data-section="exceptions"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="delivery"] #shipment-overview,
-.shipment-detail-v2[data-section="delivery"] #shipment-closeout,
-.shipment-detail-v2[data-section="delivery"] #shipment-movement,
-.shipment-detail-v2[data-section="delivery"] #shipment-tasks,
-.shipment-detail-v2[data-section="delivery"] #shipment-customs,
-.shipment-detail-v2[data-section="delivery"] #shipment-documents,
-.shipment-detail-v2[data-section="delivery"] #shipment-exceptions,
-.shipment-detail-v2[data-section="delivery"] #shipment-commercial,
-.shipment-detail-v2[data-section="delivery"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="commercial"] #shipment-overview,
-.shipment-detail-v2[data-section="commercial"] #shipment-closeout,
-.shipment-detail-v2[data-section="commercial"] #shipment-movement,
-.shipment-detail-v2[data-section="commercial"] #shipment-tasks,
-.shipment-detail-v2[data-section="commercial"] #shipment-customs,
-.shipment-detail-v2[data-section="commercial"] #shipment-documents,
-.shipment-detail-v2[data-section="commercial"] #shipment-exceptions,
-.shipment-detail-v2[data-section="commercial"] #shipment-delivery,
-.shipment-detail-v2[data-section="commercial"] #shipment-activity {
-  display: none;
-}
-
-.shipment-detail-v2[data-section="activity"] #shipment-overview,
-.shipment-detail-v2[data-section="activity"] #shipment-closeout,
-.shipment-detail-v2[data-section="activity"] #shipment-movement,
-.shipment-detail-v2[data-section="activity"] #shipment-tasks,
-.shipment-detail-v2[data-section="activity"] #shipment-customs,
-.shipment-detail-v2[data-section="activity"] #shipment-documents,
-.shipment-detail-v2[data-section="activity"] #shipment-exceptions,
-.shipment-detail-v2[data-section="activity"] #shipment-delivery,
-.shipment-detail-v2[data-section="activity"] #shipment-commercial {
+/* Job File steps.
+ * The record is one checklist; each surface names the step (or steps) it
+ * belongs to in data-panel, and only the open step's surfaces show. Keep the
+ * list in step with jobStepIds and jobExtraPanels in job-steps.ts. */
+.shipment-detail-v2[data-panel-active="booking"] [data-panel]:not([data-panel~="booking"]),
+.shipment-detail-v2[data-panel-active="pickup"] [data-panel]:not([data-panel~="pickup"]),
+.shipment-detail-v2[data-panel-active="documents"] [data-panel]:not([data-panel~="documents"]),
+.shipment-detail-v2[data-panel-active="customs"] [data-panel]:not([data-panel~="customs"]),
+.shipment-detail-v2[data-panel-active="transit"] [data-panel]:not([data-panel~="transit"]),
+.shipment-detail-v2[data-panel-active="delivery"] [data-panel]:not([data-panel~="delivery"]),
+.shipment-detail-v2[data-panel-active="proof"] [data-panel]:not([data-panel~="proof"]),
+.shipment-detail-v2[data-panel-active="invoice"] [data-panel]:not([data-panel~="invoice"]),
+.shipment-detail-v2[data-panel-active="close"] [data-panel]:not([data-panel~="close"]),
+.shipment-detail-v2[data-panel-active="tasks"] [data-panel]:not([data-panel~="tasks"]),
+.shipment-detail-v2[data-panel-active="problems"] [data-panel]:not([data-panel~="problems"]),
+.shipment-detail-v2[data-panel-active="messages"] [data-panel]:not([data-panel~="messages"]),
+.shipment-detail-v2[data-panel-active="costs"] [data-panel]:not([data-panel~="costs"]),
+.shipment-detail-v2[data-panel-active="history"] [data-panel]:not([data-panel~="history"]) {
   display: none;
 }

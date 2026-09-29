@@ -9,7 +9,7 @@ import { customsClearanceStatusValue, customsReleaseRequired } from "./customs/c
 import { type KcplBranch } from "./crm/crm-data";
 import { type KcplStaffContext } from "./staff-directory.server";
 import { buildDocumentIntelligence } from "./workflow-defaults";
-import type { ShipmentWorkflowReadiness, WorkflowDocumentState, WorkflowStage } from "./workflow-guard";
+import { allowedTransitions, type ShipmentWorkflowReadiness, type WorkflowDocumentState, type WorkflowStage } from "./workflow-guard";
 
 type Actor = { name: string; email: string };
 
@@ -187,33 +187,33 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const jobClosed = Boolean(jobClosedAt);
   const blockers: string[] = [];
   const warnings: string[] = [...intelligence.advisories];
-  if (!customerLinked) blockers.push("Link this shipment to a CRM customer before controlled operational progression.");
+  if (!customerLinked) blockers.push("Link this shipment to a customer first.");
   if (!customsChecklistReady) {
-    if (customsReleaseIsRequired && requiredCustoms.length === 0) blockers.push("International shipment has no required customs checklist. Repair the Job File before controlled progression.");
+    if (customsReleaseIsRequired && requiredCustoms.length === 0) blockers.push("This international shipment has no customs checklist yet. Add its customs steps.");
     else blockers.push(`${requiredCustoms.length - completedCustoms} required customs step${requiredCustoms.length - completedCustoms === 1 ? " is" : "s are"} still open.`);
   }
   if (customsReleaseIsRequired && !customsReleased) {
     const holdReason = nullable(source.data.customs_hold_reason);
     blockers.push(customsClearanceStatus === "held"
-      ? `Customs hold must be resolved before final-mile progression${holdReason ? `: ${holdReason}` : "."}`
-      : "Record explicit Customs release before final-mile progression.");
+      ? `Customs is holding this shipment${holdReason ? `: ${holdReason}` : "."}`
+      : "Record the customs release before final delivery.");
   }
   if (!documentPackReady) {
     const unresolved = operationalRequiredDocuments.filter((item) => !item.present);
-    const descriptions = unresolved.map((item) => item.uploaded_count > 0 ? `${item.label} (uploaded, verification required)` : item.label);
-    blockers.push(`Required document pack incomplete: ${descriptions.join(", ")}.`);
+    const descriptions = unresolved.map((item) => item.uploaded_count > 0 ? `${item.label} (uploaded, needs checking)` : item.label);
+    blockers.push(`Documents still needed: ${descriptions.join(", ")}.`);
   }
-  if (!assignedOwner) warnings.push("No operational owner is assigned to this Job File.");
-  if (!billingReady) warnings.push(invoiceCount ? "Finance exists, but no invoice has been issued yet." : "No customer invoice has been created yet. Finance can continue in parallel with operations.");
+  if (!assignedOwner) warnings.push("Nobody owns this shipment yet.");
+  if (!billingReady) warnings.push(invoiceCount ? "An invoice is drafted but not sent yet." : "No invoice yet. Accounts can raise it any time.");
 
   const closeBlockers: string[] = [];
-  if (status !== "delivered") closeBlockers.push("Shipment must be marked Delivered before the Job File can close.");
-  if (!customerLinked) closeBlockers.push("A CRM customer must be confirmed.");
-  if (!customsChecklistReady) closeBlockers.push("All required customs checklist steps must be complete.");
-  if (customsReleaseIsRequired && !customsReleased) closeBlockers.push("Explicit Customs release must be recorded for this international shipment.");
-  if (!documentPackReady) closeBlockers.push("All required operational documents must be verified and unexpired.");
-  if (!proofOfDeliveryPresent) closeBlockers.push("A verified Proof of Delivery (POD) must be present.");
-  if (openTasks > 0) closeBlockers.push(`${openTasks} operational task${openTasks === 1 ? " remains" : "s remain"} open.`);
+  if (status !== "delivered") closeBlockers.push("Mark the shipment Delivered first.");
+  if (!customerLinked) closeBlockers.push("Link a customer.");
+  if (!customsChecklistReady) closeBlockers.push("Finish the customs checklist.");
+  if (customsReleaseIsRequired && !customsReleased) closeBlockers.push("Record the customs release.");
+  if (!documentPackReady) closeBlockers.push("Check all required documents, and replace any that have expired.");
+  if (!proofOfDeliveryPresent) closeBlockers.push("Upload the proof of delivery and have it checked.");
+  if (openTasks > 0) closeBlockers.push(`${openTasks} task${openTasks === 1 ? " is" : "s are"} still open.`);
 
   const inTransitOrLater = ["in_transit", "customs_clearance", "out_for_delivery", "delivered"].includes(status);
   const outForDeliveryOrLater = ["out_for_delivery", "delivered"].includes(status);
@@ -276,16 +276,6 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   return { kind: "ready" as const, readiness };
 }
 
-const allowedTransitions: Record<ShipmentStatus, ShipmentStatus[]> = {
-  booking_confirmed: ["preparing", "exception"],
-  preparing: ["booking_confirmed", "in_transit", "customs_clearance", "exception"],
-  in_transit: ["preparing", "customs_clearance", "out_for_delivery", "exception"],
-  customs_clearance: ["preparing", "in_transit", "out_for_delivery", "exception"],
-  out_for_delivery: ["in_transit", "customs_clearance", "delivered", "exception"],
-  delivered: ["exception"],
-  exception: ["preparing", "in_transit", "customs_clearance", "out_for_delivery"],
-};
-
 export async function validateShipmentTransition(
   reference: string,
   nextStatus: ShipmentStatus,
@@ -296,15 +286,15 @@ export async function validateShipmentTransition(
   if (result.kind !== "ready") return result;
   const readiness = result.readiness;
   const blockers: string[] = [];
-  if (readiness.job_closed) blockers.push("This Job File is closed. Reopen it before changing shipment status.");
+  if (readiness.job_closed) blockers.push("This job is closed. Reopen it before changing the status.");
   if (readiness.status !== nextStatus && !allowedTransitions[readiness.status].includes(nextStatus)) {
-    blockers.push(`Status cannot move directly from ${readiness.status.replaceAll("_", " ")} to ${nextStatus.replaceAll("_", " ")}.`);
+    blockers.push(`It can’t go straight from ${readiness.status.replaceAll("_", " ")} to ${nextStatus.replaceAll("_", " ")}.`);
   }
   if (["out_for_delivery", "delivered"].includes(nextStatus)) {
-    if (!readiness.customer_linked) blockers.push("Confirm the CRM customer before final-mile delivery.");
-    if (!readiness.customs_checklist_ready) blockers.push("Complete the required customs checklist before final-mile delivery.");
-    if (readiness.customs_release_required && !readiness.customs_released) blockers.push("Record explicit Customs release before final-mile delivery.");
-    if (!readiness.document_pack_ready) blockers.push("Verify the required operational document pack before final-mile delivery.");
+    if (!readiness.customer_linked) blockers.push("Link a customer before final delivery.");
+    if (!readiness.customs_checklist_ready) blockers.push("Finish the customs checklist before final delivery.");
+    if (readiness.customs_release_required && !readiness.customs_released) blockers.push("Record the customs release before final delivery.");
+    if (!readiness.document_pack_ready) blockers.push("Check the required documents before final delivery.");
   }
   if (nextStatus === "delivered" && readiness.status !== "out_for_delivery") {
     blockers.push("Move the shipment to Out for delivery before marking it Delivered.");
@@ -359,7 +349,7 @@ export async function closeShipmentJob(reference: string, actor: Actor, context:
   });
   batch.create(ref.collection("job_activity").doc(childId("close")), {
     type: useOverride ? "job_closed_override" : "job_closed",
-    title: useOverride ? "Job closed with management override" : "Digital Job File closed",
+    title: useOverride ? "Job closed with management override" : "Shipment record closed",
     detail: useOverride ? reason : "All operational closeout controls satisfied.",
     actor_name: actor.name,
     actor_email: actor.email,
@@ -390,7 +380,7 @@ export async function reopenShipmentJob(reference: string, actor: Actor, context
   });
   batch.create(ref.collection("job_activity").doc(childId("reopen")), {
     type: "job_reopened",
-    title: "Digital Job File reopened",
+    title: "Shipment record reopened",
     detail: why,
     actor_name: actor.name,
     actor_email: actor.email,

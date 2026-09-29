@@ -418,7 +418,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
     <OpsPage>
       <OpsPageHeader
         title="Freight enquiries"
-        description={`Website enquiries reviewed, quoted and converted into KCPL shipments · ${filtered.length} of ${quotes.length} shown`}
+        description="Freight requests from the website and customers. Quote them, then win them into shipments."
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6">
@@ -509,7 +509,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                     <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
                     <OpsSurface density="compact" title="Ownership & status" description={detail.status === "won" ? "Accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer confirmed. Commercial staff can progress through Quoted, Won or Lost." : "Confirm the CRM customer before marking this enquiry Won."}>
                       <form onSubmit={saveQuote} className="ops-inspector-form enq-workflow">
-                        <OpsField label="Status" className="col-span-full" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or Digital Job File." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField>
+                        <OpsField label="Status" className="col-span-full" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or shipment record." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField>
                         <OpsField label="Assigned to" className="col-span-full" hint="From People & branches; name, email and phone fill automatically."><StaffAssignmentPicker compact value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField>
                         <div className="col-span-full"><OpsButton type="submit" variant="primary" size="sm" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></div>
                       </form>
@@ -520,8 +520,8 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                         <OpsFact label="Margin">{metrics ? `${metrics.margin.toFixed(1)}%` : "—"}</OpsFact>
                       </OpsFacts>
                     </OpsSurface> : null}
-                    {detail.shipment ? <OpsSurface density="compact" title={<span className="ops-mono">{detail.shipment.reference}</span>} description="A controlled shipment and Digital Job File exist for this accepted quote.">
-                      <div className="ops-inspector-actions"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Digital Job File</a></div>
+                    {detail.shipment ? <OpsSurface density="compact" title={<span className="ops-mono">{detail.shipment.reference}</span>} description="A controlled shipment and shipment record exist for this accepted quote.">
+                      <div className="ops-inspector-actions"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Shipment record</a></div>
                     </OpsSurface> : null}
                   </aside>
                 </div> : null}

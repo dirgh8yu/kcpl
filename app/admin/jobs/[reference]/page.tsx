@@ -16,14 +16,16 @@ import { DeliveryPodControl } from "./delivery-pod-control";
 import { JobFileWorkspace } from "./job-file-workspace";
 import { ShipmentActivityTimeline } from "./shipment-activity-timeline";
 import { ShipmentExceptionControl } from "./shipment-exception-control";
-import { V4ShipmentDetailOverview } from "./v4-shipment-detail-overview";
+import { JobRecord } from "./job-record";
+import { getJobStepContext } from "./job-step-context.server";
+import { listPartnerOptions } from "../../partners/partners.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Shipment Detail | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Shipment | KCPL Operations", robots: { index: false, follow: false } };
 
-export default async function JobFilePage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ returnTo?: string | string[]; a?: string | string[] }> }) {
+export default async function JobFilePage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ returnTo?: string | string[]; a?: string | string[]; step?: string | string[] }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Digital Job Files are available only to authorised KCPL staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Sign in with your KCPL staff account to see shipments."/>;
 
   const staff = await getStaffContext(access.user);
   // Every gate past this point has a staff context, so it can keep the
@@ -41,35 +43,50 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>
   );
   const { reference } = await params;
-  const { a: requestedActivity } = await searchParams;
+  const { a: requestedActivity, step: requestedStep } = await searchParams;
   // Deep link from the shipments inspector (?a=<activity item id>).
   const activityHighlight = typeof requestedActivity === "string" ? requestedActivity : null;
   const shipmentAccess = await checkShipmentBranchAccess(reference, staff);
-  if (shipmentAccess.kind === "unavailable") return shellGate("Job File unavailable", "Firestore is not available for this deployment.");
-  if (shipmentAccess.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
-  if (shipmentAccess.kind === "forbidden") return shellGate("Outside your branch access", "This shipment is outside the branches assigned to your KCPL staff profile.");
+  if (shipmentAccess.kind === "unavailable") return shellGate("Shipment can’t be opened right now", "The records service isn’t responding. Try again in a minute.");
+  if (shipmentAccess.kind === "missing") return shellGate("Shipment not found", "No shipment has this reference. Check it and search again.");
+  if (shipmentAccess.kind === "forbidden") return shellGate("Outside your branch access", "This shipment belongs to a branch you don’t have access to. Ask Management if you need it.");
 
   const result = await getDigitalJobFile(reference, staff);
-  if (result.kind === "unavailable") return shellGate("Job File unavailable", "Firestore is not available for this deployment.");
-  if (result.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
-  if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment is outside the branches assigned to your KCPL staff profile.");
+  if (result.kind === "unavailable") return shellGate("Shipment can’t be opened right now", "The records service isn’t responding. Try again in a minute.");
+  if (result.kind === "missing") return shellGate("Shipment not found", "No shipment has this reference. Check it and search again.");
+  if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment belongs to a branch you don’t have access to. Ask Management if you need it.");
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const [workflow, activity, exceptionCases, delivery, customerAccess] = await Promise.all([
+  const [workflow, activity, exceptionCases, delivery, customerAccess, stepContext, partnerOptions] = await Promise.all([
     getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
     getShipmentActivityTimeline(result.job.reference, staff),
     getShipmentExceptions(result.job.reference, staff),
     getDeliveryControl(result.job.reference, staff),
     shipmentCustomerAccessView(result.job.reference),
+    getJobStepContext(result.job.reference).catch(() => ({ clearance: null, pickupStatus: null })),
+    listPartnerOptions(staff).catch(() => null),
   ]);
-  if (workflow.kind !== "ready") return shellGate("Workflow unavailable", "The controlled workflow state could not be loaded for this shipment.");
+  if (workflow.kind !== "ready") return shellGate("Shipment can’t be opened right now", "Its progress checks didn’t load. Try again in a minute.");
 
+  const customsAgents = (partnerOptions ?? [])
+    .filter((partner) => partner.types.includes("customs_agent") || partner.types.includes("clearing_partner"))
+    .map((partner) => ({ id: partner.id, name: partner.name }));
   const exceptionBranches = [...new Set([result.job.primary_branch, ...result.job.handling_branches])]
     .filter((branch) => staffCanAccessBranch(staff, branch));
 
   return <OperationsShell {...shellProps}>
-    <V4ShipmentDetailOverview job={result.job} readiness={workflow.readiness}>
-      <div id="shipment-work" className="shipment-detail-anchor job-record-workspace">
+    <JobRecord
+      job={result.job}
+      readiness={workflow.readiness}
+      clearance={staff.permissions.canManageJobFile ? stepContext.clearance : null}
+      customsAgents={customsAgents}
+      pickupStatus={stepContext.pickupStatus}
+      requestedPanel={typeof requestedStep === "string" ? requestedStep : null}
+      openProblems={exceptionCases.kind === "ready" ? exceptionCases.summary.open : 0}
+      canManageFinance={staff.permissions.canManageFinance}
+      canMessageCustomer={staff.permissions.canManageJobFile}
+    >
+      <div id="shipment-work" className="job-record-workspace">
         <JobFileWorkspace
           initialJob={result.job}
           initialReadiness={workflow.readiness}
@@ -84,7 +101,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
         />
       </div>
 
-      <div id="shipment-exceptions" className="shipment-detail-anchor job-record-block">
+      <div id="shipment-exceptions" className="job-record-block" data-panel="problems">
         {exceptionCases.kind === "ready" && exceptionBranches.length ? (
           <ShipmentExceptionControl
             reference={result.job.reference}
@@ -94,10 +111,10 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
             currentUserName={access.user.displayName}
             currentUserEmail={access.user.email}
           />
-        ) : <QuietSection eyebrow="Exceptions" title="Exception register unavailable" detail="No exception register is available for the branches in your current access scope."/>}
+        ) : <QuietSection eyebrow="Problems" title="Problems can’t be shown" detail="None of this shipment’s branches are in your access."/>}
       </div>
 
-      <div id="shipment-delivery" className="shipment-detail-anchor job-record-block">
+      <div id="shipment-delivery" className="job-record-block" data-panel="delivery proof">
         {delivery.kind === "ready" ? (
           <DeliveryPodControl
             reference={result.job.reference}
@@ -110,23 +127,23 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
             initialExternalObservedProvider={delivery.external_observed_provider}
             canReview={staff.permissions.canManageCustomerDocuments}
           />
-        ) : <QuietSection eyebrow="Delivery" title="Delivery control unavailable" detail="Delivery and POD state could not be loaded for this shipment."/>}
+        ) : <QuietSection eyebrow="Delivery" title="Delivery details didn’t load" detail="Reload the page to try again."/>}
       </div>
 
-      <div id="shipment-customer-access" className="shipment-detail-anchor job-record-block">
+      <div id="shipment-customer-access" className="job-record-block" data-panel="documents">
         {customerAccess.kind === "ready" ? (
           <CustomerAccessPanel
             summaries={customerAccess.summaries}
             pending={customerAccess.pending}
             releasedCount={customerAccess.releasedCount}
           />
-        ) : <QuietSection eyebrow="Customer portal" title="Document access unavailable" detail="The customer document access log could not be loaded for this shipment."/>}
+        ) : <QuietSection eyebrow="Customer portal" title="Customer document views didn’t load" detail="Reload the page to try again."/>}
       </div>
 
-      <div id="shipment-activity" className="shipment-detail-anchor job-record-block">
-        {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline} highlightId={activityHighlight}/> : <QuietSection eyebrow="Activity" title="Activity unavailable" detail="The shipment activity timeline could not be loaded."/>}
+      <div id="shipment-activity" className="job-record-block" data-panel="history">
+        {activity.kind === "ready" ? <ShipmentActivityTimeline initialTimeline={activity.timeline} highlightId={activityHighlight}/> : <QuietSection eyebrow="History" title="History didn’t load" detail="Reload the page to try again."/>}
       </div>
-    </V4ShipmentDetailOverview>
+    </JobRecord>
   </OperationsShell>;
 }
 
@@ -140,13 +157,13 @@ function QuietSection({ eyebrow, title, detail }: { eyebrow: string; title: stri
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Digital Job File"
+    eyebrow="Shipment"
     title={title}
     detail={detail}
     embedded={embedded}
     actions={[
       { href: "/admin/shipments", label: "Shipments", primary: true },
-      { href: "/admin/command-centre", label: "Operations Overview" },
+      { href: "/admin/command-centre", label: "Overview" },
     ]}
   />;
 }

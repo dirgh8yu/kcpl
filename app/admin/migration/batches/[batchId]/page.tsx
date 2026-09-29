@@ -51,9 +51,9 @@ export default async function MigrationBatchPage({ params }: { params: Promise<{
       <OpsPageHeader
         eyebrow={`Migration Control Centre · ${batch.stage_label}`}
         title={<OpsMono>{batch.id}</OpsMono>}
-        description={`${batch.type_label} migration batch${batch.source_filename ? ` from ${batch.source_filename}` : ""}. Stage 4C can now generate a non-destructive dry run and reverse only records that still prove they are untouched products of this exact migration batch.`}
+        description={`${batch.type_label} import batch${batch.source_filename ? ` from ${batch.source_filename}` : ""}. You can preview an undo, and undo records nobody has worked on since the import.`}
         meta={<><OpsBadge tone={tone(batch.status)} dot>{statusLabel(batch.status)}</OpsBadge><span>{batch.imported_count} records imported</span><span>{batch.created_by_name}</span>{batch.rollback_status ? <OpsBadge tone={batch.rollback_status === "completed" ? "success" : batch.rollback_status === "partial_failure" ? "warning" : "info"}>Recovery {batch.rollback_status.replaceAll("_", " ")}</OpsBadge> : null}</>}
-        actions={<div className="flex flex-wrap gap-2"><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Back to Migration Hub</Link></div>}
+        actions={<div className="flex flex-wrap gap-2"><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Back to Import old records</Link></div>}
       />
 
       <div className="ops-content-wide ops-stack">
@@ -97,5 +97,5 @@ function Safety({ title, detail }: { title: string; detail: string }) {
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="KCPL Migration Control Centre" title={title} detail={detail} actions={[{ href: "/admin/command-centre", label: "Operations Home", primary: true }, { href: "/admin/migration", label: "Migration Hub" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Migration Control Centre" title={title} detail={detail} actions={[{ href: "/admin/command-centre", label: "Operations Home", primary: true }, { href: "/admin/migration", label: "Import old records" }]}/>;
 }

@@ -230,9 +230,8 @@ export function NotificationsWorkspace() {
   return <OpsPage>
     <div className="notifications-workspace-page">
       <OpsPageHeader
-        eyebrow="Operational control"
         title="Notifications"
-        description={view === "transitions" ? `Register status history · ${counts.transitions} transition${counts.transitions === 1 ? "" : "s"} today (NPT)` : `Activity log · ${counts.unread} unread of ${notifications.length} total · auto-refresh every 30 seconds`}
+        description={view === "transitions" ? "Status changes made today (Nepal time)." : "Messages the system has sent you. New ones appear on their own."}
         actions={(
           <>
             {view === "transitions" ? <OpsButton variant="secondary" size="sm" onClick={() => exportTransitionsCsv(filtered)} disabled={!filtered.length} title="Download today's transition history for shift handover"><Download size={13} strokeWidth={1.75}/>Export CSV</OpsButton> : null}

@@ -10,7 +10,7 @@ import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { MarketEstimateWorkspace } from "./market-estimate-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Market Estimate | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Market rates | KCPL Operations", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }
@@ -20,7 +20,7 @@ async function resolveStaff(user: { uid: string; email: string; displayName: str
   try {
     return { kind: "ready", staff: await getStaffContext(user) };
   } catch (error) {
-    console.error("Failed to resolve KCPL staff context for Market Estimate", error);
+    console.error("Failed to resolve KCPL staff context for Market rates", error);
     return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) };
   }
 }
@@ -32,7 +32,7 @@ export default async function MarketEstimatePage() {
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Market tools could not be loaded" detail="KCPL staff or integration data is temporarily unavailable. Navigation and search remain available while the service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Market rates didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -55,8 +55,8 @@ export default async function MarketEstimatePage() {
     <OperationsShell {...shellProps}>
       <OpsPage>
         <OpsPageHeader
-          title="Market estimate"
-          description="Freight benchmarks, NRB forex and road-route references. Advisory only; never overwrites a quote."
+          title="Market rates"
+          description="Market freight prices, exchange rates and road distances, for reference. Nothing here changes a quote."
           meta={<span>{roleLabel} · live integration workspace</span>}
         />
 
@@ -80,7 +80,7 @@ export default async function MarketEstimatePage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Market Estimate"
+    eyebrow="KCPL Market rates"
     title={title}
     detail={detail}
     embedded={embedded}

@@ -73,7 +73,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   );
   const { id } = await params;
   const customerAccess = await checkCrmCustomerReadAccess(id, staff);
-  if (customerAccess.kind === "unavailable") return shellGate("Firestore is unavailable", "The CRM backend is not available for this deployment.");
+  if (customerAccess.kind === "unavailable") return shellGate("Customer can’t be opened right now", "The records service isn’t responding. Try again in a minute.");
   if (customerAccess.kind === "missing") return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
   if (customerAccess.kind === "forbidden") return shellGate("Customer access restricted", "This customer belongs to a KCPL branch outside your assigned access.");
   let customer: CrmCustomerDetail | null | undefined;
@@ -109,8 +109,8 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
     console.error("Failed to load KCPL Customer 360", id, error);
   }
 
-  if (failed) return <CustomerGate title="Customer 360 could not be loaded" detail="KCPL customer data is temporarily unavailable."/>;
-  if (customer === undefined) return shellGate("Firestore is unavailable", "The CRM backend is not available for this deployment.");
+  if (failed) return <CustomerGate title="Customer didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/>;
+  if (customer === undefined) return shellGate("Customer can’t be opened right now", "The records service isn’t responding. Try again in a minute.");
   if (!customer || customer.archived) return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
 
   const safeCustomer = redactCustomerForRole(customer, permissions);
@@ -126,7 +126,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
         <Tool title="Operations history" detail="Review the customer’s quote and shipment trail within your branch access."><CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/></Tool>
         {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific commercial rates and pricing references."><CrmRateCardPanel customerId={reconciledCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}
         {permissions.canManageFinance ? <Tool title="Statement of account" detail="The customer's statement as a PDF: view it, or email it to their portal owners."><CrmStatementPanel customerId={reconciledCustomer.id}/></Tool> : null}
-        {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="Private account-level files stored through Firebase Storage."><CrmCustomerDocumentsPanel customerId={reconciledCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}
+        {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="Private files for this customer account."><CrmCustomerDocumentsPanel customerId={reconciledCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}
         <Tool title="Quote matching" detail="Link historical or suggested enquiries to this customer record within your branch access."><CrmQuoteMatchDock customerId={reconciledCustomer.id} initialLinked={linked} initialSuggested={suggested}/></Tool>
       </div>
     </section>

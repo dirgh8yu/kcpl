@@ -194,6 +194,15 @@ export const WORKSPACE_PRESETS: Record<WorkspaceKey, readonly LayoutPreset[]> = 
       },
     },
     {
+      id: "sales",
+      label: "Sales",
+      description: "Queue, today and customer activity first — workload and finance hidden",
+      layout: {
+        order: ["work-queue", "today", "activity", "movement", "notes", "pulse", "workload", "finance"],
+        hidden: ["pulse", "workload", "finance"],
+      },
+    },
+    {
       id: "manager",
       label: "Manager",
       description: "Every section visible in the standard order",
@@ -361,6 +370,24 @@ export const WORKSPACE_PRESETS: Record<WorkspaceKey, readonly LayoutPreset[]> = 
     },
   ],
 };
+
+/**
+ * Each role's first Overview until the person arranges their own: Operations
+ * lands on the dispatch queue, Accounts on money, Commercial on customers and
+ * Management on everything. The person's own saved layout always wins.
+ */
+export const ROLE_OVERVIEW_PRESET: Record<"management" | "accounts" | "commercial" | "operations", string> = {
+  operations: "dispatch",
+  accounts: "finance",
+  commercial: "sales",
+  management: "manager",
+};
+
+export function roleOverviewArrangement(role: keyof typeof ROLE_OVERVIEW_PRESET | null | undefined): ArrangementState {
+  const preset = WORKSPACE_PRESETS.overview.find((item) => item.id === (role ? ROLE_OVERVIEW_PRESET[role] : "manager"));
+  const layout = preset?.layout ?? { order: [...OVERVIEW_SECTION_ORDER], hidden: [] };
+  return { order: [...layout.order], hidden: [...layout.hidden] };
+}
 
 /** Returns the preset whose layout exactly matches this arrangement, if any. */
 export function presetForStateIn(workspace: WorkspaceKey, state: ArrangementState): string | null {

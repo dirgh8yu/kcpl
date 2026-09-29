@@ -83,8 +83,8 @@ function buildLines(source: FreightDocumentSource, input: FreightDocumentInput, 
 
   section(lines, "Instructions and control");
   field(lines, "Special instructions", input.specialInstructions);
-  lines.push({ text: "This PDF was generated from KCPL's Digital Job File. Verify names, quantities, weights, references, route and regulatory requirements before issue or external use.", size: 8, gapBefore: 8 });
-  lines.push({ text: "Generated documents remain subject to KCPL Document Vault review and supersession controls.", size: 8 });
+  lines.push({ text: "This PDF was generated from KCPL's shipment record. Verify names, quantities, weights, references, route and regulatory requirements before issue or external use.", size: 8, gapBefore: 8 });
+  lines.push({ text: "Generated documents remain subject to KCPL document review and supersession controls.", size: 8 });
   return lines;
 }
 

@@ -1,14 +1,11 @@
-/* Digital Job File presentation.
+/* Job File presentation.
  *
- * The record now uses the same product language as the approved Overview and
- * Shipments workspaces: an OpsPageHeader band with the record tabs as a sticky
- * text-tab row beneath it, one readiness rail (OpsKpiRail), hairline panels
- * (OpsSurface) with fact rows (OpsFacts), dense list rows, quiet badges and
- * compact empty states. Shared primitives are styled in operations-system.css;
- * this sheet only lays out what is specific to the record. Route-scoped
- * presentation only: workflow, permissions, mutations and record contracts are
- * unchanged. Tab visibility for the original sections stays generated in
- * shipment-detail-v2.css (tests/shipment-detail-ui-contract.test.mjs). */
+ * The record is one guided checklist: the shipment's steps down the left
+ * (sticky), the open step's work on the right. Only the open step's surfaces
+ * show; which ones is generated in shipment-detail-v2.css from data-panel.
+ * Shared primitives are styled in operations-system.css; this sheet only lays
+ * out what is specific to the record. Switching steps is instant: staff do it
+ * dozens of times a day, so nothing here animates it. */
 
 .kcpl-admin-content .job-record {
   min-width: 0;
@@ -26,18 +23,50 @@
 .kcpl-admin-content .job-record-title { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .kcpl-admin-content .job-record-title .ops-badge { min-height: 22px; padding: 2px 8px; border-color: transparent; font-size: 12px; font-weight: 550; letter-spacing: 0; line-height: 16px; }
 
-.kcpl-admin-content .job-record-tabs {
-  position: sticky;
-  top: var(--app-toolbar-height);
-  z-index: 30;
-  border-bottom: 1px solid var(--admin-line);
-  padding: 0 var(--app-page-gap);
-  background: var(--admin-surface);
-}
-.kcpl-admin-content .job-record-tabs-inner { display: flex; gap: 2px; overflow-x: auto; padding: 0 0 8px; scrollbar-width: none; }
-.kcpl-admin-content .job-record-tabs-inner::-webkit-scrollbar { display: none; }
+/* ---- Guide: steps + open step ------------------------------------------------ */
+.kcpl-admin-content .job-guide { display: grid; grid-template-columns: 248px minmax(0, 1fr); align-items: start; gap: 16px; min-width: 0; padding: 16px var(--app-page-gap) 0; }
+.kcpl-admin-content .job-guide-body { display: grid; gap: 12px; min-width: 0; }
 
-.kcpl-admin-content .job-record-body { display: grid; gap: 12px; min-width: 0; padding: 16px var(--app-page-gap) 0; }
+.kcpl-admin-content .job-steps { position: sticky; top: calc(var(--app-toolbar-height) + 12px); display: grid; gap: 10px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); padding: 8px; background: var(--admin-surface); }
+.kcpl-admin-content .job-steps ol { position: relative; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-steps ol > li { position: relative; }
+/* The thread joining the step markers; it turns solid up to the last done step. */
+.kcpl-admin-content .job-steps ol > li:not(:last-child)::after { content: ""; position: absolute; top: 30px; bottom: -6px; left: 19px; width: 1px; background: var(--admin-line); pointer-events: none; }
+.kcpl-admin-content .job-steps ol > li[data-state="done"]:not(:last-child)::after { background: var(--admin-success); }
+.kcpl-admin-content .job-steps button { display: flex; width: 100%; min-height: 36px; align-items: flex-start; gap: 10px; border: 0; border-radius: var(--app-radius-sm); padding: 8px 10px; background: transparent; color: var(--admin-muted); font: inherit; text-align: left; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .job-steps button:hover { background: var(--admin-canvas); color: var(--admin-ink); }
+.kcpl-admin-content .job-steps button[data-active="true"] { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.kcpl-admin-content .job-steps button:focus-visible { outline: 2px solid var(--admin-ink); outline-offset: -2px; }
+.kcpl-admin-content .job-step-icon { position: relative; z-index: 1; display: grid; width: 20px; height: 20px; flex: none; place-items: center; border: 1.5px solid var(--admin-line-strong); border-radius: 999px; background: var(--admin-surface); color: var(--admin-faint); }
+.kcpl-admin-content .job-step-icon svg { width: 12px; height: 12px; }
+.kcpl-admin-content li[data-state="done"] .job-step-icon { border-color: var(--admin-success); background: var(--admin-success); color: var(--admin-surface); }
+.kcpl-admin-content li[data-state="current"] .job-step-icon { border-color: var(--admin-ink); color: var(--admin-ink); }
+.kcpl-admin-content li[data-state="blocked"] .job-step-icon { border-color: var(--admin-danger); background: var(--admin-danger); color: var(--admin-surface); }
+.kcpl-admin-content li[data-state="skipped"] .job-step-icon { border-style: dashed; }
+.kcpl-admin-content .job-step-text { display: grid; gap: 2px; min-width: 0; padding-top: 1px; }
+.kcpl-admin-content .job-step-label { font-size: 13px; font-weight: 550; line-height: 18px; }
+.kcpl-admin-content li:is([data-state="current"], [data-state="blocked"]) .job-step-label { color: var(--admin-ink); font-weight: 650; }
+.kcpl-admin-content li[data-state="done"] .job-step-label { color: var(--admin-ink); }
+.kcpl-admin-content li[data-state="skipped"] .job-step-label { color: var(--admin-faint); }
+.kcpl-admin-content .job-step-summary { display: -webkit-box; overflow: hidden; color: var(--admin-muted); font-size: 12px; line-height: 16px; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+
+.kcpl-admin-content .job-extras { display: grid; gap: 1px; margin: 0; border-top: 1px solid var(--admin-line); padding: 8px 0 0; list-style: none; }
+.kcpl-admin-content .job-extras button { min-height: 32px; align-items: center; justify-content: space-between; padding: 6px 10px; font-size: 12.5px; font-weight: 550; }
+
+/* The open step's heading: what the step is and what is true now. */
+.kcpl-admin-content .job-step-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; padding: 2px 0 4px; }
+.kcpl-admin-content .job-step-head h2 { margin: 0; color: var(--admin-ink); font-size: 20px; font-weight: 650; letter-spacing: -0.015em; line-height: 26px; }
+.kcpl-admin-content .job-step-head p { margin: 2px 0 0; max-width: 720px; color: var(--admin-muted); font-size: 13.5px; line-height: 20px; }
+.kcpl-admin-content .job-step-head .job-step-head-state { margin: 0 0 2px; color: var(--admin-faint); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; line-height: 16px; text-transform: uppercase; }
+.kcpl-admin-content .job-step-head[data-state="current"] .job-step-head-state { color: var(--admin-crimson); }
+.kcpl-admin-content .job-step-head[data-state="blocked"] .job-step-head-state { color: var(--admin-danger); }
+.kcpl-admin-content .job-step-head[data-state="done"] .job-step-head-state { color: var(--admin-success); }
+
+.kcpl-admin-content .job-panel-line { margin: 0; color: var(--admin-ink); font-size: 13px; line-height: 19px; }
+.kcpl-admin-content .job-panel-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; border: 0; padding: 0; background: none; color: var(--admin-muted); font: inherit; font-size: 12.5px; font-weight: 550; text-decoration: none; cursor: pointer; }
+.kcpl-admin-content .job-step-head .job-panel-link { margin-top: 0; }
+.kcpl-admin-content .job-panel-link:hover { color: var(--admin-crimson); }
+.kcpl-admin-content .job-row-reject { display: grid; gap: 6px; margin-top: 8px; max-width: 420px; }
 
 /* Panels use the shared compact density (operations-system.css, "Compact
  * panels"): the record sets data-surface-density="compact" on its root. */
@@ -46,28 +75,6 @@
 .kcpl-admin-content .job-quiet-section h2 { margin: 0; font-size: 14px; font-weight: 600; line-height: 20px; }
 .kcpl-admin-content .job-quiet-section p { margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
 
-/* ---- Summary ------------------------------------------------------------------ */
-.kcpl-admin-content .job-summary { display: grid; gap: 12px; min-width: 0; }
-.kcpl-admin-content .job-summary > .ops-kpi-rail { margin-bottom: 0; }
-.kcpl-admin-content .job-summary-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 12px; }
-.kcpl-admin-content .job-summary-main { display: grid; gap: 12px; min-width: 0; }
-
-/* Workflow stepper: text steps joined by a hairline; state is a 7px dot and
- * the label weight, never a filled pill. A blocker keeps ink text and marks
- * itself with a red dot only. */
-.kcpl-admin-content .job-stepper { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin: 0; padding: 0; list-style: none; }
-.kcpl-admin-content .job-stepper li { display: flex; align-items: center; }
-.kcpl-admin-content .job-stepper li + li::before { content: ""; width: 14px; height: 1px; margin: 0 2px; background: var(--admin-line-strong); }
-.kcpl-admin-content .job-stepper a { display: inline-flex; min-height: 28px; align-items: center; gap: 6px; border-radius: var(--app-radius-sm); padding: 0 8px; color: var(--admin-faint); font-size: 12.5px; font-weight: 500; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
-.kcpl-admin-content .job-stepper a:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
-.kcpl-admin-content .job-stepper-dot { width: 7px; height: 7px; flex: none; border: 1.5px solid var(--admin-line-strong); border-radius: 999px; background: var(--admin-surface); }
-.kcpl-admin-content .job-stepper li[data-state="complete"] a { color: var(--admin-ink); }
-.kcpl-admin-content .job-stepper li[data-state="complete"] .job-stepper-dot { border-color: var(--admin-success); background: var(--admin-success); }
-.kcpl-admin-content .job-stepper li[data-state="current"] a { color: var(--admin-ink); font-weight: 650; }
-.kcpl-admin-content .job-stepper li[data-state="current"] .job-stepper-dot { border-color: var(--admin-ink); background: var(--admin-ink); }
-.kcpl-admin-content .job-stepper li[data-state="blocked"] a { color: var(--admin-ink); font-weight: 600; }
-.kcpl-admin-content .job-stepper li[data-state="blocked"] .job-stepper-dot { border-color: var(--admin-danger); background: var(--admin-danger); }
-
 /* Inline statistics (economics, cost totals): hairline-separated, no cards. */
 .kcpl-admin-content .job-stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin: 0; }
 .kcpl-admin-content .job-stat-row > div { min-width: 0; padding: 2px 16px; border-left: 1px solid var(--admin-line); }
@@ -75,40 +82,19 @@
 .kcpl-admin-content .job-stat-row dt { color: var(--admin-muted); font-size: 11px; font-weight: 570; letter-spacing: 0.02em; line-height: 14px; text-transform: uppercase; }
 .kcpl-admin-content .job-stat-row dd { margin: 5px 0 0; color: var(--admin-ink); font-size: 16px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 20px; }
 .kcpl-admin-content .job-stat-row dd span { color: var(--admin-muted); font-size: 13px; font-weight: 500; }
-.kcpl-admin-content .job-stat-row .job-stat-note { margin-top: 2px; color: var(--admin-faint); font-size: 11.5px; font-weight: 500; line-height: 15px; }
-
-/* Next-action panel: the Shipments inspector's "Next action" section. */
-.kcpl-admin-content .job-next { position: sticky; top: calc(var(--app-toolbar-height) + 56px); }
-.kcpl-admin-content .job-next-title { display: block; color: var(--admin-ink); font-size: 14px; font-weight: 600; line-height: 19px; }
-.kcpl-admin-content .job-next-links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.kcpl-admin-content .job-next-links a { color: var(--admin-muted); font-size: 12px; font-weight: 550; text-decoration: none; }
-.kcpl-admin-content .job-next-links a:hover { color: var(--admin-crimson); }
 
 /* ---- Working record ------------------------------------------------------------ */
 .kcpl-admin-content .job-workspace { display: grid; gap: 12px; min-height: 0; background: transparent; }
-.kcpl-admin-content .job-workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: start; gap: 12px; }
-.kcpl-admin-content :is(.job-workspace-main, .job-workspace-side) { display: grid; align-content: start; gap: 12px; min-width: 0; }
-
-/* Only Summary pairs panels side by side. Every other tab shows its own panels
- * full width in one column, so a tab never leaves half the page empty. */
-.kcpl-admin-content .job-record:not([data-section="summary"]) .job-workspace-grid { display: flex; flex-direction: column; align-items: stretch; }
-.kcpl-admin-content .job-record:not([data-section="summary"]) :is(.job-workspace-main, .job-workspace-side) { display: contents; }
-.kcpl-admin-content .job-record[data-section="movement"] #shipment-movement { order: 1; }
-.kcpl-admin-content .job-record[data-section="movement"] #shipment-free-time { order: 2; }
-.kcpl-admin-content .job-record[data-section="movement"] #shipment-context { order: 3; }
-@media (min-width: 1100px) {
-  .kcpl-admin-content .job-record[data-section="movement"] #shipment-movement .ops-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-/* Panels that belong to one concern stop leaking onto every tab. */
-.kcpl-admin-content .job-record:not([data-section="summary"]):not([data-section="movement"]) :is(#shipment-context, #shipment-free-time) { display: none; }
-.kcpl-admin-content .job-record:not([data-section="documents"]) #shipment-customer-access { display: none; }
+.kcpl-admin-content .job-workspace-main { display: grid; align-content: start; gap: 12px; min-width: 0; }
 
 /* Closeout checklist: hairline rows, ink text, red only on the marker. */
 .kcpl-admin-content .job-checklist { margin: 0; padding: 0; list-style: none; }
-.kcpl-admin-content .job-checklist li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-top: 1px solid var(--admin-line); color: var(--admin-ink); font-size: 12.5px; line-height: 17px; }
+.kcpl-admin-content .job-checklist li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 8px; padding: 6px 0; border-top: 1px solid var(--admin-line); color: var(--admin-ink); font-size: 12.5px; line-height: 17px; }
 .kcpl-admin-content .job-checklist li:first-child { border-top: 0; padding-top: 0; }
 .kcpl-admin-content .job-checklist svg { flex: none; margin-top: 2px; color: var(--admin-danger); }
+.kcpl-admin-content .job-checklist li > span { flex: 1 1 240px; min-width: 0; }
+.kcpl-admin-content .job-checklist + .job-upload,
+.kcpl-admin-content .job-checklist + .ops-notice { margin-top: 10px; }
 .kcpl-admin-content .job-closeout-override { margin-top: 10px; border-top: 1px solid var(--admin-line); padding-top: 10px; }
 .kcpl-admin-content .job-closeout-override textarea { min-height: 56px; }
 .kcpl-admin-content .job-advisories { margin: 8px 0 0; padding-left: 16px; color: var(--admin-faint); font-size: 12px; line-height: 17px; }
@@ -145,10 +131,9 @@
 .kcpl-admin-content .job-check[aria-pressed="true"] { border-color: var(--admin-success); background: var(--admin-success); color: var(--admin-surface); }
 .kcpl-admin-content .job-row[data-overdue="true"] .job-check:not([aria-pressed="true"]) { border-color: var(--admin-danger); }
 
-.kcpl-admin-content .job-progress { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-bottom: 6px; color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .job-progress { margin-bottom: 8px; }
 .kcpl-admin-content .job-progress strong { color: var(--admin-ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .kcpl-admin-content .job-note { margin: 0; color: var(--admin-ink); font-size: 13px; line-height: 20px; white-space: pre-wrap; }
-.kcpl-admin-content .job-inline-links { display: inline-flex; flex-wrap: wrap; gap: 2px 8px; }
 
 /* Editing areas: one faint canvas block with compact controls. */
 .kcpl-admin-content .job-form { margin-bottom: 10px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 12px; background: var(--admin-canvas); }
@@ -162,7 +147,6 @@
 .kcpl-admin-content .job-form-span-2 { grid-column: span 2; }
 .kcpl-admin-content .job-form-span-all { grid-column: 1 / -1; }
 .kcpl-admin-content .job-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.kcpl-admin-content .job-form-static { display: flex; min-height: 34px; align-items: center; color: var(--admin-muted); font-size: 13px; }
 .kcpl-admin-content .job-form-check { display: flex; align-items: center; gap: 8px; color: var(--admin-ink); font-size: 12.5px; }
 .kcpl-admin-content .job-form-money { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; }
 .kcpl-admin-content .job-upload { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; align-items: end; gap: 10px; }
@@ -206,16 +190,23 @@
 
 /* ---- Responsive ---------------------------------------------------------------- */
 @media (max-width: 1180px) {
-  .kcpl-admin-content .job-summary-grid { grid-template-columns: minmax(0, 1fr) 280px; }
-  .kcpl-admin-content .job-workspace-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 320px); }
+  .kcpl-admin-content .job-guide { grid-template-columns: 216px minmax(0, 1fr); }
 }
+/* Narrow screens: the steps become one scrolling strip above the open step;
+ * the open step's heading carries the summary the strip has no room for. */
 @media (max-width: 960px) {
-  .kcpl-admin-content :is(.job-summary-grid, .job-workspace-grid, .job-delivery-grid) { grid-template-columns: minmax(0, 1fr); }
-  .kcpl-admin-content .job-next { position: static; }
+  .kcpl-admin-content .job-guide { grid-template-columns: minmax(0, 1fr); gap: 12px; padding-inline: 16px; }
+  .kcpl-admin-content .job-steps { position: static; display: flex; gap: 4px; overflow-x: auto; padding: 6px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .kcpl-admin-content .job-steps::-webkit-scrollbar { display: none; }
+  .kcpl-admin-content :is(.job-steps ol, .job-extras) { display: flex; flex: none; gap: 2px; }
+  .kcpl-admin-content .job-steps ol > li::after { display: none; }
+  .kcpl-admin-content .job-extras { border-top: 0; border-left: 1px solid var(--admin-line); padding: 0 0 0 6px; }
+  .kcpl-admin-content .job-steps button { min-height: 44px; align-items: center; gap: 6px; padding: 6px 10px; white-space: nowrap; }
+  .kcpl-admin-content .job-step-summary { display: none; }
+  .kcpl-admin-content :is(.job-delivery-grid) { grid-template-columns: minmax(0, 1fr); }
   .kcpl-admin-content .job-state-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  .kcpl-admin-content .job-record-tabs { padding-inline: 16px; }
   .kcpl-admin-content :is(.job-form-grid, .job-form-grid-2, .job-upload) { grid-template-columns: minmax(0, 1fr); }
   .kcpl-admin-content .job-form-span-2 { grid-column: 1 / -1; }
   .kcpl-admin-content .job-case-meta { text-align: left; }
@@ -227,5 +218,5 @@
   .kcpl-admin-content .job-row-actions { justify-content: flex-start; width: 100%; padding-left: 28px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .kcpl-admin-content :is(.job-stepper a, .job-check, .job-select-row) { transition: none; }
+  .kcpl-admin-content :is(.job-steps button, .job-check, .job-select-row) { transition: none; }
 }

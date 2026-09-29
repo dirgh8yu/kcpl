@@ -1058,6 +1058,8 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .customs-checklist-fill { height: 100%; border-radius: 999px; background: var(--admin-crimson); }
 .kcpl-admin-content .customs-checklist-fill[data-complete] { background: var(--admin-success); }
 .kcpl-admin-content .customs-unassigned { color: var(--admin-danger); font-size: 12px; }
+.kcpl-admin-content .customs-risk { color: var(--admin-warning); font-size: 12.5px; font-weight: 600; }
+.kcpl-admin-content .customs-risk[data-risk="critical"] { color: var(--admin-danger); }
 .kcpl-admin-content .customs-warning-list { display: grid; margin: 0; padding: 0; gap: 6px; list-style: none; }
 .kcpl-admin-content .customs-warning-list li { display: flex; align-items: flex-start; gap: 7px; color: var(--admin-danger); font-size: 12.5px; line-height: 17px; }
 .kcpl-admin-content .customs-warning-list li[data-warning] { color: var(--admin-warning); }
@@ -1132,6 +1134,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .alerts-row-main { min-width: 0; flex: 1; }
 .kcpl-admin-content .alerts-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 .kcpl-admin-content .alerts-row-owner { color: var(--admin-muted); font-size: 12px; }
+.kcpl-admin-content .alerts-row-type { color: var(--admin-muted); font-size: 12px; font-weight: 550; }
 .kcpl-admin-content .alerts-row-age { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--admin-muted); font-size: 12px; white-space: nowrap; }
 .kcpl-admin-content .alerts-row-title { color: var(--admin-ink); font-size: 13.5px; line-height: 19px; }
 .kcpl-admin-content .alerts-row-link { color: inherit; font-weight: 550; text-decoration: none; }
@@ -2440,3 +2443,36 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .portal-text-channels { display: flex; flex-wrap: wrap; gap: 16px; }
 .portal-text-consent { font-weight: 400; align-items: flex-start; }
 .portal-text-consent input { margin-top: 3px; }
+
+/* ---- Workflow blockers + status moves ------------------------------------------
+ * A blocked status change or closeout is explained in place: each blocker with
+ * the step that fixes it, the management override last and closed by default. */
+.kcpl-admin-content .workflow-blockers { margin-top: 10px; border: 1px solid var(--admin-danger-line); border-radius: var(--app-radius); padding: 12px 14px; background: var(--admin-surface); }
+.kcpl-admin-content .workflow-blockers-title { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--admin-ink); font-size: 13.5px; font-weight: 650; line-height: 19px; }
+.kcpl-admin-content .workflow-blockers-title svg { color: var(--admin-danger); }
+.kcpl-admin-content .workflow-blockers ul { margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .workflow-blockers li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; border-top: 1px solid var(--admin-line); padding: 7px 0; color: var(--admin-ink); font-size: 12.5px; line-height: 18px; }
+.kcpl-admin-content .workflow-blockers li:first-child { border-top: 0; }
+.kcpl-admin-content .workflow-blockers li > span { flex: 1 1 260px; min-width: 0; }
+.kcpl-admin-content .workflow-blockers-fix { display: inline-flex; flex: none; align-items: center; gap: 3px; border: 0; padding: 0; background: none; color: var(--admin-crimson); font: inherit; font-size: 12.5px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.kcpl-admin-content .workflow-blockers-fix:hover { text-decoration: underline; text-underline-offset: 3px; }
+.kcpl-admin-content .workflow-blockers-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; }
+.kcpl-admin-content .workflow-blockers-link { border: 0; padding: 0; background: none; color: var(--admin-muted); font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.kcpl-admin-content .workflow-blockers-link:hover { color: var(--admin-ink); }
+.kcpl-admin-content .workflow-blockers-override { display: grid; gap: 8px; margin-top: 8px; border-top: 1px solid var(--admin-line); padding-top: 10px; }
+.kcpl-admin-content .workflow-blockers-override textarea { min-height: 56px; }
+.kcpl-admin-content .shipment-status-control { display: grid; gap: 8px; }
+.kcpl-admin-content .shipment-status-control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kcpl-admin-content .shipment-status-control-error { margin: 0; color: var(--admin-danger); font-size: 12.5px; line-height: 18px; }
+
+/* ---- Loading placeholders --------------------------------------------------------
+ * Grey bars where rows will be, so a page keeps its shape while data arrives. */
+.kcpl-admin-content .ops-skeleton-rows { display: grid; gap: 10px; padding: 6px 0; }
+.kcpl-admin-content .ops-skeleton-rows > span,
+.kcpl-admin-content .ops-skeleton-block { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--admin-surface-muted) 0%, var(--admin-canvas) 50%, var(--admin-surface-muted) 100%); background-size: 200% 100%; animation: ops-skeleton 1.4s linear infinite; }
+.kcpl-admin-content .ops-skeleton-rows > span:nth-child(2n) { width: 72%; }
+.kcpl-admin-content .ops-skeleton-rows > span:nth-child(3n) { width: 86%; }
+@keyframes ops-skeleton { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content :is(.ops-skeleton-rows > span, .ops-skeleton-block) { animation: none; }
+}

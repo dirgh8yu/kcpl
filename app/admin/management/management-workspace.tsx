@@ -26,8 +26,8 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
 
   return <OpsPage>
     <OpsPageHeader
-      title="Analytics"
-      description="Period performance, live working capital and operational pressure. Currencies are never blended."
+      title="Reports"
+      description="How the business is doing this period. Each currency is shown separately."
       meta={<span>{analytics.range.label} · generated {generated}</span>}
       actions={<>
         <Link href={`/api/admin/management/export?${exportQuery}`} className="ops-button" data-variant="secondary" data-size="md"><Download size={16} strokeWidth={1.75} aria-hidden="true"/>Export CSV</Link>

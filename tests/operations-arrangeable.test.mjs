@@ -15,6 +15,7 @@ import {
   parseSectionDndId,
   presetForState,
   presetForStateIn,
+  roleOverviewArrangement,
   savedLayoutForState,
   sectionDndId,
 } from "../app/admin/operations-arrangeable.ts";
@@ -171,4 +172,19 @@ test("manager preset matches the default arrangement and applying it over a cust
     JSON.stringify(custom),
     JSON.stringify(manager.layout),
   );
+});
+
+test("each role starts on its own Overview until the person arranges one", () => {
+  assert.equal(presetForState(roleOverviewArrangement("operations")), "dispatch");
+  assert.equal(presetForState(roleOverviewArrangement("accounts")), "finance");
+  assert.equal(presetForState(roleOverviewArrangement("commercial")), "sales");
+  assert.equal(presetForState(roleOverviewArrangement("management")), "manager");
+  assert.equal(presetForState(roleOverviewArrangement(null)), "manager");
+  // A fresh copy each time: applying it can never mutate the preset table.
+  const first = roleOverviewArrangement("operations");
+  first.order.reverse();
+  assert.equal(presetForState(roleOverviewArrangement("operations")), "dispatch");
+  // Operations work the queue; money is not on their first screen.
+  assert.ok(roleOverviewArrangement("operations").hidden.includes("finance"));
+  assert.equal(roleOverviewArrangement("accounts").order[0], "finance");
 });

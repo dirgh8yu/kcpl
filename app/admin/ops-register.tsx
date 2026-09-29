@@ -7,7 +7,7 @@ import { useAdminPortalContainer } from "./use-admin-portal-container";
 
 /*
  * Register primitives shared by the operational workspaces (Shipments set the
- * benchmark; Pickup Scheduling and Freight Documents consume these). They are
+ * benchmark; Pickups and Freight Documents consume these). They are
  * presentation only: every value, count and filter change comes from the
  * calling workspace, so adopting them never changes filtering semantics.
  * Styles live in operations-system.css under "Register primitives".

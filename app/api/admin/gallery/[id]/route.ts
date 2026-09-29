@@ -11,7 +11,7 @@ function refreshGallery() {
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authorizeGallery(request);
   if ("response" in auth) return auth.response;
-  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "Firebase Storage is not configured." }, 503);
+  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "File uploads aren’t set up on this site yet. Ask Management." }, 503);
   const { id } = await params;
   if (!validId(id)) return galleryJson({ ok: false, error: "Invalid gallery image." }, 400);
   let body: Record<string, unknown>;
@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authorizeGallery(request);
   if ("response" in auth) return auth.response;
-  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "Firebase Storage is not configured." }, 503);
+  if (!galleryStorageAvailable()) return galleryJson({ ok: false, error: "File uploads aren’t set up on this site yet. Ask Management." }, 503);
   const { id } = await params;
   if (!validId(id)) return galleryJson({ ok: false, error: "Invalid gallery image." }, 400);
   try {

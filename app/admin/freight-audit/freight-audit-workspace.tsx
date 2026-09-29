@@ -56,7 +56,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   }
 
   return <div className="ops-content ops-stack">
-    <OpsPageHeader eyebrow="Finance control" title="Freight Audit & Match-Pay" description="Compare supplier invoices against the locked TMS procurement booking before Accounts releases payment. Taxes remain visible but are excluded from the freight-rate comparison, and currencies are never silently converted."/>
+    <OpsPageHeader title="Supplier bill checks" description="Check each supplier bill against what we booked before paying it. Taxes are shown but not compared, and currencies are never converted."/>
 
     <OpsKpiRail label="Freight audit summary">
       <OpsRailMetric label="Bills audited" value={summary.total} title="Current payable queue"/>

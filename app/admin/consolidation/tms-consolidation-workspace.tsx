@@ -115,11 +115,11 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
     try {
       const response = await fetch("/api/admin/consolidation", { cache: "no-store" });
       const data = await response.json() as ApiResponse;
-      if (!response.ok || !data.ok || !data.loads || !data.orders) throw new Error(data.error || "Load Planner could not be refreshed.");
+      if (!response.ok || !data.ok || !data.loads || !data.orders) throw new Error(data.error || "Load planning could not be refreshed.");
       setLoads(data.loads); setOrders(data.orders);
       if (!selectedLoadId && data.loads[0]) setSelectedLoadId(data.loads[0].id);
       setNotice({ tone: "success", text: "Consolidation loads and transport orders refreshed." });
-    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Load Planner could not be refreshed." }); }
+    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Load planning could not be refreshed." }); }
     finally { setBusy(false); }
   }
   // The top bar's refresh reloads this desk; the page no longer has its own button.
@@ -213,7 +213,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
     if (!selectedLoad) return;
     setBusy(true); setNotice(null);
     try {
-      await action({ action: "cancel", loadId: selectedLoad.id, note: "Cancelled from Load Planner" });
+      await action({ action: "cancel", loadId: selectedLoad.id, note: "Cancelled from Load planning" });
       await refresh();
       setNotice({ tone: "success", text: `${selectedLoad.reference} cancelled and its house orders were released.` });
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Load could not be cancelled." }); }
@@ -235,8 +235,8 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
   return (
     <OpsPage>
       <OpsPageHeader
-        title="Load Planner"
-        description="Consolidate transport orders into master loads and sequence their stops."
+        title="Load planning"
+        description="Combine shipments into one load and set the order of stops."
         actions={<>
           {canManage ? <OpsButton variant="primary" onClick={() => setShowCreate((value) => !value)} aria-expanded={showCreate}><PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>New load</OpsButton> : null}
         </>}
@@ -406,7 +406,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                 Rate the master order in the Rate Desk, then tender it normally.
                 <span className="load-note-actions"><Link href="/admin/rating" className="ops-button" data-size="xs" data-variant="secondary">Rate master order</Link><Link href="/admin/tenders" className="ops-button" data-size="xs" data-variant="ghost">Tender Desk</Link></span>
               </OpsInspectorNote> : null}
-              {selectedLoad.status === "booked" ? <OpsInspectorNote tone="success" title={`Master booking ${selectedLoad.master_booking_reference || "recorded"} · ${selectedLoad.procurement_partner_name || "Partner"}`}>Each house order keeps its own Digital Job File while remaining linked to this master movement.</OpsInspectorNote> : null}
+              {selectedLoad.status === "booked" ? <OpsInspectorNote tone="success" title={`Master booking ${selectedLoad.master_booking_reference || "recorded"} · ${selectedLoad.procurement_partner_name || "Partner"}`}>Each house order keeps its own shipment record while remaining linked to this master movement.</OpsInspectorNote> : null}
 
               {editable ? <div className="load-detail-actions">
                 <OpsButton variant="danger" size="sm" onClick={cancelLoad} disabled={busy}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>Cancel load</OpsButton>

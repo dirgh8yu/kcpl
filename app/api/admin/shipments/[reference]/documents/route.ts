@@ -35,7 +35,7 @@ async function authorize() {
 
 async function guard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
   const access = await checkShipmentBranchAccess(reference, staff);
-  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   if (access.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (access.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
   return null;
@@ -61,7 +61,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   if (accessError) return accessError;
   try {
     const result = await listShipmentDocuments(reference);
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Documents aren’t responding right now. Try again in a minute." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
     return json({ ok: true, documents: result.documents, storageAvailable: result.storageAvailable });
   } catch (error) {
@@ -119,7 +119,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       data,
       supersedesDocumentId,
     });
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase Storage is not configured yet." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "File uploads aren’t set up on this site yet. Ask Management." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
     if (result.kind === "duplicate") return json({ ok: false, error: "This exact file is already stored on the shipment.", code: "DUPLICATE_DOCUMENT", document: result.document }, 409);
     if (result.kind === "supersedes_missing") return json({ ok: false, error: "The document being replaced no longer exists." }, 409);

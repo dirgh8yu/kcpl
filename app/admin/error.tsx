@@ -14,13 +14,13 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
 
   return <V4WorkspaceGate
     eyebrow="KCPL Operations"
-    title="This workspace could not be loaded"
-    detail="The operations route failed before it finished rendering. Nothing was saved by this request. Retry the workspace, or return to the operations overview and open it again."
+    title="This page didn’t load"
+    detail="Something went wrong while opening it. Nothing was changed. Try again, or go back to the Overview."
     actions={[
-      { href: "/admin/command-centre", label: "Operations Overview", primary: true },
+      { href: "/admin/command-centre", label: "Overview" },
       { href: "/admin/shipments", label: "Shipments" },
     ]}
   >
-    <OpsButton variant="secondary" size="md" onClick={reset}><RefreshCw size={13}/>Retry this workspace</OpsButton>
+    <OpsButton variant="primary" size="md" onClick={reset}><RefreshCw size={13}/>Try again</OpsButton>
   </V4WorkspaceGate>;
 }

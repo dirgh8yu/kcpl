@@ -42,7 +42,7 @@ export function NewReceivableWorkspace() {
   }
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Quick create" title="New receivable" description="Create a customer invoice directly. Use either a shipment reference, which resolves its CRM customer automatically, or a KCPL customer reference for a general receivable." actions={<Link href="/admin/finance" className="ops-button" data-variant="secondary" data-size="md">Cancel</Link>}/>
+    <OpsPageHeader title="New invoice" description="Enter a shipment reference to bill its customer, or a customer reference for a general invoice." actions={<Link href="/admin/finance" className="ops-button" data-variant="secondary" data-size="md">Cancel</Link>}/>
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
       <OpsSurface eyebrow="Customer invoice" title="Create invoice draft" description="Shipment-linked invoicing preserves the existing customer-linking guard and sends unresolved jobs to the dedicated resolution workflow.">

@@ -26,7 +26,7 @@ export default async function PayableBillPage({ params }: { params: Promise<{ re
 
   const { reference } = await params;
   const result = await getPayable(reference, staff);
-  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Accounts Payable unavailable" detail="The Firestore payable ledger is unavailable for this deployment."/></OperationsShell>;
+  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Supplier bills didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Supplier bill not found" detail="This payable reference does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Outside your branch access" detail="This supplier bill belongs to a branch outside your staff profile."/></OperationsShell>;
 

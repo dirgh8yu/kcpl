@@ -150,8 +150,8 @@ export function PortalAccessWorkspace({
   return (
     <OpsPage>
       <OpsPageHeader
-        title="Customer Portal Access"
-        description="Read-only customer logins for their own shipments, released documents and invoices. Portal accounts are separate from staff accounts."
+        title="Customer portal logins"
+        description="Who at each customer can sign in to see their shipments, documents and invoices."
         meta={<span>{accounts.length} portal account{accounts.length === 1 ? "" : "s"} · {activeAccounts} active</span>}
       />
 
@@ -170,7 +170,7 @@ export function PortalAccessWorkspace({
         </div> : null}
 
         <div className="org-grid">
-          <OpsSurface density="compact" title="Grant portal access" description="The contact receives a Firebase link to set their own password. KCPL never sets or holds a customer password.">
+          <OpsSurface density="compact" title="Grant portal access" description="The contact gets an email link to set their own password. KCPL never sees it.">
             <form onSubmit={submit} aria-busy={Boolean(busy)}>
               <div className="ops-form-grid portal-grid">
                 <OpsField label="Customer contact email" className="ops-form-full">

@@ -58,7 +58,7 @@ export function MigrationBatchHistory({ initialDashboard }: { initialDashboard: 
       action={<OpsButton variant="ghost" size="xs" disabled={busy} onClick={() => void refresh()}>{busy ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>}Refresh</OpsButton>}
       flush
     >
-      {!dashboard ? <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Migration history unavailable" description="Firebase migration batch storage could not be loaded."/> : <>
+      {!dashboard ? <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Import history didn’t load" description="Import batches didn’t load. Try again in a minute."/> : <>
         <div className="migration-counts"><OpsKpiRail label="Migration batch summary">
           <Metric label="Batches" value={dashboard.total_batches}/>
           <Metric label="Completed" value={dashboard.completed_batches} tone="success"/>
@@ -78,7 +78,7 @@ export function MigrationBatchHistory({ initialDashboard }: { initialDashboard: 
           <td><OpsBadge tone={tone(batch.status)}>{label(batch.status)}</OpsBadge>{batch.status === "interrupted" ? <p className="mt-1 flex items-center gap-1 text-[length:var(--app-label-size)] text-[var(--admin-warning)]"><Clock3 size={9}/>Running for more than 30 minutes</p> : null}{batch.error ? <p className="mt-1 max-w-[220px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{batch.error}</p> : null}</td>
         </tr>)}</tbody></table></div> : <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No migration batches yet" description="The first confirmed Stage 1–3 import will appear here automatically."/>}
 
-        {dashboard.partial_failure_batches || dashboard.interrupted_batches ? <div className="migration-attention"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Recovery attention required.</strong> Stage 4A only surfaces the affected batches. Controlled rollback and recovery actions run from Migration Recovery.</OpsInlineAlert></div> : null}
+        {dashboard.partial_failure_batches || dashboard.interrupted_batches ? <div className="migration-attention"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Recovery attention required.</strong> Stage 4A only surfaces the affected batches. Controlled rollback and recovery actions run from Undo an import.</OpsInlineAlert></div> : null}
       </>}
     </OpsSurface>
   </div>;

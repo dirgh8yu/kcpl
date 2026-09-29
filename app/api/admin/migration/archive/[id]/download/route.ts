@@ -25,9 +25,9 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const { id } = await context.params;
   try {
     const result = await getPaperArchiveFile(id);
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase Storage is not configured for the paper archive." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "File uploads aren’t set up for the paper archive yet. Ask Management." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Archive record not found." }, 404);
-    if (result.kind === "object-missing") return json({ ok: false, error: "Archive metadata exists but the stored file is missing." }, 410);
+    if (result.kind === "object-missing") return json({ ok: false, error: "The archive record exists but its file is missing. Ask Management to upload it again." }, 410);
     return new Response(new Uint8Array(result.bytes), {
       status: 200,
       headers: {

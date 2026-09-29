@@ -51,7 +51,7 @@ export const canonicalDeliveryBlockerMessages: Record<CanonicalDeliveryBlockerCo
   customs_not_released: "Explicit KCPL Customs release is required before canonical delivery completion.",
   required_documents_incomplete: "Required operational documents must be verified and unexpired before canonical delivery completion.",
   blocking_operational_exception: "Resolve active high or critical operational exceptions before canonical delivery completion.",
-  job_closed: "The Digital Job File is closed. Reopen it before canonical delivery completion.",
+  job_closed: "The shipment record is closed. Reopen it before canonical delivery completion.",
 };
 
 export function canonicalDeliveryStatus(value: unknown): ShipmentStatus | null {

@@ -8,7 +8,7 @@ import { TmsPricingWorkspace } from "./tms-pricing-workspace";
 import { listPricingWorkspace } from "./tms-pricing.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pricing Desk | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Pricing | KCPL Operations", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }
@@ -18,7 +18,7 @@ async function resolveStaff(user: { uid: string; email: string; displayName: str
   try {
     return { kind: "ready", staff: await getStaffContext(user) };
   } catch (error) {
-    console.error("Failed to resolve KCPL staff context for Pricing Desk", error);
+    console.error("Failed to resolve KCPL staff context for Pricing", error);
     return { kind: "error", permissions: staffCapabilitiesForEmail(user.email) };
   }
 }
@@ -27,19 +27,19 @@ async function loadWorkspace(staff: Awaited<ReturnType<typeof getStaffContext>>)
   try {
     return await listPricingWorkspace(staff);
   } catch (error) {
-    console.error("Failed to load KCPL Pricing Desk", error);
+    console.error("Failed to load KCPL Pricing", error);
     return { kind: "error" as const };
   }
 }
 
 export default async function PricingPage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Pricing Desk is available only to authorised staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Pricing is available only to authorised staff."/>;
 
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Pricing Desk could not be loaded" detail="KCPL pricing data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Pricing didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -54,7 +54,7 @@ export default async function PricingPage() {
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Sell pricing contains customer-specific rates, procurement costs and margin controls." embedded/></OperationsShell>;
 
   const workspace = await loadWorkspace(staff);
-  if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Pricing Desk unavailable" detail="KCPL transport-order, CRM or pricing-rule storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Pricing didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   return (
     <OperationsShell {...shellProps}>
@@ -65,7 +65,7 @@ export default async function PricingPage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Pricing Desk"
+    eyebrow="KCPL Pricing"
     title={title}
     detail={detail}
     embedded={embedded}

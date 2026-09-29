@@ -176,7 +176,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     return json({ ok: false, error: "Commercial access is required to move an enquiry into or out of Quoted, Won or Lost.", code: "COMMERCIAL_REQUIRED" }, 403);
   }
   if (result.kind === "won-locked") {
-    return json({ ok: false, error: "A Won quote cannot be moved backwards. Continue the accepted movement from its Shipment or Digital Job File.", code: "WON_LOCKED" }, 409);
+    return json({ ok: false, error: "A Won quote cannot be moved backwards. Continue the accepted movement from its Shipment or shipment record.", code: "WON_LOCKED" }, 409);
   }
   if (result.kind === "customer-required") {
     return json({ ok: false, error: "Confirm or create the CRM customer before marking this quote Won.", code: "CUSTOMER_REQUIRED" }, 409);
@@ -188,7 +188,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     try {
       const shipmentResult = await ensureShipmentForWonQuote(reference, auth.user.displayName, auth.user.email);
       if (shipmentResult.kind === "tms-authority-required") {
-        return json({ ok: false, error: "TMS/versioned quotes can create shipments only through canonical Tender and Booking.", code: "TMS_BOOKING_REQUIRED" }, 409);
+        return json({ ok: false, error: "This quote is booked through Tenders. Create the shipment there.", code: "TMS_BOOKING_REQUIRED" }, 409);
       }
       if (shipmentResult.kind === "created" || shipmentResult.kind === "ready") {
         shipment = shipmentResult.shipment;

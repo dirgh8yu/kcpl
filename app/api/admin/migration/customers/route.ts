@@ -11,7 +11,7 @@ async function authorizeManagement() {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return { response: json({ ok: false, error: "Sign in is required." }, 401) };
   const staff = await getStaffContext(access.user);
-  if (staff.permissions.role !== "management") return { response: json({ ok: false, error: "Migration Hub access is restricted to KCPL Management." }, 403) };
+  if (staff.permissions.role !== "management") return { response: json({ ok: false, error: "Import old records access is restricted to KCPL Management." }, 403) };
   return { user: access.user, staff };
 }
 
@@ -60,13 +60,13 @@ export async function POST(request: Request) {
   try {
     if (action === "preview") {
       const result = await prepareCustomerImport(file.name, csv);
-      if (result.kind === "unavailable") return json({ ok: false, error: "Firebase customer storage is unavailable." }, 503);
+      if (result.kind === "unavailable") return json({ ok: false, error: "Customer records aren’t responding. Try again in a minute." }, 503);
       if (result.kind === "invalid_file") return json({ ok: false, error: result.error }, 400);
       return json({ ok: true, preview: result.preview, limits });
     }
 
     const result = await importCustomerCsv(file.name, csv, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase customer storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Customer records aren’t responding. Try again in a minute." }, 503);
     if (result.kind === "invalid_file") return json({ ok: false, error: result.error }, 400);
     return json({ ok: true, result: result.result });
   } catch (error) {

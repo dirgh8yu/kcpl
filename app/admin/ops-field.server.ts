@@ -23,7 +23,7 @@ import type { KcplStaffContext } from "./staff-directory.server";
  *
  * A field note is Job File activity, the same record every other change to a
  * job leaves, so the web timeline shows it with no new surface. A photo is an
- * ordinary staff upload to the job's Document Vault, entering `received` like
+ * ordinary staff upload to the job's documents, entering `received` like
  * any other file; the note only points at it. Neither writes shipment status.
  */
 

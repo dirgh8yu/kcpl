@@ -122,8 +122,8 @@ export function CarrierIntegrationsWorkspace({
 
   return <>
     <OpsPageHeader
-      title="Carrier integrations"
-      description="Carrier APIs, DCSA webhooks and tracking sync. Credentials stay server-only."
+      title="Carrier connections"
+      description="Carrier systems that send KCPL tracking updates automatically."
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">

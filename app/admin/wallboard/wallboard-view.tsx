@@ -100,7 +100,7 @@ export function WallboardView({ initial, initialGeneratedAt }: { initial: Wallbo
   );
 }
 
-const SLIDE_LABELS = ["Live pulse", "Today", "Blockers", "Transitions"];
+const SLIDE_LABELS = ["Right now", "Today", "Stuck", "Status changes"];
 
 /** Kathmandu wall clock and date, ticking gently (wallboards run for days). */
 function WallboardClock() {
@@ -127,8 +127,8 @@ function nptDate(now: Date): string {
 
 function PulseSlide({ board }: { board: Wallboard }) {
   return (
-    <section className="wb-slide" aria-label="Live pulse">
-      <h2 className="wb-slide-title">Live pulse</h2>
+    <section className="wb-slide" aria-label="Right now">
+      <h2 className="wb-slide-title">Right now</h2>
       <div className="wb-pulse-grid">
         {board.pulse.map((metric) => (
           <div key={metric.key} className="wb-pulse-cell" data-tone={metric.tone} data-zero={metric.value === 0 || undefined}>

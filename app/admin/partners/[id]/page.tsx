@@ -29,10 +29,10 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
   try { result = await getPartner360Snapshot(partnerId, staff); }
   catch (error) {
     console.error("Failed to load KCPL Partner 360", partnerId, error);
-    return <OperationsShell {...shellProps}><Gate embedded title="Partner 360 could not be loaded" detail="KCPL partner relationship data is temporarily unavailable."/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate embedded title="Partner didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/></OperationsShell>;
   }
 
-  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Partner network is unavailable" detail="The Firebase Partner registry is not available for this deployment."/></OperationsShell>;
+  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Partners didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Partner not found" detail="This partner or vendor record does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Partner access restricted" detail="This partner belongs to a KCPL branch outside your assigned access."/></OperationsShell>;
 
@@ -40,5 +40,5 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · Partner 360" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier Integrations" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Network · Partner 360" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
 }

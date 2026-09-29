@@ -91,7 +91,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
   if (!isKcplBranch(decodedBranch)) return <Gate title="Branch not found" detail="This location is not registered as a KCPL operating branch."/>;
 
   const data = await loadCommandCentre(staff);
-  if (!data) return <Gate title="Branch data unavailable" detail="Firebase operational data is unavailable for this deployment."/>;
+  if (!data) return <Gate title="Branch didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/>;
   if (!data.accessible_branches.includes(decodedBranch)) return <Gate title="Outside your branch access" detail="Your staff profile does not include access to this KCPL branch."/>;
 
   const branch = decodedBranch;

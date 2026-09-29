@@ -33,7 +33,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (accessError) return accessError;
   try {
     const result = await listCrmCustomerDocuments(id);
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Firebase document metadata storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Documents aren’t responding right now. Try again in a minute." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     return crmJson({ ok: true, documents: result.documents, storageAvailable: result.storageAvailable });
   } catch (error) {
@@ -76,7 +76,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       uploadedByEmail: auth.user.email,
       data: await file.arrayBuffer(),
     });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Firebase Storage is not configured yet." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "File uploads aren’t set up on this site yet. Ask Management." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     return crmJson({ ok: true, document: result.document }, 201);
   } catch (error) {

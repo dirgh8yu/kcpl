@@ -8,12 +8,10 @@ import {
   OpsBadge,
   OpsButton,
   OpsEmptyState,
-  OpsKpiRail,
   OpsMono,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
@@ -38,14 +36,6 @@ function dateTime(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return `${new Intl.DateTimeFormat("en-AU", { timeZone: "Asia/Kathmandu", dateStyle: "medium", timeStyle: "short" }).format(date)} NPT`;
-}
-
-function severityTone(value: AutomationAlertSeverity): "info" | "warning" | "danger" {
-  return value === "critical" ? "danger" : value === "warning" ? "warning" : "info";
-}
-
-function statusTone(value: AutomationAlertStatus): "info" | "success" | "neutral" {
-  return value === "open" ? "info" : value === "acknowledged" ? "success" : "neutral";
 }
 
 function ageLabel(value: string) {
@@ -78,7 +68,7 @@ const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
   { value: "all", label: "All history" },
 ];
 
-export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: AutomationAlert[]; roleLabel: string }) {
+export function AlertsWorkspace({ initialAlerts }: { initialAlerts: AutomationAlert[] }) {
   const [alerts, setAlerts] = useState(initialAlerts);
   const { params, update } = useWorkspaceQuery();
   const query = params.get("q") ?? "";
@@ -217,9 +207,8 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
   return <OpsPage>
     <div className="alerts-workspace-page">
       <OpsPageHeader
-        eyebrow="Operational control"
-        title="Tasks & Alerts"
-        description={`Operational exceptions ordered by severity · ${counts.active} active · ${roleLabel}`}
+        title="Tasks & alerts"
+        description="Problems and follow-ups, most urgent first."
         actions={<><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} strokeWidth={1.75} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
       />
 
@@ -266,21 +255,9 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
                 <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
               </button>
             );
-            if (id === "rail") {
-              return (
-          <div className="px-4 pt-3 md:px-6">
-            {handle}
-            <OpsKpiRail label="Alert summary">
-          <OpsRailMetric label="Critical" value={counts.critical} tone="danger" active={severity === "critical"} onClick={() => setSeverity(severity === "critical" ? "all" : "critical")} title="Critical severity, unresolved"/>
-          <OpsRailMetric label="Warning" value={counts.warning} tone="warning" active={severity === "warning"} onClick={() => setSeverity(severity === "warning" ? "all" : "warning")} title="Warning severity, unresolved"/>
-          <OpsRailMetric label="Open" value={counts.open} tone="info" active={status === "open"} onClick={() => setStatus(status === "open" ? "active" : "open")}/>
-          <OpsRailMetric label="Acknowledged" value={counts.acknowledged} active={status === "acknowledged"} onClick={() => setStatus(status === "acknowledged" ? "active" : "acknowledged")}/>
-          <OpsRailMetric label="Active" value={counts.active} active={status === "active"} onClick={() => setStatus("active")} title="Not yet resolved"/>
-          <OpsRailMetric label="Resolved" value={counts.resolved} tone="success" active={status === "resolved"} onClick={() => setStatus(status === "resolved" ? "active" : "resolved")}/>
-            </OpsKpiRail>
-          </div>
-            );
-          }
+            // The severity and status tabs above the queue carry every count and
+            // filter; a summary rail repeated all six numbers a row higher.
+            if (id === "rail") return null;
           return (
       <div className="px-4 pb-8 md:px-6">
         {handle}
@@ -314,13 +291,13 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
             const busy = busyId === alert.id;
             const resolved = alert.status === "resolved";
             return <div key={alert.id} className="alerts-row" data-resolved={resolved || undefined} data-critical={!resolved && alert.severity === "critical" ? "true" : undefined}>
-              <div className="alerts-row-icon"><SeverityIcon severity={alert.severity}/></div>
+              {/* Severity is the icon; status is the tab and the line below. One
+                  badge is left, and only when someone has to step in. */}
+              <div className="alerts-row-icon" role="img" aria-label={`${alert.severity} severity`} title={`${alert.severity[0].toUpperCase()}${alert.severity.slice(1)}`}><SeverityIcon severity={alert.severity}/></div>
               <div className="alerts-row-main">
                 <div className="alerts-row-meta">
-                  <OpsBadge tone={severityTone(alert.severity)} dot>{alert.severity}</OpsBadge>
-                  <OpsBadge>{automationAlertTypeLabels[alert.type]}</OpsBadge>
-                  {alert.status !== "open" ? <OpsBadge tone={statusTone(alert.status)}>{alert.status}</OpsBadge> : null}
-                  {alert.escalated_at ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}
+                  {alert.escalated_at && !resolved ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}
+                  <span className="alerts-row-type">{automationAlertTypeLabels[alert.type]}</span>
                   <OpsMono>{alert.entity_id}</OpsMono>
                   {alert.assigned_to_name || alert.assigned_to_email ? <span className="alerts-row-owner">· {alert.assigned_to_name || alert.assigned_to_email}</span> : null}
                   <span className="alerts-row-age"><Clock3 size={11} strokeWidth={1.75} aria-hidden="true"/>{ageLabel(alert.last_triggered_at)}</span>

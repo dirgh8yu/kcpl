@@ -7,7 +7,7 @@ import { listFreightAuditQueue } from "./freight-audit.server";
 import { FreightAuditWorkspace } from "./freight-audit-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Freight Audit & Match-Pay | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Supplier bill checks | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function FreightAuditPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const access = await getAdminAccess();
@@ -27,7 +27,7 @@ export default async function FreightAuditPage({ searchParams }: { searchParams:
   try { result = await listFreightAuditQueue(staff); }
   catch (error) { console.error("Failed to load KCPL Freight Audit", error); result = { kind: "unavailable" as const }; }
 
-  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Freight Audit unavailable" detail="Firebase audit data is temporarily unavailable. Existing supplier bills have not been changed."/></OperationsShell>;
+  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Bill checks didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   const { q } = await searchParams;
   return <OperationsShell {...shellProps}><OpsPage><FreightAuditWorkspace initialRows={result.rows} initialSummary={result.summary} isManagement={staff.permissions.role === "management"} initialFocus={q?.trim() ?? ""}/></OpsPage></OperationsShell>;
 }

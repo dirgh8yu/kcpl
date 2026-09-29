@@ -35,7 +35,7 @@ import { presetForStateIn, savedLayoutForState, WORKSPACE_PRESETS } from "../ope
 import type { SuggestedChecklist as SuggestedChecklistData } from "./checklist-recommender";
 import { useStaffArrangement } from "../use-staff-arrangement";
 import { CustomiseMenu, CustomiseRow } from "../ops-register";
-import { CustomsClearanceEditor, clearanceTone } from "./customs-clearance-editor";
+import { CustomsClearanceEditor } from "./customs-clearance-editor";
 import type { CustomsDeskRow } from "./customs-data.server";
 import { customsClearanceStatusLabels } from "./customs-policy";
 
@@ -151,14 +151,13 @@ function Inspector({
     <div className="ops-inspector-scroll">
       <div className="ops-inspector-body">
         <div className="flex flex-wrap gap-1.5">
-          <OpsBadge tone={clearanceTone(row.clearance.status)} dot>{customsClearanceStatusLabels[row.clearance.status]}</OpsBadge>
           <OpsBadge tone={stateTone(row.state)} dot>{stateLabel(row.state)}</OpsBadge>
-          <OpsBadge tone={riskTone(row.risk)}>{row.risk === "critical" ? "Critical risk" : row.risk === "warning" ? "Warning" : "Normal"}</OpsBadge>
+          {row.risk === "normal" ? null : <OpsBadge tone={riskTone(row.risk)}>{row.risk === "critical" ? "High risk" : "Watch"}</OpsBadge>}
         </div>
 
-        {checklistReady && !released ? <OpsInlineAlert tone="warning" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Checklist complete — not yet released.</strong> Customs has not officially released this shipment; release evidence remains authoritative.</OpsInlineAlert> : null}
+        {checklistReady && !released ? <OpsInlineAlert tone="warning" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Checklist done, not released yet.</strong> Record the release once customs confirms it.</OpsInlineAlert> : null}
         {released ? <OpsInlineAlert tone="info" icon={<CheckCircle2 size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Customs released.</strong> Official release confirmed{row.clearance.declaration_reference ? ` · ${row.clearance.declaration_reference}` : ""}{row.clearance.entry_point ? ` · ${row.clearance.entry_point}` : ""}.</OpsInlineAlert> : null}
-        {held ? <OpsInlineAlert tone="danger" icon={<ShieldAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Customs hold.</strong> {row.clearance.hold_reason || "A Customs hold is recorded. Resolve the authority requirement before movement continues."}</OpsInlineAlert> : null}
+        {held ? <OpsInlineAlert tone="danger" icon={<ShieldAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Customs hold.</strong> {row.clearance.hold_reason || "Customs is holding this shipment. Sort out what they need before it can move."}</OpsInlineAlert> : null}
 
         <OpsInspectorSection title="Clearance record">
           <OpsFacts columns={2}>
@@ -286,7 +285,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
       });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "Could not complete the customs step.");
-      setNotice({ tone: "success", text: "Customs step completed. The queue is refreshing from the Digital Job File." });
+      setNotice({ tone: "success", text: "Customs step completed. The queue is refreshing from the shipment record." });
       router.refresh();
     } catch (error) {
       setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Could not complete the customs step." });
@@ -371,9 +370,8 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
   return <OpsPage className="customs-clearance-register">
     <div className="customs-clearance-page">
       <OpsPageHeader
-        eyebrow="Shipment compliance"
-        title="Customs Clearance"
-        description={`Branch-aware clearance desk · ${rows.length} shipments in scope · release evidence remains authoritative`}
+        title="Customs"
+        description="Shipments waiting on customs. Record each release with its evidence."
       />
 
       <div className="px-4 pt-3 md:px-6">
@@ -439,7 +437,6 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
           return (
       <div className="px-4 pb-8 md:px-6">
         {handle}
-        {blockedCount > 0 ? <div className="mb-3"><OpsInlineAlert tone="danger" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} actions={<button type="button" className="ops-inline-alert-action" aria-pressed={state === "blocked"} onClick={() => setStateFilter("blocked")}>Show blocked</button>}><strong>{blockedCount} shipment{blockedCount === 1 ? "" : "s"} blocked</strong> · resolve missing documents, checklist dependencies or authority holds.</OpsInlineAlert></div> : null}
         {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
         <OpsRegisterToolbar
@@ -469,8 +466,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
                       <th>Shipment</th>
                       <th>Customer · Branch</th>
                       {compact ? null : <th>Border point</th>}
-                      <th>Clearance</th>
-                      <th>Desk state</th>
+                      <th>Status</th>
                       <th>Risk</th>
                       <th>Checklist</th>
                       {compact ? null : <th>Owner</th>}
@@ -499,9 +495,13 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
                           <span className="ops-cell-secondary">{row.branch || "Branch repair needed"}</span>
                         </td>
                         {compact ? null : <td><span className="ops-cell-muted">{row.clearance.entry_point || "—"}</span></td>}
-                        <td><OpsBadge tone={clearanceTone(row.clearance.status)} dot>{customsClearanceStatusLabels[row.clearance.status]}</OpsBadge></td>
-                        <td><OpsBadge tone={stateTone(row.state)} dot>{stateLabel(row.state)}</OpsBadge></td>
-                        <td><OpsBadge tone={riskTone(row.risk)}>{row.risk === "critical" ? "Critical risk" : row.risk === "warning" ? "Warning" : "Normal"}</OpsBadge></td>
+                        {/* One badge per row: where the desk stands. Customs' own status
+                            is the line under it; risk is text, and only when raised. */}
+                        <td>
+                          <OpsBadge tone={stateTone(row.state)} dot>{stateLabel(row.state)}</OpsBadge>
+                          {row.state === "released" ? null : <span className="ops-cell-secondary">Customs: {customsClearanceStatusLabels[row.clearance.status]}</span>}
+                        </td>
+                        <td>{row.risk === "normal" ? null : <span className="customs-risk" data-risk={row.risk}>{row.risk === "critical" ? "High" : "Watch"}</span>}</td>
                         <td>
                           <div className="customs-checklist-cell">
                             <div className="customs-checklist-track"><div className="customs-checklist-fill" data-complete={progress === 1 || undefined} style={{ width: `${Math.round(progress * 100)}%` }}/></div>

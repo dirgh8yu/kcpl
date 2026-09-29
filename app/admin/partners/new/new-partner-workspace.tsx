@@ -74,7 +74,7 @@ export function NewPartnerWorkspace({ ownerOptions }: { ownerOptions: PartnerOwn
   }
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Quick create" title="New partner" description="Add the working identity first, then complete contracts, service footprint and commercial details from Partner 360." actions={<Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Cancel</Link>}/>
+    <OpsPageHeader title="New partner" description="Start with the name and contact. Add contracts and rates on the partner’s page afterwards." actions={<Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Cancel</Link>}/>
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
       <OpsSurface eyebrow="Partner identity" title="Add to the KCPL network" description="This uses the same Partner API, duplicate checks and branch permissions as the full Partner workspace.">

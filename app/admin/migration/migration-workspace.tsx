@@ -69,8 +69,8 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
 
   return <OpsPage>
     <OpsPageHeader
-      title="Paper → KCPL migration"
-      description="Staged imports, an authoritative batch ledger, preserved paper evidence and fail-closed rollback recovery."
+      title="Import old records"
+      description="Bring paper and spreadsheet records into KCPL in batches. Each batch can be checked and undone."
       meta={<span>Management only · Stages 1–4 live · dry-run recovery, no force delete</span>}
     />
 

@@ -32,10 +32,10 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
     orders = await listTmsOrders(staff);
   } catch (error) {
     console.error("Failed to load KCPL Transport Orders", error);
-    return <OperationsShell {...shellProps}><Gate title="Transport Orders could not be loaded" detail="KCPL planning data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate title="Orders didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
-  if (orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Transport Orders unavailable" detail="KCPL transport-order storage is temporarily unavailable. Navigation and search remain available." embedded/></OperationsShell>;
+  if (orders.kind !== "ready") return <OperationsShell {...shellProps}><Gate title="Orders didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   const requestedOrder = order?.trim().toUpperCase() ?? "";
   const orderedOrders = requestedOrder
@@ -52,9 +52,9 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
       ]);
     } catch (error) {
       console.error("Failed to load KCPL Rate Desk", error);
-      return <OperationsShell {...shellProps}><Gate title="Rate Desk could not be loaded" detail="KCPL Partner pricing is temporarily unavailable. The Transport Orders register remains available." embedded/></OperationsShell>;
+      return <OperationsShell {...shellProps}><Gate title="Buy rates didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
     }
-    if (rateCards.kind !== "ready" || !partners) return <OperationsShell {...shellProps}><Gate title="Rate Desk unavailable" detail="KCPL Partner pricing storage is temporarily unavailable." embedded/></OperationsShell>;
+    if (rateCards.kind !== "ready" || !partners) return <OperationsShell {...shellProps}><Gate title="Buy rates didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
     return <OperationsShell {...shellProps}>
       <TmsRatingWorkspace

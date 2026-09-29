@@ -80,7 +80,7 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
     if (!selectedLoad || !allocation) return;
     setBusy(true); setNotice(null);
     try {
-      const result = await post({ action: "approve_allocation", loadId: selectedLoad.id, packageId: allocation.package_id, commercialVersionId, note: "Approved from KCPL Load Planner allocation workflow" });
+      const result = await post({ action: "approve_allocation", loadId: selectedLoad.id, packageId: allocation.package_id, commercialVersionId, note: "Approved from KCPL Load planning allocation workflow" });
       await refresh();
       setNotice({ tone: "success", text: result.packageStatus === "ready" ? "Exact commercial version approved. The allocation package is now ready to book." : "Exact commercial version approved. Additional staged versions still require Management approval." });
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Allocation version could not be approved." }); }

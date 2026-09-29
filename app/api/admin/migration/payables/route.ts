@@ -61,13 +61,13 @@ export async function POST(request: Request) {
   try {
     if (action === "preview") {
       const result = await preparePayablesImport(file.name, csv);
-      if (result.kind === "unavailable") return json({ ok: false, error: "Firebase finance storage is unavailable." }, 503);
+      if (result.kind === "unavailable") return json({ ok: false, error: "Finance records aren’t responding. Try again in a minute." }, 503);
       if (result.kind === "invalid_file") return json({ ok: false, error: result.error }, 400);
       return json({ ok: true, preview: result.preview, limits });
     }
 
     const result = await importPayablesCsv(file.name, csv, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return json({ ok: false, error: "Firebase finance storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Finance records aren’t responding. Try again in a minute." }, 503);
     if (result.kind === "invalid_file") return json({ ok: false, error: result.error }, 400);
     return json({ ok: true, result: result.result });
   } catch (error) {

@@ -133,7 +133,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
 
   const staffState = await loadStaffState(access.user);
   if (staffState.kind === "restricted") return <Gate title="Overview is restricted" detail="Your current staff role does not include operational Job File access." />;
-  if (staffState.kind === "error") return <Gate title="Overview could not be loaded" detail="KCPL staff permissions are temporarily unavailable." />;
+  if (staffState.kind === "error") return <Gate title="Overview didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." />;
 
   const query = await searchParams;
   const staff = staffState.staff;
@@ -169,8 +169,8 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
       selectedBranch={selectedBranch}
       canAccessAllBranches={staff.can_access_all_branches}
     >
-      {overview.kind === "unavailable" ? <Gate title="Overview data is unavailable" detail="The Firebase operational data service is not available for this deployment." embedded /> : null}
-      {overview.kind === "error" ? <Gate title="Overview could not be loaded" detail="KCPL operational data is temporarily unavailable. Search and notifications remain available while the data service recovers." embedded /> : null}
+      {overview.kind === "unavailable" ? <Gate title="Overview can’t be shown right now" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded /> : null}
+      {overview.kind === "error" ? <Gate title="Overview didn’t load" detail="Something went wrong fetching today’s work. Try again in a minute; search still works." embedded /> : null}
       {overview.kind === "ready" ? (
         <V4OperationsOverview
           data={overview.data}
@@ -183,6 +183,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
           branches={accessibleBranches}
           canViewCommercial={staff.permissions.canViewCommercial}
           canPostNotes={staff.permissions.canManageJobFile}
+          role={staff.permissions.role}
         />
       ) : null}
     </OperationsShell>

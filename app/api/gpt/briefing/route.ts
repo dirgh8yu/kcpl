@@ -29,7 +29,7 @@ function dateValue(value: unknown) {
 export async function GET(request: Request) {
   const authError = requireGptAction(request);
   if (authError) return authError;
-  if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "Firebase is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "The records service isn’t responding. Try again in a minute." }, 503);
 
   try {
     const snapshot = await firebaseAdminDb().collection("shipments").orderBy("updated_at", "desc").limit(750).get();

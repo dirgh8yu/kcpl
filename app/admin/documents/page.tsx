@@ -6,11 +6,11 @@ import { listDocumentVault } from "./documents-data.server";
 import { DocumentsWorkspace } from "./documents-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Document Vault | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Documents | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function DocumentsPage() {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The Document Vault is available only to authorised KCPL staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Documents are available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
@@ -20,17 +20,17 @@ export default async function DocumentsPage() {
     canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Shipment document access is not available for this staff role." embedded/></OperationsShell>;
+  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Documents can’t be shown right now" detail="Shipment document access is not available for this staff role." embedded/></OperationsShell>;
 
   let dashboard: Awaited<ReturnType<typeof listDocumentVault>>;
   try {
     dashboard = await listDocumentVault(staff);
   } catch (error) {
-    console.error("Failed to load KCPL Document Vault", error);
-    return <OperationsShell {...shellProps}><Gate title="Document Vault could not be loaded" detail="KCPL document data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    console.error("Failed to load KCPL documents", error);
+    return <OperationsShell {...shellProps}><Gate title="Documents didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
-  if (!dashboard) return <OperationsShell {...shellProps}><Gate title="Document Vault unavailable" detail="Firestore is not available for shipment document control in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+  if (!dashboard) return <OperationsShell {...shellProps}><Gate title="Documents can’t be shown right now" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   return (
     <OperationsShell {...shellProps}>
@@ -41,7 +41,7 @@ export default async function DocumentsPage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Document Vault"
+    eyebrow="Documents"
     title={title}
     detail={detail}
     embedded={embedded}

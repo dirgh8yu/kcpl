@@ -9,7 +9,7 @@ import { PartnersWorkspace } from "./partners-workspace";
 import { listPartnerDashboard } from "./partners.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Partners & Vendors | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Partners | KCPL Operations", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }
@@ -32,7 +32,7 @@ export default async function PartnersPage() {
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Partner network could not be loaded" detail="KCPL supplier and counterpart data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><Gate title="Partners didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -45,8 +45,8 @@ export default async function PartnersPage() {
     isManagement: staff.permissions.role === "management",
   };
   const result = await loadDashboard(staff);
-  if (result.kind === "error") return <OperationsShell {...shellProps}><Gate title="Partner network could not be loaded" detail="KCPL supplier and counterpart data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
-  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate title="Partner network is unavailable" detail="The Firebase partner registry is not available for this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+  if (result.kind === "error") return <OperationsShell {...shellProps}><Gate title="Partners didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
+  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate title="Partners didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   const dashboard = result.dashboard;
   const canEdit = canEditPartnerNetwork(staff.permissions);
@@ -55,5 +55,5 @@ export default async function PartnersPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier Integrations" }, { href: "/admin/edi", label: "EDI Gateway" }]}/>;
+  return <V4WorkspaceGate eyebrow="KCPL Network · Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }, { href: "/admin/edi", label: "EDI messages" }]}/>;
 }

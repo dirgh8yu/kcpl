@@ -84,7 +84,7 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
     <OpsPageHeader
       eyebrow="Partner 360"
       title={partner.display_name}
-      description={partner.legal_name || "Operational footprint, relationship context and linked supplier activity in one counterpart record."}
+      description={partner.legal_name || "Contacts, services, rates and bills for this partner."}
       meta={<>
         <OpsMono>{partner.id}</OpsMono>
         <OpsBadge tone={statusTone(partner.status)} dot>{partnerStatusLabels[partner.status]}</OpsBadge>

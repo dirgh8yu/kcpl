@@ -124,11 +124,11 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
 
   return <OpsPage>
     <OpsPageHeader
-      title="Paper Archive"
-      description="Historical paper trail with record links and SHA-256 fingerprints. Recovery never deletes it."
+      title="Paper archive"
+      description="Scanned paper files, each linked to its record. Undoing an import never deletes them."
       meta={<span>Management only · 20 MB per file · no destructive archive actions</span>}
       actions={<>
-        <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Migration Hub</Link>
+        <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Import old records</Link>
         <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link>
         <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === "refresh" ? <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>}Refresh</OpsButton>
       </>}

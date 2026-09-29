@@ -1,7 +1,7 @@
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
-import { kcplStaffRoleLabels, staffCapabilitiesForEmail } from "../staff-permissions";
+import { staffCapabilitiesForEmail } from "../staff-permissions";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listAutomationAlerts } from "./alert-engine.server";
 import { AlertsWorkspace } from "./alerts-workspace";
@@ -22,7 +22,6 @@ type ShellState = {
 type LoadResult =
   | {
       kind: "ready";
-      roleLabel: string;
       alerts: NonNullable<Awaited<ReturnType<typeof listAutomationAlerts>>>;
       shell: ShellState;
     }
@@ -66,12 +65,7 @@ async function loadPage(user: StaffUser): Promise<LoadResult> {
   try {
     const alerts = await listAutomationAlerts(staff, user.email, true);
     if (!alerts) return { kind: "unavailable", shell };
-    return {
-      kind: "ready",
-      roleLabel: kcplStaffRoleLabels[staff.permissions.role],
-      alerts,
-      shell,
-    };
+    return { kind: "ready", alerts, shell };
   } catch (error) {
     console.error("Failed to load KCPL automation alerts", error);
     return { kind: "error", shell };
@@ -93,15 +87,15 @@ export default async function AlertsPage() {
   };
 
   if (result.kind === "unavailable") {
-    return <OperationsShell {...shellProps}><Gate title="Alert storage unavailable" detail="Firestore is not available for the alerts workspace in this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate title="Tasks & alerts didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
   if (result.kind === "error") {
-    return <OperationsShell {...shellProps}><Gate title="Tasks & alerts could not be loaded" detail="KCPL operational alert data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate title="Tasks & alerts didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   return (
     <OperationsShell {...shellProps}>
-      <AlertsWorkspace initialAlerts={result.alerts} roleLabel={result.roleLabel}/>
+      <AlertsWorkspace initialAlerts={result.alerts}/>
     </OperationsShell>
   );
 }

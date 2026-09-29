@@ -6,7 +6,7 @@ import { listPickupWorkspace } from "./pickup-appointments.server";
 import { PickupAppointmentsWorkspace } from "./pickup-appointments-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pickup Scheduling | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Pickups | KCPL Operations", robots: { index: false, follow: false } };
 
 export default async function PickupPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();
@@ -20,23 +20,23 @@ export default async function PickupPage({ searchParams }: { searchParams: Promi
     canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Pickup access restricted" detail="Digital Job File access is required for Pickup & Appointment Scheduling."/></OperationsShell>;
+  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate embedded title="Pickup access restricted" detail="Your role doesn’t include shipments. Ask Management if you need it."/></OperationsShell>;
   let result: Awaited<ReturnType<typeof listPickupWorkspace>>;
   try { result = await listPickupWorkspace(staff); }
-  catch (error) { console.error("Failed to load KCPL Pickup Scheduling", error); result = { kind: "unavailable" as const }; }
-  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Pickup Scheduling unavailable" detail="Firebase pickup data is temporarily unavailable. Existing bookings and shipment records have not been changed."/></OperationsShell>;
+  catch (error) { console.error("Failed to load KCPL Pickups", error); result = { kind: "unavailable" as const }; }
+  if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Pickups didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   const params = await searchParams;
   return <OperationsShell {...shellProps}><PickupAppointmentsWorkspace initialRows={result.rows} initialSummary={result.summary} initialReference={(params.shipment ?? "").trim().toUpperCase()}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Pickup Scheduling"
+    eyebrow="KCPL Pickups"
     title={title}
     detail={detail}
     embedded={embedded}
     actions={[
-      { href: "/admin/tenders", label: "Tender & Booking", primary: true },
+      { href: "/admin/tenders", label: "Carrier booking", primary: true },
       { href: "/admin/shipments", label: "Shipments" },
     ]}
   />;

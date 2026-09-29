@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "Cross-origin sign-in is not accepted." }, { status: 403 });
   }
   if (!firebaseAdminConfigured()) {
-    return Response.json({ ok: false, error: "Firebase admin access is not configured." }, { status: 503 });
+    return Response.json({ ok: false, error: "The server isn’t set up to sign staff in yet. Ask Management." }, { status: 503 });
   }
 
   let idToken = "";
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const auth = firebaseAdminAuth();
     const decoded = await auth.verifyIdToken(idToken, true);
     if (!await isAuthorizedAdminUser(decoded.uid, decoded.email)) {
-      return Response.json({ ok: false, error: "This Firebase account is not authorised for KCPL Operations." }, { status: 403 });
+      return Response.json({ ok: false, error: "This account isn’t a KCPL staff account." }, { status: 403 });
     }
 
     const authTime = Number(decoded.auth_time ?? 0) * 1000;
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Firebase KCPL admin sign-in failed", error);
-    return Response.json({ ok: false, error: "Firebase sign-in could not be verified." }, { status: 401 });
+    return Response.json({ ok: false, error: "Your sign-in couldn’t be confirmed. Sign in again." }, { status: 401 });
   }
 }
 

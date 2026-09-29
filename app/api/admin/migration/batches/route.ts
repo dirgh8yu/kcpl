@@ -14,7 +14,7 @@ export async function GET() {
 
   try {
     const dashboard = await listMigrationBatches();
-    if (!dashboard) return json({ ok: false, error: "Firebase migration storage is unavailable." }, 503);
+    if (!dashboard) return json({ ok: false, error: "Import records aren’t responding. Try again in a minute." }, 503);
     return json({ ok: true, dashboard });
   } catch (error) {
     console.error("Failed to load KCPL migration batch history", error);

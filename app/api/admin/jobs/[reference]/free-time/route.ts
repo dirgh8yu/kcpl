@@ -29,7 +29,7 @@ async function authorize(reference: string) {
   const staff = await getStaffContext(access.user);
   const normalized = reference.trim().toUpperCase();
   const branchAccess = await checkShipmentBranchAccess(normalized, staff);
-  if (branchAccess.kind === "unavailable") return { response: json({ ok: false, error: "Shipment storage is unavailable." }, 503) };
+  if (branchAccess.kind === "unavailable") return { response: json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503) };
   if (branchAccess.kind === "missing") return { response: json({ ok: false, error: "Shipment not found." }, 404) };
   if (branchAccess.kind === "forbidden") return { response: json({ ok: false, error: "This shipment is outside your branch access." }, 403) };
   return { access, staff, normalized };
@@ -39,7 +39,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   const { reference } = await context.params;
   const auth = await authorize(reference);
   if ("response" in auth) return auth.response;
-  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
 
   try {
     const record = await readShipmentFreeTime(auth.normalized);
@@ -100,7 +100,7 @@ export async function PUT(request: Request, context: { params: Promise<{ referen
     ? bearerInput as FreeTimeBearer
     : "undecided";
 
-  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   try {
     const now = new Date().toISOString();
     await firebaseAdminDb().collection("shipments").doc(normalized).update({

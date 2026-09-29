@@ -18,7 +18,7 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
   const linked = await resolveInvoiceCustomerFromShipment(reference);
 
   if (linked.kind === "shipment_missing") return <Gate title="Shipment not found" detail="The shipment reference does not exist."/>;
-  if (linked.kind === "unavailable") return <Gate title="Finance unavailable" detail="Customer linking is temporarily unavailable."/>;
+  if (linked.kind === "unavailable") return <Gate title="Finance didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/>;
 
   return (
     <ShipmentInvoiceForm

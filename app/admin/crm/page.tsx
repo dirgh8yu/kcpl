@@ -45,7 +45,7 @@ export default async function CrmPage() {
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
     const permissions = staffResult.permissions;
-    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><CrmGate title="The CRM could not be loaded" detail="KCPL customer data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
+    return <OperationsShell userName={access.user.displayName} canManageStaff={permissions.canManageStaff} canManageFinance={permissions.canManageFinance} canViewCommercial={permissions.canViewCommercial} canManageJobFile={permissions.canManageJobFile} isManagement={permissions.role === "management"}><CrmGate title="Customers didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
   const staff = staffResult.staff;
@@ -59,8 +59,8 @@ export default async function CrmPage() {
     isManagement: staff.permissions.role === "management",
   };
 
-  if (result.kind === "error") return <OperationsShell {...shellProps}><CrmGate title="The CRM could not be loaded" detail="KCPL customer data is temporarily unavailable. Navigation and search remain available while the data service recovers." embedded/></OperationsShell>;
-  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><CrmGate title="Firestore is not available yet" detail="The CRM is ready, but Firebase customer storage is not available for this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+  if (result.kind === "error") return <OperationsShell {...shellProps}><CrmGate title="Customers didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
+  if (result.kind === "unavailable") return <OperationsShell {...shellProps}><CrmGate title="Can’t load right now" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   const safeCustomers: CrmCustomerSummary[] = staff.permissions.canViewCommercial
     ? result.customers

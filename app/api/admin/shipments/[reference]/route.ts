@@ -26,7 +26,7 @@ async function authorize() {
 
 async function branchGuard(reference: string, staff: Awaited<ReturnType<typeof getStaffContext>>) {
   const access = await checkShipmentBranchAccess(reference, staff);
-  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   if (access.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (access.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
   return null;
@@ -108,7 +108,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
         customer_note: customerNote,
       }).filter(([, value]) => value !== undefined).map(([key, value]) => [key, value || null])),
     });
-    if (completion.kind === "unavailable") return json({ ok: false, error: "Canonical delivery controls are unavailable." }, 503);
+    if (completion.kind === "unavailable") return json({ ok: false, error: "Delivery records aren’t responding. Try again in a minute." }, 503);
     if (completion.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
     if (completion.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
     if (completion.kind === "invalid_branch") return json({ ok: false, error: completion.blockers.join(" "), code: "INVALID_PRIMARY_BRANCH", blockerCodes: completion.blocker_codes, blockers: completion.blockers, completionStatus: completion.completionStatus, canonicalStatus: completion.canonicalStatus }, 409);
@@ -137,7 +137,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 
   const transition = await validateShipmentTransition(reference, status as ShipmentStatus, auth.staff, overrideReason);
-  if (transition.kind === "unavailable") return json({ ok: false, error: "Workflow controls are unavailable." }, 503);
+  if (transition.kind === "unavailable") return json({ ok: false, error: "Progress checks aren’t responding. Try again in a minute." }, 503);
   if (transition.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (transition.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your branch access." }, 403);
   if (transition.kind === "blocked") {
@@ -161,10 +161,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     customerNote,
   }, auth.user.displayName, auth.user.email);
 
-  if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (result.kind === "unavailable") return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
-  if (result.kind === "terminal_delivered") return json({ ok: false, error: "Canonical Delivered is terminal. Record post-delivery issues through the exception workflow." }, 409);
-  if (result.kind === "canonical_delivery_authority_required") return json({ ok: false, error: "Delivered must be recorded through KCPL canonical delivery authority." }, 409);
+  if (result.kind === "terminal_delivered") return json({ ok: false, error: "This shipment is already delivered. Record any later issue as a problem on the shipment." }, 409);
+  if (result.kind === "canonical_delivery_authority_required") return json({ ok: false, error: "Mark it delivered on the shipment’s Delivery step, with proof of delivery." }, 409);
   if (transition.overrideUsed) {
     await recordWorkflowOverride(reference, fromStatus, status as ShipmentStatus, transition.overrideReason, { name: auth.user.displayName, email: auth.user.email });
   }
@@ -200,7 +200,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (eventTime === null) return json({ ok: false, error: "Choose a real event date and time." }, 400);
 
   const result = await addShipmentEvent(reference, { title, location, details, eventTime }, auth.user.displayName);
-  if (result.kind === "unavailable") return json({ ok: false, error: "Shipment storage is unavailable." }, 503);
+  if (result.kind === "unavailable") return json({ ok: false, error: "Shipment records aren’t responding. Try again in a minute." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);
   return json({ ok: true, event: result.event }, 201);
 }

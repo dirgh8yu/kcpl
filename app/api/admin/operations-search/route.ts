@@ -28,7 +28,7 @@ async function recent(collection: string, orderField: string, limit: number): Pr
 export async function GET(request: Request) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return json({ ok: false, error: "Sign in is required." }, 401);
-  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Firebase search is unavailable." }, 503);
+  if (!firebaseRuntimeConfigured()) return json({ ok: false, error: "Search isn’t responding. Try again in a minute." }, 503);
 
   const query = (new URL(request.url).searchParams.get("q") ?? "").trim().slice(0, 180);
   if (!query) return json({ ok: true, query: null, results: [] });

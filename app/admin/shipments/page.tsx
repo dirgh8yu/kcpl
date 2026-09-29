@@ -24,17 +24,17 @@ export default async function ShipmentsPage() {
     canManageFinance: staff.permissions.canManageFinance,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Shipment access restricted" detail="Your KCPL staff role does not currently include Digital Job File access." embedded/></OperationsShell>;
+  if (!staff.permissions.canManageJobFile) return <OperationsShell {...shellProps}><Gate title="Shipment access restricted" detail="Your KCPL staff role does not currently include shipment record access." embedded/></OperationsShell>;
 
   let data;
   try {
     data = await loadCommandCentre(staff, { includeDelivered: true });
   } catch (error) {
     console.error("Failed to load KCPL shipment queue", error);
-    return <OperationsShell {...shellProps}><Gate title="Shipments could not be loaded" detail="KCPL operational data is temporarily unavailable. Navigation and search remain available and no shipment records have been changed." embedded/></OperationsShell>;
+    return <OperationsShell {...shellProps}><Gate title="Shipments didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   }
 
-  if (!data) return <OperationsShell {...shellProps}><Gate title="Shipment backend unavailable" detail="Firestore is not available for this deployment. Navigation and search remain available." embedded/></OperationsShell>;
+  if (!data) return <OperationsShell {...shellProps}><Gate title="Shipments didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
   // Ranking and suggestion inputs load additively: a failure must never take
   // down the register, it only degrades to severity-only order and no

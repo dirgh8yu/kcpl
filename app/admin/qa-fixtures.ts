@@ -2007,7 +2007,7 @@ import { summarizeShipmentExceptions, type ShipmentException } from "./shipment-
 import type { DeliveryAttempt, PodEvidence } from "./delivery/delivery-control.ts";
 
 /* ---------------------------------------------------------------------------
- * Digital Job File
+ * shipment record
  *
  * The detail page loads six independent server modules. All six derive from the
  * same mockCommandCentre() job, so the header, the workflow rail, the task
@@ -2203,10 +2203,10 @@ export function mockShipmentWorkflowReadiness(reference: string, staff: KcplStaf
   const inTransitOrLater = ["in_transit", "customs_clearance", "out_for_delivery", "delivered"].includes(job.status);
 
   const closeBlockers: string[] = [];
-  if (!customsChecklistReady) closeBlockers.push("All required customs checklist steps must be complete.");
-  if (!documentPackReady) closeBlockers.push("All required operational documents must be verified and unexpired.");
-  if (!proofOfDeliveryPresent) closeBlockers.push("A verified Proof of Delivery (POD) must be present.");
-  if (openTasks > 0) closeBlockers.push(`${openTasks} operational task${openTasks === 1 ? " remains" : "s remain"} open.`);
+  if (!customsChecklistReady) closeBlockers.push("Finish the customs checklist.");
+  if (!documentPackReady) closeBlockers.push("Check all required documents, and replace any that have expired.");
+  if (!proofOfDeliveryPresent) closeBlockers.push("Upload the proof of delivery and have it checked.");
+  if (openTasks > 0) closeBlockers.push(`${openTasks} task${openTasks === 1 ? " is" : "s are"} still open.`);
 
   const readiness: ShipmentWorkflowReadiness = {
     reference: job.reference,
@@ -2242,7 +2242,7 @@ export function mockShipmentWorkflowReadiness(reference: string, staff: KcplStaf
     job_closed_at: null,
     job_closed_by_name: null,
     blockers: customsReady ? [] : ["Customs release is not yet recorded for this shipment."],
-    warnings: openTasks ? [`${openTasks} operational task${openTasks === 1 ? "" : "s"} still open.`] : [],
+    warnings: openTasks ? [`${openTasks} task${openTasks === 1 ? " is" : "s are"} still open.`] : [],
     close_blockers: closeBlockers,
     can_close: closeBlockers.length === 0,
     stages: [
