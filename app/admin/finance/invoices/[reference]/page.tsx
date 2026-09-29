@@ -1,3 +1,4 @@
+import { listInvoiceRemittancesForStaff } from "../../../../portal/portal-remittance.server";
 import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
@@ -31,7 +32,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
   if (result.kind === "relationship_mismatch") return <OperationsShell {...shellProps}><Gate embedded title="Invoice relationship requires repair" detail="This invoice is linked to customer or shipment records with incompatible canonical scope and cannot be opened until the relationship is repaired."/></OperationsShell>;
   if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Finance unavailable" detail="The Firestore finance backend is unavailable for this deployment."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
+  // What the customer sent from the portal or app against this invoice.
+  const remittances = await listInvoiceRemittancesForStaff(result.invoice.reference).catch((error) => {
+    console.error("KCPL admin remittance listing failed", error);
+    return [];
+  });
+
+  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

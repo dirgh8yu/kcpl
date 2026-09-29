@@ -21,6 +21,8 @@
  *      route to the portal through these functions.
  */
 
+import { effectiveInvoiceStatus } from "../invoice-effective-status.ts";
+
 export const portalRoles = ["owner", "member"] as const;
 export type PortalRole = (typeof portalRoles)[number];
 
@@ -309,6 +311,9 @@ const withheldDocumentStatuses = new Set(["rejected", "superseded", "deleted"]);
  */
 export function portalDocumentReleased(document: Record<string, unknown>, now = new Date()) {
   if (document.customer_safe !== true) return false;
+  // A sealed POD manifest carries the recipient's phone, GPS and driver. It is
+  // staff evidence even if an older record was marked customer-safe.
+  if (document.pod_manifest === true) return false;
   if (document.deleted_at) return false;
   const status = typeof document.review_status === "string" ? document.review_status : "";
   if (withheldDocumentStatuses.has(status)) return false;
@@ -326,12 +331,24 @@ export function portalInvoiceVisible(invoice: Record<string, unknown>) {
   return status !== "draft" && status !== "void" && status !== "";
 }
 
+/**
+ * The customer price on a quote. The admin quote desk stores it as the
+ * decimal string staff typed ("168500.50"); older and imported records hold a
+ * number. Both mean the same price. Anything else, or a price that is not
+ * positive, is unpriced.
+ */
+export function portalQuoteAmount(value: unknown): number | null {
+  const amount = typeof value === "number"
+    ? value
+    : typeof value === "string" && /^\d{1,12}(?:\.\d{1,3})?$/.test(value.trim()) ? Number(value.trim()) : null;
+  return amount !== null && Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
 /** A quote reaches the customer only once it has been priced and issued. */
 export function portalQuoteVisible(quote: Record<string, unknown>) {
   const status = typeof quote.status === "string" ? quote.status : "";
   if (status === "lost" || status === "cancelled") return false;
-  const amount = typeof quote.quoted_amount === "number" ? quote.quoted_amount : null;
-  return amount !== null && Number.isFinite(amount);
+  return portalQuoteAmount(quote.quoted_amount) !== null;
 }
 
 /**
@@ -711,12 +728,17 @@ export type PortalInvoiceView = {
   line_items: PortalInvoiceLineView[];
 };
 
-export function portalInvoiceView(data: Record<string, unknown>): PortalInvoiceView {
+/**
+ * [today] is Nepal's operational date. The status is the one admin finance
+ * shows for the same invoice: a passed due date reads overdue even before
+ * anyone rewrites the stored status.
+ */
+export function portalInvoiceView(data: Record<string, unknown>, today: string): PortalInvoiceView {
   const lines = Array.isArray(data.line_items) ? data.line_items as Array<Record<string, unknown>> : [];
   return {
     reference: text(data.reference),
     record_type: text(data.record_type, "invoice"),
-    status: text(data.status, "issued"),
+    status: effectiveInvoiceStatus(text(data.status, "issued"), text(data.due_date), money(data.balance_due), today),
     issue_date: text(data.issue_date),
     due_date: text(data.due_date),
     currency: text(data.currency, "NPR"),
@@ -757,7 +779,7 @@ export type PortalQuoteView = {
 };
 
 export function portalQuoteView(data: Record<string, unknown>): PortalQuoteView {
-  const amount = typeof data.quoted_amount === "number" && Number.isFinite(data.quoted_amount) ? data.quoted_amount : null;
+  const amount = portalQuoteAmount(data.quoted_amount);
   return {
     reference: text(data.reference),
     status: text(data.status, "new"),

@@ -131,6 +131,7 @@ test("only a happy customer is offered a review link, and only a real one", asyn
   assert.equal(deliveryReviewUrl({}), null);
   const shared = code(await readFile(repo("app/portal/portal-delivery-rating.server.ts"), "utf8"));
   assert.match(shared, /reviewUrl: complaint \? null : deliveryReviewUrl\(\)/);
-  assert.match(shared, /\.create\(\{/, "once per login: a second rating is refused, not overwritten");
+  assert.match(shared, /batch\.create\(ref, \{/, "once per login: a second rating is refused, not overwritten");
+  assert.doesNotMatch(shared, /\.set\(ref\b/);
   assert.doesNotMatch(shared, /collection\("shipments"\)\.doc\([^)]*\)\.(update|set)\(/, "a rating never writes the shipment");
 });

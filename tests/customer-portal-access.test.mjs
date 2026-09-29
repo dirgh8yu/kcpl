@@ -179,7 +179,7 @@ test("the invoice projection exposes billing, not margin", () => {
     notes: "Chase through the branch manager",
     created_by_email: "accounts@kcpl.test",
     line_items: [{ id: "l1", description: "Ocean freight", quantity: 1, unit_price: 100000, total: 100000, cost: 84000 }],
-  });
+  }, "2026-09-29");
   for (const leaked of ["job_cost_total", "notes", "created_by_email"]) {
     assert.equal(leaked in view, false, `${leaked} must not reach a customer`);
   }

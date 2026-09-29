@@ -145,6 +145,50 @@ export async function saveInvoiceRemittance(input: {
   }
 }
 
+/** A remittance as accounts see it: the customer's claim plus who checked it. */
+export type StaffRemittance = PortalRemittance & {
+  acknowledged_at: string | null;
+  acknowledged_by_name: string | null;
+};
+
+/** For the admin invoice page. Callers check finance and branch access first. */
+export async function listInvoiceRemittancesForStaff(invoiceReference: string): Promise<StaffRemittance[]> {
+  if (!configured()) return [];
+  const snapshot = await firebaseAdminDb().collection("invoices").doc(invoiceReference)
+    .collection("remittances")
+    .limit(50)
+    .get();
+  return snapshot.docs
+    .map((doc) => ({
+      ...remittanceFromSnapshot(doc),
+      acknowledged_at: typeof doc.get("acknowledged_at") === "string" ? String(doc.get("acknowledged_at")) : null,
+      acknowledged_by_name: typeof doc.get("acknowledged_by_name") === "string" ? String(doc.get("acknowledged_by_name")) : null,
+    }))
+    .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at));
+}
+
+/**
+ * Accounts have seen the receipt. The customer's portal and app show it as
+ * acknowledged from then on. Like the upload, this is not a ledger entry:
+ * money is applied only through the payments path.
+ */
+export async function acknowledgeInvoiceRemittance(invoiceReference: string, id: string, actor: { name: string; email: string }) {
+  if (!configured()) return { kind: "unavailable" as const };
+  const ref = firebaseAdminDb().collection("invoices").doc(invoiceReference).collection("remittances").doc(id);
+  return firebaseAdminDb().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return { kind: "missing" as const };
+    if (snapshot.get("review_state") === "acknowledged") return { kind: "idempotent" as const };
+    transaction.update(ref, {
+      review_state: "acknowledged",
+      acknowledged_at: new Date().toISOString(),
+      acknowledged_by_name: actor.name || null,
+      acknowledged_by_email: actor.email || null,
+    });
+    return { kind: "updated" as const };
+  });
+}
+
 export async function invoiceRemittanceFile(invoiceReference: string, id: string) {
   if (!configured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("invoices").doc(invoiceReference)

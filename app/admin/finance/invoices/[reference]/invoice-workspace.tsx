@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Banknote, BriefcaseBusiness, Building2, CheckCircle2, Printer, ReceiptText, Trash2 } from "lucide-react";
+import { Banknote, BriefcaseBusiness, Building2, CheckCircle2, FileDown, Printer, ReceiptText, Trash2 } from "lucide-react";
+import { nepalOperationalDate } from "../../../../invoice-effective-status";
+import type { StaffRemittance } from "../../../../portal/portal-remittance.server";
 import { financeInvoiceStatusLabels, financePaymentMethodLabels, financePaymentMethods, type FinanceInvoice, type FinancePaymentMethod } from "../../finance-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 
@@ -14,11 +16,11 @@ function money(amount: number, currency: string) {
 function dateLabel(value: string) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date); }
 function statusTone(status: FinanceInvoice["status"]): "neutral" | "info" | "violet" | "success" | "danger" { if (status === "issued") return "info"; if (status === "partially_paid") return "violet"; if (status === "paid") return "success"; if (status === "overdue") return "danger"; return "neutral"; }
 
-export function InvoiceWorkspace({ invoice, roleLabel }: { invoice: FinanceInvoice; roleLabel: string }) {
+export function InvoiceWorkspace({ invoice, remittances, roleLabel }: { invoice: FinanceInvoice; remittances: StaffRemittance[]; roleLabel: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nepalOperationalDate();
   const [payment, setPayment] = useState({ amount: invoice.balance_due ? String(invoice.balance_due) : "", paymentDate: today, method: "bank_transfer" as FinancePaymentMethod, reference: "", notes: "" });
 
   async function invoiceAction(action: "issue" | "void") {
@@ -44,6 +46,27 @@ export function InvoiceWorkspace({ invoice, roleLabel }: { invoice: FinanceInvoi
     finally { setBusy(false); }
   }
 
+  async function acknowledge(remittance: StaffRemittance) {
+    setBusy(true); setNotice("");
+    try {
+      const response = await fetch(`/api/admin/finance/invoices/${encodeURIComponent(invoice.reference)}/remittances/${encodeURIComponent(remittance.id)}`, { method: "PATCH" });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "The receipt could not be acknowledged.");
+      setNotice("Receipt acknowledged. The customer now sees it as acknowledged."); router.refresh();
+    } catch (error) { setNotice(error instanceof Error ? error.message : "The receipt could not be acknowledged."); }
+    finally { setBusy(false); }
+  }
+
+  // A receipt is the customer's claim; this only pre-fills the form for accounts to check.
+  function fillFromReceipt(remittance: StaffRemittance) {
+    setPayment((current) => ({
+      ...current,
+      amount: remittance.amount !== null && (!remittance.currency || remittance.currency === invoice.currency) ? String(Math.min(remittance.amount, invoice.balance_due)) : current.amount,
+      paymentDate: remittance.paid_on && /^\d{4}-\d{2}-\d{2}$/.test(remittance.paid_on) ? remittance.paid_on : current.paymentDate,
+      notes: `Customer receipt ${remittance.filename}`,
+    }));
+  }
+
   const canPay = ["issued", "partially_paid", "overdue"].includes(invoice.status) && invoice.balance_due > 0;
 
   return <OpsPage>
@@ -65,6 +88,24 @@ export function InvoiceWorkspace({ invoice, roleLabel }: { invoice: FinanceInvoi
         <OpsSurface eyebrow="Connected records" title="Operational links"><div className="grid gap-2"><Link href={`/admin/crm/${encodeURIComponent(invoice.customer_id)}`} className="flex items-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)] hover:bg-[var(--admin-surface)]"><Building2 size={13}/>Customer 360</Link>{invoice.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(invoice.shipment_reference)}`} className="flex items-center gap-2 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] px-3 py-3 text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)] hover:bg-[var(--admin-surface)]"><BriefcaseBusiness size={13}/>Digital Job File</Link> : null}</div></OpsSurface>
         <OpsSurface eyebrow="Collections" title="Payments" description={`${money(invoice.balance_due, invoice.currency)} currently due.`}>
           {canPay ? <form onSubmit={recordPayment} className="grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4 sm:grid-cols-2"><OpsField label="Amount"><input required min="0.01" max={invoice.balance_due} step="0.01" type="number" value={payment.amount} onChange={(event) => setPayment({ ...payment, amount: event.target.value })}/></OpsField><OpsField label="Payment date"><input required type="date" value={payment.paymentDate} onChange={(event) => setPayment({ ...payment, paymentDate: event.target.value })}/></OpsField><OpsField label="Method"><select value={payment.method} onChange={(event) => setPayment({ ...payment, method: event.target.value as FinancePaymentMethod })}>{financePaymentMethods.map((method) => <option key={method} value={method}>{financePaymentMethodLabels[method]}</option>)}</select></OpsField><OpsField label="Bank / receipt reference"><input value={payment.reference} onChange={(event) => setPayment({ ...payment, reference: event.target.value })}/></OpsField><OpsField label="Notes" className="sm:col-span-2"><input value={payment.notes} onChange={(event) => setPayment({ ...payment, notes: event.target.value })}/></OpsField><div className="sm:col-span-2"><OpsButton type="submit" variant="primary" disabled={busy}><Banknote size={12}/>{busy ? "Recording…" : "Record payment"}</OpsButton></div></form> : null}
+          {remittances.length ? <div className="mt-4 rounded-[var(--app-radius)] border border-[var(--admin-line)] p-4">
+            <p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.1em] text-[var(--admin-muted)]">Receipts from the customer</p>
+            <div className="mt-2 divide-y divide-[var(--admin-line)]">{remittances.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div>
+                <strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{item.amount !== null ? money(item.amount, item.currency || invoice.currency) : "Amount not stated"}</strong>
+                <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{item.paid_on ? `Paid ${dateLabel(item.paid_on)} · ` : ""}Sent {dateLabel(item.uploaded_at.slice(0, 10))} by {item.uploaded_by_email || "the customer"}{item.note ? ` · ${item.note}` : ""}</p>
+                {item.acknowledged_at ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Acknowledged {dateLabel(item.acknowledged_at.slice(0, 10))}{item.acknowledged_by_name ? ` by ${item.acknowledged_by_name}` : ""}</p> : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <a href={`/api/admin/finance/invoices/${encodeURIComponent(invoice.reference)}/remittances/${encodeURIComponent(item.id)}`} className="ops-button" data-variant="ghost" data-size="sm"><FileDown size={12}/><span className="max-w-[180px] truncate" title={item.filename}>{item.filename}</span></a>
+                {canPay ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => fillFromReceipt(item)}>Fill payment form</OpsButton> : null}
+                {item.review_state === "acknowledged"
+                  ? <OpsBadge tone="success"><CheckCircle2 size={10}/>Acknowledged</OpsBadge>
+                  : <OpsButton size="sm" variant="primary" disabled={busy} onClick={() => acknowledge(item)}>Acknowledge</OpsButton>}
+              </div>
+            </div>)}</div>
+            <p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">A receipt is the customer&apos;s claim. Record the payment once the money is in the account.</p>
+          </div> : null}
           <div className="mt-4 divide-y divide-[var(--admin-line)]">{invoice.payments.length ? invoice.payments.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(item.amount, item.currency)}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{dateLabel(item.payment_date)} · {financePaymentMethodLabels[item.method]}{item.reference ? ` · ${item.reference}` : ""}</p></div><OpsBadge tone="success"><CheckCircle2 size={10}/>Recorded</OpsBadge></div>) : <OpsEmptyState icon={<ReceiptText size={17}/>} title="No payments recorded" description="Payments will appear here with method, date and reference."/>}</div>
         </OpsSurface>
       </div>

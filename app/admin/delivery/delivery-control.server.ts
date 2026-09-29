@@ -707,7 +707,9 @@ export async function reviewPod(
       uploaded_by: "KCPL Delivery Control",
       uploaded_by_email: actor.email || null,
       review_status: "verified",
-      customer_safe: customerSafe,
+      // The sealed manifest holds the recipient's phone, GPS and driver: staff
+      // only. Customers see the released evidence through the proof view.
+      customer_safe: false,
       review_note: note.trim() || null,
       reviewed_at: now,
       reviewed_by: actor.name || null,

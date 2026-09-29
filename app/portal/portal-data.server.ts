@@ -21,6 +21,7 @@ import {
   type PortalShipmentView,
 } from "./portal-access-policy";
 import type { PortalSession } from "./portal-auth";
+import { nepalOperationalDate } from "../invoice-effective-status";
 import {
   freeTimeNeedsAttention,
   freeTimeStatus,
@@ -142,7 +143,7 @@ export async function getPortalShipment(session: PortalSession, reference: strin
 
     const record = snapshot.data() as Record<string, unknown>;
     const freeTime = shipmentFreeTimeFromRecord(record);
-    const freeTimeState = freeTimeStatus(freeTime, new Date().toISOString().slice(0, 10));
+    const freeTimeState = freeTimeStatus(freeTime, nepalOperationalDate());
 
     const shipment = portalShipmentView(normalized, record);
     if (!shipment.origin) {
@@ -258,7 +259,8 @@ export type PortalFinanceSummary = {
   overdueInvoices: number;
 };
 
-function summarizeInvoices(invoices: PortalInvoiceView[], today: string): PortalFinanceSummary {
+/** Invoice statuses are already effective (see portalInvoiceView), so overdue is read straight off them. */
+function summarizeInvoices(invoices: PortalInvoiceView[]): PortalFinanceSummary {
   const byCurrency = new Map<string, PortalCurrencyBalance>();
   let openInvoices = 0;
   let overdueInvoices = 0;
@@ -269,8 +271,7 @@ function summarizeInvoices(invoices: PortalInvoiceView[], today: string): Portal
     balance.invoiced += invoice.total;
     balance.paid += invoice.amount_paid;
     balance.outstanding += invoice.balance_due;
-    const overdue = invoice.balance_due > 0
-      && (invoice.status === "overdue" || (Boolean(invoice.due_date) && isoDay(invoice.due_date) < today));
+    const overdue = invoice.balance_due > 0 && invoice.status === "overdue";
     if (overdue) {
       balance.overdue += invoice.balance_due;
       overdueInvoices += 1;
@@ -296,15 +297,17 @@ export async function listPortalInvoices(session: PortalSession): Promise<
       .where("customer_id", "==", session.customerId)
       .limit(INVOICE_SCAN_LIMIT)
       .get();
+    // Nepal's day, the same one admin finance uses to call an invoice overdue.
+    const today = nepalOperationalDate();
     const invoices = snapshot.docs
       .map((document) => ({ ...(document.data() as Record<string, unknown>), reference: document.id }))
       .filter(portalInvoiceVisible)
-      .map(portalInvoiceView)
+      .map((record) => portalInvoiceView(record, today))
       .sort((a, b) => b.issue_date.localeCompare(a.issue_date));
     return {
       kind: "ready",
       invoices,
-      summary: summarizeInvoices(invoices, new Date().toISOString().slice(0, 10)),
+      summary: summarizeInvoices(invoices),
     };
   } catch (error) {
     console.error("KCPL portal invoice listing failed", error);
@@ -325,7 +328,7 @@ export async function getPortalInvoice(session: PortalSession, reference: string
     if (!snapshot.exists || String(snapshot.get("customer_id") ?? "") !== session.customerId) return { kind: "missing" };
     const record = { ...(snapshot.data() as Record<string, unknown>), reference: snapshot.id };
     if (!portalInvoiceVisible(record)) return { kind: "missing" };
-    return { kind: "ready", invoice: portalInvoiceView(record) };
+    return { kind: "ready", invoice: portalInvoiceView(record, nepalOperationalDate()) };
   } catch (error) {
     console.error("KCPL portal invoice read failed", error);
     return { kind: "unavailable" };
@@ -420,8 +423,8 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
 
     const shipments = shipmentSource.shipments;
     const shipmentRecords = shipmentSource.records;
-    const horizon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = nepalOperationalDate();
+    const horizon = nepalOperationalDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
     // The overview only looks at the shipments it already lists, so it never
     // costs more reads than the shipment workspace itself. One pass produces

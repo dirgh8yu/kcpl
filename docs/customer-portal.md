@@ -304,6 +304,34 @@ Keeping them apart matters: `customer_safe` governs what KCPL releases *to* a
 customer, and a bank receipt flowing the other way has no business inheriting
 those semantics.
 
+Accounts see a customer's receipts on the admin invoice page
+(`/admin/finance/invoices/[reference]`), open them, and **Acknowledge** them through
+`GET`/`PATCH /api/admin/finance/invoices/[reference]/remittances/[id]` (finance access
+and the invoice's branch, as the page checks). The customer's portal and app then show
+the receipt as acknowledged. Neither step touches the ledger; **Fill payment form** only
+pre-fills the payment form for accounts to check.
+
+## Staff and customers read the same record the same way
+
+`tests/customer-portal-admin-sync.test.mjs` holds these:
+
+- **Quote prices.** The quote desk and TMS pricing store `quoted_amount` as a decimal
+  string. `portalQuoteAmount` reads that string (and older numeric records) with the admin
+  route's own pattern, so a quote priced in the admin appears in the portal.
+- **Invoice status.** `app/invoice-effective-status.ts` decides it once: past its due date
+  with a balance is overdue, a cleared balance is paid. Admin finance and every portal
+  invoice view, summary and statement use it, so both show the same invoice as overdue
+  on the same day.
+- **Nepal's day.** Due dates, free-time countdowns, arrivals and reminders use
+  `nepalOperationalDate()` on both sides, not the UTC date, which lagged 5 h 45 m.
+- **POD manifests stay with staff.** The sealed manifest records the recipient's phone,
+  GPS and driver, so it is written `customer_safe: false`, and `portalDocumentReleased`
+  refuses any `pod_manifest` record, older ones included. Customers see the verified
+  evidence through the proof-of-delivery view.
+- **Customer actions land on the Job File.** A delivery confirmation and a delivery
+  rating each write a `job_activity` line with the record, so the desk sees them even
+  when nobody is assigned to be notified.
+
 ## What the portal never writes
 
 A customer request (`POST /api/portal/requests`) creates an ordinary enquiry in `quotes`

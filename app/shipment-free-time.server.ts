@@ -1,5 +1,6 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "./firebase-admin.server";
 import { freeTimeStatus, shipmentFreeTimeFromRecord, type FreeTimeStatus, type ShipmentFreeTime } from "./shipment-free-time";
+import { nepalOperationalDate } from "./invoice-effective-status";
 
 /**
  * Read the free-time block off a shipment.
@@ -9,7 +10,7 @@ import { freeTimeStatus, shipmentFreeTimeFromRecord, type FreeTimeStatus, type S
  * need to *write* free time go through the namespaced admin route, which
  * touches free-time fields and nothing canonical.
  */
-export async function readShipmentFreeTime(reference: string, today = new Date().toISOString().slice(0, 10)): Promise<
+export async function readShipmentFreeTime(reference: string, today = nepalOperationalDate()): Promise<
   { freeTime: ShipmentFreeTime; status: FreeTimeStatus } | null
 > {
   if (!firebaseRuntimeConfigured() || !reference.trim()) return null;

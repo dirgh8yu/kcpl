@@ -40,17 +40,30 @@ export async function ratePortalDelivery(session: PortalSession, reference: stri
   if (!deliveryRatable(String(shipment.get("status") ?? ""))) return portalWriteRefused(409, "conflict", "This shipment can be rated once it is delivered.");
 
   const ref = feedbackRef(normalized, session.email);
+  const now = new Date().toISOString();
+  // The rating and its Job File line land together, so the desk sees every
+  // rating on the job even when nobody is assigned to be notified.
+  const batch = firebaseAdminDb().batch();
+  batch.create(ref, {
+    score: rating.score,
+    comment: rating.comment || null,
+    email: session.email,
+    name: session.displayName || null,
+    customer_id: session.customerId,
+    customer_name: session.customerName,
+    source,
+    created_at: now,
+  });
+  batch.create(firebaseAdminDb().collection("shipments").doc(normalized).collection("job_activity").doc(`customer-rating-${ref.id}`), {
+    type: "customer_rated_delivery",
+    title: `Customer rated the delivery ${rating.score}/5`,
+    detail: rating.comment || null,
+    actor_name: session.customerName,
+    actor_email: session.email,
+    created_at: now,
+  });
   try {
-    await ref.create({
-      score: rating.score,
-      comment: rating.comment || null,
-      email: session.email,
-      name: session.displayName || null,
-      customer_id: session.customerId,
-      customer_name: session.customerName,
-      source,
-      created_at: new Date().toISOString(),
-    });
+    await batch.commit();
   } catch {
     return portalWriteRefused(409, "conflict", "You have already rated this delivery.");
   }

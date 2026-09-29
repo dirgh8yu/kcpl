@@ -1,6 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import type { PortalSession } from "./portal-auth";
+import { nepalOperationalDate } from "../invoice-effective-status";
 import { portalInvoiceView, portalInvoiceVisible } from "./portal-access-policy";
 import { buildStatement, type Statement, type StatementPayment } from "./portal-statement";
 import { renderStatementPdf } from "./portal-statement-pdf";
@@ -14,17 +15,13 @@ import { renderStatementPdf } from "./portal-statement-pdf";
 
 const INVOICE_LIMIT = 500;
 
-function nepalToday() {
-  return new Date(Date.now() + 345 * 60_000).toISOString().slice(0, 10);
-}
-
-async function statementFor(customerId: string, asOf = nepalToday()): Promise<Statement> {
+async function statementFor(customerId: string, asOf = nepalOperationalDate()): Promise<Statement> {
   const db = firebaseAdminDb();
   const snapshot = await db.collection("invoices").where("customer_id", "==", customerId).limit(INVOICE_LIMIT).get();
   const invoices = snapshot.docs
     .map((doc) => ({ ...(doc.data() as Record<string, unknown>), reference: doc.id }))
     .filter(portalInvoiceVisible)
-    .map(portalInvoiceView);
+    .map((record) => portalInvoiceView(record, asOf));
   // Payments are read only where something was paid.
   const paid = snapshot.docs.filter((doc) => Number(doc.get("amount_paid") ?? 0) > 0);
   const payments: StatementPayment[] = (await Promise.all(paid.map(async (doc) => {

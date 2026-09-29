@@ -3,6 +3,7 @@ import { sendWhatsappTemplate, whatsappConfigured } from "../integrations/whatsa
 import { storedTextNotice, textNoticeSms, type TextNoticeSettings } from "./portal-text-notices";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { nepalOperationalDate } from "../invoice-effective-status";
 import { sendTransactionalEmail, transactionalEmailConfigured } from "../integrations/sendgrid-email.server";
 import { normalizePortalEmail, portalDocumentChecklist, portalOutstandingUploads, portalShipmentView } from "./portal-access-policy";
 import { listShipmentDocuments } from "../shipment-documents.server";
@@ -301,7 +302,8 @@ export async function dispatchPortalNotifications() {
     const documentSubscribers = customerAccounts.filter((account) => account.preferences.documents);
 
     const freeTimeSubscribers = customerAccounts.filter((account) => account.preferences.free_time);
-    const today = new Date().toISOString().slice(0, 10);
+    // Nepal's day: free time and due dates run on KCPL's calendar, as in admin.
+    const today = nepalOperationalDate();
 
     for (const document of shipments.docs) {
       const record = document.data() as Record<string, unknown>;

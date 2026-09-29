@@ -1,6 +1,7 @@
 import { mockFinanceDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { effectiveInvoiceStatus, nepalOperationalDate } from "../../invoice-effective-status";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { customerCommercialProfitabilitySummary } from "../commercial-lineage/commercial-profitability.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
@@ -65,12 +66,7 @@ function childId(prefix: string) {
   return `${prefix}-${Date.now()}-${randomBytes(4).toString("hex")}`;
 }
 
-function operationalDate(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kathmandu", year: "numeric", month: "2-digit", day: "2-digit" });
-  const parts = formatter.formatToParts(date);
-  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${map.year}-${map.month}-${map.day}`;
-}
+const operationalDate = nepalOperationalDate;
 
 function addDays(date: string, days: number) {
   const parsed = new Date(`${date}T00:00:00Z`);
@@ -82,11 +78,9 @@ function safeDate(value: string, fallback: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : fallback;
 }
 
+// Shared with the customer portal so both read the same invoice as overdue.
 function effectiveStatus(status: FinanceInvoiceStatus, dueDate: string, balanceDue: number): FinanceInvoiceStatus {
-  if (status === "draft" || status === "void" || status === "paid") return status;
-  if (balanceDue <= 0.00001) return "paid";
-  if (dueDate < operationalDate()) return "overdue";
-  return status === "overdue" ? "issued" : status;
+  return effectiveInvoiceStatus(status, dueDate, balanceDue, operationalDate());
 }
 
 function lineFromData(value: unknown, index: number): FinanceInvoiceLine {
