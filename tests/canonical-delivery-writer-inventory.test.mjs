@@ -286,6 +286,11 @@ const reviewedClassifications = [
     rationale: "App push and Live Activity delivery. Writes only its own rows -- device tokens in mobile_push_devices and Live Activity push tokens in mobile_live_activities, each keyed by a hash of the token and owned by one login. A Live Activity update carries a label and progress already derived from canonical status by the notification sweep; nothing here writes the shipment document, so it cannot assign or influence canonical status.",
   },
   {
+    file: "app/admin/operational-shipments.server.ts",
+    category: "F",
+    rationale: "Read model for the operational screens: every open shipment (status in the open list, plus any unrecognised status) and the newest delivered ones, and per-job task, customs and quote reads. Every Firestore call is a get or getAll; the status names appear only as query filters.",
+  },
+  {
     file: "app/portal/portal-access-log.ts",
     category: "F",
     rationale: "Pure customer document access rollup. No Firebase dependency: it turns download events into per-document summaries and the list of released documents nobody has fetched.",

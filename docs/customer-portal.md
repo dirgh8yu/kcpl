@@ -332,6 +332,25 @@ pre-fills the payment form for accounts to check.
   rating each write a `job_activity` line with the record, so the desk sees them even
   when nobody is assigned to be notified.
 
+## Checked end to end
+
+The whole path was run through the real routes against the Firestore and Storage emulators:
+enquiry → price → quote → "proceed" with a pickup → confirm customer → won → pickup desk →
+documents both ways → customs release → out for delivery → failed attempt and reattempt →
+proof of delivery → confirmation and rating → invoice → remittance → part and full payment →
+overdue → statements → job close, plus a lost quote, an exception and a supplier bill. Fixes it
+led to:
+
+- **A customer's pickup reaches the desk** even when the shipment has no carrier booking.
+- **A status-only update keeps the carrier, reference and ETA.** Absent fields are kept; an
+  empty string clears one (`PATCH /api/admin/shipments/[reference]`).
+- **A retried payment is recognised, not refused.** The idempotency key is checked before
+  the balance, for receivables and payables alike.
+- **Customer notifications run without a mail provider.** App push, web push and SMS/WhatsApp
+  used to stop entirely when SendGrid was not configured; now only email is skipped.
+- **Signed-in customers have an account budget** (30 requests an hour) instead of the public
+  form's 3 per half hour, which locked out a customer after two enquiries and one acceptance.
+
 ## What the portal never writes
 
 A customer request (`POST /api/portal/requests`) creates an ordinary enquiry in `quotes`

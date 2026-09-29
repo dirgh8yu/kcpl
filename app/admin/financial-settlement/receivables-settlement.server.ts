@@ -102,23 +102,15 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
       if (shipmentCustomerId && shipmentCustomerId !== customerId) return { kind: "relationship_mismatch" as const };
     }
 
-    const currentStatus = text(invoice.status);
-    if (currentStatus === "paid" || numberValue(invoice.balance_due) <= 0) return { kind: "already_paid" as const };
-    if (!["issued", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
-
     const invoiceCurrency = normalizeSettlementCurrency(invoice.currency);
     if (!invoiceCurrency || !crmCurrencies.includes(invoiceCurrency as (typeof crmCurrencies)[number])) return { kind: "invalid_financial_state" as const };
     if (requestCurrency && !settlementCurrenciesMatch(requestCurrency, invoiceCurrency)) return { kind: "currency_mismatch" as const };
-    const basis = resolveSettlementBasis({
-      subtotal: invoice.subtotal, taxes: invoice.tax_total, adjustments: invoice.adjustment_total, credits: invoice.credit_total,
-      storedTotal: invoice.total, amountAlreadyPaid: invoice.amount_paid, storedOutstanding: invoice.balance_due,
-    });
-    if (!basis.ok) return { kind: "invalid_financial_state" as const };
-    const applied = applySettlementPayment(basis.basis, input.amount);
-    if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
 
+    // A retry is recognised before the balance is checked again: the first
+    // attempt already moved the balance, so a double-click or network retry
+    // used to be refused as an overpayment or as already paid.
     const requestFingerprint = settlementRequestFingerprint({
-      accountReference: normalizedReference, amount: applied.amount, currency: invoiceCurrency, paymentDate, method: input.method,
+      accountReference: normalizedReference, amount: input.amount, currency: invoiceCurrency, paymentDate, method: input.method,
       externalReference: input.reference,
     });
     const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "", requestFingerprint);
@@ -133,6 +125,17 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
       }
       return { kind: "idempotency_conflict" as const };
     }
+
+    const currentStatus = text(invoice.status);
+    if (currentStatus === "paid" || numberValue(invoice.balance_due) <= 0) return { kind: "already_paid" as const };
+    if (!["issued", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
+    const basis = resolveSettlementBasis({
+      subtotal: invoice.subtotal, taxes: invoice.tax_total, adjustments: invoice.adjustment_total, credits: invoice.credit_total,
+      storedTotal: invoice.total, amountAlreadyPaid: invoice.amount_paid, storedOutstanding: invoice.balance_due,
+    });
+    if (!basis.ok) return { kind: "invalid_financial_state" as const };
+    const applied = applySettlementPayment(basis.basis, input.amount);
+    if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
 
     const now = new Date().toISOString();
     const nextStatus = applied.nextOutstanding <= 0.00001 ? "paid" : text(invoice.due_date) < operationalDate() ? "overdue" : "partially_paid";

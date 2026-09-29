@@ -46,13 +46,14 @@ export type ShipmentDetail = {
   events: ShipmentEvent[];
 };
 
+/** Fields left undefined keep their stored value; an empty string clears one. */
 export type ShipmentUpdateInput = {
   status: ShipmentStatus;
-  eta: string;
-  currentLocation: string;
-  carrier: string;
-  carrierReference: string;
-  customerNote: string;
+  eta?: string;
+  currentLocation?: string;
+  carrier?: string;
+  carrierReference?: string;
+  customerNote?: string;
 };
 
 export type PublicShipmentEvent = Pick<ShipmentEvent, "id" | "title" | "location" | "details" | "event_time">;

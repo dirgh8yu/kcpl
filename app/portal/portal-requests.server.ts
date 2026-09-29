@@ -81,7 +81,7 @@ export function validatePortalEnquiry(payload: Record<string, unknown>): PortalE
  */
 export function checkPortalRequestRateLimit(session: PortalSession) {
   return checkQuoteRateLimit({
-    subjects: [{ policy: quoteRateLimitPolicies.contact, value: session.email }],
+    subjects: [{ policy: quoteRateLimitPolicies.account, value: session.email }],
     store: firestoreQuoteRateLimitStore(),
   });
 }

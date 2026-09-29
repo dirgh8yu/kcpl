@@ -291,13 +291,18 @@ export async function updateShipment(reference: string, values: ShipmentUpdateIn
     const customerRef = customerId ? db.collection("customers").doc(customerId) : null;
     const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
 
+    // A field the caller did not send keeps its value: a status-only update
+    // used to wipe the carrier, its reference and the ETA.
+    const stored = snapshot.data() ?? {};
+    const keep = (value: string | undefined, current: unknown) => value === undefined ? nullableString(current) : value || null;
+    const currentLocation = keep(values.currentLocation, stored.current_location);
     transaction.update(shipmentRef, {
       status: values.status,
-      eta: values.eta || null,
-      current_location: values.currentLocation || null,
-      carrier: values.carrier || null,
-      carrier_reference: values.carrierReference || null,
-      customer_note: values.customerNote || null,
+      eta: keep(values.eta, stored.eta),
+      current_location: currentLocation,
+      carrier: keep(values.carrier, stored.carrier),
+      carrier_reference: keep(values.carrierReference, stored.carrier_reference),
+      customer_note: keep(values.customerNote, stored.customer_note),
       updated_at: updatedAt,
     });
 
@@ -307,7 +312,7 @@ export async function updateShipment(reference: string, values: ShipmentUpdateIn
         id: eventId,
         shipment_reference: normalized,
         title: shipmentStatusLabels[values.status],
-        location: values.currentLocation || null,
+        location: currentLocation,
         details: values.customerNote || null,
         event_time: updatedAt,
         created_at: updatedAt,

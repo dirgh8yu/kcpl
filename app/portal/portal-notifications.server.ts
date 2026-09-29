@@ -219,6 +219,9 @@ async function textOnce(key: string, account: Account, subject: string, text: st
 }
 
 async function sendOnce(input: { key: string; to: string; subject: string; text: string; html: string; reference: string }) {
+  // Email is one channel of several: without a mail provider the sweep still
+  // runs for push, the app and SMS/WhatsApp, and simply sends no email.
+  if (!transactionalEmailConfigured()) return { kind: "not_configured" as const };
   const reference = firebaseAdminDb().collection("portal_email_deliveries").doc(deliveryId(input.key));
   const existing = await reference.get();
   if (existing.exists) return { kind: "already_sent" as const };
@@ -262,7 +265,9 @@ async function sendOnce(input: { key: string; to: string; subject: string; text:
 
 export async function dispatchPortalNotifications() {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!transactionalEmailConfigured()) return { kind: "not_configured" as const, sent: 0 };
+  // No gate on email here: app push needs nothing beyond Firebase, and web
+  // push and SMS/WhatsApp have their own switches. This used to return early
+  // without a mail provider, so no customer heard anything on any channel.
 
   const db = firebaseAdminDb();
   let accounts: Account[];

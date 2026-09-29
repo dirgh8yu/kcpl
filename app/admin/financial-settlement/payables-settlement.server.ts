@@ -209,19 +209,12 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       const supplier = await transaction.get(db.collection("partners").doc(supplierId));
       if (!supplier.exists || !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), billBranch)) return { kind: "relationship_mismatch" as const };
     }
-    const currentStatus = status(bill.status);
-    if (currentStatus === "paid" || numberValue(bill.balance_due) <= 0) return { kind: "already_paid" as const };
-    if (!["approved", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
-
     const billCurrency = normalizeSettlementCurrency(bill.currency);
     if (!billCurrency || !crmCurrencies.includes(billCurrency as (typeof crmCurrencies)[number])) return { kind: "invalid_financial_state" as const, reason: "invalid_currency" as const };
     if (requestCurrency && !settlementCurrenciesMatch(requestCurrency, billCurrency)) return { kind: "currency_mismatch" as const };
-    const basisResult = resolveSettlementBasis({ subtotal: bill.subtotal, taxes: bill.tax_total, adjustments: bill.adjustment_total, credits: bill.credit_total, storedTotal: bill.total, amountAlreadyPaid: bill.amount_paid, storedOutstanding: bill.balance_due });
-    if (!basisResult.ok) return { kind: "invalid_financial_state" as const, reason: basisResult.reason };
-    const applied = applySettlementPayment(basisResult.basis, input.amount);
-    if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
 
-    const requestFingerprint = settlementRequestFingerprint({ accountReference: normalizedReference, amount: applied.amount, currency: billCurrency, paymentDate, method: input.method, externalReference: input.reference });
+    // A retry is recognised before the balance is checked again, as for receivables.
+    const requestFingerprint = settlementRequestFingerprint({ accountReference: normalizedReference, amount: input.amount, currency: billCurrency, paymentDate, method: input.method, externalReference: input.reference });
     const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "", requestFingerprint);
     const paymentRef = billRef.collection("payments").doc(paymentId);
     const existingPayment = await transaction.get(paymentRef);
@@ -233,6 +226,15 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       };
       return { kind: "idempotency_conflict" as const };
     }
+
+    const currentStatus = status(bill.status);
+    if (currentStatus === "paid" || numberValue(bill.balance_due) <= 0) return { kind: "already_paid" as const };
+    if (!["approved", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
+    const basisResult = resolveSettlementBasis({ subtotal: bill.subtotal, taxes: bill.tax_total, adjustments: bill.adjustment_total, credits: bill.credit_total, storedTotal: bill.total, amountAlreadyPaid: bill.amount_paid, storedOutstanding: bill.balance_due });
+    if (!basisResult.ok) return { kind: "invalid_financial_state" as const, reason: basisResult.reason };
+    const applied = applySettlementPayment(basisResult.basis, input.amount);
+    if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+
 
     const audit = await transaction.get(db.collection("freight_audits").doc(normalizedReference));
     if (!audit.exists) return { kind: "audit_missing" as const };

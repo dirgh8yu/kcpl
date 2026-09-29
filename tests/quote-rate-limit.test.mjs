@@ -270,3 +270,12 @@ test("the quote route measures abuse before it does CRM or Firestore work", () =
   assert.match(policy, /KCPL_RATE_LIMIT_SALT/, "the hash can be salted per deployment");
   assert.doesNotMatch(policy, /from "\.[^"]*"/, "the policy module must stay importable without project aliases");
 });
+
+test("a signed-in customer has an account budget, not the anonymous form's", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { account, contact } = quoteRateLimitPolicies;
+  assert.ok(account.limit >= 20, "a working day of enquiries and acceptances fits");
+  assert.notEqual(account.name, contact.name, "separate buckets from the public form");
+  const source = await readFile(new URL("../app/portal/portal-requests.server.ts", import.meta.url), "utf8");
+  assert.match(source, /policy: quoteRateLimitPolicies\.account, value: session\.email/);
+});

@@ -5,7 +5,7 @@ Pickup Scheduling closes the execution gap between a confirmed TMS booking and t
 ## Operational flow
 
 1. Tender/Booking confirms a carrier or counterpart.
-2. The booked shipment automatically appears in `/admin/pickups`, even if no pickup appointment exists yet.
+2. The booked shipment automatically appears in `/admin/pickups`, even if no pickup appointment exists yet. A shipment opened straight from a won quote, with no carrier booking, appears as soon as its customer asked KCPL to collect.
 3. Operations requests a pickup window and records the shipper/vendor contact and location.
 4. The carrier/vendor confirms an appointment and may provide a provider reference.
 5. Operations can assign driver, phone and vehicle details.

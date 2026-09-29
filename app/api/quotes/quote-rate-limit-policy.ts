@@ -52,6 +52,10 @@ const MINUTE = 60_000;
 export const quoteRateLimitPolicies = {
   address: { name: "address", limit: 6, windowMs: 10 * MINUTE },
   contact: { name: "contact", limit: 3, windowMs: 30 * MINUTE },
+  // A signed-in customer is known to KCPL, not an anonymous form: two
+  // enquiries and accepting one quote used to lock them out for half an hour.
+  // Still bounded, so a runaway client cannot flood the enquiry desk.
+  account: { name: "account", limit: 30, windowMs: 60 * MINUTE },
 } satisfies Record<string, RateLimitPolicy>;
 
 /**

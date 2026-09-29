@@ -78,32 +78,35 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 
   const status = clean(body.status);
-  const eta = clean(body.eta);
-  const currentLocation = clean(body.currentLocation);
-  const carrier = clean(body.carrier);
-  const carrierReference = clean(body.carrierReference);
-  const customerNote = clean(body.customerNote);
+  // Absent keeps the stored value; "" clears it. The admin panel always sends all five.
+  const optional = (key: string) => Object.prototype.hasOwnProperty.call(body, key) ? clean(body[key]) : undefined;
+  const eta = optional("eta");
+  const currentLocation = optional("currentLocation");
+  const carrier = optional("carrier");
+  const carrierReference = optional("carrierReference");
+  const customerNote = optional("customerNote");
   const overrideReason = clean(body.overrideReason);
 
   if (!shipmentStatuses.includes(status as ShipmentStatus)) return json({ ok: false, error: "Choose a valid shipment status." }, 400);
   if (eta && !isValidDateOnly(eta)) return json({ ok: false, error: "Choose a real ETA calendar date." }, 400);
-  if (currentLocation.length > 180) return json({ ok: false, error: "Current location must be 180 characters or fewer." }, 400);
-  if (carrier.length > 160) return json({ ok: false, error: "Carrier must be 160 characters or fewer." }, 400);
-  if (carrierReference.length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
-  if (customerNote.length > 2000) return json({ ok: false, error: "Customer update must be 2000 characters or fewer." }, 400);
+  if ((currentLocation ?? "").length > 180) return json({ ok: false, error: "Current location must be 180 characters or fewer." }, 400);
+  if ((carrier ?? "").length > 160) return json({ ok: false, error: "Carrier must be 160 characters or fewer." }, 400);
+  if ((carrierReference ?? "").length > 160) return json({ ok: false, error: "Carrier reference must be 160 characters or fewer." }, 400);
+  if ((customerNote ?? "").length > 2000) return json({ ok: false, error: "Customer update must be 2000 characters or fewer." }, 400);
 
   if (status === "delivered") {
     const completion = await reconcileCanonicalDelivery(reference, {
       source: "direct_admin_request",
       actor: { name: auth.user.displayName, email: auth.user.email },
       context: auth.staff,
-      shipmentPatch: {
-        eta: eta || null,
-        current_location: currentLocation || null,
-        carrier: carrier || null,
-        carrier_reference: carrierReference || null,
-        customer_note: customerNote || null,
-      },
+      // Only the fields sent; the rest keep their stored values.
+      shipmentPatch: Object.fromEntries(Object.entries({
+        eta,
+        current_location: currentLocation,
+        carrier,
+        carrier_reference: carrierReference,
+        customer_note: customerNote,
+      }).filter(([, value]) => value !== undefined).map(([key, value]) => [key, value || null])),
     });
     if (completion.kind === "unavailable") return json({ ok: false, error: "Canonical delivery controls are unavailable." }, 503);
     if (completion.kind === "missing") return json({ ok: false, error: "Shipment not found." }, 404);

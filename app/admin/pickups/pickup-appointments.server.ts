@@ -157,23 +157,30 @@ export async function listPickupWorkspace(staff: KcplStaffContext) {
     if (appointment) appointments.set(appointment.shipment_reference, appointment);
   }
 
-  const accessible = shipmentsSnapshot.docs.filter((doc) => {
+  const open = shipmentsSnapshot.docs.filter((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const branch = branchValue(data.primary_branch) ?? branchValue(Array.isArray(data.handling_branches) ? data.handling_branches[0] : null);
     if (!branch || !staffCanAccessBranch(staff, branch)) return false;
     const status = text(data.status);
-    if (status === "delivered" || status === "cancelled") return false;
-    return Boolean(nullable(data.booking_reference) || nullable(data.tender_id) || nullable(data.transport_order_id));
+    return status !== "delivered" && status !== "cancelled";
   });
+  const booked = (doc: FirebaseFirestore.QueryDocumentSnapshot) => Boolean(nullable(doc.get("booking_reference")) || nullable(doc.get("tender_id")) || nullable(doc.get("transport_order_id")));
 
-  const customerIds = accessible.map((doc) => nullable(doc.get("customer_id"))).filter((value): value is string => Boolean(value));
   // The customer's own quote too, where their booking request (and any
   // pickup they asked for) lives.
-  const quoteIds = accessible
+  const quoteIds = open
     .flatMap((doc) => [nullable(doc.get("quote_reference")), nullable(doc.get("customer_quote_reference"))])
     .filter((value): value is string => Boolean(value));
+  const quotes = await loadMap("quotes", quoteIds);
+  // A job belongs on the desk once a carrier is booked, or as soon as the
+  // customer asked KCPL to collect: a shipment opened straight from a won
+  // quote has no carrier booking, and its pickup used to be seen nowhere.
+  const accessible = open.filter((doc) => booked(doc)
+    || Boolean(customerPickupRequest(quotes.get(text(doc.get("customer_quote_reference"))) ?? quotes.get(text(doc.get("quote_reference"))) ?? {})));
+
+  const customerIds = accessible.map((doc) => nullable(doc.get("customer_id"))).filter((value): value is string => Boolean(value));
   const tenderIds = accessible.map((doc) => nullable(doc.get("tender_id"))).filter((value): value is string => Boolean(value));
-  const [customers, quotes, tenders] = await Promise.all([loadMap("customers", customerIds), loadMap("quotes", quoteIds), loadMap("transport_tenders", tenderIds)]);
+  const [customers, tenders] = await Promise.all([loadMap("customers", customerIds), loadMap("transport_tenders", tenderIds)]);
   const now = new Date().toISOString();
   const rows: PickupQueueRow[] = [];
   for (const doc of accessible) {
