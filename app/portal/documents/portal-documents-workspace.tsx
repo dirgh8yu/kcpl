@@ -7,15 +7,14 @@ import {
   OpsBadge,
   OpsButton,
   OpsEmptyState,
-  OpsFilterChip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
-  OpsToolbar,
 } from "../../admin/operations-ui";
+import { OpsFilterSelect, OpsRegisterToolbar, OpsScopeTabs } from "../../admin/ops-register";
 import type { PortalDocumentRow } from "../portal-data.server";
 import { portalDate, portalDocumentLabel, portalFileSize } from "../portal-format";
 import { portalTranslator, type PortalLocale } from "../portal-i18n";
@@ -69,36 +68,52 @@ export function PortalDocumentsWorkspace({
         </>}
       />
       <div className="ops-content">
-        <OpsSurface flush>
-          <OpsToolbar className="portal-toolbar">
+        {/* The Document Vault's operating row: direction as scopes with
+            counts, the paper type as a filter, as staff see it. */}
+        <OpsRegisterToolbar
+          search={(
             <OpsSearch
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("docs.search_placeholder")}
               aria-label={t("docs.search_label")}
             />
-            <div className="portal-filter-group" role="group" aria-label={t("docs.direction_label")}>
-              <OpsFilterChip active={direction === "all"} onClick={() => setDirection("all")}>{t("docs.all")}</OpsFilterChip>
-              <OpsFilterChip active={direction === "from_kcpl"} onClick={() => setDirection("from_kcpl")}>{t("docs.from_kcpl")}</OpsFilterChip>
-              <OpsFilterChip active={direction === "from_you"} onClick={() => setDirection("from_you")}>{t("docs.sent_by_you")} · {sentByYou}</OpsFilterChip>
-            </div>
-            <div className="portal-filter-group" role="group" aria-label={t("docs.type_label")}>
-              <OpsFilterChip active={documentType === "all"} onClick={() => setDocumentType("all")}>{t("docs.all_types")}</OpsFilterChip>
-              {types.map(([type, count]) => (
-                <OpsFilterChip key={type} active={documentType === type} onClick={() => setDocumentType(type)}>
-                  {portalDocumentLabel(type, locale)} · {count}
-                </OpsFilterChip>
-              ))}
-            </div>
-            {filtered ? (
-              <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setDirection("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
-            ) : null}
-            <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
-          </OpsToolbar>
+          )}
+          actions={(
+            <>
+              <OpsFilterSelect
+                label={t("docs.type")}
+                filterLabel={t("docs.type_label")}
+                value={documentType}
+                allLabel={t("docs.all_types")}
+                options={types.map(([type, count]) => ({ value: type, label: `${portalDocumentLabel(type, locale)} · ${count}` }))}
+                onChange={setDocumentType}
+                align="end"
+              />
+              {filtered ? (
+                <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setDirection("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
+              ) : null}
+              <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
+            </>
+          )}
+          tabs={(
+            <OpsScopeTabs
+              label={t("docs.direction_label")}
+              value={direction}
+              onChange={setDirection}
+              items={[
+                { value: "all", label: t("docs.all"), count: documents.length },
+                { value: "from_kcpl", label: t("docs.from_kcpl"), count: documents.length - sentByYou },
+                { value: "from_you", label: t("docs.sent_by_you"), count: sentByYou },
+              ]}
+            />
+          )}
+        />
+        <OpsSurface flush>
 
           {rows.length ? (
             <OpsTableWrap>
-              <table className="ops-table portal-stack-table">
+              <table className="ops-table ops-register-table portal-stack-table">
                 <thead>
                   <tr>
                     <th>{t("common.document")}</th>

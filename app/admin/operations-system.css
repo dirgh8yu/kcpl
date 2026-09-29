@@ -1550,9 +1550,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 
 /* Workspace content -------------------------------------------------------- */
 .kcpl-admin-content .portal-stack { display: grid; }
-.kcpl-admin-content .portal-toolbar { padding-inline: var(--app-space-4); }
 .kcpl-admin-content .portal-toolbar-count { margin-left: auto; color: var(--admin-muted); font-size: var(--app-text-sm); white-space: nowrap; }
-.kcpl-admin-content .portal-filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
 .kcpl-admin-content .portal-empty-wrap { padding: var(--app-space-4); }
 .kcpl-admin-content .portal-lane { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-weight: 500; }
 .kcpl-admin-content .portal-lane-arrow { color: var(--admin-faint); }
@@ -1629,7 +1627,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .portal-nav { order: 3; width: 100%; padding-bottom: 2px; }
   .portal-account-meta { display: none; }
   .portal-footer { padding-inline: var(--app-space-4); }
-  .kcpl-admin-content .portal-toolbar { padding-inline: var(--app-space-3); }
   .kcpl-admin-content .portal-login-card { padding: var(--app-space-5); }
   .kcpl-admin-content .portal-document-list li { flex-wrap: wrap; }
 }
@@ -1671,10 +1668,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-label]::before { content: attr(data-label) " "; color: var(--admin-faint); font-weight: 400; }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table[data-row-link] td[data-cell="primary"] .portal-row-link::after { content: ""; position: absolute; inset: 0; }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table[data-row-link] td:not([data-cell="primary"]) a { position: relative; z-index: 1; }
-
-  /* Six counts in pairs, not six full-width cards before any content. */
-  .kcpl-portal-route .kcpl-admin-content .ops-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .kcpl-portal-route .kcpl-admin-content .ops-kpi { grid-template-columns: minmax(0, 1fr); gap: 8px; min-height: 0; padding: 12px; }
 
   /* A balance is read whole: one currency per line, never cut off. */
   .kcpl-portal-route .kcpl-admin-content .ops-metric-strip { grid-template-columns: minmax(0, 1fr); }

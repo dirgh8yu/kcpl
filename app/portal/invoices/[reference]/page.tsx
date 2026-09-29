@@ -82,7 +82,7 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
 
                   {result.invoice.line_items.length ? (
                     <OpsTableWrap>
-                      <table className="ops-table portal-stack-table">
+                      <table className="ops-table ops-register-table portal-stack-table">
                         <thead>
                           <tr>
                             <th>{t("invd.col_charge")}</th>

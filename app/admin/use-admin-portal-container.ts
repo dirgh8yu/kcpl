@@ -12,8 +12,10 @@ export function useAdminPortalContainer() {
   useEffect(() => {
     // Deliberate: the portal target only exists in the DOM post-mount, and is
     // unavailable during SSR, so it can't be read in a lazy useState initializer.
+    // The customer portal renders the same primitives inside its own content
+    // root, which carries the same tokens.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setContainer(document.getElementById("workspace-content"));
+    setContainer(document.getElementById("workspace-content") ?? document.getElementById("portal-content"));
   }, []);
   return container;
 }

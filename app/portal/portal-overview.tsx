@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { AlarmClock, AlertTriangle, ArrowRight, CalendarClock, FileText, FileUp, Package, Receipt, Truck } from "lucide-react";
+import { AlarmClock, ArrowRight, FileText, FileUp, Package, Receipt } from "lucide-react";
 import {
   OpsBadge,
   OpsEmptyState,
-  OpsKpiCard,
-  OpsKpiStrip,
   OpsMetric,
   OpsMetricStrip,
   OpsMono,
@@ -13,6 +11,7 @@ import {
   OpsSurface,
   OpsTableWrap,
 } from "../admin/operations-ui";
+import { OpsKpiRail, OpsRailMetric } from "../admin/ops-register";
 import type { PortalOverview as PortalOverviewData } from "./portal-data.server";
 import { freeTimeSummary } from "../shipment-free-time";
 import {
@@ -49,32 +48,20 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
-          <OpsKpiStrip>
-            <OpsKpiCard label={t("overview.kpi_active")} value={overview.activeCount} icon={<Package size={16} strokeWidth={1.75}/>} tone="accent"/>
-            <OpsKpiCard label={t("overview.kpi_in_transit")} value={overview.inTransitCount} icon={<Truck size={16} strokeWidth={1.75}/>} tone="info"/>
-            <OpsKpiCard label={t("overview.kpi_arriving")} value={overview.arrivingCount} icon={<CalendarClock size={16} strokeWidth={1.75}/>} tone="neutral"/>
-            <OpsKpiCard
+          {/* The staff registers' metric rail: one flat strip, tone on the
+              value, zeros receding. */}
+          <OpsKpiRail label={t("overview.eyebrow")}>
+            <OpsRailMetric label={t("overview.kpi_active")} value={overview.activeCount}/>
+            <OpsRailMetric label={t("overview.kpi_in_transit")} value={overview.inTransitCount} tone="success"/>
+            <OpsRailMetric label={t("overview.kpi_arriving")} value={overview.arrivingCount} tone="info"/>
+            <OpsRailMetric
               label={t("overview.kpi_free_time")}
               value={overview.freeTime.length}
-              icon={<AlarmClock size={16} strokeWidth={1.75}/>}
-              tone={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : overview.freeTime.length ? "warning" : "success"}
-              detail={overview.freeTime.length ? t("overview.kpi_free_time_clear") : t("overview.kpi_free_time_none")}
+              tone={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : "warning"}
             />
-            <OpsKpiCard
-              label={t("overview.kpi_documents")}
-              value={overview.outstandingCount}
-              icon={<FileUp size={16} strokeWidth={1.75}/>}
-              tone={overview.outstandingCount > 0 ? "warning" : "success"}
-              detail={overview.outstandingCount > 0 ? t("overview.kpi_documents_waiting") : t("overview.kpi_documents_none")}
-            />
-            <OpsKpiCard
-              label={t("overview.kpi_attention")}
-              value={overview.attentionCount}
-              icon={<AlertTriangle size={16} strokeWidth={1.75}/>}
-              tone={overview.attentionCount > 0 ? "danger" : "success"}
-              detail={overview.attentionCount > 0 ? t("overview.kpi_attention_working") : t("overview.kpi_attention_none")}
-            />
-          </OpsKpiStrip>
+            <OpsRailMetric label={t("overview.kpi_documents")} value={overview.outstandingCount} tone="warning"/>
+            <OpsRailMetric label={t("overview.kpi_attention")} value={overview.attentionCount} tone="danger"/>
+          </OpsKpiRail>
 
           {overview.freeTime.length ? (
             <OpsSurface
@@ -183,7 +170,7 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
           >
             {active.length ? (
               <OpsTableWrap>
-                <table className="ops-table portal-stack-table" data-row-link="">
+                <table className="ops-table ops-register-table portal-stack-table" data-row-link="">
                   <thead>
                     <tr>
                       <th>{t("overview.col_reference")}</th>

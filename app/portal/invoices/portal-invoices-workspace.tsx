@@ -65,7 +65,7 @@ export function PortalInvoicesWorkspace({
           <OpsSurface eyebrow={t("inv.billing_eyebrow")} title={t("inv.billing_title")} flush>
             {invoices.length ? (
               <OpsTableWrap>
-                <table className="ops-table portal-stack-table" data-row-link="">
+                <table className="ops-table ops-register-table portal-stack-table" data-row-link="">
                   <thead>
                     <tr>
                       <th>{t("inv.col_invoice")}</th>

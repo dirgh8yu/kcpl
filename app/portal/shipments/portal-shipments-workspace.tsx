@@ -7,15 +7,14 @@ import {
   OpsBadge,
   OpsButton,
   OpsEmptyState,
-  OpsFilterChip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
   OpsSearch,
   OpsSurface,
   OpsTableWrap,
-  OpsToolbar,
 } from "../../admin/operations-ui";
+import { OpsRegisterToolbar, OpsScopeTabs } from "../../admin/ops-register";
 import type { PortalShipmentView } from "../portal-access-policy";
 import { portalDate, portalDateTime, portalModeLabel, portalStatusLabel, portalStatusTone } from "../portal-format";
 import { portalTranslator, type PortalLocale, type PortalTextKey } from "../portal-i18n";
@@ -64,30 +63,43 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
         meta={<span>{shipments.length === 1 ? t("overview.on_record_one") : t("overview.on_record", { count: shipments.length })}</span>}
       />
       <div className="ops-content">
-        <OpsSurface flush>
-          <OpsToolbar className="portal-toolbar">
+        {/* The staff registers' operating row: search left, the count and a
+            reset right, status scopes with their counts beneath. */}
+        <OpsRegisterToolbar
+          search={(
             <OpsSearch
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("ships.search_placeholder")}
               aria-label={t("ships.search_label")}
             />
-            <div className="portal-filter-group" role="group" aria-label={t("ships.filter_label")}>
-              {(Object.keys(focusKeys) as ShipmentFocus[]).map((value) => (
-                <OpsFilterChip key={value} active={focus === value} onClick={() => setFocus(value)}>
-                  {t(focusKeys[value])}
-                </OpsFilterChip>
-              ))}
-            </div>
-            {filtered ? (
-              <OpsButton size="sm" variant="ghost" onClick={() => { setFocus("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
-            ) : null}
-            <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
-          </OpsToolbar>
+          )}
+          actions={(
+            <>
+              {filtered ? (
+                <OpsButton size="sm" variant="ghost" onClick={() => { setFocus("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
+              ) : null}
+              <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
+            </>
+          )}
+          tabs={(
+            <OpsScopeTabs
+              label={t("ships.filter_label")}
+              value={focus}
+              onChange={setFocus}
+              items={(Object.keys(focusKeys) as ShipmentFocus[]).map((value) => ({
+                value,
+                label: t(focusKeys[value]),
+                count: shipments.filter((shipment) => matchesFocus(shipment, value)).length,
+              }))}
+            />
+          )}
+        />
+        <OpsSurface flush>
 
           {rows.length ? (
             <OpsTableWrap>
-              <table className="ops-table portal-stack-table" data-row-link="">
+              <table className="ops-table ops-register-table portal-stack-table" data-row-link="">
                 <thead>
                   <tr>
                     <th>{t("overview.col_reference")}</th>

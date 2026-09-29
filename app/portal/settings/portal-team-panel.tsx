@@ -131,7 +131,7 @@ export function PortalTeamPanel({
 
         {team.length ? (
           <OpsTableWrap>
-            <table className="ops-table portal-stack-table">
+            <table className="ops-table ops-register-table portal-stack-table">
               <thead>
                 <tr>
                   <th>{t("team.col_login")}</th>

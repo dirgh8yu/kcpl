@@ -78,3 +78,36 @@ test("the server refuses what the page does not offer", async () => {
   const page = code(await readFile(repo("app/portal/requests/portal-requests-workspace.tsx"), "utf8"));
   assert.match(page, /!portalQuoteBookingBlock\(quote\) && capabilities\.canSubmitRequests/);
 });
+
+/* One interface for staff and customers --------------------------------- */
+
+test("a shipment status has the same colour in the admin and the portal", async () => {
+  const { portalStatusTone } = await import("../app/portal/portal-format.ts");
+  const { shipmentStatusTone } = await import("../app/shipment-status-tone.ts");
+  for (const status of ["booking_confirmed", "preparing", "in_transit", "customs_clearance", "out_for_delivery", "delivered", "exception"]) {
+    assert.equal(portalStatusTone(status), shipmentStatusTone(status), status);
+  }
+  const admin = code(await readFile(repo("app/admin/shipments/shipments-views.tsx"), "utf8"));
+  assert.match(admin, /return shipmentStatusTone\(status\);/);
+});
+
+test("the portal is built from the admin's register kit, not a look of its own", async () => {
+  const files = await tsxFiles("app/portal");
+  for (const path of files) {
+    const source = code(await readFile(repo(path), "utf8"));
+    assert.doesNotMatch(source, /OpsFilterChip|OpsKpiCard|OpsKpiStrip/, `${path}: use OpsScopeTabs / OpsKpiRail as the admin registers do`);
+    for (const table of source.match(/<table className="[^"]*"/g) ?? []) {
+      assert.match(table, /ops-register-table/, `${path}: ${table} uses the admin register table`);
+    }
+  }
+  const overview = code(await readFile(repo("app/portal/portal-overview.tsx"), "utf8"));
+  assert.match(overview, /<OpsKpiRail/);
+  for (const path of ["app/portal/shipments/portal-shipments-workspace.tsx", "app/portal/documents/portal-documents-workspace.tsx"]) {
+    const source = code(await readFile(repo(path), "utf8"));
+    assert.match(source, /<OpsRegisterToolbar/, path);
+    assert.match(source, /<OpsScopeTabs/, path);
+  }
+  // Popovers from the kit open inside the portal's token scope too.
+  const hook = await readFile(repo("app/admin/use-admin-portal-container.ts"), "utf8");
+  assert.match(hook, /getElementById\("portal-content"\)/);
+});

@@ -2,6 +2,7 @@
 
 import { ArrowRight, Package, Plane, Ship, Train, Truck } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
+import { shipmentStatusTone } from "../../shipment-status-tone";
 import type { CommandCentreJob } from "../command-centre/command-centre-data";
 import { shipmentNextAction } from "./shipment-queue-policy";
 
@@ -11,12 +12,9 @@ export type StatusTone = "neutral" | "info" | "warning" | "success" | "danger";
 
 /* ---- Shared presentation helpers (single source of truth for the register) ---- */
 
+/** The customer portal reads the same map (app/shipment-status-tone.ts). */
 export function statusTone(status: ShipmentStatus): StatusTone {
-  if (status === "exception") return "danger";
-  if (status === "customs_clearance") return "warning";
-  if (status === "out_for_delivery") return "info";
-  if (status === "in_transit") return "success";
-  return "neutral";
+  return shipmentStatusTone(status);
 }
 
 export function priorityTone(priority: CommandCentreJob["priority"]): StatusTone {

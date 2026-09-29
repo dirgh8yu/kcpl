@@ -1,4 +1,5 @@
 import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types.ts";
+import { shipmentStatusTone } from "../shipment-status-tone.ts";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types.ts";
 import { portalText, type PortalLocale, type PortalTextKey } from "./portal-i18n.ts";
 
@@ -25,24 +26,15 @@ export const portalModeLabels: Record<string, string> = {
 
 export type PortalTone = "neutral" | "accent" | "success" | "warning" | "danger" | "info" | "violet";
 
-const statusTones: Record<string, PortalTone> = {
-  booking_confirmed: "info",
-  preparing: "neutral",
-  in_transit: "accent",
-  customs_clearance: "violet",
-  out_for_delivery: "info",
-  delivered: "success",
-  exception: "danger",
-};
-
 export function portalStatusLabel(status: string, locale: PortalLocale = "en") {
   const fallback = shipmentStatusLabels[status as ShipmentStatus] ?? "Shipment update";
   if (locale === "en") return fallback;
   return labelled(locale, `status.${status}`, fallback);
 }
 
+/** The staff register's colours, so a shipment reads the same on both sides. */
 export function portalStatusTone(status: string): PortalTone {
-  return statusTones[status] ?? "neutral";
+  return shipmentStatusTone(status);
 }
 
 export function portalModeLabel(mode: string, locale: PortalLocale = "en") {

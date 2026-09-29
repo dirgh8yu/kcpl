@@ -125,6 +125,7 @@ export function OpsFilterSelect({
   showValue = false,
   align = "start",
   icon,
+  filterLabel,
 }: {
   label: string;
   value: string;
@@ -135,6 +136,9 @@ export function OpsFilterSelect({
   showValue?: boolean;
   align?: "start" | "end";
   icon?: ReactNode;
+  /** The trigger's accessible name when nothing is chosen, in the reader's
+   * language; "Filter by <label>" otherwise. */
+  filterLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const container = useAdminPortalContainer();
@@ -151,7 +155,7 @@ export function OpsFilterSelect({
           type="button"
           className="ops-filter-trigger"
           data-active={active || undefined}
-          aria-label={active || showValue ? `${label}: ${current?.label ?? value}` : `Filter by ${label.toLowerCase()}`}
+          aria-label={active || showValue ? `${label}: ${current?.label ?? value}` : filterLabel ?? `Filter by ${label.toLowerCase()}`}
         >
           {icon}
           <span className="ops-filter-trigger-label">{triggerText}</span>

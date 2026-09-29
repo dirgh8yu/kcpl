@@ -220,7 +220,7 @@ export function PortalRequestsWorkspace({
           >
             {quotes.length ? (
               <OpsTableWrap>
-                <table className="ops-table portal-stack-table">
+                <table className="ops-table ops-register-table portal-stack-table">
                   <thead>
                     <tr>
                       <th>{t("req.col_quote")}</th>
@@ -344,7 +344,7 @@ export function PortalRequestsWorkspace({
           >
             {requests.length ? (
               <OpsTableWrap>
-                <table className="ops-table portal-stack-table">
+                <table className="ops-table ops-register-table portal-stack-table">
                   <thead>
                     <tr>
                       <th>{t("overview.col_reference")}</th>

@@ -259,7 +259,9 @@ test("a public and private value from different key pairs is refused", () => {
   // The likeliest real misconfiguration: two halves of two different runs of
   // the generator documented in .env.example.
   assert.throws(
-    () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, privateKey: base64UrlEncode(other.getPrivateKey()) } }),
+    // getPrivateKey() drops leading zero bytes (about 1 run in 256), which
+    // would fail on length first; pad to the 32 bytes a real key has.
+    () => vapidAuthorization({ endpoint: "https://push.example/x", keys: { ...vapid, privateKey: base64UrlEncode(Buffer.from(other.getPrivateKey("hex").padStart(64, "0"), "hex")) } }),
     /matching pair/,
   );
 });
