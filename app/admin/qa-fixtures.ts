@@ -21,6 +21,7 @@
 
 import type { KcplBranch } from "./crm/crm-data";
 import type { KcplStaffContext } from "./staff-directory.server";
+import type { ShipmentMessageView } from "../shipment-messages";
 import { qaAuthBypassEnabled } from "./qa-auth-bypass.ts";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre/command-centre-data";
 import type { OperationalNote } from "./command-centre/operational-notes.server";
@@ -2113,6 +2114,20 @@ export function mockShipmentBranchAccess(reference: string, staff: KcplStaffCont
     accessBranches: [...new Set([job.primary_branch, ...job.handling_branches])],
     branchDataComplete: true,
   };
+}
+
+/** A short customer conversation for the Job File's Customer messages panel.
+ * Nothing is stored: a reply posted in QA comes back once and is gone. */
+export function mockShipmentMessages(reference: string, staff: KcplStaffContext, now = Date.now()): ShipmentMessageView[] | null {
+  const job = mockJob(reference, staff, now);
+  if (!job) return null;
+  const staffName = job.assigned_to_name ?? JOB_OWNER.name;
+  const customer = `${job.customer_name.split(/\s+/)[0]} (customer)`;
+  return [
+    { id: "qa-msg-1", from: "customer", author: customer, body: "Hi, is there any update on this shipment? Our warehouse needs a day's notice.", created_at: iso(now, -26 * HOUR) },
+    { id: "qa-msg-2", from: "kcpl", author: staffName, body: `It's at ${job.current_location ?? "the depot"} now. We'll confirm the delivery day as soon as it's cleared.`, created_at: iso(now, -25 * HOUR) },
+    { id: "qa-msg-3", from: "customer", author: customer, body: "Thanks. Please call before the truck leaves.", created_at: iso(now, -3 * HOUR) },
+  ];
 }
 
 export function mockDigitalJobFile(reference: string, staff: KcplStaffContext, now = Date.now()) {

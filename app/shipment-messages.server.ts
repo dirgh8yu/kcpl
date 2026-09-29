@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "./firebase-admin.server";
 import type { AdminUser } from "./admin/admin-auth";
+import { mockShipmentMessages, qaMockDataEnabled } from "./admin/qa-fixtures";
 import { createDirectNotification } from "./admin/notifications/notification-centre.server";
 import { checkShipmentBranchAccess } from "./admin/shipment-access.server";
 import type { KcplStaffContext } from "./admin/staff-directory.server";
@@ -123,6 +124,7 @@ export async function staffReadsMessages(reference: string, staff: KcplStaffCont
   const normalized = reference.trim().toUpperCase();
   const denied = await staffCanSee(normalized, staff);
   if (denied) return denied;
+  if (qaMockDataEnabled()) return { status: 200, body: { ok: true, messages: mockShipmentMessages(normalized, staff) ?? [] } };
   return { status: 200, body: { ok: true, messages: await read(normalized, "kcpl") } };
 }
 
@@ -135,6 +137,10 @@ export async function staffPostsMessage(reference: string, payload: Record<strin
   const denied = await staffCanSee(normalized, staff);
   if (denied) return denied;
   const now = new Date().toISOString();
+  // QA preview: show the reply as sent, but store nothing and tell no one.
+  if (qaMockDataEnabled()) {
+    return { status: 201, body: { ok: true, message: shipmentMessageView(`qa-${now}`, { body, author_side: "kcpl", author_name: user.displayName || user.email, created_at: now }, "kcpl") } };
+  }
   const id = await write(normalized, {
     body,
     author_side: "kcpl",

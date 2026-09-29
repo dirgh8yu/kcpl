@@ -19,6 +19,7 @@ import {
   mockPartnerDashboard,
   mockPickupWorkspace,
   mockQuoteSummaries,
+  mockShipmentMessages,
   mockTmsOrders,
   mockVisibilityWorkspace,
   mockWorkflowOverview,
@@ -111,6 +112,7 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/workflow-guard.server.ts",
     "app/admin/shipment-activity.server.ts",
     "app/admin/shipment-exceptions.server.ts",
+    "app/shipment-messages.server.ts",
     // Customer 360
     "app/admin/crm/crm-access.server.ts",
     "app/admin/crm/crm-quote-links.server.ts",
@@ -398,4 +400,20 @@ test("the transport-order chain is one list, not four", () => {
       assert.ok(orderIds.has(member.order_id), `load member ${member.order_id} is not a real order`);
     }
   }
+});
+
+test("the Job File conversation fixture belongs to a real mock job and stores nothing", () => {
+  const staff = { can_access_all_branches: true, branches: [] };
+  const now = Date.parse("2026-09-29T06:00:00Z");
+  const reference = mockCommandCentre(staff, now).jobs[0].reference;
+  const thread = mockShipmentMessages(reference, staff, now);
+  assert.ok(thread && thread.length >= 2);
+  assert.ok(thread.some((message) => message.from === "customer") && thread.some((message) => message.from === "kcpl"));
+  assert.deepEqual(thread, mockShipmentMessages(reference, staff, now));
+  assert.equal(mockShipmentMessages("KCPL-NOPE", staff, now), null);
+  // A QA reply is echoed back before anything is written or anyone is told.
+  const server = source("app/shipment-messages.server.ts");
+  const post = server.slice(server.indexOf("export async function staffPostsMessage"));
+  assert.ok(post.indexOf("qaMockDataEnabled()") < post.indexOf("await write("));
+  assert.ok(post.indexOf("qaMockDataEnabled()") < post.indexOf("tellCustomer("));
 });
