@@ -1,4 +1,5 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -37,6 +38,8 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
     setRows(data.rows); setSummary(data.summary);
     if (!data.rows.some((row) => row.payable_reference === selectedReference)) setSelectedReference(data.rows[0]?.payable_reference ?? "");
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(() => refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })));
 
   async function act(action: "recheck" | "dispute" | "approve_variance" | "reject") {
     if (!selected) return;
@@ -53,7 +56,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   }
 
   return <div className="ops-content ops-stack">
-    <OpsPageHeader eyebrow="Finance control" title="Freight Audit & Match-Pay" description="Compare supplier invoices against the locked TMS procurement booking before Accounts releases payment. Taxes remain visible but are excluded from the freight-rate comparison, and currencies are never silently converted." actions={<OpsButton variant="secondary" size="sm" onClick={() => { setBusy(true); refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false)); }} disabled={busy}><RefreshCw size={12} strokeWidth={1.75}/>Refresh</OpsButton>}/>
+    <OpsPageHeader eyebrow="Finance control" title="Freight Audit & Match-Pay" description="Compare supplier invoices against the locked TMS procurement booking before Accounts releases payment. Taxes remain visible but are excluded from the freight-rate comparison, and currencies are never silently converted."/>
 
     <OpsKpiRail label="Freight audit summary">
       <OpsRailMetric label="Bills audited" value={summary.total} title="Current payable queue"/>

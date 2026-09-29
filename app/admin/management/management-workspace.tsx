@@ -31,7 +31,6 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
       meta={<span>{analytics.range.label} · generated {generated}</span>}
       actions={<>
         <Link href={`/api/admin/management/export?${exportQuery}`} className="ops-button" data-variant="secondary" data-size="md"><Download size={16} strokeWidth={1.75} aria-hidden="true"/>Export CSV</Link>
-        <Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md">Operations home</Link>
       </>}
     />
 

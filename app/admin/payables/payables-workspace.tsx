@@ -178,7 +178,7 @@ export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", 
 
   // Per-staff workspace layout: the summary rail and the payables ledger are
   // arrangeable sections persisted server-side (same primitive as Shipments).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -212,9 +212,9 @@ export function PayablesWorkspace({ dashboard, roleLabel, initialShipment = "", 
   );
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Finance" title="Accounts Payable" description="Supplier bills, opening payables, payment aging and job-linked costs. Real supplier bills can feed shipment cost; migration opening balances stay ledger-only so historical debt does not become fictional job spend." meta={<><span>{roleLabel}</span><span>{dashboard.bills.length} payable records</span></>} actions={<><Link href="/admin/finance" className="ops-button" data-variant="secondary" data-size="md">Receivables</Link><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New supplier bill"}</OpsButton></>}/>
+    <OpsPageHeader eyebrow="Finance" title="Accounts Payable" description="Supplier bills, opening payables, payment aging and job-linked costs. Real supplier bills can feed shipment cost; migration opening balances stay ledger-only so historical debt does not become fictional job spend." meta={<><span>{roleLabel}</span><span>{dashboard.bills.length} payable records</span></>} actions={<><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New supplier bill"}</OpsButton></>}/>
     <div className="px-4 pt-3 md:px-6">
-      <CustomiseRow
+      <CustomiseRow customisable={customisable}
         arranging={arranging}
         onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
         arrangeMenu={arrangeMenu}

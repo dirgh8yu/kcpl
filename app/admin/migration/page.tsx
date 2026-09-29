@@ -30,7 +30,7 @@ export default async function MigrationPage() {
   });
 
   return <OperationsShell {...shellProps}>
-    <MigrationWorkspace initialBatchDashboard={batchDashboard} canRecover={staff.permissions.canManageFinance}/>
+    <MigrationWorkspace initialBatchDashboard={batchDashboard}/>
   </OperationsShell>;
 }
 

@@ -396,6 +396,7 @@ export type CustomiseRowPreset = {
  * Status strings come from useStaffArrangement.
  */
 export function CustomiseRow({
+  customisable = true,
   arranging,
   onToggle,
   arrangeMenu,
@@ -412,6 +413,8 @@ export function CustomiseRow({
   savedMatchId,
   onApplySaved,
 }: {
+  /** False on registers, which keep the standard layout: the row renders nothing. */
+  customisable?: boolean;
   arranging: boolean;
   onToggle: () => void;
   arrangeMenu: boolean;
@@ -445,6 +448,7 @@ export function CustomiseRow({
     return () => clearTimeout(timer);
   }, [justSaved]);
 
+  if (!customisable) return null;
   return (
     <div className="ops-customise-row">
       <button

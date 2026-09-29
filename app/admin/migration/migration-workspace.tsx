@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, Archive, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, RotateCcw, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import type { CustomerImportPreview, CustomerImportResult, CustomerImportStatus } from "./customer-import";
 import { MigrationBatchHistory } from "./migration-batch-history";
@@ -23,7 +23,7 @@ function statusLabel(status: CustomerImportStatus) {
   return "Invalid";
 }
 
-export function MigrationWorkspace({ initialBatchDashboard, canRecover }: { initialBatchDashboard: MigrationBatchDashboard | null; canRecover: boolean }) {
+export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDashboard: MigrationBatchDashboard | null }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CustomerImportPreview | null>(null);
   const [result, setResult] = useState<CustomerImportResult | null>(null);
@@ -72,10 +72,6 @@ export function MigrationWorkspace({ initialBatchDashboard, canRecover }: { init
       title="Paper → KCPL migration"
       description="Staged imports, an authoritative batch ledger, preserved paper evidence and fail-closed rollback recovery."
       meta={<span>Management only · Stages 1–4 live · dry-run recovery, no force delete</span>}
-      actions={<>
-        <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md"><Archive size={16} strokeWidth={1.75} aria-hidden="true"/>Paper Archive</Link>
-        {canRecover ? <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md"><RotateCcw size={16} strokeWidth={1.75} aria-hidden="true"/>Recovery</Link> : null}
-      </>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6 org-stack">

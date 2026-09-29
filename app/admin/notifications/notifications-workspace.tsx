@@ -1,8 +1,9 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 import { nepalOperationalDate } from "../../invoice-effective-status";
 
 import { useRouter } from "next/navigation";
-import { Activity, AlertTriangle, Bell, CheckCheck, Download, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
+import { Activity, AlertTriangle, Bell, CheckCheck, Download, FileText, Link2, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
 import { notificationCategories, notificationCategoryLabels, type NotificationCategory, type NotificationPreferences, type OperationsNotification } from "./notification-data";
@@ -122,6 +123,8 @@ export function NotificationsWorkspace() {
       setLoading(false);
     }
   }, []);
+  // The top bar's refresh reloads the log; the page no longer has its own button.
+  useWorkspaceRefresh(load);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void load(), 0);
@@ -233,7 +236,6 @@ export function NotificationsWorkspace() {
         actions={(
           <>
             {view === "transitions" ? <OpsButton variant="secondary" size="sm" onClick={() => exportTransitionsCsv(filtered)} disabled={!filtered.length} title="Download today's transition history for shift handover"><Download size={13} strokeWidth={1.75}/>Export CSV</OpsButton> : null}
-            <OpsButton variant="secondary" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw size={13} strokeWidth={1.75} className={loading ? "app-refreshing" : ""}/>Refresh</OpsButton>
             {counts.unread > 0 ? <OpsButton variant="secondary" size="sm" onClick={() => void markAllRead()} disabled={busy}><CheckCheck size={13} strokeWidth={1.75}/>{busy ? "Updating…" : "Mark all read"}</OpsButton> : null}
           </>
         )}

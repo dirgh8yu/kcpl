@@ -19,7 +19,6 @@ import {
   type PartnerStatus,
   type PartnerType,
 } from "./partners-data";
-import { Partner360Jump } from "./partner-360-jump";
 import {
   OpsActiveFilters,
   OpsBadge,
@@ -103,9 +102,8 @@ function partnerSearchText(p: PartnerRecord) {
 /** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
 const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
-export function PartnersWorkspace({ dashboard, canReconcile, canEdit, canEditGlobal, editableOwnerBranches, commercialVisible, financialVisible }: {
+export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableOwnerBranches, commercialVisible, financialVisible }: {
   dashboard: PartnerDashboard;
-  canReconcile: boolean;
   canEdit: boolean;
   canEditGlobal: boolean;
   editableOwnerBranches: KcplBranch[];
@@ -208,8 +206,6 @@ export function PartnersWorkspace({ dashboard, canReconcile, canEdit, canEditGlo
       description={`Carriers, agents, transporters and suppliers · ${total} records · ${dashboard.country_count} countries`}
       meta={financialVisible ? undefined : <span>Supplier exposure is shown only to Accounts and Management roles.</span>}
       actions={<>
-        <Partner360Jump partners={dashboard.partners.map((partner) => ({ id: partner.id, display_name: partner.display_name }))}/>
-        {canReconcile ? <Link href="/admin/partners/reconciliation" className="ops-button" data-variant="secondary" data-size="md">Reconcile supplier bills</Link> : null}
         {canCreate ? <OpsButton variant="primary" onClick={startCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New partner</OpsButton> : <OpsBadge>Read-only access</OpsBadge>}
       </>}
     />

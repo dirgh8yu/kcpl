@@ -1,8 +1,9 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw, Send, X } from "lucide-react";
+import { Plus, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { TmsOrder } from "../rating/tms-rating";
@@ -187,6 +188,8 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
       setBusy(false);
     }
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(refresh);
 
   async function linkCustomer() {
     if (!selectedOrder || !customerId) return;
@@ -300,7 +303,6 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
         title="Tender & Booking"
         description={`${awaiting} awaiting response · ${accepted} accepted / countered · ${expired} expired · ${booked} booked`}
         actions={<>
-          <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
           {canManage ? <OpsButton variant="primary" onClick={() => setShowCreate((value) => !value)} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Create tender</OpsButton> : null}
         </>}
       />

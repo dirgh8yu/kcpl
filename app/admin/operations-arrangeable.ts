@@ -34,6 +34,17 @@ export const WORKSPACE_SECTIONS = {
 
 export type WorkspaceKey = keyof typeof WORKSPACE_SECTIONS;
 
+/**
+ * Only the Overview dashboard is personal. Registers (Shipments, Customs,
+ * Finance…) show the same standard layout to everyone: a "Customise" button
+ * and saved layouts on every list made each page busier than the work in it.
+ */
+export const CUSTOMISABLE_WORKSPACES: readonly WorkspaceKey[] = ["overview"];
+
+export function workspaceCustomisable(workspace: WorkspaceKey) {
+  return CUSTOMISABLE_WORKSPACES.includes(workspace);
+}
+
 export type ArrangementState = {
   order: string[];
   hidden: string[];

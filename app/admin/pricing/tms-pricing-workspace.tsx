@@ -1,8 +1,9 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Calculator, CheckCircle2, CircleAlert, FilePlus2, RefreshCw, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
+import { Calculator, CheckCircle2, CircleAlert, FilePlus2, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
@@ -155,6 +156,8 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Pricing Desk could not be refreshed." }); }
     finally { setBusy(false); }
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(refresh);
 
   async function post(body: Record<string, unknown>) {
     const response = await fetch("/api/admin/pricing", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -238,9 +241,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
       title="Pricing Desk"
       description="Governed customer sell prices from selected partner buy costs, margin floors and NRB FX."
       actions={<>
-        <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
         {canManageRules ? <OpsButton variant="secondary" onClick={() => setShowRuleForm((value) => !value)} aria-expanded={showRuleForm}><SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/>Pricing rules</OpsButton> : null}
-        <Link href="/admin/rating" className="ops-button" data-size="md" data-variant="secondary">Rate Desk</Link>
       </>}
     />
 

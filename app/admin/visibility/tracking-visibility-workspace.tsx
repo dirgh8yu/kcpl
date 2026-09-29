@@ -1,4 +1,5 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import {
@@ -7,7 +8,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  RefreshCw,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -438,6 +438,8 @@ export function TrackingVisibilityWorkspace({
       setRefreshing(false);
     }
   }
+  // The top bar's refresh reloads this register; the page no longer has its own button.
+  useWorkspaceRefresh(() => refresh(false));
 
   async function sweep() {
     setSweeping(true);
@@ -492,10 +494,6 @@ export function TrackingVisibilityWorkspace({
         meta={<span className="visibility-last-updated">Last updated <strong>{lastUpdated ? dateTime(lastUpdated) : "No tracking signal"}</strong></span>}
         actions={(
           <>
-            <OpsButton variant="secondary" disabled={refreshing || sweeping} onClick={() => { void refresh(); }}>
-              <RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>
-              Refresh
-            </OpsButton>
             {canSweep ? (
               <OpsButton variant="primary" disabled={sweeping || refreshing} onClick={sweep}>
                 <Activity size={16} strokeWidth={1.75} aria-hidden="true"/>

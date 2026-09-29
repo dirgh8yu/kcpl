@@ -30,5 +30,5 @@ test("commercial destinations live in the canonical workspace registry", async (
 test("shell does not re-hardcode a parallel commercial navigation list", async () => {
   const shell = await readFile(shellPath, "utf8");
   assert.doesNotMatch(shell, /const commercialWorkflow = \[/);
-  assert.match(shell, /groupedWorkspaces\(capabilities\)/);
+  assert.match(shell, /visibleHubs\(capabilities\)/);
 });

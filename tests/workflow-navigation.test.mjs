@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
+  activeHub,
   activeWorkspace,
-  collapsedGroupIds,
   groupedWorkspaces,
+  visibleHubs,
   visibleWorkspaces,
   workflowWorkspaces,
+  workspaceHubs,
 } from "../app/admin/workflow-navigation.ts";
 
 const full = {
@@ -66,28 +68,6 @@ test("menu groups follow operational pipeline order", () => {
   assert.deepEqual(groupedWorkspaces(full).map((group) => group.group), ["Operate", "Plan & Sell", "Network", "Finance", "Organisation"]);
 });
 
-test("context-first nav collapses every group except the active one", () => {
-  const groups = groupedWorkspaces(full);
-  // Deep link into a job file still opens the Shipments group only.
-  const shipmentsActive = collapsedGroupIds(groups, activeWorkspace("/admin/jobs/KCPL-S-20260822-X", full)?.group);
-  assert.equal(shipmentsActive.has("Operate"), false);
-  assert.deepEqual([...shipmentsActive], ["Plan & Sell", "Network", "Finance", "Organisation"]);
-  // Commercial users landing on Rate Desk get Plan & Sell, not Operate.
-  const pricingActive = collapsedGroupIds(groups, "Plan & Sell");
-  assert.equal(pricingActive.has("Plan & Sell"), false);
-  assert.equal(pricingActive.has("Operate"), true);
-});
-
-test("context-first nav falls back to the first group when nothing is active", () => {
-  const groups = groupedWorkspaces(full);
-  assert.deepEqual([...collapsedGroupIds(groups, undefined)], ["Plan & Sell", "Network", "Finance", "Organisation"]);
-  assert.deepEqual([...collapsedGroupIds(groups, "Unknown")], ["Plan & Sell", "Network", "Finance", "Organisation"]);
-  // The operations-only role also sees the permission-"all" Plan & Sell rows;
-  // landing in Operate collapses the other two groups.
-  const operationsOnly = groupedWorkspaces({ canViewCommercial: false, canManageJobFile: true, canManageFinance: false, canManageStaff: false, isManagement: false });
-  assert.deepEqual([...collapsedGroupIds(operationsOnly, "Operate")], ["Plan & Sell", "Network"]);
-});
-
 test("every registered workspace href resolves to a real App Router page", () => {
   for (const workspace of workflowWorkspaces) {
     const pathname = workspace.href.split("?")[0];
@@ -128,23 +108,91 @@ test("primary admin navigation uses Overview and Shipments without ambiguous Hom
   assert.equal(overview?.href, "/admin/command-centre");
   assert.equal(shipments?.label, "Shipments");
   assert.equal(shipments?.href, "/admin/shipments");
+  assert.deepEqual(visibleHubs(full).slice(0, 3).map((entry) => [entry.hub.label, entry.href]), [["Overview", "/admin/command-centre"], ["Inbox", "/admin/alerts"], ["Shipments", "/admin/shipments"]]);
 
   const shell = readFileSync(repoFile("app/admin/operations-shell.tsx"), "utf8");
-  assert.match(shell, /groupedWorkspaces\(capabilities\)/);
-  assert.match(shell, /href=\{workspace\.href\}/);
+  assert.match(shell, /visibleHubs\(capabilities\)/);
+  assert.match(shell, /activeHub\(pathname, capabilities\)/);
+  assert.match(shell, /activeWorkspace\(pathname, capabilities\)/);
   assert.doesNotMatch(shell, /label: "Home", href: "\/admin\/command-centre"/);
   assert.doesNotMatch(shell, /label: "Operations", href: "\/admin\/shipments"/);
-  assert.match(shell, /activeWorkspace\(pathname, capabilities\)/);
 });
 
-test("manual sidebar group toggles persist per device and never close the active group", () => {
+/* Hubs: the sidebar names a few areas; each area's pages are tabs. ------- */
+
+test("the sidebar shows a handful of hubs, not every page", () => {
+  const hubs = visibleHubs(full);
+  assert.ok(hubs.length <= 9, `${hubs.length} hubs`);
+  assert.ok(workflowWorkspaces.length > hubs.length * 3, "most pages are tabs inside a hub");
+  assert.deepEqual(hubs.map((entry) => entry.hub.id), ["overview", "inbox", "shipments", "sales", "customers", "partners", "finance", "reports", "settings"]);
+  for (const workspace of workflowWorkspaces) {
+    assert.ok(workspaceHubs.some((hub) => hub.id === workspace.hub), `${workspace.id} belongs to a hub`);
+    assert.ok(workspace.tab.length <= 24, `${workspace.id}: a short tab name`);
+  }
+});
+
+test("a hub opens on its first page the person may see, and hides when they may see none", () => {
+  const operationsOnly = { canViewCommercial: false, canManageJobFile: true, canManageFinance: false, canManageStaff: false, isManagement: false };
+  const ids = visibleHubs(operationsOnly).map((entry) => entry.hub.id);
+  assert.equal(ids.includes("finance"), false);
+  assert.equal(ids.includes("reports"), false);
+  assert.equal(ids.includes("settings"), false);
+  const sales = visibleHubs(operationsOnly).find((entry) => entry.hub.id === "sales");
+  assert.deepEqual(sales?.items.map((workspace) => workspace.id), ["enquiries"], "no commercial desks without commercial access");
+  assert.equal(sales?.href, "/admin/enquiries");
+});
+
+test("the Shipments hub holds the stages of a job, in the order work happens", () => {
+  const shipments = activeHub("/admin/customs", full);
+  assert.equal(shipments?.hub.id, "shipments");
+  assert.deepEqual(shipments?.items.map((workspace) => workspace.tab), ["All shipments", "Pickups", "Tracking", "Customs", "Documents", "Freight documents", "Delivery & POD"]);
+  assert.equal(activeHub("/admin/jobs/KCPL-S-1", full)?.hub.id, "shipments", "a Job File sits in Shipments");
+  assert.equal(activeHub("/admin/partners/reconciliation", full)?.hub.id, "finance", "the most specific page decides the hub");
+});
+
+test("the shell draws a hub's tabs on its list pages, not on a record's own page", () => {
   const shell = readFileSync(repoFile("app/admin/operations-shell.tsx"), "utf8");
-  // Toggles are remembered per device (launcher state, same rationale as the palette recents).
-  assert.match(shell, /writeManualCollapses\(\[...next\]\)/);
-  // The active workspace's group is always re-opened, even for a remembered arrangement.
-  assert.match(shell, /if \(activeGroup\) next\.delete\(activeGroup\)/);
-  // Signing out forgets the device-local arrangement (shared machines).
-  assert.match(shell, /onClick=\{\(\) => clearManualCollapses\(\)\}/);
+  assert.match(shell, /const hubTabs = currentHub && currentHub\.items\.length > 1 && !detail \? currentHub\.items : \[\];/);
+  assert.match(shell, /className="app-hub-tabs"/);
+  assert.match(shell, /aria-current=\{workspace\.id === activeItem\?\.id \? "page" : undefined\}/);
+});
+
+test("one refresh control: the top bar's reaches every workspace's own data", () => {
+  const shell = readFileSync(repoFile("app/admin/operations-shell.tsx"), "utf8");
+  assert.match(shell, /announceWorkspaceRefresh\(\); startRefresh\(\(\) => router\.refresh\(\)\)/);
+  for (const path of ["app/admin/pickups/pickup-appointments-workspace.tsx", "app/admin/visibility/tracking-visibility-workspace.tsx", "app/admin/notifications/notifications-workspace.tsx", "app/admin/pricing/tms-pricing-workspace.tsx", "app/admin/rating/tms-rating-workspace.tsx", "app/admin/tenders/v4-tender-workspace.tsx", "app/admin/consolidation/tms-consolidation-workspace.tsx", "app/admin/carrier-integrations/carrier-integrations-workspace.tsx", "app/admin/edi/edi-workspace.tsx", "app/admin/freight-audit/freight-audit-workspace.tsx"]) {
+    const source = readFileSync(repoFile(path), "utf8");
+    assert.match(source, /useWorkspaceRefresh\(/, path);
+    assert.doesNotMatch(source, />\s*Refresh\s*<\/OpsButton>|\/>Refresh<\/OpsButton>/, `${path}: no page-level Refresh button`);
+  }
+});
+
+test("page headers carry actions, not links to their sibling pages", () => {
+  // The hub's tabs are the way between sibling pages; header buttons that
+  // only jumped to one used to crowd every register.
+  const siblings = [
+    ["app/admin/finance/finance-workspace.tsx", "/admin/payables"],
+    ["app/admin/payables/payables-workspace.tsx", "/admin/finance\""],
+    ["app/admin/customs/customs-workspace.tsx", "/admin/alerts"],
+    ["app/admin/delivery/delivery-workspace.tsx", "/admin/visibility"],
+    ["app/admin/market-estimate/page.tsx", "/admin/consolidation"],
+    ["app/admin/consolidation/tms-consolidation-workspace.tsx", "/admin/tenders"],
+    ["app/admin/migration/migration-workspace.tsx", "/admin/migration/archive"],
+  ];
+  for (const [path, href] of siblings) {
+    const source = readFileSync(repoFile(path), "utf8");
+    const header = source.slice(source.indexOf("<OpsPageHeader"), source.indexOf("/>", source.indexOf("<OpsPageHeader")) + 400);
+    assert.doesNotMatch(header, new RegExp(`href="${href}`), `${path} links to ${href} from its header`);
+  }
+});
+
+test("only the Overview is customisable; registers keep one standard layout", async () => {
+  const { CUSTOMISABLE_WORKSPACES } = await import("../app/admin/operations-arrangeable.ts");
+  assert.deepEqual([...CUSTOMISABLE_WORKSPACES], ["overview"]);
+  const hook = readFileSync(repoFile("app/admin/use-staff-arrangement.ts"), "utf8");
+  assert.match(hook, /if \(!customisable\) return;/);
+  const row = readFileSync(repoFile("app/admin/ops-register.tsx"), "utf8");
+  assert.match(row, /if \(!customisable\) return null;/);
 });
 
 test("operations search deep-links quote results into the enquiries workspace", () => {

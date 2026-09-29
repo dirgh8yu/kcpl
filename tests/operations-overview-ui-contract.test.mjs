@@ -55,7 +55,7 @@ test("Overview reuses the shared operations shell with search, notifications and
   const page = await readFile(pagePath, "utf8");
   assert.match(shell, /OperationsCommandPalette/);
   assert.match(shell, /OperationsNotificationCentre/);
-  assert.match(shell, /groupedWorkspaces/);
+  assert.match(shell, /visibleHubs/);
   assert.match(shell, /visibleWorkspaces/);
   assert.match(shell, /WorkspaceIcon/);
   // Branch scoping is preserved by the shared shell, not a bespoke command-centre shell.

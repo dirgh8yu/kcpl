@@ -7,17 +7,17 @@ import { ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "l
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { KcplBranch } from "./crm/crm-data";
 import { OperationsCommandPalette } from "./operations-command-palette";
-import { clearManualCollapses, readManualCollapses, writeManualCollapses } from "./sidebar-group-state";
 import { OperationsAccountMenu, type AccountTab } from "./operations-account-menu";
 import { OperationsNotificationCentre } from "./operations-notification-centre";
 import {
+  activeHub,
   activeWorkspace,
-  collapsedGroupIds,
-  groupedWorkspaces,
+  visibleHubs,
   visibleWorkspaces,
   type NavigationCapabilities,
 } from "./workflow-navigation";
 import { WorkspaceIcon } from "./workflow-icon";
+import { announceWorkspaceRefresh } from "./use-workspace-refresh";
 
 function initialsFor(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KC";
@@ -57,23 +57,8 @@ export function OperationsShell({
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const accountTrigger = useRef<HTMLButtonElement>(null);
+  const hubTabsRef = useRef<HTMLElement>(null);
   const capabilities = useMemo(() => resolvedCapabilities ?? ({ canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement }), [resolvedCapabilities, canViewCommercial, canManageJobFile, canManageFinance, canManageStaff, isManagement]);
-  // Remembered manual toggles are adopted once, when real capabilities resolve;
-  // until then the SSR default (context-first) is already correct. The active
-  // group is never persisted-closed: the derivation below re-opens it on every
-  // group change.
-  const [manualGroups, setManualGroups] = useState<Set<string> | null>(null);
-  useEffect(() => {
-    if (!resolvedCapabilities || manualGroups) return;
-    const stored = readManualCollapses();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- adopting persisted storage into state on capability resolve
-    if (stored) setManualGroups(new Set(stored));
-  }, [resolvedCapabilities, manualGroups]);
-  // Context-first navigation: only the active workspace's group starts expanded,
-  // so the first paint already shows a short nav instead of every workspace.
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    () => collapsedGroupIds(groupedWorkspaces(capabilities), activeWorkspace(pathname, capabilities)?.group),
-  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,24 +70,13 @@ export function OperationsShell({
   }, []);
 
   const workspaces = useMemo(() => visibleWorkspaces(capabilities), [capabilities]);
-  const groups = useMemo(() => groupedWorkspaces(capabilities), [capabilities]);
+  const hubs = useMemo(() => visibleHubs(capabilities), [capabilities]);
   const activeItem = useMemo(() => activeWorkspace(pathname, capabilities), [pathname, capabilities]);
-  const activeGroup = activeItem?.group;
-  // Re-derive on group change so navigating between workspaces brings the
-  // destination's group with it. Render-time adjustment (the React-endorsed
-  // pattern) instead of an effect; manual toggles survive until the next group
-  // change.
-  const [derivedFromGroup, setDerivedFromGroup] = useState(activeGroup);
-  if (derivedFromGroup !== activeGroup) {
-    setDerivedFromGroup(activeGroup);
-    // A remembered arrangement wins once adopted; the active group is always
-    // re-opened, so a peeked group stays open for the next visit.
-    const manual = manualGroups;
-    const next = manual ? new Set(manual) : collapsedGroupIds(groups, activeGroup);
-    if (activeGroup) next.delete(activeGroup);
-    setCollapsedGroups(next);
-  }
+  const currentHub = useMemo(() => activeHub(pathname, capabilities), [pathname, capabilities]);
   const detail = pathname === activeItem?.href ? "" : decodeSegment(pathname.split("/").filter(Boolean).at(-1) || "");
+  // A hub's pages are tabs across the top of its list pages; a record's own
+  // page (a Job File, an invoice) keeps the full width for the record.
+  const hubTabs = currentHub && currentHub.items.length > 1 && !detail ? currentHub.items : [];
   const initials = initialsFor(userName);
 
   useEffect(() => {
@@ -118,6 +92,14 @@ export function OperationsShell({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  // On a phone the tab strip scrolls sideways; bring the open tab into view
+  // instead of leaving "Delivery & POD" past the edge.
+  useEffect(() => {
+    const strip = hubTabsRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (strip && active) strip.scrollLeft = Math.max(0, active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2);
+  }, [pathname]);
 
   function closeAccount() { setAccountOpen(false); }
 
@@ -158,14 +140,6 @@ export function OperationsShell({
     query.set("branch", value);
     router.push(`${pathname}?${query.toString()}`);
   }
-  function toggleGroup(group: string) {
-    const next = new Set(collapsedGroups);
-    if (next.has(group)) next.delete(group);
-    else next.add(group);
-    setCollapsedGroups(next);
-    // Manual toggles are remembered per device so a peeked group survives reloads.
-    writeManualCollapses([...next]);
-  }
 
   return (
     <div className="kcpl-admin-shell" data-operations-context={activeItem?.group === "Operate" || undefined} data-commercial-context={activeItem?.group === "Plan & Sell" || undefined} data-workspace-group={activeItem?.group} data-workspace-id={activeItem?.id || "unscoped"}>
@@ -178,12 +152,12 @@ export function OperationsShell({
         </Link>
         <div className="app-scope"><span className="app-scope-mark" style={{ background: "var(--admin-success)" }}/>{capabilities.isManagement ? "All branches" : "Assigned branches"}<span>{capabilities.isManagement ? "Management" : "Staff"}</span></div>
         <nav className="app-workspaces" aria-label="KCPL workspaces">
-          {groups.map(({ group, items }) => {
-            const isCollapsed = collapsedGroups.has(group);
-            return <details key={group} className={isCollapsed ? "app-nav-group is-collapsed" : "app-nav-group"} open={!isCollapsed}>
-              <summary data-collapsed={isCollapsed || undefined} onClick={(event) => { event.preventDefault(); toggleGroup(group); }}>{group}<span className="app-nav-group-meta"><span className="app-nav-group-count" aria-hidden="true">{items.length}</span><ChevronDown size={13} strokeWidth={1.75} aria-hidden="true"/></span></summary>
-              <div className="app-nav-group-list"><div>{items.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={workspace.icon}/><span>{workspace.label}</span></span>{workspace.id === activeItem?.id ? <ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/> : null}</Link>)}</div></div>
-            </details>;
+          {(["work", "admin"] as const).map((section) => {
+            const items = hubs.filter((entry) => entry.hub.section === section);
+            if (!items.length) return null;
+            return <div key={section} className="app-nav-group" data-section={section}>
+              <div className="app-nav-group-list"><div>{items.map(({ hub, href }) => <Link key={hub.id} href={href} prefetch={false} aria-current={hub.id === currentHub?.hub.id ? "page" : undefined} title={hub.hint} onClick={() => setMobileOpen(false)}><span className="app-nav-item-main"><WorkspaceIcon name={hub.icon}/><span>{hub.label}</span></span></Link>)}</div></div>
+            </div>;
           })}
         </nav>
         <div className="app-sidebar-footer">
@@ -194,13 +168,13 @@ export function OperationsShell({
               <span className="app-account-name">{userName}<small>{capabilities.isManagement ? "Management" : "KCPL staff"}</small></span>
               <ChevronDown size={13} strokeWidth={1.75} className="app-account-chevron" aria-hidden="true"/>
             </button>
-            <a href={signOutPath} aria-label="Sign out" onClick={() => clearManualCollapses()}><LogOut size={16} strokeWidth={1.75} aria-hidden="true"/></a>
+            <a href={signOutPath} aria-label="Sign out"><LogOut size={16} strokeWidth={1.75} aria-hidden="true"/></a>
           </div>
         </div>
       </aside>
       <header className="app-topbar">
         <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={18} strokeWidth={1.75}/> : <Menu size={18} strokeWidth={1.75}/>}</button>
-        <nav className="app-breadcrumb" aria-label="Breadcrumb"><span>{activeItem?.group || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
+        <nav className="app-breadcrumb" aria-label="Breadcrumb">{currentHub?.hub.label === activeItem?.label ? null : <><span>{currentHub?.hub.label || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/></>}<Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
         {branches && branches.length ? (
           <label className="app-branch">
             <span className="app-branch-mark" aria-hidden="true">▥</span>
@@ -212,10 +186,15 @@ export function OperationsShell({
             <ChevronDown size={14} strokeWidth={1.75} aria-hidden="true"/>
           </label>
         ) : null}
-        <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : undefined}/></button>
+        <button type="button" className="app-icon-button" disabled={refreshing} onClick={() => { announceWorkspaceRefresh(); startRefresh(() => router.refresh()); }} aria-label={refreshing ? "Refreshing workspace" : "Refresh workspace"} title="Refresh workspace"><RefreshCw size={16} strokeWidth={1.75} className={refreshing ? "app-refreshing" : undefined}/></button>
         <OperationsNotificationCentre/>
       </header>
-      <div id="workspace-content" tabIndex={-1} className="kcpl-admin-content">{children}</div>
+      <div id="workspace-content" tabIndex={-1} className="kcpl-admin-content">
+        {hubTabs.length ? <nav ref={hubTabsRef} className="app-hub-tabs" aria-label={`${currentHub?.hub.label} sections`}>
+          {hubTabs.map((workspace) => <Link key={workspace.id} href={workspace.href} prefetch={false} aria-current={workspace.id === activeItem?.id ? "page" : undefined} title={workspace.hint}>{workspace.tab}</Link>)}
+        </nav> : null}
+        {children}
+      </div>
       <div className="app-account-anchor">
         <OperationsAccountMenu userName={userName} isManagement={capabilities.isManagement} signOutPath={signOutPath} open={accountOpen} tab={accountTab} onTabChange={setAccountTab} onClose={closeAccount} triggerRef={accountTrigger}/>
       </div>

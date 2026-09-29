@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Download, Folder, RefreshCw, ShieldCheck, Trash2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Folder, ShieldCheck, Trash2, X } from "lucide-react";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments } from "../../shipment-document-policy";
 import { shipmentDocumentReviewStatusLabels, shipmentDocumentTypes, shipmentDocumentTypeLabels, type ShipmentDocumentEffectiveStatus, type ShipmentDocumentReviewStatus, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -298,7 +298,6 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
     <OpsPageHeader
       title="Document Vault"
       description={`Evidence control · upload ≠ verification · ${dashboard.rows.length} documents · snapshot ${dateTime(dashboard.generated_at)}`}
-      actions={<><Link href="/admin/freight-documents" className="ops-button" data-variant="secondary" data-size="md">Freight Documents</Link><Link href="/admin/customs" className="ops-button" data-variant="secondary" data-size="md">Customs</Link><OpsButton variant="secondary" onClick={() => router.refresh()}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton></>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">

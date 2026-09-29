@@ -1,8 +1,9 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, PackagePlus, RefreshCw, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, PackagePlus, Trash2, X } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import {
@@ -121,6 +122,8 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Load Planner could not be refreshed." }); }
     finally { setBusy(false); }
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(refresh);
 
   async function action(body: Record<string, unknown>) {
     const response = await fetch("/api/admin/consolidation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -235,9 +238,6 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
         title="Load Planner"
         description="Consolidate transport orders into master loads and sequence their stops."
         actions={<>
-          <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
-          <Link href="/admin/rating" className="ops-button" data-size="md" data-variant="secondary">Rate Desk</Link>
-          <Link href="/admin/tenders" className="ops-button" data-size="md" data-variant="secondary">Tender Desk</Link>
           {canManage ? <OpsButton variant="primary" onClick={() => setShowCreate((value) => !value)} aria-expanded={showCreate}><PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>New load</OpsButton> : null}
         </>}
       />

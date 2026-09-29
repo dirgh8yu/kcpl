@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -16,7 +16,6 @@ import {
   PackageCheck,
   Plane,
   Plus,
-  RefreshCw,
   ShieldCheck,
   RotateCcw,
   UserRoundX,
@@ -713,8 +712,6 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
 }
 
 export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes }: DashboardProps) {
-  const router = useRouter();
-  const [refreshing, startRefresh] = useTransition();
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherClosing, setLauncherClosing] = useState(false);
   // The unmount is deferred until the exit has played, so the timer has to be
@@ -813,9 +810,6 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
           </p>
         </div>
         <div className={styles.pageHeadActions}>
-          <button type="button" className={styles.secondaryButton} onClick={() => startRefresh(() => router.refresh())} disabled={refreshing}>
-            <RefreshCw size={14} strokeWidth={1.8} className={refreshing ? "app-refreshing" : undefined} />{refreshing ? "Refreshing" : "Refresh"}
-          </button>
           <button type="button" className={styles.blackButton} onClick={openLauncher}>
             <Plus size={14} strokeWidth={2} /> New shipment
           </button>

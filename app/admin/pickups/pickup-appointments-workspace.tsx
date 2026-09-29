@@ -1,4 +1,5 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
@@ -16,7 +17,6 @@ import {
   PackageCheck,
   Pencil,
   Plus,
-  RefreshCw,
   Truck,
   UserRound,
   X,
@@ -470,6 +470,8 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     setBusy(true);
     refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false));
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(handleRefresh);
 
   function scheduleNext() {
     const next = rows.find((row) => row.status === "unscheduled" || row.status === "requested") ?? null;
@@ -480,7 +482,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
   // Per-staff workspace layout: the summary rail and the register are arrangeable
   // sections persisted server-side (same primitive as the Overview and Shipments).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -521,9 +523,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
         description="Plan and manage cargo pickups from origin to keep shipments moving."
         actions={(
           <div className="pickups-actions">
-            <OpsButton variant="secondary" onClick={handleRefresh} disabled={busy}>
-              <RefreshCw size={16} strokeWidth={1.75} className={busy ? "app-refreshing" : undefined} aria-hidden="true"/> Refresh
-            </OpsButton>
             <OpsButton
               variant="primary"
               type="button"
@@ -539,7 +538,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
       {/* Per-staff layout controls. */}
       <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow
+        <CustomiseRow customisable={customisable}
           arranging={arranging}
           onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
           arrangeMenu={arrangeMenu}

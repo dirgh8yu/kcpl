@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, ChevronRight, Circle, GripVertical, RefreshCw, ShieldAlert, Sparkles, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Circle, GripVertical, ShieldAlert, Sparkles, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { customsPulseRows, RegisterPulseStrip } from "../register-pulse-strip";
 import type { CommandCentreData } from "../command-centre/command-centre-data";
@@ -313,7 +313,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
 
   // Per-staff workspace layout: pulse strip, summary rail and queue are
   // arrangeable sections persisted server-side (same primitive as Overview).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -374,11 +374,10 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
         eyebrow="Shipment compliance"
         title="Customs Clearance"
         description={`Branch-aware clearance desk · ${rows.length} shipments in scope · release evidence remains authoritative`}
-        actions={<><Link href="/admin/alerts" className="ops-button" data-variant="secondary" data-size="sm">Tasks & Alerts</Link><OpsButton variant="secondary" size="sm" onClick={() => router.refresh()}><RefreshCw size={13}/>Refresh</OpsButton></>}
       />
 
       <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow
+        <CustomiseRow customisable={customisable}
           arranging={arranging}
           onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
           arrangeMenu={arrangeMenu}

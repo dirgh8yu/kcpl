@@ -1,8 +1,9 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Cable, RefreshCw, Search, Send, ShieldAlert } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Cable, Search, Send, ShieldAlert } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import type { TmsTender } from "../tenders/tms-tendering";
 import type { EdiLedgerRow } from "./edi-gateway.server";
@@ -70,6 +71,8 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
     if (!response.ok || !data.ok || !data.rows || !data.summary || !data.eligibleTenders) throw new Error(data.error || "EDI Gateway could not be refreshed.");
     setRows(data.rows); setSummary(data.summary); setConfigured(Boolean(data.configured)); setEligibleTenders(data.eligibleTenders);
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(() => refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")));
 
   async function queue204(tender: TmsTender) {
     setBusy(tender.id); setMessage(""); setError("");
@@ -89,11 +92,6 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
     <OpsPageHeader
       title="EDI Gateway"
       description="X12 204 load tenders, 990 carrier responses and 214 shipment status messages."
-      actions={<>
-        <Link href="/admin/tenders" className="ops-button" data-variant="secondary" data-size="md">Tender & Booking</Link>
-        <Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="md">Live Visibility</Link>
-        <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => { setBusy("refresh"); setError(""); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")).finally(() => setBusy(null)); }}><RefreshCw size={16} strokeWidth={1.75} className={busy === "refresh" ? "network-spin" : undefined} aria-hidden="true"/>Refresh</OpsButton>
-      </>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">

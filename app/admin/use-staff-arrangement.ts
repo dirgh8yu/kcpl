@@ -10,6 +10,7 @@ import {
   serializeArrangement,
   serializeSavedLayouts,
   WORKSPACE_SECTIONS,
+  workspaceCustomisable,
 } from "@/app/admin/operations-arrangeable";
 
 const SAVE_DEBOUNCE_MS = 900;
@@ -28,6 +29,8 @@ export type StaffArrangementHook = {
   saved: SavedLayout[];
   saveCurrentAs: (name: string) => SavedLayout | null;
   deleteSaved: (id: string) => void;
+  /** False on registers: the standard layout, no Customise control. */
+  customisable: boolean;
 };
 
 function initialFor(workspace: WorkspaceKey): ArrangementState {
@@ -66,7 +69,10 @@ export function useStaffArrangement(workspace: WorkspaceKey = "overview"): Staff
   // The server copy is authoritative; the localStorage cache is only consulted
   // when the load fails (offline / API down) so a staff member keeps their
   // arrangement rather than snapping back to default.
+  const customisable = workspaceCustomisable(workspace);
   useEffect(() => {
+    // A register keeps the standard layout; nothing is loaded or saved for it.
+    if (!customisable) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -91,7 +97,7 @@ export function useStaffArrangement(workspace: WorkspaceKey = "overview"): Staff
     return () => {
       cancelled = true;
     };
-  }, [workspace]);
+  }, [workspace, customisable]);
 
   // What the server was last told (or the out-of-the-box default before the
   // first load). Every save decision compares against this, so "returning to a
@@ -222,5 +228,5 @@ export function useStaffArrangement(workspace: WorkspaceKey = "overview"): Staff
     })();
   }, [workspace]);
 
-  return { state, status, applyState, toggleHidden, moveSectionToward, resetArrangement, loadError, saved, saveCurrentAs, deleteSaved };
+  return { state, status, applyState, toggleHidden, moveSectionToward, resetArrangement, loadError, saved, saveCurrentAs, deleteSaved, customisable };
 }

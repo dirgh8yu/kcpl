@@ -205,11 +205,8 @@
 .app-scope-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--admin-crimson); }
 .app-workspaces { overflow-y: auto; flex: 1; min-height: 0; padding: 10px 8px; scrollbar-width: thin; }
 .app-nav-group { margin-bottom: 10px; }
-.app-nav-group summary { min-height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 5px 10px 3px; list-style: none; cursor: pointer; color: var(--admin-line-strong); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-.app-nav-group-meta { display: inline-flex; align-items: center; gap: 5px; }
-.app-nav-group-count { color: inherit; opacity: .7; font-size: 10.5px; font-weight: 550; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-.app-nav-group summary::-webkit-details-marker { display: none; }
-.app-nav-group summary:hover { color: var(--admin-muted); background: transparent; }
+/* Hubs: day-to-day work first, then reports and settings below a rule. */
+.app-nav-group[data-section="admin"] { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--admin-line); }
 .app-nav-group a { position: relative; min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: 6px; padding: 0 8px 0 10px; color: var(--admin-muted); font-size: 13.5px; font-weight: 450; line-height: 1.35; text-decoration: none; transition: background-color 120ms ease, color 120ms ease; }
 .app-nav-group a:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
 .app-nav-group a[aria-current="page"] { color: var(--admin-ink); background: var(--admin-surface-muted); font-weight: 550; }
@@ -217,6 +214,19 @@
 .app-nav-item-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .app-nav-item-main > svg { flex: none; color: currentColor; opacity: .72; }
 .app-nav-item-main > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A hub's pages as tabs above the page header: pick an area once in the
+ * sidebar, then move sideways between its pages here. */
+.kcpl-admin-content .app-hub-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding: 8px var(--app-page-gap) 0; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); }
+.kcpl-admin-content .app-hub-tabs::-webkit-scrollbar { display: none; }
+.kcpl-admin-content .app-hub-tabs a { position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 6px 6px 0 0; color: var(--admin-muted); font-size: 13.5px; font-weight: 500; text-decoration: none; white-space: nowrap; transition: color 120ms ease, background-color 120ms ease; }
+.kcpl-admin-content .app-hub-tabs a:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
+.kcpl-admin-content .app-hub-tabs a[aria-current="page"] { color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .app-hub-tabs a[aria-current="page"]::after { content: ""; position: absolute; right: 10px; bottom: -1px; left: 10px; height: 2px; border-radius: 2px; background: var(--admin-crimson); }
+@media (max-width: 760px) {
+  .kcpl-admin-content .app-hub-tabs { padding: 4px 8px 0; }
+  .kcpl-admin-content .app-hub-tabs a { min-height: 44px; }
+}
 
 /* The persistent rail only. Below 1024px the sidebar is a drawer, and a drawer
  * is touched rather than pointed at, so it keeps the larger rows the 760px
@@ -227,8 +237,7 @@
 @media (min-width: 1024px) {
   .app-workspaces { padding: 6px 8px; }
   .app-nav-group { margin-bottom: 6px; }
-  .app-nav-group summary { min-height: 24px; padding: 3px 10px 2px; }
-  .app-nav-group a { min-height: 30px; }
+  .app-nav-group a { min-height: 34px; }
 }
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
 .app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
@@ -736,7 +745,7 @@
   .app-topbar { gap: 5px; padding-inline: 10px; }
   .app-breadcrumb > span:first-child, .app-breadcrumb > svg:first-of-type { display: none; }
   .app-icon-button { min-height: 44px; width: 40px; }
-  .app-nav-group a, .app-nav-group summary { min-height: 44px; }
+  .app-nav-group a { min-height: 44px; }
   .app-nav-search { min-height: 44px; }
   .kcpl-admin-content .ops-page-header { --ops-page-header-pad-top: 18px; }
   .kcpl-admin-content .ops-page-actions { justify-content: flex-start; width: 100%; display: flex; }
@@ -769,16 +778,6 @@
 .kcpl-admin-content .ops-empty { opacity: 0; transform: translateY(4px); animation: ops-fade-in var(--app-duration-slow) var(--app-ease-out) forwards; }
 @keyframes ops-fade-in { to { opacity: 1; transform: none; } }
 
-/* Nav groups (plans/admin-motion-audit.md #3): details stays [open] in the DOM
- * (the shell preventDefaults native toggling) so the group animates via the
- * grid-rows trick (0fr <-> 1fr) + opacity; summary[data-collapsed] drives it.
- * Interruptible: retargets from the current value mid-motion.
- */
-.app-nav-group > .app-nav-group-list { display: grid; grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows var(--app-duration-slow) var(--app-ease-out), opacity var(--app-duration-fast) var(--app-ease-out), visibility 0s linear 0s; }
-.app-nav-group.is-collapsed > .app-nav-group-list { grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows var(--app-duration-slow) var(--app-ease-out), opacity var(--app-duration-fast) var(--app-ease-out), visibility 0s linear var(--app-duration-slow); }
-.app-nav-group > .app-nav-group-list > div { min-height: 0; overflow: hidden; }
-.app-nav-group summary svg { transition: transform var(--app-duration-fast) var(--app-ease-out); }
-.app-nav-group summary[data-collapsed] svg { transform: rotate(-90deg); }
 
 /* ── Floating-layer micro-glass (the one approved floating surface) ───────
  * Applies to Radix floating content only — surfaces that exist while open and
@@ -912,9 +911,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .kcpl-admin-content .ops-action-menu-item { transition: none; }
   .kcpl-admin-content .ops-notice { transition: none; }
   .kcpl-admin-content :where(table tbody tr) { transition: none; }
-  .app-nav-group > .app-nav-group-list,
-  .app-nav-group.is-collapsed > .app-nav-group-list { transition: none; }
-  .app-nav-group summary svg { transition: none; }
 }
 @media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
   .app-sidebar, .app-sidebar[data-open="true"], .app-nav-backdrop, .app-nav-backdrop[data-open="true"] { transition: none; }
@@ -1138,6 +1134,12 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .alerts-row-owner { color: var(--admin-muted); font-size: 12px; }
 .kcpl-admin-content .alerts-row-age { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--admin-muted); font-size: 12px; white-space: nowrap; }
 .kcpl-admin-content .alerts-row-title { color: var(--admin-ink); font-size: 13.5px; line-height: 19px; }
+.kcpl-admin-content .alerts-row-link { color: inherit; font-weight: 550; text-decoration: none; }
+.kcpl-admin-content .alerts-row-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Registers keep one standard layout (only the Overview is customisable), so
+ * their sections carry no drag handle. This sheet loads on every staff page;
+ * arrangeable-grid.css does not, which left the handles showing unstyled. */
+.kcpl-admin-content .ops-arrange-grid:not([data-arrange-workspace="overview"]):not([data-arranging]) .ops-arrange-handle { display: none; }
 .kcpl-admin-content .alerts-row-detail { margin-top: 3px; color: var(--admin-muted); font-size: 12.5px; line-height: 17px; }
 .kcpl-admin-content .alerts-row-context { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 5px; color: var(--admin-faint); font-size: 11.5px; line-height: 15px; }
 .kcpl-admin-content .alerts-row-actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }

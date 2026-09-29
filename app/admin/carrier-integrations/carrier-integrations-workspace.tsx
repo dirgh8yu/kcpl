@@ -1,4 +1,5 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -87,6 +88,8 @@ export function CarrierIntegrationsWorkspace({
     setRows(data.rows);
     setSummary(data.summary);
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(() => refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")));
 
   async function syncDhl(reference: string) {
     setBusy(reference); setError(""); setMessage("");
@@ -116,17 +119,11 @@ export function CarrierIntegrationsWorkspace({
     } finally { setBusy(null); }
   }
 
-  const refreshBusy = busy === "refresh";
 
   return <>
     <OpsPageHeader
       title="Carrier integrations"
       description="Carrier APIs, DCSA webhooks and tracking sync. Credentials stay server-only."
-      actions={<>
-        <Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="md">Live visibility</Link>
-        <Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners & vendors</Link>
-        <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => { setBusy("refresh"); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Refresh failed.")).finally(() => setBusy(null)); }}><RefreshCw size={16} strokeWidth={1.75} className={refreshBusy ? "network-spin" : undefined} aria-hidden="true"/>Refresh</OpsButton>
-      </>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">

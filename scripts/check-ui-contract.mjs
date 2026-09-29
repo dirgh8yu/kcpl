@@ -59,7 +59,7 @@ for (const file of ["app/site-document.tsx", "app/admin/layout.tsx", "app/admin/
   if (/OperationsGlobalSearch|OperationsNavigationFallback|OperationsNotificationBridge/.test(readFileSync(file, "utf8"))) failures.push(`${file}: mount search and notifications directly through OperationsShell only.`);
 }
 const shell = readFileSync("app/admin/operations-shell.tsx", "utf8");
-if (!shell.includes("groupedWorkspaces(capabilities)")) failures.push("Navigation must derive from workflow-navigation.ts.");
+if (!shell.includes("visibleHubs(capabilities)")) failures.push("Navigation must derive from workflow-navigation.ts.");
 if (/can(?:ViewCommercial|ManageJobFile)\s*=\s*true/.test(shell)) failures.push("Navigation permissions must default to false.");
 // PRs cannot loosen the baseline together with their implementation changes.
 const base = process.env.KCPL_UI_BASE;

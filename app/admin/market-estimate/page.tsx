@@ -1,5 +1,4 @@
 import "../plan-sell-premium.css";
-import Link from "next/link";
 import { getAdminAccess } from "../admin-auth";
 import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
@@ -59,11 +58,6 @@ export default async function MarketEstimatePage() {
           title="Market estimate"
           description="Freight benchmarks, NRB forex and road-route references. Advisory only; never overwrites a quote."
           meta={<span>{roleLabel} · live integration workspace</span>}
-          actions={<>
-            <Link href="/admin/rating" className="ops-button" data-variant="secondary" data-size="md">Rate Desk</Link>
-            <Link href="/admin/pricing" className="ops-button" data-variant="secondary" data-size="md">Pricing Desk</Link>
-            <Link href="/admin/consolidation" className="ops-button" data-variant="secondary" data-size="md">Load Planner</Link>
-          </>}
         />
 
         <div className="px-4 pb-8 pt-4 md:px-6">
@@ -91,7 +85,7 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
     detail={detail}
     embedded={embedded}
     actions={[
-      { href: "/admin", label: "Enquiries", primary: true },
+      { href: "/admin/enquiries", label: "Enquiries", primary: true },
       { href: "/admin/rating", label: "Rate Desk" },
     ]}
   />;

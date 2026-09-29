@@ -1,5 +1,4 @@
 import { getAdminAccess } from "../admin-auth";
-import { loadCommandCentre } from "../command-centre/command-centre.server";
 import { OperationsShell } from "../operations-shell";
 import { listPartnerOptions } from "../partners/partners.server";
 import { getStaffContext } from "../staff-directory.server";
@@ -40,13 +39,9 @@ export default async function CustomsPage() {
     .filter((partner) => partner.types.includes("customs_agent") || partner.types.includes("clearing_partner"))
     .map((partner) => ({ id: partner.id, name: partner.name }));
 
-  // The pulse strip is additive: a snapshot failure must not take down the
-  // clearance desk, so it loads independently of the rows above.
-  const pulseData = await loadCommandCentre(staff, { includeDelivered: true }).catch(() => null);
-
   return (
     <OperationsShell {...shellProps}>
-      <CustomsWorkspace initialRows={rows} customsAgents={customsAgents} pulseData={pulseData}/>
+      <CustomsWorkspace initialRows={rows} customsAgents={customsAgents}/>
     </OperationsShell>
   );
 }

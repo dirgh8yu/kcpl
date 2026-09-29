@@ -8,7 +8,6 @@ import {
   OpsBadge,
   OpsButton,
   OpsEmptyState,
-  OpsInlineAlert,
   OpsKpiRail,
   OpsMono,
   OpsNotice,
@@ -180,7 +179,7 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
 
   // Per-staff workspace layout: the summary rail and the alert queue are
   // arrangeable sections persisted server-side (same primitive as Shipments).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -221,11 +220,11 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
         eyebrow="Operational control"
         title="Tasks & Alerts"
         description={`Operational exceptions ordered by severity · ${counts.active} active · ${roleLabel}`}
-        actions={<><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="sm">Overview</Link><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} strokeWidth={1.75} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
+        actions={<><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} strokeWidth={1.75} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
       />
 
       <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow
+        <CustomiseRow customisable={customisable}
           arranging={arranging}
           onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
           arrangeMenu={arrangeMenu}
@@ -285,7 +284,6 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
           return (
       <div className="px-4 pb-8 md:px-6">
         {handle}
-        {counts.critical > 0 ? <div className="mb-3"><OpsInlineAlert tone="danger" icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} actions={<button type="button" className="ops-inline-alert-action" aria-pressed={severity === "critical"} onClick={() => setSeverity("critical")}>Show critical</button>}><strong>{counts.critical} critical exception{counts.critical === 1 ? "" : "s"}</strong> require immediate review.</OpsInlineAlert></div> : null}
         {notice ? <div className="mb-3"><OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
         <OpsRegisterToolbar
@@ -321,26 +319,27 @@ export function AlertsWorkspace({ initialAlerts, roleLabel }: { initialAlerts: A
                 <div className="alerts-row-meta">
                   <OpsBadge tone={severityTone(alert.severity)} dot>{alert.severity}</OpsBadge>
                   <OpsBadge>{automationAlertTypeLabels[alert.type]}</OpsBadge>
-                  <OpsBadge tone={statusTone(alert.status)}>{alert.status}</OpsBadge>
+                  {alert.status !== "open" ? <OpsBadge tone={statusTone(alert.status)}>{alert.status}</OpsBadge> : null}
                   {alert.escalated_at ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}
                   <OpsMono>{alert.entity_id}</OpsMono>
                   {alert.assigned_to_name || alert.assigned_to_email ? <span className="alerts-row-owner">· {alert.assigned_to_name || alert.assigned_to_email}</span> : null}
                   <span className="alerts-row-age"><Clock3 size={11} strokeWidth={1.75} aria-hidden="true"/>{ageLabel(alert.last_triggered_at)}</span>
                 </div>
-                <div className="alerts-row-title">{alert.title}</div>
+                {/* The title opens the record; a separate "Open record" button repeated it on every row. */}
+                <div className="alerts-row-title"><Link href={alert.action_path} className="alerts-row-link">{alert.title}</Link></div>
                 <div className="alerts-row-detail">{alert.detail}</div>
                 <div className="alerts-row-context">
                   <span>{alert.branch || "No branch"}</span>
-                  {alert.parent_reference ? <span>Parent {alert.parent_reference}</span> : null}
+                  {alert.parent_reference && alert.parent_reference !== alert.entity_id ? <span>Parent {alert.parent_reference}</span> : null}
                   <span>Triggered {dateTime(alert.last_triggered_at)}</span>
                   {alert.acknowledged_at ? <span>Acknowledged {dateTime(alert.acknowledged_at)} by {alert.acknowledged_by_name || alert.acknowledged_by_email || "recorded operator"}</span> : null}
                   {alert.resolved_at ? <span>Resolved {dateTime(alert.resolved_at)} by {alert.resolved_by_name || alert.resolved_by_email || "recorded operator"}</span> : null}
                 </div>
               </div>
               <div className="alerts-row-actions">
-                <Link href={alert.action_path} className="ops-button" data-variant="secondary" data-size="sm">Open record</Link>
+                {/* One next step per alert: acknowledge it, then resolve it. */}
                 {alert.status === "open" ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => void action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}
-                {!resolved ? <OpsButton size="sm" variant="ghost" disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12} strokeWidth={1.75}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}
+                {alert.status === "acknowledged" ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12} strokeWidth={1.75}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}
               </div>
             </div>;
           }) : <OpsEmptyState compact kind={counts.active === 0 && status === "active" && !filtersActive ? "healthy" : "search"} icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={counts.active === 0 && status === "active" && !filtersActive ? "No active alerts" : "No alerts match this view"} description={counts.active === 0 && status === "active" && !filtersActive ? "The operational exception queue is clear. Resolved history remains available." : "Change the search or filters to widen the view."} action={filtersActive ? <OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton> : counts.resolved ? <OpsButton size="sm" variant="secondary" onClick={() => setStatus("resolved")}>View resolved history</OpsButton> : undefined}/>}

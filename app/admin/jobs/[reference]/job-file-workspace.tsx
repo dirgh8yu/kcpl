@@ -84,6 +84,9 @@ export function JobFileWorkspace({
   const [job, setJob] = useState(initialJob);
   const [workflow, setWorkflow] = useState(initialReadiness);
   const [closeReason, setCloseReason] = useState("");
+  // The audited reason box appears only when Management chooses to override
+  // or reopen; it used to sit open on every job that was not ready to close.
+  const [reasonOpen, setReasonOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [documents, setDocuments] = useState<ShipmentDocument[]>([]);
@@ -243,6 +246,7 @@ export function JobFileWorkspace({
       if (!response.ok) throw new Error(data.error || "The Job File could not be closed.");
       await refresh();
       setCloseReason("");
+      setReasonOpen(false);
       setNotice(data.overrideUsed ? "Job closed with a recorded management override." : "Operational closeout complete. Job File locked as closed.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "The Job File could not be closed.");
@@ -267,6 +271,7 @@ export function JobFileWorkspace({
       if (!response.ok) throw new Error(data.error || "The Job File could not be reopened.");
       await refresh();
       setCloseReason("");
+      setReasonOpen(false);
       setNotice("Job File reopened and returned to active operations.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "The Job File could not be reopened.");
@@ -337,15 +342,17 @@ export function JobFileWorkspace({
       <div className="ops-grid-main job-workspace-grid">
         <div className="ops-stack job-workspace-main">
           <OpsSurface id="shipment-closeout" title="Operational closeout" description="Customs, required documents, POD and open tasks are re-checked before closeout. Closing locks the operational lifecycle and keeps the record for finance, audit and the customer." action={workflow.job_closed
-            ? (canOverride ? <OpsButton variant="secondary" size="xs" disabled={busy} onClick={reopenJob}><RotateCcw size={13} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Reopening…" : "Reopen job"}</OpsButton> : null)
-            : <OpsButton variant={workflow.can_close ? "primary" : "secondary"} size="xs" disabled={busy || (!workflow.can_close && !canOverride)} onClick={() => closeJob(workflow.can_close ? "" : closeReason)}><PackageCheck size={13} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Closing…" : workflow.can_close ? "Close job" : "Close with override"}</OpsButton>}>
+            ? (canOverride && !reasonOpen ? <OpsButton variant="secondary" size="xs" disabled={busy} onClick={() => setReasonOpen(true)}><RotateCcw size={13} strokeWidth={1.75} aria-hidden="true"/>Reopen job…</OpsButton> : null)
+            : workflow.can_close
+              ? <OpsButton variant="primary" size="xs" disabled={busy} onClick={() => closeJob("")}><PackageCheck size={13} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Closing…" : "Close job"}</OpsButton>
+              : (canOverride && !reasonOpen ? <OpsButton variant="secondary" size="xs" disabled={busy} onClick={() => setReasonOpen(true)}><PackageCheck size={13} strokeWidth={1.75} aria-hidden="true"/>Override…</OpsButton> : null)}>
             {workflow.job_closed ? <OpsInspectorNote tone="success" icon={<LockKeyhole size={14} strokeWidth={1.75} aria-hidden="true"/>} title={`Closed${workflow.job_closed_at ? ` ${dateTime(workflow.job_closed_at)}` : ""}${workflow.job_closed_by_name ? ` by ${workflow.job_closed_by_name}` : ""}`}>The shipment, documents, customs controls and audit trail remain available as the permanent record.{canOverride ? " Management can reopen with an audited reason." : " Only Management can reopen a closed job."}</OpsInspectorNote>
               : workflow.close_blockers.length ? <>
                 <ul className="job-checklist" aria-label="Closeout blockers">{workflow.close_blockers.map((blocker) => <li key={blocker}><AlertTriangle size={13} strokeWidth={1.75} aria-hidden="true"/><span>{blocker}</span></li>)}</ul>
-                {canOverride ? <div className="job-closeout-override"><OpsField label="Management override reason" hint="Recorded against the closeout in the shipment activity trail. Minimum 8 characters."><textarea value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being closed before every control is satisfied?"/></OpsField></div> : <p className="ops-inspector-hint mt-2">Only Management can override a blocked closeout.</p>}
+                {canOverride ? (reasonOpen ? <div className="job-closeout-override"><OpsField label="Management override reason" hint="Recorded against the closeout in the shipment activity trail. Minimum 8 characters."><textarea autoComplete="off" value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being closed before every control is satisfied?"/></OpsField><div className="job-form-actions"><OpsButton variant="primary" size="sm" disabled={busy || closeReason.trim().length < 8} onClick={() => closeJob(closeReason)}>{busy ? "Closing…" : "Close with override"}</OpsButton><OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => { setReasonOpen(false); setCloseReason(""); }}>Cancel</OpsButton></div></div> : null) : <p className="ops-inspector-hint mt-2">Only Management can override a blocked closeout.</p>}
               </>
                 : <OpsInspectorNote tone="success" icon={<PackageCheck size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Ready to close">All operational closeout controls are satisfied.</OpsInspectorNote>}
-            {workflow.job_closed && canOverride ? <div className="job-closeout-override"><OpsField label="Reopening reason" hint="Management reasons are audited. Minimum 8 characters."><textarea value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being reopened?"/></OpsField></div> : null}
+            {workflow.job_closed && canOverride && reasonOpen ? <div className="job-closeout-override"><OpsField label="Reopening reason" hint="Management reasons are audited. Minimum 8 characters."><textarea autoComplete="off" value={closeReason} onChange={(event) => setCloseReason(event.target.value)} placeholder="Why is this job being reopened?"/></OpsField><div className="job-form-actions"><OpsButton variant="primary" size="sm" disabled={busy || closeReason.trim().length < 8} onClick={reopenJob}>{busy ? "Reopening…" : "Reopen job"}</OpsButton><OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => { setReasonOpen(false); setCloseReason(""); }}>Cancel</OpsButton></div></div> : null}
             {!workflow.job_closed && closeoutWarnings.length ? <ul className="job-advisories">{closeoutWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul> : null}
           </OpsSurface>
 

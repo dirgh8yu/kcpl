@@ -51,7 +51,7 @@ export default async function PartnersPage() {
   const dashboard = result.dashboard;
   const canEdit = canEditPartnerNetwork(staff.permissions);
   const canEditGlobal = canEdit && (staff.permissions.role === "management" || staff.can_access_all_branches);
-  return <OperationsShell {...shellProps}><PartnersWorkspace dashboard={dashboard} canReconcile={staff.permissions.canManageFinance} canEdit={canEdit} canEditGlobal={canEditGlobal} editableOwnerBranches={staff.branches} commercialVisible={staff.permissions.canViewCommercial} financialVisible={canViewPartnerFinance(staff.permissions)}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><PartnersWorkspace dashboard={dashboard} canEdit={canEdit} canEditGlobal={canEditGlobal} editableOwnerBranches={staff.branches} commercialVisible={staff.permissions.canViewCommercial} financialVisible={canViewPartnerFinance(staff.permissions)}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

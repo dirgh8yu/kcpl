@@ -182,7 +182,7 @@ export function FreightDocumentsWorkspace({
 
   // Per-staff workspace layout: the production rail and document queue are
   // arrangeable sections persisted server-side (same primitive as Overview).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -319,11 +319,10 @@ export function FreightDocumentsWorkspace({
       <OpsPageHeader
         title="Freight Documents"
         description="Produce, review and open controlled carriage documents without losing the shipment context."
-        actions={<Link href="/admin/documents" className="ops-button" data-variant="secondary" data-size="md"><FileText size={16} strokeWidth={1.75} aria-hidden="true"/>Document Vault</Link>}
       />
 
       <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow
+        <CustomiseRow customisable={customisable}
           arranging={arranging}
           onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
           arrangeMenu={arrangeMenu}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { RECENT_DELIVERED_WINDOW } from "../operational-shipments";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, GripVertical, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, GripVertical, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { ShipmentActivityItem, ShipmentActivityTimeline } from "../shipment-activity";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -223,7 +223,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
 
   // Per-staff workspace layout: the summary rail and the register are arrangeable
   // sections persisted server-side (same primitive as the Overview).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -284,9 +284,6 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
             <OpsButton variant="secondary" onClick={handleExport} disabled={!filtered.length} title="Download the current view as CSV">
               <Download size={16} strokeWidth={1.75} aria-hidden="true"/> Export
             </OpsButton>
-            <OpsButton variant="secondary" disabled aria-disabled="true" title="Bulk import is coming soon">
-              <Upload size={16} strokeWidth={1.75} aria-hidden="true"/> Import
-            </OpsButton>
             {canStartShipment ? (
               <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Tender & Booking">
                 <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
@@ -301,7 +298,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           below is the actual working surface, so the summary stays quiet. Segments
           reuse the existing status scopes — no new filtering logic. */}
       <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow
+        <CustomiseRow customisable={customisable}
           arranging={arranging}
           onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
           arrangeMenu={arrangeMenu}

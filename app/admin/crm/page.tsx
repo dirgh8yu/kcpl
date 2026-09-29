@@ -4,7 +4,6 @@ import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
-import { CrmCustomerJump } from "./crm-customer-jump";
 import { CrmDashboard } from "./crm-dashboard";
 import { crmDashboardStats, listCrmCustomers } from "./crm-data.server";
 import type { CrmCustomerSummary } from "./crm-data";
@@ -69,7 +68,7 @@ export default async function CrmPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <CrmDashboard initialCustomers={safeCustomers} initialStats={crmDashboardStats(safeCustomers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial} jump={<CrmCustomerJump key="customer-360" customers={safeCustomers}/>}/>
+      <CrmDashboard initialCustomers={safeCustomers} initialStats={crmDashboardStats(safeCustomers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
     </OperationsShell>
   );
 }

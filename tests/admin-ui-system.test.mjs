@@ -24,9 +24,9 @@ const displayPrefsRoutePath = new URL("../app/api/admin/display-preferences/rout
 const displayPrefsDataPath = new URL("../app/admin/notifications/display-preferences.ts", import.meta.url);
 const adminLayoutPath = new URL("../app/admin/layout.tsx", import.meta.url);
 
-test("admin shell derives grouped navigation from the canonical workspace registry", async () => {
+test("admin shell derives hub navigation from the canonical workspace registry", async () => {
   const shell = await readFile(shellPath, "utf8");
-  assert.match(shell, /groupedWorkspaces\(capabilities\)/);
+  assert.match(shell, /visibleHubs\(capabilities\)/);
   assert.match(shell, /data-workspace-group=/);
   assert.match(shell, /data-workspace-id=/);
   assert.match(shell, /app-workspaces/);

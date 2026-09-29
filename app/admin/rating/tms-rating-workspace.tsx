@@ -1,8 +1,9 @@
 "use client";
+import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, Calculator, PackagePlus, Plus, RefreshCw, Route, X } from "lucide-react";
+import { ArrowLeft, Calculator, PackagePlus, Plus, Route, X } from "lucide-react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSurface, OpsTableWrap } from "../operations-ui";
 import {
@@ -90,6 +91,8 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Rate Desk could not be refreshed." }); }
     finally { setBusy(false); }
   }
+  // The top bar's refresh reloads this desk; the page no longer has its own button.
+  useWorkspaceRefresh(refresh);
 
   async function createOrder(event: FormEvent) {
     event.preventDefault(); setBusy(true); setNotice(null);
@@ -159,8 +162,6 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
         title="Rate Desk"
         description="Compare Partner buy rates and lock the procurement rate."
         actions={<>
-          <Link href="/admin/tenders" className="ops-button" data-variant="secondary" data-size="md">Tender Workspace</Link>
-          <OpsButton variant="secondary" onClick={refresh} disabled={busy}><RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton>
           {canManageRateCards ? <OpsButton variant="secondary" onClick={() => setShowRate((value) => !value)} aria-expanded={showRate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Partner buy rate</OpsButton> : null}
           <OpsButton variant="primary" onClick={() => setShowOrder((value) => !value)} aria-expanded={showOrder}><PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>New order</OpsButton>
         </>}

@@ -78,7 +78,7 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
 
   // Per-staff workspace layout: the summary rail and the receivables ledger are
   // arrangeable sections persisted server-side (same primitive as Shipments).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -112,9 +112,9 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
   );
 
   return <OpsPage>
-    <OpsPageHeader eyebrow="Commercial" title="Receivables" description="Customer invoices, collections, imported opening balances and aging in the same operating ledger. Opening balances stay visibly separate from invoiced revenue so migration does not manufacture historical sales." meta={<><span>{roleLabel}</span><span>{dashboard.invoices.length} receivable records</span>{dashboard.opening_balance_count ? <span>{dashboard.opening_balance_count} opening balances</span> : null}</>} actions={<><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Payables</Link><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New invoice"}</OpsButton></>}/>
+    <OpsPageHeader eyebrow="Commercial" title="Receivables" description="Customer invoices, collections, imported opening balances and aging in the same operating ledger. Opening balances stay visibly separate from invoiced revenue so migration does not manufacture historical sales." meta={<><span>{roleLabel}</span><span>{dashboard.invoices.length} receivable records</span>{dashboard.opening_balance_count ? <span>{dashboard.opening_balance_count} opening balances</span> : null}</>} actions={<><OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New invoice"}</OpsButton></>}/>
     <div className="px-4 pt-3 md:px-6">
-      <CustomiseRow
+      <CustomiseRow customisable={customisable}
         arranging={arranging}
         onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
         arrangeMenu={arrangeMenu}

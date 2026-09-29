@@ -154,7 +154,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
 
   // Per-staff workspace layout: pulse strip, summary rail and queue are
   // arrangeable sections persisted server-side (same primitive as Overview).
-  const {
+  const { customisable,
     state: arrangement,
     status: arrangeStatus,
     applyState: setArrangement,
@@ -215,11 +215,10 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
         eyebrow="Shipment execution"
         title="Delivery & POD"
         description={`Last-mile execution queue · ${initialRows.length} deliveries · POD evidence received ≠ POD verified`}
-        actions={<><Link href="/admin/visibility" className="ops-button" data-variant="secondary" data-size="sm">Live Visibility</Link><Link href="/admin/shipments" className="ops-button" data-variant="secondary" data-size="sm">Shipments</Link></>}
       />
 
       <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow
+        <CustomiseRow customisable={customisable}
           arranging={arranging}
           onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
           arrangeMenu={arrangeMenu}
