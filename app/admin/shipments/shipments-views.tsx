@@ -18,12 +18,6 @@ export function statusTone(status: ShipmentStatus): StatusTone {
   return shipmentStatusTone(status);
 }
 
-export function priorityTone(priority: CommandCentreJob["priority"]): StatusTone {
-  if (priority === "urgent") return "danger";
-  if (priority === "high") return "warning";
-  return "neutral";
-}
-
 export function shortDate(value: string | null) {
   if (!value) return "—";
   const date = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);

@@ -902,7 +902,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeAllClear => 'Everything is moving as planned';
 
   @override
-  String get homeNeedsYou => 'Needs you';
+  String get homeNeedsYou => 'What KCPL needs from you';
 
   @override
   String get quoteWhereTo => 'Where is your cargo going?';
@@ -2159,7 +2159,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opsOptional => 'Optional';
 
   @override
-  String get opsBeforeCloseout => 'Before closeout';
+  String opsNextStep(String step) {
+    return 'Next: $step';
+  }
+
+  @override
+  String opsStuckStep(String step) {
+    return 'Stuck: $step';
+  }
+
+  @override
+  String get opsStepBooking => 'Booking';
+
+  @override
+  String get opsStepPickup => 'Pickup';
+
+  @override
+  String get opsStepDocuments => 'Documents';
+
+  @override
+  String get opsStepCustoms => 'Customs';
+
+  @override
+  String get opsStepTransit => 'In transit';
+
+  @override
+  String get opsStepDelivery => 'Delivery';
+
+  @override
+  String get opsStepProof => 'Proof of delivery';
+
+  @override
+  String get opsStepInvoice => 'Invoice';
+
+  @override
+  String get opsStepClose => 'Close';
+
+  @override
+  String get opsBeforeCloseout => 'Before the job can close';
 
   @override
   String get opsFromField => 'From the field';
@@ -2813,4 +2850,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get opsLanguageFootnote =>
       'Records (references, places, notes from the desk) stay as KCPL holds them.';
+
+  @override
+  String needsSend(String documents) {
+    return 'Send $documents';
+  }
+
+  @override
+  String needsPayOverdue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Pay $count overdue invoices',
+      one: 'Pay 1 overdue invoice',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String needsPayOpen(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count invoices to pay',
+      one: '1 invoice to pay',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get needsPayDetail => 'Pay here, or send a receipt';
+
+  @override
+  String needsQuote(String reference) {
+    return 'Reply to quote $reference';
+  }
+
+  @override
+  String needsValidUntil(String date) {
+    return 'valid until $date';
+  }
 }

@@ -5,8 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ChevronRight, Circle, GripVertical, ShieldAlert, Sparkles, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
-import { customsPulseRows, RegisterPulseStrip } from "../register-pulse-strip";
-import type { CommandCentreData } from "../command-centre/command-centre-data";
 import {
   OpsBadge,
   OpsButton,
@@ -44,8 +42,8 @@ type RiskFilter = "all" | CustomsDeskRow["risk"];
 type StateFilter = "all" | CustomsDeskRow["state"];
 type Notice = { tone: "success" | "danger"; text: string } | null;
 
-type CustomsSectionId = "pulse" | "rail" | "queue";
-const CUSTOMS_SECTION_LABELS: Record<CustomsSectionId, string> = { pulse: "Live pulse", rail: "Customs summary", queue: "Clearance queue" };
+type CustomsSectionId = "rail" | "queue";
+const CUSTOMS_SECTION_LABELS: Record<CustomsSectionId, string> = { rail: "Customs summary", queue: "Clearance queue" };
 
 function dateLabel(value: string | null) {
   if (!value) return "Not set";
@@ -228,7 +226,7 @@ function Inspector({
   </aside>;
 }
 
-export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null, currentStaff }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[]; pulseData?: CommandCentreData | null; currentStaff: CurrentStaff }) {
+export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[]; currentStaff: CurrentStaff }) {
   const [mine, setMine] = useMineFilter("customs");
   const router = useRouter();
   const rows = initialRows;
@@ -313,7 +311,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null,
   const compact = selected !== null;
   const inspectorRef = useRef<HTMLElement | null>(null);
 
-  // Per-staff workspace layout: pulse strip, summary rail and queue are
+  // Per-staff workspace layout: summary rail and queue are
   // arrangeable sections persisted server-side (same primitive as Overview).
   const { customisable,
     state: arrangement,
@@ -354,11 +352,11 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null,
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
-    updateSelectedReference(null);
-  };
+      updateSelectedReference(null);
+    };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selected]);
+  }, [selected, updateSelectedReference]);
 
   // Stacked layouts put the inspector under the queue; bring it into view.
   useEffect(() => {
@@ -412,14 +410,6 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null,
               <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
             </button>
           );
-          if (id === "pulse") {
-            return (
-              <>
-                {handle}
-                {pulseData ? <RegisterPulseStrip initialData={pulseData} rows={customsPulseRows} urlParam="pulse"/> : null}
-              </>
-            );
-          }
           if (id === "rail") {
             return (
               <div className="px-4 pt-3 md:px-6">

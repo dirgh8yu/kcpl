@@ -429,7 +429,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Quote requested'), findsOneWidget);
-    expect(find.textContaining('KCPL-Q-'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'KCPL-Q-\d+-DEMO')), findsOneWidget);
     final sent = api.quoteRequests.single.toJson();
     expect(sent['origin'], 'Kolkata');
     expect(sent['destination'], 'Birgunj ICD');

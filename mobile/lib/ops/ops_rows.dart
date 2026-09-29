@@ -28,10 +28,28 @@ void openJob(BuildContext context, String reference, {OpsJob? preview}) {
 (String, Emphasis) jobFlag(AppLocalizations l, OpsJob job) {
   if (job.exception) return (statusLabel(l, job.status), Emphasis.attention);
   if (job.overdueTasks > 0) return (l.opsOverdueCount(job.overdueTasks), Emphasis.attention);
+  final step = job.step;
+  if (step != null && step.stuck) return (l.opsStuckStep(stepLabel(l, step)), Emphasis.attention);
   if (job.urgent) return (l.opsPriorityUrgent, Emphasis.attention);
+  // The same "what's next" the web list and Job File show.
+  if (step != null && !step.finished) return (l.opsNextStep(stepLabel(l, step)), Emphasis.normal);
   if (job.customsOpen > 0 && job.status == 'customs_clearance') return (l.opsCustomsOpenCount(job.customsOpen), Emphasis.normal);
   return (statusLabel(l, job.status), Emphasis.muted);
 }
+
+/// A Job File step's name in the app's language, by its id.
+String stepLabel(AppLocalizations l, JobStep step) => switch (step.id) {
+  'booking' => l.opsStepBooking,
+  'pickup' => l.opsStepPickup,
+  'documents' => l.opsStepDocuments,
+  'customs' => l.opsStepCustoms,
+  'transit' => l.opsStepTransit,
+  'delivery' => l.opsStepDelivery,
+  'proof' => l.opsStepProof,
+  'invoice' => l.opsStepInvoice,
+  'close' => l.opsStepClose,
+  _ => step.label,
+};
 
 /// A job as a row: the route with its ETA, then what matters about it
 /// (in crimson when it has gone wrong), its reference, and whose it is or

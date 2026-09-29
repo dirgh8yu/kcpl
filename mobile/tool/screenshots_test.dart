@@ -154,7 +154,7 @@ void main() {
       await _shot(tester, 'customer-$mode-5-shipment');
       await tester.tap(find.byType(SheetCloseButton).last);
       await _wait(tester);
-      await _tab(tester, 'Documents');
+      await _tab(tester, 'Docs');
       await _shot(tester, 'customer-$mode-6-documents');
       await _tab(tester, 'Invoices');
       await _shot(tester, 'customer-$mode-7-invoices');

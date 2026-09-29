@@ -470,6 +470,70 @@ class FinanceSummary {
   );
 }
 
+enum CustomerNeedKind { documents, payOverdue, freeTime, quote, payOpen }
+
+String needRoute(String origin, String destination) =>
+    origin.isEmpty && destination.isEmpty ? '' : '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}';
+
+/// One thing KCPL needs from the customer: paperwork to send, invoices to
+/// pay, a quote to answer or cargo to clear before free time runs out. The
+/// server decides the order (app/portal/portal-needs.ts).
+class CustomerNeed {
+  const CustomerNeed({
+    required this.kind,
+    this.reference = '',
+    this.route = '',
+    this.documentTypes = const [],
+    this.count = 0,
+    this.location,
+    this.freeTime,
+    this.amount,
+    this.currency = '',
+    this.validUntil,
+  });
+
+  final CustomerNeedKind kind;
+  final String reference;
+  final String route;
+  final List<String> documentTypes;
+
+  /// Invoices, for the two payment kinds.
+  final int count;
+  final String? location;
+  final FreeTimeStatus? freeTime;
+  final double? amount;
+  final String currency;
+  final String? validUntil;
+
+  /// Null for a kind this app doesn't know yet, which is left out.
+  static CustomerNeed? fromJson(Map<String, dynamic> json) {
+    final kind = switch (json['kind']) {
+      'documents' => CustomerNeedKind.documents,
+      'pay_overdue' => CustomerNeedKind.payOverdue,
+      'free_time' => CustomerNeedKind.freeTime,
+      'quote' => CustomerNeedKind.quote,
+      'pay_open' => CustomerNeedKind.payOpen,
+      _ => null,
+    };
+    if (kind == null) return null;
+    return CustomerNeed(
+      kind: kind,
+      reference: _s(json['reference']),
+      route: _s(json['route']),
+      documentTypes: [for (final type in json['documentTypes'] is List ? json['documentTypes'] as List : const []) '$type'],
+      count: _i(json['count']),
+      location: _ns(json['location']),
+      freeTime: json['status'] is Map ? FreeTimeStatus.fromJson(_map(json['status'])) : null,
+      amount: json['amount'] is num ? (json['amount'] as num).toDouble() : null,
+      currency: _s(json['currency']),
+      validUntil: _ns(json['validUntil']),
+    );
+  }
+
+  static List<CustomerNeed>? listFromJson(Object? json) =>
+      json is List ? [for (final item in json.whereType<Map>()) ?CustomerNeed.fromJson(_map(item))] : null;
+}
+
 class Overview {
   const Overview({
     required this.shipments,
@@ -483,6 +547,7 @@ class Overview {
     required this.outstandingCount,
     required this.freeTime,
     this.finance,
+    this.needs,
   });
 
   final List<Shipment> shipments;
@@ -496,6 +561,48 @@ class Overview {
   final int outstandingCount;
   final List<FreeTimeRow> freeTime;
   final FinanceSummary? finance;
+
+  /// What KCPL needs from the customer, most pressing first, as the server
+  /// orders it. Null from a server that predates the list.
+  final List<CustomerNeed>? needs;
+
+  /// The list to show: the server's, or for an older server the paperwork
+  /// and free-time clocks the overview already carries.
+  List<CustomerNeed> get thingsToDo =>
+      needs ??
+      [
+        for (final item in outstanding)
+          if (item.rows.isNotEmpty)
+            CustomerNeed(
+              kind: CustomerNeedKind.documents,
+              reference: item.reference,
+              route: needRoute(item.origin, item.destination),
+              documentTypes: [for (final row in item.rows) row.documentType],
+            ),
+        for (final row in freeTime)
+          CustomerNeed(
+            kind: CustomerNeedKind.freeTime,
+            reference: row.reference,
+            route: needRoute(row.origin, row.destination),
+            location: row.location,
+            freeTime: row.status,
+          ),
+      ];
+
+  Overview withNeeds(List<CustomerNeed>? needs) => Overview(
+    shipments: shipments,
+    activeCount: activeCount,
+    inTransitCount: inTransitCount,
+    arrivingCount: arrivingCount,
+    attentionCount: attentionCount,
+    deliveredCount: deliveredCount,
+    documents: documents,
+    outstanding: outstanding,
+    outstandingCount: outstandingCount,
+    freeTime: freeTime,
+    finance: finance,
+    needs: needs,
+  );
 
   factory Overview.fromJson(Map<String, dynamic> json) => Overview(
     shipments: _list(json['shipments']).map(Shipment.fromJson).toList(),

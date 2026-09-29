@@ -464,7 +464,7 @@
     }
   },
   "homeAllClear": "Everything is moving as planned",
-  "homeNeedsYou": "Needs you",
+  "homeNeedsYou": "What KCPL needs from you",
   "quoteWhereTo": "Where is your cargo going?",
   "quoteTitle": "Get a quote",
   "quoteFrom": "From",
@@ -1120,7 +1120,20 @@
   "opsCustoms": "Customs",
   "opsRequired": "Required",
   "opsOptional": "Optional",
-  "opsBeforeCloseout": "Before closeout",
+  "opsNextStep": "Next: {step}",
+  "@opsNextStep": {"placeholders": {"step": {"type": "String"}}},
+  "opsStuckStep": "Stuck: {step}",
+  "@opsStuckStep": {"placeholders": {"step": {"type": "String"}}},
+  "opsStepBooking": "Booking",
+  "opsStepPickup": "Pickup",
+  "opsStepDocuments": "Documents",
+  "opsStepCustoms": "Customs",
+  "opsStepTransit": "In transit",
+  "opsStepDelivery": "Delivery",
+  "opsStepProof": "Proof of delivery",
+  "opsStepInvoice": "Invoice",
+  "opsStepClose": "Close",
+  "opsBeforeCloseout": "Before the job can close",
   "opsFromField": "From the field",
   "opsNotes": "Notes",
   "opsDetails": "Details",
@@ -1673,5 +1686,46 @@
   "opsPushPrimerTitle": "Get alerts as they happen",
   "opsPushPrimerBody": "Assignments, overdue tasks, customs and exceptions for your jobs, on this phone.",
   "opsPushBlockedHelp": "Allow notifications for KCPL Ops in your phone's Settings.",
-  "opsLanguageFootnote": "Records (references, places, notes from the desk) stay as KCPL holds them."
+  "opsLanguageFootnote": "Records (references, places, notes from the desk) stay as KCPL holds them.",
+  "needsSend": "Send {documents}",
+  "@needsSend": {
+    "placeholders": {
+      "documents": {
+        "type": "String"
+      }
+    }
+  },
+  "needsPayOverdue": "{count, plural, =1{Pay 1 overdue invoice} other{Pay {count} overdue invoices}}",
+  "@needsPayOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "needsPayOpen": "{count, plural, =1{1 invoice to pay} other{{count} invoices to pay}}",
+  "@needsPayOpen": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "needsPayDetail": "Pay here, or send a receipt",
+  "needsQuote": "Reply to quote {reference}",
+  "@needsQuote": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "needsValidUntil": "valid until {date}",
+  "@needsValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

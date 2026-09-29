@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Camera, CheckCircle2, FileCheck2, PackageCheck, RefreshCw, ShieldCheck, Truck } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsInspectorNote, OpsNotice, OpsSurface } from "../../operations-ui";
+import { nepalInputToIso } from "../../nepal-time";
 import { deliveryAttemptStatusLabels, podEvidenceKinds, type DeliveryAttempt, type DeliveryAttemptStatus, type PodEvidence, type PodEvidenceKind } from "../../delivery/delivery-control";
 
 type DeliveryResponse = {
@@ -30,13 +31,6 @@ function dateTime(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(date) + " NPT";
-}
-function nepalInputToIso(value: string) {
-  if (!value) return "";
-  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$/.exec(value);
-  if (!match) return "";
-  const parsed = new Date(`${match[1]}:00+05:45`);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
 }
 function statusTone(status: DeliveryAttemptStatus): "neutral" | "info" | "warning" | "success" | "danger" {
   if (status === "delivered") return "success";

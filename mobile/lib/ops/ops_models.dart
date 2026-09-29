@@ -43,6 +43,31 @@ class OpsSession {
   );
 }
 
+/// The step a job is waiting on, as the web Job File's checklist names it:
+/// "Documents" with "1 of 2 checked. Still needed: Packing list." The web list,
+/// the web Job File and this app read the same step.
+class JobStep {
+  const JobStep({required this.id, required this.label, required this.state, required this.summary});
+  final String id;
+  final String label;
+
+  /// done, current, blocked, upcoming or skipped.
+  final String state;
+  final String summary;
+
+  bool get stuck => state == 'blocked';
+  bool get finished => state == 'done';
+
+  static JobStep? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final j = raw.cast<String, dynamic>();
+    final id = _s(j['id']);
+    final label = _s(j['label']);
+    if (id.isEmpty || label.isEmpty) return null;
+    return JobStep(id: id, label: label, state: _s(j['state'], 'current'), summary: _s(j['summary']));
+  }
+}
+
 /// A job as the command centre lists it.
 class OpsJob {
   const OpsJob({
@@ -64,7 +89,11 @@ class OpsJob {
     required this.overdueTasks,
     required this.customsOpen,
     required this.updatedAt,
+    this.step,
   });
+
+  /// What the job is waiting on, when the server has worked it out.
+  final JobStep? step;
 
   final String reference;
   final String customerName;
@@ -107,6 +136,7 @@ class OpsJob {
     overdueTasks: overdueTasks,
     customsOpen: customsOpen,
     updatedAt: updatedAt,
+    step: step,
   );
 
   bool ownedBy(String email) => ownerEmail != null && ownerEmail!.toLowerCase() == email.toLowerCase();
@@ -144,6 +174,7 @@ class OpsJob {
     overdueTasks: _i(j['overdue_tasks']),
     customsOpen: _i(j['required_customs_open']),
     updatedAt: _s(j['updated_at']),
+    step: JobStep.fromJson(j['workflow_step']),
   );
 }
 
@@ -389,6 +420,7 @@ class JobFile {
         overdueTasks: tasks.where((t) => t.overdue(DateTime.now())).length,
         customsOpen: customs.where((c) => c.required && !c.completed).length,
         updatedAt: _s(j['updated_at']),
+        step: JobStep.fromJson(body['step']),
       ),
       carrierReference: _ns(j['carrier_reference']),
       handlingBranches: _strings(j['handling_branches']),

@@ -49,6 +49,7 @@ class DemoOpsApi implements OpsApi {
       overdueTasks: 1,
       customsOpen: 2,
       updatedAt: _at(2),
+      step: JobStep(id: 'customs', label: 'Customs', state: 'blocked', summary: 'Held by customs: packing list does not match the invoice.'),
     ),
     OpsJob(
       reference: 'KCPL-2609-0151',
@@ -69,6 +70,7 @@ class DemoOpsApi implements OpsApi {
       overdueTasks: 0,
       customsOpen: 1,
       updatedAt: _at(1),
+      step: JobStep(id: 'customs', label: 'Customs', state: 'current', summary: 'Checklist done. Record the customs release.'),
     ),
     OpsJob(
       reference: 'KCPL-2609-0163',
@@ -89,6 +91,7 @@ class DemoOpsApi implements OpsApi {
       overdueTasks: 0,
       customsOpen: 0,
       updatedAt: _at(5),
+      step: JobStep(id: 'transit', label: 'In transit', state: 'current', summary: 'In transit · Raxaul border.'),
     ),
     OpsJob(
       reference: 'KCPL-2609-0170',
@@ -109,6 +112,7 @@ class DemoOpsApi implements OpsApi {
       overdueTasks: 0,
       customsOpen: 0,
       updatedAt: _at(1),
+      step: JobStep(id: 'delivery', label: 'Delivery', state: 'current', summary: 'Out for delivery now.'),
     ),
     OpsJob(
       reference: 'KCPL-2609-0177',
@@ -125,6 +129,7 @@ class DemoOpsApi implements OpsApi {
       overdueTasks: 0,
       customsOpen: 3,
       updatedAt: _at(20),
+      step: JobStep(id: 'documents', label: 'Documents', state: 'current', summary: '1 of 3 checked. Still needed: Packing list, Certificate of origin.'),
     ),
   ];
 

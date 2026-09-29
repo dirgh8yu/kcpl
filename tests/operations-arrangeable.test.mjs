@@ -85,7 +85,8 @@ test("section dnd ids round-trip", () => {
 
 test("register workspaces have valid sections and presets", () => {
   assert.deepEqual([...WORKSPACE_SECTIONS.shipments], ["rail", "register"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.customs], ["pulse", "rail", "queue"]);
+  assert.deepEqual([...WORKSPACE_SECTIONS.customs], ["rail", "queue"]);
+  assert.deepEqual([...WORKSPACE_SECTIONS.delivery], ["rail", "queue"]);
   assert.deepEqual([...WORKSPACE_SECTIONS.pickups], ["rail", "register"]);
   assert.deepEqual([...WORKSPACE_SECTIONS.alerts], ["rail", "register"]);
   assert.deepEqual([...WORKSPACE_SECTIONS.finance], ["rail", "register"]);
@@ -102,8 +103,8 @@ test("register workspaces have valid sections and presets", () => {
 });
 
 test("normalizeArrangementFor drops unknown ids and completes the order", () => {
-  const state = normalizeArrangementFor("customs", { order: ["queue"], hidden: ["nope", "rail"] });
-  assert.deepEqual(state.order, ["queue", "pulse", "rail"]);
+  const state = normalizeArrangementFor("customs", { order: ["queue", "pulse"], hidden: ["nope", "pulse", "rail"] });
+  assert.deepEqual(state.order, ["queue", "rail"]);
   assert.deepEqual(state.hidden, ["rail"]);
   assert.equal(isDefaultArrangementFor("customs", state), false);
   assert.equal(isDefaultArrangementFor("customs", normalizeArrangementFor("customs", null)), true);

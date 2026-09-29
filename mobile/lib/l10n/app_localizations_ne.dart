@@ -893,7 +893,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get homeAllClear => 'सबै योजनाअनुसार चलिरहेको छ';
 
   @override
-  String get homeNeedsYou => 'तपाईंको काम';
+  String get homeNeedsYou => 'KCPL लाई तपाईंबाट चाहिएको';
 
   @override
   String get quoteWhereTo => 'तपाईंको कार्गो कहाँ जाँदैछ?';
@@ -2141,6 +2141,43 @@ class AppLocalizationsNe extends AppLocalizations {
   String get opsOptional => 'ऐच्छिक';
 
   @override
+  String opsNextStep(String step) {
+    return 'अर्को: $step';
+  }
+
+  @override
+  String opsStuckStep(String step) {
+    return 'अड्किएको: $step';
+  }
+
+  @override
+  String get opsStepBooking => 'बुकिङ';
+
+  @override
+  String get opsStepPickup => 'पिकअप';
+
+  @override
+  String get opsStepDocuments => 'कागजात';
+
+  @override
+  String get opsStepCustoms => 'भन्सार';
+
+  @override
+  String get opsStepTransit => 'बाटोमा';
+
+  @override
+  String get opsStepDelivery => 'डेलिभरी';
+
+  @override
+  String get opsStepProof => 'डेलिभरीको प्रमाण';
+
+  @override
+  String get opsStepInvoice => 'बिल';
+
+  @override
+  String get opsStepClose => 'बन्द';
+
+  @override
   String get opsBeforeCloseout => 'बन्द गर्नुअघि';
 
   @override
@@ -2783,4 +2820,32 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get opsLanguageFootnote =>
       'रेकर्ड (सन्दर्भ, ठाउँ, डेस्कका नोट) KCPL मा जस्तो छ त्यस्तै रहन्छ।';
+
+  @override
+  String needsSend(String documents) {
+    return '$documents पठाउनुहोस्';
+  }
+
+  @override
+  String needsPayOverdue(int count) {
+    return 'म्याद नाघेका $count बिल तिर्नुहोस्';
+  }
+
+  @override
+  String needsPayOpen(int count) {
+    return 'तिर्न बाँकी $count बिल';
+  }
+
+  @override
+  String get needsPayDetail => 'यहीँ तिर्नुहोस्, वा रसिद पठाउनुहोस्';
+
+  @override
+  String needsQuote(String reference) {
+    return 'कोटेसन $reference को जवाफ दिनुहोस्';
+  }
+
+  @override
+  String needsValidUntil(String date) {
+    return '$date सम्म मान्य';
+  }
 }

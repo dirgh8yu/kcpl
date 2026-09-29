@@ -20,14 +20,12 @@ import {
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
-import { deliveryPulseRows, RegisterPulseStrip } from "../register-pulse-strip";
 import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import { ArrangeableGrid } from "../arrangeable-grid";
 import "../arrangeable-grid.css";
 import { presetForStateIn, savedLayoutForState, WORKSPACE_PRESETS } from "../operations-arrangeable";
 import { useStaffArrangement } from "../use-staff-arrangement";
 import { CustomiseMenu, CustomiseRow } from "../ops-register";
-import type { CommandCentreData } from "../command-centre/command-centre-data";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
@@ -48,8 +46,8 @@ function dateTime(value: string | null) {
   return `${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(date)} NPT`;
 }
 
-type DeliverySectionId = "pulse" | "rail" | "queue";
-const DELIVERY_SECTION_LABELS: Record<DeliverySectionId, string> = { pulse: "Live pulse", rail: "Delivery summary", queue: "Delivery queue" };
+type DeliverySectionId = "rail" | "queue";
+const DELIVERY_SECTION_LABELS: Record<DeliverySectionId, string> = { rail: "Delivery summary", queue: "Delivery queue" };
 
 function stateLabel(row: DeliveryQueueRow) {
   if (row.delivery_state === "pod_verified") return "POD verified";
@@ -125,7 +123,7 @@ function Inspector({ row, onClose, inspectorRef }: { row: DeliveryQueueRow; onCl
   </aside>;
 }
 
-export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "", pulseData = null, currentStaff }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string; pulseData?: CommandCentreData | null; currentStaff: CurrentStaff }) {
+export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "", currentStaff }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string; currentStaff: CurrentStaff }) {
   const [mine, setMine] = useMineFilter("delivery");
   const { params, update } = useWorkspaceQuery();
   const requestedFocus = params.get("view");
@@ -155,7 +153,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   const compact = selected !== null;
   const inspectorRef = useRef<HTMLElement | null>(null);
 
-  // Per-staff workspace layout: pulse strip, summary rail and queue are
+  // Per-staff workspace layout: summary rail and queue are
   // arrangeable sections persisted server-side (same primitive as Overview).
   const { customisable,
     state: arrangement,
@@ -254,14 +252,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
               <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
             </button>
           );
-          if (id === "pulse") {
-            return (
-              <>
-                {handle}
-                {pulseData ? <RegisterPulseStrip initialData={pulseData} rows={deliveryPulseRows} urlParam="dpulse"/> : null}
-              </>
-            );
-          }
           if (id === "rail") {
             return (
               <div className="px-4 pt-3 md:px-6">

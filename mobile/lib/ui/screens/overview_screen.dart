@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'quote_screen.dart';
+import 'quotes_screen.dart' show openQuotes;
 
 import '../../api/models.dart';
 import '../../api/offline_cache.dart';
@@ -238,7 +239,12 @@ class _Sheet extends StatelessWidget {
     final overview = bundle.overview;
     final session = bundle.session;
     final finance = session.canViewFinance ? overview.finance : null;
-    final needsYou = overview.freeTime.isNotEmpty || overview.outstanding.isNotEmpty;
+    // Payments only for someone who can see the account.
+    final needs = [
+      for (final need in overview.thingsToDo)
+        if (session.canViewFinance || (need.kind != CustomerNeedKind.payOverdue && need.kind != CustomerNeedKind.payOpen)) need,
+    ];
+    final needsYou = needs.isNotEmpty;
 
     return [
       _Headline(session: session, overview: overview, active: active.length, refreshing: refreshing),
@@ -248,28 +254,7 @@ class _Sheet extends StatelessWidget {
         SectionHeader(l.homeNeedsYou, top: 20),
         RowGroup(
           indent: RowGroup.iconIndent,
-          children: [
-            for (final row in overview.freeTime)
-              RowTile(
-                onTap: () => openShipment(context, row.reference),
-                leading: IconTile(icon: KIcons.timer, attention: freeTimeEmphasis(row.status) == Emphasis.attention),
-                title: Text(freeTimeSummary(l, row.location, row.status)),
-                subtitle: Text('${row.reference} · ${l.freeTimeDeadline} ${formatShortDate(row.status.deadline)}'),
-                chevron: true,
-              ),
-            for (final item in overview.outstanding)
-              RowTile(
-                onTap: () => openShipment(context, item.reference),
-                leading: const IconTile(icon: KIcons.upload, attention: true),
-                title: Text(item.rows.map((row) => documentTypeLabel(l, row.documentType)).join(', ')),
-                subtitle: Text(
-                  '${item.reference} · ${place(item.origin)} – ${place(item.destination)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                chevron: true,
-              ),
-          ],
+          children: [for (final need in needs) _NeedRow(need: need, onNavigate: onNavigate)],
         ),
       ],
       PushPrimer(copy: customerPushCopy(l)),
@@ -301,6 +286,65 @@ class _Sheet extends StatelessWidget {
       else
         RowGroup(indent: RowGroup.iconIndent, children: [for (final document in overview.documents.take(3)) DocumentRowTile(document)]),
     ];
+  }
+}
+
+/// One thing KCPL needs from the customer, with the one place to do it.
+class _NeedRow extends StatelessWidget {
+  const _NeedRow({required this.need, required this.onNavigate});
+  final CustomerNeed need;
+  final ValueChanged<HomeTab> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    Widget detail(String text) => Text(text, maxLines: 1, overflow: TextOverflow.ellipsis);
+    final where = [need.reference, need.route].where((part) => part.isNotEmpty).join(' · ');
+    switch (need.kind) {
+      case CustomerNeedKind.documents:
+        return RowTile(
+          onTap: () => openShipment(context, need.reference),
+          leading: const IconTile(icon: KIcons.upload, attention: true),
+          title: Text(l.needsSend(need.documentTypes.map((type) => documentTypeLabel(l, type)).join(', '))),
+          subtitle: detail(where),
+          chevron: true,
+        );
+      case CustomerNeedKind.payOverdue:
+      case CustomerNeedKind.payOpen:
+        final overdue = need.kind == CustomerNeedKind.payOverdue;
+        return RowTile(
+          onTap: () => onNavigate(HomeTab.invoices),
+          leading: IconTile(icon: KIcons.wallet, attention: overdue),
+          title: Text(overdue ? l.needsPayOverdue(need.count) : l.needsPayOpen(need.count)),
+          subtitle: detail(l.needsPayDetail),
+          chevron: true,
+        );
+      case CustomerNeedKind.quote:
+        final amount = need.amount;
+        return RowTile(
+          onTap: () => openQuotes(context),
+          leading: const IconTile(icon: KIcons.invoice),
+          title: Text(l.needsQuote(need.reference)),
+          // The price and its deadline first: the route is the part that can go.
+          subtitle: detail([
+            if (amount != null) formatMoney(amount, need.currency),
+            if (need.validUntil != null) l.needsValidUntil(formatShortDate(need.validUntil)),
+            if (need.route.isNotEmpty) need.route,
+          ].join(' · ')),
+          chevron: true,
+        );
+      case CustomerNeedKind.freeTime:
+        final status = need.freeTime ?? const FreeTimeStatus(state: 'not_set', daysRemaining: 0, daysOverdue: 0);
+        return RowTile(
+          onTap: () => openShipment(context, need.reference),
+          leading: IconTile(icon: KIcons.timer, attention: freeTimeEmphasis(status) == Emphasis.attention),
+          title: Text(freeTimeSummary(l, need.location, status)),
+          subtitle: detail(
+            status.deadline == null ? need.reference : '${need.reference} · ${l.freeTimeDeadline} ${formatShortDate(status.deadline)}',
+          ),
+          chevron: true,
+        );
+    }
   }
 }
 

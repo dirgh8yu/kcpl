@@ -113,7 +113,7 @@ class HttpKcplApi extends KcplApi {
     final body = await _json('overview');
     return OverviewBundle(
       SessionView.fromJson(body['session'] as Map<String, dynamic>),
-      Overview.fromJson(body['overview'] as Map<String, dynamic>),
+      Overview.fromJson(body['overview'] as Map<String, dynamic>).withNeeds(CustomerNeed.listFromJson(body['needs'])),
     );
   }
 

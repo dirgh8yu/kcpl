@@ -39,6 +39,7 @@ import {
   type OpsActiveFilter,
 } from "../operations-ui";
 import { statusTone as shipmentStatusTone } from "../shipments/shipments-views";
+import { nepalInputToIso } from "../nepal-time";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { shipmentStatusLabels } from "../../shipment-types";
 import {
@@ -106,14 +107,6 @@ function shortDateTime(value: string | null) {
         hour12: false,
         timeZone: NEPAL_TIME_ZONE,
       }).format(date);
-}
-
-function nepalInputToIso(value: string) {
-  if (!value) return "";
-  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$/.exec(value);
-  if (!match) return "";
-  const date = new Date(`${match[1]}:00+05:45`);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
 function delayText(hours: number | null) {

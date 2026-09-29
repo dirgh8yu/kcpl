@@ -291,6 +291,32 @@ class DemoApi extends KcplApi {
           ),
         ],
         finance: _summary,
+        needs: [
+          const CustomerNeed(
+            kind: CustomerNeedKind.documents,
+            reference: 'KCPL-S-24077',
+            route: 'Haldia, India → Biratnagar, Nepal',
+            documentTypes: ['packing_list'],
+          ),
+          const CustomerNeed(kind: CustomerNeedKind.payOverdue, count: 1),
+          if (!bookingRequests.containsKey('KCPL-Q-20260921-014'))
+            CustomerNeed(
+              kind: CustomerNeedKind.quote,
+              reference: 'KCPL-Q-20260921-014',
+              route: 'Kolkata, India → Birgunj ICD, Nepal',
+              amount: 168500,
+              currency: 'NPR',
+              validUntil: _day(9),
+            ),
+          CustomerNeed(
+            kind: CustomerNeedKind.freeTime,
+            reference: 'KCPL-S-24091',
+            route: 'Kolkata, India → Birgunj ICD, Nepal',
+            location: 'Birgunj ICD',
+            freeTime: FreeTimeStatus(state: 'running', deadline: _day(2), daysRemaining: 3, daysOverdue: 0),
+          ),
+          const CustomerNeed(kind: CustomerNeedKind.payOpen, count: 1),
+        ],
       ),
     );
   }

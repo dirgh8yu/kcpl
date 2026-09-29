@@ -247,4 +247,33 @@ void main() {
     expect(overview.activeCount, 3);
     expect(overview.finance, isNull);
   });
+
+  test('what KCPL needs comes in the server\'s order; unknown kinds are left out', () {
+    final needs = CustomerNeed.listFromJson([
+      {'kind': 'documents', 'reference': 'S-1', 'route': 'A → B', 'documentTypes': ['packing_list']},
+      {'kind': 'pay_overdue', 'count': 2},
+      {'kind': 'something_new', 'reference': 'X'},
+      {'kind': 'quote', 'reference': 'Q-1', 'amount': 1200, 'currency': 'USD', 'validUntil': '2026-10-09'},
+      {'kind': 'free_time', 'reference': 'S-2', 'location': 'Birgunj ICD', 'status': {'state': 'expired', 'daysOverdue': 2}},
+    ])!;
+    expect(needs.map((need) => need.kind), [CustomerNeedKind.documents, CustomerNeedKind.payOverdue, CustomerNeedKind.quote, CustomerNeedKind.freeTime]);
+    expect(needs.first.documentTypes, ['packing_list']);
+    expect(needs[1].count, 2);
+    expect(needs[2].amount, 1200);
+    expect(needs[3].freeTime!.state, 'expired');
+  });
+
+  test('an older server without the list still shows paperwork and free time', () {
+    final overview = Overview.fromJson({
+      'outstanding': [
+        {'reference': 'S-1', 'origin': 'A', 'destination': 'B', 'rows': [{'document_type': 'invoice', 'required': true}]},
+      ],
+      'freeTime': [
+        {'reference': 'S-2', 'origin': 'A', 'destination': 'B', 'status': {'state': 'running', 'daysRemaining': 3}},
+      ],
+    });
+    expect(overview.needs, isNull);
+    expect(overview.thingsToDo.map((need) => need.kind), [CustomerNeedKind.documents, CustomerNeedKind.freeTime]);
+    expect(overview.withNeeds(const []).thingsToDo, isEmpty);
+  });
 }

@@ -16,6 +16,7 @@ import '../../ui/widgets/message_thread.dart';
 import '../ops_controller.dart';
 import '../ops_format.dart';
 import '../ops_models.dart';
+import '../ops_rows.dart';
 import '../delivery_queue.dart';
 import '../note_queue.dart';
 import 'delivery_screen.dart';
@@ -85,7 +86,18 @@ class JobDetailScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final job = file.job;
 
+    final step = job.step;
     return [
+      // What the job is waiting on, in the web Job File's words.
+      if (step != null && !step.finished)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kGutter, 16, kGutter, 0),
+          child: Notice(
+            title: step.stuck ? context.l.opsStuckStep(stepLabel(l, step)) : context.l.opsNextStep(stepLabel(l, step)),
+            body: step.summary.isEmpty ? null : step.summary,
+            emphasis: step.stuck ? Emphasis.attention : Emphasis.normal,
+          ),
+        ),
       SectionHeader(context.l.opsOwner),
       RowGroup(
         indent: job.ownerName == null ? RowGroup.iconIndent : 68,

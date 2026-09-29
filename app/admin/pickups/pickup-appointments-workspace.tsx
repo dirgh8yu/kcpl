@@ -55,6 +55,7 @@ import {
 } from "../operations-arrangeable";
 import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { useStaffArrangement } from "../use-staff-arrangement";
+import { nepalInputToIso } from "../nepal-time";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
   pickupAppointmentStatuses,
@@ -142,14 +143,6 @@ function toLocalInput(value: string | null) {
     return result;
   }, {});
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
-}
-
-function nepalInputToIso(value: string) {
-  if (!value) return "";
-  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$/.exec(value);
-  if (!match) return "";
-  const parsed = new Date(`${match[1]}:00+05:45`);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
 }
 
 function rowWindowStart(row: PickupQueueRow) {

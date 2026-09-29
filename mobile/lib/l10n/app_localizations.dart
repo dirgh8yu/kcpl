@@ -1661,7 +1661,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeNeedsYou.
   ///
   /// In en, this message translates to:
-  /// **'Needs you'**
+  /// **'What KCPL needs from you'**
   String get homeNeedsYou;
 
   /// No description provided for @quoteWhereTo.
@@ -3884,10 +3884,76 @@ abstract class AppLocalizations {
   /// **'Optional'**
   String get opsOptional;
 
+  /// No description provided for @opsNextStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {step}'**
+  String opsNextStep(String step);
+
+  /// No description provided for @opsStuckStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Stuck: {step}'**
+  String opsStuckStep(String step);
+
+  /// No description provided for @opsStepBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking'**
+  String get opsStepBooking;
+
+  /// No description provided for @opsStepPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get opsStepPickup;
+
+  /// No description provided for @opsStepDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get opsStepDocuments;
+
+  /// No description provided for @opsStepCustoms.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs'**
+  String get opsStepCustoms;
+
+  /// No description provided for @opsStepTransit.
+  ///
+  /// In en, this message translates to:
+  /// **'In transit'**
+  String get opsStepTransit;
+
+  /// No description provided for @opsStepDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get opsStepDelivery;
+
+  /// No description provided for @opsStepProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery'**
+  String get opsStepProof;
+
+  /// No description provided for @opsStepInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get opsStepInvoice;
+
+  /// No description provided for @opsStepClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get opsStepClose;
+
   /// No description provided for @opsBeforeCloseout.
   ///
   /// In en, this message translates to:
-  /// **'Before closeout'**
+  /// **'Before the job can close'**
   String get opsBeforeCloseout;
 
   /// No description provided for @opsFromField.
@@ -4915,6 +4981,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Records (references, places, notes from the desk) stay as KCPL holds them.'**
   String get opsLanguageFootnote;
+
+  /// No description provided for @needsSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send {documents}'**
+  String needsSend(String documents);
+
+  /// No description provided for @needsPayOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Pay 1 overdue invoice} other{Pay {count} overdue invoices}}'**
+  String needsPayOverdue(int count);
+
+  /// No description provided for @needsPayOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 invoice to pay} other{{count} invoices to pay}}'**
+  String needsPayOpen(int count);
+
+  /// No description provided for @needsPayDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay here, or send a receipt'**
+  String get needsPayDetail;
+
+  /// No description provided for @needsQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to quote {reference}'**
+  String needsQuote(String reference);
+
+  /// No description provided for @needsValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'valid until {date}'**
+  String needsValidUntil(String date);
 }
 
 class _AppLocalizationsDelegate
