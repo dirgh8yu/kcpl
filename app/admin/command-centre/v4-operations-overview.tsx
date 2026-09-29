@@ -50,6 +50,7 @@ import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
 import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./workflow-overview.server";
 import type { KcplStaffRole } from "../staff-permissions";
+import { BulkAssignBar } from "../bulk-assign-bar";
 import styles from "./overview-dashboard.module.css";
 import extras from "./overview-dashboard-extras.module.css";
 
@@ -346,10 +347,11 @@ function WorkQueue({ jobs, total, returnTo, generatedAt, impactContext }: { jobs
         <div className={styles.cardTitleRow}>
           <h2>Work queue</h2>
           <span className={`${styles.headCount} ${total ? styles.headCountAlert : undefined}`}>{total}</span>
-          {selected.size ? <span className={extras.selectionSummary}>{selected.size} selected</span> : null}
         </div>
         <Link className={styles.headAction} href="/admin/shipments?attention=1">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
+      {/* Ticked rows get one owner in one go; the bar only shows with a selection. */}
+      <div className={extras.bulkSlot}><BulkAssignBar references={[...selected]} onClear={() => setSelected(new Set())}/></div>
       {jobs.length ? (
         <div className={styles.tableWrap}>
           <table className={styles.table} aria-label="Shipments requiring attention">

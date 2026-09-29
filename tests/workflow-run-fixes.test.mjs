@@ -28,8 +28,9 @@ test("a status-only update keeps the carrier, its reference and the ETA", async 
   const route = await code("app/api/admin/shipments/[reference]/route.ts");
   assert.match(route, /Object\.prototype\.hasOwnProperty\.call\(body, key\) \? clean\(body\[key\]\) : undefined/);
   assert.match(route, /\.filter\(\(\[, value\]\) => value !== undefined\)/, "the delivered path merges only what was sent");
-  const panel = await code("app/admin/admin-shipment-panel.tsx");
-  assert.match(panel, /carrierReference: draft\.carrier_reference \?\? ""/, "the admin panel still sends every field, so clearing works");
+  // Details are edited in the Job File now; it sends every field it shows, so clearing one works.
+  const movement = await code("app/admin/jobs/[reference]/movement-control.tsx");
+  assert.match(movement, /carrierReference: String\(form\.get\("carrierReference"\) \|\| ""\)/, "the details form sends the field even when cleared");
 });
 
 test("a retried payment is recognised before the balance is checked again", async () => {

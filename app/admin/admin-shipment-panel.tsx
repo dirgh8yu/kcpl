@@ -1,15 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { AlertTriangle, Clock3, Download, ExternalLink, FileText, MapPin, Plus, ShieldCheck, Trash2, Truck, Upload } from "lucide-react";
+import { ArrowRight, ExternalLink, Truck } from "lucide-react";
 import type { QuoteStatus } from "./admin-data";
-import { shipmentStatusLabels, shipmentStatuses, type ShipmentDetail, type ShipmentEvent, type ShipmentStatus } from "../shipment-types";
-import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../shipment-document-types";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice } from "./operations-ui";
-import { WorkflowBlockersPanel, type WorkflowBlock } from "./shipment-status-control";
-
-const shipmentTabs = ["details", "tracking", "documents"] as const;
-type ShipmentTab = (typeof shipmentTabs)[number];
+import { shipmentStatusLabels, type ShipmentDetail, type ShipmentStatus } from "../shipment-types";
+import { OpsBadge, OpsMono, OpsNotice } from "./operations-ui";
 
 function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "violet" | "success" | "danger" {
   if (status === "delivered") return "success";
@@ -20,130 +14,36 @@ function statusTone(status: ShipmentStatus): "neutral" | "info" | "warning" | "v
   return "neutral";
 }
 
-function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date); }
 function formatDateOnly(value: string) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date); }
-function formatBytes(bytes: number) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
 
-export function AdminShipmentPanel({ shipment, quoteStatus, onShipmentChange, onNotice }: { shipment: ShipmentDetail | null; quoteStatus: QuoteStatus; onShipmentChange: (shipment: ShipmentDetail) => void; onNotice: (message: string) => void }) {
+/**
+ * The enquiry's view of its shipment: where it stands, and the way into it.
+ * Status, details, tracking updates and documents are all worked in the
+ * shipment's own checklist; this used to be a second copy of those editors.
+ */
+export function AdminShipmentPanel({ shipment, quoteStatus }: { shipment: ShipmentDetail | null; quoteStatus: QuoteStatus }) {
   if (!shipment) {
     if (quoteStatus !== "won") return null;
-    return <OpsNotice tone="success"><span className="inline-flex items-center gap-2"><Truck size={13}/>Shipment creation is being prepared. Reload this enquiry if the reference does not appear automatically.</span></OpsNotice>;
+    return <OpsNotice tone="success"><span className="inline-flex items-center gap-2"><Truck size={13}/>The shipment is being created. Reload this enquiry if its reference doesn’t appear.</span></OpsNotice>;
   }
-  return <ShipmentWorkspace key={shipment.reference} initialShipment={shipment} onShipmentChange={onShipmentChange} onNotice={onNotice}/>;
-}
-
-function ShipmentWorkspace({ initialShipment, onShipmentChange, onNotice }: { initialShipment: ShipmentDetail; onShipmentChange: (shipment: ShipmentDetail) => void; onNotice: (message: string) => void }) {
-  const [draft, setDraft] = useState(initialShipment);
-  const [activeTab, setActiveTab] = useState<ShipmentTab>("details");
-  const [saving, setSaving] = useState(false);
-  const [eventDraft, setEventDraft] = useState({ title: "", location: "", details: "", eventTime: "" });
-  const [documents, setDocuments] = useState<ShipmentDocument[]>([]);
-  const [documentsLoading, setDocumentsLoading] = useState(true);
-  const [documentSaving, setDocumentSaving] = useState(false);
-  const [documentStorageAvailable, setDocumentStorageAvailable] = useState(true);
-  // A blocked status change is shown in place, with each blocker's fix, not in a browser prompt.
-  const [block, setBlock] = useState<WorkflowBlock | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        const data = await response.json() as { documents?: ShipmentDocument[]; storageAvailable?: boolean; error?: string };
-        if (!response.ok || !data.documents) throw new Error(data.error || "Could not load shipment documents.");
-        setDocuments(data.documents);
-        setDocumentStorageAvailable(data.storageAvailable !== false);
-      })
-      .catch((error) => { if (error instanceof DOMException && error.name === "AbortError") return; onNotice(error instanceof Error ? error.message : "Could not load shipment documents."); })
-      .finally(() => setDocumentsLoading(false));
-    return () => controller.abort();
-  }, [draft.reference, onNotice]);
-
-  async function persistShipment(overrideReason = "") {
-    const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        status: draft.status,
-        eta: draft.eta ?? "",
-        currentLocation: draft.current_location ?? "",
-        carrier: draft.carrier ?? "",
-        carrierReference: draft.carrier_reference ?? "",
-        customerNote: draft.customer_note ?? "",
-        overrideReason,
-      }),
-    });
-    const data = await response.json() as { shipment?: ShipmentDetail; error?: string; blockers?: string[]; canOverride?: boolean; overrideUsed?: boolean };
-    if (!response.ok) {
-      if (response.status === 409 && data.blockers?.length) {
-        setBlock({ target: draft.status, blockers: data.blockers, canOverride: data.canOverride === true });
-        return;
-      }
-      throw new Error(data.error || "Could not save the shipment.");
-    }
-    setBlock(null);
-    if (!data.shipment) throw new Error("Shipment update returned without a shipment record.");
-    setDraft(data.shipment);
-    onShipmentChange(data.shipment);
-    onNotice(data.overrideUsed ? "Shipment updated with a recorded management workflow override." : "Shipment details updated.");
-  }
-
-  async function saveShipment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSaving(true); onNotice("");
-    try { await persistShipment(); }
-    catch (error) { onNotice(error instanceof Error ? error.message : "Could not save the shipment."); }
-    finally { setSaving(false); }
-  }
-
-  async function addEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!eventDraft.title.trim()) return; setSaving(true); onNotice("");
-    try {
-      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(eventDraft) });
-      const data = await response.json() as { event?: ShipmentEvent; error?: string };
-      if (!response.ok || !data.event) throw new Error(data.error || "Could not add the tracking event.");
-      const next = { ...draft, current_location: data.event.location || draft.current_location, events: [data.event, ...draft.events] };
-      setDraft(next); onShipmentChange(next); setEventDraft({ title: "", location: "", details: "", eventTime: "" }); onNotice("Tracking event published.");
-    } catch (error) { onNotice(error instanceof Error ? error.message : "Could not add the tracking event."); }
-    finally { setSaving(false); }
-  }
-
-  async function uploadDocument(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = event.currentTarget; setDocumentSaving(true); onNotice("");
-    try {
-      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents`, { method: "POST", body: new FormData(form) });
-      const data = await response.json() as { document?: ShipmentDocument; error?: string };
-      if (!response.ok || !data.document) throw new Error(data.error || "Could not upload the document.");
-      setDocuments((current) => [data.document!, ...current]); setDocumentStorageAvailable(true); form.reset(); onNotice(`${data.document.filename} uploaded. Workflow readiness will refresh automatically.`);
-    } catch (error) { onNotice(error instanceof Error ? error.message : "Could not upload the document."); }
-    finally { setDocumentSaving(false); }
-  }
-
-  async function removeDocument(document: ShipmentDocument) {
-    if (!window.confirm(`Delete ${document.filename} from this shipment?`)) return;
-    setDocumentSaving(true); onNotice("");
-    try {
-      const response = await fetch(`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents/${document.id}`, { method: "DELETE" });
-      const data = await response.json() as { ok?: boolean; error?: string };
-      if (!response.ok || !data.ok) throw new Error(data.error || "Could not delete the document.");
-      setDocuments((current) => current.filter((item) => item.id !== document.id)); onNotice(`${document.filename} deleted. Workflow readiness will refresh automatically.`);
-    } catch (error) { onNotice(error instanceof Error ? error.message : "Could not delete the document."); }
-    finally { setDocumentSaving(false); }
-  }
-
-  return <div className="overflow-hidden rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)]">
-    <div className="border-b border-[var(--admin-line)] p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex flex-wrap items-center gap-2"><p className="ops-eyebrow">Shipment operations</p><OpsBadge tone={statusTone(draft.status)} dot>{shipmentStatusLabels[draft.status]}</OpsBadge><OpsBadge><ShieldCheck size={10}/>Workflow guarded</OpsBadge></div><h2 className="mt-2 text-[16px] font-[730] tracking-[-.03em] text-[var(--admin-ink)]"><OpsMono>{draft.reference}</OpsMono></h2><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Won quote <OpsMono>{draft.quote_reference}</OpsMono></p></div><div className="flex gap-2"><a href={`/admin/jobs/${encodeURIComponent(draft.reference)}`} className="ops-button" data-variant="primary" data-size="sm">Shipment record <ExternalLink size={11}/></a><a href={`/tracking?reference=${encodeURIComponent(draft.reference)}`} target="_blank" rel="noreferrer" className="ops-button" data-variant="secondary" data-size="sm">Public tracking <ExternalLink size={11}/></a></div></div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-4"><Snapshot label="Status" value={shipmentStatusLabels[draft.status]}/><Snapshot label="Location" value={draft.current_location || "Not set"}/><Snapshot label="ETA" value={draft.eta ? formatDateOnly(draft.eta) : "Not set"}/><Snapshot label="Carrier" value={draft.carrier || "Not set"}/></div>
-      <nav className="ops-segmented mt-4">{shipmentTabs.map((tab) => <button key={tab} type="button" data-active={activeTab === tab || undefined} onClick={() => setActiveTab(tab)}>{tab}{tab === "tracking" ? ` · ${draft.events.length}` : tab === "documents" ? ` · ${documents.length}` : ""}</button>)}</nav>
+  const job = `/admin/jobs/${encodeURIComponent(shipment.reference)}`;
+  return <div className="enquiry-shipment-summary">
+    <div className="enquiry-shipment-summary-head">
+      <div>
+        <p className="ops-eyebrow">Shipment</p>
+        <p className="enquiry-shipment-summary-ref"><OpsMono>{shipment.reference}</OpsMono><OpsBadge tone={statusTone(shipment.status)} dot>{shipmentStatusLabels[shipment.status]}</OpsBadge></p>
+      </div>
+      <div className="job-form-actions">
+        <a href={job} className="ops-button" data-variant="primary" data-size="sm">Open shipment<ArrowRight size={13} strokeWidth={1.75} aria-hidden="true"/></a>
+        <a href={`/tracking?reference=${encodeURIComponent(shipment.reference)}`} target="_blank" rel="noreferrer" className="ops-button" data-variant="ghost" data-size="sm">Customer’s tracking page<ExternalLink size={12} strokeWidth={1.75} aria-hidden="true"/></a>
+      </div>
     </div>
-
-    <div className="p-4 sm:p-5">
-      {activeTab === "details" ? <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]"><form onSubmit={saveShipment} className="grid gap-4 sm:grid-cols-2"><OpsField label="Shipment status"><select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as ShipmentStatus })}>{shipmentStatuses.map((status) => <option value={status} key={status}>{shipmentStatusLabels[status]}</option>)}</select></OpsField><OpsField label="ETA"><input type="date" value={draft.eta ?? ""} onChange={(event) => setDraft({ ...draft, eta: event.target.value })}/></OpsField><OpsField label="Current location"><input value={draft.current_location ?? ""} onChange={(event) => setDraft({ ...draft, current_location: event.target.value })} placeholder="Kathmandu, Nepal"/></OpsField><OpsField label="Carrier / line"><input value={draft.carrier ?? ""} onChange={(event) => setDraft({ ...draft, carrier: event.target.value })} placeholder="Airline, line or road carrier"/></OpsField><OpsField label="Carrier reference" hint="AWB, BL, road note, container or carrier reference"><input value={draft.carrier_reference ?? ""} onChange={(event) => setDraft({ ...draft, carrier_reference: event.target.value })}/></OpsField><OpsField label="Customer status note" className="sm:col-span-2"><textarea value={draft.customer_note ?? ""} onChange={(event) => setDraft({ ...draft, customer_note: event.target.value })} placeholder="Customer-safe update shown on tracking…"/></OpsField><div className="sm:col-span-2"><OpsButton type="submit" variant="primary" disabled={saving}>{saving ? "Saving…" : "Save shipment"}</OpsButton></div>{block ? <div className="sm:col-span-2"><WorkflowBlockersPanel reference={draft.reference} block={block} busy={saving} onCancel={() => setBlock(null)} onOverride={(reason) => { setSaving(true); onNotice(""); persistShipment(reason).catch((error) => onNotice(error instanceof Error ? error.message : "Could not save the shipment.")).finally(() => setSaving(false)); }}/></div> : null}</form><aside className="h-fit rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4"><p className="ops-eyebrow">Controlled milestones</p><p className="mt-3 flex items-start gap-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]"><AlertTriangle size={12} className="mt-1 shrink-0 text-[var(--admin-crimson)]"/>Final-mile and Delivered transitions are checked against CRM ownership, customs completion and required documents. Management can override only with a recorded reason.</p><div className="mt-3 border-t border-[var(--admin-line)] pt-3"><p className="text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Customer view</p><p className="mt-1 text-[11px] font-bold text-[var(--admin-ink)]">{shipmentStatusLabels[draft.status]}</p><p className="mt-2 flex items-center gap-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><MapPin size={11}/>{draft.current_location || "Location not set"}</p><p className="mt-1.5 flex items-center gap-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><Clock3 size={11}/>{draft.eta ? `ETA ${formatDateOnly(draft.eta)}` : "ETA not set"}</p></div></aside></div> : null}
-
-      {activeTab === "tracking" ? <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]"><form onSubmit={addEvent} className="h-fit rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4"><p className="ops-eyebrow">New public update</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">Publish tracking event</h3><div className="mt-4 grid gap-3"><OpsField label="Event title"><input value={eventDraft.title} onChange={(event) => setEventDraft({ ...eventDraft, title: event.target.value })} placeholder="Departed origin facility"/></OpsField><OpsField label="Location"><input value={eventDraft.location} onChange={(event) => setEventDraft({ ...eventDraft, location: event.target.value })} placeholder="Birgunj, Nepal"/></OpsField><OpsField label="Event time" hint="Leave blank to use current time"><input type="datetime-local" value={eventDraft.eventTime} onChange={(event) => setEventDraft({ ...eventDraft, eventTime: event.target.value })}/></OpsField><OpsField label="Details"><textarea value={eventDraft.details} onChange={(event) => setEventDraft({ ...eventDraft, details: event.target.value })} placeholder="Optional customer-safe detail"/></OpsField><OpsButton type="submit" variant="primary" disabled={saving || !eventDraft.title.trim()}><Plus size={12}/>Publish update</OpsButton></div></form><div><div className="mb-3 flex items-center justify-between"><div><p className="ops-eyebrow">Timeline</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">Customer-visible events</h3></div><span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{draft.events.length} events</span></div>{draft.events.length ? <div>{draft.events.map((event,index) => <div key={event.id} className="relative pb-4 pl-6 last:pb-0"><span className={`absolute left-0 top-1.5 h-2 w-2 rounded-full ${index === 0 ? "bg-[var(--admin-crimson)]" : "bg-[var(--admin-line)]"}`}/>{index < draft.events.length - 1 ? <span className="absolute left-[3.5px] top-3.5 h-[calc(100%-4px)] w-px bg-[var(--admin-line)]"/> : null}<div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3.5"><div className="flex items-start justify-between gap-3"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{event.title}</strong>{event.location ? <p className="mt-1 flex items-center gap-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><MapPin size={9}/>{event.location}</p> : null}</div><span className="text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{formatDate(event.event_time)}</span></div>{event.details ? <p className="mt-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{event.details}</p> : null}<p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Published by {event.author_name}</p></div></div>)}</div> : <OpsEmptyState title="No tracking events" description="Publish the first customer-visible movement update here."/>}</div></div> : null}
-
-      {activeTab === "documents" ? <div><div className="mb-4 flex items-start justify-between gap-3"><div><p className="ops-eyebrow">Document vault</p><h3 className="mt-1 text-[12px] font-bold text-[var(--admin-ink)]">Private shipment files</h3><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Required categories feed the workflow guard. POD is required for operational closeout.</p></div><OpsBadge tone="success"><ShieldCheck size={10}/>Admin only</OpsBadge></div>{!documentStorageAvailable ? <OpsNotice tone="warning">Firebase Storage is unavailable for this deployment.</OpsNotice> : null}<form onSubmit={uploadDocument} className="grid gap-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4 md:grid-cols-[220px_minmax(0,1fr)_auto] md:items-end"><OpsField label="Document type"><select name="documentType" defaultValue="other">{shipmentDocumentTypes.map((type) => <option value={type} key={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></OpsField><OpsField label="File" hint="PDF, image, Word, Excel, CSV or TXT · max 15 MB"><input name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField><OpsButton type="submit" variant="primary" disabled={documentSaving || !documentStorageAvailable}><Upload size={12}/>{documentSaving ? "Uploading…" : "Upload"}</OpsButton></form><div className="mt-4 divide-y divide-[var(--admin-line)]">{documentsLoading ? <p className="py-4 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Loading documents…</p> : documents.length ? documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><strong className="block truncate text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{document.filename}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{shipmentDocumentTypeLabels[document.document_type]} · {formatBytes(document.size_bytes)} · {document.uploaded_by} · {formatDate(document.uploaded_at)}</p></div><div className="flex gap-1.5"><a href={`/api/admin/shipments/${encodeURIComponent(draft.reference)}/documents/${document.id}`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={10}/>Download</a><OpsButton variant="danger" size="sm" disabled={documentSaving} onClick={() => removeDocument(document)}><Trash2 size={10}/>Delete</OpsButton></div></div>) : <OpsEmptyState icon={<FileText size={17}/>} title="No documents uploaded" description="Add carriage, customs and commercial documents here as the movement progresses."/>}</div></div> : null}
-    </div>
+    <dl className="enquiry-shipment-summary-facts">
+      <div><dt>Location</dt><dd>{shipment.current_location || "Not set"}</dd></div>
+      <div><dt>ETA</dt><dd>{shipment.eta ? formatDateOnly(shipment.eta) : "Not set"}</dd></div>
+      <div><dt>Carrier</dt><dd>{shipment.carrier || "Not chosen"}</dd></div>
+      <div><dt>Updates posted</dt><dd>{shipment.events.length}</dd></div>
+    </dl>
+    <p className="ops-inspector-hint">Status, pickup, documents, customs, tracking updates and delivery are all done in the shipment.</p>
   </div>;
 }
-
-function Snapshot({label,value}:{label:string;value:string}) { return <div className="rounded-[var(--app-radius)] bg-[var(--admin-surface-muted)] px-3 py-2.5"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><p className="mt-1 truncate text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]" title={value}>{value}</p></div>; }

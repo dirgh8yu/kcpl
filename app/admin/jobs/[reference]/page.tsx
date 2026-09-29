@@ -63,7 +63,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     getShipmentExceptions(result.job.reference, staff),
     getDeliveryControl(result.job.reference, staff),
     shipmentCustomerAccessView(result.job.reference),
-    getJobStepContext(result.job.reference).catch(() => ({ clearance: null, pickupStatus: null })),
+    getJobStepContext(result.job.reference).catch(() => ({ clearance: null, pickupStatus: null, pickup: null })),
     listPartnerOptions(staff).catch(() => null),
   ]);
   if (workflow.kind !== "ready") return shellGate("Shipment can’t be opened right now", "Its progress checks didn’t load. Try again in a minute.");
@@ -81,6 +81,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
       clearance={staff.permissions.canManageJobFile ? stepContext.clearance : null}
       customsAgents={customsAgents}
       pickupStatus={stepContext.pickupStatus}
+      pickup={stepContext.pickup}
       requestedPanel={typeof requestedStep === "string" ? requestedStep : null}
       openProblems={exceptionCases.kind === "ready" ? exceptionCases.summary.open : 0}
       canManageFinance={staff.permissions.canManageFinance}

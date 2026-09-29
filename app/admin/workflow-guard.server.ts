@@ -322,7 +322,9 @@ export async function validateShipmentTransition(
   if (readiness.status !== nextStatus && !allowedTransitions[readiness.status].includes(nextStatus)) {
     blockers.push(`It can’t go straight from ${readiness.status.replaceAll("_", " ")} to ${nextStatus.replaceAll("_", " ")}.`);
   }
-  if (["out_for_delivery", "delivered"].includes(nextStatus)) {
+  // Saving details (ETA, carrier, location) keeps the status; only a move into
+  // final delivery has to pass the final-delivery checks.
+  if (readiness.status !== nextStatus && ["out_for_delivery", "delivered"].includes(nextStatus)) {
     if (!readiness.customer_linked) blockers.push("Link a customer before final delivery.");
     if (!readiness.customs_checklist_ready) blockers.push("Finish the customs checklist before final delivery.");
     if (readiness.customs_release_required && !readiness.customs_released) blockers.push("Record the customs release before final delivery.");

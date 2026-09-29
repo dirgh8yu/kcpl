@@ -161,6 +161,9 @@ test("no staff screen asks for input through a browser prompt", async () => {
   for (const file of files) {
     assert.doesNotMatch(await readFile(file, "utf8"), /window\.prompt\(/, file.pathname);
   }
+  const status = await readFile(new URL("../app/admin/shipment-status-control.tsx", import.meta.url), "utf8");
+  assert.match(status, /WorkflowBlockersPanel/);
+  // The enquiry's shipment panel is a summary now, with no second status editor.
   const panel = await readFile(new URL("../app/admin/admin-shipment-panel.tsx", import.meta.url), "utf8");
-  assert.match(panel, /WorkflowBlockersPanel/);
+  assert.doesNotMatch(panel, /method: "PATCH"|<select/);
 });

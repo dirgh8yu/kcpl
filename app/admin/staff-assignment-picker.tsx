@@ -28,6 +28,8 @@ type Props = {
   onChange: (value: StaffAssignmentValue) => void;
   branch?: string;
   allowUnassigned?: boolean;
+  /** The empty choice's text; "Unassigned" where clearing the owner is meant. */
+  emptyLabel?: string;
   disabled?: boolean;
   compact?: boolean;
 };
@@ -55,7 +57,7 @@ function appliesToBranch(option: StaffAssignmentOption, branch?: string) {
   return option.branches.includes(branch);
 }
 
-export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned = true, disabled = false, compact = false }: Props) {
+export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned = true, emptyLabel = "Unassigned", disabled = false, compact = false }: Props) {
   const [options, setOptions] = useState<StaffAssignmentOption[]>(cachedOptions ?? []);
   const [loading, setLoading] = useState(!cachedOptions);
   const [error, setError] = useState("");
@@ -119,7 +121,7 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
         disabled={disabled || loading}
         aria-label="Choose staff member from KCPL staff directory"
       >
-        {allowUnassigned ? <option value="">Unassigned</option> : null}
+        {allowUnassigned ? <option value="">{emptyLabel}</option> : null}
         {selectValue === "__current__" ? <option value="__current__">{value.name || value.email} · current assignment</option> : null}
         {visibleOptions.map((option) => (
           <option key={option.uid} value={option.uid}>

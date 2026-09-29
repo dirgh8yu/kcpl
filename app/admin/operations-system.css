@@ -705,7 +705,6 @@
 .ops-pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 10px; border: 1px solid var(--admin-line); border-top: 0; padding: 10px 12px; background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; line-height: 16px; }
 .ops-pagination-actions { display: flex; align-items: center; gap: 8px; }
 
-.kcpl-admin-content .ops-filter-pill, .kcpl-admin-content .ops-segmented { border-radius: var(--app-radius); }
 
 @media (max-width: 1023px) {
   .kcpl-admin-route .kcpl-admin-content { padding-left: 0; }
@@ -1135,6 +1134,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .alerts-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 .kcpl-admin-content .alerts-row-owner { color: var(--admin-muted); font-size: 12px; }
 .kcpl-admin-content .alerts-row-type { color: var(--admin-muted); font-size: 12px; font-weight: 550; }
+.kcpl-admin-content .alerts-row-tick { flex: none; width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: var(--admin-crimson); }
 .kcpl-admin-content .alerts-row-age { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--admin-muted); font-size: 12px; white-space: nowrap; }
 .kcpl-admin-content .alerts-row-title { color: var(--admin-ink); font-size: 13.5px; line-height: 19px; }
 .kcpl-admin-content .alerts-row-link { color: inherit; font-weight: 550; text-decoration: none; }
@@ -2483,3 +2483,18 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 
 /* "Assigned to me": one toggle on each work list, beside its filters. */
 .kcpl-admin-content .ops-mine-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+/* The enquiry's view of its shipment: a summary and the way in. */
+.kcpl-admin-content .enquiry-shipment-summary { display: grid; gap: 12px; }
+.kcpl-admin-content .enquiry-shipment-summary-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.kcpl-admin-content .enquiry-shipment-summary-ref { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; font-size: 15px; font-weight: 600; }
+.kcpl-admin-content .enquiry-shipment-summary-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 0; }
+.kcpl-admin-content .enquiry-shipment-summary-facts > div { border-radius: var(--app-radius); padding: 8px 10px; background: var(--admin-surface-muted); }
+.kcpl-admin-content .enquiry-shipment-summary-facts dt { color: var(--admin-muted); font-size: 11.5px; font-weight: 550; }
+.kcpl-admin-content .enquiry-shipment-summary-facts dd { margin: 2px 0 0; overflow: hidden; color: var(--admin-ink); font-size: 13px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Bulk bar: appears when rows are ticked, one owner for all of them. */
+.kcpl-admin-content .ops-bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 10px; border: 1px solid var(--admin-line-strong); border-radius: var(--app-radius); padding: 8px 12px; background: var(--admin-surface); }
+.kcpl-admin-content .ops-bulk-bar > strong { color: var(--admin-ink); font-size: 13px; font-weight: 650; }
+.kcpl-admin-content .ops-bulk-bar-picker { min-width: 220px; flex: 1 1 240px; max-width: 360px; }
+.kcpl-admin-content .ops-bulk-notice { flex-basis: 100%; margin: 0 0 10px; }

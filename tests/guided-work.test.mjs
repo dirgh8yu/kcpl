@@ -92,3 +92,36 @@ test("customers see what KCPL needs from them, most pressing first", () => {
   assert.equal(needs.at(-1).count, 2, "open invoices exclude the overdue ones already listed");
   assert.equal(portalNeeds({ outstanding: [], freeTime: [], quotesAwaiting: [], finance: null }).length, 0);
 });
+
+const source = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+
+test("pickup and movement are worked inside the Job File", async () => {
+  const record = await source("app/admin/jobs/[reference]/job-record.tsx");
+  assert.match(record, /<PickupControl reference=\{job\.reference\} pickup=\{pickup\}/);
+  assert.match(record, /<MovementControl reference=\{job\.reference\}/);
+  const pickup = await source("app/admin/jobs/[reference]/pickup-control.tsx");
+  for (const action of ["schedule", "confirm", "assign_driver", "picked_up", "missed"]) assert.match(pickup, new RegExp(`"${action}"`), action);
+  assert.match(pickup, /\/api\/admin\/pickups/);
+  const movement = await source("app/admin/jobs/[reference]/movement-control.tsx");
+  assert.match(movement, /send\("PATCH", \{\s*status,/, "details are saved with the status unchanged");
+  assert.match(movement, /send\("POST", \{\s*title:/, "tracking updates use the existing publish route");
+});
+
+test("saving details never trips the final-delivery checks", async () => {
+  const guard = await source("app/admin/workflow-guard.server.ts");
+  assert.match(guard, /if \(readiness\.status !== nextStatus && \["out_for_delivery", "delivered"\]\.includes\(nextStatus\)\)/);
+});
+
+test("bulk owner changes go through the single-shipment checks, capped", async () => {
+  const route = await source("app/api/admin/shipments/bulk-assign/route.ts");
+  assert.match(route, /checkShipmentBranchAccess\(reference, staff\)/);
+  assert.match(route, /reassignJob\(reference, \{ assignedToUid: body\.assignedToUid \}, access\.user, staff\)/);
+  assert.match(route, /MAX_REFERENCES = 50/);
+  assert.match(route, /isTrustedSameOriginRequest/);
+  for (const path of ["app/admin/shipments/shipments-workspace.tsx", "app/admin/command-centre/v4-operations-overview.tsx"]) {
+    assert.match(await source(path), /<BulkAssignBar references=/, path);
+  }
+  const alerts = await source("app/admin/alerts/alerts-workspace.tsx");
+  assert.match(alerts, /bulk\("acknowledge"\)/);
+  assert.match(alerts, /bulk\("resolve"\)/);
+});

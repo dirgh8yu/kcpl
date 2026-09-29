@@ -199,9 +199,6 @@
 
 
 
-.ops-segmented { display: inline-flex; gap: 2px; border: 1px solid var(--ops-line); border-radius: 11px; background: #f3eeea; padding: 3px; }
-.ops-segmented button, .ops-segmented a { display: inline-flex; min-height: 29px; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; padding: 0 10px; color: #82776f; font-size: 9px; font-weight: 700; cursor: pointer; }
-.ops-segmented [data-active="true"] { background: white; color: #514841; box-shadow: 0 1px 4px rgba(74,56,43,.06); }
 
 
 @media (max-width: 1180px) {

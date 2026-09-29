@@ -9,10 +9,13 @@ import type { ShipmentWorkflowReadiness } from "../../workflow-guard";
 import type { CustomsAgentOption, CustomsClearanceRecord } from "../../customs/customs-clearance";
 import { CustomsClearanceEditor } from "../../customs/customs-clearance-editor";
 import { shipmentStatusLabels } from "../../../shipment-types";
-import { pickupAppointmentStatusLabels, type PickupAppointmentStatus } from "../../pickups/pickup-appointments";
+import type { PickupAppointmentStatus } from "../../pickups/pickup-appointments";
 import { OpsBadge, OpsNotice, OpsPageHeader, OpsSurface } from "../../operations-ui";
 import { ShipmentStatusControl } from "../../shipment-status-control";
 import { statusTone } from "../../shipments/shipments-views";
+import { MovementControl } from "./movement-control";
+import { PickupControl } from "./pickup-control";
+import type { JobPickup } from "./job-step-context.server";
 import { buildJobSteps, initialJobPanel, type JobPanel, type JobStep, type JobStepState } from "./job-steps";
 
 /** Other parts of the Job File (the closeout, a blocker's fix link) open a
@@ -71,6 +74,7 @@ export function JobRecord({
   clearance,
   customsAgents,
   pickupStatus,
+  pickup,
   requestedPanel,
   openProblems,
   canManageFinance,
@@ -82,6 +86,7 @@ export function JobRecord({
   clearance: CustomsClearanceRecord | null;
   customsAgents: CustomsAgentOption[];
   pickupStatus: PickupAppointmentStatus | null;
+  pickup: JobPickup | null;
   requestedPanel: string | null;
   openProblems: number;
   canManageFinance: boolean;
@@ -175,10 +180,7 @@ export function JobRecord({
         {selectedStep ? <StepHead step={selectedStep} current={currentStep} onOpen={show}/> : null}
 
         <div data-panel="pickup">
-          <OpsSurface title="Pickup">
-            <p className="job-panel-line">{pickupStatus ? pickupAppointmentStatusLabels[pickupStatus] : "No pickup booked for this shipment."}</p>
-            <Link className="ops-button mt-3" data-variant={pickupStatus && pickupStatus !== "picked_up" ? "secondary" : "primary"} data-size="sm" href={`/admin/pickups?shipment=${reference}`}>{pickupStatus ? "Manage pickup" : "Book a pickup"}<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></Link>
-          </OpsSurface>
+          <PickupControl reference={job.reference} pickup={pickup} stepDone={steps.find((step) => step.id === "pickup")?.state === "done"} onChanged={changed}/>
         </div>
 
         {clearance ? <div data-panel="customs">
@@ -188,10 +190,14 @@ export function JobRecord({
         </div> : null}
 
         <div data-panel="transit">
+          <MovementControl reference={job.reference} status={job.status} eta={job.eta} currentLocation={job.current_location} carrier={job.carrier} carrierReference={job.carrier_reference} onChanged={changed}/>
+        </div>
+
+        <div data-panel="transit">
           <OpsSurface title="Move the shipment" description={`Now: ${shipmentStatusLabels[job.status]}${job.current_location ? ` · ${job.current_location}` : ""}`}>
             {job.status === "delivered" ? <p className="job-panel-line">Delivered. Nothing more to move.</p>
               : <ShipmentStatusControl reference={job.reference} status={job.status} disabled={readiness.job_closed} onChanged={changed} onFix={show}/>}
-            <Link className="job-panel-link" href={`/admin/visibility?shipment=${reference}`}>Tracking updates and carrier events<ArrowRight size={12} strokeWidth={1.75} aria-hidden="true"/></Link>
+            <Link className="job-panel-link" href={`/admin/visibility?shipment=${reference}`}>Carrier tracking feed<ArrowRight size={12} strokeWidth={1.75} aria-hidden="true"/></Link>
           </OpsSurface>
         </div>
 

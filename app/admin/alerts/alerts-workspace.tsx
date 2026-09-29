@@ -156,6 +156,33 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
     }
   }
 
+  // Several alerts at once: the same one-alert action, applied in turn, so
+  // each keeps its own audit entry. Only alerts in the right state are sent.
+  const [ticked, setTicked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  function tick(id: string) {
+    setTicked((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }
+  async function bulk(actionName: "acknowledge" | "resolve") {
+    const targets = alerts.filter((alert) => ticked.has(alert.id) && (actionName === "acknowledge" ? alert.status === "open" : alert.status !== "resolved"));
+    if (!targets.length) return;
+    setBulkBusy(true);
+    setNotice("");
+    let done = 0;
+    const failed: string[] = [];
+    for (const alert of targets) {
+      try {
+        const response = await fetch("/api/admin/alerts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: actionName, alertId: alert.id }) });
+        if (response.ok) done += 1; else failed.push(alert.entity_id);
+      } catch { failed.push(alert.entity_id); }
+    }
+    await reload().catch(() => undefined);
+    setTicked(new Set());
+    setBulkBusy(false);
+    setNoticeTone(failed.length ? "danger" : "success");
+    setNotice(`${done} alert${done === 1 ? "" : "s"} ${actionName === "acknowledge" ? "acknowledged" : "resolved"}.${failed.length ? ` Not changed: ${failed.join(", ")}. Try those again.` : ""}`);
+  }
+
   function reset() { update({ q: null, severity: null, status: null }); }
   const setSeverity = (value: "all" | AutomationAlertSeverity) => update({ severity: value === "all" ? null : value });
   const setStatus = (value: StatusFilter) => update({ status: value === "active" ? null : value });
@@ -290,11 +317,18 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
           )}
         />
 
+        {ticked.size ? <div className="ops-bulk-bar" role="region" aria-label="Selected alerts">
+          <strong>{ticked.size} selected</strong>
+          <OpsButton variant="secondary" size="sm" disabled={bulkBusy} onClick={() => void bulk("acknowledge")}>Acknowledge</OpsButton>
+          <OpsButton variant="primary" size="sm" disabled={bulkBusy} onClick={() => void bulk("resolve")}><CheckCircle2 size={12} strokeWidth={1.75}/>{bulkBusy ? "Working…" : "Resolve"}</OpsButton>
+          <OpsButton variant="ghost" size="sm" disabled={bulkBusy} onClick={() => setTicked(new Set())}>Clear</OpsButton>
+        </div> : null}
         <section className="ops-surface" aria-label="Alert queue">
           {visible.length ? visible.map((alert) => {
             const busy = busyId === alert.id;
             const resolved = alert.status === "resolved";
             return <div key={alert.id} className="alerts-row" data-resolved={resolved || undefined} data-critical={!resolved && alert.severity === "critical" ? "true" : undefined}>
+              {resolved ? <span className="alerts-row-tick" aria-hidden="true"/> : <input type="checkbox" className="alerts-row-tick" checked={ticked.has(alert.id)} onChange={() => tick(alert.id)} aria-label={`Select ${alert.title} for ${alert.entity_id}`}/>}
               {/* Severity is the icon; status is the tab and the line below. One
                   badge is left, and only when someone has to step in. */}
               <div className="alerts-row-icon" role="img" aria-label={`${alert.severity} severity`} title={`${alert.severity[0].toUpperCase()}${alert.severity.slice(1)}`}><SeverityIcon severity={alert.severity}/></div>

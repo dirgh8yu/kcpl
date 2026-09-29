@@ -78,17 +78,13 @@
   line-height: 15px;
 }
 
-.selectionSummary {
-  display: inline-flex;
-  min-height: 20px;
-  align-items: center;
-  border-radius: 5px;
-  background: var(--admin-surface-soft);
-  padding: 0 7px;
-  color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
+/* Holds the bulk-assign bar under the work queue heading when rows are ticked. */
+.bulkSlot {
+  padding: 0 14px;
+}
+
+.bulkSlot:empty {
+  display: none;
 }
 
 @media (max-width: 640px) {

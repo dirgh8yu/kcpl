@@ -9,6 +9,7 @@ import type { ShipmentActivityItem, ShipmentActivityTimeline } from "../shipment
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob, CommandCentreStaffLoad } from "../command-centre/command-centre-data";
 import { shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
+import { BulkAssignBar } from "../bulk-assign-bar";
 import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import { compareWorkQueueImpact, type ReceivableExposure } from "../command-centre/work-queue-impact";
 import { suggestOwner, laneKey, type OwnerCandidateEvidence, type OwnerSuggestion } from "../command-centre/owner-recommender";
@@ -187,6 +188,15 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  // Ticked rows, for giving several shipments one owner at once.
+  const [ticked, setTicked] = useState<Set<string>>(new Set());
+  const allPageTicked = pageRows.length > 0 && pageRows.every((job) => ticked.has(job.reference));
+  function tick(reference: string) {
+    setTicked((current) => { const next = new Set(current); if (next.has(reference)) next.delete(reference); else next.add(reference); return next; });
+  }
+  function tickPage() {
+    setTicked((current) => { const next = new Set(current); pageRows.forEach((job) => allPageTicked ? next.delete(job.reference) : next.add(job.reference)); return next; });
+  }
   const selected = selectedReference ? filtered.find((job) => job.reference === selectedReference) ?? null : null;
   const activityHighlightId = params.get("a");
   const returnTo = `/admin/shipments${search}`;
@@ -479,10 +489,12 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           <ShipmentMap jobs={pageRows} selectedReference={selected?.reference ?? null} onSelect={setSelectedReference}/>
         ) : (
           <section className="ops-surface overflow-hidden" aria-label="Shipment register">
+            <BulkAssignBar references={[...ticked]} onClear={() => setTicked(new Set())}/>
             <OpsTableWrap>
               <table className="ops-table shipments-register-table" aria-label="Shipments register">
                 <thead>
                   <tr>
+                    <th className="shipments-tick-cell"><input type="checkbox" checked={allPageTicked} onChange={tickPage} aria-label="Select every shipment on this page"/></th>
                     <th>Ref</th>
                     <th>Customer · Route</th>
                     <th>Mode</th>
@@ -514,6 +526,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                         className="cursor-pointer"
                         aria-label={`Open ${job.reference}, ${job.customer_name}, ${shipmentStatusLabels[job.status]}`}
                       >
+                        <td className="shipments-tick-cell" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}><input type="checkbox" checked={ticked.has(job.reference)} onChange={() => tick(job.reference)} aria-label={`Select ${job.reference}`}/></td>
                         <td><span className="ops-mono text-xs font-medium text-[var(--admin-info)]">{job.reference}</span>{liveActivityRefs.has(job.reference) ? <span className="shipments-live-activity" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}</td>
                         <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-1 block"><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
                         <td><span className="inline-flex items-center gap-1.5 text-sm text-[var(--admin-muted)]"><ModeIcon mode={job.mode} size={14}/>{job.mode || "—"}</span></td>

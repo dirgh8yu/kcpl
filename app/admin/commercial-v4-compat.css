@@ -201,34 +201,6 @@
 }
 
 
-.kcpl-admin-shell[data-commercial-context] .ops-segmented {
-  gap: 22px;
-  border-bottom: 1px solid var(--commercial-line);
-  background: transparent;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-segmented button {
-  min-height: 38px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--commercial-muted);
-  font-size: 11px;
-  font-weight: 600;
-  box-shadow: none;
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-segmented button:hover,
-.kcpl-admin-shell[data-commercial-context] .ops-segmented button[data-active] {
-  color: var(--commercial-ink);
-}
-
-.kcpl-admin-shell[data-commercial-context] .ops-segmented button[data-active] {
-  border-bottom-color: var(--commercial-crimson);
-  font-weight: 700;
-}
-
 /* Badges are supporting metadata, never the dominant visual. */
 .kcpl-admin-shell[data-commercial-context] .ops-badge {
   min-height: 22px;

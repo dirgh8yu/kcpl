@@ -220,3 +220,10 @@
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-content :is(.job-steps button, .job-check, .job-select-row) { transition: none; }
 }
+
+/* Pickup facts: label and value per line, hairline between. */
+.kcpl-admin-content .job-pickup-facts { display: grid; margin: 0 0 12px; }
+.kcpl-admin-content .job-pickup-facts > div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px; border-top: 1px solid var(--admin-line); padding: 7px 0; font-size: 13px; line-height: 18px; }
+.kcpl-admin-content .job-pickup-facts > div:first-child { border-top: 0; padding-top: 0; }
+.kcpl-admin-content .job-pickup-facts dt { color: var(--admin-muted); }
+.kcpl-admin-content .job-pickup-facts dd { margin: 0; color: var(--admin-ink); }

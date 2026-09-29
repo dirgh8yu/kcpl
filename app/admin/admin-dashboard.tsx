@@ -554,7 +554,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                   </form>
                 </OpsSurface> : null}
 
-                {activeTab === "shipment" ? <OpsSurface density="compact" title={detail.shipment ? <span className="ops-mono">{detail.shipment.reference}</span> : "Shipment workspace"} description={detail.shipment ? "Continue operational tracking without leaving the enquiry. Workflow guards apply to controlled status changes." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the CRM customer first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status} onShipmentChange={(shipment) => setDetail((current) => current ? { ...current, shipment } : current)} onNotice={(message) => showNotice(message)}/></OpsSurface> : null}
+                {activeTab === "shipment" ? <OpsSurface density="compact" title="Shipment" description={detail.shipment ? "This enquiry’s shipment. Work it from its own page." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the CRM customer first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status}/></OpsSurface> : null}
 
                 {activeTab === "activity" ? <OpsSurface density="compact" title="Activity & communications" description="Customer quote emails and internal notes in one chronological history.">
                   <form onSubmit={addNote} className="enq-note-form">
