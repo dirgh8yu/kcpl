@@ -40,7 +40,7 @@ export function ShipmentThread({ endpoint, viewer, labels, id = "messages" }: {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const end = useRef<HTMLLIElement>(null);
+  const list = useRef<HTMLOListElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -66,7 +66,11 @@ export function ShipmentThread({ endpoint, viewer, labels, id = "messages" }: {
   }, [load]);
 
   useEffect(() => {
-    end.current?.scrollIntoView({ block: "nearest" });
+    // The newest message into view inside the thread's own scroll box. Never
+    // scrollIntoView: that also scrolls the page, so opening a shipment would
+    // jump the reader down to the conversation before they had read the top.
+    const box = list.current;
+    if (box) box.scrollTop = box.scrollHeight;
   }, [messages?.length]);
 
   async function send(event: FormEvent<HTMLFormElement>) {
@@ -99,14 +103,13 @@ export function ShipmentThread({ endpoint, viewer, labels, id = "messages" }: {
         {messages && messages.length === 0 ? (
           <OpsEmptyState compact kind="neutral" icon={<MessageSquare size={18}/>} title={labels.empty} description={labels.emptyDescription}/>
         ) : (
-          <ol className="shipment-thread" aria-live="polite" aria-busy={messages === null}>
+          <ol ref={list} className="shipment-thread" aria-live="polite" aria-busy={messages === null}>
             {(messages ?? []).map((message) => (
               <li key={message.id} data-own={message.from === viewer ? "true" : undefined}>
                 <span className="shipment-thread-meta">{message.author} · {when(message.created_at)}</span>
                 <p>{message.body}</p>
               </li>
             ))}
-            <li ref={end} aria-hidden="true" className="shipment-thread-end"/>
           </ol>
         )}
         <form className="shipment-thread-form" onSubmit={send} aria-busy={busy}>

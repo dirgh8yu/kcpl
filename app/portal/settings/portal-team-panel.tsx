@@ -131,7 +131,7 @@ export function PortalTeamPanel({
 
         {team.length ? (
           <OpsTableWrap>
-            <table className="ops-table">
+            <table className="ops-table portal-stack-table">
               <thead>
                 <tr>
                   <th>{t("team.col_login")}</th>
@@ -146,18 +146,18 @@ export function PortalTeamPanel({
                   const isYou = member.email === currentEmail;
                   return (
                     <tr key={member.email}>
-                      <td>
+                      <td data-cell="primary">
                         <OpsMono>{member.email}</OpsMono>
                         {isYou ? <span className="portal-cell-detail">{t("team.this_is_you")}</span> : null}
                         {member.linked ? <span className="portal-cell-detail">{t("team.linked")}</span> : null}
                       </td>
-                      <td>{t(`role.${member.role}`)}</td>
-                      <td>
+                      <td data-cell="meta" data-label={t("team.col_access")}>{t(`role.${member.role}`)}</td>
+                      <td data-cell="status">
                         <OpsBadge tone={member.active ? "success" : "neutral"} dot>{member.active ? t("team.active") : t("team.disabled")}</OpsBadge>
                         <span className="portal-cell-detail">{member.bound ? t("team.signed_in_before") : t("team.never_signed_in")}</span>
                       </td>
-                      <td>{member.last_sign_in_at ? portalDate(member.last_sign_in_at) : t("common.none")}</td>
-                      <td>
+                      <td data-cell="meta" data-label={t("team.col_last_signed_in")}>{member.last_sign_in_at ? portalDate(member.last_sign_in_at) : t("common.none")}</td>
+                      <td data-cell="action">
                         {member.role === "member" && !isYou && !member.linked ? (
                           <OpsButton
                             size="sm"

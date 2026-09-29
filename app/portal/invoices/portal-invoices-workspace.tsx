@@ -65,7 +65,7 @@ export function PortalInvoicesWorkspace({
           <OpsSurface eyebrow={t("inv.billing_eyebrow")} title={t("inv.billing_title")} flush>
             {invoices.length ? (
               <OpsTableWrap>
-                <table className="ops-table">
+                <table className="ops-table portal-stack-table" data-row-link="">
                   <thead>
                     <tr>
                       <th>{t("inv.col_invoice")}</th>
@@ -81,7 +81,7 @@ export function PortalInvoicesWorkspace({
                   <tbody>
                     {invoices.map((invoice) => (
                       <tr key={invoice.reference}>
-                        <td>
+                        <td data-cell="primary">
                           <Link href={`/portal/invoices/${encodeURIComponent(invoice.reference)}`} className="portal-row-link">
                             <OpsMono>{invoice.external_invoice_number ?? invoice.reference}</OpsMono>
                           </Link>
@@ -89,19 +89,19 @@ export function PortalInvoicesWorkspace({
                             ? <span className="portal-cell-detail">{t("inv.opening_balance")}</span>
                             : null}
                         </td>
-                        <td>
+                        <td data-cell="meta" data-label={t("common.shipment")}>
                           {invoice.shipment_reference ? (
                             <Link href={`/portal/shipments/${encodeURIComponent(invoice.shipment_reference)}`} className="portal-row-link">
                               <OpsMono>{invoice.shipment_reference}</OpsMono>
                             </Link>
                           ) : t("common.none")}
                         </td>
-                        <td>{portalDate(invoice.issue_date)}</td>
-                        <td>{portalDate(invoice.due_date)}</td>
-                        <td><OpsBadge tone={portalInvoiceTone(invoice.status)}>{portalInvoiceStatusLabel(invoice.status, locale)}</OpsBadge></td>
-                        <td>{portalMoney(invoice.total, invoice.currency)}</td>
-                        <td>{portalMoney(invoice.amount_paid, invoice.currency)}</td>
-                        <td><strong>{portalMoney(invoice.balance_due, invoice.currency)}</strong></td>
+                        <td data-cell="meta" data-label={t("inv.col_issued")}>{portalDate(invoice.issue_date)}</td>
+                        <td data-cell="meta" data-label={t("inv.col_due")}>{portalDate(invoice.due_date)}</td>
+                        <td data-cell="status"><OpsBadge tone={portalInvoiceTone(invoice.status)}>{portalInvoiceStatusLabel(invoice.status, locale)}</OpsBadge></td>
+                        <td data-cell="meta" data-label={t("inv.col_total")}>{portalMoney(invoice.total, invoice.currency)}</td>
+                        <td data-cell="meta" data-label={t("inv.col_paid")}>{portalMoney(invoice.amount_paid, invoice.currency)}</td>
+                        <td data-cell="amount" data-label={t("inv.col_balance")}><strong>{portalMoney(invoice.balance_due, invoice.currency)}</strong></td>
                       </tr>
                     ))}
                   </tbody>

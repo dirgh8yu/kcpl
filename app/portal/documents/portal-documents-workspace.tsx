@@ -98,7 +98,7 @@ export function PortalDocumentsWorkspace({
 
           {rows.length ? (
             <OpsTableWrap>
-              <table className="ops-table">
+              <table className="ops-table portal-stack-table">
                 <thead>
                   <tr>
                     <th>{t("common.document")}</th>
@@ -112,25 +112,25 @@ export function PortalDocumentsWorkspace({
                 <tbody>
                   {rows.map((document) => (
                     <tr key={`${document.shipment_reference}:${document.id}`}>
-                      <td>
+                      <td data-cell="primary">
                         <span className="portal-cell-title">{portalDocumentLabel(document.document_type, locale)}</span>
                         <span className="portal-cell-detail">{document.filename}</span>
                       </td>
-                      <td>
+                      <td data-cell="meta" data-label={t("common.shipment")}>
                         <Link href={`/portal/shipments/${encodeURIComponent(document.shipment_reference)}`} className="portal-row-link">
                           <OpsMono>{document.shipment_reference}</OpsMono>
                         </Link>
                       </td>
-                      <td>
+                      <td data-cell="status">
                         {document.from_customer ? (
                           <OpsBadge tone={document.review_state === "confirmed" ? "success" : document.review_state === "resend" ? "danger" : "info"}>
                             {document.review_state === "confirmed" ? t("docs.state_confirmed") : document.review_state === "resend" ? t("docs.state_resend") : t("docs.state_with_kcpl")}
                           </OpsBadge>
                         ) : <OpsBadge tone="neutral">{t("docs.from_kcpl")}</OpsBadge>}
                       </td>
-                      <td>{portalDate(document.uploaded_at)}</td>
-                      <td>{portalFileSize(document.size_bytes)}</td>
-                      <td>
+                      <td data-cell="meta" data-label={t("docs.col_date")}>{portalDate(document.uploaded_at)}</td>
+                      <td data-cell="meta" data-label={t("docs.col_size")}>{portalFileSize(document.size_bytes)}</td>
+                      <td data-cell="action">
                         <a
                           className="ops-button"
                           data-variant="secondary"

@@ -4,6 +4,7 @@ import { firebaseAdminDb } from "../firebase-admin.server";
 import { checkQuoteRateLimit, quoteRateLimitPolicies } from "../api/quotes/quote-rate-limit-policy";
 import { firestoreQuoteRateLimitStore } from "../api/quotes/quote-rate-limit.server";
 import type { PortalSession } from "./portal-auth";
+import { portalQuoteBookingBlock, portalQuoteView } from "./portal-access-policy";
 
 /*
  * A quote request raised by a signed-in customer, from the web portal or the
@@ -172,6 +173,18 @@ export async function requestPortalBooking(
       && (String(quote.get("customer_id") ?? "") === session.customerId
         || String(quote.get("portal_customer_id") ?? "") === session.customerId);
     if (!ownedByCustomer) return { status: 404, body: { ok: false, error: "Quote not found." } };
+    // The same rule the portal page and the app use to offer the button.
+    const view = portalQuoteView(quote.data() as Record<string, unknown>);
+    const block = portalQuoteBookingBlock(view);
+    if (block) {
+      const refusal = {
+        unpriced: "This quote has not been priced yet.",
+        booked: `This quote is already booked as ${view.shipment_reference}.`,
+        requested: "You have already asked KCPL to proceed with this quote. Your account manager will confirm the booking.",
+        expired: "This quote has expired. Ask KCPL for a fresh quote.",
+      }[block];
+      return { status: 409, body: { ok: false, code: block, error: refusal } };
+    }
 
     const now = new Date().toISOString();
     const noteId = Date.now() * 1000 + Math.floor(Math.random() * 1000);

@@ -496,6 +496,11 @@ download, with a sandboxing content security policy on the portal route.
 
 ## Booking with a pickup
 
+A quote can be asked to proceed only while it is priced, not yet booked, not already
+asked for, and still valid (to the end of its last day, Nepal time). One rule,
+`portalQuoteBookingBlock`, decides this for the portal page, and the server refuses the
+same cases with a 409, so a button is never offered that the server would turn down.
+
 "Ask to proceed" on a priced quote can carry a pickup: a date (today to 90 days out, Nepal
 time), a window (morning 9–12, afternoon 12–5, or any time), the address, and an optional
 contact (`portal-booking-pickup.ts`). It is a **request**, not an appointment. It is kept

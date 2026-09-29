@@ -1644,6 +1644,51 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .portal-nav-link, .portal-signout, .portal-skip-link { transition: none; }
 }
 
+/* Phones -------------------------------------------------------------------
+ * The portal's registers read as stacked rows rather than a table scrolled
+ * sideways, where the status, dates and amounts ended up off screen. Each cell
+ * says what it is (data-cell): the reference and its status share the first
+ * line, the lane runs full width, and dates and amounts follow as small
+ * labelled facts. Where a row opens a record (data-row-link), the whole row is
+ * the tap target. */
+@media (max-width: 760px) {
+  .kcpl-portal-route .kcpl-admin-content .ops-table.portal-stack-table { min-width: 0; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table tbody { display: block; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table tr { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 14px 16px; border-bottom: 1px solid var(--admin-line); }
+  .kcpl-portal-route .kcpl-admin-content table.portal-stack-table > tbody > tr > td { display: block; height: auto; min-height: 0; padding: 0; border: 0; }
+  /* The reference and its status own the first line; everything else starts
+   * below them, so a long reference is never squeezed into a narrow column. */
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table tr::after { content: ""; flex-basis: 100%; order: 2; height: 0; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="primary"] { flex: 1 1 0; min-width: 0; order: 0; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="status"],
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="amount"]:not([data-label]) { flex: none; margin-left: auto; order: 1; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="route"] { flex: 1 1 100%; order: 2; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="meta"] { flex: 0 1 auto; order: 3; color: var(--admin-muted); font-size: var(--app-text-sm); }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="amount"][data-label] { flex: 1 1 100%; order: 4; font-size: var(--app-text-md); }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="action"] { flex: 1 1 100%; order: 5; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="open"] { display: none; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-label]::before { content: attr(data-label) " "; color: var(--admin-faint); font-weight: 400; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table[data-row-link] td[data-cell="primary"] .portal-row-link::after { content: ""; position: absolute; inset: 0; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table[data-row-link] td:not([data-cell="primary"]) a { position: relative; z-index: 1; }
+
+  /* Six counts in pairs, not six full-width cards before any content. */
+  .kcpl-portal-route .kcpl-admin-content .ops-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kcpl-portal-route .kcpl-admin-content .ops-kpi { grid-template-columns: minmax(0, 1fr); gap: 8px; min-height: 0; padding: 12px; }
+
+  /* A balance is read whole: one currency per line, never cut off. */
+  .kcpl-portal-route .kcpl-admin-content .ops-metric-strip { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-portal-route .kcpl-admin-content .ops-metric-value { overflow-wrap: anywhere; }
+
+  /* Every tab in sight: they wrap onto a second row rather than scroll past
+   * the edge, where Invoices and Settings looked as if they did not exist.
+   * The header then scrolls away with the page instead of pinning two rows
+   * of a small screen. */
+  .portal-topbar { position: static; }
+  .portal-nav { flex-wrap: wrap; gap: 2px; overflow: visible; }
+  .portal-nav-link { padding: 0 10px; font-size: var(--app-text-base); }
+}
+
 /* Customer portal -- inbound document exchange.
  * The checklist is the customer's half of the Document Vault: one line per
  * requirement KCPL seeded on the shipment, in customer language. Rows carry
@@ -1747,10 +1792,12 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 /* Customer portal -- Nepali.
  * Devanagari needs more vertical room than Latin at the same nominal size, and
  * the UI face the portal otherwise uses has no Devanagari coverage, so a
- * Nepali portal would fall back to whatever the device happens to have. The
- * face is already loaded by the root layout for the public site. */
+ * Nepali portal would fall back to whatever the device happens to have. Latin
+ * text and figures keep the portal's own face; Devanagari falls through to
+ * Noto Sans Devanagari, as on the public site and in the app. (The serif Noto
+ * face set everything, English names and amounts included, in a serif.) */
 .kcpl-portal-route .portal-shell[data-locale="ne"],
-.portal-shell[data-locale="ne"] { font-family: var(--font-devanagari), var(--font-inter), system-ui, sans-serif; }
+.portal-shell[data-locale="ne"] { font-family: var(--font-geist), var(--font-inter), var(--font-devanagari-sans), system-ui, sans-serif; }
 .portal-shell[data-locale="ne"] .ops-page-header h1,
 .portal-shell[data-locale="ne"] .ops-surface-header h2,
 .portal-shell[data-locale="ne"] .ops-badge,
@@ -2342,7 +2389,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .shipment-thread li[data-own] { justify-self: end; border-color: var(--admin-accent-line); border-radius: 12px 12px 4px 12px; background: var(--admin-accent-bg); }
 .kcpl-admin-content .shipment-thread li p { margin: 0; color: var(--admin-ink); font-size: var(--app-text-base); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .kcpl-admin-content .shipment-thread .shipment-thread-meta { color: var(--admin-faint); font-size: var(--app-text-sm); }
-.kcpl-admin-content .shipment-thread .shipment-thread-end { padding: 0; border: 0; background: none; }
 .kcpl-admin-content .shipment-thread-form { display: flex; align-items: flex-end; gap: var(--app-space-2); }
 .kcpl-admin-content .shipment-thread-form textarea { flex: 1; min-height: 44px; resize: vertical; }
 .kcpl-admin-content .delivery-rating { display: flex; flex-wrap: wrap; gap: var(--app-space-2); margin: 0 0 var(--app-space-3); }

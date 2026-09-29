@@ -87,7 +87,7 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
 
           {rows.length ? (
             <OpsTableWrap>
-              <table className="ops-table">
+              <table className="ops-table portal-stack-table" data-row-link="">
                 <thead>
                   <tr>
                     <th>{t("overview.col_reference")}</th>
@@ -102,24 +102,24 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
                 <tbody>
                   {rows.map((shipment) => (
                     <tr key={shipment.reference}>
-                      <td>
+                      <td data-cell="primary">
                         <Link href={`/portal/shipments/${encodeURIComponent(shipment.reference)}`} className="portal-row-link">
                           <OpsMono>{shipment.reference}</OpsMono>
                         </Link>
                         <span className="portal-cell-detail">{portalModeLabel(shipment.mode, locale)}</span>
                       </td>
-                      <td>
+                      <td data-cell="route">
                         <span className="portal-lane">{shipment.origin || t("overview.origin")}<span className="portal-lane-arrow" aria-hidden="true">→</span>{shipment.destination || t("overview.destination")}</span>
                         {shipment.current_location ? <span className="portal-cell-detail">{t("overview.now_at", { location: shipment.current_location })}</span> : null}
                       </td>
-                      <td><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge></td>
-                      <td>
+                      <td data-cell="status"><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge></td>
+                      <td data-cell="meta" data-label={t("ships.col_carrier")}>
                         {shipment.carrier ?? t("common.none")}
                         {shipment.carrier_reference ? <span className="portal-cell-detail"><OpsMono>{shipment.carrier_reference}</OpsMono></span> : null}
                       </td>
-                      <td>{portalDate(shipment.eta)}</td>
-                      <td>{portalDateTime(shipment.updated_at)}</td>
-                      <td>
+                      <td data-cell="meta" data-label={t("overview.col_eta")}>{portalDate(shipment.eta)}</td>
+                      <td data-cell="meta" data-label={t("overview.col_last_update")}>{portalDateTime(shipment.updated_at)}</td>
+                      <td data-cell="open">
                         <Link href={`/portal/shipments/${encodeURIComponent(shipment.reference)}`} className="portal-row-open" aria-label={t("overview.open_shipment", { reference: shipment.reference })}>
                           <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true"/>
                         </Link>

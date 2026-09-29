@@ -18,6 +18,7 @@ import {
 } from "../../admin/operations-ui";
 import type { PortalQuoteView } from "../portal-access-policy";
 import type { PortalCapabilities } from "../portal-access-policy";
+import { portalQuoteBookingBlock, portalQuoteExpired } from "../portal-access-policy";
 import { portalDate, portalMoney } from "../portal-format";
 import { portalTranslator, type PortalLocale } from "../portal-i18n";
 
@@ -219,7 +220,7 @@ export function PortalRequestsWorkspace({
           >
             {quotes.length ? (
               <OpsTableWrap>
-                <table className="ops-table">
+                <table className="ops-table portal-stack-table">
                   <thead>
                     <tr>
                       <th>{t("req.col_quote")}</th>
@@ -233,28 +234,32 @@ export function PortalRequestsWorkspace({
                   <tbody>
                     {quotes.map((quote) => (
                       <tr key={quote.reference}>
-                        <td>
+                        <td data-cell="primary">
                           <OpsMono>{quote.reference}</OpsMono>
                           <span className="portal-cell-detail">{t("req.raised_on", { date: portalDate(quote.created_at) })}</span>
                         </td>
-                        <td>
+                        <td data-cell="route">
                           <span className="portal-lane">{quote.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{quote.destination}</span>
                           {quote.cargo_type ? <span className="portal-cell-detail">{quote.cargo_type}</span> : null}
                         </td>
-                        <td>
+                        <td data-cell="amount" data-label={t("req.col_price")}>
                           <strong>{quote.quoted_amount === null ? t("common.none") : portalMoney(quote.quoted_amount, quote.quote_currency)}</strong>
                           {quote.customer_quote_note ? <span className="portal-cell-detail">{quote.customer_quote_note}</span> : null}
                         </td>
-                        <td>{portalDate(quote.valid_until)}</td>
-                        <td>
+                        <td data-cell="meta" data-label={t("req.col_valid")}>{portalDate(quote.valid_until)}</td>
+                        <td data-cell="status">
                           {quote.shipment_reference ? (
                             <Link href={`/portal/shipments/${encodeURIComponent(quote.shipment_reference)}`} className="portal-row-link">
                               <OpsMono>{quote.shipment_reference}</OpsMono>
                             </Link>
+                          ) : quote.booking_requested_at ? (
+                            <OpsBadge tone="info">{t("req.asked")}</OpsBadge>
+                          ) : portalQuoteExpired(quote.valid_until) ? (
+                            <OpsBadge tone="warning">{t("req.expired")}</OpsBadge>
                           ) : <OpsBadge tone="neutral">{t("req.not_booked")}</OpsBadge>}
                         </td>
-                        <td>
-                          {!quote.shipment_reference && capabilities.canSubmitRequests ? (
+                        <td data-cell="action">
+                          {!portalQuoteBookingBlock(quote) && capabilities.canSubmitRequests ? (
                             <OpsButton
                               size="sm"
                               variant="secondary"
@@ -339,7 +344,7 @@ export function PortalRequestsWorkspace({
           >
             {requests.length ? (
               <OpsTableWrap>
-                <table className="ops-table">
+                <table className="ops-table portal-stack-table">
                   <thead>
                     <tr>
                       <th>{t("overview.col_reference")}</th>
@@ -351,12 +356,12 @@ export function PortalRequestsWorkspace({
                   <tbody>
                     {requests.map((request) => (
                       <tr key={request.reference}>
-                        <td><OpsMono>{request.reference}</OpsMono></td>
-                        <td>
+                        <td data-cell="primary"><OpsMono>{request.reference}</OpsMono></td>
+                        <td data-cell="route">
                           <span className="portal-lane">{request.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{request.destination}</span>
                         </td>
-                        <td>{request.cargo_type ?? t("common.none")}</td>
-                        <td>{portalDate(request.created_at)}</td>
+                        <td data-cell="meta" data-label={t("req.commodity")}>{request.cargo_type ?? t("common.none")}</td>
+                        <td data-cell="meta" data-label={t("req.col_raised")}>{portalDate(request.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>

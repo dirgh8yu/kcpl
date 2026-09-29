@@ -779,6 +779,33 @@ export function portalQuoteView(data: Record<string, unknown>): PortalQuoteView 
   };
 }
 
+/** Past the end of the day, Nepal time, that a quote was valid until. */
+export function portalQuoteExpired(validUntil: string | null | undefined, now = new Date()) {
+  const value = (validUntil ?? "").trim();
+  if (!value) return false;
+  const end = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T23:59:59.999+05:45`) : new Date(value);
+  return !Number.isNaN(end.getTime()) && end.getTime() < now.getTime();
+}
+
+export type PortalQuoteBookingBlock = "unpriced" | "booked" | "expired" | "requested";
+
+/**
+ * Why a quote cannot be asked to proceed, or null when it can: priced, not
+ * yet booked, still valid, and not already asked for. The portal page, the
+ * app and the server all read it, so a button is never offered that the
+ * server would refuse.
+ */
+export function portalQuoteBookingBlock(
+  quote: Pick<PortalQuoteView, "quoted_amount" | "shipment_reference" | "valid_until" | "booking_requested_at">,
+  now = new Date(),
+): PortalQuoteBookingBlock | null {
+  if (quote.quoted_amount === null) return "unpriced";
+  if (quote.shipment_reference) return "booked";
+  if (quote.booking_requested_at) return "requested";
+  if (portalQuoteExpired(quote.valid_until, now)) return "expired";
+  return null;
+}
+
 /** Apple's "Hide My Email" relay: an address KCPL never provisioned. */
 export function isApplePrivateRelay(email: string | null | undefined) {
   return /@privaterelay\.appleid\.com$/i.test((email ?? "").trim());

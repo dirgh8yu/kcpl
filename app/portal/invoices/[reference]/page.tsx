@@ -82,7 +82,7 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
 
                   {result.invoice.line_items.length ? (
                     <OpsTableWrap>
-                      <table className="ops-table">
+                      <table className="ops-table portal-stack-table">
                         <thead>
                           <tr>
                             <th>{t("invd.col_charge")}</th>
@@ -94,10 +94,10 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
                         <tbody>
                           {result.invoice.line_items.map((line) => (
                             <tr key={line.id}>
-                              <td>{line.description}</td>
-                              <td>{line.quantity}</td>
-                              <td>{portalMoney(line.unit_price, result.invoice.currency)}</td>
-                              <td>{portalMoney(line.total, result.invoice.currency)}</td>
+                              <td data-cell="primary">{line.description}</td>
+                              <td data-cell="meta" data-label={t("invd.col_quantity")}>{line.quantity}</td>
+                              <td data-cell="meta" data-label={t("invd.col_unit_price")}>{portalMoney(line.unit_price, result.invoice.currency)}</td>
+                              <td data-cell="amount">{portalMoney(line.total, result.invoice.currency)}</td>
                             </tr>
                           ))}
                         </tbody>

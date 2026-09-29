@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BellRing, Building2, FileText, LayoutDashboard, LogOut, Receipt, Send, Truck } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PortalCapabilities } from "./portal-access-policy";
 import type { PortalSession } from "./portal-auth";
 import { portalLocaleTags, portalTranslator, type PortalTextKey } from "./portal-i18n";
@@ -98,6 +98,21 @@ export function PortalShell({ children, session }: { children: ReactNode; sessio
   const t = portalTranslator(session.locale);
   const items = navigation.filter((item) => !item.requires || session.capabilities[item.requires] === true);
   const multiCustomer = session.customers.length > 1;
+  const nav = useRef<HTMLElement>(null);
+
+  // On a phone the tabs scroll sideways; keep the current one in view, so
+  // Invoices or Settings is not selected but hidden past the edge. Only the
+  // tab strip moves, never the page.
+  useEffect(() => {
+    const box = nav.current;
+    const link = box?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!box || !link || box.scrollWidth <= box.clientWidth) return;
+    const strip = box.getBoundingClientRect();
+    const tab = link.getBoundingClientRect();
+    if (tab.left < strip.left || tab.right > strip.right - 28) {
+      box.scrollLeft += tab.left - strip.left - (strip.width - tab.width) / 2;
+    }
+  }, [pathname]);
 
   return (
     // `lang` carries to assistive technology and hyphenation; `data-locale` is
@@ -112,7 +127,7 @@ export function PortalShell({ children, session }: { children: ReactNode; sessio
             <small>{t("chrome.brand_sub")}</small>
           </span>
         </Link>
-        <nav className="portal-nav" aria-label={t("chrome.nav_label")}>
+        <nav ref={nav} className="portal-nav" aria-label={t("chrome.nav_label")}>
           {items.map((item) => (
             <Link
               key={item.href}
