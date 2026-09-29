@@ -1,6 +1,7 @@
 import { mockPayablesDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
+import { readAllDocuments } from "../firestore-scan";
 import { canAccessBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
@@ -248,22 +249,30 @@ export async function listPayablesDashboard(context: KcplStaffContext): Promise<
   if (qaMockDataEnabled()) return canAccessPayables(context) ? mockPayablesDashboard(context) : null;
   if (!firebaseRuntimeConfigured() || !canAccessPayables(context)) return null;
   const db = firebaseAdminDb();
-  const snapshot = await db.collection("payables").orderBy("updated_at", "desc").limit(3000).get();
+  // Every open bill, however old, so outstanding and overdue are whole;
+  // settled history is the most recent window.
+  const [openScan, recent] = await Promise.all([
+    readAllDocuments(db.collection("payables").where("status", "in", ["draft", "approved", "partially_paid", "overdue"])),
+    db.collection("payables").orderBy("updated_at", "desc").limit(3000).get(),
+  ]);
+  const docs = [...new Map([...openScan.docs, ...recent.docs].map((doc) => [doc.id, doc])).values()];
   const bills: PayableBill[] = [];
-  const statusBatch = db.batch();
-  let changedStatuses = 0;
+  const statusUpdates: Array<{ ref: FirebaseFirestore.DocumentReference; status: PayableStatus }> = [];
 
-  for (const doc of snapshot.docs) {
+  for (const doc of docs) {
     if (!canAccessBill(context, doc.get("branch"))) continue;
     const bill = await payableFromSnapshot(doc, false);
     bills.push(bill);
     const stored = statusValue(doc.get("status"));
-    if (stored !== bill.status) {
-      statusBatch.update(doc.ref, { status: bill.status, updated_at: new Date().toISOString() });
-      changedStatuses += 1;
-    }
+    if (stored !== bill.status) statusUpdates.push({ ref: doc.ref, status: bill.status });
   }
-  if (changedStatuses) await statusBatch.commit();
+  // Written back in modest commits, as for receivables.
+  for (let index = 0; index < statusUpdates.length; index += 400) {
+    const batch = db.batch();
+    const updatedAt = new Date().toISOString();
+    for (const update of statusUpdates.slice(index, index + 400)) batch.update(update.ref, { status: update.status, updated_at: updatedAt });
+    await batch.commit();
+  }
 
   const summaries = new Map<CrmCurrency, PayableCurrencySummary>();
   for (const bill of bills) {

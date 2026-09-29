@@ -1,3 +1,4 @@
+import { loadShipmentChildren } from "../../../admin/operational-shipments.server";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { gptActionJson, requireGptAction } from "../../../gpt-action-auth.server";
 import { generatedFreightDocumentKinds, generatedFreightDocumentLabels, primaryCarriageDocumentKind, type GeneratedFreightDocumentKind } from "../../../admin/freight-documents/freight-documents";
@@ -11,11 +12,10 @@ export async function GET(request: Request) {
   if (!firebaseRuntimeConfigured()) return gptActionJson({ ok: false, error: "Firebase is unavailable." }, 503);
   try {
     const db = firebaseAdminDb();
-    const [shipments, allDocuments] = await Promise.all([
-      db.collection("shipments").orderBy("updated_at", "desc").limit(1200).get(),
-      db.collectionGroup("documents").limit(5000).get(),
-    ]);
-    const generatedDocs = allDocuments.docs.filter((doc) => doc.get("generated_by_engine") === true);
+    const shipments = await db.collection("shipments").orderBy("updated_at", "desc").limit(1200).get();
+    // The documents of these jobs, per job, not the oldest 5,000 of all time.
+    const allDocuments = await loadShipmentChildren(db, shipments.docs.map((doc) => doc.id), "documents");
+    const generatedDocs = allDocuments.filter((doc) => doc.get("generated_by_engine") === true);
     const byShipment = new Map<string, Array<{ id: string; kind: GeneratedFreightDocumentKind; label: string; filename: string; revision: number; status: string; generatedAt: string; sha256: string }>>();
     for (const doc of generatedDocs) {
       const reference = doc.ref.parent.parent?.id ?? "";

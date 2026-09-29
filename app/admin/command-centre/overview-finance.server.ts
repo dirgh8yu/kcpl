@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
@@ -102,10 +103,11 @@ export async function getOverviewFinanceSnapshot(staff: KcplStaffContext): Promi
   if (qaMockDataEnabled()) return staff.permissions.canManageFinance ? mockFinanceSnapshot() : null;
   if (!firebaseRuntimeConfigured() || !staff.permissions.canManageFinance) return null;
   const db = firebaseAdminDb();
+  // Complete reads: a bare limit kept the oldest records by reference.
   const [invoices, costs, shipments] = await Promise.all([
-    db.collection("invoices").limit(6000).get(),
-    db.collectionGroup("job_costs").limit(15000).get(),
-    db.collection("shipments").limit(5000).get(),
+    readAllDocuments(db.collection("invoices")),
+    readAllDocuments(db.collectionGroup("job_costs")),
+    readAllDocuments(db.collection("shipments")),
   ]);
 
   const today = nepalDate();

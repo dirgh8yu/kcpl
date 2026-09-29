@@ -1,4 +1,5 @@
 "use client";
+import { nepalOperationalDate } from "../../invoice-effective-status";
 
 import { ArrowRight, Package, Plane, Ship, Train, Truck } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
@@ -260,7 +261,7 @@ export function exportShipmentsCsv(jobs: CommandCentreJob[], filenameBase = "kcp
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${filenameBase}-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.download = `${filenameBase}-${nepalOperationalDate()}.csv`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();

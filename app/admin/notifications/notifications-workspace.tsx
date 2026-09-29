@@ -1,4 +1,5 @@
 "use client";
+import { nepalOperationalDate } from "../../invoice-effective-status";
 
 import { useRouter } from "next/navigation";
 import { Activity, AlertTriangle, Bell, CheckCheck, Download, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
@@ -63,7 +64,7 @@ function exportTransitionsCsv(items: OperationsNotification[]) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `kcpl-transitions-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.download = `kcpl-transitions-${nepalOperationalDate()}.csv`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();

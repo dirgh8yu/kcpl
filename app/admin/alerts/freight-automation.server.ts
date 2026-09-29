@@ -1,19 +1,13 @@
+import { readAllDocuments } from "../firestore-scan";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../../shipment-document-policy";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../shipment-document-types";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { buildDocumentIntelligence } from "../workflow-defaults";
-import type { AutomationAlertSeverity, AutomationAlertType } from "./alert-data";
+import { freightAutomationAlertTypes, type AutomationAlertSeverity, type AutomationAlertType } from "./alert-data";
 
-const EXTRA_TYPES: AutomationAlertType[] = [
-  "shipment_unassigned",
-  "eta_upcoming",
-  "customs_open",
-  "required_document_missing",
-  "pod_missing",
-  "shipment_stalled",
-];
+const EXTRA_TYPES: AutomationAlertType[] = [...freightAutomationAlertTypes];
 const ACTIVE_STATUSES = new Set(["booking_confirmed", "preparing", "in_transit", "customs_clearance", "out_for_delivery", "exception"]);
 const MAX_BATCH_WRITES = 400;
 
@@ -116,15 +110,22 @@ async function commitOperations(operations: BatchOperation[]) {
 export async function evaluateFreightAutomation() {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
+  // Complete reads: a bare limit kept the oldest records by reference, so new
+  // work went unchecked and its alerts were resolved as if the condition had cleared.
   const [shipmentsSnapshot, quotesSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot, autoTasksSnapshot, existingAlertsSnapshot] = await Promise.all([
-    db.collection("shipments").limit(2500).get(),
-    db.collection("quotes").limit(3000).get(),
-    db.collectionGroup("customs_steps").limit(10000).get(),
-    db.collectionGroup("documents").limit(15000).get(),
-    db.collectionGroup("document_requirements").limit(5000).get(),
-    db.collectionGroup("job_tasks").where("automation_generated", "==", true).limit(10000).get(),
-    db.collection("alerts").limit(5000).get(),
+    readAllDocuments(db.collection("shipments")),
+    readAllDocuments(db.collection("quotes")),
+    readAllDocuments(db.collectionGroup("customs_steps")),
+    readAllDocuments(db.collectionGroup("documents")),
+    readAllDocuments(db.collectionGroup("document_requirements")),
+    // Filtered below, not in the query: a collection-group filter needs an index
+    // Firestore does not create by itself, and none is declared.
+    readAllDocuments(db.collectionGroup("job_tasks")),
+    readAllDocuments(db.collection("alerts")),
   ]);
+  const scansComplete = [shipmentsSnapshot, quotesSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot, autoTasksSnapshot, existingAlertsSnapshot].every((scan) => scan.complete);
+  if (!scansComplete) console.error("KCPL automation read stopped at its backstop; alerts will not be auto-resolved this run");
+  const autoTasks = autoTasksSnapshot.docs.filter((doc) => doc.get("automation_generated") === true);
 
   const now = new Date();
   const nowIso = now.toISOString();
@@ -408,7 +409,8 @@ export async function evaluateFreightAutomation() {
 
   for (const existing of existingExtra) {
     const fingerprint = text(existing.get("fingerprint"), existing.id);
-    if (candidates.has(fingerprint) || existing.get("status") === "resolved") continue;
+    // Nothing is resolved on a partial read: an unread record is not a cleared condition.
+    if (!scansComplete || candidates.has(fingerprint) || existing.get("status") === "resolved") continue;
     operations.push((batch) => batch.set(existing.ref, {
       status: "resolved",
       resolved_at: nowIso,
@@ -420,7 +422,7 @@ export async function evaluateFreightAutomation() {
   }
 
   const existingAutoTasks = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
-  for (const task of autoTasksSnapshot.docs) {
+  for (const task of autoTasks) {
     const reference = childShipmentId(task.ref);
     if (reference) existingAutoTasks.set(`${reference}:${task.id}`, task);
   }
@@ -486,10 +488,10 @@ export async function evaluateFreightAutomation() {
     }
   }
 
-  for (const task of autoTasksSnapshot.docs) {
+  for (const task of autoTasks) {
     const reference = childShipmentId(task.ref);
     const active = activeTaskIds.get(reference) ?? new Set<string>();
-    if (!reference || active.has(task.id) || task.get("completed") === true) continue;
+    if (!scansComplete || !reference || active.has(task.id) || task.get("completed") === true) continue;
     operations.push((batch) => batch.set(task.ref, {
       completed: true,
       completed_at: nowIso,

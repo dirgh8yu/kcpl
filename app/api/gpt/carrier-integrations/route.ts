@@ -18,7 +18,8 @@ export async function GET(request: Request) {
     const [shipments, health, unmatched] = await Promise.all([
       db.collection("shipments").orderBy("updated_at", "desc").limit(1500).get(),
       db.collection("carrier_integrations").get(),
-      db.collection("carrier_integration_unmatched_events").limit(500).get(),
+      // Only the number is reported: count it, do not read up to a cap.
+      db.collection("carrier_integration_unmatched_events").count().get(),
     ]);
     const healthMap = new Map(health.docs.map((doc) => [doc.id, doc]));
     const providers = carrierIntegrationDefinitions.map((definition) => {
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
         configuredProviders: providers.filter((provider) => provider.configured).length,
         linkedShipments: linked.length,
         shipmentsWithCarrierErrors: linked.filter((shipment) => shipment.lastCarrierError).length,
-        unmatchedOceanEvents: unmatched.size,
+        unmatchedOceanEvents: unmatched.data().count,
       },
       linkedShipments: linked,
       safety: "This action is read-only. It reports carrier adapter configuration and health without exposing API credentials, webhook secrets or authorization headers. It cannot create carrier bookings, request pickups or mutate provider accounts.",

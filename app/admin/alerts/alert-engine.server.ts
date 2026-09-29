@@ -1,3 +1,5 @@
+import { coreAutomationAlertTypes } from "./alert-data";
+import { readAllDocuments } from "../firestore-scan";
 import { mockAutomationAlerts, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
@@ -176,15 +178,19 @@ async function shipmentBranchesForAlerts(alerts: AutomationAlert[]) {
 export async function evaluateAutomationRules(options: { applyCreditHolds?: boolean } = {}) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
+  // Complete reads: a bare limit kept the oldest records by reference, so new
+  // work went unchecked and its alerts were resolved as if the condition had cleared.
   const [shipmentsSnapshot, quotesSnapshot, customersSnapshot, invoicesSnapshot, tasksSnapshot, customsSnapshot, existingAlertsSnapshot] = await Promise.all([
-    db.collection("shipments").limit(2500).get(),
-    db.collection("quotes").limit(3000).get(),
-    db.collection("customers").limit(3000).get(),
-    db.collection("invoices").limit(4000).get(),
-    db.collectionGroup("job_tasks").limit(10000).get(),
-    db.collectionGroup("customs_steps").limit(7000).get(),
-    db.collection("alerts").limit(5000).get(),
+    readAllDocuments(db.collection("shipments")),
+    readAllDocuments(db.collection("quotes")),
+    readAllDocuments(db.collection("customers")),
+    readAllDocuments(db.collection("invoices")),
+    readAllDocuments(db.collectionGroup("job_tasks")),
+    readAllDocuments(db.collectionGroup("customs_steps")),
+    readAllDocuments(db.collection("alerts")),
   ]);
+  const scansComplete = [shipmentsSnapshot, quotesSnapshot, customersSnapshot, invoicesSnapshot, tasksSnapshot, customsSnapshot, existingAlertsSnapshot].every((scan) => scan.complete);
+  if (!scansComplete) console.error("KCPL automation read stopped at its backstop; alerts will not be auto-resolved this run");
 
   const now = new Date();
   const nowIso = now.toISOString();
@@ -408,7 +414,9 @@ export async function evaluateAutomationRules(options: { applyCreditHolds?: bool
   }
 
   for (const [fingerprint, previous] of existing) {
-    if (previous.type === "payable_overdue" || previous.status === "resolved" || candidates.has(fingerprint)) continue;
+    // Nothing is resolved on a partial read: an unread record is not a cleared condition.
+    // Only this engine's own types: freight and payables alerts belong to their sweeps.
+    if (!scansComplete || !(coreAutomationAlertTypes as readonly string[]).includes(previous.type) || previous.status === "resolved" || candidates.has(fingerprint)) continue;
     const ref = db.collection("alerts").doc(previous.id);
     alertOperations.push((batch) => batch.update(ref, {
       status: "resolved",

@@ -1,3 +1,5 @@
+import { loadDocumentsById } from "../operational-shipments.server";
+import { readAllDocuments } from "../firestore-scan";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import type { OwnerCandidateEvidence } from "./owner-recommender";
@@ -13,7 +15,8 @@ import type { ReceivableExposure } from "./work-queue-impact";
 export async function getReceivableExposureByCustomer(staff: KcplStaffContext): Promise<Map<string, ReceivableExposure>> {
   if (!firebaseRuntimeConfigured()) return new Map();
   const db = firebaseAdminDb();
-  const invoices = await db.collection("invoices").limit(6000).get();
+  // Exposure is what is still owed: every open invoice, not the oldest 6,000.
+  const invoices = await readAllDocuments(db.collection("invoices").where("status", "not-in", ["draft", "void"]));
   const map = new Map<string, ReceivableExposure>();
   for (const doc of invoices.docs) {
     const data = doc.data();
@@ -50,11 +53,10 @@ function numberValue(value: unknown) {
 export async function getLaneCompletionsByStaff(staff: KcplStaffContext): Promise<Map<string, Map<string, OwnerCandidateEvidence>>> {
   if (!firebaseRuntimeConfigured()) return new Map();
   const db = firebaseAdminDb();
-  const [delivered, quotes] = await Promise.all([
-    db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(400).get(),
-    db.collection("quotes").limit(4000).get(),
-  ]);
-  const quoteById = new Map(quotes.docs.map((doc) => [doc.id, doc]));
+  const delivered = await db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(400).get();
+  // Only the quotes these jobs came from, by id.
+  const quotes = await loadDocumentsById(db, "quotes", delivered.docs.map((doc) => text(doc.get("quote_reference"))));
+  const quoteById = new Map(quotes.map((doc) => [doc.id, doc]));
   const laneByStaff = new Map<string, Map<string, OwnerCandidateEvidence>>();
   for (const doc of delivered.docs) {
     const uid = text(doc.get("job_assigned_to_uid")).trim();

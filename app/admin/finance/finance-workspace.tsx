@@ -1,4 +1,5 @@
 "use client";
+import { nepalOperationalDate } from "../../invoice-effective-status";
 
 import Link from "next/link";
 import { FormEvent, useCallback, useMemo, useState } from "react";
@@ -46,7 +47,7 @@ export function FinanceWorkspace({ dashboard, roleLabel }: { dashboard: FinanceD
   const [createOpen, setCreateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nepalOperationalDate();
   const [form, setForm] = useState({ shipmentReference: "", customerId: "", issueDate: today, dueDate: "", currency: "NPR" as CrmCurrency, description: "", amount: "", taxRate: "0", notes: "" });
 
   const filtered = useMemo(() => {

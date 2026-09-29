@@ -1,3 +1,4 @@
+import { loadShipmentChildren } from "../operational-shipments.server";
 import { mockFreightDocumentWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
@@ -128,10 +129,12 @@ export async function listFreightDocumentWorkspace(staff: KcplStaffContext) {
     getAll("customers", customerIds),
     getAll("transport_orders", orderIds),
     getAll("transport_tenders", tenderIds),
-    db.collectionGroup("documents").limit(5000).get(),
+    // The documents of the jobs listed, per job; a collection-group read kept
+    // the oldest 5,000 documents and missed what the engine generated lately.
+    loadShipmentChildren(db, eligible.map((doc) => doc.id), "documents"),
   ]);
   const generated = new Map<string, GeneratedFreightDocumentRow[]>();
-  for (const doc of generatedSnapshot.docs) {
+  for (const doc of generatedSnapshot) {
     if (doc.get("generated_by_engine") !== true) continue;
     const reference = doc.ref.parent.parent?.id ?? "";
     if (!reference) continue;

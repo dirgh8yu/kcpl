@@ -116,6 +116,8 @@ export type ManagementDataQuality = {
 
 export type ManagementAnalytics = {
   generated_at: string;
+  /** False when a read stopped at its safety backstop: figures are then partial. */
+  complete: boolean;
   range: ManagementRange;
   financials: CurrencyFinancialMetric[];
   branches: BranchPerformance[];

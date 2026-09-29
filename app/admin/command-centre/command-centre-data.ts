@@ -63,6 +63,8 @@ export type CommandCentreTotals = {
 
 export type CommandCentreData = {
   partial?: boolean;
+  /** Only the most recently delivered jobs are included; older ones exist. */
+  delivered_window_full?: boolean;
   generated_at: string;
   operational_date: string;
   accessible_branches: KcplBranch[];

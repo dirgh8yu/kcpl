@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RECENT_DELIVERED_WINDOW } from "../operational-shipments";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, GripVertical, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, Upload, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
@@ -148,6 +149,9 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
     () => ({ exposureByCustomer, operationalDate: data.operational_date, now: new Date(data.generated_at) }),
     [exposureByCustomer, data.operational_date, data.generated_at],
   );
+  // A delivered job older than the window is not in the snapshot; a full
+  // reference typed into search can still open its Job File directly.
+  const olderReference = /^KCPL-[A-Z0-9-]{6,}$/i.test(query.trim()) ? query.trim().toUpperCase() : null;
   const filtered = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return data.jobs.filter((job) => {
@@ -319,6 +323,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
       </div>
 
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
+      {data.delivered_window_full && (status === "delivered" || status === "all") ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="neutral">Every open job is listed. Delivered jobs show the most recent {RECENT_DELIVERED_WINDOW}; search an older one by its full reference to open its Job File.</OpsNotice></div> : null}
 
       <div className="px-4 py-4 md:px-6">
         <div>
@@ -466,7 +471,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
               {handle}
         {!filtered.length ? (
           <section className="ops-surface p-4" aria-label="Shipment register">
-            <OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
+            <OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={olderReference ? <Link href={`/admin/jobs/${encodeURIComponent(olderReference)}`} className="ops-button" data-variant="secondary" data-size="md">Open Job File {olderReference}</Link> : hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
           </section>
         ) : view === "cards" ? (
           <ShipmentCards jobs={pageRows} selectedReference={selected?.reference ?? null} onSelect={setSelectedReference} liveActivityRefs={liveActivityRefs}/>

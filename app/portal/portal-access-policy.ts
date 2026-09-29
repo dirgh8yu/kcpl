@@ -21,7 +21,7 @@
  *      route to the portal through these functions.
  */
 
-import { effectiveInvoiceStatus } from "../invoice-effective-status.ts";
+import { effectiveInvoiceStatus, nepalOperationalDate } from "../invoice-effective-status.ts";
 
 export const portalRoles = ["owner", "member"] as const;
 export type PortalRole = (typeof portalRoles)[number];
@@ -317,11 +317,9 @@ export function portalDocumentReleased(document: Record<string, unknown>, now = 
   if (document.deleted_at) return false;
   const status = typeof document.review_status === "string" ? document.review_status : "";
   if (withheldDocumentStatuses.has(status)) return false;
-  const expires = typeof document.expires_on === "string" ? document.expires_on.trim() : "";
-  if (expires) {
-    const expiry = new Date(`${expires}T23:59:59.999Z`);
-    if (!Number.isNaN(expiry.getTime()) && expiry.getTime() < now.getTime()) return false;
-  }
+  // Valid through its expiry date in Nepal, as the admin reads it.
+  const expires = typeof document.expires_on === "string" ? document.expires_on.trim().slice(0, 10) : "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(expires) && expires < nepalOperationalDate(now)) return false;
   return true;
 }
 
@@ -540,7 +538,7 @@ export function portalDocumentChecklist({
   documents: Array<Record<string, unknown>>;
   now?: Date;
 }): PortalRequirementRow[] {
-  const today = now.toISOString().slice(0, 10);
+  const today = nepalOperationalDate(now);
 
   const byType = new Map<string, Array<Record<string, unknown>>>();
   for (const document of documents) {

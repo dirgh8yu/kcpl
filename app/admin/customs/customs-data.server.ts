@@ -1,3 +1,4 @@
+import { loadDocumentsById } from "../operational-shipments.server";
 import { mockCustomsDeskRows, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { shipmentDocumentCountsAsReady, shipmentDocumentReviewStatusValue } from "../../shipment-document-policy";
@@ -127,11 +128,10 @@ async function getAllInChunks(refs: FirebaseFirestore.DocumentReference[], size 
  * desk never learns from records it cannot open.
  */
 async function loadChecklistEvidence(context: KcplStaffContext, db: FirebaseFirestore.Firestore): Promise<ChecklistEvidence[]> {
-  const [delivered, quotes] = await Promise.all([
-    db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(400).get(),
-    db.collection("quotes").limit(4000).get(),
-  ]);
-  const quoteById = new Map(quotes.docs.map((doc) => [doc.id, doc]));
+  const delivered = await db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(400).get();
+  // Only the quotes these jobs came from, by id, not the oldest 4,000.
+  const quotes = await loadDocumentsById(db, "quotes", delivered.docs.map((doc) => text(doc.get("quote_reference"))));
+  const quoteById = new Map(quotes.map((doc) => [doc.id, doc]));
 
   const accessible = delivered.docs.map((shipment) => {
     const primary = strictBranchValue(shipment.get("primary_branch"));
@@ -175,11 +175,10 @@ async function loadChecklistEvidence(context: KcplStaffContext, db: FirebaseFire
  * register read; streams with no completed clearance simply yield nothing.
  */
 async function loadDwellEvidence(db: FirebaseFirestore.Firestore): Promise<DwellEvidenceItem[]> {
-  const [delivered, quotes] = await Promise.all([
-    db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(200).get(),
-    db.collection("quotes").limit(4000).get(),
-  ]);
-  const quoteById = new Map(quotes.docs.map((doc) => [doc.id, doc]));
+  const delivered = await db.collection("shipments").where("status", "==", "delivered").orderBy("updated_at", "desc").limit(200).get();
+  // Only the quotes these jobs came from, by id, not the oldest 4,000.
+  const quotes = await loadDocumentsById(db, "quotes", delivered.docs.map((doc) => text(doc.get("quote_reference"))));
+  const quoteById = new Map(quotes.map((doc) => [doc.id, doc]));
   const chunks: { ref: FirebaseFirestore.DocumentReference; lane: string }[][] = [];
   const chunkSize = 30;
   for (let index = 0; index < delivered.docs.length; index += chunkSize) {

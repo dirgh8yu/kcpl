@@ -1,3 +1,4 @@
+import { loadShipmentChildren } from "../../operational-shipments.server";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -125,8 +126,10 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   const accessibleReferences = new Set(data.jobs.map((job) => job.reference));
   const now = Date.parse(data.generated_at);
 
-  const taskSnapshot = await firebaseAdminDb().collectionGroup("job_tasks").limit(8000).get();
-  const tasks: StaffTask[] = taskSnapshot.docs.flatMap((doc) => {
+  // The tasks of the jobs this person can see, read per job; a collection-group
+  // read kept the oldest 8,000 tasks and missed new work.
+  const taskDocs = await loadShipmentChildren(firebaseAdminDb(), [...accessibleReferences], "job_tasks");
+  const tasks: StaffTask[] = taskDocs.flatMap((doc) => {
     const row = doc.data() as Record<string, unknown>;
     if (row.completed === true) return [];
     const shipmentReference = shipmentIdFromTask(doc.ref);

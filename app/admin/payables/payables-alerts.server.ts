@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -62,9 +63,11 @@ export async function evaluatePayablesAlerts() {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const [payablesSnapshot, alertsSnapshot] = await Promise.all([
-    db.collection("payables").limit(4000).get(),
-    db.collection("alerts").where("type", "==", "payable_overdue").limit(4000).get(),
+    // Complete reads: a bare limit kept the oldest bills by reference.
+    readAllDocuments(db.collection("payables")),
+    readAllDocuments(db.collection("alerts").where("type", "==", "payable_overdue")),
   ]);
+  const scansComplete = payablesSnapshot.complete && alertsSnapshot.complete;
   const nowIso = new Date().toISOString();
   const today = operationalDate();
   const active = new Set<string>();
@@ -131,7 +134,8 @@ export async function evaluatePayablesAlerts() {
 
   for (const alert of alertsSnapshot.docs) {
     const fingerprint = text(alert.get("fingerprint"), alert.id);
-    if (active.has(fingerprint) || text(alert.get("status")) === "resolved") continue;
+    // Nothing is resolved on a partial read: an unread bill is not a paid one.
+    if (!scansComplete || active.has(fingerprint) || text(alert.get("status")) === "resolved") continue;
     operations.push((batch) => batch.update(alert.ref, {
       status: "resolved",
       resolved_at: nowIso,

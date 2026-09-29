@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
@@ -163,7 +164,7 @@ function hiddenQuoteReference(reference: string) {
 }
 
 async function loadCustomers() {
-  const snapshot = await firebaseAdminDb().collection("customers").limit(5000).get();
+  const snapshot = await readAllDocuments(firebaseAdminDb().collection("customers"));
   const byId = new Map<string, CustomerRecord>();
   const byName = new Map<string, CustomerRecord[]>();
   for (const doc of snapshot.docs) {
@@ -188,7 +189,7 @@ async function loadCustomers() {
 }
 
 async function loadExistingShipments() {
-  const snapshot = await firebaseAdminDb().collection("shipments").limit(5000).get();
+  const snapshot = await readAllDocuments(firebaseAdminDb().collection("shipments"));
   const byReference = new Set<string>();
   const byCarrier = new Map<string, ExistingShipment[]>();
   for (const doc of snapshot.docs) {
@@ -552,7 +553,7 @@ export async function importShipmentCsv(filename: string, csv: string, actor: Ac
   let activeImported = 0;
   let historicalImported = 0;
 
-  const customersSnapshot = await db.collection("customers").limit(5000).get();
+  const customersSnapshot = await readAllDocuments(db.collection("customers"));
   const customers = new Map<string, CustomerRecord>();
   for (const doc of customersSnapshot.docs) {
     customers.set(doc.id, {

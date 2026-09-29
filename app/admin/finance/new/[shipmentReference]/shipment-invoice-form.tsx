@@ -1,4 +1,5 @@
 "use client";
+import { nepalOperationalDate } from "../../../../invoice-effective-status";
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -21,7 +22,7 @@ export function ShipmentInvoiceForm({
   suggestions: FinanceCustomerSuggestion[];
 }) {
   const router = useRouter();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nepalOperationalDate();
   const [busy, setBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [notice, setNotice] = useState("");

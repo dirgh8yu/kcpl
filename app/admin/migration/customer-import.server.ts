@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import {
@@ -111,7 +112,7 @@ function keyPairs(input: Pick<CrmCreateCustomerInput, "displayName" | "primaryEm
 
 async function existingMatches() {
   const map = new Map<string, ExistingMatch[]>();
-  const snapshot = await firebaseAdminDb().collection("customers").limit(5000).get();
+  const snapshot = await readAllDocuments(firebaseAdminDb().collection("customers"));
   for (const doc of snapshot.docs) {
     if (doc.get("archived") === true) continue;
     const name = text(doc.get("display_name")) || doc.id;

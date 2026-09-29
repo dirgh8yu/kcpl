@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { mockManagementAnalytics, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
@@ -126,16 +127,19 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   if (qaMockDataEnabled()) return mockManagementAnalytics(range);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
+  // Complete reads. A bare limit kept the oldest records by reference, so
+  // totals would have left out the most recent months without a word.
   const [invoicesSnapshot, payablesSnapshot, shipmentsSnapshot, quotesSnapshot, customersSnapshot, costsSnapshot, tasksSnapshot, customsSnapshot] = await Promise.all([
-    db.collection("invoices").limit(6000).get(),
-    db.collection("payables").limit(6000).get(),
-    db.collection("shipments").limit(5000).get(),
-    db.collection("quotes").limit(6000).get(),
-    db.collection("customers").limit(5000).get(),
-    db.collectionGroup("job_costs").limit(15000).get(),
-    db.collectionGroup("job_tasks").limit(15000).get(),
-    db.collectionGroup("customs_steps").limit(10000).get(),
+    readAllDocuments(db.collection("invoices")),
+    readAllDocuments(db.collection("payables")),
+    readAllDocuments(db.collection("shipments")),
+    readAllDocuments(db.collection("quotes")),
+    readAllDocuments(db.collection("customers")),
+    readAllDocuments(db.collectionGroup("job_costs")),
+    readAllDocuments(db.collectionGroup("job_tasks")),
+    readAllDocuments(db.collectionGroup("customs_steps")),
   ]);
+  const complete = [invoicesSnapshot, payablesSnapshot, shipmentsSnapshot, quotesSnapshot, customersSnapshot, costsSnapshot, tasksSnapshot, customsSnapshot].every((scan) => scan.complete);
 
   const today = operationalDate();
   const currentMonth = today.slice(0, 7);
@@ -514,6 +518,7 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
 
   return {
     generated_at: new Date().toISOString(),
+    complete,
     range,
     financials,
     branches,

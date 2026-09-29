@@ -1,4 +1,5 @@
 "use client";
+import { nepalOperationalDate } from "../../../../invoice-effective-status";
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -15,7 +16,7 @@ function statusTone(status: PayableBill["status"]): "neutral" | "info" | "violet
 
 export function PayableWorkspace({ bill, roleLabel }: { bill: PayableBill; roleLabel: string }) {
   const router = useRouter();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nepalOperationalDate();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [payment, setPayment] = useState({ amount: bill.balance_due ? String(bill.balance_due) : "", paymentDate: today, method: "bank_transfer" as FinancePaymentMethod, reference: "", notes: "" });

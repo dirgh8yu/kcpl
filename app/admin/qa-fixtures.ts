@@ -1929,7 +1929,11 @@ export function mockManagementAnalytics(range: ManagementRange, now = Date.now()
     const share = [0.72, 0.81, 0.88, 0.94, 0.97, 1][5 - back];
     const revenue = Math.round(totalRevenue * share);
     const cost = Math.round(totalCost * share);
-    return { month: nepalDay(now, -back * 30).slice(0, 7), currency: "NPR" as CrmCurrency, revenue, cost, profit: revenue - cost };
+    // Calendar months back from this one: 30-day steps put two points in a
+    // 31-day month and skipped another.
+    const month = new Date(`${nepalDay(now, 0).slice(0, 7)}-01T00:00:00Z`);
+    month.setUTCMonth(month.getUTCMonth() - back);
+    return { month: month.toISOString().slice(0, 7), currency: "NPR" as CrmCurrency, revenue, cost, profit: revenue - cost };
   });
 
   const topFive = customers.slice(0, 5).reduce((total, row) => total + row.revenue, 0);
@@ -1961,6 +1965,7 @@ export function mockManagementAnalytics(range: ManagementRange, now = Date.now()
 
   return {
     generated_at: iso(now, 0),
+    complete: true,
     range,
     financials,
     branches,

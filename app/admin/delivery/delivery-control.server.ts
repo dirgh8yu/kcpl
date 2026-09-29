@@ -1,3 +1,4 @@
+import { loadOperationalShipments } from "../operational-shipments.server";
 import { mockDeliveryControl, mockDeliveryWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
@@ -172,8 +173,9 @@ export async function listDeliveryWorkspace(context: KcplStaffContext) {
   if (qaMockDataEnabled()) return mockDeliveryWorkspace(context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
-  const snapshot = await db.collection("shipments").limit(2000).get();
-  const accessible = snapshot.docs.filter((doc) => {
+  // Every open job plus the newest delivered ones, not the oldest 2,000 by reference.
+  const { docs: shipmentDocs } = await loadOperationalShipments(db, { includeDelivered: true });
+  const accessible = shipmentDocs.filter((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const branches = [...new Set([...(branchValue(data.primary_branch) ? [branchValue(data.primary_branch)!] : []), ...branchList(data.handling_branches)])];
     return context.can_access_all_branches || branches.some((branch) => staffCanAccessBranch(context, branch));

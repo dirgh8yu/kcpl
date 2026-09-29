@@ -2,6 +2,7 @@ import { mockFinanceDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { effectiveInvoiceStatus, nepalOperationalDate } from "../../invoice-effective-status";
+import { readAllDocuments } from "../firestore-scan";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { customerCommercialProfitabilitySummary } from "../commercial-lineage/commercial-profitability.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
@@ -258,23 +259,31 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
   if (qaMockDataEnabled()) return canAccessFinance(context) ? mockFinanceDashboard(context) : null;
   if (!firebaseRuntimeConfigured() || !canAccessFinance(context)) return null;
   const db = firebaseAdminDb();
-  const snapshot = await db.collection("invoices").orderBy("updated_at", "desc").limit(3000).get();
+  // Every open invoice, however old, so outstanding and overdue are whole;
+  // settled history is the most recent window. The recent read alone let an
+  // old unpaid invoice fall out of AR once 3,000 newer ones were touched.
+  const [openScan, recent] = await Promise.all([
+    readAllDocuments(db.collection("invoices").where("status", "in", ["draft", "issued", "partially_paid", "overdue"])),
+    db.collection("invoices").orderBy("updated_at", "desc").limit(3000).get(),
+  ]);
+  const docs = [...new Map([...openScan.docs, ...recent.docs].map((doc) => [doc.id, doc])).values()];
   const invoices: FinanceInvoice[] = [];
-  const statusBatch = db.batch();
-  let changedStatuses = 0;
+  const statusUpdates: Array<{ ref: FirebaseFirestore.DocumentReference; status: FinanceInvoice["status"] }> = [];
 
-  for (const doc of snapshot.docs) {
+  for (const doc of docs) {
     if (!canAccessInvoice(context, doc.get("branch"))) continue;
     const invoice = await invoiceFromSnapshot(doc, false);
     invoices.push(invoice);
     const stored = invoiceStatus(doc.get("status"));
-    if (stored !== invoice.status) {
-      statusBatch.update(doc.ref, { status: invoice.status, updated_at: new Date().toISOString() });
-      changedStatuses += 1;
-    }
-
+    if (stored !== invoice.status) statusUpdates.push({ ref: doc.ref, status: invoice.status });
   }
-  if (changedStatuses) await statusBatch.commit();
+  // Written back in modest commits: a day on which hundreds of invoices fall due is one page load.
+  for (let index = 0; index < statusUpdates.length; index += 400) {
+    const batch = db.batch();
+    const updatedAt = new Date().toISOString();
+    for (const update of statusUpdates.slice(index, index + 400)) batch.update(update.ref, { status: update.status, updated_at: updatedAt });
+    await batch.commit();
+  }
 
   const summaries = new Map<CrmCurrency, FinanceCurrencySummary>();
   for (const invoice of invoices) {

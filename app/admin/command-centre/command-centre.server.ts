@@ -11,6 +11,7 @@ import {
 import { shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { CommandCentreBranchLoad, CommandCentreData, CommandCentreJob, CommandCentreStaffLoad } from "./command-centre-data";
 import { mockCommandCentre, qaMockDataEnabled } from "../qa-fixtures";
+import { loadOperationalShipments, loadShipmentChildren } from "../operational-shipments.server";
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -80,10 +81,10 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
   if (qaMockDataEnabled()) return mockCommandCentre(context);
   if (!firebaseRuntimeConfigured()) return null;
   const db = firebaseAdminDb();
-  const [shipmentsSnapshot, tasksSnapshot, customsSnapshot, staffProfiles] = await Promise.all([
-    db.collection("shipments").limit(2000).get(),
-    db.collectionGroup("job_tasks").limit(8000).get(),
-    db.collectionGroup("customs_steps").limit(5000).get(),
+  // Every open job and the newest delivered ones: a bare limit here kept the
+  // oldest shipments by reference and dropped today's.
+  const [shipmentSource, staffProfiles] = await Promise.all([
+    loadOperationalShipments(db, { includeDelivered: Boolean(options.includeDelivered) }),
     listStaffProfiles(),
   ]);
 
@@ -91,7 +92,7 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
   const today = operationalDate();
   const now = Date.now();
 
-  const accessibleShipmentRows = shipmentsSnapshot.docs.flatMap((doc) => {
+  const accessibleShipmentRows = shipmentSource.docs.flatMap((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const status = statusValue(data.status);
     if (status === "delivered" && !options.includeDelivered) return [];
@@ -106,10 +107,15 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
     return [{ id: doc.id, data, status, primary, handling }];
   });
   const accessibleShipmentIds = new Set(accessibleShipmentRows.map((row) => row.id));
+  // Tasks and customs steps of the jobs on screen only, read per job.
+  const [taskDocs, customsDocs] = await Promise.all([
+    loadShipmentChildren(db, [...accessibleShipmentIds], "job_tasks"),
+    loadShipmentChildren(db, [...accessibleShipmentIds], "customs_steps"),
+  ]);
 
   const taskStats = new Map<string, { open: number; overdue: number }>();
   const staffTaskStats = new Map<string, { uid: string | null; name: string; email: string; phone: string | null; open: number; overdue: number }>();
-  for (const doc of tasksSnapshot.docs) {
+  for (const doc of taskDocs) {
     const data = doc.data() as Record<string, unknown>;
     if (data.completed === true) continue;
     const shipmentId = shipmentIdFromChild(doc.ref);
@@ -140,7 +146,7 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
   }
 
   const customsStats = new Map<string, { open: number; total: number }>();
-  for (const doc of customsSnapshot.docs) {
+  for (const doc of customsDocs) {
     const data = doc.data() as Record<string, unknown>;
     if (data.required === false) continue;
     const shipmentId = shipmentIdFromChild(doc.ref);
@@ -275,7 +281,8 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
 
   return {
     generated_at: new Date().toISOString(),
-    partial: shipmentsSnapshot.size >= 2000 || tasksSnapshot.size >= 8000 || customsSnapshot.size >= 5000,
+    partial: !shipmentSource.openComplete,
+    delivered_window_full: shipmentSource.deliveredWindowFull,
     operational_date: today,
     accessible_branches: accessibleBranches,
     totals: {

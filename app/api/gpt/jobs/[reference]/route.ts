@@ -1,3 +1,4 @@
+import { nepalOperationalDate } from "../../../../invoice-effective-status";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../../firebase-admin.server";
 import { gptActionJson, requireGptAction } from "../../../../gpt-action-auth.server";
 
@@ -34,7 +35,7 @@ function sortNewest<T extends Record<string, unknown>>(values: T[], field: strin
 function documentEffectiveStatus(document: Record<string, unknown>) {
   const status = text(document.review_status, "received");
   const expiresOn = text(document.expires_on);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nepalOperationalDate();
   if (status === "verified" && expiresOn && expiresOn < today) return "expired";
   return status;
 }

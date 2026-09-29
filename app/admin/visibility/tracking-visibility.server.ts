@@ -1,3 +1,4 @@
+import { loadOperationalShipments } from "../operational-shipments.server";
 import { createHash } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import type { ShipmentEvent, ShipmentStatus } from "../../shipment-types";
@@ -203,8 +204,9 @@ export async function listTrackingVisibility(context: KcplStaffContext) {
   if (qaMockDataEnabled()) return mockVisibilityWorkspace(context);
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
-  const snapshot = await db.collection("shipments").limit(2000).get();
-  const accessible = snapshot.docs.filter((doc) => {
+  // Every open job plus the newest delivered ones, not the oldest 2,000 by reference.
+  const { docs: shipmentDocs } = await loadOperationalShipments(db, { includeDelivered: true });
+  const accessible = shipmentDocs.filter((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const branches = [...new Set([...(branchValue(data.primary_branch) ? [branchValue(data.primary_branch)!] : []), ...branchList(data.handling_branches)])];
     return context.can_access_all_branches || branches.some((branch) => staffCanAccessBranch(context, branch));
@@ -563,11 +565,12 @@ export async function recordTrackingEvent(reference: string, input: RecordTracki
 export async function runTrackingHealthSweep(context?: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
-  const snapshot = await db.collection("shipments").limit(2000).get();
+  // Only open jobs can go stale, and every one of them is checked.
+  const { docs: shipmentDocs } = await loadOperationalShipments(db, { includeDelivered: false });
   const nowIso = new Date().toISOString();
   let checked = 0;
   let opened = 0;
-  for (const doc of snapshot.docs) {
+  for (const doc of shipmentDocs) {
     const data = doc.data() as Record<string, unknown>;
     const status = statusValue(data.status);
     if (status === "delivered") continue;

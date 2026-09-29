@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { createHash, randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
@@ -147,7 +148,7 @@ function childId(prefix: string) {
 }
 
 async function loadCustomers() {
-  const snapshot = await firebaseAdminDb().collection("customers").limit(5000).get();
+  const snapshot = await readAllDocuments(firebaseAdminDb().collection("customers"));
   const byId = new Map<string, CustomerRecord>();
   const byName = new Map<string, CustomerRecord[]>();
   for (const doc of snapshot.docs) {
@@ -204,7 +205,7 @@ async function loadShipment(reference: string, cache: Map<string, ShipmentRecord
 }
 
 async function loadExistingReceivables(): Promise<ExistingReceivableIndex> {
-  const snapshot = await firebaseAdminDb().collection("invoices").limit(6000).get();
+  const snapshot = await readAllDocuments(firebaseAdminDb().collection("invoices"));
   const references = new Set<string>();
   const invoiceKeys = new Map<string, string[]>();
   const openingKeys = new Map<string, string[]>();

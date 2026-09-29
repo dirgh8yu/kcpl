@@ -133,6 +133,34 @@ a *string* that merely looks numeric is treated as text, because a string reachi
 came from data KCPL does not control. Behaviour is pinned by
 `tests/csv-export-policy.test.mjs`.
 
+## Complete reads and Firestore indexes
+
+Firestore answers a query with no `orderBy` in document-id order, and KCPL references begin
+with their creation date. A bare `.limit(2000)` on a whole collection therefore kept the 2,000
+**oldest** records. Past that size, the Command Centre and Shipments register showed old work,
+the alert sweeps skipped new shipments and resolved their alerts, and Management and AR totals
+dropped recent or old unpaid records without a word.
+
+- Operational screens (Command Centre, Shipments, Wallboard, Delivery, Customs pulse, Live
+  Visibility) read **every open job** plus the **500 most recently delivered**
+  (`app/admin/operational-shipments.server.ts`). Tasks and customs steps are read per job on
+  screen. The register says when older delivered jobs are not listed, and a full reference
+  typed into search opens that Job File.
+- Scheduled sweeps, Management, import duplicate checks and partner payables read completely,
+  a page at a time (`app/admin/firestore-scan.ts`). A sweep whose read stopped at the
+  100,000-record backstop resolves nothing that run; Management shows "Partial figures".
+- Receivables and Payables read every open record plus the 3,000 most recent settled ones.
+- Each alert sweep resolves only its own alert types (`app/admin/alerts/alert-data.ts`); the
+  core sweep used to close the freight sweep's alerts on every run.
+- `tests/complete-reads.test.mjs` refuses a new bare-limit read of a whole collection.
+
+`scripts/firestore-index-audit.mjs` now also checks collection-group queries, which need a
+declared `COLLECTION_GROUP` field index that Firestore does not create by itself. Five were
+missing (recent activity feeds, "my tasks" notifications) and are now declared in
+`firestore.indexes.json`. **Indexes are not deployed by CI.** After merging, run
+`firebase deploy --only firestore:indexes` for the production project (or create them in the
+console); until then those queries fail exactly as they already did.
+
 ## Verification sequence
 
 1. Deploy the candidate commit to the intended production host.

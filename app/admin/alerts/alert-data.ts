@@ -18,6 +18,16 @@ export const automationAlertTypes = [
 ] as const;
 export type AutomationAlertType = (typeof automationAlertTypes)[number];
 
+/*
+ * Which sweep owns which alert. Each sweep resolves only its own types: the
+ * core engine used to resolve every alert it had not raised itself, so it
+ * closed the freight automation's alerts on every run while that sweep
+ * reopened them.
+ */
+export const coreAutomationAlertTypes = ["job_task_overdue", "shipment_exception", "eta_customs_blocked", "quote_stale", "invoice_overdue", "credit_limit_exceeded"] as const satisfies readonly AutomationAlertType[];
+export const freightAutomationAlertTypes = ["shipment_unassigned", "eta_upcoming", "customs_open", "required_document_missing", "pod_missing", "shipment_stalled"] as const satisfies readonly AutomationAlertType[];
+export const payablesAutomationAlertTypes = ["payable_overdue"] as const satisfies readonly AutomationAlertType[];
+
 export const automationAlertSeverities = ["info", "warning", "critical"] as const;
 export type AutomationAlertSeverity = (typeof automationAlertSeverities)[number];
 

@@ -65,6 +65,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
         <OpsRailMetric label="Data quality" value={dataQualityCount} tone={dataQualityCount ? "warning" : "neutral"} detail={dataQualityCount ? "Records need cleanup" : "No tracked issues"}/>
       </OpsKpiRail>
 
+      {analytics.complete ? null : <div className="org-notice"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Partial figures:</strong> a read reached its safety limit, so some records are not counted. Treat totals as a lower bound.</OpsInlineAlert></div>}
       {dataQualityCount ? <div className="org-notice"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Reporting integrity:</strong> {dataQualityCount} tracked records need cleanup · {quality.excluded_currency_records} unsupported currency · {quality.unassigned_branch_financial_records} unassigned financial · {quality.active_unassigned_branch_shipments} unassigned shipments · {quality.unlinked_invoice_records} unlinked invoices · {quality.orphaned_job_cost_records} orphaned costs.</OpsInlineAlert></div> : null}
 
       <SectionHead title="Period P&L and live working capital" detail="Revenue and recognised job cost follow the selected range. AR and AP are current open balances."/>

@@ -1,3 +1,4 @@
+import { nepalOperationalDate } from "../invoice-effective-status";
 import { bookingPickupFromBody, bookingPickupSummary } from "./portal-booking-pickup";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
@@ -160,8 +161,7 @@ export async function requestPortalBooking(
   if (!quoteReference) return { status: 400, body: { ok: false, error: "A quote reference is required." } };
   // Where and when to collect the cargo, if KCPL is to pick it up. A request
   // for the pickup desk, never an appointment.
-  const nepalToday = new Date(Date.now() + 345 * 60_000).toISOString().slice(0, 10);
-  const pickupResult = bookingPickupFromBody(payload, nepalToday);
+  const pickupResult = bookingPickupFromBody(payload, nepalOperationalDate());
   if (!pickupResult.ok) return { status: 400, body: { ok: false, code: "invalid", error: pickupResult.error } };
   const pickup = pickupResult.pickup;
 

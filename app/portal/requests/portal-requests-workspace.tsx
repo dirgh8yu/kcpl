@@ -1,4 +1,5 @@
 "use client";
+import { nepalOperationalDate } from "../../invoice-effective-status";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -293,7 +294,7 @@ export function PortalRequestsWorkspace({
                 {pickup.collect ? (
                   <div className="portal-pickup-grid">
                     <OpsField label={t("pk.date")}>
-                      <input type="date" required value={pickup.date} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setPickup({ ...pickup, date: event.target.value })}/>
+                      <input type="date" required value={pickup.date} min={nepalOperationalDate()} onChange={(event) => setPickup({ ...pickup, date: event.target.value })}/>
                     </OpsField>
                     <OpsField label={t("pk.window")}>
                       <select value={pickup.window} onChange={(event) => setPickup({ ...pickup, window: event.target.value })}>

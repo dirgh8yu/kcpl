@@ -28,7 +28,7 @@ function sources(dir, out = []) {
 }
 
 // One chained expression: .collection("x").where(...).orderBy(...)...
-const CHAIN = /\.collection(?:Group)?\(\s*["'`]([^"'`]+)["'`]\s*\)((?:\s*\.\s*(?:where|orderBy|limit|startAfter|startAt|endBefore|endAt|select|offset)\([^;]*?\))+)/gs;
+const CHAIN = /\.collection(Group)?\(\s*["'`]([^"'`]+)["'`]\s*\)((?:\s*\.\s*(?:where|orderBy|limit|startAfter|startAt|endBefore|endAt|select|offset)\([^;]*?\))+)/gs;
 const WHERE = /\.where\(\s*["'`]([^"'`]+)["'`]\s*,\s*["'`]([^"'`]+)["'`]/g;
 const ORDER = /\.orderBy\(\s*["'`]([^"'`]+)["'`](?:\s*,\s*["'`](asc|desc)["'`])?/g;
 // A query assembled across statements would escape the scan above, so the audit
@@ -43,16 +43,42 @@ export function auditFirestoreIndexes() {
       `${index.collectionGroup}|${index.fields.map((field) => `${field.fieldPath}:${(field.order ?? "ASCENDING").toLowerCase()}`).join(",")}`),
   );
 
+  // A collection-group query that filters or orders on a field needs that
+  // field's COLLECTION_GROUP index. Firestore keeps single-field indexes
+  // automatically only at collection scope, so these must be declared as
+  // fieldOverrides or the query fails exactly like a missing composite.
+  const groupHave = new Set();
+  for (const override of declared.fieldOverrides ?? []) {
+    for (const index of override.indexes ?? []) {
+      if (index.queryScope !== "COLLECTION_GROUP" || !index.order) continue;
+      groupHave.add(`${override.collectionGroup}|group:${override.fieldPath}:${index.order.toLowerCase()}`);
+    }
+  }
+
   const required = [];
+  const groupRequired = [];
   const unscannable = [];
   for (const file of sources("app")) {
     const src = readFileSync(path.join(ROOT, file), "utf8");
     if (BUILDER.test(src)) unscannable.push(file);
     for (const match of src.matchAll(CHAIN)) {
-      const collection = match[1];
-      const tail = match[2];
+      const group = Boolean(match[1]);
+      const collection = match[2];
+      const tail = match[3];
       const filters = [...tail.matchAll(WHERE)].map((m) => ({ field: m[1], op: m[2] }));
       const orders = [...tail.matchAll(ORDER)].map((m) => ({ field: m[1], dir: m[2] ?? "asc" }));
+      const line = src.slice(0, match.index).split("\n").length;
+      if (group) {
+        const singles = [
+          ...filters.filter((f) => !orders.some((o) => o.field === f.field)).map((f) => `group:${f.field}:ascending`),
+          ...orders.map((o) => `group:${o.field}:${o.dir === "desc" ? "descending" : "ascending"}`),
+        ];
+        const distinctFields = new Set([...filters.map((f) => f.field), ...orders.map((o) => o.field)]);
+        if (distinctFields.size <= 1) {
+          for (const shape of new Set(singles)) groupRequired.push({ collection, shape, key: `${collection}|${shape}`, line, file });
+          continue;
+        }
+      }
       if (!filters.length || !orders.length) continue;
       const fields = [...new Set(filters.map((f) => f.field))];
       // Filtering and ordering the same single field is served by that field's
@@ -66,15 +92,18 @@ export function auditFirestoreIndexes() {
         collection,
         shape,
         key: `${collection}|${shape}`,
-        line: src.slice(0, match.index).split("\n").length,
+        line,
         file,
       });
     }
   }
 
-  const missing = required.filter((entry) => !have.has(entry.key));
+  const missing = [
+    ...required.filter((entry) => !have.has(entry.key)),
+    ...groupRequired.filter((entry) => !groupHave.has(entry.key)),
+  ];
   const unused = [...have].filter((key) => !required.some((entry) => entry.key === key));
-  return { required, missing, unused, unscannable, declared: [...have] };
+  return { required, groupRequired, missing, unused, unscannable, declared: [...have] };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

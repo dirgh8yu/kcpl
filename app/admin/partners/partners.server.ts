@@ -1,3 +1,4 @@
+import { readAllDocuments } from "../firestore-scan";
 import { mockPartnerDashboard, mockPartnerOptions, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
@@ -258,7 +259,7 @@ export async function listPartnerDashboard(context: KcplStaffContext): Promise<P
   const financeVisible = canViewPartnerFinance(context.permissions);
   const [partnersSnapshot, payablesSnapshot] = await Promise.all([
     db.collection("partners").orderBy("display_name", "asc").limit(2500).get(),
-    financeVisible ? db.collection("payables").limit(8000).get() : Promise.resolve(null),
+    financeVisible ? readAllDocuments(db.collection("payables")) : Promise.resolve(null),
   ]);
 
   const partnerDocs = partnersSnapshot.docs.filter((doc) => canAccessPartnerOwner(context, doc.get("owner_branch")));
