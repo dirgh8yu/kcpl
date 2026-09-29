@@ -36,6 +36,7 @@ import type { SuggestedChecklist as SuggestedChecklistData } from "./checklist-r
 import { useStaffArrangement } from "../use-staff-arrangement";
 import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { CustomsClearanceEditor } from "./customs-clearance-editor";
+import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import type { CustomsDeskRow } from "./customs-data.server";
 import { customsClearanceStatusLabels } from "./customs-policy";
 
@@ -227,7 +228,8 @@ function Inspector({
   </aside>;
 }
 
-export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[]; pulseData?: CommandCentreData | null }) {
+export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null, currentStaff }: { initialRows: CustomsDeskRow[]; customsAgents: CustomsAgentOption[]; pulseData?: CommandCentreData | null; currentStaff: CurrentStaff }) {
+  const [mine, setMine] = useMineFilter("customs");
   const router = useRouter();
   const rows = initialRows;
   const [query, setQuery] = useState("");
@@ -266,11 +268,12 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
       if (branch !== "all" && !row.handling_branches.includes(branch)) return false;
       if (risk !== "all" && row.risk !== risk) return false;
       if (state !== "all" && row.state !== state) return false;
+      if (mine && !ownedBy(currentStaff, { email: row.assigned_to_email })) return false;
       if (!terms.length) return true;
       const haystack = [row.reference, row.quote_reference, row.customer_name, row.origin, row.destination, row.mode, row.document_direction, row.branch ?? "", row.assigned_to_name ?? "", row.assigned_to_email ?? "", row.current_location ?? "", row.clearance.status, row.clearance.entry_point ?? "", row.clearance.declaration_reference ?? "", row.clearance.agent_name ?? "", row.clearance.hold_reason ?? "", row.clearance.release_evidence ?? "", ...row.open_steps.map((step) => `${step.title} ${step.detail ?? ""}`), ...row.missing_documents.map((document) => `${document.label} ${document.reason}`), ...row.document_advisories, ...row.customs_integrity_warnings].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
-  }, [branch, query, risk, rows, state]);
+  }, [branch, currentStaff, mine, query, risk, rows, state]);
 
   const selected = selectedReference ? rows.find((row) => row.reference === selectedReference) ?? null : null;
 
@@ -449,6 +452,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, pulseData = null 
                 <OpsFilterChoices label="Risk" value={risk} options={[{ value: "all", label: "Any" }, { value: "critical", label: "Critical" }, { value: "warning", label: "Warning" }, { value: "normal", label: "Normal" }]} onChange={(value) => setRisk(value as RiskFilter)}/>
                 <OpsFilterChoices label="Branch" value={branch} options={[{ value: "all", label: "All branches" }, ...branchOptions]} onChange={(value) => setBranch(value === "all" ? "all" : value as KcplBranch)}/>
               </OpsFilterMenu>
+              <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
               <span className="ops-result-count" aria-live="polite">{visible.length === rows.length ? `${rows.length} shipments` : `${visible.length} of ${rows.length}`}</span>

@@ -120,3 +120,8 @@ export function summarizePickups(rows: PickupQueueRow[], nowIso: string): Pickup
     picked_up_today: rows.filter((row) => row.status === "picked_up" && row.picked_up_at?.slice(0, 10) === today).length,
   };
 }
+
+/** A shipment has at most one pickup appointment, stored under this id. */
+export function appointmentId(reference: string) {
+  return `PU-${reference.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 180);
+}

@@ -26,6 +26,7 @@ import {
 import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { useStaffArrangement } from "../use-staff-arrangement";
 import { useWorkspaceQuery } from "../use-workspace-query";
+import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 
 type StatusFilter = "active" | "all" | AutomationAlertStatus;
 type NoticeTone = "success" | "danger" | "warning";
@@ -68,7 +69,8 @@ const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
   { value: "all", label: "All history" },
 ];
 
-export function AlertsWorkspace({ initialAlerts }: { initialAlerts: AutomationAlert[] }) {
+export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts: AutomationAlert[]; currentStaff: CurrentStaff }) {
+  const [mine, setMine] = useMineFilter("alerts");
   const [alerts, setAlerts] = useState(initialAlerts);
   const { params, update } = useWorkspaceQuery();
   const query = params.get("q") ?? "";
@@ -98,6 +100,7 @@ export function AlertsWorkspace({ initialAlerts }: { initialAlerts: AutomationAl
       if (severity !== "all" && alert.severity !== severity) return false;
       if (status === "active" && alert.status === "resolved") return false;
       if (status !== "active" && status !== "all" && alert.status !== status) return false;
+      if (mine && !ownedBy(currentStaff, { email: alert.assigned_to_email })) return false;
       if (!terms.length) return true;
       const haystack = [
         alert.title,
@@ -117,7 +120,7 @@ export function AlertsWorkspace({ initialAlerts }: { initialAlerts: AutomationAl
       ].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     }).sort((a, b) => Number(b.status !== "resolved") - Number(a.status !== "resolved") || severityOrder[b.severity] - severityOrder[a.severity] || stateOrder[b.status] - stateOrder[a.status] || b.last_triggered_at.localeCompare(a.last_triggered_at));
-  }, [alerts, query, severity, status]);
+  }, [alerts, currentStaff, mine, query, severity, status]);
 
   async function reload() {
     const response = await fetch("/api/admin/alerts", { cache: "no-store" });
@@ -267,6 +270,7 @@ export function AlertsWorkspace({ initialAlerts }: { initialAlerts: AutomationAl
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search alert, shipment, owner…" aria-label="Search tasks and alerts"/>}
           actions={(
             <>
+              <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
               <span className="ops-result-count" aria-live="polite">{visible.length} showing</span>

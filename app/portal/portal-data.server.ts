@@ -8,6 +8,7 @@ import {
   portalOutstandingUploads,
   portalInvoiceView,
   portalInvoiceVisible,
+  portalQuoteBookingBlock,
   portalQuoteView,
   portalQuoteVisible,
   portalShipmentActive,
@@ -395,6 +396,8 @@ export type PortalOverview = {
   finance: PortalFinanceSummary | null;
   quoteCount: number;
   requestCount: number;
+  /** Priced quotes the customer can still ask KCPL to proceed with. */
+  quotesAwaiting: PortalQuoteView[];
 };
 
 export type PortalFreeTimeRow = {
@@ -505,6 +508,7 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
         finance: invoiceResult.kind === "ready" ? invoiceResult.summary : null,
         quoteCount: quoteResult.kind === "ready" ? quoteResult.quotes.length : 0,
         requestCount: quoteResult.kind === "ready" ? quoteResult.requests.length : 0,
+        quotesAwaiting: quoteResult.kind === "ready" ? quoteResult.quotes.filter((quote) => portalQuoteBookingBlock(quote) === null).slice(0, 5) : [],
       },
     };
   } catch (error) {

@@ -21,6 +21,7 @@ import {
   OpsTableWrap,
 } from "../operations-ui";
 import { deliveryPulseRows, RegisterPulseStrip } from "../register-pulse-strip";
+import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import { ArrangeableGrid } from "../arrangeable-grid";
 import "../arrangeable-grid.css";
 import { presetForStateIn, savedLayoutForState, WORKSPACE_PRESETS } from "../operations-arrangeable";
@@ -124,7 +125,8 @@ function Inspector({ row, onClose, inspectorRef }: { row: DeliveryQueueRow; onCl
   </aside>;
 }
 
-export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "", pulseData = null }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string; pulseData?: CommandCentreData | null }) {
+export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = "", pulseData = null, currentStaff }: { initialRows: DeliveryQueueRow[]; initialSummary: DeliverySummary; initialQuery?: string; pulseData?: CommandCentreData | null; currentStaff: CurrentStaff }) {
+  const [mine, setMine] = useMineFilter("delivery");
   const { params, update } = useWorkspaceQuery();
   const requestedFocus = params.get("view");
   const focus: Focus = requestedFocus === "active" || requestedFocus === "failed" || requestedFocus === "pod_pending" || requestedFocus === "verified" ? requestedFocus : "all";
@@ -135,11 +137,12 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     return initialRows.filter((row) => {
       if (focus !== "all" && row.delivery_state !== FOCUS_STATE[focus]) return false;
+      if (mine && !ownedBy(currentStaff, { uid: row.owner_uid, email: row.owner_email })) return false;
       if (!terms.length) return true;
       const haystack = [row.reference, row.customer_name, row.origin, row.destination, row.mode, row.primary_branch, row.current_location ?? "", row.recipient_name ?? "", row.last_attempt_status ?? ""].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
-  }, [focus, initialRows, query]);
+  }, [currentStaff, focus, initialRows, mine, query]);
 
   const filtersActive = Boolean(query.trim()) || focus !== "all";
 
@@ -281,6 +284,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, branch…" aria-label="Search delivery and POD queue"/>}
           actions={(
             <>
+              <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <button type="button" className="ops-inline-alert-action" onClick={reset}>Reset</button> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
               <span className="ops-result-count" aria-live="polite">{rows.length === initialRows.length ? `${initialRows.length} deliveries` : `${rows.length} of ${initialRows.length}`}</span>

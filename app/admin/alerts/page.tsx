@@ -95,7 +95,7 @@ export default async function AlertsPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <AlertsWorkspace initialAlerts={result.alerts}/>
+      <AlertsWorkspace initialAlerts={result.alerts} currentStaff={{ uid: access.user.uid, email: access.user.email }}/>
     </OperationsShell>
   );
 }

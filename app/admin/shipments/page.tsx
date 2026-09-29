@@ -50,7 +50,7 @@ export default async function ShipmentsPage() {
     }),
   ]);
 
-  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} canStartShipment={staff.permissions.canViewCommercial} exposureByCustomer={exposureByCustomer} laneCompletionsByStaff={laneCompletionsByStaff}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><ShipmentsWorkspace data={data} canStartShipment={staff.permissions.canViewCommercial} exposureByCustomer={exposureByCustomer} laneCompletionsByStaff={laneCompletionsByStaff} currentStaff={{ uid: access.user.uid, email: access.user.email }}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

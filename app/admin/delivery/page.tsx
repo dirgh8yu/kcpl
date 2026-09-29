@@ -33,7 +33,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
   if (workspace.kind !== "ready") return <OperationsShell {...shellProps}><Gate embedded title="Deliveries didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   const { shipment } = await searchParams;
   const initialQuery = shipment?.trim().toUpperCase() ?? "";
-  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary} initialQuery={initialQuery}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><DeliveryWorkspace initialRows={workspace.rows} initialSummary={workspace.summary} initialQuery={initialQuery} currentStaff={{ uid: access.user.uid, email: access.user.email }}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

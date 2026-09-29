@@ -1,3 +1,4 @@
+import { refreshShipmentWorkflowStep } from "../../../admin/workflow-guard.server";
 import { getAdminAccess } from "../../../admin/admin-auth";
 import { cancelPickup, completePickup, confirmPickup, listPickupWorkspace, missPickup, schedulePickup, assignPickupDriver } from "../../../admin/pickups/pickup-appointments.server";
 import { pickupChannels, type PickupChannel } from "../../../admin/pickups/pickup-appointments";
@@ -76,7 +77,10 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "Choose a valid pickup action." }, 400);
   }
 
-  if (result.kind === "updated") return json({ ok: true, appointment: "appointment" in result ? result.appointment : undefined });
+  if (result.kind === "updated") {
+    await refreshShipmentWorkflowStep(reference);
+    return json({ ok: true, appointment: "appointment" in result ? result.appointment : undefined });
+  }
   if (result.kind === "missing" || result.kind === "missing_appointment") return json({ ok: false, error: result.kind === "missing" ? "Shipment not found." : "Schedule a pickup appointment first." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This shipment is outside your access." }, 403);
   if (result.kind === "invalid_window") return json({ ok: false, error: "Enter a valid pickup window with an end time after the start time." }, 400);

@@ -1,3 +1,4 @@
+import { jobStepSnapshotValue } from "../jobs/[reference]/job-steps.ts";
 import { compareShipmentPriority } from "../shipments/shipment-queue-policy";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -220,6 +221,7 @@ export async function loadCommandCentre(context: KcplStaffContext, options: { in
       required_customs_total: customs.total,
       updated_at: text(data.updated_at),
       latest_activity_at: latestActivity.get(id) ?? null,
+      workflow_step: jobStepSnapshotValue(data.workflow_step),
     };
   });
 

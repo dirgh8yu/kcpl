@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlarmClock, ArrowRight, FileText, FileUp, Package, Receipt } from "lucide-react";
+import { AlarmClock, ArrowRight, CheckCircle2, FileText, FileUp, MessageSquareQuote, Package, Receipt } from "lucide-react";
 import {
   OpsBadge,
   OpsEmptyState,
@@ -25,6 +25,7 @@ import {
   portalStatusTone,
 } from "./portal-format";
 import type { PortalSession } from "./portal-auth";
+import { portalNeeds, type PortalNeed } from "./portal-needs";
 import { portalTranslator } from "./portal-i18n";
 
 export function PortalOverview({ session, overview }: { session: PortalSession; overview: PortalOverviewData }) {
@@ -32,6 +33,7 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
   const locale = session.locale;
   const active = overview.shipments.filter((shipment) => shipment.status !== "delivered").slice(0, 8);
   const outstanding = overview.finance?.balances.filter((balance) => balance.outstanding > 0) ?? [];
+  const needs = portalNeeds(overview);
 
   return (
     <OpsPage>
@@ -48,96 +50,16 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
-          {/* The staff registers' metric rail: one flat strip, tone on the
-              value, zeros receding. */}
+          <PortalNeedsList session={session} needs={needs}/>
+
+          {/* Where things stand. What needs the customer is the list above, so
+              documents and free time are not counted a second time here. */}
           <OpsKpiRail label={t("overview.eyebrow")}>
             <OpsRailMetric label={t("overview.kpi_active")} value={overview.activeCount}/>
             <OpsRailMetric label={t("overview.kpi_in_transit")} value={overview.inTransitCount} tone="success"/>
             <OpsRailMetric label={t("overview.kpi_arriving")} value={overview.arrivingCount} tone="info"/>
-            <OpsRailMetric
-              label={t("overview.kpi_free_time")}
-              value={overview.freeTime.length}
-              tone={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : "warning"}
-            />
-            <OpsRailMetric label={t("overview.kpi_documents")} value={overview.outstandingCount} tone="warning"/>
             <OpsRailMetric label={t("overview.kpi_attention")} value={overview.attentionCount} tone="danger"/>
           </OpsKpiRail>
-
-          {overview.freeTime.length ? (
-            <OpsSurface
-              eyebrow={t("overview.free_time_eyebrow")}
-              title={t("overview.free_time_title")}
-              description={t("overview.free_time_description")}
-              priority={overview.freeTime.some((row) => row.status.state === "expired") ? "danger" : "warning"}
-              flush
-            >
-              <ul className="portal-document-list portal-action-list">
-                {overview.freeTime.map((row) => (
-                  <li key={row.reference}>
-                    <span className="portal-document-icon" aria-hidden="true"><AlarmClock size={15} strokeWidth={1.75}/></span>
-                    <span className="portal-document-main">
-                      <strong>{freeTimeSummary({
-                        location: row.location,
-                        days: null,
-                        started_on: null,
-                        daily_charge: null,
-                        charge_currency: null,
-                        bearer: "undecided",
-                        note: null,
-                        updated_at: null,
-                        updated_by: null,
-                      }, row.status, locale)}</strong>
-                      <span>
-                        <OpsMono>{row.reference}</OpsMono>
-                        {row.origin ? ` · ${row.origin} → ${row.destination}` : ""}
-                      </span>
-                    </span>
-                    <Link
-                      href={`/portal/shipments/${encodeURIComponent(row.reference)}`}
-                      className="ops-button"
-                      data-variant="secondary"
-                      data-size="sm"
-                    >
-                      {t("overview.open")}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </OpsSurface>
-          ) : null}
-
-          {overview.outstanding.length ? (
-            <OpsSurface
-              eyebrow={t("overview.outstanding_eyebrow")}
-              title={t("overview.outstanding_title")}
-              description={t("overview.outstanding_description")}
-              priority="warning"
-              flush
-            >
-              <ul className="portal-document-list portal-action-list">
-                {overview.outstanding.map((entry) => (
-                  <li key={entry.reference}>
-                    <span className="portal-document-icon" aria-hidden="true"><FileUp size={15} strokeWidth={1.75}/></span>
-                    <span className="portal-document-main">
-                      <strong>{entry.rows.map((row) => portalDocumentLabel(row.document_type, locale)).join(", ")}</strong>
-                      <span>
-                        <OpsMono>{entry.reference}</OpsMono>
-                        {entry.origin ? ` · ${entry.origin} → ${entry.destination}` : ""}
-                      </span>
-                    </span>
-                    <Link
-                      href={`/portal/shipments/${encodeURIComponent(entry.reference)}#documents`}
-                      className="ops-button"
-                      data-variant="primary"
-                      data-size="sm"
-                    >
-                      {t("overview.send_now")}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </OpsSurface>
-          ) : null}
 
           {overview.finance && outstanding.length ? (
             <OpsSurface
@@ -262,4 +184,62 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
       </div>
     </OpsPage>
   );
+}
+
+/** One list of everything the customer has to do, most pressing first. */
+function PortalNeedsList({ session, needs }: { session: PortalSession; needs: PortalNeed[] }) {
+  const t = portalTranslator(session.locale);
+  const locale = session.locale;
+  if (!needs.length) {
+    return <div className="portal-needs-clear" role="status">
+      <CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>
+      <span><strong>{t("needs.none_title")}</strong> {t("needs.none_description")}</span>
+    </div>;
+  }
+  return <OpsSurface
+    title={t("needs.title")}
+    description={needs.length === 1 ? t("needs.count_one") : t("needs.count", { count: needs.length })}
+    priority={needs.some((need) => need.kind === "pay_overdue" || (need.kind === "free_time" && need.status.state === "expired")) ? "danger" : "warning"}
+    flush
+  >
+    <ul className="portal-document-list portal-action-list portal-needs">
+      {needs.map((need) => {
+        const key = `${need.kind}:${"reference" in need ? need.reference : ""}`;
+        if (need.kind === "documents") return <li key={key}>
+          <span className="portal-document-icon" aria-hidden="true"><FileUp size={15} strokeWidth={1.75}/></span>
+          <span className="portal-document-main">
+            <strong>{t("needs.documents", { documents: need.documentTypes.map((type) => portalDocumentLabel(type, locale)).join(", ") })}</strong>
+            <span><OpsMono>{need.reference}</OpsMono>{need.route ? ` · ${need.route}` : ""}</span>
+          </span>
+          <Link href={need.href} className="ops-button" data-variant="primary" data-size="sm">{t("overview.send_now")}</Link>
+        </li>;
+        if (need.kind === "pay_overdue" || need.kind === "pay_open") return <li key={key}>
+          <span className="portal-document-icon" aria-hidden="true"><Receipt size={15} strokeWidth={1.75}/></span>
+          <span className="portal-document-main">
+            <strong>{need.kind === "pay_overdue"
+              ? (need.count === 1 ? t("needs.pay_overdue_one") : t("needs.pay_overdue", { count: need.count }))
+              : (need.count === 1 ? t("needs.pay_open_one") : t("needs.pay_open", { count: need.count }))}</strong>
+            <span>{t("needs.pay_detail")}</span>
+          </span>
+          <Link href={need.href} className="ops-button" data-variant={need.kind === "pay_overdue" ? "primary" : "secondary"} data-size="sm">{t("overview.view_invoices")}</Link>
+        </li>;
+        if (need.kind === "quote") return <li key={key}>
+          <span className="portal-document-icon" aria-hidden="true"><MessageSquareQuote size={15} strokeWidth={1.75}/></span>
+          <span className="portal-document-main">
+            <strong>{t("needs.quote", { reference: need.reference })}</strong>
+            <span>{need.route}{need.amount !== null ? ` · ${portalMoney(need.amount, need.currency)}` : ""}{need.validUntil ? ` · ${t("needs.valid_until", { date: portalDate(need.validUntil) })}` : ""}</span>
+          </span>
+          <Link href={need.href} className="ops-button" data-variant="secondary" data-size="sm">{t("needs.review")}</Link>
+        </li>;
+        return <li key={key}>
+          <span className="portal-document-icon" aria-hidden="true"><AlarmClock size={15} strokeWidth={1.75}/></span>
+          <span className="portal-document-main">
+            <strong>{freeTimeSummary({ location: need.location, days: null, started_on: null, daily_charge: null, charge_currency: null, bearer: "undecided", note: null, updated_at: null, updated_by: null }, need.status, locale)}</strong>
+            <span><OpsMono>{need.reference}</OpsMono>{need.route ? ` · ${need.route}` : ""} · {t("needs.free_time_detail")}</span>
+          </span>
+          <Link href={need.href} className="ops-button" data-variant="secondary" data-size="sm">{t("overview.open")}</Link>
+        </li>;
+      })}
+    </ul>
+  </OpsSurface>;
 }

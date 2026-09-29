@@ -1,8 +1,7 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { customsClearanceFromShipment } from "../../customs/customs-clearance.server";
 import type { CustomsClearanceRecord } from "../../customs/customs-clearance";
-import { appointmentId } from "../../pickups/pickup-appointments.server";
-import { pickupAppointmentStatuses, type PickupAppointmentStatus } from "../../pickups/pickup-appointments";
+import { appointmentId, pickupAppointmentStatuses, type PickupAppointmentStatus } from "../../pickups/pickup-appointments";
 import { qaMockDataEnabled } from "../../qa-fixtures";
 
 export type JobStepContext = {

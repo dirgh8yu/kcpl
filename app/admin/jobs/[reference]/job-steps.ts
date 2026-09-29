@@ -148,3 +148,21 @@ export function initialJobPanel(steps: JobStep[], requested: string | null | und
   if (requested && panels.has(requested)) return requested as JobPanel;
   return steps.find((step) => step.state === "current" || step.state === "blocked")?.id ?? "close";
 }
+
+/** The one step a shipment is waiting on, as the Shipments list shows it. */
+export type JobStepSnapshot = { id: JobStepId; label: string; state: JobStepState; summary: string };
+
+export function currentJobStep(steps: JobStep[]): JobStepSnapshot {
+  const open = steps.find((step) => step.state === "current" || step.state === "blocked");
+  const step = open ?? steps[steps.length - 1];
+  return { id: step.id, label: step.label, state: open ? step.state : "done", summary: step.summary };
+}
+
+export function jobStepSnapshotValue(value: unknown): JobStepSnapshot | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  const states: JobStepState[] = ["done", "current", "blocked", "upcoming", "skipped"];
+  if (!jobStepIds.includes(raw.id as JobStepId) || !states.includes(raw.state as JobStepState)) return null;
+  if (typeof raw.label !== "string" || typeof raw.summary !== "string") return null;
+  return { id: raw.id as JobStepId, label: raw.label, state: raw.state as JobStepState, summary: raw.summary.slice(0, 400) };
+}

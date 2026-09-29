@@ -41,7 +41,7 @@ export default async function CustomsPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <CustomsWorkspace initialRows={rows} customsAgents={customsAgents}/>
+      <CustomsWorkspace initialRows={rows} customsAgents={customsAgents} currentStaff={{ uid: access.user.uid, email: access.user.email }}/>
     </OperationsShell>
   );
 }

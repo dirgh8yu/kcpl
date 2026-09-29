@@ -1,3 +1,4 @@
+import type { JobStepSnapshot } from "../jobs/[reference]/job-steps.ts";
 import type { KcplBranch } from "../crm/crm-data";
 import type { ShipmentStatus } from "../../shipment-types";
 import type { JobPriority } from "../job-file";
@@ -28,6 +29,8 @@ export type CommandCentreJob = {
   updated_at: string;
   /** Newest job_activity created_at for this shipment (null when none is recorded). */
   latest_activity_at: string | null;
+  /** The Job File's current step, as last computed; null until the job is first opened. */
+  workflow_step?: JobStepSnapshot | null;
 };
 
 export type CommandCentreBranchLoad = {

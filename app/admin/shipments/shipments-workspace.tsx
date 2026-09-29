@@ -9,6 +9,7 @@ import type { ShipmentActivityItem, ShipmentActivityTimeline } from "../shipment
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import type { CommandCentreData, CommandCentreJob, CommandCentreStaffLoad } from "../command-centre/command-centre-data";
 import { shipmentNeedsAttention, shipmentNextAction } from "./shipment-queue-policy";
+import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import { compareWorkQueueImpact, type ReceivableExposure } from "../command-centre/work-queue-impact";
 import { suggestOwner, laneKey, type OwnerCandidateEvidence, type OwnerSuggestion } from "../command-centre/owner-recommender";
 import { useFreshnessLabel, useRegisterSnapshot } from "../use-register-poll";
@@ -70,7 +71,7 @@ function modeOptions(jobs: CommandCentreJob[]) {
   return [...new Set(jobs.map((job) => job.mode.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-export function ShipmentsWorkspace({ data: initialData, canStartShipment = false, exposureByCustomer, laneCompletionsByStaff }: { data: CommandCentreData; canStartShipment?: boolean; exposureByCustomer: Map<string, ReceivableExposure>; laneCompletionsByStaff: Map<string, Map<string, OwnerCandidateEvidence>>; }) {
+export function ShipmentsWorkspace({ data: initialData, canStartShipment = false, exposureByCustomer, laneCompletionsByStaff, currentStaff }: { data: CommandCentreData; canStartShipment?: boolean; exposureByCustomer: Map<string, ReceivableExposure>; laneCompletionsByStaff: Map<string, Map<string, OwnerCandidateEvidence>>; currentStaff: CurrentStaff; }) {
   const { params, search, update } = useWorkspaceQuery();
   // Quiet 60s live refresh shared with the Overview pulse and the Customs and
   // Delivery strips; changes power the toast below.
@@ -99,6 +100,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   const overdue = params.get("overdue") === "1";
   const live = params.get("live") === "1";
   const ownerFilter = params.get("owner") === "unassigned" ? "unassigned" : "all";
+  const [mine, setMine] = useMineFilter("shipments");
   const sort = params.get("sort") === "updated" ? "updated" : "priority";
   const requestedView = params.get("view");
   const view: RegisterView = requestedView === "cards" || requestedView === "map" ? requestedView : "table";
@@ -161,6 +163,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
       if (overdue && !(job.overdue_tasks > 0)) return false;
       if (live && !liveActivityRefs.has(job.reference)) return false;
       if (ownerFilter === "unassigned" && owner(job) !== "Unassigned") return false;
+      if (mine && !ownedBy(currentStaff, { uid: job.assigned_to_uid, email: job.assigned_to_email })) return false;
       if (mode !== "all" && job.mode !== mode) return false;
       if (!terms.length) return true;
       const haystack = [
@@ -179,7 +182,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
     }).sort(sort === "priority"
       ? (a, b) => compareWorkQueueImpact(a, b, impactContext)
       : (a, b) => (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0) || a.reference.localeCompare(b.reference));
-  }, [attention, branch, data.jobs, impactContext, live, liveActivityRefs, mode, overdue, ownerFilter, query, sort, status]);
+  }, [attention, branch, currentStaff, data.jobs, impactContext, live, liveActivityRefs, mine, mode, overdue, ownerFilter, query, sort, status]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
@@ -348,6 +351,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
             </div>
 
             <div className="shipments-toolbar-actions">
+              <MineToggle mine={mine} onChange={setMine}/>
               <div className="shipments-view-toggle" role="group" aria-label="Register view">
                 {VIEW_OPTIONS.map(({ value, label, icon: Icon }) => (
                   <button
@@ -575,7 +579,8 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update,
 
   function withReturn(href: string) {
     const [path, hash] = href.split("#");
-    return `${path}?returnTo=${encodeURIComponent(returnTo)}${hash ? `#${hash}` : ""}`;
+    // Step links already carry ?step=; the return path joins them, not replaces them.
+    return `${path}${path.includes("?") ? "&" : "?"}returnTo=${encodeURIComponent(returnTo)}${hash ? `#${hash}` : ""}`;
   }
 
   return (
@@ -652,9 +657,9 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update,
 
               <section className="shipment-sheet-section">
                 <h3>Readiness</h3>
-                <ReadinessRow label="Open work" value={job.open_tasks ? `${job.open_tasks} task${job.open_tasks === 1 ? "" : "s"}` : "Clear"} warning={job.overdue_tasks > 0} href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}#shipment-work`)}/>
-                <ReadinessRow label="Customs" value={job.required_customs_open ? `${job.required_customs_open} open` : "Clear"} warning={job.required_customs_open > 0} href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}#shipment-work`)}/>
-                <ReadinessRow label="Exception" value={openException ? "Open" : "None"} warning={openException} href={openException ? withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}#shipment-exceptions`) : undefined}/>
+                <ReadinessRow label="Open work" value={job.open_tasks ? `${job.open_tasks} task${job.open_tasks === 1 ? "" : "s"}` : "Clear"} warning={job.overdue_tasks > 0} href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}?step=tasks`)}/>
+                <ReadinessRow label="Customs" value={job.required_customs_open ? `${job.required_customs_open} open` : "Clear"} warning={job.required_customs_open > 0} href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}?step=customs`)}/>
+                <ReadinessRow label="Exception" value={openException ? "Open" : "None"} warning={openException} href={openException ? withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}?step=problems`) : undefined}/>
                 <ReadinessRow label="Owner" value={jobOwner} warning={jobOwner === "Unassigned"}/>
               </section>
 
@@ -827,7 +832,7 @@ function ShipmentInspectorActivity({ reference, highlightId, update, generatedAt
       {state.kind === "loading" ? <p className="shipment-sheet-activity-note">Loading…</p> : null}
       {state.kind === "error" ? (
         <p className="shipment-sheet-activity-note">
-          Activity is unavailable here. <Link className="shipment-sheet-activity-more" href={`/admin/jobs/${encodeURIComponent(reference)}#shipment-activity`}>Open the Job File</Link>
+          Activity is unavailable here. <Link className="shipment-sheet-activity-more" href={`/admin/jobs/${encodeURIComponent(reference)}?step=history`}>Open the Job File</Link>
         </p>
       ) : null}
       {state.kind === "items" ? (
@@ -867,7 +872,7 @@ function ShipmentInspectorActivity({ reference, highlightId, update, generatedAt
                 );
               })}
             </ul>
-            <Link className="shipment-sheet-activity-more" href={`/admin/jobs/${encodeURIComponent(reference)}#shipment-activity`}>View all</Link>
+            <Link className="shipment-sheet-activity-more" href={`/admin/jobs/${encodeURIComponent(reference)}?step=history`}>View all</Link>
           </>
         ) : (
           <p className="shipment-sheet-activity-note">No recorded activity yet.</p>

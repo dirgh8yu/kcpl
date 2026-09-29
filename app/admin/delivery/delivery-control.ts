@@ -92,6 +92,9 @@ export type DeliveryQueueRow = {
   next_delivery_at: string | null;
   current_location: string | null;
   updated_at: string;
+  /** The shipment's owner, for the "Assigned to me" view. */
+  owner_uid?: string | null;
+  owner_email?: string | null;
 };
 
 export type DeliverySummary = {

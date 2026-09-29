@@ -10,6 +10,8 @@ import { type KcplBranch } from "./crm/crm-data";
 import { type KcplStaffContext } from "./staff-directory.server";
 import { buildDocumentIntelligence } from "./workflow-defaults";
 import { allowedTransitions, type ShipmentWorkflowReadiness, type WorkflowDocumentState, type WorkflowStage } from "./workflow-guard";
+import { buildJobSteps, currentJobStep } from "./jobs/[reference]/job-steps.ts";
+import { appointmentId, pickupAppointmentStatuses, type PickupAppointmentStatus } from "./pickups/pickup-appointments";
 
 type Actor = { name: string; email: string };
 
@@ -87,12 +89,13 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   const customerLinked = Boolean(customerId);
   const assignedOwner = Boolean(nullable(source.data.job_assigned_to_name) || nullable(source.data.job_assigned_to_email));
 
-  const [tasksSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot, invoicesSnapshot] = await Promise.all([
+  const [tasksSnapshot, customsSnapshot, documentsSnapshot, requirementsSnapshot, invoicesSnapshot, pickupSnapshot] = await Promise.all([
     shipmentRef.collection("job_tasks").limit(1000).get(),
     shipmentRef.collection("customs_steps").limit(500).get(),
     shipmentRef.collection("documents").limit(1000).get(),
     shipmentRef.collection("document_requirements").limit(100).get(),
     db.collection("invoices").where("shipment_reference", "==", source.reference).limit(1000).get(),
+    db.collection("pickup_appointments").doc(appointmentId(source.reference)).get(),
   ]);
 
   const openTasks = tasksSnapshot.docs.filter((doc) => doc.get("completed") !== true).length;
@@ -273,7 +276,36 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
     can_close: closeBlockers.length === 0 && !jobClosed,
     stages,
   };
+  await rememberWorkflowStep(shipmentRef, source.data, readiness, pickupSnapshot);
   return { kind: "ready" as const, readiness };
+}
+
+/** Keep the Job File's current step on the shipment itself, so the Shipments
+ * list and the Overview can say the same "what's next" without recomputing
+ * readiness for every row. Written only when it changes, and never touching
+ * status or updated_at; a failed write just leaves the previous step. */
+async function rememberWorkflowStep(
+  shipmentRef: FirebaseFirestore.DocumentReference,
+  data: Record<string, unknown>,
+  readiness: ShipmentWorkflowReadiness,
+  pickupSnapshot: FirebaseFirestore.DocumentSnapshot,
+) {
+  try {
+    const pickupStatus = pickupSnapshot.exists ? pickupSnapshot.get("status") : null;
+    const step = currentJobStep(buildJobSteps({
+      status: readiness.status,
+      customerName: nullable(data.customer_name) ?? nullable(data.company),
+      currentLocation: nullable(data.current_location),
+      readiness,
+      pickupStatus: pickupAppointmentStatuses.includes(pickupStatus) ? pickupStatus as PickupAppointmentStatus : null,
+      customsHoldReason: nullable(data.customs_hold_reason),
+    }));
+    const stored = data.workflow_step as Record<string, unknown> | undefined;
+    if (stored && stored.id === step.id && stored.state === step.state && stored.summary === step.summary) return;
+    await shipmentRef.update({ workflow_step: { ...step, computed_at: new Date().toISOString() } });
+  } catch (error) {
+    console.error("Failed to remember the shipment's current step", error);
+  }
 }
 
 export async function validateShipmentTransition(
@@ -389,4 +421,12 @@ export async function reopenShipmentJob(reference: string, actor: Actor, context
   await batch.commit();
   const refreshed = await getShipmentWorkflowReadiness(loaded.source.reference, context);
   return { kind: "reopened" as const, readiness: refreshed.kind === "ready" ? refreshed.readiness : null };
+}
+
+/** Recompute readiness only to refresh the shipment's stored current step,
+ * after a change made outside the Job File (a document review, a customer
+ * upload, a pickup or customs update). Never fails the caller. */
+export async function refreshShipmentWorkflowStep(reference: string) {
+  try { await getShipmentWorkflowReadiness(reference); }
+  catch (error) { console.error("Failed to refresh the shipment's current step", error); }
 }

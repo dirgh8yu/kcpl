@@ -5,6 +5,7 @@ import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.
 import { recordTrackingEvent } from "../visibility/tracking-visibility.server";
 import { mockPickupWorkspace, qaMockDataEnabled } from "../qa-fixtures";
 import {
+  appointmentId,
   pickupAppointmentStatuses,
   pickupChannels,
   summarizePickups,
@@ -50,7 +51,6 @@ function branchValue(value: unknown): KcplBranch | null { return kcplBranches.in
 function statusValue(value: unknown): PickupAppointmentStatus { return pickupAppointmentStatuses.includes(value as PickupAppointmentStatus) ? value as PickupAppointmentStatus : "unscheduled"; }
 function channelValue(value: unknown): PickupChannel { return pickupChannels.includes(value as PickupChannel) ? value as PickupChannel : "manual"; }
 function validIso(value: unknown) { const candidate = text(value); const parsed = Date.parse(candidate); return candidate && Number.isFinite(parsed) ? new Date(parsed).toISOString() : null; }
-export function appointmentId(reference: string) { return `PU-${reference.replace(/[^A-Z0-9-]/gi, "").toUpperCase()}`.slice(0, 180); }
 
 function appointmentFromData(id: string, data: Record<string, unknown>): PickupAppointment | null {
   const branch = branchValue(data.branch);

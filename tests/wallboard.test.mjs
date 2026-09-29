@@ -106,7 +106,7 @@ test("blockers reuse the register next-action policy and cap at 10", () => {
   const board = buildWallboard(snapshot(jobs), [], new Date("2026-09-21T04:00:00.000Z"));
   assert.equal(board.blockers.length, 10);
   for (const blocker of board.blockers) {
-    assert.equal(blocker.label, "Exception");
+    assert.equal(blocker.label, "Problem");
     assert.equal(blocker.tone, "danger");
   }
 });

@@ -1,3 +1,4 @@
+import { withStepRefresh } from "../../../../../admin/workflow-step-refresh.server";
 import { getAdminAccess } from "../../../../../admin/admin-auth";
 import { reconcileCanonicalDelivery } from "../../../../../admin/delivery/canonical-delivery-authority.server";
 import { adoptTrackedDelivery, reviewPod } from "../../../../../admin/delivery/delivery-control.server";
@@ -39,7 +40,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   return respond(await deliveryControlView(reference, auth.staff));
 }
 
-export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
+async function handlePOST(request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin delivery updates are not accepted." }, 403);
@@ -80,3 +81,5 @@ export async function POST(request: Request, context: { params: Promise<{ refere
 
   return json({ ok: false, error: "Unknown delivery action." }, 400);
 }
+
+export const POST = withStepRefresh(handlePOST);

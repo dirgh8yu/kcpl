@@ -1,3 +1,4 @@
+import { withStepRefresh } from "../../../../../../admin/workflow-step-refresh.server";
 import { getAdminAccess } from "../../../../../../admin/admin-auth";
 import { getStaffContext } from "../../../../../../admin/staff-directory.server";
 import { checkShipmentBranchAccess } from "../../../../../../admin/shipment-access.server";
@@ -76,7 +77,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   }
 }
 
-export async function PATCH(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
+async function handlePATCH(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin document reviews are not accepted." }, 403);
@@ -124,7 +125,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
+async function handleDELETE(request: Request, context: { params: Promise<{ reference: string; id: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin deletes are not accepted." }, 403);
@@ -156,3 +157,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ refe
     return json({ ok: false, error: "The document could not be deleted." }, 500);
   }
 }
+
+export const PATCH = withStepRefresh(handlePATCH);
+
+export const DELETE = withStepRefresh(handleDELETE);

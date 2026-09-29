@@ -132,7 +132,18 @@ function buildJob(seed: JobSeed, now: number, index: number): CommandCentreJob {
     // -2h for seeded jobs, so a couple of them land inside the register's
     // 15-minute live-activity window and demonstrate the badge.
     latest_activity_at: index < 2 ? iso(now, -(5 + index * 3) * MINUTE) : iso(now, -2 * HOUR),
+    workflow_step: mockWorkflowStep(seed),
   };
+}
+
+/** The Job File step a seeded shipment would show, so the mock list and the
+ * mock Job File tell the same story. */
+function mockWorkflowStep(seed: JobSeed): CommandCentreJob["workflow_step"] {
+  if (seed.status === "delivered") return { id: "proof", label: "Proof of delivery", state: "current", summary: "Needs a checked proof of delivery." };
+  if (seed.customsOpen > 0) return { id: "customs", label: "Customs", state: seed.status === "exception" ? "blocked" : "current", summary: `${seed.customsTotal - seed.customsOpen} of ${seed.customsTotal} customs steps done.` };
+  if (seed.status === "out_for_delivery") return { id: "delivery", label: "Delivery", state: "current", summary: "Out for delivery now." };
+  if (seed.status === "booking_confirmed" || seed.status === "preparing") return { id: "pickup", label: "Pickup", state: "current", summary: "No pickup booked yet." };
+  return { id: "transit", label: "In transit", state: "current", summary: `In transit${seed.location ? ` · ${seed.location}` : ""}.` };
 }
 
 const STAFF_SEEDS: { name: string; email: string }[] = [
@@ -567,6 +578,8 @@ export function mockDeliveryWorkspace(staff: KcplStaffContext, now = Date.now())
       pod_status: verified ? "verified" : state === "delivered_pod_pending" ? "received" : "not_received",
       pod_evidence_count: verified ? 2 : state === "delivered_pod_pending" ? 1 : 0,
       recipient_name: verified || state === "delivered_pod_pending" ? "Warehouse supervisor" : null,
+      owner_uid: job.assigned_to_uid,
+      owner_email: job.assigned_to_email,
       next_delivery_at: state === "delivery_failed" ? iso(now, 18 * HOUR) : job.eta,
       current_location: job.current_location,
       updated_at: job.updated_at,

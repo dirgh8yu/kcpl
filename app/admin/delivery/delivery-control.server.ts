@@ -217,6 +217,8 @@ export async function listDeliveryWorkspace(context: KcplStaffContext) {
       next_delivery_at: nullable(data.delivery_next_at),
       current_location: nullable(data.current_location),
       updated_at: text(data.updated_at),
+      owner_uid: nullable(data.job_assigned_to_uid),
+      owner_email: nullable(data.job_assigned_to_email),
     }];
   }).sort((a, b) => {
     const score = (row: DeliveryQueueRow) => row.delivery_state === "delivery_failed" ? 100 : row.delivery_state === "delivered_pod_pending" ? 80 : row.delivery_state === "delivery_active" ? 50 : row.delivery_state === "not_started" ? 20 : 0;

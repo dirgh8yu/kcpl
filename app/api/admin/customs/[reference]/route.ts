@@ -1,3 +1,4 @@
+import { withStepRefresh } from "../../../../admin/workflow-step-refresh.server";
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { customsClearanceStatuses, type CustomsClearanceStatus } from "../../../../admin/customs/customs-policy";
 import { updateCustomsClearance } from "../../../../admin/customs/customs-clearance.server";
@@ -12,7 +13,7 @@ function clean(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-export async function PATCH(request: Request, context: { params: Promise<{ reference: string }> }) {
+async function handlePATCH(request: Request, context: { params: Promise<{ reference: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return json({ ok: false, error: "Sign in is required." }, 401);
   const staff = await getStaffContext(access.user);
@@ -43,3 +44,5 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (result.kind === "forbidden") return json({ ok: false, error: "This shipment or customs agent is outside your branch access." }, 403);
   return json({ ok: false, error: "Customs clearance storage is unavailable." }, 503);
 }
+
+export const PATCH = withStepRefresh(handlePATCH);

@@ -1,3 +1,4 @@
+import { withStepRefresh } from "../../../../../admin/workflow-step-refresh.server";
 import { getAdminAccess } from "../../../../../admin/admin-auth";
 import { getStaffContext } from "../../../../../admin/staff-directory.server";
 import { checkShipmentBranchAccess } from "../../../../../admin/shipment-access.server";
@@ -70,7 +71,7 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   }
 }
 
-export async function POST(request: Request, context: { params: Promise<{ reference: string }> }) {
+async function handlePOST(request: Request, context: { params: Promise<{ reference: string }> }) {
   const auth = await authorize();
   if ("response" in auth) return auth.response;
   if (!auth.staff.permissions.canManageJobFile) return json({ ok: false, error: "Job File document access is not available for this account." }, 403);
@@ -131,3 +132,5 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     return json({ ok: false, error: "The document could not be stored." }, 500);
   }
 }
+
+export const POST = withStepRefresh(handlePOST);

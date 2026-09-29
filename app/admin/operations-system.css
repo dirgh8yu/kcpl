@@ -1719,6 +1719,10 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .portal-exchange-free { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--app-space-3); border-top: 1px solid var(--admin-line); padding-top: var(--app-space-4); }
 .kcpl-admin-content .portal-exchange-free .ops-field { min-width: 240px; }
 .kcpl-admin-content .portal-action-list { padding: var(--app-space-4); }
+/* Nothing needed from the customer: one quiet line, not an empty panel. */
+.kcpl-admin-content .portal-needs-clear { display: flex; align-items: flex-start; gap: 8px; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); padding: 12px 16px; background: var(--admin-surface); color: var(--admin-muted); font-size: 13px; line-height: 19px; }
+.kcpl-admin-content .portal-needs-clear svg { flex: none; margin-top: 2px; color: var(--admin-success); }
+.kcpl-admin-content .portal-needs-clear strong { color: var(--admin-ink); font-weight: 600; }
 
 @media (max-width: 760px) {
   .kcpl-admin-content .portal-checklist li { flex-wrap: wrap; }
@@ -2476,3 +2480,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-content :is(.ops-skeleton-rows > span, .ops-skeleton-block) { animation: none; }
 }
+
+/* "Assigned to me": one toggle on each work list, beside its filters. */
+.kcpl-admin-content .ops-mine-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
