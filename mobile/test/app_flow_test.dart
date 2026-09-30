@@ -356,8 +356,9 @@ void main() {
     // A flick up carries the sheet to its top.
     await tester.fling(find.byKey(const ValueKey('home-sheet-grabber')), const Offset(0, -300), 1500);
     await run(const Duration(seconds: 1));
-    // Where the row lands depends on how much the sheet holds above it.
-    await tester.ensureVisible(ref('KCPL-S-24091').last);
+    // Where the row lands depends on how much the sheet holds above it: bring
+    // it to the middle, clear of the floating tab bar.
+    await Scrollable.ensureVisible(tester.element(ref('KCPL-S-24091').last), alignment: 0.5);
     await run(const Duration(seconds: 1));
     await tester.tap(ref('KCPL-S-24091').last);
     await run(const Duration(seconds: 2));
