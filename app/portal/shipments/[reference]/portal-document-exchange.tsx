@@ -89,11 +89,13 @@ export function PortalDocumentExchange({
   }
 
   const outstanding = checklist.filter((row) => row.state === "needed" || row.state === "resend");
+  // A confirmed document is already in the Documents list with its badge;
+  // this list is what is still open.
+  const rows = checklist.filter((row) => row.state !== "confirmed" || row.document_type === requested);
 
   return (
     <OpsSurface
       id="documents"
-      eyebrow={t("overview.paperwork_eyebrow")}
       title={t("xchg.title")}
       description={outstanding.length
         ? t("xchg.description_outstanding")
@@ -104,9 +106,9 @@ export function PortalDocumentExchange({
         {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
         {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
 
-        {checklist.length ? (
+        {rows.length ? (
           <ul className="portal-checklist">
-            {checklist.map((row) => (
+            {rows.map((row) => (
               <li key={row.document_type} data-state={row.state} data-requested={row.document_type === requested ? "" : undefined}>
                 <span className="portal-checklist-mark" aria-hidden="true"><StateIcon state={row.state}/></span>
                 <span className="portal-checklist-main">
@@ -146,7 +148,7 @@ export function PortalDocumentExchange({
               </li>
             ))}
           </ul>
-        ) : (
+        ) : checklist.length ? null : (
           <OpsEmptyState
             compact
             kind="healthy"

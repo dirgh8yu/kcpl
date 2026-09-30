@@ -60,7 +60,6 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
         eyebrow={t("overview.eyebrow")}
         title={t("ships.title")}
         description={t("ships.description")}
-        meta={<span>{shipments.length === 1 ? t("overview.on_record_one") : t("overview.on_record", { count: shipments.length })}</span>}
       />
       <div className="ops-content">
         {/* The staff registers' operating row: search left, the count and a

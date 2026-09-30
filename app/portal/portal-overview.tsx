@@ -3,15 +3,12 @@ import { AlarmClock, ArrowRight, CheckCircle2, FileText, FileUp, MessageSquareQu
 import {
   OpsBadge,
   OpsEmptyState,
-  OpsMetric,
-  OpsMetricStrip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
   OpsSurface,
   OpsTableWrap,
 } from "../admin/operations-ui";
-import { OpsKpiRail, OpsRailMetric } from "../admin/ops-register";
 import type { PortalOverview as PortalOverviewData } from "./portal-data.server";
 import { freeTimeSummary } from "../shipment-free-time";
 import {
@@ -33,7 +30,11 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
   const locale = session.locale;
   const active = overview.shipments.filter((shipment) => shipment.status !== "delivered").slice(0, 8);
   const outstanding = overview.finance?.balances.filter((balance) => balance.outstanding > 0) ?? [];
-  const needs = portalNeeds(overview);
+  // Money is one row here: the amounts owed sit on it, so no separate
+  // account box or second "to pay" row repeats them. (The app keeps both
+  // rows; it lists overdue and open invoices on their own screen.)
+  const needs = portalNeeds(overview).filter((need, _, all) => need.kind !== "pay_open" || !all.some((other) => other.kind === "pay_overdue"));
+  const owed = outstanding.map((balance) => portalMoney(balance.outstanding, balance.currency)).join(" · ");
 
   return (
     <OpsPage>
@@ -41,52 +42,16 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
         eyebrow={t("overview.eyebrow")}
         title={session.customerName}
         description={t("overview.description")}
-        meta={<>
-          <span>{t("overview.signed_in_as", { email: session.email })}</span>
-          <span>{overview.shipments.length === 1 ? t("overview.on_record_one") : t("overview.on_record", { count: overview.shipments.length })}</span>
-        </>}
         actions={<Link href="/portal/requests" className="ops-button" data-variant="primary" data-size="sm">{t("overview.new_request")}</Link>}
       />
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
-          <PortalNeedsList session={session} needs={needs}/>
-
-          {/* Where things stand. What needs the customer is the list above, so
-              documents and free time are not counted a second time here. */}
-          <OpsKpiRail label={t("overview.eyebrow")}>
-            <OpsRailMetric label={t("overview.kpi_active")} value={overview.activeCount}/>
-            <OpsRailMetric label={t("overview.kpi_in_transit")} value={overview.inTransitCount} tone="success"/>
-            <OpsRailMetric label={t("overview.kpi_arriving")} value={overview.arrivingCount} tone="info"/>
-            <OpsRailMetric label={t("overview.kpi_attention")} value={overview.attentionCount} tone="danger"/>
-          </OpsKpiRail>
-
-          {overview.finance && outstanding.length ? (
-            <OpsSurface
-              eyebrow={t("overview.account_eyebrow")}
-              title={t("overview.account_title")}
-              description={`${overview.finance.openInvoices === 1 ? t("overview.open_invoices_one") : t("overview.open_invoices", { count: overview.finance.openInvoices })}${overview.finance.overdueInvoices ? ` · ${t("overview.overdue_count", { count: overview.finance.overdueInvoices })}` : ""}`}
-              action={<Link href="/portal/invoices" className="ops-button" data-variant="secondary" data-size="sm">{t("overview.view_invoices")}</Link>}
-              priority={overview.finance.overdueInvoices > 0 ? "warning" : "normal"}
-            >
-              <OpsMetricStrip columns={Math.min(4, Math.max(1, outstanding.length))}>
-                {outstanding.map((balance) => (
-                  <OpsMetric
-                    key={balance.currency}
-                    icon={<Receipt size={14} strokeWidth={1.75}/>}
-                    label={t("overview.currency_outstanding", { currency: balance.currency })}
-                    value={portalMoney(balance.outstanding, balance.currency)}
-                    detail={balance.overdue > 0 ? t("overview.amount_overdue", { amount: portalMoney(balance.overdue, balance.currency) }) : t("overview.nothing_overdue")}
-                  />
-                ))}
-              </OpsMetricStrip>
-            </OpsSurface>
-          ) : null}
+          <PortalNeedsList session={session} needs={needs} owed={owed} openInvoices={overview.finance?.openInvoices ?? 0}/>
 
           <OpsSurface
-            eyebrow={t("overview.movements_eyebrow")}
             title={t("overview.movements_title")}
-            description={t("overview.movements_description")}
+            description={t("overview.movements_counts", { active: overview.activeCount, in_transit: overview.inTransitCount, arriving: overview.arrivingCount })}
             action={<Link href="/portal/shipments" className="ops-button" data-variant="secondary" data-size="sm">{t("overview.all_shipments")}</Link>}
             flush
           >
@@ -145,14 +110,12 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
           </OpsSurface>
 
           <OpsSurface
-            eyebrow={t("overview.paperwork_eyebrow")}
             title={t("overview.paperwork_title")}
-            description={t("overview.paperwork_description")}
             action={<Link href="/portal/documents" className="ops-button" data-variant="secondary" data-size="sm">{t("overview.all_documents")}</Link>}
           >
             {overview.documents.length ? (
               <ul className="portal-document-list">
-                {overview.documents.map((document) => (
+                {overview.documents.slice(0, 3).map((document) => (
                   <li key={`${document.shipment_reference}:${document.id}`}>
                     <span className="portal-document-icon" aria-hidden="true"><FileText size={15} strokeWidth={1.75}/></span>
                     <span className="portal-document-main">
@@ -187,7 +150,7 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
 }
 
 /** One list of everything the customer has to do, most pressing first. */
-function PortalNeedsList({ session, needs }: { session: PortalSession; needs: PortalNeed[] }) {
+function PortalNeedsList({ session, needs, owed, openInvoices }: { session: PortalSession; needs: PortalNeed[]; owed: string; openInvoices: number }) {
   const t = portalTranslator(session.locale);
   const locale = session.locale;
   if (!needs.length) {
@@ -219,7 +182,7 @@ function PortalNeedsList({ session, needs }: { session: PortalSession; needs: Po
             <strong>{need.kind === "pay_overdue"
               ? (need.count === 1 ? t("needs.pay_overdue_one") : t("needs.pay_overdue", { count: need.count }))
               : (need.count === 1 ? t("needs.pay_open_one") : t("needs.pay_open", { count: need.count }))}</strong>
-            <span>{t("needs.pay_detail")}</span>
+            <span>{owed ? `${openInvoices === 1 ? t("overview.open_invoices_one") : t("overview.open_invoices", { count: openInvoices })} · ${t("needs.pay_owed", { amounts: owed })}` : t("needs.pay_detail")}</span>
           </span>
           <Link href={need.href} className="ops-button" data-variant={need.kind === "pay_overdue" ? "primary" : "secondary"} data-size="sm">{t("overview.view_invoices")}</Link>
         </li>;

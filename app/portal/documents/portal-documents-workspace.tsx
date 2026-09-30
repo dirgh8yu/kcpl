@@ -62,10 +62,7 @@ export function PortalDocumentsWorkspace({
         eyebrow={t("overview.eyebrow")}
         title={t("docs.title")}
         description={t("docs.description")}
-        meta={<>
-          <span>{documents.length === 1 ? t("docs.count_one") : t("docs.count", { count: documents.length })}</span>
-          {total > scanned ? <span>{t("docs.coverage", { scanned, total })}</span> : null}
-        </>}
+        meta={total > scanned ? <span>{t("docs.coverage", { scanned, total })}</span> : undefined}
       />
       <div className="ops-content">
         {/* The Document Vault's operating row: direction as scopes with

@@ -40,7 +40,7 @@ export function portalNeeds(input: PortalNeedsInput): PortalNeed[] {
   const freeTime = (row: PortalNeedsInput["freeTime"][number]): PortalNeed => ({ kind: "free_time", reference: row.reference, route: route(row.origin, row.destination), location: row.location, status: row.status, href: shipment(row.reference) });
   needs.push(...expired.map(freeTime));
   for (const quote of input.quotesAwaiting) {
-    needs.push({ kind: "quote", reference: quote.reference, route: route(quote.origin, quote.destination), amount: quote.quoted_amount, currency: quote.quote_currency, validUntil: quote.valid_until, href: "/portal/requests" });
+    needs.push({ kind: "quote", reference: quote.reference, route: route(quote.origin, quote.destination), amount: quote.quoted_amount, currency: quote.quote_currency, validUntil: quote.valid_until, href: "/portal/requests#quotes" });
   }
   needs.push(...running.map(freeTime));
   const open = (input.finance?.openInvoices ?? 0) - overdue;

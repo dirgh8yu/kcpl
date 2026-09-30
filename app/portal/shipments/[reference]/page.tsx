@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { AlarmClock, CircleDot, FileText, Package } from "lucide-react";
+import { CircleDot, FileText, Package } from "lucide-react";
 import {
   OpsBadge,
   OpsDetailGrid,
   OpsDetailItem,
-  OpsDetailSection,
   OpsEmptyState,
   OpsMono,
   OpsPage,
@@ -100,6 +99,8 @@ export default async function PortalShipmentPage({
 function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; locale: PortalLocale; requested: string | null }) {
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
+  const waiting = checklist.some((row) => row.state === "needed" || row.state === "resend");
+  const exchange = <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend} locale={locale} requested={requested}/>;
 
   return (
     <OpsPage>
@@ -154,9 +155,7 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
                 ) : null}
                 <OpsDetailItem label={t("ship.allowance")}>{t("ship.allowance_days", { days: freeTime.freeTime.days ?? 0 })}</OpsDetailItem>
               </OpsDetailGrid>
-              <p className="portal-footnote">
-                <AlarmClock size={14} aria-hidden="true"/> {t("ship.free_time_footnote")}
-              </p>
+              <p className="portal-footnote">{t("ship.free_time_footnote")}</p>
             </OpsSurface>
           ) : null}
 
@@ -164,24 +163,22 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
             <OpsNotice tone="neutral">{shipment.customer_note}</OpsNotice>
           ) : null}
 
-          <OpsSurface eyebrow={t("ship.movement_eyebrow")} title={t("ship.movement_title")}>
-            <OpsDetailSection title={t("ship.route_section")} columns={3}>
-              <OpsDetailItem label={t("overview.origin")}>{shipment.origin || t("common.none")}</OpsDetailItem>
-              <OpsDetailItem label={t("overview.destination")}>{shipment.destination || t("common.none")}</OpsDetailItem>
-              <OpsDetailItem label={t("ship.mode")}>{portalModeLabel(shipment.mode, locale)}</OpsDetailItem>
+          {/* What the customer owes KCPL comes before what KCPL reports. */}
+          {waiting ? exchange : null}
+
+          {/* Route, mode, status and the opening date are in the header. */}
+          <OpsSurface title={t("ship.movement_title")}>
+            <OpsDetailGrid columns={4}>
               <OpsDetailItem label={t("ship.current_location")}>{shipment.current_location || t("ship.not_reported")}</OpsDetailItem>
               <OpsDetailItem label={t("ship.eta")}>{portalDate(shipment.eta)}</OpsDetailItem>
               <OpsDetailItem label={t("ships.col_carrier")}>{shipment.carrier || t("ship.to_be_confirmed")}</OpsDetailItem>
               <OpsDetailItem label={t("ship.carrier_reference")}>
                 {shipment.carrier_reference ? <OpsMono>{shipment.carrier_reference}</OpsMono> : t("common.none")}
               </OpsDetailItem>
-              <OpsDetailItem label={t("common.status")}>{portalStatusLabel(shipment.status, locale)}</OpsDetailItem>
-              <OpsDetailItem label={t("ship.opened_label")}>{portalDate(shipment.created_at)}</OpsDetailItem>
-            </OpsDetailSection>
+            </OpsDetailGrid>
           </OpsSurface>
 
           <OpsSurface
-            eyebrow={t("ship.progress_eyebrow")}
             title={t("ship.milestones_title")}
             description={t("ship.milestones_description")}
           >
@@ -227,10 +224,8 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
             }}
           />
 
-          <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend} locale={locale} requested={requested}/>
 
           <OpsSurface
-            eyebrow={t("overview.paperwork_eyebrow")}
             title={t("docs.title")}
             description={t("ship.documents_description")}
           >
@@ -272,6 +267,8 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
               />
             )}
           </OpsSurface>
+
+          {waiting ? null : exchange}
         </div>
       </div>
     </OpsPage>

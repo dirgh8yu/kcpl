@@ -1625,6 +1625,9 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .portal-footer { padding-inline: var(--app-space-4); }
   .kcpl-admin-content .portal-login-card { padding: var(--app-space-5); }
   .kcpl-admin-content .portal-document-list li { flex-wrap: wrap; }
+  /* The words stay beside their icon; the buttons drop to one line under them. */
+  .kcpl-admin-content .portal-document-list li > .portal-document-main { flex: 1 1 calc(100% - 44px); margin-right: 0; }
+  .kcpl-admin-content .portal-document-list li > .portal-document-main + * { margin-left: 44px; }
 }
 
 @media (max-width: 760px) {
@@ -1743,7 +1746,8 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 
 @media (max-width: 760px) {
   .kcpl-admin-content .portal-checklist li { flex-wrap: wrap; }
-  .kcpl-admin-content .portal-checklist-main { margin-right: 0; width: 100%; }
+  .kcpl-admin-content .portal-checklist-main { margin-right: 0; flex: 1 1 calc(100% - 40px); }
+  .kcpl-admin-content .portal-checklist-main + * { margin-left: 40px; }
 }
 
 /* Customer portal -- notification settings. A row per topic with its switch on

@@ -101,7 +101,17 @@ test("the portal is built from the admin's register kit, not a look of its own",
     }
   }
   const overview = code(await readFile(repo("app/portal/portal-overview.tsx"), "utf8"));
-  assert.match(overview, /<OpsKpiRail/);
+  // Each number once: what is owed sits on the one "pay" row of the needs
+  // list, and the shipment counts are the table's own line, not a rail.
+  assert.doesNotMatch(overview, /<OpsKpiRail|<OpsMetricStrip/);
+  assert.match(overview, /need\.kind !== "pay_open" \|\| !all\.some\(\(other\) => other\.kind === "pay_overdue"\)/);
+  assert.match(overview, /t\("needs\.pay_owed", \{ amounts: owed \}\)/);
+  assert.match(overview, /t\("overview\.movements_counts"/);
+  // A shipment page asks for the missing paperwork before it reports, and
+  // does not repeat the route, mode, status or opening date from its header.
+  const detail = code(await readFile(repo("app/portal/shipments/[reference]/page.tsx"), "utf8"));
+  assert.ok(detail.indexOf("{waiting ? exchange : null}") < detail.indexOf('t("ship.movement_title")'));
+  assert.doesNotMatch(detail, /t\("ship\.opened_label"\)|label=\{t\("common\.status"\)\}/);
   for (const path of ["app/portal/shipments/portal-shipments-workspace.tsx", "app/portal/documents/portal-documents-workspace.tsx"]) {
     const source = code(await readFile(repo(path), "utf8"));
     assert.match(source, /<OpsRegisterToolbar/, path);

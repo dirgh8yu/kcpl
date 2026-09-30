@@ -32,10 +32,7 @@ export function PortalInvoicesWorkspace({
         eyebrow={t("overview.eyebrow")}
         title={t("inv.title")}
         description={t("inv.description")}
-        meta={<>
-          <span>{invoices.length === 1 ? t("inv.count_one") : t("inv.count", { count: invoices.length })}</span>
-          <span>{t("inv.open_overdue", { open: summary.openInvoices, overdue: summary.overdueInvoices })}</span>
-        </>}
+        meta={<span>{t("inv.open_overdue", { open: summary.openInvoices, overdue: summary.overdueInvoices })}</span>}
         // What is owed, how overdue, and what was paid, as a PDF.
         actions={<a className="ops-button" data-variant="secondary" data-size="sm" href="/api/portal/statement">{t("inv.statement")}</a>}
       />
@@ -43,7 +40,6 @@ export function PortalInvoicesWorkspace({
         <div className="ops-stack portal-stack">
           {summary.balances.length ? (
             <OpsSurface
-              eyebrow={t("inv.position_eyebrow")}
               title={t("inv.position_title")}
               description={t("inv.position_description")}
               priority={summary.overdueInvoices > 0 ? "warning" : "normal"}
@@ -62,7 +58,7 @@ export function PortalInvoicesWorkspace({
             </OpsSurface>
           ) : null}
 
-          <OpsSurface eyebrow={t("inv.billing_eyebrow")} title={t("inv.billing_title")} flush>
+          <OpsSurface title={t("inv.billing_title")} flush>
             {invoices.length ? (
               <OpsTableWrap>
                 <table className="ops-table ops-register-table portal-stack-table" data-row-link="">

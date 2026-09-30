@@ -145,10 +145,6 @@ export function PortalRequestsWorkspace({
         eyebrow={t("overview.eyebrow")}
         title={t("req.title")}
         description={t("req.description")}
-        meta={<>
-          <span>{quotes.length === 1 ? t("req.quote_count_one") : t("req.quote_count", { count: quotes.length })}</span>
-          <span>{requests.length === 1 ? t("req.open_count_one") : t("req.open_count", { count: requests.length })}</span>
-        </>}
       />
 
       <div className="ops-content">
@@ -158,7 +154,6 @@ export function PortalRequestsWorkspace({
 
           {capabilities.canSubmitRequests ? (
             <OpsSurface
-              eyebrow={t("req.new_eyebrow")}
               title={t("req.new_title")}
               description={t("req.new_description")}
             >
@@ -214,7 +209,7 @@ export function PortalRequestsWorkspace({
           ) : null}
 
           <OpsSurface
-            eyebrow={t("req.commercial_eyebrow")}
+            id="quotes"
             title={t("req.quotes_title")}
             description={t("req.quotes_description")}
             flush
@@ -338,7 +333,6 @@ export function PortalRequestsWorkspace({
           </OpsSurface>
 
           <OpsSurface
-            eyebrow={t("req.progress_eyebrow")}
             title={t("req.progress_title")}
             description={t("req.progress_description")}
             flush
