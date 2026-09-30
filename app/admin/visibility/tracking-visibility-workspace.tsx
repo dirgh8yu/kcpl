@@ -88,9 +88,8 @@ function shortDateTime(value: string | null) {
     : new Intl.DateTimeFormat("en-AU", {
         day: "numeric",
         month: "short",
-        hour: "2-digit",
+        hour: "numeric",
         minute: "2-digit",
-        hour12: false,
         timeZone: NEPAL_TIME_ZONE,
       }).format(date);
 }

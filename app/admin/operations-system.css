@@ -38,7 +38,10 @@
   --admin-line: #E3E8EF;
   --admin-line-strong: #CBD3DE;
   --admin-muted: #5C6675;
-  --admin-faint: #8B95A4;
+  /* The lightest text: 4.5:1 or more on white, the canvas and surface-muted
+   * (WCAG AA for small text). Hierarchy below muted comes from size and
+   * weight, not from text too pale to read. */
+  --admin-faint: #646E7D;
   /* Semantic ink — Untitled-grade 700 shades that hold AA contrast on light chips. */
   --admin-danger: #B42318;
   --admin-warning: #B54708;
@@ -242,7 +245,7 @@
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
 .app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
 @media (hover: hover) and (pointer: fine) { .app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); color: var(--admin-ink); } }
-.app-nav-search kbd { margin-left: auto; color: var(--admin-line-strong); font-family: inherit; font-size: 10px; }
+.app-nav-search kbd { margin-left: auto; color: var(--admin-faint); font-family: inherit; font-size: 10px; }
 .app-account { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--app-radius); }
 /* Profile button: opens the account panel (the shell's settings surface). */
 .app-account-trigger { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; padding: 0; border: 0; border-radius: var(--app-radius); background: transparent; color: inherit; text-align: left; cursor: pointer; }
@@ -1280,6 +1283,8 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 @starting-style {
   .app-command-dialog { opacity: 0; transform: translateY(-8px) scale(.98); }
 }
+/* Opened with ⌘K or /: no entrance at all (Raycast-style). A click keeps it. */
+:is(.app-command-backdrop, .app-command-dialog)[data-instant] { transition: none; }
 
 .app-notification-toggle { position: relative; }
 /* Danger-activity cue fired by operational surfaces (kcpl:activity-danger). */
@@ -1906,7 +1911,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-scope-tab:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
 .kcpl-admin-content .ops-scope-tab[data-active="true"] { background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; }
 .kcpl-admin-content .ops-scope-count { color: var(--admin-faint); font-size: 11px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
-.kcpl-admin-content .ops-scope-tab[data-active="true"] .ops-scope-count { color: var(--admin-crimson); font-weight: 600; }
+.kcpl-admin-content .ops-scope-tab[data-active="true"] .ops-scope-count { color: var(--admin-crimson-dark); font-weight: 600; }
 
 /* Filter triggers: 32px, quiet until active; an active filter gains ink and a
  * crimson dot, and its value is spelled out in the chip row below. */

@@ -20,7 +20,7 @@
 .crm360-tool > summary { display: flex; min-height: 54px; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 14px; }
 .crm360-tool > summary::-webkit-details-marker { display: none; }
 .crm360-tool > summary strong { display: block; color: #141414; font-size: 12px; font-weight: 650; }
-.crm360-tool > summary small { display: block; margin-top: 3px; color: #737373; font-size: 10px; line-height: 15px; }
+.crm360-tool > summary small { display: block; margin-top: 3px; color: var(--admin-muted); font-size: 10px; line-height: 15px; }
 .crm360-tool > summary span:last-child { color: #dc143c; font-size: 10px; font-weight: 650; }
 .crm360-tool[open] > summary { border-bottom: 1px solid #e2e2e2; background: #f7f7f7; }
 .crm360-tool-body { overflow: hidden; }
@@ -33,7 +33,7 @@
 .crm360-tool-body [class*="bg-[#faf9f5]"] { background: #f7f7f7; }
 .crm360-tool-body [class*="text-black/40"],
 .crm360-tool-body [class*="text-black/45"],
-.crm360-tool-body [class*="text-black/50"] { color: #737373; }
+.crm360-tool-body [class*="text-black/50"] { color: var(--admin-muted); }
 
 }
 

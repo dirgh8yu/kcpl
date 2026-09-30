@@ -272,6 +272,9 @@ export function OpsMono({ children, className }: { children: ReactNode; classNam
 
 export function OpsProgress({ value, max = 100, tone = "accent", label }: { value: number; max?: number; tone?: "accent" | "success" | "warning" | "danger"; label?: string }) {
   const ratio = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+  // Without a label the bar only draws a figure already printed beside it, so
+  // screen readers skip it rather than announce an unnamed progress bar.
+  if (!label) return <div className="ops-progress" data-tone={tone} aria-hidden="true"><span style={{ width: `${ratio}%` }}/></div>;
   return <div className="ops-progress" data-tone={tone} aria-label={label} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}><span style={{ width: `${ratio}%` }}/></div>;
 }
 

@@ -60,6 +60,10 @@ export function OperationsShell({
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Opened from the keyboard, the palette appears at once; a keyboard action
+  // is repeated all day and must never wait for motion. A click keeps the
+  // short entrance that shows where it came from.
+  const [paletteInstant, setPaletteInstant] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountTab>("identity");
   const [refreshing, startRefresh] = useTransition();
@@ -102,6 +106,7 @@ export function OperationsShell({
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setMobileOpen(false);
+        setPaletteInstant(true);
         setPaletteOpen((current) => !current);
       } else if (event.key === "Escape") {
         setMobileOpen(false);
@@ -152,7 +157,8 @@ export function OperationsShell({
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); restoreFocus?.focus(); };
   }, [mobileOpen]);
 
-  const openSearch = useCallback(() => { setMobileOpen(false); setPaletteOpen(true); }, []);
+  const openSearch = useCallback(() => { setMobileOpen(false); setPaletteInstant(false); setPaletteOpen(true); }, []);
+  const openSearchFromKeyboard = useCallback(() => { setMobileOpen(false); setPaletteInstant(true); setPaletteOpen(true); }, []);
   function changeBranch(value: string) {
     const query = new URLSearchParams(searchParams?.toString() ?? "");
     query.set("branch", value);
@@ -216,8 +222,8 @@ export function OperationsShell({
       <div className="app-account-anchor">
         <OperationsAccountMenu userName={userName} isManagement={capabilities.isManagement} signOutPath={signOutPath} open={accountOpen} tab={accountTab} onTabChange={setAccountTab} onClose={closeAccount} triggerRef={accountTrigger}/>
       </div>
-      <OperationsCommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
-      {placeholder ? null : <StaffShortcuts hubs={keyHubs} paletteOpen={paletteOpen} onOpenPalette={openSearch}/>}
+      <OperationsCommandPalette open={paletteOpen} instant={paletteInstant} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
+      {placeholder ? null : <StaffShortcuts hubs={keyHubs} paletteOpen={paletteOpen} onOpenPalette={openSearchFromKeyboard}/>}
     </div>
   );
 }

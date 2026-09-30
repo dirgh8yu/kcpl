@@ -32,10 +32,12 @@ function formatMoney(value: number | null, currency: string) {
   }
 }
 
+/** A calendar day, whether stored as "2026-11-29" or as a full timestamp. */
 function dateLabel(value: string | null) {
   if (!value) return "Open-ended";
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
+  const plainDay = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const date = new Date(plainDay ? `${value}T00:00:00Z` : value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: plainDay ? "UTC" : "Asia/Kathmandu" }).format(date);
 }
 
 export function CrmRateCardPanel({ customerId, initialRateCards, permissions }: { customerId: string; initialRateCards: CrmRateCard[]; permissions: StaffCapabilities }) {

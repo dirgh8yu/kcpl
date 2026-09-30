@@ -105,13 +105,13 @@ function dateLabel(value: string | null) {
 function timeLabel(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" }).format(date);
+  return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-AU", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kathmandu" }).format(date);
 }
 
 function shortDateTime(value: string | null) {
   if (!value) return "Not set";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" }).format(date);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kathmandu" }).format(date);
 }
 
 function toLocalInput(value: string | null) {

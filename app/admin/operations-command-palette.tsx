@@ -52,7 +52,7 @@ function kindLabel(kind: PaletteEntry["kind"]) {
   return "Supplier bill";
 }
 
-export function OperationsCommandPalette({ open, onClose, workspaces }: { open: boolean; onClose: () => void; workspaces: WorkflowWorkspace[] }) {
+export function OperationsCommandPalette({ open, instant = false, onClose, workspaces }: { open: boolean; instant?: boolean; onClose: () => void; workspaces: WorkflowWorkspace[] }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -203,8 +203,8 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
   const busy = query.trim().length >= 2 && resultQuery !== query.trim();
 
   return (
-    <div className="app-command-backdrop fixed inset-0 z-[100] flex items-start justify-center bg-[var(--admin-ink)]/30 px-3 pt-[10vh]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div ref={dialogRef} className="app-command-dialog w-full max-w-[760px] overflow-hidden border border-[var(--admin-ink)] bg-[var(--admin-surface)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
+    <div data-instant={instant || undefined} className="app-command-backdrop fixed inset-0 z-[100] flex items-start justify-center bg-[var(--admin-ink)]/30 px-3 pt-[10vh]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={dialogRef} data-instant={instant || undefined} className="app-command-dialog w-full max-w-[760px] overflow-hidden border border-[var(--admin-ink)] bg-[var(--admin-surface)]" role="dialog" aria-modal="true" aria-label="KCPL command palette">
         <div className="flex items-center gap-3 border-b border-[var(--admin-ink)] px-4 py-4 sm:px-5">
           <Search size={16} strokeWidth={1.75} className="shrink-0 text-[var(--admin-crimson)]"/>
           <input

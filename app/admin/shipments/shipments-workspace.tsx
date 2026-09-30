@@ -435,7 +435,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                         {/* The reference opens the Job File in one click; the rest of the row previews it here. */}
                         <td data-cell="primary">
                           <Link href={`/admin/jobs/${encodeURIComponent(job.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="shipments-ref-link ops-mono" onClick={(event) => event.stopPropagation()}>{job.reference}</Link>
-                          {liveActivityRefs.has(job.reference) ? <span className="shipments-live-activity" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}
+                          {liveActivityRefs.has(job.reference) ? <span className="shipments-live-activity" role="img" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}
                           {/* Only a raised priority is worth a mark; "standard" on every row was noise. */}
                           {job.priority === "standard" ? null : <span className="shipments-priority" data-priority={job.priority}>{job.priority === "urgent" ? "Urgent" : "High"}</span>}
                         </td>

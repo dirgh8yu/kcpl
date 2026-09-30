@@ -172,7 +172,7 @@ export function ShipmentCards({ jobs, selectedReference, onSelect, liveActivityR
               aria-label={`Open ${job.reference}, ${job.customer_name || "unlinked customer"}, ${shipmentStatusLabels[job.status]}${live ? ", new activity in the last 15 minutes" : ""}`}
             >
               <span className="ship-card-head">
-                <span className="ops-mono ship-card-ref">{job.reference}{live ? <span className="shipments-live-activity" title="New activity in the last 15 minutes"/> : null}</span>
+                <span className="ops-mono ship-card-ref">{job.reference}{live ? <span className="shipments-live-activity" role="img" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}</span>
                 <span className="ops-badge" data-tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</span>
               </span>
               <strong className="ship-card-customer">{job.customer_name || "Customer not linked"}</strong>

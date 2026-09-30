@@ -147,7 +147,7 @@
 }
 
 .kcpl-admin-content .shipments-filter-tab[data-active="true"] .shipments-tab-count {
-  color: var(--admin-crimson);
+  color: var(--admin-crimson-dark);
   font-weight: 600;
 }
 

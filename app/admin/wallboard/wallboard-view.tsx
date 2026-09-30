@@ -94,7 +94,7 @@ export function WallboardView({ initial, initialGeneratedAt }: { initial: Wallbo
         <span className="wb-progress-track" aria-hidden="true">
           <span key={slide} className="wb-progress" style={{ animationDuration: `${SLIDE_MS}ms` }} />
         </span>
-        <span className="wb-snapshot" title={generatedAt}>Snapshot {generatedAt}</span>
+        <span className="wb-snapshot" title={generatedAt}>Snapshot {Number.isNaN(Date.parse(generatedAt)) ? generatedAt : nptClock(new Date(generatedAt))}</span>
       </footer>
     </div>
   );
@@ -118,7 +118,7 @@ function WallboardClock() {
 }
 
 function nptClock(now: Date): string {
-  return new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" }).format(now);
+  return new Intl.DateTimeFormat("en-AU", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kathmandu" }).format(now);
 }
 
 function nptDate(now: Date): string {

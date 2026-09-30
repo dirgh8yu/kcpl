@@ -40,3 +40,15 @@ test("shortcuts stand down while typing, in dialogs, and with modifier keys", ()
   assert.match(source, /\[data-page-actions\]/);
   assert.match(source, /\^\\s\*\(New\|Schedule\)\\b/);
 });
+
+test("the palette opens without motion from the keyboard and with its entrance from a click", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  const shell = await read("app/admin/operations-shell.tsx");
+  // ⌘K and the shortcut layer both mark the opening as keyboard-driven.
+  assert.match(shell, /setPaletteInstant\(true\);\n\s*setPaletteOpen\(\(current\) => !current\);/);
+  assert.match(shell, /onOpenPalette=\{openSearchFromKeyboard\}/);
+  assert.match(shell, /const openSearch = useCallback\(\(\) => \{ setMobileOpen\(false\); setPaletteInstant\(false\);/);
+  const css = await read("app/admin/operations-system.css");
+  assert.match(css, /:is\(\.app-command-backdrop, \.app-command-dialog\)\[data-instant\] \{ transition: none; \}/);
+});

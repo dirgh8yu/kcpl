@@ -18,11 +18,13 @@ export type ShipmentThreadLabels = {
   loadFailed: string;
 };
 
-function when(value: string) {
+/** Nepal time, in the viewer's product's own clock: the portal's 24-hour
+ *  "29 Sept, 13:21", the staff workspace's "29 Sept, 1:21 pm". */
+function when(value: string, viewer: ShipmentMessageSide) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? value
-    : date.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    : new Intl.DateTimeFormat(viewer === "customer" ? "en-GB" : "en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kathmandu" }).format(date);
 }
 
 /**
@@ -106,7 +108,7 @@ export function ShipmentThread({ endpoint, viewer, labels, id = "messages" }: {
           <ol ref={list} className="shipment-thread" aria-live="polite" aria-busy={messages === null}>
             {(messages ?? []).map((message) => (
               <li key={message.id} data-own={message.from === viewer ? "true" : undefined}>
-                <span className="shipment-thread-meta">{message.author} · {when(message.created_at)}</span>
+                <span className="shipment-thread-meta">{message.author} · {when(message.created_at, viewer)}</span>
                 <p>{message.body}</p>
               </li>
             ))}
