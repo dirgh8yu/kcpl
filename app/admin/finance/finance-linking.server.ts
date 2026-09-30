@@ -5,6 +5,7 @@ import { linkQuoteToCrmCustomer } from "../crm/crm-quote-links.server";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { authorizeFinanceCustomerLink } from "./finance-authorization.server";
 import type { FinanceCustomerResolution, FinanceCustomerSuggestion } from "./finance-customer-resolution";
+import { mockInvoiceCustomerResolution, qaMockDataEnabled } from "../qa-fixtures";
 
 type Actor = { name: string; email: string };
 
@@ -29,6 +30,7 @@ function suggestionsFromQuote(value: unknown): FinanceCustomerSuggestion[] {
  * use the transaction-backed CRM link helper with the staff context.
  */
 export async function resolveInvoiceCustomerFromShipment(shipmentReference: string): Promise<FinanceCustomerResolution> {
+  if (qaMockDataEnabled()) return mockInvoiceCustomerResolution(shipmentReference.trim().toUpperCase());
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
 
   const shipmentId = shipmentReference.trim().toUpperCase();

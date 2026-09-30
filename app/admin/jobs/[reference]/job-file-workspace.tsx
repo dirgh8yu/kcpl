@@ -33,7 +33,7 @@ import { workflowBlockerFix, type ShipmentWorkflowReadiness } from "../../workfl
 import { openJobPanel } from "./job-record";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSkeleton, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFileDrop, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSkeleton, OpsSurface } from "../../operations-ui";
 import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
 import { ShipmentThread } from "../../../shipment-thread";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments, canVerifyOwnShipmentDocument } from "../../../shipment-document-policy";
@@ -418,7 +418,7 @@ export function JobFileWorkspace({
             {!storageAvailable ? <div className="mb-3"><OpsNotice tone="warning">File uploads aren’t working right now. Try again later.</OpsNotice></div> : null}
             <form onSubmit={uploadDocument} className="job-form job-upload">
               <OpsField label="Type"><select name="documentType" defaultValue={workflow.documents.find((item) => item.required && !item.present && item.uploaded_count === 0 && item.document_type !== "proof_of_delivery")?.document_type ?? "other"}>{shipmentDocumentTypes.map((type) => <option key={type} value={type}>{shipmentDocumentTypeLabels[type]}</option>)}</select></OpsField>
-              <OpsField label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField>
+              <OpsFileDrop name="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" prompt="Choose a file" hint="PDF, image, Word, Excel, CSV or TXT"/>
               <OpsButton type="submit" variant="secondary" size="sm" disabled={documentBusy || !storageAvailable}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{documentBusy ? "Uploading…" : "Upload"}</OpsButton>
             </form>
             {documentsLoading ? <OpsSkeleton lines={2} label="Loading documents" className="mt-3"/> : documents.length ? <ul className="job-rows mt-2">{documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} role={role} currentUserEmail={currentUserEmail} onDelete={() => deleteDocument(document)} onReview={(status, note) => reviewDocument(document, status, note)}/>)}</ul> : <OpsEmptyState icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No documents yet" description="Upload the AWB or BL, invoice, packing list and customs papers here."/>}

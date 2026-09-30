@@ -68,15 +68,6 @@
   background: var(--admin-surface);
 }
 
-.createError {
-  border: 1px solid var(--admin-danger-line);
-  border-radius: 6px;
-  background: var(--admin-danger-bg);
-  padding: 8px 10px;
-  color: var(--admin-danger);
-  font-size: 10px;
-  line-height: 15px;
-}
 
 /* Holds the bulk-assign bar under the work queue heading when rows are ticked. */
 .bulkSlot {

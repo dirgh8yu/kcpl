@@ -2394,7 +2394,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .workflow-blockers-override textarea { min-height: 56px; }
 .kcpl-admin-content .shipment-status-control { display: grid; gap: 8px; }
 .kcpl-admin-content .shipment-status-control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.kcpl-admin-content .shipment-status-control-error { margin: 0; color: var(--admin-danger); font-size: 12.5px; line-height: 18px; }
 
 
 /* "Assigned to me": one toggle on each work list, beside its filters. */
@@ -2475,3 +2474,58 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .app-workspaces,
 .ops-shortcuts,
 .kcpl-admin-content :is(.ops-filter-options, .ops-jump-list, .shipment-thread) { overscroll-behavior: contain; }
+
+/* File picker (OpsFileDrop): one dashed area that names what to choose, then
+ * what was chosen. The input underneath keeps keyboard and form behaviour. */
+.kcpl-admin-content .ops-file-drop { display: grid; justify-items: center; gap: 4px; padding: 18px 16px; border: 1px dashed var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-canvas); color: var(--admin-muted); text-align: center; cursor: pointer; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-file-drop:hover { border-color: var(--admin-ink); background: var(--admin-surface); } }
+.kcpl-admin-content .ops-file-drop:focus-within { border-color: var(--admin-ink); background: var(--admin-surface); outline: 2px solid var(--app-focus); outline-offset: 1px; }
+.kcpl-admin-content .ops-file-drop[data-chosen] { border-style: solid; background: var(--admin-surface); }
+.kcpl-admin-content .ops-file-drop[data-disabled] { cursor: not-allowed; opacity: .6; }
+.kcpl-admin-content .ops-file-drop strong { max-width: 100%; overflow: hidden; color: var(--admin-ink); font-size: var(--app-text-base); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .ops-file-drop > span { font-size: var(--app-text-sm); line-height: 16px; }
+@media (prefers-reduced-motion: reduce) { .kcpl-admin-content .ops-file-drop { transition: none; } }
+
+/* Customer account tools: one bordered list of fold-out rows inside the
+ * "Account tools" surface, each panel on the shared controls. */
+.kcpl-admin-content .crm360-tools { display: grid; }
+.kcpl-admin-content .crm360-tool + .crm360-tool { border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .crm360-tool > summary { display: flex; min-height: 56px; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; cursor: pointer; list-style: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .crm360-tool > summary::-webkit-details-marker { display: none; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .crm360-tool > summary:hover { background: var(--admin-canvas); } }
+.kcpl-admin-content .crm360-tool > summary:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+.kcpl-admin-content .crm360-tool > summary strong { display: block; color: var(--admin-ink); font-size: var(--app-text-base); font-weight: 600; line-height: 18px; }
+.kcpl-admin-content .crm360-tool > summary small { display: block; margin-top: 2px; color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 16px; }
+.kcpl-admin-content .crm360-tool > summary > svg { flex: none; color: var(--admin-faint); transition: transform var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .crm360-tool[open] > summary > svg { transform: rotate(180deg); }
+.kcpl-admin-content .crm360-tool[open] > summary { border-bottom: 1px solid var(--admin-line); }
+.kcpl-admin-content .crm360-tool-body { padding: 16px; }
+.kcpl-admin-content .crm-tool-panel { display: grid; gap: 14px; }
+.kcpl-admin-content .crm-tool-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.kcpl-admin-content .crm-tool-intro { max-width: 640px; margin: 0; color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 18px; }
+.kcpl-admin-content .ops-inset-group { padding: 14px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-canvas); }
+.kcpl-admin-content .crm-tool-heading { margin: 0 0 8px; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 600; }
+.kcpl-admin-content .ops-inset-group > .crm-tool-heading + div { margin-top: 0; }
+.kcpl-admin-content .crm-tool-check { display: inline-flex; align-items: center; gap: 8px; color: var(--admin-ink); font-size: var(--app-text-sm); cursor: pointer; }
+.kcpl-admin-content .crm-chip { min-height: 30px; padding: 4px 12px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface); color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 500; cursor: pointer; }
+.kcpl-admin-content .crm-chip[aria-pressed="true"] { border-color: var(--admin-ink); background: var(--admin-ink); color: var(--admin-surface); }
+.kcpl-admin-content .crm-chip:disabled { cursor: default; opacity: .7; }
+.kcpl-admin-content .crm-doc-upload { display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; align-items: end; gap: 12px; }
+.kcpl-admin-content .crm-rate-card { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); }
+.kcpl-admin-content .crm-rate-card + .crm-rate-card { margin-top: 0; }
+.kcpl-admin-content .crm-rate-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; padding-top: 12px; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .crm-rate-label { margin: 0; color: var(--admin-muted); font-size: var(--app-label-size); }
+.kcpl-admin-content .crm-rate-value { margin: 2px 0 0; color: var(--admin-ink); font-size: var(--app-text-base); font-weight: 500; }
+.kcpl-admin-content .crm-rate-note { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 18px; }
+.kcpl-admin-content .crm-quote-list { display: grid; overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-radius); }
+.kcpl-admin-content .crm-quote-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--admin-surface); }
+.kcpl-admin-content .crm-quote-row + .crm-quote-row { border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .crm-quote-row .ops-route { margin: 4px 0 0; }
+.kcpl-admin-content .crm-quote-meta { margin: 2px 0 0; color: var(--admin-muted); font-size: var(--app-text-sm); }
+@media (max-width: 760px) {
+  .kcpl-admin-content .crm-doc-upload { grid-template-columns: minmax(0, 1fr); }
+  .kcpl-admin-content .crm-rate-facts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcpl-admin-content .crm360-tool > summary, .kcpl-admin-content .crm360-tool > summary > svg { transition: none; }
+}

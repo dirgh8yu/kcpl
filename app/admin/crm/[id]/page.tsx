@@ -1,5 +1,7 @@
+import { ChevronDown } from "lucide-react";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
+import { OpsSurface } from "../../operations-ui";
 import { getStaffContext } from "../../staff-directory.server";
 import type { StaffCapabilities } from "../../staff-permissions";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
@@ -17,7 +19,7 @@ import { listCrmRateCards } from "../crm-rate-cards.server";
 import { CrmCustomerDocumentsPanel } from "./crm-customer-documents-panel";
 import { CrmCustomerProfileEditor } from "./crm-customer-profile-editor";
 import { CrmOperationsHistoryPanel } from "./crm-operations-history";
-import { CrmQuoteMatchDock } from "./crm-quote-match-dock";
+import { CrmQuoteMatchPanel } from "./crm-quote-match-dock";
 import { CrmRateCardPanel } from "./crm-rate-card-panel";
 import { Customer360Workspace } from "./customer-360-workspace";
 import { CrmStatementPanel } from "./crm-statement-panel";
@@ -123,20 +125,21 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
       <CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/>
     </section>
     <section className="ops-content-wide pb-12 pt-0">
-      <div className="mb-3 border-b border-[var(--admin-line)] pb-3"><p className="ops-eyebrow">Account tools</p><h2 className="mt-1 text-[15px] font-semibold tracking-[-.01em] text-[var(--admin-ink)]">Advanced customer controls</h2><p className="mt-1 max-w-2xl text-[11px] leading-[17px] text-[var(--admin-muted)]">Profile editing, rate cards, statements, documents and quote matching.</p></div>
+      <OpsSurface title="Account tools" description="Profile, rate cards, statement, documents and enquiry matching for this customer." flush>
       <div className="crm360-tools">
-        <Tool title="Master profile" detail="Edit identity, ownership, relationship classification and permitted commercial settings."><CrmCustomerProfileEditor customer={reconciledCustomer} permissions={permissions}/></Tool>
-        {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific commercial rates and pricing references."><CrmRateCardPanel customerId={reconciledCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}
+        <Tool title="Profile" detail="Names, contacts, owner, relationships and commercial settings."><CrmCustomerProfileEditor customer={reconciledCustomer} permissions={permissions}/></Tool>
+        {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific lanes and rates."><CrmRateCardPanel customerId={reconciledCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}
         {permissions.canManageFinance ? <Tool title="Statement of account" detail="The customer's statement as a PDF: view it, or email it to their portal owners."><CrmStatementPanel customerId={reconciledCustomer.id}/></Tool> : null}
-        {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="Private files for this customer account."><CrmCustomerDocumentsPanel customerId={reconciledCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}
-        <Tool title="Quote matching" detail="Link historical or suggested enquiries to this customer record within your branch access."><CrmQuoteMatchDock customerId={reconciledCustomer.id} initialLinked={linked} initialSuggested={suggested}/></Tool>
+        {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="KYC, tax registration, contracts and rate sheets, kept against the customer rather than a shipment."><CrmCustomerDocumentsPanel customerId={reconciledCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}
+        <Tool title="Enquiry matching" detail={suggested.length ? `${suggested.length} website ${suggested.length === 1 ? "enquiry needs" : "enquiries need"} confirming.` : "Website enquiries linked to this customer."}><CrmQuoteMatchPanel customerId={reconciledCustomer.id} initialLinked={linked} initialSuggested={suggested}/></Tool>
       </div>
+      </OpsSurface>
     </section>
   </OperationsShell>;
 }
 
 function Tool({ title, detail, children }: { title: string; detail: string; children: React.ReactNode }) {
-  return <details className="crm360-tool"><summary><span><strong>{title}</strong><small>{detail}</small></span><span>Open</span></summary><div className="crm360-tool-body">{children}</div></details>;
+  return <details className="crm360-tool"><summary><span><strong>{title}</strong><small>{detail}</small></span><ChevronDown size={16} strokeWidth={1.75} aria-hidden="true"/></summary><div className="crm360-tool-body">{children}</div></details>;
 }
 
 function CustomerGate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

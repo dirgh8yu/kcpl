@@ -207,3 +207,50 @@ test("content loading inside a page is the shared skeleton, announced once", asy
     assert.doesNotMatch(source, /title="Loading|>Loading…<|ops-skeleton-rows/, path);
   }
 });
+
+test("every file is chosen through the one picker", async () => {
+  for (const path of await files("app/admin")) {
+    if (path.endsWith("ops-file-drop.tsx")) continue;
+    const source = await readFile(repo(path), "utf8");
+    assert.doesNotMatch(source, /type="file"/, `${path}: use OpsFileDrop`);
+    assert.doesNotMatch(source, /migration-drop|crm360-input/, path);
+  }
+  const drop = await readFile(repo("app/admin/ops-file-drop.tsx"), "utf8");
+  assert.match(drop, /<input\s+ref=\{own\}\s+className="sr-only"\s+type="file"/);
+  assert.match(drop, /form\.addEventListener\("reset", clear\)/);
+});
+
+test("customer account tools fold out on the shared styles, not the legacy layer", async () => {
+  const legacy = await readFile(repo("app/admin/crm/[id]/customer-360.css"), "utf8");
+  assert.doesNotMatch(legacy, /crm360-tool|crm360-input/);
+  const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
+  assert.match(css, /\.kcpl-admin-content \.crm360-tool > summary \{ display: flex;/);
+  for (const path of ["crm-customer-documents-panel.tsx", "crm-rate-card-panel.tsx", "crm-customer-profile-editor.tsx", "crm-quote-match-dock.tsx"]) {
+    const source = await readFile(repo(`app/admin/crm/[id]/${path}`), "utf8");
+    assert.doesNotMatch(source, /#b78a3e|#d4ad62|#fff8e8|#fffaf0|black\/\d\d|fixed bottom-5/, path);
+  }
+});
+
+test("a list with no rows shows its empty state in place of the table, not under a header", async () => {
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    assert.doesNotMatch(source, /<tr><td colSpan=\{\d+\}[^>]*>\{?\(?\s*(?:[^<]*\?\s*)?<Ops(NoMatches|EmptyState)/, path);
+    assert.doesNotMatch(source, /No confirmed bookings<\/p>/, path);
+  }
+});
+
+test("every access or load gate is the shared gate", async () => {
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    const gate = source.match(/function \w*Gate\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
+    if (gate && !path.endsWith("v4-workspace-gate.tsx")) assert.match(gate[1], /<V4WorkspaceGate|<AdminLoginPage/, path);
+  }
+});
+
+test("messages use the shared notice; no page paints its own palette", async () => {
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    assert.doesNotMatch(source, /\b(?:bg|text|border)-(?:rose|red|amber|emerald|green|yellow|orange|sky|blue)-\d{2,3}\b/, `${path}: use tokens`);
+    assert.doesNotMatch(source, /\{\w*[eE]rror \? <(?:div|p) className="[^"]*admin-danger/, `${path}: use OpsNotice`);
+  }
+});

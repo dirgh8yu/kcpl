@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, ReceiptText, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
 import { jobCostCategoryLabels } from "../job-file";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFileDrop, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import type { PayablesImportPreview, PayablesImportResult, PayablesImportStatus } from "./payables-import";
 
 function statusTone(status: PayablesImportStatus): "success" | "warning" | "danger" {
@@ -77,12 +77,7 @@ export function PayablesImportPanel() {
     <OpsSurface density="compact" title="Stage 3B · Payables" description="Current supplier money KCPL owes. Import real outstanding supplier bills or a controlled opening payable when the paper ledger has a known balance but reconstructing old vendor invoices would create false history." action={<a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download Stage 3B template</a>}>
       <div className="migration-intake">
         <div>
-          <label className="migration-drop">
-            <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}/>
-            <span className="mx-auto grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-surface)] text-[var(--admin-crimson)] shadow-[0_5px_18px_rgba(80,55,40,.06)]"><ReceiptText size={17}/></span>
-            <strong>{file ? file.name : "Choose Stage 3B payables CSV"}</strong>
-            <span>CSV only · maximum 150 rows · maximum 2 MB · preview required before import</span>
-          </label>
+          <OpsFileDrop accept=".csv,text/csv" prompt="Choose the payables CSV" hint="CSV only · up to 150 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
           <div className="migration-actions">
             <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true"/>}Preview & validate</OpsButton>
             {file ? <OpsButton variant="ghost" disabled={Boolean(busy)} onClick={() => chooseFile(null)}>Clear file</OpsButton> : null}

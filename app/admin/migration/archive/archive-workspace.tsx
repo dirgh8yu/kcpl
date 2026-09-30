@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { Archive, Download, FileText, LoaderCircle, RefreshCw, ShieldCheck, Upload } from "lucide-react";
+import { Archive, Download, FileText, LoaderCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { kcplBranches } from "../../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFileDrop, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../../operations-ui";
 import {
   archiveCategories,
   archiveCategoryLabels,
@@ -164,12 +164,7 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
           </div>
 
           <div className="archive-side">
-            <label className="migration-drop">
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" className="sr-only" onChange={(event) => setFile(event.target.files?.[0] ?? null)}/>
-              <Upload size={16} strokeWidth={1.75} aria-hidden="true"/>
-              <strong>{file ? file.name : "Choose scanned paper file"}</strong>
-              <span>{file ? `${bytes(file.size)} · ${file.type || "type inferred from extension"}` : "PDF, image, Word, Excel, CSV or TXT · up to 20 MB"}</span>
-            </label>
+            <OpsFileDrop accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" prompt="Choose the scanned paper file" hint={file ? `${bytes(file.size)} · ${file.type || "type from its extension"}` : "PDF, image, Word, Excel, CSV or TXT · up to 20 MB"} chosen={file?.name ?? null} onFiles={(files) => setFile(files[0] ?? null)}/>
             <OpsInspectorNote tone="neutral" icon={<ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Archive integrity">KCPL stores a SHA-256 fingerprint with every file. Stage 4C cannot erase archived evidence; if its linked record is reversed, the archive keeps the original link metadata and moves its live link to the migration batch.</OpsInspectorNote>
             <OpsButton type="submit" variant="primary" size="sm" disabled={!file || !form.title.trim() || Boolean(busy) || dashboard?.storage_available === false}>{busy === "upload" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <Archive size={14} strokeWidth={1.75} aria-hidden="true"/>}Archive paper file</OpsButton>
           </div>

@@ -1,39 +1,6 @@
 /* Frozen compatibility rules. New UI belongs in operations-system.css. */
 @layer kcpl-legacy {
-.crm360-input {
-  min-height: 32px;
-  width: 100%;
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
-  background: #fff;
-  padding: 7px 10px;
-  color: #141414;
-  font-size: 12px;
-  outline: none;
-  transition: border-color .14s ease, box-shadow .14s ease;
-}
-.crm360-input:focus { border-color: #9a9a9a; background: #fff; box-shadow: 0 0 0 2px rgba(20,20,20,.06); }
-.crm360-input::placeholder { color: #9a9a9a; }
 
-.crm360-tools { display: grid; gap: 0; border-top: 1px solid #e2e2e2; }
-.crm360-tool { overflow: hidden; border: 0; border-bottom: 1px solid #e2e2e2; border-radius: 0; background: #fff; }
-.crm360-tool > summary { display: flex; min-height: 54px; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 14px; }
-.crm360-tool > summary::-webkit-details-marker { display: none; }
-.crm360-tool > summary strong { display: block; color: #141414; font-size: 12px; font-weight: 650; }
-.crm360-tool > summary small { display: block; margin-top: 3px; color: var(--admin-muted); font-size: 10px; line-height: 15px; }
-.crm360-tool > summary span:last-child { color: #dc143c; font-size: 10px; font-weight: 650; }
-.crm360-tool[open] > summary { border-bottom: 1px solid #e2e2e2; background: #f7f7f7; }
-.crm360-tool-body { overflow: hidden; }
-.crm360-tool-body > section { background: transparent; padding: 0; }
-.crm360-tool-body > section > div { max-width: none; border: 0; border-radius: 0; box-shadow: none; background: #fff; }
-.crm360-tool-body [class*="bg-[#10263f]"] { background: #dc143c; }
-.crm360-tool-body [class*="text-[#10263f]"] { color: #141414; }
-.crm360-tool-body [class*="border-black/10"] { border-color: #e2e2e2; }
-.crm360-tool-body [class*="bg-[#f4f1e9]"] { background: transparent; }
-.crm360-tool-body [class*="bg-[#faf9f5]"] { background: #f7f7f7; }
-.crm360-tool-body [class*="text-black/40"],
-.crm360-tool-body [class*="text-black/45"],
-.crm360-tool-body [class*="text-black/50"] { color: var(--admin-muted); }
 
 }
 

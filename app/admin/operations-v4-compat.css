@@ -8,8 +8,7 @@
  */
 
 :where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[0_"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[inset_"],
-:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) .shadow-sm {
+:where(.ops-page, main[class*="min-h-[calc(100vh-58px)]"][class*="bg-[#f8f6f3]"]) [class*="shadow-[inset_"] {
   box-shadow: none;
 }
 

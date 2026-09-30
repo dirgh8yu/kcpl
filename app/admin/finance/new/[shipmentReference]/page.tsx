@@ -1,4 +1,5 @@
 import { getAdminAccess } from "../../../admin-auth";
+import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { resolveInvoiceCustomerFromShipment } from "../../finance-linking.server";
@@ -17,16 +18,20 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Invoice creation is available only to authorised KCPL staff."/>;
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canManageFinance) return <Gate title="Finance access is restricted" detail="Invoice creation is available to Management and Accounts roles only."/>;
+  const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: staff.permissions.role === "management" };
+  // Past sign-in, gates keep the staff frame.
+  const shellGate = (title: string, detail: string) => <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>;
+  if (!staff.permissions.canManageFinance) return shellGate("Finance access is restricted", "Invoice creation is available to Management and Accounts roles only.");
 
   const { shipmentReference } = await params;
   const reference = decodeURIComponent(shipmentReference).trim().toUpperCase();
   const linked = await resolveInvoiceCustomerFromShipment(reference);
 
-  if (linked.kind === "shipment_missing") return <Gate title="Shipment not found" detail="The shipment reference does not exist."/>;
-  if (linked.kind === "unavailable") return <Gate title="Finance didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/>;
+  if (linked.kind === "shipment_missing") return shellGate("Shipment not found", "No shipment has that reference.");
+  if (linked.kind === "unavailable") return shellGate("Finance didn’t load", "Something went wrong fetching it. Try again in a minute; the menu and search still work.");
 
   return (
+    <OperationsShell {...shellProps} detailLabel={`New invoice · ${reference}`}>
     <ShipmentInvoiceForm
       shipmentReference={reference}
       customerId={linked.kind === "resolved" ? linked.customerId : null}
@@ -34,9 +39,10 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
       quoteReference={linked.kind === "unlinked" ? linked.quoteReference : null}
       suggestions={linked.kind === "unlinked" ? linked.suggestions : []}
     />
+    </OperationsShell>
   );
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="Receivables" title={title} detail={detail} actions={[{ href: "/admin/finance", label: "Finance", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate eyebrow="Receivables" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
 }

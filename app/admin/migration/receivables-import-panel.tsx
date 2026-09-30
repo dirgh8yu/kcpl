@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Landmark, LoaderCircle, Upload } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFileDrop, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import type { ReceivablesImportPreview, ReceivablesImportResult, ReceivablesImportStatus } from "./receivables-import";
 
 function statusTone(status: ReceivablesImportStatus): "success" | "warning" | "danger" {
@@ -76,12 +76,7 @@ export function ReceivablesImportPanel() {
     <OpsSurface density="compact" title="Stage 3A · Receivables" description="Current customer money owed to KCPL. Import open customer invoices or a controlled opening balance when the paper ledger has a known amount due but the old invoice detail should not be reconstructed." action={<a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download Stage 3A template</a>}>
       <div className="migration-intake">
         <div>
-          <label className="migration-drop">
-            <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}/>
-            <span className="mx-auto grid h-10 w-10 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-surface)] text-[var(--admin-crimson)] shadow-[0_5px_18px_rgba(80,55,40,.06)]"><Landmark size={17}/></span>
-            <strong>{file ? file.name : "Choose Stage 3A receivables CSV"}</strong>
-            <span>CSV only · maximum 150 rows · maximum 2 MB · preview required before import</span>
-          </label>
+          <OpsFileDrop accept=".csv,text/csv" prompt="Choose the receivables CSV" hint="CSV only · up to 150 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
           <div className="migration-actions">
             <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true"/>}Preview & validate</OpsButton>
             {file ? <OpsButton variant="ghost" disabled={Boolean(busy)} onClick={() => chooseFile(null)}>Clear file</OpsButton> : null}

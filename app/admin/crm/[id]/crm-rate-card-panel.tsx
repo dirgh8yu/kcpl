@@ -4,6 +4,8 @@ import { FormEvent, useMemo, useState } from "react";
 import { Archive, ArrowRight, BadgeDollarSign, Pencil, Plus, Save, X } from "lucide-react";
 import { crmCurrencies } from "../crm-data";
 import { crmRateModes, crmRateUnitLabels, crmRateUnits, type CrmRateCard, type CrmRateMode, type CrmRateUnit } from "../crm-rate-cards";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice } from "../../operations-ui";
+import { freightModeLabel } from "../../freight-mode";
 import type { StaffCapabilities } from "../../staff-permissions";
 
 const blankForm = {
@@ -46,7 +48,7 @@ export function CrmRateCardPanel({ customerId, initialRateCards, permissions }: 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<{ text: string; tone: "success" | "danger" } | null>(null);
 
   const activeCards = useMemo(() => rateCards.filter((item) => item.active), [rateCards]);
 
@@ -75,13 +77,13 @@ export function CrmRateCardPanel({ customerId, initialRateCards, permissions }: 
     });
     setEditingId(item.id);
     setOpen(true);
-    setNotice("");
+    setNotice(null);
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const path = editingId
         ? `/api/admin/crm/customers/${encodeURIComponent(customerId)}/rate-cards/${encodeURIComponent(editingId)}`
@@ -101,10 +103,10 @@ export function CrmRateCardPanel({ customerId, initialRateCards, permissions }: 
       setRateCards((current) => editingId
         ? current.map((item) => item.id === editingId ? data.rateCard! : item)
         : [data.rateCard!, ...current]);
-      setNotice(editingId ? "Rate card updated." : "Rate card added.");
+      setNotice({ text: editingId ? "Rate card updated." : "Rate card added.", tone: "success" });
       reset();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Rate card could not be saved.");
+      setNotice({ text: error instanceof Error ? error.message : "Rate card could not be saved.", tone: "danger" });
     } finally {
       setBusy(false);
     }
@@ -113,66 +115,60 @@ export function CrmRateCardPanel({ customerId, initialRateCards, permissions }: 
   async function archive(item: CrmRateCard) {
     if (!window.confirm(`Archive the ${item.origin} → ${item.destination} rate card?`)) return;
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customerId)}/rate-cards/${encodeURIComponent(item.id)}`, { method: "DELETE" });
       const data = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok) throw new Error(data.error || "Rate card could not be archived.");
       setRateCards((current) => current.map((rate) => rate.id === item.id ? { ...rate, active: false } : rate));
-      setNotice("Rate card archived.");
+      setNotice({ text: "Rate card archived.", tone: "success" });
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Rate card could not be archived.");
+      setNotice({ text: error instanceof Error ? error.message : "Rate card could not be archived.", tone: "danger" });
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="bg-[var(--admin-surface-muted)] px-5 pb-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-black/10 p-6 sm:p-8">
-          <div>
-            <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[#b78a3e]">Customer pricing</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-.035em]">Rate cards</h2>
-            <p className="mt-2 max-w-2xl text-xs leading-6 text-black/45">Structured customer-specific lanes and commercial rates. Cost fields stay inside commercial permissions.</p>
-          </div>
-          {permissions.canManageRateCards ? <button type="button" onClick={() => { if (open) reset(); else { setForm(blankForm); setEditingId(null); setOpen(true); } }} className="ops-button" data-variant="primary" data-size="sm">{open ? <X size={14} /> : <Plus size={14} />}{open ? "Close" : "New rate card"}</button> : null}
-        </div>
+    <div className="crm-tool-panel">
+      <div className="crm-tool-bar">
+        <p className="crm-tool-intro">Costs show only to people with commercial access.</p>
+        {permissions.canManageRateCards ? <OpsButton variant={open ? "secondary" : "primary"} onClick={() => { if (open) reset(); else { setForm(blankForm); setEditingId(null); setOpen(true); } }}>{open ? <X size={14} strokeWidth={1.75} aria-hidden="true"/> : <Plus size={14} strokeWidth={1.75} aria-hidden="true"/>}{open ? "Close" : "New rate card"}</OpsButton> : null}
+      </div>
 
-        {notice ? <div className="mx-6 mt-5 rounded-[var(--app-radius)] bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427] sm:mx-8">{notice}</div> : null}
+      {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 
-        {open && permissions.canManageRateCards ? <form onSubmit={save} className="mx-6 mt-5 grid gap-3 rounded-[var(--app-radius)] border border-[#d4ad62]/30 bg-[#fffaf0] p-4 sm:mx-8 md:grid-cols-2 xl:grid-cols-4">
-          <Field label="Origin"><input required className="crm360-input" value={form.origin} onChange={(event) => setForm((current) => ({ ...current, origin: event.target.value }))} /></Field>
-          <Field label="Destination"><input required className="crm360-input" value={form.destination} onChange={(event) => setForm((current) => ({ ...current, destination: event.target.value }))} /></Field>
-          <Field label="Mode"><select className="crm360-input" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value as CrmRateMode }))}>{crmRateModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select></Field>
-          <Field label="Rate unit"><select className="crm360-input" value={form.unit} onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value as CrmRateUnit }))}>{crmRateUnits.map((unit) => <option key={unit} value={unit}>{crmRateUnitLabels[unit]}</option>)}</select></Field>
-          <Field label="Carrier"><input className="crm360-input" value={form.carrier} onChange={(event) => setForm((current) => ({ ...current, carrier: event.target.value }))} /></Field>
-          <Field label="Service"><input className="crm360-input" value={form.service} onChange={(event) => setForm((current) => ({ ...current, service: event.target.value }))} /></Field>
-          <Field label="Currency"><select className="crm360-input" value={form.currency} onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></Field>
-          <Field label="Sell rate"><input required inputMode="decimal" className="crm360-input" value={form.sellRate} onChange={(event) => setForm((current) => ({ ...current, sellRate: event.target.value }))} /></Field>
-          <Field label="Internal cost rate"><input inputMode="decimal" className="crm360-input" value={form.costRate} onChange={(event) => setForm((current) => ({ ...current, costRate: event.target.value }))} /></Field>
-          <Field label="Minimum charge"><input inputMode="decimal" className="crm360-input" value={form.minimumCharge} onChange={(event) => setForm((current) => ({ ...current, minimumCharge: event.target.value }))} /></Field>
-          <Field label="Valid from"><input type="date" className="crm360-input" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} /></Field>
-          <Field label="Valid until"><input type="date" className="crm360-input" value={form.validUntil} onChange={(event) => setForm((current) => ({ ...current, validUntil: event.target.value }))} /></Field>
-          <div className="md:col-span-2 xl:col-span-4"><Field label="Notes"><textarea className="crm360-input min-h-20 resize-y" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></Field></div>
-          <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} />Active rate</label>
-          <div className="flex justify-end gap-2 md:col-span-2 xl:col-span-3"><button type="button" onClick={reset} className="ops-button" data-variant="ghost" data-size="sm">Cancel</button><button type="submit" disabled={busy} className="ops-button" data-variant="primary" data-size="sm"><Save size={13} />{busy ? "Saving…" : editingId ? "Update rate" : "Save rate"}</button></div>
+        {open && permissions.canManageRateCards ? <form onSubmit={save} className="ops-inset-group grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Field label="Origin"><input required className="ops-input" value={form.origin} onChange={(event) => setForm((current) => ({ ...current, origin: event.target.value }))} /></Field>
+          <Field label="Destination"><input required className="ops-input" value={form.destination} onChange={(event) => setForm((current) => ({ ...current, destination: event.target.value }))} /></Field>
+          <Field label="Mode"><select className="ops-select" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value as CrmRateMode }))}>{crmRateModes.map((mode) => <option key={mode} value={mode}>{freightModeLabel(mode)}</option>)}</select></Field>
+          <Field label="Rate unit"><select className="ops-select" value={form.unit} onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value as CrmRateUnit }))}>{crmRateUnits.map((unit) => <option key={unit} value={unit}>{crmRateUnitLabels[unit]}</option>)}</select></Field>
+          <Field label="Carrier"><input className="ops-input" value={form.carrier} onChange={(event) => setForm((current) => ({ ...current, carrier: event.target.value }))} /></Field>
+          <Field label="Service"><input className="ops-input" value={form.service} onChange={(event) => setForm((current) => ({ ...current, service: event.target.value }))} /></Field>
+          <Field label="Currency"><select className="ops-select" value={form.currency} onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></Field>
+          <Field label="Sell rate"><input required inputMode="decimal" className="ops-input" value={form.sellRate} onChange={(event) => setForm((current) => ({ ...current, sellRate: event.target.value }))} /></Field>
+          <Field label="Internal cost rate"><input inputMode="decimal" className="ops-input" value={form.costRate} onChange={(event) => setForm((current) => ({ ...current, costRate: event.target.value }))} /></Field>
+          <Field label="Minimum charge"><input inputMode="decimal" className="ops-input" value={form.minimumCharge} onChange={(event) => setForm((current) => ({ ...current, minimumCharge: event.target.value }))} /></Field>
+          <Field label="Valid from"><input type="date" className="ops-input" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} /></Field>
+          <Field label="Valid until"><input type="date" className="ops-input" value={form.validUntil} onChange={(event) => setForm((current) => ({ ...current, validUntil: event.target.value }))} /></Field>
+          <div className="md:col-span-2 xl:col-span-4"><Field label="Notes"><textarea className="ops-textarea min-h-20" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></Field></div>
+          <label className="crm-tool-check"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} />Active rate</label>
+          <div className="flex justify-end gap-2 md:col-span-2 xl:col-span-3"><OpsButton variant="ghost" onClick={reset}>Cancel</OpsButton><OpsButton type="submit" variant="primary" disabled={busy}><Save size={14} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Saving…" : editingId ? "Update rate" : "Save rate"}</OpsButton></div>
         </form> : null}
 
-        <div className="p-6 sm:p-8">
-          {activeCards.length ? <div className="grid gap-3 lg:grid-cols-2">{activeCards.map((item) => <article key={item.id} className="rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface-muted)] p-4">
-            <div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2 text-sm font-semibold"><span>{item.origin}</span><ArrowRight size={13} /><span>{item.destination}</span></div><p className="mt-1 text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-black/35">{item.mode} · {crmRateUnitLabels[item.unit]}</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[length:var(--app-label-size)] font-semibold uppercase text-emerald-700">Active</span></div>
-            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-black/10 pt-3 text-xs"><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/30">Sell</p><p className="mt-1 font-semibold text-[var(--admin-ink)]">{formatMoney(item.sell_rate, item.currency)}</p></div><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/30">Cost</p><p className="mt-1 font-bold text-black/55">{formatMoney(item.cost_rate, item.currency)}</p></div><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/30">Carrier</p><p className="mt-1 font-bold text-black/55">{item.carrier || "Any"}</p></div><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/30">Valid until</p><p className="mt-1 font-bold text-black/55">{dateLabel(item.valid_until)}</p></div></div>
-            {item.minimum_charge !== null ? <p className="mt-3 flex items-center gap-2 rounded-[var(--app-radius)] bg-[var(--admin-surface)] px-3 py-2 text-[length:var(--app-label-size)] font-bold text-black/50"><BadgeDollarSign size={12} />Minimum {formatMoney(item.minimum_charge, item.currency)}</p> : null}
-            {item.notes ? <p className="mt-3 text-xs leading-5 text-black/45">{item.notes}</p> : null}
-            {permissions.canManageRateCards ? <div className="mt-4 flex justify-end gap-2"><button type="button" onClick={() => edit(item)} className="ops-button" data-variant="secondary" data-size="xs"><Pencil size={11} />Edit</button><button type="button" disabled={busy} onClick={() => archive(item)} className="ops-button" data-variant="danger" data-size="xs"><Archive size={11} />Archive</button></div> : null}
-          </article>)}</div> : <div className="rounded-[var(--app-radius)] border border-dashed border-black/15 bg-[var(--admin-surface-muted)] p-8 text-center text-sm text-black/40">No active customer rate cards yet.</div>}
+        <div>
+          {activeCards.length ? <div className="grid gap-3 lg:grid-cols-2">{activeCards.map((item) => <article key={item.id} className="crm-rate-card">
+            <div className="flex items-start justify-between gap-3"><div><strong className="ops-route"><span>{item.origin}</span><ArrowRight size={11} className="ops-route-arrow" aria-hidden="true"/><span>{item.destination}</span></strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{freightModeLabel(item.mode)} · {crmRateUnitLabels[item.unit]}</p></div><OpsBadge tone="success" dot>Active</OpsBadge></div>
+            <div className="crm-rate-facts"><div><p className="crm-rate-label">Sell</p><p className="crm-rate-value">{formatMoney(item.sell_rate, item.currency)}</p></div><div><p className="crm-rate-label">Cost</p><p className="crm-rate-value">{formatMoney(item.cost_rate, item.currency)}</p></div><div><p className="crm-rate-label">Carrier</p><p className="crm-rate-value">{item.carrier || "Any"}</p></div><div><p className="crm-rate-label">Valid until</p><p className="crm-rate-value">{dateLabel(item.valid_until)}</p></div></div>
+            {item.minimum_charge !== null ? <p className="crm-rate-note"><BadgeDollarSign size={13} strokeWidth={1.75} aria-hidden="true"/>Minimum {formatMoney(item.minimum_charge, item.currency)}</p> : null}
+            {item.notes ? <p className="crm-rate-note">{item.notes}</p> : null}
+            {permissions.canManageRateCards ? <div className="mt-4 flex justify-end gap-2"><OpsButton size="sm" variant="secondary" onClick={() => edit(item)}><Pencil size={13} strokeWidth={1.75} aria-hidden="true"/>Edit</OpsButton><OpsButton size="sm" variant="danger" disabled={busy} onClick={() => archive(item)}><Archive size={13} strokeWidth={1.75} aria-hidden="true"/>Archive</OpsButton></div> : null}
+          </article>)}</div> : <OpsEmptyState compact icon={<BadgeDollarSign size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No rate cards yet" description="Add one for a lane this customer ships often."/>}
         </div>
-      </div>
-    </section>
+    </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/40">{label}</span>{children}</label>;
+  return <OpsField label={label}>{children}</OpsField>;
 }

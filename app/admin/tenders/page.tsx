@@ -1,8 +1,11 @@
 import "../plan-sell-premium.css";
 import Link from "next/link";
+import { ArrowRight, Send } from "lucide-react";
+import { OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsTableWrap } from "../operations-ui";
 import { getAdminAccess } from "../admin-auth";
 import { listCrmCustomers } from "../crm/crm-data.server";
 import { OperationsShell } from "../operations-shell";
+import { V4WorkspaceGate } from "../v4-workspace-gate";
 import type { TmsOrder } from "../rating/tms-rating";
 import { listTmsOrders } from "../rating/tms-rating.server";
 import { getStaffContext } from "../staff-directory.server";
@@ -68,25 +71,34 @@ export default async function TenderDeskPage({ searchParams }: { searchParams: P
 function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: TmsOrder[] }) {
   const orderById = new Map(orders.map((order) => [order.id, order]));
   const sorted = [...tenders].sort((a, b) => Date.parse(b.booked_at ?? b.updated_at) - Date.parse(a.booked_at ?? a.updated_at));
-  return <main className="min-h-[calc(100vh-54px)] bg-[var(--admin-canvas)] px-4 pb-10 pt-6 text-[var(--admin-ink)] sm:px-6 lg:px-7">
-    <div className="mx-auto w-full max-w-[1152px]">
-      <header className="flex min-h-[60px] flex-wrap items-center justify-between gap-4">
-        <div><h1 className="text-[22px] font-semibold leading-[30px]">Bookings</h1><p className="mt-[3px] text-[13px] leading-[19px] text-[var(--admin-muted)]">{sorted.length} confirmed booking{sorted.length === 1 ? "" : "s"} with authoritative tender lineage</p></div>
-        <Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Back to carrier booking</Link>
-      </header>
-      <section className="ops-scroll-x mt-4 overflow-x-auto border-t border-[var(--admin-line)]">
-        <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
-          <thead><tr className="h-9 border-b border-[var(--admin-line)] text-[11px] font-medium text-[var(--admin-muted)]"><th className="w-[160px] px-3 font-medium">BOOKING</th><th className="w-[150px] px-3 font-medium">ORDER</th><th className="w-[190px] px-3 font-medium">ROUTE</th><th className="w-[170px] px-3 font-medium">CUSTOMER</th><th className="w-[160px] px-3 font-medium">PARTNER</th><th className="w-[130px] px-3 font-medium">SHIPMENT</th><th className="w-[90px] px-3 text-right font-medium">ACTION</th></tr></thead>
-          <tbody>{sorted.length ? sorted.map((tender) => {
+  return <OpsPage>
+    <OpsPageHeader
+      title="Confirmed bookings"
+      description="Carrier bookings the server has confirmed, newest first."
+      meta={<span>{sorted.length} {sorted.length === 1 ? "booking" : "bookings"}</span>}
+      actions={<Link href="/admin/tenders" className="ops-button" data-variant="secondary" data-size="md">Carrier booking</Link>}
+    />
+    <div className="ops-content ops-stack">
+      <section className="ops-surface" aria-label="Confirmed bookings">
+        {sorted.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table" data-row-link aria-label="Confirmed bookings">
+          <thead><tr><th>Booking</th><th>Order</th><th>Route</th><th>Customer</th><th>Partner</th><th>Shipment</th></tr></thead>
+          <tbody>{sorted.map((tender) => {
             const order = orderById.get(tender.order_id);
-            return <tr key={tender.id} className="h-12 border-b border-[var(--admin-line)] bg-[var(--admin-surface)] text-[12px] hover:bg-[var(--admin-surface-soft)]"><td className="px-3 text-[13px] font-semibold"><span className="block truncate">{tender.booking_reference || tender.tender_reference}</span></td><td className="px-3 font-medium text-[var(--admin-muted)]">{tender.order_id}</td><td className="px-3 text-[var(--admin-muted)]"><span className="block truncate">{tender.origin} → {tender.destination}</span></td><td className="px-3 text-[var(--admin-muted)]"><span className="block truncate">{order?.customer_name || "Not linked"}</span></td><td className="px-3 text-[var(--admin-muted)]"><span className="block truncate">{tender.partner_name}</span></td><td className="px-3 font-medium">{tender.shipment_reference || "Not linked"}</td><td className="px-3 text-right"><Link href={`/admin/tenders/${encodeURIComponent(tender.id)}`} className="font-semibold text-[var(--admin-crimson)]">Open</Link></td></tr>;
-          }) : <tr><td colSpan={7} className="h-48 px-6 text-center"><p className="text-[14px] font-semibold">No confirmed bookings</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Accepted tenders will appear here after the server confirms booking.</p></td></tr>}</tbody>
-        </table>
+            return <tr key={tender.id}>
+              <td data-cell="primary"><Link href={`/admin/tenders/${encodeURIComponent(tender.id)}`} className="font-semibold text-[var(--admin-ink)]"><OpsMono>{tender.booking_reference || tender.tender_reference}</OpsMono></Link></td>
+              <td data-label="Order"><OpsMono>{tender.order_id}</OpsMono></td>
+              <td data-cell="route"><span className="ops-route"><span>{tender.origin}</span><ArrowRight size={11} className="ops-route-arrow" aria-hidden="true"/><span>{tender.destination}</span></span></td>
+              <td data-label="Customer">{order?.customer_name || "Not linked"}</td>
+              <td data-label="Partner">{tender.partner_name}</td>
+              <td data-label="Shipment">{tender.shipment_reference ? <OpsMono>{tender.shipment_reference}</OpsMono> : "Not linked"}</td>
+            </tr>;
+          })}</tbody>
+        </table></OpsTableWrap> : <OpsEmptyState compact icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No confirmed bookings yet" description="Accepted carrier bookings appear here once the server confirms them."/>}
       </section>
     </div>
-  </main>;
+  </OpsPage>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-[var(--admin-surface)] p-8"><p className="text-[11px] font-semibold uppercase tracking-[.04em] text-[var(--admin-crimson)]">Carrier booking</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Transport orders</Link><Link href="/admin/partners" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Partners</Link></div></section></main>;
+  return <V4WorkspaceGate eyebrow="Carrier booking" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/rating", label: "Buy rates", primary: true }, { href: "/admin/partners", label: "Partners" }]}/>;
 }

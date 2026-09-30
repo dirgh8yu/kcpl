@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Building2, CircleUserRound, Gauge, KeyRound, LogOut, RefreshCw, ShieldCheck, UserRoundCog, Users } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { OpsButton } from "./operations-ui";
+import { OpsButton, OpsNotice } from "./operations-ui";
 import { NotificationPreferencesEditor } from "./notifications/notification-preferences-editor";
 import { type NotificationPreferences } from "./notifications/notification-data";
 import { displayDensityLabels, displayDensities, displayMotionLabels, displayMotions, type DisplayPreferences } from "./notifications/display-preferences";
@@ -268,7 +268,7 @@ export function OperationsAccountMenu({ userName, isManagement, signOutPath, ope
         </div>
       </div>
 
-      {error ? <div className="border-b border-[var(--admin-danger)] bg-[var(--admin-danger-bg)] px-4 py-2.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{error}</div> : null}
+      {error ? <div className="px-3 pt-3"><OpsNotice tone="danger">{error}</OpsNotice></div> : null}
 
       {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- a
         * tablist is not itself a tab stop: the tabs carry the roving tabindex
@@ -297,7 +297,7 @@ export function OperationsAccountMenu({ userName, isManagement, signOutPath, ope
         </div>
 
         <div role="tabpanel" id="account-panel-notifications" aria-labelledby="account-tab-notifications" hidden={tab !== "notifications"} className="px-4 py-3">
-          {settingsError ? <div className="mb-2.5 rounded-[var(--app-radius)] border border-[var(--admin-danger)] bg-[var(--admin-danger-bg)] px-2.5 py-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{settingsError}</div> : null}
+          {settingsError ? <div className="mb-2.5"><OpsNotice tone="danger">{settingsError}</OpsNotice></div> : null}
           {settingsDraft ? <NotificationPreferencesEditor draft={settingsDraft} onChange={setSettingsDraft} emailConfigured={settings?.email_configured ?? false} busy={settingsBusy} onSave={() => void savePreferences()}/>
             : <p className="m-0 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{settingsError ? "Notification settings could not be loaded." : "Loading notification settings…"}</p>}
           {settingsSaved ? <p className="m-0 mt-2 text-[length:var(--app-label-size)] font-medium text-[var(--admin-success)]" role="status">Preferences saved.</p> : null}
@@ -306,7 +306,7 @@ export function OperationsAccountMenu({ userName, isManagement, signOutPath, ope
         <div role="tabpanel" id="account-panel-display" aria-labelledby="account-tab-display" hidden={tab !== "display"} className="px-4 py-3">
           <p className="m-0 mb-2 flex items-center gap-2 text-[length:var(--app-text-xs)] font-semibold uppercase tracking-[.04em] text-[var(--admin-faint)]"><Gauge size={13} strokeWidth={1.75} aria-hidden="true"/>Display</p>
           <p className="m-0 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">Choose how dense the workspace feels and how much motion KCPL uses. Saved to your KCPL account and applied across the app.</p>
-          {displayError ? <div className="mt-2.5 rounded-[var(--app-radius)] border border-[var(--admin-danger)] bg-[var(--admin-danger-bg)] px-2.5 py-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{displayError}</div> : null}
+          {displayError ? <div className="mt-2.5"><OpsNotice tone="danger">{displayError}</OpsNotice></div> : null}
           {display ? <>
             <div role="radiogroup" aria-label="Density" className="mt-3 grid gap-2">
               {displayDensities.map((density) => (

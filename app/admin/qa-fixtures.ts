@@ -22,6 +22,7 @@
 import type { KcplBranch } from "./crm/crm-data";
 import type { KcplStaffContext } from "./staff-directory.server";
 import type { ShipmentMessageView } from "../shipment-messages";
+import type { FinanceCustomerResolution } from "./finance/finance-customer-resolution";
 import type { Partner360Snapshot } from "./partners/partner-360";
 import { qaAuthBypassEnabled } from "./qa-auth-bypass.ts";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre/command-centre-data";
@@ -3030,4 +3031,18 @@ export function mockCrmCustomerFinanceSnapshot(id: string, staff: KcplStaffConte
     integrity_warning_count: 0,
     generated_at: iso(now, 0),
   };
+}
+
+/** Who a preview shipment bills to. Most seeds carry their customer; one
+ *  seed per ten has none yet, so the preview also shows the step where
+ *  Finance confirms the customer before invoicing. */
+export function mockInvoiceCustomerResolution(reference: string, now = Date.now()): FinanceCustomerResolution {
+  const jobs = mockCommandCentre(ALL_BRANCH_CONTEXT, now).jobs;
+  const index = jobs.findIndex((job) => job.reference === reference);
+  if (index < 0) return { kind: "shipment_missing" };
+  const job = jobs[index];
+  if (index % 10 === 3) {
+    return { kind: "unlinked", quoteReference: job.quote_reference, suggestions: [{ id: job.customer_id ?? "cust-1", display_name: job.customer_name, reason: "the same company name on the quote" }] };
+  }
+  return { kind: "resolved", customerId: job.customer_id ?? "cust-1", customerName: job.customer_name };
 }

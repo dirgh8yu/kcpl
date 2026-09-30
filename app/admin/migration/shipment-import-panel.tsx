@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, PackageCheck, Upload } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, PackageCheck } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFileDrop, OpsMono, OpsNotice, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import { shipmentStatusLabels } from "../../shipment-types";
 import type { ShipmentImportPreview, ShipmentImportResult, ShipmentImportStatus } from "./shipment-import";
 
@@ -70,12 +70,7 @@ export function ShipmentImportPanel() {
     <OpsSurface density="compact" title="Stage 2 · Shipment history" description="CSV intake → resolve customers → validate → preview → confirm. Stage 2 imports shipment records only. It does not import invoices, supplier bills, scanned documents or paper Job File archives." action={<a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download shipment template</a>}>
       <div className="migration-intake">
         <div>
-          <label className="migration-drop">
-            <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}/>
-            <Upload size={16} strokeWidth={1.75} aria-hidden="true"/>
-            <strong>{file ? file.name : "Choose shipment CSV"}</strong>
-            <span>CSV only · maximum 200 shipment rows · maximum 2 MB</span>
-          </label>
+          <OpsFileDrop accept=".csv,text/csv" prompt="Choose the shipment CSV" hint="CSV only · up to 200 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
           <div className="migration-actions">
             <OpsButton variant="primary" disabled={!file || Boolean(busy)} onClick={() => void submit("preview")}>{busy === "preview" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true"/>}Preview & validate</OpsButton>
             {file ? <OpsButton variant="ghost" disabled={Boolean(busy)} onClick={() => chooseFile(null)}>Clear file</OpsButton> : null}

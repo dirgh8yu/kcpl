@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { ExternalLink, ImagePlus, Trash2, Upload } from "lucide-react";
 import type { GalleryEntry } from "../../site-gallery.server";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFileDrop, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../operations-ui";
 import { maxGalleryBatchSize, uploadGalleryBatch } from "./gallery-upload-queue";
 
 type GalleryResponse = { ok: boolean; item?: GalleryEntry; error?: string };
@@ -25,8 +25,7 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function selectFiles(files: FileList | null) {
-    const selection = Array.from(files ?? []);
+  function selectFiles(selection: File[]) {
     setFailedFiles([]);
     setProgress(null);
     if (selection.length > maxGalleryBatchSize) {
@@ -105,12 +104,7 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
       <OpsSurface title="Upload images" description="JPG, PNG or WebP, each up to 10 MB and at least 400 × 300 pixels. Location metadata is removed.">
         <form onSubmit={upload} className="site-gallery-upload">
-          <label className="migration-drop">
-            <input ref={inputRef} className="sr-only" name="file" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busyId === "upload"} onChange={(event) => selectFiles(event.target.files)} />
-            <ImagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>
-            <strong>{selectedFiles.length ? `${selectedFiles.length} ${selectedFiles.length === 1 ? "image" : "images"} chosen` : "Choose images"}</strong>
-            <span>Up to {maxGalleryBatchSize} at a time</span>
-          </label>
+          <OpsFileDrop inputRef={inputRef} name="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busyId === "upload"} prompt="Choose images" hint={`JPG, PNG or WebP · up to ${maxGalleryBatchSize} at a time`} chosen={selectedFiles.length ? `${selectedFiles.length} ${selectedFiles.length === 1 ? "image" : "images"} chosen` : null} onFiles={(files) => selectFiles(files)}/>
           <div className="site-gallery-upload-actions">
             <label className="site-gallery-publish"><input type="checkbox" checked={publishOnUpload} disabled={busyId === "upload"} onChange={(event) => setPublishOnUpload(event.target.checked)} /> Publish immediately</label>
             <OpsButton variant="primary" type="submit" disabled={Boolean(busyId) || selectedFiles.length === 0}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{busyId === "upload" ? "Uploading…" : failedFiles.length ? `Retry ${selectedFiles.length} failed` : selectedFiles.length ? `Upload ${selectedFiles.length} ${selectedFiles.length === 1 ? "image" : "images"}` : "Upload images"}</OpsButton>

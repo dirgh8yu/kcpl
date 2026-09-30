@@ -90,14 +90,6 @@
 .kcpl-admin-content .migration-table td { padding-block: 6px; }
 .kcpl-admin-content .migration-attention { padding: 10px 16px 12px; border-top: 1px solid var(--admin-line); }
 .kcpl-admin-content .migration-intake { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); align-items: start; gap: 16px; }
-.kcpl-admin-content .migration-drop { display: grid; justify-items: center; gap: 4px; padding: 18px 16px; border: 1px dashed var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-canvas); color: var(--admin-muted); text-align: center; cursor: pointer; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out); }
-.kcpl-admin-content .migration-drop:focus-within { border-color: var(--admin-ink); background: var(--admin-surface); }
-@media (hover: hover) and (pointer: fine) {
-.kcpl-admin-content .migration-drop:hover { border-color: var(--admin-ink); background: var(--admin-surface); }
-}
-.kcpl-admin-content .migration-drop:focus-within { outline: 2px solid var(--app-focus); outline-offset: 1px; }
-.kcpl-admin-content .migration-drop strong { color: var(--admin-ink); font-size: 13px; font-weight: 600; }
-.kcpl-admin-content .migration-drop > span { font-size: 12px; line-height: 16px; }
 .kcpl-admin-content .migration-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .kcpl-admin-content .migration-rules { padding: 10px 12px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-canvas); }
 .kcpl-admin-content .migration-rules-title { margin: 0 0 6px; color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -111,9 +103,6 @@
 .kcpl-admin-content .migration-confirm-check > span { font-size: 12px; }
 @media (max-width: 1023px) {
   .kcpl-admin-content .migration-intake { grid-template-columns: minmax(0, 1fr); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .kcpl-admin-content .migration-drop { transition: none; }
 }
 
 /* Paper Archive. */

@@ -8,6 +8,7 @@ import {
   type CrmCustomerDocument,
   type CrmCustomerDocumentType,
 } from "../crm-customer-document-types";
+import { OpsButton, OpsEmptyState, OpsField, OpsFileDrop, OpsNotice, OpsTableWrap } from "../../operations-ui";
 import type { StaffCapabilities } from "../../staff-permissions";
 
 function formatBytes(bytes: number) {
@@ -16,9 +17,11 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const uploadedAt = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" });
+
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? value : uploadedAt.format(date);
 }
 
 export function CrmCustomerDocumentsPanel({
@@ -33,49 +36,50 @@ export function CrmCustomerDocumentsPanel({
   permissions: StaffCapabilities;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [documents, setDocuments] = useState(initialDocuments);
   const [documentType, setDocumentType] = useState<CrmCustomerDocumentType>("kyc");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<{ text: string; tone: "success" | "warning" | "danger" } | null>(null);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setNotice("Choose a file first.");
+      setNotice({ text: "Choose a file first.", tone: "warning" });
       return;
     }
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const form = new FormData();
       form.set("file", file);
       form.set("documentType", documentType);
       const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customerId)}/documents`, { method: "POST", body: form });
       const data = await response.json() as { ok?: boolean; document?: CrmCustomerDocument; error?: string };
-      if (!response.ok || !data.document) throw new Error(data.error || "Document could not be uploaded.");
+      if (!response.ok || !data.document) throw new Error(data.error || "The document didn’t upload. Try again.");
       setDocuments((current) => [data.document!, ...current]);
-      if (fileRef.current) fileRef.current.value = "";
-      setNotice("Document uploaded to the customer vault.");
+      formRef.current?.reset();
+      setNotice({ text: "Document uploaded.", tone: "success" });
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Document could not be uploaded.");
+      setNotice({ text: error instanceof Error ? error.message : "The document didn’t upload. Try again.", tone: "danger" });
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(document: CrmCustomerDocument) {
-    if (!window.confirm(`Delete ${document.filename} from this customer vault?`)) return;
+    if (!window.confirm(`Delete ${document.filename} from this customer’s documents?`)) return;
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const response = await fetch(`/api/admin/crm/customers/${encodeURIComponent(customerId)}/documents/${document.id}`, { method: "DELETE" });
       const data = await response.json() as { ok?: boolean; error?: string };
-      if (!response.ok) throw new Error(data.error || "Document could not be deleted.");
+      if (!response.ok) throw new Error(data.error || "The document wasn’t deleted. Try again.");
       setDocuments((current) => current.filter((item) => item.id !== document.id));
-      setNotice("Document deleted.");
+      setNotice({ text: "Document deleted.", tone: "success" });
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Document could not be deleted.");
+      setNotice({ text: error instanceof Error ? error.message : "The document wasn’t deleted. Try again.", tone: "danger" });
     } finally {
       setBusy(false);
     }
@@ -84,30 +88,28 @@ export function CrmCustomerDocumentsPanel({
   if (!permissions.canManageCustomerDocuments) return null;
 
   return (
-    <section className="bg-[var(--admin-surface-muted)] px-5 pb-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-sm">
-        <div className="border-b border-black/10 p-6 sm:p-8">
-          <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[#b78a3e]">Permanent account files</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-.035em]">Customer document vault</h2>
-          <p className="mt-2 max-w-2xl text-xs leading-6 text-black/45">Keep KYC, PAN/VAT, contracts, credit agreements, standing instructions and rate sheets against the customer, separate from shipment documents.</p>
-        </div>
+    <div className="crm-tool-panel">
+      {!storageAvailable ? <OpsNotice tone="warning">File storage isn’t set up on this site yet, so new documents can’t be uploaded.</OpsNotice> : null}
+      {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 
-        {!storageAvailable ? <div className="mx-6 mt-5 rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800 sm:mx-8">Firebase Storage is not available for this deployment. Metadata can load, but new customer documents cannot be uploaded.</div> : null}
-        {notice ? <div className="mx-6 mt-5 rounded-[var(--app-radius)] bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427] sm:mx-8">{notice}</div> : null}
+      <form ref={formRef} onSubmit={upload} className="crm-doc-upload">
+        <OpsField label="Document type"><select className="ops-select" value={documentType} onChange={(event) => setDocumentType(event.target.value as CrmCustomerDocumentType)}>{crmCustomerDocumentTypes.map((type) => <option key={type} value={type}>{crmCustomerDocumentTypeLabels[type]}</option>)}</select></OpsField>
+        <OpsFileDrop inputRef={fileRef} accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" prompt="Choose a file" hint="PDF, image, Word, Excel, CSV or TXT · up to 15 MB" disabled={!storageAvailable || busy}/>
+        <OpsButton type="submit" variant="primary" disabled={busy || !storageAvailable}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Uploading…" : "Upload"}</OpsButton>
+      </form>
 
-        <form onSubmit={upload} className="mx-6 mt-5 grid gap-3 rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface-muted)] p-4 sm:mx-8 md:grid-cols-[220px_1fr_auto] md:items-end">
-          <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/40">Document type</span><select className="crm360-input" value={documentType} onChange={(event) => setDocumentType(event.target.value as CrmCustomerDocumentType)}>{crmCustomerDocumentTypes.map((type) => <option key={type} value={type}>{crmCustomerDocumentTypeLabels[type]}</option>)}</select></label>
-          <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/40">File · max 15 MB</span><input ref={fileRef} type="file" className="block w-full rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] px-3 py-2.5 text-xs" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" /></label>
-          <button type="submit" disabled={busy || !storageAvailable} className="ops-button" data-variant="primary" data-size="sm"><Upload size={14} />{busy ? "Working…" : "Upload"}</button>
-        </form>
-
-        <div className="p-6 sm:p-8">
-          {documents.length ? <div className="divide-y divide-black/10 rounded-[var(--app-radius)] border border-black/10">{documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
-            <div className="flex min-w-0 items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] text-[var(--admin-on-crimson)]"><FileText size={16} /></div><div className="min-w-0"><strong className="block truncate text-sm">{document.filename}</strong><p className="mt-1 text-[length:var(--app-label-size)] font-bold text-black/40">{crmCustomerDocumentTypeLabels[document.document_type]} · {formatBytes(document.size_bytes)} · {formatDate(document.uploaded_at)} · {document.uploaded_by}</p></div></div>
-            <div className="flex gap-2"><a href={`/api/admin/crm/customers/${encodeURIComponent(customerId)}/documents/${document.id}`} className="ops-button" data-variant="secondary" data-size="xs"><Download size={11} />Download</a><button type="button" disabled={busy} onClick={() => remove(document)} className="ops-button" data-variant="danger" data-size="xs"><Trash2 size={11} />Delete</button></div>
-          </div>)}</div> : <div className="rounded-[var(--app-radius)] border border-dashed border-black/15 bg-[var(--admin-surface-muted)] p-8 text-center text-sm text-black/40">No permanent customer documents stored yet.</div>}
-        </div>
-      </div>
-    </section>
+      {documents.length ? <OpsTableWrap>
+        <table className="ops-table ops-register-table ops-stack-table" aria-label="Customer documents">
+          <thead><tr><th>Document</th><th>Type</th><th>Size</th><th>Uploaded</th><th><span className="sr-only">Actions</span></th></tr></thead>
+          <tbody>{documents.map((document) => <tr key={document.id}>
+            <td><strong className="block truncate">{document.filename}</strong></td>
+            <td>{crmCustomerDocumentTypeLabels[document.document_type]}</td>
+            <td>{formatBytes(document.size_bytes)}</td>
+            <td>{formatDate(document.uploaded_at)} · {document.uploaded_by}</td>
+            <td><div className="flex justify-end gap-2"><a href={`/api/admin/crm/customers/${encodeURIComponent(customerId)}/documents/${document.id}`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={13} strokeWidth={1.75} aria-hidden="true"/>Download</a><OpsButton size="sm" variant="danger" disabled={busy} onClick={() => remove(document)}><Trash2 size={13} strokeWidth={1.75} aria-hidden="true"/>Delete</OpsButton></div></td>
+          </tr>)}</tbody>
+        </table>
+      </OpsTableWrap> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No customer documents yet" description="Upload KYC, tax registration or a contract above."/>}
+    </div>
   );
 }

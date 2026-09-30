@@ -1,5 +1,6 @@
 "use client";
 
+import { OpsNotice } from "../ops-notice";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -607,7 +608,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
               <div className={extras.createField}><label htmlFor="overview-new-pieces">Pieces</label><input id="overview-new-pieces" type="number" min="0" step="1" value={pieces} onChange={(event) => setPieces(event.target.value)} /></div>
               <div className={extras.createField}><label htmlFor="overview-new-containers">Containers</label><input id="overview-new-containers" type="number" min="0" step="1" value={containerCount} onChange={(event) => setContainerCount(event.target.value)} /></div>
             </div>
-            {error ? <div className={extras.createError} role="alert">{error}</div> : null}
+            {error ? <OpsNotice tone="danger">{error}</OpsNotice> : null}
             <div className={extras.createActions}><Link href="/admin/rating" className={styles.textButton}>Open rate desk</Link><button type="button" className={styles.secondaryButton} onClick={onClose}>Cancel</button><button type="submit" className={styles.blackButton} disabled={busy}>{busy ? "Creating…" : "Create planning record"}</button></div>
           </form>
         ) : (

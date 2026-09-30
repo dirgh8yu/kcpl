@@ -6,6 +6,7 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { Search, SearchX } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
+export { OpsFileDrop } from "./ops-file-drop";
 export {
   OpsActiveFilters,
   OpsFact,

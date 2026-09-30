@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowRight, Bell, Check, CheckCheck, ChevronDown, ChevronRight, Settings2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { OpsButton } from "./operations-ui";
+import { OpsButton, OpsNotice } from "./operations-ui";
 import {
   notificationCategoryLabels,
   type OperationsNotification,
@@ -192,7 +192,7 @@ export function OperationsNotificationCentre() {
           <button type="button" onClick={() => setOpen(false)} className="app-icon-button" aria-label="Close notifications"><X size={14} strokeWidth={1.75}/></button>
         </div>
 
-        {error ? <div className="border-b border-[var(--admin-danger)] bg-[var(--admin-danger-bg)] px-4 py-2.5 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{error}</div> : null}
+        {error ? <div className="px-3 pt-3"><OpsNotice tone="danger">{error}</OpsNotice></div> : null}
 
         <div className="max-h-[460px] overflow-y-auto">
           {recent.length ? recent.map((item) => {

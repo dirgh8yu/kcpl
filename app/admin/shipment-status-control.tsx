@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types";
-import { OpsButton, OpsField } from "./operations-ui";
+import { OpsButton, OpsField, OpsNotice } from "./operations-ui";
 import { nextShipmentStatus, otherShipmentStatuses, workflowBlockerFix, type WorkflowFixStep } from "./workflow-guard";
 
 export type WorkflowBlock = { target: ShipmentStatus | null; blockers: string[]; canOverride: boolean };
@@ -115,7 +115,7 @@ export function ShipmentStatusControl({
     {otherOpen ? <div className="shipment-status-control-row" role="group" aria-label="Other statuses">
       {others.map((item) => <OpsButton key={item} variant="secondary" size="xs" disabled={busy || disabled} onClick={() => void move(item)}>{shipmentStatusLabels[item]}</OpsButton>)}
     </div> : null}
-    {error ? <p className="shipment-status-control-error" role="alert">{error}</p> : null}
+    {error ? <OpsNotice tone="danger">{error}</OpsNotice> : null}
     {block ? <WorkflowBlockersPanel
       reference={reference}
       block={block}

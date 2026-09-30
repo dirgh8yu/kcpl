@@ -4,7 +4,8 @@ import { nepalOperationalDate } from "../../../../invoice-effective-status";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FilePlus2, Link2, TriangleAlert, UserCheck, UserPlus } from "lucide-react";
+import { FilePlus2, UserCheck, UserPlus } from "lucide-react";
+import { OpsButton, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 import { crmCurrencies, type CrmCurrency } from "../../../crm/crm-data";
 import type { FinanceCustomerSuggestion } from "../../finance-customer-resolution";
 
@@ -25,7 +26,7 @@ export function ShipmentInvoiceForm({
   const today = nepalOperationalDate();
   const [busy, setBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<{ text: string; tone: "success" | "warning" | "danger" } | null>(null);
   const [manualCustomerId, setManualCustomerId] = useState("");
   const [candidateCustomers, setCandidateCustomers] = useState(suggestions);
   const [form, setForm] = useState({
@@ -42,7 +43,7 @@ export function ShipmentInvoiceForm({
     const target = targetCustomerId.trim().toUpperCase();
     if (!target) return;
     setLinkBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const response = await fetch("/api/admin/finance/customer-link", {
         method: "POST",
@@ -51,10 +52,10 @@ export function ShipmentInvoiceForm({
       });
       const data = await response.json() as { customerId?: string; error?: string };
       if (!response.ok || !data.customerId) throw new Error(data.error || "Customer could not be linked.");
-      setNotice("Customer record confirmed. Reloading the invoice workspace…");
+      setNotice({ text: "Customer record confirmed. Reloading the invoice workspace…", tone: "success" });
       router.refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Customer could not be linked.");
+      setNotice({ text: error instanceof Error ? error.message : "Customer could not be linked.", tone: "danger" });
     } finally {
       setLinkBusy(false);
     }
@@ -62,7 +63,7 @@ export function ShipmentInvoiceForm({
 
   async function createCustomerFromQuote() {
     setLinkBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const response = await fetch("/api/admin/finance/customer-link", {
         method: "POST",
@@ -81,10 +82,10 @@ export function ShipmentInvoiceForm({
         throw new Error("A similar customer record already exists. Confirm the correct existing customer below instead of creating a duplicate.");
       }
       if (!response.ok || !data.customerId) throw new Error(data.error || "Customer record could not be created.");
-      setNotice(`Customer record ${data.customerName || data.customerId} created and linked. Reloading…`);
+      setNotice({ text: `Customer record ${data.customerName || data.customerId} created and linked. Reloading…`, tone: "success" });
       router.refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Customer record could not be created.");
+      setNotice({ text: error instanceof Error ? error.message : "Customer record could not be created.", tone: "danger" });
     } finally {
       setLinkBusy(false);
     }
@@ -93,11 +94,11 @@ export function ShipmentInvoiceForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!customerId) {
-      setNotice("Confirm or create the customer record before creating the invoice.");
+      setNotice({ text: "Confirm or create the customer record before creating the invoice.", tone: "warning" });
       return;
     }
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     try {
       const response = await fetch("/api/admin/finance/invoices", {
         method: "POST",
@@ -114,45 +115,53 @@ export function ShipmentInvoiceForm({
       if (!response.ok || !data.reference) throw new Error(data.error || "Invoice could not be created.");
       router.push(`/admin/finance/invoices/${encodeURIComponent(data.reference)}`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Invoice could not be created.");
+      setNotice({ text: error instanceof Error ? error.message : "Invoice could not be created.", tone: "danger" });
     } finally {
       setBusy(false);
     }
   }
 
-  return <main className="min-h-screen bg-[var(--admin-canvas)] text-[var(--admin-ink)]">
-    <header className="bg-[var(--admin-crimson)] px-5 py-6 text-[var(--admin-on-crimson)] lg:px-8"><div className="mx-auto flex max-w-[1300px] flex-wrap items-start justify-between gap-5"><div className="flex items-start gap-4"><Link href={`/admin/jobs/${encodeURIComponent(shipmentReference)}`} className="grid h-10 w-10 place-items-center rounded-[var(--app-radius)] border border-white/15 text-white/65 hover:bg-white/10"><ArrowLeft size={16}/></Link><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[#d4ad62]">KCPL Finance</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.045em]">Create shipment invoice</h1><p className="mt-2 text-xs text-white/45">{shipmentReference}</p></div></div><Link href="/admin/finance" className="rounded-[var(--app-radius)] border border-white/15 px-4 py-2.5 text-xs font-semibold">Receivables</Link></div></header>
+  return <OpsPage>
+    <OpsPageHeader
+      eyebrow="Invoice"
+      title="New invoice"
+      description={<>For shipment <OpsMono>{shipmentReference}</OpsMono>{quoteReference ? <> · quote <OpsMono>{quoteReference}</OpsMono></> : null}</>}
+      actions={<Link href={`/admin/jobs/${encodeURIComponent(shipmentReference)}`} className="ops-button" data-variant="secondary" data-size="md">Open Job File</Link>}
+    />
+    <div className="ops-content ops-stack">
+      {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 
-    <div className="mx-auto max-w-[1300px] p-5 lg:p-8">
-      {notice ? <div className="mb-5 rounded-[var(--app-radius)] border border-[#d4ad62]/35 bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#6d5427]">{notice}</div> : null}
+      {customerId ? <OpsNotice tone="success"><strong>Customer confirmed:</strong> {customerName || customerId} <OpsMono>{customerId}</OpsMono></OpsNotice> : <OpsSurface priority="warning" eyebrow="Before invoicing" title="Confirm who this shipment belongs to" description="Finance links the quote and shipment to the customer you confirm. A new customer can be created straight from the quote.">
+        {candidateCustomers.length ? <div className="grid gap-3 md:grid-cols-2">{candidateCustomers.map((item) => <div key={item.id} className="ops-inset-group grid gap-2">
+          <strong className="text-[var(--admin-ink)]">{item.display_name}</strong>
+          <p className="m-0 text-[length:var(--app-text-sm)] text-[var(--admin-muted)]"><OpsMono>{item.id}</OpsMono> · matched by {item.reason}</p>
+          <div><OpsButton variant="primary" disabled={linkBusy} onClick={() => confirmCustomer(item.id)}><UserCheck size={14} strokeWidth={1.75} aria-hidden="true"/>{linkBusy ? "Linking…" : "Confirm this customer"}</OpsButton></div>
+        </div>)}</div> : <div className="ops-inset-group grid gap-2">
+          <p className="m-0 text-[length:var(--app-text-sm)] text-[var(--admin-muted)]">No existing customer matched this quote. KCPL can create one from the quote’s company and contact details, mark it active and link this quote and shipment.</p>
+          <div><OpsButton variant="primary" disabled={linkBusy || !quoteReference} onClick={createCustomerFromQuote}><UserPlus size={14} strokeWidth={1.75} aria-hidden="true"/>{linkBusy ? "Creating customer…" : "Create customer from quote"}</OpsButton></div>
+        </div>}
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <OpsField label="Or enter an existing customer reference" className="min-w-[280px] flex-1"><input className="ops-input" value={manualCustomerId} onChange={(event) => setManualCustomerId(event.target.value)} placeholder="KCPL-C-…"/></OpsField>
+          <OpsButton variant="secondary" disabled={linkBusy || !manualCustomerId.trim()} onClick={() => confirmCustomer(manualCustomerId)}>Confirm existing customer</OpsButton>
+        </div>
+      </OpsSurface>}
 
-      <section className="mb-5 rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] p-5 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/35">Shipment</p><p className="mt-1 text-sm font-semibold">{shipmentReference}</p>{quoteReference ? <p className="mt-1 text-[length:var(--app-label-size)] text-black/40">Quote {quoteReference}</p> : null}</div><div className="min-w-[280px]"><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/35">Customer record</p>{customerId ? <div className="mt-1"><p className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><Link2 size={14}/>{customerName || customerId}</p><p className="mt-1 text-[length:var(--app-label-size)] text-black/35">{customerId}</p></div> : <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-amber-700"><TriangleAlert size={14}/>Confirmation required</p>}</div></div>
-      </section>
-
-      {!customerId ? <section className="mb-5 rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 p-5 sm:p-6">
-        <div className="flex items-start gap-3"><span className="rounded-[var(--app-radius)] bg-amber-100 p-2.5 text-amber-800"><UserCheck size={17}/></span><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-amber-700">Resolve customer</p><h2 className="mt-1 text-xl font-semibold text-amber-950">Confirm who this shipment belongs to</h2><p className="mt-2 text-xs leading-5 text-amber-900/70">Finance will link the originating quote and shipment to the customer you confirm. If this is a new customer, KCPL can create the customer record directly from the quote.</p></div></div>
-        {candidateCustomers.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{candidateCustomers.map((item) => <div key={item.id} className="rounded-[var(--app-radius)] border border-amber-200 bg-[var(--admin-surface)] p-4"><p className="text-sm font-semibold text-[var(--admin-ink)]">{item.display_name}</p><p className="mt-1 text-[length:var(--app-label-size)] text-black/40">{item.id}</p><p className="mt-2 text-[length:var(--app-label-size)] font-bold text-amber-800">Matched by {item.reason}</p><button type="button" disabled={linkBusy} onClick={() => confirmCustomer(item.id)} className="mt-4 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 py-2.5 text-xs font-semibold text-[var(--admin-on-crimson)] disabled:opacity-50">{linkBusy ? "Linking…" : "Confirm this customer"}</button></div>)}</div> : <div className="mt-5 rounded-[var(--app-radius)] border border-amber-200 bg-[var(--admin-surface)] p-4"><p className="text-xs text-black/55">No existing customer record matched this quote.</p><button type="button" disabled={linkBusy || !quoteReference} onClick={createCustomerFromQuote} className="mt-4 inline-flex items-center gap-2 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 py-3 text-xs font-semibold text-[var(--admin-on-crimson)] disabled:opacity-50"><UserPlus size={14}/>{linkBusy ? "Creating customer…" : "Create customer record from quote"}</button><p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-black/35">KCPL will use the quote company/contact details, mark the account Active, link this quote and shipment, and keep the customer’s history.</p></div>}
-        <div className="mt-4 flex flex-wrap items-end gap-3"><label className="min-w-[280px] flex-1"><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-amber-800">Or enter an existing customer reference</span><input className="ship-fin-input" value={manualCustomerId} onChange={(event) => setManualCustomerId(event.target.value)} placeholder="KCPL-C-…"/></label><button type="button" disabled={linkBusy || !manualCustomerId.trim()} onClick={() => confirmCustomer(manualCustomerId)} className="rounded-[var(--app-radius)] border border-amber-300 bg-[var(--admin-surface)] px-4 py-3 text-xs font-semibold text-amber-950 disabled:opacity-50">Confirm existing customer</button></div>
-      </section> : null}
-
-      <section className={`rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] p-6 shadow-sm sm:p-8 ${customerId ? "" : "opacity-60"}`}><div className="mb-6 flex items-start gap-3"><span className="rounded-[var(--app-radius)] bg-[var(--admin-crimson)] p-2.5 text-[var(--admin-on-crimson)]"><FilePlus2 size={17}/></span><div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[#b78a3e]">New receivable</p><h2 className="mt-1 text-2xl font-semibold">Invoice draft</h2><p className="mt-1 text-xs text-black/45">{customerId ? "Customer confirmed. Complete the commercial details below." : "Invoice creation unlocks after the customer record is confirmed or created above."}</p></div></div>
+      <OpsSurface title="Invoice draft" description={customerId ? "Complete the details, then create the draft." : "Unlocks once the customer is confirmed above."}>
         <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Field label="Issue date"><input required disabled={!customerId} type="date" className="ship-fin-input" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></Field>
-          <Field label="Due date"><input disabled={!customerId} type="date" className="ship-fin-input" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></Field>
-          <Field label="Currency"><select disabled={!customerId} className="ship-fin-input" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></Field>
-          <Field label="Amount before tax"><input required disabled={!customerId} min="0.01" step="0.01" type="number" className="ship-fin-input" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></Field>
-          <Field label="Tax %"><input disabled={!customerId} min="0" max="100" step="0.01" type="number" className="ship-fin-input" value={form.taxRate} onChange={(event) => setForm({ ...form, taxRate: event.target.value })}/></Field>
-          <Field label="Description"><input disabled={!customerId} className="ship-fin-input" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></Field>
-          <div className="md:col-span-2 xl:col-span-4"><Field label="Invoice notes"><textarea disabled={!customerId} className="ship-fin-input min-h-24 resize-y" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></Field></div>
-          <div className="md:col-span-2 xl:col-span-4"><button disabled={busy || !customerId} className="rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 py-3 text-sm font-semibold text-[var(--admin-on-crimson)] disabled:opacity-40">{busy ? "Creating…" : "Create invoice draft"}</button></div>
+          <Field label="Issue date"><input required disabled={!customerId} type="date" className="ops-input" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></Field>
+          <Field label="Due date"><input disabled={!customerId} type="date" className="ops-input" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></Field>
+          <Field label="Currency"><select disabled={!customerId} className="ops-select" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></Field>
+          <Field label="Amount before tax"><input required disabled={!customerId} min="0.01" step="0.01" type="number" inputMode="decimal" className="ops-input" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></Field>
+          <Field label="Tax %"><input disabled={!customerId} min="0" max="100" step="0.01" type="number" inputMode="decimal" className="ops-input" value={form.taxRate} onChange={(event) => setForm({ ...form, taxRate: event.target.value })}/></Field>
+          <Field label="Description"><input disabled={!customerId} className="ops-input" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></Field>
+          <div className="md:col-span-2 xl:col-span-4"><Field label="Invoice notes"><textarea disabled={!customerId} className="ops-textarea min-h-24" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></Field></div>
+          <div className="md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy || !customerId}><FilePlus2 size={14} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Creating…" : "Create invoice draft"}</OpsButton></div>
         </form>
-      </section>
+      </OpsSurface>
     </div>
-    <style jsx global>{`.ship-fin-input{width:100%;border:1px solid rgba(0,0,0,.1);border-radius:.75rem;background:#faf9f5;padding:.75rem;font-size:.8rem;outline:none}.ship-fin-input:focus{border-color:#b78a3e;background:white}.ship-fin-input:disabled{cursor:not-allowed;opacity:.6}`}</style>
-  </main>;
+  </OpsPage>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/40">{label}</span>{children}</label>;
+  return <OpsField label={label}>{children}</OpsField>;
 }
